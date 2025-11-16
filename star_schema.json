@@ -1,0 +1,70 @@
+{
+  "_id": "b7e9df84-84b3-4957-93f1-7f1adfe5588c",
+  "company": "Seven.One Entertainment Group",
+  "role_title": "Lead Software Engineer / Technical Architect",
+  "period": "2020–Present",
+
+  "star": {
+    "situation": "Legacy monolith causing slow delivery and fragile deployments across the AdTech platform.",
+    "task": "Refactor and stabilize the system while maintaining continuous delivery for millions of ad impressions.",
+    "actions": [
+      "Led a multi-year modernization effort, decomposing monolith into event-driven microservices.",
+      "Introduced Domain-Driven Design (DDD) and ubiquitous language to align tech and business teams.",
+      "Implemented AWS-based CI/CD pipelines, observability, and fault-tolerant architecture."
+    ],
+    "results": [
+      "Reduced incidents by 75%.",
+      "Improved release cycle time from weeks to days.",
+      "Onboarded new engineers 50% faster."
+    ],
+    "impact_summary": "Transformed a fragile legacy advertising platform into a scalable, reliable, cloud-native architecture."
+  },
+
+  "ats_keywords": [
+    "Domain-Driven Design (DDD)",
+    "Event-Driven Architecture",
+    "Microservices",
+    "AWS",
+    "Node.js",
+    "CI/CD",
+    "Observability",
+    "AdTech"
+  ],
+
+  "target_roles": [
+    "Software Architect",
+    "Senior Software Architect",
+    "Head of Engineering",
+    "Director Technology",
+    "CTO"
+  ],
+
+  "seniority_weights": {
+    "lead_engineer": 1.0,
+    "software_architect": 1.0,
+    "enterprise_architect": 0.9,
+    "engineering_lead": 0.9,
+    "director_technology": 0.85,
+    "vp_engineering": 0.8,
+    "cto": 0.8,
+    "program_manager": 0.45
+  },
+
+  "condensed_star_text": "Led modernization of AdTech platform from monolith to event-driven microservices using DDD and AWS. Reduced incidents by 75%, improved release cadence from weeks to days. Increased reliability and team efficiency through domain-driven design and automation.",
+
+  "embedding_condensed_small": [
+    0.0143, -0.0712, 0.0087
+  ],
+
+  "embedding_condensed_large": [
+    0.0092, -0.0244, 0.0311
+  ],
+
+  "domain_area": ["AdTech", "Cloud Architecture", "Software Modernization"],
+  "last_updated": "2025-11-09T22:25:00Z",
+  "source": "KnowledgeGraph_v1",
+  "embedding_models": {
+    "small": "text-embedding-3-small",
+    "large": "text-embedding-3-large"
+  }
+}
