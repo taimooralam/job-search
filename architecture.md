@@ -12,37 +12,74 @@ You have a **7-layer AI job-intelligence pipeline** that automates personalized 
 
 ### 2. Pain-Point Miner (Layer 2)
 - Uses LLM (GPT-4) to analyze job descriptions
-- Extracts 3-5 key challenges/requirements the company wants to solve
-- Outputs bullet points of main technical problems and responsibilities
+- Extracts structured pain point analysis:
+  - **Pain Points**: 3-5 key challenges/requirements
+  - **Strategic Needs**: Business objectives behind the hire
+  - **Risks if Unfilled**: What company loses without this role
+  - **Success Metrics**: How success will be measured
+- Outputs comprehensive pain point dossier section
 
 ### 3. Company + Role Researcher (Layer 3)
-- Uses FireCrawl to scrape company websites, About pages, news
-- Gathers context: what the company does, products, size, recent events
-- May use LLM for general knowledge about company/role
-- Creates concise company profile
+- **Company Overview**: FireCrawl scrapes company websites, About pages, LinkedIn, news
+  - Summary (2-3 sentences)
+  - Key Signals (acquisitions, growth, funding, leadership changes)
+  - Industry classification
+  - Keywords for context
+- **Role Research**: Analyzes the specific position
+  - Summary of role's business impact
+  - "Why Now": Timing significance based on company signals
+  - Key skills emphasized
+  - Business impact of the role
+- Creates rich company + role profile with timing intelligence
 
 ### 4. Opportunity Mapper (Layer 4)
-- Takes candidate's "knowledge graph" (your skills/experience profile)
-- Maps your background to each pain point from Layer 2
-- LLM generates tailored fit analysis: "How you solve their problems"
-- Produces match scoring (likely the "score: 85" in your sample.json)
+- **Hiring Reasoning**: Why this role exists now (based on company signals)
+- **Timing Significance**: Why hiring at this specific moment
+- **Company Signals**: Acquisitions, growth milestones, product launches that drove the need
+- Maps candidate profile to pain points with strategic context
+- Produces match scoring (0-100 with rationale)
 
 ### 5. People Mapper (Layer 5)
-- Identifies key people for outreach (hiring managers, recruiters, referrals)
-- Uses LinkedIn search via FireCrawl or LinkedIn API
-- *Currently optional/placeholder for future implementation*
+- Identifies **Primary Contacts** (CEO, hiring managers, department heads)
+- Identifies **Secondary Contacts** (team members, adjacent roles)
+- For EACH person, gathers:
+  - Name, role, LinkedIn URL
+  - Generates personalized **LinkedIn message** (150-200 chars)
+  - Generates personalized **email template** (3-4 paragraphs)
+  - Includes **reasoning summary** for why this outreach works
+- Outputs per-person outreach intelligence
 
 ### 6. Outreach Generator (Layer 6)
-- Synthesizes outputs from Layers 2-5
-- LLM drafts personalized cover letter/email
-- References specific pain points, company insights, and your fit
-- Professional yet enthusiastic tone
+- Synthesizes ALL prior layers (pain points, company signals, timing, fit analysis)
+- Generates **general cover letter** (not person-specific)
+- Creates **tailored CV** with job-specific summary paragraph
+- Professional, signal-aware tone that references recent company news
 
 ### 7. Output Publisher (Layer 7)
-- Creates tailored CV (.docx) customized for the specific job
-- Uploads CV to Google Drive (specific folder)
-- Updates Google Sheets tracking log (date, company, role, match score, links)
+- Generates **Opportunity Dossier** (comprehensive markdown/text report with all sections 1-10)
+- Creates **tailored CV** (.docx) customized for the specific job
+- Uploads dossier + CV to Google Drive: `/applications/<company>/<role>/`
+- Updates Google Sheets tracking log (date, company, role, match score, Drive links, status)
 - Sends notifications (Telegram or email) for high-priority matches
+- Stores run metadata and validation timestamps in MongoDB
+
+## Output Format: Opportunity Dossier
+
+The final output is a comprehensive **Opportunity Dossier** containing:
+
+1. **Job Summary**: Role, company, location, score, URLs, posting metadata
+2. **Job Requirements/Criteria**: Seniority, employment type, job function, industries
+3. **Company Overview**: Summary, key signals, industry, keywords
+4. **Opportunity Mapper**: Hiring signals, reasoning, timing significance
+5. **Role Research**: Summary, "why now", key skills, business impact
+6. **Pain Point Analysis**: Pain points, strategic needs, risks if unfilled, success metrics
+7. **People & Outreach Mapper**:
+   - Primary contacts (4-6 people) with LinkedIn + email templates each
+   - Secondary contacts (4-6 people) with LinkedIn + email templates each
+   - Each contact includes: name, role, URL, subject line, message, reasoning
+8. **Notes**: Hiring manager info, talent acquisition team, additional context
+9. **Firecrawl/Opportunity Queries**: Search queries used for research
+10. **Validation & Metadata**: Validation status per section, timestamps, source, dedup key
 
 ## Technical Stack
 
