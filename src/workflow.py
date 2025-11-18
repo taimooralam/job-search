@@ -5,14 +5,19 @@ Orchestrates all 7 layers in a sequential workflow.
 Today's vertical slice: Layers 2, 3, 4, 6, 7 (skipping Layer 5 - People Mapper).
 """
 
+import uuid
+from datetime import datetime
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
 from src.common.state import JobState
 
 # Import all layer node functions
 from src.layer2.pain_point_miner import pain_point_miner_node
+from src.layer2_5 import select_stars  # Phase 1.3: STAR Selector
 from src.layer3.company_researcher import company_researcher_node
+from src.layer3.role_researcher import role_researcher_node  # Phase 5.2: Role Researcher
 from src.layer4.opportunity_mapper import opportunity_mapper_node
+from src.layer5 import people_mapper_node  # Phase 1.3: People Mapper
 from src.layer6.generator import generator_node
 from src.layer7.output_publisher import output_publisher_node
 
@@ -23,10 +28,13 @@ def create_workflow() -> StateGraph:
 
     Flow:
     1. Layer 2: Pain-Point Miner (extract pain points from job description)
-    2. Layer 3: Company Researcher (scrape + summarize company)
-    3. Layer 4: Opportunity Mapper (generate fit score + rationale)
-    4. Layer 6: Generator (create cover letter + CV)
-    5. Layer 7: Output Publisher (upload to Drive, log to Sheets)
+    2. Layer 2.5: STAR Selector (select 2-3 best-fit achievements - Phase 1.3)
+    3. Layer 3.0: Company Researcher (scrape company signals - Phase 5.1)
+    4. Layer 3.5: Role Researcher (analyze role business impact - Phase 5.2)
+    5. Layer 4: Opportunity Mapper (generate fit score + rationale)
+    6. Layer 5: People Mapper (identify contacts, generate personalized outreach - Phase 1.3)
+    7. Layer 6: Generator (create cover letter + CV)
+    8. Layer 7: Output Publisher (upload to Drive, log to Sheets)
 
     Returns:
         Compiled StateGraph ready to execute
@@ -36,17 +44,23 @@ def create_workflow() -> StateGraph:
 
     # Add nodes for each layer
     workflow.add_node("pain_point_miner", pain_point_miner_node)
-    workflow.add_node("company_researcher", company_researcher_node)
+    workflow.add_node("star_selector", select_stars)  # Phase 1.3
+    workflow.add_node("company_researcher", company_researcher_node)  # Phase 5.1
+    workflow.add_node("role_researcher", role_researcher_node)  # Phase 5.2
     workflow.add_node("opportunity_mapper", opportunity_mapper_node)
+    workflow.add_node("people_mapper", people_mapper_node)  # Phase 1.3
     workflow.add_node("generator", generator_node)
     workflow.add_node("output_publisher", output_publisher_node)
 
-    # Define sequential edges (linear flow for today's slice)
+    # Define sequential edges
     workflow.set_entry_point("pain_point_miner")
-    workflow.add_edge("pain_point_miner", "company_researcher")
-    workflow.add_edge("company_researcher", "opportunity_mapper")
-    workflow.add_edge("opportunity_mapper", "generator")
-    workflow.add_edge("generator", "output_publisher")
+    workflow.add_edge("pain_point_miner", "star_selector")  # Layer 2 -> Layer 2.5
+    workflow.add_edge("star_selector", "company_researcher")  # Layer 2.5 -> Layer 3.0
+    workflow.add_edge("company_researcher", "role_researcher")  # Layer 3.0 -> Layer 3.5 (Phase 5)
+    workflow.add_edge("role_researcher", "opportunity_mapper")  # Layer 3.5 -> Layer 4
+    workflow.add_edge("opportunity_mapper", "people_mapper")  # Layer 4 -> Layer 5
+    workflow.add_edge("people_mapper", "generator")  # Layer 5 -> Layer 6
+    workflow.add_edge("generator", "output_publisher")  # Layer 6 -> Layer 7
     workflow.add_edge("output_publisher", END)
 
     # Compile graph
@@ -66,11 +80,17 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     Returns:
         Final JobState with all outputs populated
     """
+    # Generate metadata
+    run_id = str(uuid.uuid4())
+    created_at = datetime.utcnow().isoformat() + 'Z'
+
     print("\n" + "="*70)
     print("🚀 STARTING JOB INTELLIGENCE PIPELINE")
     print("="*70)
     print(f"Job: {job_data.get('title')} at {job_data.get('company')}")
     print(f"Job ID: {job_data.get('job_id')}")
+    print(f"Run ID: {run_id}")
+    print(f"Started: {created_at}")
     print("="*70 + "\n")
 
     # Initialize state
@@ -85,19 +105,31 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
 
         # Output fields (will be populated by layers)
         "pain_points": None,
-        "company_summary": None,
-        "company_url": None,
+        "strategic_needs": None,  # Phase 1.3: Layer 2 JSON
+        "risks_if_unfilled": None,  # Phase 1.3: Layer 2 JSON
+        "success_metrics": None,  # Phase 1.3: Layer 2 JSON
+        "selected_stars": None,  # Phase 1.3: Layer 2.5
+        "star_to_pain_mapping": None,  # Phase 1.3: Layer 2.5
+        "company_research": None,  # Phase 5.1: Layer 3.0 structured signals
+        "company_summary": None,  # Legacy (populated from company_research)
+        "company_url": None,  # Legacy (populated from company_research)
+        "role_research": None,  # Phase 5.2: Layer 3.5 business impact
         "fit_score": None,
         "fit_rationale": None,
+        "fit_category": None,  # Phase 6: Layer 4 category
+        "primary_contacts": None,  # Phase 7: Layer 5 primary contacts
+        "secondary_contacts": None,  # Phase 7: Layer 5 secondary contacts
+        "people": None,  # Legacy: Layer 5 (deprecated, use primary_contacts + secondary_contacts)
+        "outreach_packages": None,  # Phase 7/9: Per-contact outreach
         "cover_letter": None,
         "cv_path": None,
         "drive_folder_url": None,
         "sheet_row_id": None,
 
         # Metadata
-        "run_id": None,
-        "created_at": None,
-        "errors": None,
+        "run_id": run_id,
+        "created_at": created_at,
+        "errors": [],
         "status": "processing"
     }
 
@@ -105,12 +137,35 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     app = create_workflow()
 
     # Execute workflow
-    final_state = app.invoke(initial_state)
+    try:
+        final_state = app.invoke(initial_state)
+
+        # Update status based on errors
+        if final_state.get("errors"):
+            # Check if critical outputs are missing
+            critical_missing = (
+                not final_state.get("pain_points") or
+                not final_state.get("fit_score") or
+                not final_state.get("cover_letter")
+            )
+            final_state["status"] = "failed" if critical_missing else "partial"
+        else:
+            final_state["status"] = "completed"
+
+    except Exception as e:
+        print(f"\n❌ Pipeline failed with exception: {e}")
+        # Create minimal final state with error
+        final_state = initial_state.copy()
+        final_state["errors"] = [f"Pipeline exception: {str(e)}"]
+        final_state["status"] = "failed"
+        raise
 
     # Print summary
     print("\n" + "="*70)
     print("✅ PIPELINE COMPLETE")
     print("="*70)
+    print(f"Run ID: {final_state.get('run_id')}")
+    print(f"Status: {final_state.get('status')}")
     print(f"Fit Score: {final_state.get('fit_score')}/100")
     print(f"Drive Folder: {final_state.get('drive_folder_url')}")
     print(f"Sheets Row: {final_state.get('sheet_row_id')}")
