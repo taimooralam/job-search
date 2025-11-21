@@ -7,25 +7,9 @@ Each layer reads from and writes to this shared state.
 
 from typing import TypedDict, List, Optional, Dict
 
-
-class STARRecord(TypedDict):
-    """
-    Structured STAR achievement record.
-
-    Parsed from knowledge-base.md by Layer 2.5.
-    Contains: situation, task, actions, results, metrics, keywords.
-    """
-    id: str
-    company: str
-    role: str
-    period: str
-    domain_areas: str
-    situation: str
-    task: str
-    actions: str
-    results: str
-    metrics: str
-    keywords: str
+# Import canonical STARRecord from types.py (Phase 2.1)
+# This is the 22-field schema with List-typed fields for tasks, actions, results, metrics, etc.
+from src.common.types import STARRecord
 
 
 class Contact(TypedDict):
@@ -115,6 +99,7 @@ class JobState(TypedDict):
     title: str                       # Job title (e.g., "Senior Manager, YouTube Paid Performance")
     company: str                     # Company name (e.g., "Launch Potato")
     job_description: str             # Full job description text
+    scraped_job_posting: Optional[str]  # Scraped job posting markdown (from job_url)
     job_url: str                     # LinkedIn/Indeed job posting URL
     source: str                      # Job source (e.g., "linkedin", "indeed")
 
@@ -133,6 +118,7 @@ class JobState(TypedDict):
     # Enables hyper-personalization by mapping pain points to specific achievements
     selected_stars: Optional[List[STARRecord]]                # 2-3 most relevant STAR achievements
     star_to_pain_mapping: Optional[Dict[str, List[str]]]     # pain_point -> [star_ids with score >= 7]
+    all_stars: Optional[List[STARRecord]]                     # Phase 8.2: Full STAR library for CV generation
 
     # ===== LAYER 3: Company & Role Researcher (Phase 5) =====
     # Phase 5.1: Enhanced Company Researcher with structured signals
@@ -156,12 +142,14 @@ class JobState(TypedDict):
     secondary_contacts: Optional[List[Contact]]  # 4-6 cross-functional/peer contacts
     people: Optional[List[Contact]]              # Legacy field (deprecated, use primary_contacts + secondary_contacts)
     outreach_packages: Optional[List[OutreachPackage]]  # Per-contact outreach (Phase 7/9)
+    fallback_cover_letters: Optional[List[str]]  # Fallback when no contacts discovered
 
     # ===== LAYER 6: Generator (SIMPLIFIED) =====
     # TODAY: Simple cover letter + basic CV
     # FUTURE: Will add per-person outreach templates
     cover_letter: Optional[str]      # 3-paragraph outreach draft
     cv_path: Optional[str]           # Path to generated tailored CV file
+    cv_reasoning: Optional[str]      # Phase 8.2: Rationale for STAR selection, competency mix, gap mitigation
 
     # ===== LAYER 7: Publisher =====
     drive_folder_url: Optional[str]  # Google Drive folder URL for this job

@@ -1,0 +1,59 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Credentials (never commit these!)
+credentials/
+*.json
+!package.json
+!tsconfig.json
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Build / Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# LangSmith / Logging
+*.log
+logs/
+
+# Application outputs (can be regenerated)
+applications/
+star_records.json
+
+# Node (if any frontend)
+node_modules/
