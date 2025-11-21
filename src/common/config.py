@@ -48,8 +48,23 @@ class Config:
     # ===== Candidate Profile =====
     CANDIDATE_PROFILE_PATH: str = os.getenv(
         "CANDIDATE_PROFILE_PATH",
-        "./knowledge-base.md"
+        "./master-cv.md"
     )
+
+    # ===== Feature Flags =====
+    # Disable STAR selector while keeping code available for future re-enable
+    ENABLE_STAR_SELECTOR: bool = os.getenv("ENABLE_STAR_SELECTOR", "false").lower() == "true"
+    # Disable remote publishing (Drive/Sheets) and rely on local ./applications output by default
+    ENABLE_REMOTE_PUBLISHING: bool = os.getenv("ENABLE_REMOTE_PUBLISHING", "false").lower() == "true"
+
+    # ===== STAR Selection Strategy (Phase 2.2) =====
+    # LLM_ONLY: Skip embedding filter, use LLM scoring only (simple, slower)
+    # HYBRID: Graph + embedding filter + LLM ranker (recommended, requires embeddings)
+    # EMBEDDING_ONLY: Pure cosine similarity (fast, less accurate, requires embeddings)
+    STAR_SELECTION_STRATEGY: str = os.getenv("STAR_SELECTION_STRATEGY", "LLM_ONLY")
+
+    # Knowledge base path for STAR parsing
+    KNOWLEDGE_BASE_PATH: str = os.getenv("KNOWLEDGE_BASE_PATH", "./knowledge-base.md")
 
     # ===== LLM Model Configuration =====
     # Default models per layer (can be overridden)
@@ -70,10 +85,14 @@ class Config:
             "MONGODB_URI": cls.MONGODB_URI,
             "OPENAI_API_KEY": cls.OPENAI_API_KEY,
             "FIRECRAWL_API_KEY": cls.FIRECRAWL_API_KEY,
-            "GOOGLE_CREDENTIALS_PATH": cls.GOOGLE_CREDENTIALS_PATH,
-            "GOOGLE_DRIVE_FOLDER_ID": cls.GOOGLE_DRIVE_FOLDER_ID,
-            "GOOGLE_SHEET_ID": cls.GOOGLE_SHEET_ID,
         }
+
+        if cls.ENABLE_REMOTE_PUBLISHING:
+            required_settings.update({
+                "GOOGLE_CREDENTIALS_PATH": cls.GOOGLE_CREDENTIALS_PATH,
+                "GOOGLE_DRIVE_FOLDER_ID": cls.GOOGLE_DRIVE_FOLDER_ID,
+                "GOOGLE_SHEET_ID": cls.GOOGLE_SHEET_ID,
+            })
 
         missing = [name for name, value in required_settings.items() if not value]
 
@@ -84,10 +103,11 @@ class Config:
             )
 
         # Validate file paths exist
-        if not Path(cls.GOOGLE_CREDENTIALS_PATH).exists():
-            raise FileNotFoundError(
-                f"Google credentials file not found: {cls.GOOGLE_CREDENTIALS_PATH}"
-            )
+        if cls.ENABLE_REMOTE_PUBLISHING:
+            if not Path(cls.GOOGLE_CREDENTIALS_PATH).exists():
+                raise FileNotFoundError(
+                    f"Google credentials file not found: {cls.GOOGLE_CREDENTIALS_PATH}"
+                )
 
         if not Path(cls.CANDIDATE_PROFILE_PATH).exists():
             raise FileNotFoundError(
