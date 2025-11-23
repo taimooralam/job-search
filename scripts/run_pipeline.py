@@ -110,6 +110,11 @@ def main():
     args = parser.parse_args()
 
     try:
+        # Validate configuration before starting
+        print("🔍 Validating configuration...")
+        Config.validate()
+        print("✅ Configuration valid\n")
+
         # Load candidate profile
         print(f"Loading candidate profile from: {args.profile}")
         candidate_profile = load_candidate_profile(args.profile)
@@ -175,12 +180,45 @@ EXPERIENCE:
         print("\n" + "="*70)
         print("📊 FINAL RESULTS")
         print("="*70)
-        print(f"\n📋 Pain Points:")
+
+        # Pain Point Analysis (4 Dimensions)
+        print(f"\n📋 Pain Point Analysis (4 Dimensions):")
+
+        print("\n  A. Pain Points:")
         if final_state.get("pain_points"):
             for i, point in enumerate(final_state["pain_points"], 1):
-                print(f"  {i}. {point}")
+                print(f"    {i}. {point}")
         else:
-            print("  None extracted")
+            print("    None extracted")
+
+        print("\n  B. Strategic Needs:")
+        if final_state.get("strategic_needs"):
+            for i, need in enumerate(final_state["strategic_needs"], 1):
+                print(f"    {i}. {need}")
+        else:
+            print("    None extracted")
+
+        print("\n  C. Risks if Unfilled:")
+        if final_state.get("risks_if_unfilled"):
+            for i, risk in enumerate(final_state["risks_if_unfilled"], 1):
+                print(f"    {i}. {risk}")
+        else:
+            print("    None extracted")
+
+        print("\n  D. Success Metrics:")
+        if final_state.get("success_metrics"):
+            for i, metric in enumerate(final_state["success_metrics"], 1):
+                print(f"    {i}. {metric}")
+        else:
+            print("    None extracted")
+
+        print(f"\n⭐ Selected STAR Achievements (Layer 2.5):")
+        if final_state.get("selected_stars"):
+            for i, star in enumerate(final_state["selected_stars"], 1):
+                print(f"  {i}. {star['company']} - {star['role'][:50]}...")
+                print(f"     Metrics: {star['metrics'][:80]}...")
+        else:
+            print("  None selected")
 
         print(f"\n🏢 Company Summary:")
         print(f"  {final_state.get('company_summary', 'None')}")
@@ -188,6 +226,14 @@ EXPERIENCE:
         print(f"\n🎯 Fit Analysis:")
         print(f"  Score: {final_state.get('fit_score', 'N/A')}/100")
         print(f"  Rationale: {final_state.get('fit_rationale', 'None')}")
+
+        print(f"\n👥 Key Contacts (Layer 5):")
+        if final_state.get("people"):
+            for i, person in enumerate(final_state["people"], 1):
+                print(f"  {i}. {person['name']} - {person['role']}")
+                print(f"     LinkedIn: {person['linkedin_url'][:60]}...")
+        else:
+            print("  None identified")
 
         print(f"\n📄 Cover Letter:")
         if final_state.get("cover_letter"):
