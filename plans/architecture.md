@@ -4,11 +4,12 @@
 You have a **7-layer AI job-intelligence pipeline** that automates personalized job application preparation using **LangGraph** for orchestration. The workflow is stateful, durable, and integrates multiple AI/web services.
 
 ## Current Operational Overrides
-- **Master CV everywhere**: `Config.CANDIDATE_PROFILE_PATH` now defaults to `./master-cv.md` and candidate context is passed into fit, outreach, and CV generation prompts for Layers 3–6.
+- **Master CV everywhere**: `Config.CANDIDATE_PROFILE_PATH` defaults to `./master-cv.md` and candidate context is passed into fit, outreach, and CV generation prompts for Layers 3–6.
 - **STAR selector paused**: Layer 2.5 remains in code but is bypassed by default via `Config.ENABLE_STAR_SELECTOR=False`; downstream prompts fall back to master CV evidence instead of STAR citations.
 - **Privacy-safe FireCrawl**: Search queries in Layers 3 and 5 use natural-language, non-outreach phrasing. Layer 3 also scrapes the original job URL to capture the written JD text for dossiers.
+- **People Mapper scraping off**: `DISABLE_FIRECRAWL_OUTREACH=true` disables FireCrawl contact discovery; Layer 5 emits role-based synthetic contacts and generic outreach instead of scraped leads.
 - **Local-only outputs**: Google Drive/Sheets publishing is disabled by default (`ENABLE_REMOTE_PUBLISHING=False`); artifacts are saved only under `./applications/<company>/<role>/`.
-- **CV generation**: Layer 6 now uses the prompt in `prompts/cv-creator.prompt.md` + the master CV to emit `CV.md` (no `.docx`) alongside an integrity check.
+- **CV generation (two-pass + QA)**: Layer 6 now pulls the full job description into the CV prompt, runs a two-pass flow (JSON evidence → formatted bullets) with QA guards (strong verb + metric + pain/success tie-in), and outputs `CV.md` with an integrity check. Defaults to OpenRouter `CV_MODEL` (`anthropic/claude-3-opus-20240229`).
 - **Contact fallbacks**: If contact discovery fails, Layer 5 returns three fallback cover letters and records them for publishing.
 
 ## The 7+ Layers (Your Process)
@@ -180,12 +181,13 @@ These outputs feed directly into the Opportunity Mapper, People Mapper, and Outr
   - Company + role research (including signals).
   - `selected_stars`.
 - **Discovery:**
+  - Operational override: FireCrawl scraping is disabled (`DISABLE_FIRECRAWL_OUTREACH=true`); People Mapper produces role-based synthetic contacts and generic outreach without web scraping.
   - Uses multiple signals to propose 4–6 **primary contacts**:
     - Likely hiring manager.
     - Department head (e.g., VP Engineering).
     - Key stakeholders.
     - Recruiters / Talent Acquisition.
-  - Next iteration:
+  - Next iteration (when FireCrawl is re-enabled):
     - Multi-source FireCrawl queries (`${company} LinkedIn`, `${company} Crunchbase`, `${company} people`).
     - Fallback patterns when no explicit names are found (role‑based targets).
 - **Output contract (JSON):**

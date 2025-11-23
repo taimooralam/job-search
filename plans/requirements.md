@@ -43,7 +43,7 @@
 
 ### Generation & Output (Layers 6-7)
 - **LinkedIn outreach generation**: Personalized LinkedIn cover letter/message using **selected STAR records** with concrete metrics cited (e.g., "reduced incidents by 75%", "3-year zero-downtime record"), plus pain points, company research, opportunity mapping, and People Mapper signals; output must fit within LinkedIn's character limit and end with the candidate's email address and Calendly URL `https://calendly.com/taimooralam/15min`.
-- **CV tailoring**: Job-specific CV summary highlighting relevant STARs
+- **CV tailoring**: Job-specific CV in two-pass mode (JSON evidence per role → QA’d bullets) that injects the full job description into the prompt, enforces strong-verb + metric + pain/success tie-ins, and emits `CV.md` (no `.docx`) via `prompts/cv-creator.prompt.md` using OpenRouter `CV_MODEL` (`anthropic/claude-3-opus-20240229` default).
 - **Dossier assembly**: Complete `dossier.txt` matching sample-dossier structure (simplified) with pain points, selected STARs, company summary, fit analysis, LinkedIn cover letter
 
 ### Data Persistence & Tracking
