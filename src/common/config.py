@@ -27,6 +27,7 @@ class Config:
     # ===== LLM APIs =====
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    # OpenRouter is limited to CV generation; all other layers use OpenAI directly
     USE_OPENROUTER: bool = os.getenv("USE_OPENROUTER", "false").lower() == "true"
 
     # ===== Web Scraping =====
@@ -56,6 +57,8 @@ class Config:
     ENABLE_STAR_SELECTOR: bool = os.getenv("ENABLE_STAR_SELECTOR", "false").lower() == "true"
     # Disable remote publishing (Drive/Sheets) and rely on local ./applications output by default
     ENABLE_REMOTE_PUBLISHING: bool = os.getenv("ENABLE_REMOTE_PUBLISHING", "false").lower() == "true"
+    # Disable FireCrawl-backed people discovery/outreach by default (use role-based contacts instead)
+    DISABLE_FIRECRAWL_OUTREACH: bool = os.getenv("DISABLE_FIRECRAWL_OUTREACH", "true").lower() == "true"
 
     # ===== STAR Selection Strategy (Phase 2.2) =====
     # LLM_ONLY: Skip embedding filter, use LLM scoring only (simple, slower)
@@ -70,10 +73,13 @@ class Config:
     # Default models per layer (can be overridden)
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gpt-4o")  # GPT-4o for quality
     CHEAP_MODEL: str = os.getenv("CHEAP_MODEL", "gpt-4o-mini")  # Mini for simple tasks
+    # CV generation uses Anthropic Claude Opus via OpenRouter by default
+    CV_MODEL: str = os.getenv("CV_MODEL", "anthropic/claude-3-opus-20240229")
 
     # Temperature settings
     CREATIVE_TEMPERATURE: float = 0.7  # For outreach generation
     ANALYTICAL_TEMPERATURE: float = 0.3  # For pain point extraction, scoring
+    CV_TEMPERATURE: float = float(os.getenv("CV_TEMPERATURE", "0.33"))  # Slightly warmer CV tone
 
     @classmethod
     def validate(cls) -> None:
@@ -102,6 +108,11 @@ class Config:
                 f"Please check your .env file."
             )
 
+        if cls.USE_OPENROUTER and not cls.OPENROUTER_API_KEY:
+            raise ValueError(
+                "USE_OPENROUTER is enabled for CV generation but OPENROUTER_API_KEY is missing."
+            )
+
         # Validate file paths exist
         if cls.ENABLE_REMOTE_PUBLISHING:
             if not Path(cls.GOOGLE_CREDENTIALS_PATH).exists():
@@ -116,15 +127,29 @@ class Config:
 
     @classmethod
     def get_llm_api_key(cls) -> str:
-        """Get the appropriate LLM API key based on USE_OPENROUTER setting."""
-        if cls.USE_OPENROUTER:
-            return cls.OPENROUTER_API_KEY
+        """Get the API key for general pipeline LLM calls (always OpenAI)."""
         return cls.OPENAI_API_KEY
 
     @classmethod
     def get_llm_base_url(cls) -> Optional[str]:
-        """Get the LLM base URL (for OpenRouter) or None for direct OpenAI."""
-        if cls.USE_OPENROUTER:
+        """General LLM base URL (None to use OpenAI directly)."""
+        return None
+
+    @classmethod
+    def get_cv_llm_api_key(cls) -> str:
+        """
+        Get the API key for CV generation.
+
+        Uses OpenRouter when enabled and configured, otherwise falls back to OpenAI.
+        """
+        if cls.USE_OPENROUTER and cls.OPENROUTER_API_KEY:
+            return cls.OPENROUTER_API_KEY
+        return cls.OPENAI_API_KEY
+
+    @classmethod
+    def get_cv_llm_base_url(cls) -> Optional[str]:
+        """Get the LLM base URL for CV generation (OpenRouter when configured)."""
+        if cls.USE_OPENROUTER and cls.OPENROUTER_API_KEY:
             return "https://openrouter.ai/api/v1"
         return None
 
@@ -134,8 +159,10 @@ class Config:
         return f"""
 Configuration Summary:
   MongoDB: {'✓ Configured' if cls.MONGODB_URI else '✗ Missing'}
-  LLM: {'OpenRouter' if cls.USE_OPENROUTER else 'OpenAI'} {'✓' if cls.get_llm_api_key() else '✗'}
+  LLM (general): OpenAI {'✓' if cls.get_llm_api_key() else '✗ Missing'}
+  CV LLM: {'OpenRouter' if cls.get_cv_llm_base_url() else 'OpenAI'} {'✓' if cls.get_cv_llm_api_key() else '✗ Missing'}
   FireCrawl: {'✓ Configured' if cls.FIRECRAWL_API_KEY else '✗ Missing'}
+  People Mapper FireCrawl: {'Disabled' if cls.DISABLE_FIRECRAWL_OUTREACH else 'Enabled'}
   LangSmith: {'✓ Enabled' if cls.LANGSMITH_API_KEY else '✗ Disabled'}
   Google Drive: {'✓ Configured' if cls.GOOGLE_DRIVE_FOLDER_ID else '✗ Missing'}
   Google Sheets: {'✓ Configured' if cls.GOOGLE_SHEET_ID else '✗ Missing'}

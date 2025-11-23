@@ -29,3 +29,4 @@ Guidance for using Claude Code with this repository.
 - If you propose changes, mention where they belong (e.g., `src/`, `tests/`, `docs/`). Use Drive/Sheets/LangSmith integration points from the context above.
 - **After completing work**: Review and update `missing.md` to check off completed items and keep implementation tracking current.
 - Use TDD approach to implementing the system
+- whenever you run tests or python remember to use .venv virtual environment
