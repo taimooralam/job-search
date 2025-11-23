@@ -310,9 +310,12 @@ def validate_phase6_outputs(state: Dict[str, Any]) -> Dict[str, Any]:
     if not state.get("fit_rationale"):
         issues.append("Phase 6: Missing fit_rationale")
     else:
-        # Check for STAR citation (ROADMAP requirement)
-        if not any(keyword in state["fit_rationale"].lower() for keyword in ["star #", "star#"]):
-            issues.append("Phase 6: fit_rationale missing STAR citation")
+        # Check for STAR citation (only when STAR selector is enabled)
+        # NOTE: STAR selector is currently disabled via ENABLE_STAR_SELECTOR=false
+        from src.common.config import Config
+        if Config.ENABLE_STAR_SELECTOR:
+            if not any(keyword in state["fit_rationale"].lower() for keyword in ["star #", "star#"]):
+                issues.append("Phase 6: fit_rationale missing STAR citation")
 
         # Check for quantified metric
         import re
@@ -337,16 +340,29 @@ def validate_phase7_outputs(state: Dict[str, Any]) -> Dict[str, Any]:
     """Validate Phase 7 (Layer 5) outputs: People mapping."""
     issues = []
 
-    # Primary contacts (4-6 required)
+    # Check if we're in fallback mode (synthetic contacts have role-based names like "VP Engineering at Company")
+    # In fallback mode, we only generate 3 primary contacts and 0 secondary contacts (per operational design)
+    primary_contacts = state.get("primary_contacts") or []
+    is_fallback_mode = (
+        len(primary_contacts) > 0 and
+        all(" at " in c.get("name", "") for c in primary_contacts)
+    )
+
+    # Primary contacts (4-6 required for discovered contacts, 3 for fallback mode)
     if not state.get("primary_contacts"):
         issues.append("Phase 7: Missing primary_contacts")
     elif not isinstance(state["primary_contacts"], list):
         issues.append("Phase 7: primary_contacts is not a list")
-    elif len(state["primary_contacts"]) < 4:
-        issues.append(f"Phase 7: primary_contacts has {len(state['primary_contacts'])} contacts (min 4)")
+    else:
+        min_required = 3 if is_fallback_mode else 4
+        if len(state["primary_contacts"]) < min_required:
+            issues.append(f"Phase 7: primary_contacts has {len(state['primary_contacts'])} contacts (min {min_required})")
 
-    # Secondary contacts (4-6 required)
-    if not state.get("secondary_contacts"):
+    # Secondary contacts (4-6 required for discovered contacts, 0 acceptable for fallback mode)
+    if is_fallback_mode:
+        # In fallback mode, secondary_contacts can be empty
+        pass
+    elif not state.get("secondary_contacts"):
         issues.append("Phase 7: Missing secondary_contacts")
     elif not isinstance(state["secondary_contacts"], list):
         issues.append("Phase 7: secondary_contacts is not a list")

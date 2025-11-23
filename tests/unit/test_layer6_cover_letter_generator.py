@@ -90,7 +90,7 @@ More recently at FinTech Startup, I architected and led infrastructure scaling i
 
 I'm confident I can help TechCorp achieve enterprise-grade reliability while supporting your rapid growth trajectory following your Series B funding. I'd welcome the opportunity to discuss how my proven experience in infrastructure scaling and reliability engineering aligns with your specific challenges, and explore concrete ways I can contribute measurable impact in the first 90 days.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ More recently at FinTech Startup, I led infrastructure scaling efforts when our 
 
 I'm eager to bring this experience to TechCorp and help achieve your infrastructure reliability and scaling goals while supporting your growth following your Series B funding. I would welcome the opportunity to discuss how my background aligns with your challenges and explore ways I can contribute immediately upon joining your team.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ At FinTech Startup, I enabled the platform to handle 100x traffic bursts while m
 
 I would be thrilled to discuss this great opportunity further and demonstrate why I'm the perfect fit for your team. I'm excited to add value from day one and hit the ground running with immediate contributions.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
 
 @pytest.fixture
@@ -138,7 +138,7 @@ I reduced incidents by 75% at AdTech Co and enabled 100x traffic capacity at Fin
 
 Let's talk soon.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
 
 # ===== VALIDATION TESTS =====
@@ -171,7 +171,7 @@ My experience leading cross-functional teams through complex technical transform
 
 I'm confident I can contribute immediately to achieving enterprise-grade reliability and operational excellence while supporting rapid customer acquisition and product expansion. I would welcome the opportunity to discuss how my background directly addresses your specific engineering challenges and growth objectives.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # With relaxed constraints (2-5 paragraphs allowed), this 5-paragraph
         # letter should be accepted without raising any validation errors.
@@ -206,7 +206,7 @@ At FinTech Startup I enabled the platform to handle 100x traffic bursts with exc
 
 I'm confident I can help TechCorp achieve infrastructure goals while supporting growth.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         with pytest.raises(ValueError) as exc_info:
             validate_cover_letter(long_letter, sample_job_state)
@@ -236,7 +236,7 @@ More recently at FinTech Startup I architected and led major infrastructure scal
 
 I'm confident I can help TechCorp achieve enterprise-grade reliability and maintain excellent uptime at 98% while supporting your rapid growth trajectory following your Series B funding round.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # This letter has 98% as the ONLY quantified metric - now valid under relaxed metric requirement (≥1).
         # Should not raise.
@@ -255,7 +255,7 @@ More recently at FinTech Startup I architected and led comprehensive infrastruct
 
 I'm confident I can help TechCorp achieve enterprise-grade reliability and operational excellence while successfully supporting your rapid growth trajectory and business expansion following your Series B funding round.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should not raise - has 75% and $2M as two distinct metrics
         validate_cover_letter(two_metrics_letter, sample_job_state)
@@ -273,7 +273,7 @@ At another organization where I held a senior leadership position I architected 
 
 I'm confident I can help TechCorp achieve enterprise-grade reliability and operational excellence while successfully supporting your rapid growth trajectory and business expansion following your Series B funding round.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should fail because it has metrics (75%, $2M) but doesn't mention any STAR companies
         with pytest.raises(ValueError) as exc_info:
@@ -295,7 +295,7 @@ At FinTech Startup I architected comprehensive infrastructure scaling initiative
 
 I'm confident I can help TechCorp achieve enterprise-grade reliability and operational excellence while successfully supporting your rapid growth trajectory and business expansion plans following your Series B funding round.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should pass because it mentions "AdTech Co" which is in selected_stars
         validate_cover_letter(with_star_company_letter, sample_job_state)
@@ -318,7 +318,7 @@ At another place where I held a leadership position, I led marketing groups and 
 
 I'd love to work with your group and contribute to your success in achieving your business objectives and brand goals through my proven background and extensive marketing expertise development. I'm confident my profile and background would be valuable additions to your marketing group and organizational culture in ways that drive meaningful business outcomes and sustainable long-term brand equity for your organization.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         with pytest.raises(ValueError) as exc_info:
             validate_cover_letter(generic_letter_without_specifics, sample_job_state)
@@ -651,7 +651,7 @@ My experience at FinTech Startup further reinforced these capabilities, where I 
 
 I'm confident I can help address your scaling challenges and team velocity issues with proven experience from my time at AdTech Co and FinTech Startup. I would welcome the opportunity to discuss how my background aligns with your specific needs.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise because "AdTech Co" is found in master-cv.md
         validate_cover_letter(letter_with_master_cv_company, state)
@@ -681,7 +681,7 @@ My experience further reinforced these capabilities, where I led critical infras
 
 I'm confident I can help address your challenges and velocity issues with proven experience from my previous roles in technology companies. I would welcome the opportunity to discuss how my background in engineering leadership and infrastructure scaling directly aligns with your specific needs and growth objectives.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should raise because no company from master-cv.md is mentioned
         with pytest.raises(ValueError) as exc_info:
@@ -716,7 +716,7 @@ The results were measurable improvements in deployment frequency and overall tea
 
 I would welcome the opportunity to discuss how my proven track record at adtech co directly addresses your specific needs and business objectives. My background in scaling engineering teams and implementing best practices positions me well to contribute immediately to your growth trajectory and help resolve team velocity issues.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - case insensitive match
         validate_cover_letter(letter, state)
@@ -745,7 +745,7 @@ The measurable results from my time there demonstrate my ability to deliver impa
 
 I'm confident I can bring the same dedication and results-driven approach to your organization and help address your current challenges and velocity concerns immediately. My background in scaling engineering teams and implementing best practices positions me well to contribute from day one to your growth objectives and operational excellence goals.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - "FinTech" matches "FinTech Startup Inc"
         validate_cover_letter(letter, state)
@@ -777,7 +777,7 @@ The opportunity to contribute to your scaling efforts excites me because I've su
 
 I'm confident my background makes me well-suited to help address your infrastructure scaling needs and would welcome the chance to discuss how I can contribute meaningfully to your team's success during this critical growth phase. My experience positions me to make immediate contributions.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - contains exact phrase "scale infrastructure"
         validate_cover_letter(letter, state)
@@ -804,7 +804,7 @@ My approach to alerting focuses on actionable signals rather than noise, which h
 
 I'm confident my experience with monitoring and alerting platforms can help DataCorp achieve its reliability goals and create a more observable, resilient infrastructure that supports your growth objectives. I would welcome the opportunity to discuss how my technical skills can contribute to your platform engineering team.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - hits "monitoring", "alerting", "observability", "incidents" across paragraphs
         validate_cover_letter(letter, state)
@@ -833,7 +833,7 @@ My approach to database engineering emphasizes understanding application pattern
 
 I'm confident my database optimization expertise can help CloudTech achieve the performance improvements you're seeking for your customer applications and data infrastructure. I would welcome the opportunity to discuss how my technical background can contribute to your data engineering objectives.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - has keywords: database, performance, query, latency, optimization
         validate_cover_letter(letter, state)
@@ -862,7 +862,7 @@ My background in marketing analytics helps me understand customer behavior and o
 
 I'm confident my marketing expertise can help TechStartup achieve its growth objectives and build stronger connections with your target audience through compelling brand storytelling. I would welcome the opportunity to discuss how my marketing background can contribute to your business growth.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         with pytest.raises(ValueError) as exc_info:
             validate_cover_letter(letter, state)
@@ -889,7 +889,7 @@ My technical expertise spans multiple domains including distributed systems, dat
 
 I'm confident I can make meaningful contributions to your engineering team and would welcome the opportunity to discuss how my extensive experience aligns with your current needs and future objectives. My track record demonstrates my ability to deliver results quickly and effectively.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - no source content means Gate 4 is skipped
         validate_cover_letter(letter, state)
@@ -916,7 +916,7 @@ The information challenges you're facing align with problems I've solved before 
 
 I'm confident my technical background makes me an excellent fit for this information-focused role, and I would welcome the opportunity to discuss how my skills can contribute to your objectives and help you achieve your important business goals.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should raise - only keyword is "platform" or "build" which don't appear much, needs condition (a) or (b)
         with pytest.raises(ValueError) as exc_info:
@@ -945,7 +945,7 @@ My approach to automation emphasizes reliability and developer experience as cor
 
 I'm confident my deployment automation expertise can help HybridSourceCo achieve its CI/CD objectives and improve pipeline efficiency across your engineering organization. I would welcome the opportunity to discuss how my technical background can contribute to your engineering team's goals.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - hits deployment, pipeline, automation, expertise across paragraphs
         validate_cover_letter(letter, state)
