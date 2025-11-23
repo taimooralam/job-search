@@ -33,7 +33,6 @@ class OutreachGenerator:
     def __init__(self):
         """Initialize outreach generator."""
         # Contact info for LinkedIn closing line
-        self.candidate_email = "taimooralam@example.com"
         self.candidate_calendly = "https://calendly.com/taimooralam/15min"
 
     # ===== VALIDATION METHODS =====
@@ -102,7 +101,7 @@ class OutreachGenerator:
 
     def _validate_linkedin_closing(self, message: str) -> None:
         """
-        Validate that LinkedIn message ends with email + Calendly link.
+        Validate that LinkedIn message ends with applied note + Calendly link (no email).
 
         Args:
             message: LinkedIn message to validate
@@ -110,17 +109,13 @@ class OutreachGenerator:
         Raises:
             ValueError: If closing line is missing or incorrect
         """
-        # Check for email and Calendly in the message
-        has_email = self.candidate_email in message or re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', message)
-        has_calendly = "calendly.com" in message.lower()
+        text = message.lower()
+        has_calendly = "calendly.com" in text
+        has_applied = "applied" in text
 
-        if not (has_email and has_calendly):
+        if not (has_calendly and has_applied):
             raise ValueError(
-                f"LinkedIn message must end with contact information "
-                f"(email + Calendly link). Missing: "
-                f"{'email' if not has_email else ''}"
-                f"{' and ' if not has_email and not has_calendly else ''}"
-                f"{'Calendly' if not has_calendly else ''}"
+                "LinkedIn message must state you have applied for the role and include the Calendly link (no email)."
             )
 
     def _validate_company_grounding(
@@ -225,9 +220,8 @@ class OutreachGenerator:
 
         # Ensure LinkedIn closing line is present; if not, append it.
         # This makes the system robust even when upstream generators omit the closing.
-        if self.candidate_email not in linkedin_message or "calendly.com" not in linkedin_message.lower():
-            closing = f"{self.candidate_email} | {self.candidate_calendly}"
-            # Avoid duplicating the closing if it is partially present
+        if "calendly.com" not in linkedin_message.lower() or "applied" not in linkedin_message.lower():
+            closing = f"I have applied for this role. Calendly: {self.candidate_calendly}"
             if closing not in linkedin_message:
                 linkedin_message = linkedin_message.rstrip() + "\n\n" + closing
 

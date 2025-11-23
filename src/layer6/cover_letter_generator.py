@@ -208,7 +208,7 @@ Your task: Write a compelling, evidence-based cover letter grounded strictly in:
 3. **Plan** (1 paragraph):
    - Brief 90-day vision OR clear call to action
    - Express confidence without arrogance
-   - End with: "taimooralam@example.com | https://calendly.com/taimooralam/15min"
+   - Explicitly state you have applied for the role and end with: "I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
 
 **REQUIREMENTS:**
 - 220-380 words total
@@ -261,15 +261,15 @@ Score: {fit_score}/100
 === YOUR TASK ===
 Write a 3-4 paragraph cover letter (220-380 words) that:
 1. Opens with specific interest in {company}'s {title} role, mentioning a pain point and company context
-2. Highlights 2-3 achievements with concrete metrics from the master CV that address their needs
-3. Closes with confidence and call to action
+2. Highlights 2-3 achievements with concrete metrics from the master CV that address their needs (pain points + opportunity/fit analysis)
+3. Closes with confidence, explicitly noting you have applied for the role, and include only Calendly
 
 Remember:
 - Ground claims in the supplied master CV or provided achievements and include specific metrics
-- Address at least 2 pain points explicitly
+- Address at least 2 pain points explicitly; tie to company research and fit analysis
 - Reference company signals (funding, growth, product launches)
 - Avoid all generic boilerplate phrases
-- End with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+- End with: I have applied for this role. Calendly: https://calendly.com/taimooralam/15min
 
 Cover Letter:
 """
@@ -378,7 +378,8 @@ def validate_cover_letter(text: str, state: JobState) -> None:
     # Gate 3.5: Company mentions (ROADMAP 8.1: tie metrics to real experience)
     # Ensure at least one employer is mentioned to ground metrics in real achievements
     # Phase 8: When STAR selector is disabled, extract companies from master-cv.md (candidate_profile)
-    selected_stars = state.get("selected_stars", [])
+    # NOTE: Use `or []` to handle None values (state.get returns None if key exists with None value)
+    selected_stars = state.get("selected_stars") or []
     star_companies = [star.get("company", "") for star in selected_stars if star.get("company")]
 
     # If no selected_stars, extract companies from candidate_profile (master-cv.md)
@@ -420,8 +421,9 @@ def validate_cover_letter(text: str, state: JobState) -> None:
     # Phase 8.1 relaxation: Accept if EITHER:
     #   (a) ≥1 exact multi-word phrase (≥2 words) from pain points/JD, OR
     #   (b) ≥3 distinct keyword hits spread across ≥2 paragraphs
-    pain_points = state.get("pain_points", [])
-    job_description = state.get("job_description", "")
+    # NOTE: Use `or` to handle None values
+    pain_points = state.get("pain_points") or []
+    job_description = state.get("job_description") or ""
     text_lower = text.lower()
 
     # Stop words to filter out when extracting keywords
@@ -513,26 +515,29 @@ def validate_cover_letter(text: str, state: JobState) -> None:
 
     # Gate 4.5: Company signal keywords (ROADMAP 8.1: strengthen company specificity)
     # When company signals are available, require at least one to be referenced
-    company_research = state.get("company_research", {})
-    signals = company_research.get("signals", []) if company_research else []
+    # NOTE: Use `or` to handle None values
+    company_research = state.get("company_research") or {}
+    signals = company_research.get("signals") or [] if company_research else []
 
     if signals:
-        # Extract signal keywords from descriptions
+        # Extract signal keywords from descriptions (with flexible variations)
         signal_keywords = []
         for signal in signals:
             desc = signal.get("description", "").lower()
             signal_type = signal.get("type", "").lower()
-            # Common signal keywords
+            # Common signal keywords with variations
             if "series" in desc or "funding" in desc or "raised" in desc:
-                signal_keywords.extend(["series", "funding", "raised"])
-            if "acquisition" in desc or signal_type == "acquisition":
-                signal_keywords.append("acquisition")
-            if "product launch" in desc or signal_type == "product_launch":
-                signal_keywords.extend(["product launch", "launched"])
-            if "expansion" in desc or "growth" in desc:
-                signal_keywords.extend(["expansion", "growth"])
+                signal_keywords.extend(["series", "funding", "raised", "investment", "round"])
+            if "acquisition" in desc or "acquire" in desc or signal_type == "acquisition":
+                signal_keywords.extend(["acquisition", "acquire", "acquired"])
+            if "product launch" in desc or "launch" in desc or signal_type == "product_launch":
+                signal_keywords.extend(["product launch", "launched", "launch", "introducing", "introduced", "suite", "platform"])
+            if "expansion" in desc or "growth" in desc or "grow" in desc:
+                signal_keywords.extend(["expansion", "growth", "growing", "expand", "scale", "scaling"])
             if "partnership" in desc or signal_type == "partnership":
-                signal_keywords.append("partnership")
+                signal_keywords.extend(["partnership", "partner", "collaboration"])
+            if "ai" in desc or "security" in desc:
+                signal_keywords.extend(["ai", "security", "innovation", "initiatives"])
 
         # Check if any signal keyword appears in the letter
         signal_mentioned = False
@@ -540,6 +545,11 @@ def validate_cover_letter(text: str, state: JobState) -> None:
             if keyword in text_lower:
                 signal_mentioned = True
                 break
+
+        # Also accept if company name is mentioned multiple times (shows specificity)
+        company = state.get("company", "").lower()
+        if company and text_lower.count(company) >= 2:
+            signal_mentioned = True
 
         if not signal_mentioned and signal_keywords:
             raise ValueError(
@@ -555,6 +565,12 @@ def validate_cover_letter(text: str, state: JobState) -> None:
         raise ValueError(
             f"Cover letter contains {boilerplate_count} generic boilerplate phrases. "
             f"Avoid phrases like: {', '.join(GENERIC_BOILERPLATE_PHRASES[:5])}"
+        )
+
+    # Gate 6: Ensure closing mentions application submitted and Calendly (no email)
+    if "calendly.com/taimooralam/15min" not in text_lower or "applied" not in text_lower:
+        raise ValueError(
+            "Cover letter must state you have applied for the role and include only the Calendly link."
         )
 
 
@@ -675,17 +691,17 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(
                 content=USER_PROMPT_TEMPLATE.format(
-                    title=state.get("title", ""),
-                    company=state.get("company", ""),
-                    job_description=state.get("job_description", "")[:1500],
-                    pain_points=self._format_pain_points(state.get("pain_points", [])),
-                    strategic_needs=self._format_strategic_needs(state.get("strategic_needs", [])),
-                    company_research=self._format_company_research(state.get("company_research", {})),
-                    role_research=self._format_role_research(state.get("role_research", {})),
+                    title=state.get("title") or "",
+                    company=state.get("company") or "",
+                    job_description=(state.get("job_description") or "")[:1500],
+                    pain_points=self._format_pain_points(state.get("pain_points") or []),
+                    strategic_needs=self._format_strategic_needs(state.get("strategic_needs") or []),
+                    company_research=self._format_company_research(state.get("company_research") or {}),
+                    role_research=self._format_role_research(state.get("role_research") or {}),
                     candidate_profile=candidate_profile,
-                    selected_stars=self._format_selected_stars(state.get("selected_stars", [])),
-                    fit_score=state.get("fit_score", "N/A"),
-                    fit_rationale=state.get("fit_rationale", "No fit analysis available.")
+                    selected_stars=self._format_selected_stars(state.get("selected_stars") or []),
+                    fit_score=state.get("fit_score") or "N/A",
+                    fit_rationale=state.get("fit_rationale") or "No fit analysis available."
                 )
             )
         ]

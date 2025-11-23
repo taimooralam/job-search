@@ -150,7 +150,7 @@ class PainPointMiner:
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for focused extraction
             api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),  # None for OpenAI, set for OpenRouter
+            base_url=Config.get_llm_base_url(),  # General pipeline uses OpenAI directly
         )
 
     @retry(

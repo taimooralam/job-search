@@ -257,9 +257,9 @@ Generate outreach that:
 
 Output JSON format:
 {{
-  "linkedin_message": "...",  // 150-550 chars, cite metric, MUST end with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+  "linkedin_message": "...",  // 150-550 chars, cite metric, use pain points + company research + fit analysis, MUST end with: I have applied for this role. Calendly: https://calendly.com/taimooralam/15min
   "subject": "...",           // 5-10 WORDS (count!), ≤100 chars, pain-focused
-  "email_body": "..."         // 95-205 WORDS (count!), 3-4 paragraphs, cite 2-3 achievements
+  "email_body": "..."         // 95-205 WORDS (count!), 3-4 paragraphs, cite 2-3 achievements using pain points/company context/fit analysis
 }}
 
 **VALIDATION CHECKLIST** (your output will be rejected if these fail):
@@ -284,8 +284,11 @@ class PeopleMapper:
             base_url=Config.get_llm_base_url(),
         )
 
-        # FireCrawl for contact discovery
-        self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+        # FireCrawl for contact discovery (disabled by default via config)
+        self.firecrawl_disabled = Config.DISABLE_FIRECRAWL_OUTREACH or not Config.FIRECRAWL_API_KEY
+        self.firecrawl = None
+        if not self.firecrawl_disabled:
+            self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
 
     # ===== FIRECRAWL MULTI-SOURCE DISCOVERY =====
 
@@ -301,6 +304,8 @@ class PeopleMapper:
         Returns:
             Markdown content from team page (or None)
         """
+        if self.firecrawl_disabled or not self.firecrawl:
+            return None
         try:
             # Try common team page paths
             team_urls = [
@@ -347,14 +352,17 @@ class PeopleMapper:
         Returns:
             Markdown content from LinkedIn search results
         """
+        if self.firecrawl_disabled or not self.firecrawl:
+            return None
         try:
             # LLM-style query focused on finding the best people to contact
             role_focus = title or department
             query = (
                 f"who are the best 5 people to send my cover letter to for {role_focus} at {company} "
                 f"(hiring manager, department head, director/VP, recruiter, head of talent). "
-                f"Return LinkedIn pages that show active team leads or recruiting contacts."
+                f"Return pages that show active team leads or recruiting contacts."
             )
+            print(f"[FireCrawl][PeopleMapper] LinkedIn search query: {query}")
             search_response = self.firecrawl.search(query, limit=2)
 
             # Use normalizer to extract results (handles SDK version differences)
@@ -390,12 +398,15 @@ class PeopleMapper:
         Returns:
             Markdown content about hiring manager
         """
+        if self.firecrawl_disabled or not self.firecrawl:
+            return None
         try:
             # LLM-style query explicitly asking for hiring manager / decision makers
             query = (
                 f"best people to send a cover letter to for {title} at {company} "
                 f"(hiring manager, VP Engineering, Director of Engineering, recruiter, Head of Talent)"
             )
+            print(f"[FireCrawl][PeopleMapper] hiring manager search query: {query}")
             search_response = self.firecrawl.search(query, limit=2)
 
             # Use normalizer to extract results (handles SDK version differences)
@@ -425,12 +436,15 @@ class PeopleMapper:
         Returns:
             Markdown content from Crunchbase team page
         """
+        if self.firecrawl_disabled or not self.firecrawl:
+            return None
         try:
             # LLM-style query focusing on leadership team information
             query = (
                 f"{company} leadership team on Crunchbase "
                 f"(VP Engineering, CTO, Head of Talent, Directors)"
             )
+            print(f"[FireCrawl][PeopleMapper] Crunchbase search query: {query}")
             search_response = self.firecrawl.search(query, limit=2)
 
             # Use normalizer to extract results (handles SDK version differences)
@@ -475,6 +489,45 @@ class PeopleMapper:
 
         return deduplicated
 
+    def _generate_synthetic_contacts(self, state: JobState) -> Dict[str, List[Dict]]:
+        """
+        Generate 3 role-based synthetic contacts when FireCrawl discovery fails.
+
+        Returns only 3 contacts total (as per operational design) to keep
+        outreach focused and manageable when real contacts aren't available.
+
+        Args:
+            state: JobState with company and title info
+
+        Returns:
+            Dict with primary_contacts (3) and secondary_contacts (empty) lists
+        """
+        company = state.get("company") or "the company"
+        title = state.get("title") or "this role"
+        company_url = (state.get("company_research") or {}).get("url") or f"https://linkedin.com/company/{company.lower().replace(' ', '-')}"
+
+        # Only 3 role-based fallback contacts (per operational design)
+        fallback_templates = [
+            {"role": "Hiring Manager", "why": f"Direct decision-maker for {title} at {company}"},
+            {"role": "VP Engineering", "why": f"Senior engineering leader involved in hiring decisions at {company}"},
+            {"role": "Technical Recruiter", "why": f"Primary recruiting contact for engineering roles at {company}"},
+        ]
+
+        primary_contacts = []
+        for template in fallback_templates:
+            primary_contacts.append({
+                "name": f"{template['role']} at {company}",
+                "role": template["role"],
+                "linkedin_url": f"{company_url}/people",
+                "why_relevant": template["why"],
+                "recent_signals": []
+            })
+
+        return {
+            "primary_contacts": primary_contacts,
+            "secondary_contacts": []  # Empty for fallback mode
+        }
+
     def _discover_contacts(self, state: JobState) -> Tuple[str, bool]:
         """
         Multi-source contact discovery using FireCrawl (Phase 7.2.2).
@@ -488,6 +541,9 @@ class PeopleMapper:
         Returns:
             Tuple of (raw contact snippets, found_any_contacts)
         """
+        if self.firecrawl_disabled or not self.firecrawl:
+            print("  🔌 FireCrawl outreach discovery disabled (role-based contacts only).")
+            return "FireCrawl discovery is disabled. Use role-based identifiers.", False
         company = state.get("company", "")
         title = state.get("title", "")
         company_url = state.get("company_research", {}).get("url", "")
@@ -583,7 +639,7 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
 
         return "\n\n".join(summaries)
 
-    def _generate_fallback_cover_letters(self, state: JobState) -> List[str]:
+    def _generate_fallback_cover_letters(self, state: JobState, reason: str) -> List[str]:
         """
         Create three fallback cover letters when no contacts are discoverable.
 
@@ -620,7 +676,7 @@ Each option must:
 - End with: taimooralam@example.com | https://calendly.com/taimooralam/15min
 
 Return the three letters separated by \"---\" lines.
-""")
+""".replace("FireCrawl could not find individual contacts.", reason))
         ]
 
         try:
@@ -798,13 +854,12 @@ Return the three letters separated by \"---\" lines.
         Raises:
             ValueError: If closing line is missing
         """
-        required_email = "taimooralam@example.com"
-        required_calendly = "calendly.com/taimooralam/15min"
+        required_phrase = "calendly.com/taimooralam/15min"
 
-        if required_email not in message or required_calendly not in message:
+        if required_phrase not in message.lower() or "applied" not in message.lower():
             raise ValueError(
-                "LinkedIn message must end with: "
-                "taimooralam@example.com | https://calendly.com/taimooralam/15min"
+                "LinkedIn message must state you have applied and include Calendly only "
+                "(no email): I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
             )
 
     def _validate_linkedin_message(self, message: str) -> str:
@@ -1019,7 +1074,7 @@ Return the three letters separated by \"---\" lines.
         """
         Layer 5: People Mapper (Phase 7).
 
-        1. Multi-source contact discovery via FireCrawl
+        1. Multi-source contact discovery via FireCrawl (skipped when DISABLE_FIRECRAWL_OUTREACH is true)
         2. LLM-based classification into primary/secondary
         3. OutreachPackage generation for each contact
         4. Quality gates: 4-6 primary, 4-6 secondary
@@ -1030,19 +1085,64 @@ Return the three letters separated by \"---\" lines.
         print(f"\n{'='*80}")
         print(f"LAYER 5: PEOPLE MAPPER (Phase 7)")
         print(f"{'='*80}")
+        if self.firecrawl_disabled:
+            print("  🔌 FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only).")
 
         try:
             # Step 1: Multi-source discovery
-            raw_contacts, found_contacts = self._discover_contacts(state)
+            if self.firecrawl_disabled:
+                raw_contacts, found_contacts = (
+                    "FireCrawl discovery is disabled. Use role-based identifiers.",
+                    False
+                )
+            else:
+                raw_contacts, found_contacts = self._discover_contacts(state)
 
             if not found_contacts:
-                print("\n  ⚠️  Skipping contact classification - generating fallback cover letters only.")
-                fallback_letters = self._generate_fallback_cover_letters(state)
+                fallback_reason = (
+                    "FireCrawl outreach discovery disabled (role-based synthetic contacts)."
+                    if self.firecrawl_disabled
+                    else "No contacts found via FireCrawl - using role-based synthetic contacts."
+                )
+                print(f"\n  ⚠️  {fallback_reason}")
+                synthetic = self._generate_synthetic_contacts(state)
+                primary_contacts = synthetic["primary_contacts"]
+                secondary_contacts = synthetic["secondary_contacts"]
+                print(f"    ✓ Generated {len(primary_contacts)} synthetic primary contacts")
+                print(f"    ✓ Generated {len(secondary_contacts)} synthetic secondary contacts")
+
+                # Also generate fallback cover letters for reference
+                fallback_letters = self._generate_fallback_cover_letters(state, fallback_reason)
+
+                # Generate outreach for synthetic contacts
+                print("\n  📧 Generating personalized outreach for synthetic contacts...")
+                all_contacts = primary_contacts + secondary_contacts
+                enriched_primary = []
+                enriched_secondary = []
+
+                for i, contact in enumerate(all_contacts, 1):
+                    print(f"    Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
+                    try:
+                        outreach = self._generate_outreach_package(contact, state)
+                        enriched_contact = {**contact, **outreach}
+                        if i <= len(primary_contacts):
+                            enriched_primary.append(enriched_contact)
+                        else:
+                            enriched_secondary.append(enriched_contact)
+                    except Exception as e:
+                        print(f"      ⚠️  Failed to generate outreach: {e}")
+                        if i <= len(primary_contacts):
+                            enriched_primary.append(contact)
+                        else:
+                            enriched_secondary.append(contact)
+
+                print(f"\n  ✅ Completed synthetic contact outreach generation")
+
                 return {
-                    "primary_contacts": [],
-                    "secondary_contacts": [],
-                    "people": [],
-                    "outreach_packages": [],
+                    "primary_contacts": enriched_primary,
+                    "secondary_contacts": enriched_secondary,
+                    "people": enriched_primary + enriched_secondary,
+                    "outreach_packages": [],  # Future: structured packages
                     "fallback_cover_letters": fallback_letters
                 }
 

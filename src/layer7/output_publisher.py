@@ -21,6 +21,7 @@ from pymongo import MongoClient
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.common.utils import sanitize_path_component
 from src.layer7.dossier_generator import DossierGenerator
 
 
@@ -177,19 +178,9 @@ class OutputPublisher:
             Dict with local file paths
         """
         # Create directory structure with sanitized names (no spaces, safe chars)
-        company_safe = (state['company']
-                       .replace('/', '_')
-                       .replace('\\', '_')
-                       .replace(' ', '_')
-                       .replace(',', '')
-                       .replace('.', ''))
-
-        role_safe = (state['title'][:50]
-                    .replace('/', '_')
-                    .replace('\\', '_')
-                    .replace(' ', '_')
-                    .replace(',', '')
-                    .replace('.', ''))
+        # Use shared utility to ensure consistent naming with Layer 6 (generator.py)
+        company_safe = sanitize_path_component(state['company'], max_length=80)
+        role_safe = sanitize_path_component(state['title'], max_length=80)
 
         local_dir = Path('./applications') / company_safe / role_safe
         local_dir.mkdir(parents=True, exist_ok=True)
@@ -527,8 +518,8 @@ class OutputPublisher:
             )
             print(f"   ✓ Company folder: {company_folder_id}")
 
-            # Create role folder
-            role_folder_name = state["title"][:50]  # Limit length for folder names
+            # Create role folder (use shared utility for consistent naming)
+            role_folder_name = sanitize_path_component(state["title"], max_length=80)
             role_folder_id = self._find_or_create_folder(
                 role_folder_name,
                 parent_folder_id=company_folder_id
