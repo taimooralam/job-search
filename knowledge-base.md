@@ -66,6 +66,18 @@ METRICS:
 • Delivery Predictability: +25%
 • System Uptime: 3 years no downtime
 
+PAIN POINTS ADDRESSED:
+• Legacy monolith causing slow delivery cycles and high deployment risk
+• Technical debt limiting team innovation velocity
+• System fragility leading to frequent production incidents
+
+OUTCOME TYPES:
+• risk_reduction
+• velocity_increase
+• team_efficiency
+• technical_debt_reduction
+• reliability
+
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 1.0
 Principal Engineer / Staff Engineer: 0.95
@@ -138,6 +150,17 @@ METRICS:
 • Turnover Reduction: 40–50% within one year
 • Developer Engagement Increase: +60% participation in retrospectives and architecture sessions
 • Innovation Initiatives: Multiple new internal projects initiated by engineers post-modernization
+
+PAIN POINTS ADDRESSED:
+• High engineer turnover due to outdated technology stack
+• Low team morale and lack of ownership due to legacy constraints
+• Difficulty attracting skilled developers to work on obsolete systems
+
+OUTCOME TYPES:
+• team_efficiency
+• developer_experience
+• innovation
+• cost_avoidance
 
 SENIORITY WEIGHTS:
 Lead Engineer: 1.0
@@ -213,6 +236,17 @@ METRICS:
 • Bug Reduction Rate: Monthly cycles → Weekly cycles
 • Onboarding Time: 6 months → 3 months (50% reduction)
 • Release Cycle Time: Weeks → Days
+
+PAIN POINTS ADDRESSED:
+• Unmaintainable codebase with callback hell and inconsistent patterns
+• High bug frequency due to poor code quality and architecture
+• Slow developer onboarding due to code complexity and lack of standards
+
+OUTCOME TYPES:
+• quality_improvement
+• velocity_increase
+• technical_debt_reduction
+• developer_experience
 
 SENIORITY WEIGHTS:
 Lead Engineer: 1.0
@@ -293,6 +327,17 @@ METRICS:
 • Cost Reduction: 10x (order of magnitude decrease)
 • Latency: Sub-second data processing
 • System Reach: Multi-million users per day
+
+PAIN POINTS ADDRESSED:
+• Inadequate observability infrastructure causing prolonged production incidents
+• Excessive infrastructure costs for data processing and storage
+• Inability to diagnose issues quickly due to lack of system visibility
+
+OUTCOME TYPES:
+• cost_reduction
+• performance_optimization
+• risk_reduction
+• quality_improvement
 
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 1.0
@@ -377,6 +422,17 @@ METRICS:
 • Business Continuity: Zero downtime during CMP deployment
 • System Reach: Millions of users affected
 
+PAIN POINTS ADDRESSED:
+• Regulatory compliance risk threatening 30M+ euro revenue stream
+• Complex legal requirements needing technical translation under tight deadlines
+• Cross-team coordination challenge across product, legal, and engineering
+
+OUTCOME TYPES:
+• risk_mitigation
+• compliance_achievement
+• revenue_growth
+• time_to_market
+
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 1.0
 Principal Engineer / Staff Engineer: 1.0
@@ -459,6 +515,17 @@ METRICS:
 • System Reach: Multi-million users
 • Development Acceleration: AI-assisted coding
 
+PAIN POINTS ADDRESSED:
+• System performance degradation during prime-time traffic spikes
+• Failed ad impressions during peak loads causing revenue loss
+• Slow scaling response unable to handle bursty traffic patterns
+
+OUTCOME TYPES:
+• scalability
+• performance_optimization
+• revenue_growth
+• reliability
+
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 1.0
 Principal Engineer / Staff Engineer: 1.0
@@ -539,6 +606,17 @@ METRICS:
 • Revenue & Reach Growth: ~20% increase
 • Innovation Initiatives: Multiple successful deliveries
 • Stakeholder Alignment: Cross-organizational coordination
+
+PAIN POINTS ADDRESSED:
+• Stagnant revenue growth requiring new monetization opportunities
+• Lack of innovation pipeline threatening competitive positioning
+• Cross-functional silos slowing feature delivery and market response
+
+OUTCOME TYPES:
+• revenue_growth
+• innovation
+• time_to_market
+• velocity_increase
 
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 0.9
@@ -624,6 +702,17 @@ METRICS:
 • Engagement: Increased engineer participation and innovation
 • Leadership Development: Multiple engineers promoted to leadership
 
+PAIN POINTS ADDRESSED:
+• Difficulty scaling team in competitive hiring market
+• High turnover risk due to technical debt and demanding workload
+• Lack of consistent hiring process leading to poor cultural fit
+
+OUTCOME TYPES:
+• team_efficiency
+• cost_avoidance
+• developer_experience
+• innovation
+
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 0.8
 Principal Engineer / Staff Engineer: 0.75
@@ -708,6 +797,17 @@ METRICS:
 • Code Coverage: Significant improvement in automated tests
 • Team Development: Junior engineers progressed to front-end proficiency
 
+PAIN POINTS ADDRESSED:
+• Startup needing rapid time-to-market for competitive entry
+• Lack of architectural foundation threatening future scalability
+• Junior team requiring technical leadership and mentorship
+
+OUTCOME TYPES:
+• time_to_market
+• scalability
+• team_efficiency
+• quality_improvement
+
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 1.0
 Principal Engineer / Staff Engineer: 0.9
@@ -788,6 +888,17 @@ METRICS:
 • Test Coverage: Comprehensive unit, E2E, and snapshot tests
 • Sprint Delivery: Bi-weekly client demos with positive feedback
 • API Stability: Maintained contracts despite dynamic data models
+
+PAIN POINTS ADDRESSED:
+• Dynamic data schema changes breaking API contracts
+• Need for maintainable architecture supporting rapid iteration
+• Client requirements requiring flexible backend services
+
+OUTCOME TYPES:
+• quality_improvement
+• velocity_increase
+• reliability
+• technical_debt_reduction
 
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 0.7
@@ -870,6 +981,17 @@ METRICS:
 • Protocol Extension: OSCOAP multicast security implemented
 • Device Integration: Third-party devices integrated via middleware
 • Business Impact: Application extensively used for stakeholder demos
+
+PAIN POINTS ADDRESSED:
+• IoT communication lacking multicast security capabilities
+• Third-party devices unable to integrate with proprietary protocol
+• Business stakeholders unable to understand technical capabilities without demos
+
+OUTCOME TYPES:
+• security_improvement
+• innovation
+• scalability
+• quality_improvement
 
 SENIORITY WEIGHTS:
 Lead Engineer / Tech Lead: 0.65
