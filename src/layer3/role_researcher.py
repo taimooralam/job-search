@@ -287,7 +287,7 @@ class RoleResearcher:
 
             for query in queries:
                 try:
-                    print(f"   Searching role context: {query}")
+                    print(f"[FireCrawl][RoleResearcher] search query: {query}")
 
                     # Use FireCrawl search API
                     search_response = self.firecrawl.search(query, limit=2)

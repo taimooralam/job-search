@@ -546,6 +546,7 @@ class CompanyResearcher:
             Dict with {"url": str, "content": str} or None if search/scrape fails
         """
         try:
+            print(f"[FireCrawl][CompanyResearcher] {source_name} search query: {query}")
             # Use FireCrawl search API to find relevant URLs
             # Limit to top 3 results to save API calls
             search_response = self.firecrawl.search(query, limit=3)

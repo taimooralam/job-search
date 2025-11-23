@@ -105,10 +105,10 @@ class CVGenerator:
     def __init__(self):
         """Initialize CV generator with LLM client."""
         self.llm = ChatOpenAI(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,
-            base_url=Config.get_llm_base_url(),
-            api_key=Config.get_llm_api_key()
+            model=getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL),
+            temperature=getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE),
+            base_url=Config.get_cv_llm_base_url(),
+            api_key=Config.get_cv_llm_api_key()
         )
 
     # ===== COMPETENCY MIX ANALYSIS =====
@@ -485,7 +485,8 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
 
         # Step 2: Score and rank STARs (Phase 8.2: Use full STAR library)
         print("→ Scoring and ranking STARs...")
-        all_stars = state.get("all_stars", state.get("selected_stars", []))
+        # NOTE: Use `or []` pattern to handle None values (key may exist with None)
+        all_stars = state.get("all_stars") or state.get("selected_stars") or []
 
         # Phase 8.2.3: Handle empty/minimal STAR list gracefully
         if not all_stars:

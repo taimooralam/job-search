@@ -6,6 +6,10 @@ Today's vertical slice: Layers 2, 3, 4, 6, 7 (skipping Layer 5 - People Mapper).
 """
 
 import uuid
+try:
+    from langsmith import uuid7
+except ImportError:  # LangSmith not installed; fall back to uuid4
+    uuid7 = None
 from datetime import datetime
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
@@ -90,7 +94,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         Final JobState with all outputs populated
     """
     # Generate metadata
-    run_id = str(uuid.uuid4())
+    run_id = str(uuid7()) if uuid7 else str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat() + 'Z'
 
     print("\n" + "="*70)
