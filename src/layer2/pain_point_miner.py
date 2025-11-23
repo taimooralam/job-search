@@ -1,14 +1,17 @@
 """
-Layer 2: Pain-Point Miner
+Layer 2: Pain-Point Miner (JSON Mode)
 
-Extracts 3-5 key business challenges/pain points from job descriptions using LLM.
-This is the SIMPLIFIED version for today's vertical slice.
+Extracts structured pain-point analysis from job descriptions using LLM.
+Returns JSON with 4 arrays: pain_points, strategic_needs, risks_if_unfilled, success_metrics.
 
-FUTURE: Will expand to extract strategic_needs, risks_if_unfilled, success_metrics.
+Phase 1.3 Update: Full JSON output per requirements.md and feedback.md
+Phase 4 Update: Added formal JSON schema validation with Pydantic
 """
 
+import json
 import re
 from typing import List, Dict, Any
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -17,21 +20,108 @@ from src.common.config import Config
 from src.common.state import JobState
 
 
+# ===== SCHEMA VALIDATION =====
+
+class PainPointAnalysis(BaseModel):
+    """
+    Pydantic schema for pain-point analysis output.
+
+    ROADMAP Phase 4 Quality Gates:
+    - JSON-only output (no text outside JSON object)
+    - Specific, business-outcome-focused language (not generic boilerplate)
+    - No hallucinated company facts (only facts from job description)
+    - Validated across 5+ diverse job scenarios
+
+    Schema Enforcement:
+    - All 4 required fields must be present
+    - Each field is a list of non-empty strings
+    - Item count constraints (relaxed for production runs):
+      * pain_points: 1-8 items
+      * strategic_needs: 1-8 items
+      * risks_if_unfilled: 1-8 items
+      * success_metrics: 1-8 items
+
+    Content Requirements (enforced via prompt, validated via tests):
+    - Focus on concrete business problems and outcomes
+    - Include specific metrics/numbers where possible
+    - Avoid generic HR boilerplate ("team player", "fast-paced", etc.)
+    - Ground all statements in the provided job description
+    """
+    pain_points: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="1-8 specific technical/operational problems they need solved"
+    )
+    strategic_needs: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="1-8 strategic business reasons why this role matters"
+    )
+    risks_if_unfilled: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="1-8 consequences if this role stays empty"
+    )
+    success_metrics: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="1-8 measurable outcomes for success"
+    )
+
+    @field_validator('pain_points', 'strategic_needs', 'risks_if_unfilled', 'success_metrics')
+    @classmethod
+    def validate_non_empty_strings(cls, v: List[str]) -> List[str]:
+        """Ensure all items are non-empty strings."""
+        for item in v:
+            if not isinstance(item, str) or not item.strip():
+                raise ValueError(f"All items must be non-empty strings, got: {item}")
+        return v
+
+
 # ===== PROMPT DESIGN =====
 
-SYSTEM_PROMPT = """You are an expert recruiter and business analyst specializing in understanding hiring needs.
+SYSTEM_PROMPT = """You are a reasoning model called "Pain-Point Miner" specializing in analyzing hiring motivations.
 
-Your task: Analyze job descriptions to identify the KEY BUSINESS CHALLENGES or PAIN POINTS the company is trying to solve by filling this role.
+Your task: Analyze job descriptions to understand the deeper business drivers behind the role.
 
-Focus on:
-- Technical/operational problems they need solved
-- Business challenges driving this hire
-- What the company is struggling with that this person will fix
+You MUST return ONLY a valid JSON object with these 4 arrays (3-6 items each):
 
-Do NOT just list job requirements. Extract the UNDERLYING PROBLEMS.
-"""
+{
+  "pain_points": ["specific technical/operational problems they need solved"],
+  "strategic_needs": ["why the company needs this role from a business perspective"],
+  "risks_if_unfilled": ["what happens if this role stays empty"],
+  "success_metrics": ["how they'll measure success once filled"]
+}
 
-USER_PROMPT_TEMPLATE = """Analyze this job posting and extract 3-5 key pain points or business challenges the company is trying to solve:
+**CRITICAL RULES:**
+1. Output ONLY the JSON object - no text before or after
+2. Each array must have 3-6 short bullet phrases (not paragraphs)
+3. Focus on business outcomes, not just job requirements
+4. Be specific and evidence-based
+
+**HALLUCINATION PREVENTION:**
+- Only use facts explicitly stated in the job description provided
+- DO NOT invent company details (funding, products, size, history) not in the JD
+- If something is unclear, infer from job requirements, don't fabricate
+- When uncertain, prefer specific observable needs over speculation
+
+**FORBIDDEN - Generic Boilerplate:**
+- ❌ "Strong communication skills required"
+- ❌ "Team player needed"
+- ❌ "Fast-paced environment"
+- ❌ "Work with stakeholders"
+- ✅ Instead: "Migrate 50+ legacy APIs from monolith to microservices"
+- ✅ Instead: "Reduce incident response time from 2 hours to 15 minutes"
+
+Be concrete, technical, and tied to actual business problems stated in the JD.
+
+NO TEXT OUTSIDE THE JSON OBJECT."""
+
+USER_PROMPT_TEMPLATE = """Analyze this job posting and extract the underlying business drivers:
 
 JOB TITLE: {title}
 COMPANY: {company}
@@ -39,22 +129,19 @@ COMPANY: {company}
 JOB DESCRIPTION:
 {job_description}
 
-Return EXACTLY 3-5 pain points as a bulleted list. Each bullet should be:
-- Concise (one line)
-- Problem-focused (what challenge they face)
-- Actionable (what needs to be addressed)
+Return a JSON object with 4 arrays (3-6 items each):
+- pain_points: Current problems/challenges they need solved
+- strategic_needs: Why this role matters strategically
+- risks_if_unfilled: Consequences of not filling this role
+- success_metrics: How success will be measured
 
-Format as:
-- Pain point 1
-- Pain point 2
-- Pain point 3
-...
-"""
+JSON only - no additional text:"""
 
 
 class PainPointMiner:
     """
     Extracts pain points from job descriptions using LLM analysis.
+    Phase 1.3: Returns JSON with 4 dimensions instead of simple bullets.
     """
 
     def __init__(self):
@@ -73,7 +160,7 @@ class PainPointMiner:
     )
     def _call_llm(self, title: str, company: str, job_description: str) -> str:
         """
-        Call LLM to extract pain points.
+        Call LLM to extract pain points in JSON format.
         Retries up to 3 times with exponential backoff on failures.
         """
         messages = [
@@ -90,40 +177,50 @@ class PainPointMiner:
         response = self.llm.invoke(messages)
         return response.content
 
-    def _parse_pain_points(self, llm_response: str) -> List[str]:
+    def _parse_json_response(self, llm_response: str) -> Dict[str, List[str]]:
         """
-        Parse LLM response into a clean list of pain points.
+        Parse LLM JSON response into structured data with Pydantic validation.
 
-        Handles various bullet formats:
-        - "- Pain point"
-        - "* Pain point"
-        - "1. Pain point"
-        - "• Pain point"
+        Returns:
+            Dict with keys: pain_points, strategic_needs, risks_if_unfilled, success_metrics
+            Each value is a list of strings.
+
+        Raises:
+            ValueError: If JSON parsing or validation fails
         """
-        # Split by newlines
-        lines = llm_response.strip().split('\n')
+        # Try to extract JSON from response (in case LLM adds extra text)
+        # Look for content between { and }
+        json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
 
-        pain_points = []
-        for line in lines:
-            # Remove leading/trailing whitespace
-            line = line.strip()
+        if json_match:
+            json_str = json_match.group(0)
+        else:
+            json_str = llm_response.strip()
 
-            # Skip empty lines
-            if not line:
-                continue
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_response[:500]}")
 
-            # Remove common bullet markers
-            # Matches: "- ", "* ", "• ", "1. ", "2. ", etc.
-            cleaned = re.sub(r'^[\-\*•]\s*', '', line)  # Remove -, *, •
-            cleaned = re.sub(r'^\d+\.\s*', '', cleaned)  # Remove 1., 2., etc.
+        # Validate with Pydantic schema
+        try:
+            validated = PainPointAnalysis(**data)
+        except ValidationError as e:
+            # Convert Pydantic validation errors to readable message
+            error_messages = []
+            for error in e.errors():
+                field = ' -> '.join(str(x) for x in error['loc'])
+                msg = error['msg']
+                error_messages.append(f"{field}: {msg}")
 
-            # Skip if line is too short (likely not a real pain point)
-            if len(cleaned) < 10:
-                continue
+            raise ValueError(
+                f"JSON schema validation failed:\n" +
+                "\n".join(f"  - {msg}" for msg in error_messages) +
+                f"\nReceived data: {json.dumps(data, indent=2)[:500]}"
+            )
 
-            pain_points.append(cleaned)
-
-        return pain_points
+        # Return as dict (validated)
+        return validated.model_dump()
 
     def extract_pain_points(self, state: JobState) -> Dict[str, Any]:
         """
@@ -133,7 +230,7 @@ class PainPointMiner:
             state: Current JobState with job_description, title, company
 
         Returns:
-            Dict with pain_points key containing list of strings
+            Dict with pain_points, strategic_needs, risks_if_unfilled, success_metrics
         """
         try:
             # Call LLM
@@ -143,27 +240,27 @@ class PainPointMiner:
                 job_description=state["job_description"]
             )
 
-            # Parse response
-            pain_points = self._parse_pain_points(llm_response)
+            # Parse and validate JSON response (Pydantic handles all validation)
+            parsed_data = self._parse_json_response(llm_response)
 
-            # Validate we got a reasonable number (3-7 is acceptable)
-            if len(pain_points) < 2:
-                print(f"⚠️  Warning: Only extracted {len(pain_points)} pain points (expected 3-5)")
-            elif len(pain_points) > 7:
-                print(f"⚠️  Warning: Extracted {len(pain_points)} pain points (expected 3-5), truncating to 5")
-                pain_points = pain_points[:5]
+            print(f"✓ Extracted pain-point analysis (schema validated):")
+            print(f"   - Pain points: {len(parsed_data['pain_points'])}")
+            print(f"   - Strategic needs: {len(parsed_data['strategic_needs'])}")
+            print(f"   - Risks if unfilled: {len(parsed_data['risks_if_unfilled'])}")
+            print(f"   - Success metrics: {len(parsed_data['success_metrics'])}")
 
-            print(f"✓ Extracted {len(pain_points)} pain points")
-
-            return {"pain_points": pain_points}
+            return parsed_data
 
         except Exception as e:
-            # Log error and return empty list (don't block pipeline)
+            # Log error and return empty lists (don't block pipeline)
             error_msg = f"Layer 2 (Pain-Point Miner) failed: {str(e)}"
             print(f"✗ {error_msg}")
 
             return {
                 "pain_points": [],
+                "strategic_needs": [],
+                "risks_if_unfilled": [],
+                "success_metrics": [],
                 "errors": state.get("errors", []) + [error_msg]
             }
 
@@ -183,7 +280,7 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     print("\n" + "="*60)
-    print("LAYER 2: Pain-Point Miner")
+    print("LAYER 2: Pain-Point Miner (JSON Mode)")
     print("="*60)
     print(f"Job: {state['title']} at {state['company']}")
     print(f"Description length: {len(state['job_description'])} chars")
@@ -196,8 +293,12 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
         print("\nExtracted Pain Points:")
         for i, point in enumerate(updates["pain_points"], 1):
             print(f"  {i}. {point}")
+
+        print("\nExtracted Strategic Needs:")
+        for i, need in enumerate(updates.get("strategic_needs", []), 1):
+            print(f"  {i}. {need}")
     else:
-        print("\n⚠️  No pain points extracted")
+        print("\n⚠️  No pain-point analysis extracted")
 
     print("="*60 + "\n")
 
