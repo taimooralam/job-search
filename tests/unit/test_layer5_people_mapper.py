@@ -613,7 +613,7 @@ class TestOutreachPackageGeneration:
         )
 
         mock_response.content = json.dumps({
-            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's platform challenges. taimooralam@example.com | https://calendly.com/taimooralam/15min",
+            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's platform challenges. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
             "subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
             "email_body": email_body_150_words
         })

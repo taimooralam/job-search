@@ -397,7 +397,7 @@ Beyond technical execution, I bring strong communication skills honed through cr
 
 I'd welcome the opportunity to discuss how my experience building scalable, reliable infrastructure can contribute to TechCorp's continued success and growth objectives.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should NOT raise - paraphrased content hits keywords across paragraphs
         # Keywords: infrastructure, scaling, incident, monitoring, growth
@@ -435,7 +435,7 @@ Beyond campaign execution, I bring strong stakeholder management skills develope
 
 I'm confident my marketing background can help TechCorp achieve its growth objectives through compelling brand storytelling and customer acquisition strategies. I look forward to discussing how my experience can contribute to your team's success.
 
-taimooralam@example.com | https://calendly.com/taimooralam/15min"""
+I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"""
 
         # Should raise - no Kubernetes, container, DevOps keywords
         with pytest.raises(ValueError) as exc_info:
