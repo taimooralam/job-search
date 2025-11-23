@@ -1,0 +1,564 @@
+"""
+Layer 3.5: Role Researcher (Phase 5.2)
+
+Analyzes the specific role's business impact and timing significance.
+- Scrapes role-specific information (responsibilities, KPIs)
+- Extracts structured role research with business_impact and "why now"
+- JSON-only output with Pydantic validation
+- Links to company signals to explain hiring timing
+
+New in Phase 5.2: Complete role research with "why now" analysis.
+"""
+
+import json
+import re
+from typing import Dict, Any, Optional, List
+from pydantic import BaseModel, Field, ValidationError
+from firecrawl import FirecrawlApp
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from src.common.config import Config
+from src.common.state import JobState, RoleResearch
+
+
+# ===== FIRECRAWL RESPONSE NORMALIZER =====
+
+def _extract_search_results(search_response: Any) -> List[Any]:
+    """
+    Normalize FireCrawl search responses across SDK versions.
+
+    Supports:
+      - New client (v4.8.0+): response.web
+      - Older client: response.data
+      - Dict responses: {"web": [...]} or {"data": [...]}
+      - Bare lists: [ {...}, {...} ]
+
+    Returns:
+        List of search result objects, or empty list if no results.
+    """
+    if not search_response:
+        return []
+
+    # Attribute-based shapes (Pydantic models)
+    results = getattr(search_response, "web", None)
+    if results is None and hasattr(search_response, "data"):
+        results = getattr(search_response, "data", None)
+
+    # Dict shape (for test mocks or API changes)
+    if results is None and isinstance(search_response, dict):
+        results = (
+            search_response.get("web")
+            or search_response.get("data")
+            or search_response.get("results")
+        )
+
+    # Bare list shape
+    if results is None and isinstance(search_response, list):
+        results = search_response
+
+    return results or []
+
+
+# ===== PYDANTIC SCHEMA VALIDATION (Phase 5.2) =====
+
+class RoleResearchOutput(BaseModel):
+    """
+    Pydantic schema for role research output (Phase 5.2).
+
+    ROADMAP Phase 5.2 Quality Gates:
+    - JSON-only output (no text outside JSON object)
+    - Business impact bullets (3-5 items)
+    - "Why now" explicitly references company signals
+    - No hallucinated facts (only from scraped content + company signals)
+
+    Schema Enforcement:
+    - summary: 2-3 sentence role overview
+    - business_impact: 3-5 bullets on how role drives business outcomes
+    - why_now: 1-2 sentences linking to company signals
+    """
+    summary: str = Field(..., min_length=10, description="2-3 sentence role summary (ownership, scope, team)")
+    business_impact: List[str] = Field(..., min_length=3, max_length=5, description="3-5 bullets on business outcomes")
+    why_now: str = Field(..., min_length=10, description="1-2 sentences explaining timing significance")
+
+
+# ===== PROMPT DESIGN =====
+
+SYSTEM_PROMPT_ROLE_RESEARCH = """You are a business intelligence analyst specializing in role analysis.
+
+Your task: Analyze the provided job description and company signals to understand:
+1. Role summary (what this person will do, scope, team structure)
+2. Business impact (how this role drives business outcomes)
+3. "Why now" (timing significance based on company signals)
+
+**CRITICAL RULES:**
+1. Output ONLY a valid JSON object - no text before or after
+2. Only use facts from the provided job description and company signals
+3. DO NOT invent any details not in the provided context
+4. For "why_now", explicitly reference at least one company signal if available
+5. If signals not provided, infer timing from job description urgency/context
+
+**OUTPUT FORMAT:**
+{
+  "summary": "2-3 sentence role overview (ownership, scope, team size if mentioned)",
+  "business_impact": [
+    "How this role drives revenue/growth",
+    "How this role reduces risk/costs",
+    "How this role enables strategic initiatives",
+    "How this role improves customer outcomes",
+    "How this role builds organizational capability"
+  ],
+  "why_now": "1-2 sentences explaining why this hire is needed now, referencing company signals"
+}
+
+**HALLUCINATION PREVENTION:**
+- Only use facts from job description and company signals
+- If a detail is unclear, don't invent it
+- "Why now" must reference provided context (signals, JD urgency, growth mentions)
+- Business impact must be tied to role responsibilities in JD
+
+NO TEXT OUTSIDE THE JSON OBJECT."""
+
+# Phase 5 enhancement: STAR-aware role research prompt
+SYSTEM_PROMPT_ROLE_RESEARCH_STAR_AWARE = """You are a business intelligence analyst specializing in role analysis.
+
+Your task: Analyze the provided job description and company signals to understand:
+1. Role summary (what this person will do, scope, team structure)
+2. Business impact (how this role drives business outcomes)
+3. "Why now" (timing significance based on company signals)
+
+**CANDIDATE'S STRONGEST DOMAINS:**
+{candidate_domains}
+
+**CANDIDATE'S PROVEN OUTCOME TYPES:**
+{candidate_outcomes}
+
+When analyzing business impact, consider how the role relates to the candidate's proven areas above.
+This helps us understand which aspects of the role align with demonstrated expertise.
+
+**CRITICAL RULES:**
+1. Output ONLY a valid JSON object - no text before or after
+2. Only use facts from the provided job description and company signals
+3. DO NOT invent any details not in the provided context
+4. For "why_now", explicitly reference at least one company signal if available
+5. If signals not provided, infer timing from job description urgency/context
+
+**OUTPUT FORMAT:**
+{
+  "summary": "2-3 sentence role overview (ownership, scope, team size if mentioned)",
+  "business_impact": [
+    "How this role drives revenue/growth",
+    "How this role reduces risk/costs",
+    "How this role enables strategic initiatives",
+    "How this role improves customer outcomes",
+    "How this role builds organizational capability"
+  ],
+  "why_now": "1-2 sentences explaining why this hire is needed now, referencing company signals"
+}
+
+**HALLUCINATION PREVENTION:**
+- Only use facts from job description and company signals
+- If a detail is unclear, don't invent it
+- "Why now" must reference provided context (signals, JD urgency, growth mentions)
+- Business impact must be tied to role responsibilities in JD
+
+NO TEXT OUTSIDE THE JSON OBJECT."""
+
+USER_PROMPT_ROLE_RESEARCH_TEMPLATE = """Analyze this role and explain its business impact:
+
+JOB TITLE: {title}
+COMPANY: {company}
+
+JOB DESCRIPTION:
+{job_description}
+
+ROLE-SPECIFIC CONTEXT (responsibilities & KPIs from external sources):
+{role_context}
+
+COMPANY SIGNALS (if available):
+{company_signals}
+
+Extract:
+1. summary: 2-3 sentence role overview
+2. business_impact: 3-5 bullets on how this role drives business outcomes
+3. why_now: Why this hire is needed now (reference signals if available)
+
+JSON only - no additional text:"""
+
+
+class RoleResearcher:
+    """
+    Researches roles to understand business impact and timing (Phase 5.2).
+    Phase 5 enhancement: STAR-aware prompts when candidate context available.
+    """
+
+    def __init__(self):
+        """Initialize LLM and FireCrawl for role analysis."""
+        self.llm = ChatOpenAI(
+            model=Config.DEFAULT_MODEL,
+            temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual analysis
+            api_key=Config.get_llm_api_key(),
+            base_url=Config.get_llm_base_url(),
+        )
+        # FireCrawl for role-specific context (Phase 5.2)
+        self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+
+    def _extract_star_context(self, state: JobState) -> tuple[Optional[str], Optional[str]]:
+        """
+        Extract candidate domains and outcome types from selected_stars.
+
+        Phase 5 STAR-awareness: When STAR selector has run, extract the candidate's
+        strongest domains and proven outcome types to bias role analysis.
+
+        Args:
+            state: JobState which may contain selected_stars
+
+        Returns:
+            Tuple of (domains_text, outcomes_text) or (None, None) if no STARs
+        """
+        selected_stars = state.get('selected_stars', [])
+        if not selected_stars:
+            return None, None
+
+        # Collect unique domains and outcomes across selected STARs
+        domains = set()
+        outcomes = set()
+
+        for star in selected_stars:
+            # Extract domain_areas (List[str] in canonical schema)
+            star_domains = star.get('domain_areas', [])
+            if isinstance(star_domains, list):
+                domains.update(star_domains)
+
+            # Extract outcome_types (List[str] in canonical schema)
+            star_outcomes = star.get('outcome_types', [])
+            if isinstance(star_outcomes, list):
+                outcomes.update(star_outcomes)
+
+        if not domains and not outcomes:
+            return None, None
+
+        domains_text = ", ".join(sorted(domains)) if domains else "Not specified"
+        outcomes_text = ", ".join(sorted(outcomes)) if outcomes else "Not specified"
+
+        return domains_text, outcomes_text
+
+    @retry(
+        stop=stop_after_attempt(2),
+        wait=wait_exponential(multiplier=1, min=2, max=5),
+        reraise=True
+    )
+    def _scrape_role_context(
+        self,
+        title: str,
+        company: str,
+        industry: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Scrape role-specific context using FireCrawl (ROADMAP Phase 5.2).
+
+        Queries (LLM-style but keyword-rich):
+        1. "responsibilities and scope for {title} at {company}"
+        2. "KPIs and success metrics for {title} in {industry or 'similar SaaS companies'}"
+
+        Args:
+            title: Job title
+            company: Company name
+            industry: Industry name (optional, extracted from job description)
+
+        Returns:
+            Combined scraped content or None if scraping fails
+        """
+        try:
+            # Build queries per ROADMAP Phase 5.2 (LLM-style)
+            queries = [
+                (
+                    f"What does a {title} typically own at {company}? "
+                    f"Focus on engineering leadership, day-to-day impact, and team size."
+                ),
+                (
+                    f"How is a {title} measured in {industry or 'similar SaaS companies'}? "
+                    f"List the KPIs and success metrics that leaders watch."
+                ),
+            ]
+
+            scraped_content = []
+
+            for query in queries:
+                try:
+                    print(f"   Searching role context: {query}")
+
+                    # Use FireCrawl search API
+                    search_response = self.firecrawl.search(query, limit=2)
+
+                    # Use normalizer to extract results (handles SDK version differences)
+                    results = _extract_search_results(search_response)
+
+                    if not results:
+                        continue
+
+                    # Get first result
+                    if len(results) > 0:
+                        top_result = results[0]
+                        # Defensive URL extraction (handles both object attributes and dict keys)
+                        url = getattr(top_result, "url", None) or (top_result.get("url") if isinstance(top_result, dict) else None)
+
+                        if url:
+                            print(f"   Found: {url}")
+
+                            # Scrape the URL
+                            scrape_result = self.firecrawl.scrape(
+                                url,
+                                formats=['markdown'],
+                                only_main_content=True
+                            )
+
+                            if scrape_result and hasattr(scrape_result, 'markdown'):
+                                content = scrape_result.markdown
+                                # Limit to 1000 chars per query to avoid huge prompts
+                                if content:
+                                    scraped_content.append(content[:1000])
+                                    print(f"   ✓ Scraped {len(content[:1000])} chars")
+
+                except Exception as e:
+                    print(f"   ⚠️  Query failed: {e}")
+                    continue
+
+            if scraped_content:
+                return "\n\n".join(scraped_content)
+
+            return None
+
+        except Exception as e:
+            print(f"   ⚠️  Role context scraping failed: {e}")
+            return None
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True
+    )
+    def _analyze_role(
+        self,
+        title: str,
+        company: str,
+        job_description: str,
+        company_signals: Optional[List[Dict[str, str]]] = None,
+        role_context: Optional[str] = None,
+        star_domains: Optional[str] = None,
+        star_outcomes: Optional[str] = None
+    ) -> RoleResearchOutput:
+        """
+        Extract role research from job description and company signals.
+
+        Phase 5 enhancement: Supports STAR-aware prompts when candidate context available.
+
+        Args:
+            title: Job title
+            company: Company name
+            job_description: Full job description text
+            company_signals: Optional list of company signals from Phase 5.1
+            role_context: Optional scraped role context (responsibilities, KPIs)
+            star_domains: Optional candidate domain areas from selected STARs
+            star_outcomes: Optional candidate outcome types from selected STARs
+
+        Returns:
+            RoleResearchOutput with validated structure
+
+        Raises:
+            ValueError: If LLM output is invalid JSON or fails validation
+        """
+        # Format company signals for prompt
+        signals_text = "No company signals available."
+        if company_signals:
+            signal_lines = []
+            for sig in company_signals:
+                signal_lines.append(
+                    f"- [{sig.get('type', 'unknown')}] {sig.get('description', 'N/A')} "
+                    f"({sig.get('date', 'unknown')})"
+                )
+            signals_text = "\n".join(signal_lines)
+
+        # Format role context
+        context_text = role_context if role_context else "No additional role context available."
+
+        # Phase 5: Use STAR-aware prompt if candidate context available
+        if star_domains and star_outcomes:
+            system_prompt = SYSTEM_PROMPT_ROLE_RESEARCH_STAR_AWARE.format(
+                candidate_domains=star_domains,
+                candidate_outcomes=star_outcomes
+            )
+            print(f"   Using STAR-aware role prompt (domains: {star_domains[:50]}...)")
+        else:
+            system_prompt = SYSTEM_PROMPT_ROLE_RESEARCH
+
+        # Call LLM for role analysis
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(
+                content=USER_PROMPT_ROLE_RESEARCH_TEMPLATE.format(
+                    title=title,
+                    company=company,
+                    job_description=job_description[:3000],  # Limit to avoid huge prompts
+                    role_context=context_text,
+                    company_signals=signals_text
+                )
+            )
+        ]
+
+        response = self.llm.invoke(messages)
+        llm_output = response.content.strip()
+
+        # Extract JSON from response (in case LLM adds extra text)
+        json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
+
+        if json_match:
+            json_str = json_match.group(0)
+        else:
+            json_str = llm_output
+
+        # Parse JSON
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_output[:500]}")
+
+        # Validate with Pydantic
+        try:
+            validated = RoleResearchOutput(**data)
+        except ValidationError as e:
+            error_messages = []
+            for error in e.errors():
+                field = ' -> '.join(str(x) for x in error['loc'])
+                msg = error['msg']
+                error_messages.append(f"{field}: {msg}")
+
+            raise ValueError(
+                f"RoleResearch schema validation failed:\n" +
+                "\n".join(f"  - {msg}" for msg in error_messages) +
+                f"\nReceived data: {json.dumps(data, indent=2)[:500]}"
+            )
+
+        return validated
+
+    def research_role(self, state: JobState) -> Dict[str, Any]:
+        """
+        Main function to analyze role and generate research.
+
+        Phase 5 enhancement: STAR-aware role analysis when candidate context available.
+
+        Args:
+            state: Current JobState with title, company, job_description, company_research
+                   (and optionally selected_stars for STAR-aware analysis)
+
+        Returns:
+            Dict with role_research (RoleResearch structure)
+        """
+        try:
+            # Extract company signals if available (from Phase 5.1)
+            company_signals = None
+            if state.get("company_research"):
+                company_signals = state["company_research"].get("signals", [])
+
+            # Phase 5 STAR-awareness: Extract candidate context if available
+            star_domains, star_outcomes = self._extract_star_context(state)
+            if star_domains:
+                print(f"   STAR context available for role analysis: {len(star_domains.split(', '))} domain(s)")
+
+            # Phase 5.2 ROADMAP: Scrape role-specific context
+            print(f"   Scraping role-specific context for: {state['title']}")
+            role_context = None
+            try:
+                # Extract industry from job description if available (simple heuristic)
+                industry = None
+                # Could enhance this to extract industry from JD, but keeping simple for now
+
+                role_context = self._scrape_role_context(
+                    title=state["title"],
+                    company=state["company"],
+                    industry=industry
+                )
+
+                if role_context:
+                    print(f"   ✓ Scraped {len(role_context)} chars of role context")
+                else:
+                    print(f"   ⚠️  No role context found, using job description only")
+            except Exception as scrape_error:
+                print(f"   ⚠️  Role context scraping failed: {scrape_error}, continuing without it")
+                role_context = None
+
+            # Analyze role (Phase 5 STAR-aware)
+            print(f"   Analyzing role: {state['title']}")
+            role_research_output = self._analyze_role(
+                title=state["title"],
+                company=state["company"],
+                job_description=state["job_description"],
+                company_signals=company_signals,
+                role_context=role_context,
+                star_domains=star_domains,
+                star_outcomes=star_outcomes
+            )
+
+            print(f"   ✓ Extracted {len(role_research_output.business_impact)} business impact points")
+
+            # Convert to TypedDict format for JobState
+            role_research: RoleResearch = {
+                "summary": role_research_output.summary,
+                "business_impact": role_research_output.business_impact,
+                "why_now": role_research_output.why_now
+            }
+
+            return {
+                "role_research": role_research
+            }
+
+        except Exception as e:
+            # Log error and return empty (don't block pipeline)
+            error_msg = f"Layer 3.5 (Role Researcher) failed: {str(e)}"
+            print(f"   ✗ {error_msg}")
+
+            return {
+                "role_research": None,
+                "errors": state.get("errors", []) + [error_msg]
+            }
+
+
+# ===== LANGGRAPH NODE FUNCTION =====
+
+def role_researcher_node(state: JobState) -> Dict[str, Any]:
+    """
+    LangGraph node function for Layer 3.5: Role Researcher (Phase 5.2).
+
+    Args:
+        state: Current job processing state
+
+    Returns:
+        Dictionary with updates to merge into state
+    """
+    print("\n" + "="*60)
+    print("LAYER 3.5: Role Researcher (Phase 5.2)")
+    print("="*60)
+    print(f"Analyzing role: {state['title']} at {state['company']}")
+
+    researcher = RoleResearcher()
+    updates = researcher.research_role(state)
+
+    # Print results
+    if updates.get("role_research"):
+        role_research = updates["role_research"]
+        print("\nRole Summary:")
+        print(f"  {role_research['summary']}")
+
+        print(f"\nBusiness Impact ({len(role_research['business_impact'])} points):")
+        for idx, impact in enumerate(role_research['business_impact'], 1):
+            print(f"  {idx}. {impact}")
+
+        print(f"\nWhy Now:")
+        print(f"  {role_research['why_now']}")
+    else:
+        print("\n⚠️  No role research generated")
+
+    print("="*60 + "\n")
+
+    return updates
