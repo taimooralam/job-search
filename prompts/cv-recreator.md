@@ -1,0 +1,1 @@
+Based on the dossier.txt, master-cv.md and feedback.md use the feedback and mitigate the changes to the CV.md and give me the final version.
