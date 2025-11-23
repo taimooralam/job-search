@@ -232,6 +232,8 @@ class TestFireCrawlContactDiscovery:
         """Uses FireCrawl search to find LinkedIn company page."""
         mock_firecrawl = MagicMock()
         mock_search_response = MagicMock()
+        # Support both old and new SDK formats
+        mock_search_response.web = [firecrawl_linkedin_result]
         mock_search_response.data = [firecrawl_linkedin_result]
         mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl_class.return_value = mock_firecrawl
@@ -253,6 +255,8 @@ class TestFireCrawlContactDiscovery:
         """Searches for hiring manager using title + company."""
         mock_firecrawl = MagicMock()
         mock_search_response = MagicMock()
+        # Support both old and new SDK formats
+        mock_search_response.web = []
         mock_search_response.data = []
         mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl_class.return_value = mock_firecrawl
@@ -303,6 +307,8 @@ class TestFireCrawlContactDiscovery:
         - Jennifer Liu, Head of Product
         - David Kim, Director of Engineering
         """
+        # Support both old and new SDK formats
+        mock_search_response.web = [crunchbase_result]
         mock_search_response.data = [crunchbase_result]
         mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl_class.return_value = mock_firecrawl
@@ -593,10 +599,23 @@ class TestOutreachPackageGeneration:
         """Outreach messages cite specific STAR metrics."""
         mock_llm = MagicMock()
         mock_response = MagicMock()
+
+        # Create 150-word email body for Phase 9 validation (100-200 words)
+        email_body_150_words = (
+            "Dear Hiring Manager, I noticed your role involves addressing legacy monolith challenges. "
+            "At AdTech Corp, I achieved 75% incident reduction and 24x faster deployments through platform modernization. "
+            "My experience includes automated deployment pipelines, microservices migration, and incident response optimization. "
+            "These align perfectly with your manual deployment process challenges. I specialize in transforming legacy systems into modern, scalable architectures. "
+            "My approach combines strategic planning with hands-on implementation. I have successfully led similar transformations at multiple organizations, "
+            "consistently delivering measurable improvements in system reliability and developer productivity. I would love to discuss how my proven track record "
+            "can help TechCorp achieve similar results. My methodology focuses on incremental modernization to minimize risk while delivering continuous value. "
+            "I am available for a brief call at your convenience to explore how we can address your specific challenges. Best regards, [Your Name]"
+        )
+
         mock_response.content = json.dumps({
-            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's platform challenges.",
-            "subject": "Platform Engineer - 75% Incident Reduction",
-            "email_body": "...achieved 75% incident reduction and 24x faster deployments at AdTech..."
+            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's platform challenges. taimooralam@example.com | https://calendly.com/taimooralam/15min",
+            "subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
+            "email_body": email_body_150_words
         })
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
@@ -611,6 +630,88 @@ class TestOutreachPackageGeneration:
 
         # Check for metrics from STAR (75%, 24x)
         assert "75%" in linkedin_msg or "75%" in email_body or "incident" in linkedin_msg.lower()
+
+    def test_validates_email_body_length_too_short(self):
+        """Email body must be at least 100 words (Phase 9 ROADMAP requirement)."""
+        mapper = PeopleMapper()
+
+        short_email = "This is too short."  # ~4 words
+
+        with pytest.raises(ValueError, match="100"):
+            mapper._validate_email_body_length(short_email)
+
+    def test_validates_email_body_length_too_long(self):
+        """Email body must be at most 200 words (Phase 9 ROADMAP requirement)."""
+        mapper = PeopleMapper()
+
+        # Create a 250-word email
+        long_email = " ".join(["word"] * 250)
+
+        with pytest.raises(ValueError, match="200"):
+            mapper._validate_email_body_length(long_email)
+
+    def test_validates_email_body_length_valid(self):
+        """Email body between 100-200 words passes validation."""
+        mapper = PeopleMapper()
+
+        # Create a 150-word email (valid)
+        valid_email = " ".join(["word"] * 150)
+
+        # Should not raise
+        result = mapper._validate_email_body_length(valid_email)
+        assert result == valid_email
+
+    def test_validates_email_subject_words_too_few(self):
+        """Email subject must have at least 6 words (Phase 9 ROADMAP requirement)."""
+        mapper = PeopleMapper()
+
+        short_subject = "Too short"  # 2 words
+        pain_points = ["scaling challenges", "legacy systems"]
+
+        with pytest.raises(ValueError, match="6"):
+            mapper._validate_email_subject_words(short_subject, pain_points)
+
+    def test_validates_email_subject_words_too_many(self):
+        """Email subject must have at most 10 words (Phase 9 ROADMAP requirement)."""
+        mapper = PeopleMapper()
+
+        long_subject = "This is a very long email subject line with way too many words"  # 14 words
+        pain_points = ["scaling challenges", "legacy systems"]
+
+        with pytest.raises(ValueError, match="10"):
+            mapper._validate_email_subject_words(long_subject, pain_points)
+
+    def test_validates_email_subject_pain_focus_missing(self):
+        """Email subject must reference at least one pain point (pain-focused requirement)."""
+        mapper = PeopleMapper()
+
+        subject = "Generic subject line with no pain"  # 7 words, but no pain point
+        pain_points = ["scaling challenges", "legacy systems"]
+
+        with pytest.raises(ValueError, match="pain"):
+            mapper._validate_email_subject_words(subject, pain_points)
+
+    def test_validates_email_subject_words_valid(self):
+        """Email subject with 6-10 words and pain focus passes."""
+        mapper = PeopleMapper()
+
+        subject = "Solving your scaling challenges with proven results"  # 7 words, mentions "scaling challenges"
+        pain_points = ["scaling challenges", "legacy systems"]
+
+        # Should not raise
+        result = mapper._validate_email_subject_words(subject, pain_points)
+        assert result == subject
+
+    def test_validates_email_subject_words_valid_partial_match(self):
+        """Email subject passes if it contains part of a pain point phrase."""
+        mapper = PeopleMapper()
+
+        subject = "Platform scaling expertise for modern infrastructure"  # 7 words, contains "scaling"
+        pain_points = ["scaling challenges", "technical debt"]
+
+        # Should not raise (partial match on "scaling" from "scaling challenges")
+        result = mapper._validate_email_subject_words(subject, pain_points)
+        assert result == subject
 
 
 # ===== TESTS: Integration and Quality Gates =====
