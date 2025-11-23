@@ -3,14 +3,14 @@
 This file tracks only **what is missing or partially implemented** compared to `ROADMAP.md`.
 Completed items have been removed. See git history for detailed completion records.
 
-**Last Updated**: 2025-11-22
+**Last Updated**: 2025-11-23
 
 ---
 
 ## Operational Deviations (by design)
 
 - **STAR selector paused**: Layer 2.5 disabled via `ENABLE_STAR_SELECTOR=false`; downstream uses master-cv.md fallback
-- **CV format**: Generates `CV.md` (not `.docx`) via `prompts/cv-creator.prompt.md` + `master-cv.md`
+- **CV format**: Generates `CV.md` (not `.docx`) via two-pass JSON→bullet flow (job description injected) with QA guardrails (strong verb + metric + pain/success tie-in) using `prompts/cv-creator.prompt.md` + `master-cv.md` and default OpenRouter model `anthropic/claude-3-opus-20240229`
 - **Remote publishing disabled**: `ENABLE_REMOTE_PUBLISHING=false`; outputs in `./applications/<company>/<role>/`
 - **People discovery fallback**: When no contacts found, returns 3 fallback cover letters grounded in master CV
 
@@ -67,20 +67,36 @@ Completed items have been removed. See git history for detailed completion recor
 
 ## Phase 6 – Layer 4 (Opportunity Mapper) – ✅ COMPLETE
 
+### Remaining Gaps
+- **STAR citations missing**: `fit_rationale` not emitting required `STAR #X` markers; prompt needs explicit format + post-processing fallback; validator can be relaxed to accept consistent citation tokens. **NOTE**: E2E tests now skip STAR citation validation when `ENABLE_STAR_SELECTOR=false` (2025-11-23).
+- **Metric guarantee**: Rationale sometimes lacks quantified metrics; add prompt requirement and validation-side guardrails.
+
 ---
 
 ## Phase 7 – Layer 5 (People Mapper) – ✅ COMPLETE
 
 ### Remaining Gaps
+- ~~**Contact discovery fallback**: FireCrawl misses lead to empty `primary_contacts`/`secondary_contacts`; add role-based synthetic contacts when scraping/search returns none.~~ **FIXED 2025-11-23**: Added `_generate_synthetic_contacts()` method that creates 3 role-based fallback contacts (Hiring Manager, VP Engineering, Technical Recruiter) when FireCrawl discovery fails.
 - **Contact enrichment**: `recent_signals` field not populated (requires LinkedIn scraping)
+- **Boundary tests**: Missing integration test to assert People Mapper always returns non-null contact lists for downstream layers.
 
 ---
 
 ## Phase 8 – Layer 6a (Cover Letter & CV Generator) – ✅ COMPLETE
 
+### Remaining Gaps
+- ~~**Null safety**: Generator iterates over `selected_stars`/contacts without defaults, causing `'NoneType' object is not iterable`; add defensive `.get(..., [])` and early exits.~~ **FIXED 2025-11-23**: Updated all `state.get(key, default)` calls to use `state.get(key) or default` pattern to handle explicit None values.
+- ~~**STAR dependency**: When STAR selector disabled, generator should gracefully fall back to master CV achievements and log that path.~~ **FIXED 2025-11-23**: Already handled by existing code + null safety fixes.
+- **Integration coverage**: Add Layer5→Layer6 handoff test to assert required fields exist before generation.
+
 ---
 
 ## Phase 9 – Layer 6b (Outreach Generator) – ✅ COMPLETE
+
+### Remaining Gaps
+- ~~**Empty contacts path**: Outreach packaging skipped when People Mapper returns none; implement stub outreach generation using fallback contacts to satisfy validators.~~ **FIXED 2025-11-23**: Layer 5 now generates 3 synthetic contacts when FireCrawl fails, ensuring outreach generator always receives contacts. Outreach generator also uses `or []` pattern for null safety.
+- **Subject/body constraints**: Add validation/post-processing to enforce subject 6-10 words and email 100-200 words to reduce e2e failures.
+- ~~**Disable FireCrawl outreach scraping**: Remove FireCrawl contact outreach and generate generic messages only (no person-specific scraping).~~ **FIXED 2025-11-23**: People Mapper now defaults to `DISABLE_FIRECRAWL_OUTREACH=true`, skips FireCrawl discovery entirely, and produces role-based synthetic contacts plus generic outreach.
 
 ---
 
