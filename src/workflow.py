@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
+from src.common.config import Config
 from src.common.state import JobState
 
 # Import all layer node functions
@@ -18,6 +19,7 @@ from src.layer3.company_researcher import company_researcher_node
 from src.layer3.role_researcher import role_researcher_node  # Phase 5.2: Role Researcher
 from src.layer4.opportunity_mapper import opportunity_mapper_node
 from src.layer5 import people_mapper_node  # Phase 1.3: People Mapper
+from src.layer6 import outreach_generator_node  # Phase 9: Outreach Generator
 from src.layer6.generator import generator_node
 from src.layer7.output_publisher import output_publisher_node
 
@@ -32,9 +34,10 @@ def create_workflow() -> StateGraph:
     3. Layer 3.0: Company Researcher (scrape company signals - Phase 5.1)
     4. Layer 3.5: Role Researcher (analyze role business impact - Phase 5.2)
     5. Layer 4: Opportunity Mapper (generate fit score + rationale)
-    6. Layer 5: People Mapper (identify contacts, generate personalized outreach - Phase 1.3)
-    7. Layer 6: Generator (create cover letter + CV)
-    8. Layer 7: Output Publisher (upload to Drive, log to Sheets)
+    6. Layer 5: People Mapper (identify contacts, generate personalized outreach - Phase 7)
+    7. Layer 6b: Outreach Generator (package outreach into OutreachPackage objects - Phase 9)
+    8. Layer 6a: Generator (create cover letter + CV - Phase 8)
+    9. Layer 7: Output Publisher (upload to Drive, log to Sheets)
 
     Returns:
         Compiled StateGraph ready to execute
@@ -44,23 +47,29 @@ def create_workflow() -> StateGraph:
 
     # Add nodes for each layer
     workflow.add_node("pain_point_miner", pain_point_miner_node)
-    workflow.add_node("star_selector", select_stars)  # Phase 1.3
+    if Config.ENABLE_STAR_SELECTOR:
+        workflow.add_node("star_selector", select_stars)  # Phase 1.3
     workflow.add_node("company_researcher", company_researcher_node)  # Phase 5.1
     workflow.add_node("role_researcher", role_researcher_node)  # Phase 5.2
     workflow.add_node("opportunity_mapper", opportunity_mapper_node)
-    workflow.add_node("people_mapper", people_mapper_node)  # Phase 1.3
+    workflow.add_node("people_mapper", people_mapper_node)  # Phase 7
+    workflow.add_node("outreach_generator", outreach_generator_node)  # Phase 9
     workflow.add_node("generator", generator_node)
     workflow.add_node("output_publisher", output_publisher_node)
 
     # Define sequential edges
     workflow.set_entry_point("pain_point_miner")
-    workflow.add_edge("pain_point_miner", "star_selector")  # Layer 2 -> Layer 2.5
-    workflow.add_edge("star_selector", "company_researcher")  # Layer 2.5 -> Layer 3.0
+    if Config.ENABLE_STAR_SELECTOR:
+        workflow.add_edge("pain_point_miner", "star_selector")  # Layer 2 -> Layer 2.5
+        workflow.add_edge("star_selector", "company_researcher")  # Layer 2.5 -> Layer 3.0
+    else:
+        workflow.add_edge("pain_point_miner", "company_researcher")
     workflow.add_edge("company_researcher", "role_researcher")  # Layer 3.0 -> Layer 3.5 (Phase 5)
     workflow.add_edge("role_researcher", "opportunity_mapper")  # Layer 3.5 -> Layer 4
     workflow.add_edge("opportunity_mapper", "people_mapper")  # Layer 4 -> Layer 5
-    workflow.add_edge("people_mapper", "generator")  # Layer 5 -> Layer 6
-    workflow.add_edge("generator", "output_publisher")  # Layer 6 -> Layer 7
+    workflow.add_edge("people_mapper", "outreach_generator")  # Layer 5 -> Layer 6b (Phase 9)
+    workflow.add_edge("outreach_generator", "generator")  # Layer 6b -> Layer 6a
+    workflow.add_edge("generator", "output_publisher")  # Layer 6a -> Layer 7
     workflow.add_edge("output_publisher", END)
 
     # Compile graph
@@ -99,6 +108,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "title": job_data.get("title", ""),
         "company": job_data.get("company", ""),
         "job_description": job_data.get("description", ""),
+        "scraped_job_posting": None,
         "job_url": job_data.get("url", ""),
         "source": job_data.get("source", "manual"),
         "candidate_profile": candidate_profile,
@@ -110,6 +120,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "success_metrics": None,  # Phase 1.3: Layer 2 JSON
         "selected_stars": None,  # Phase 1.3: Layer 2.5
         "star_to_pain_mapping": None,  # Phase 1.3: Layer 2.5
+        "all_stars": None,  # Phase 8.2: Full STAR library for CV generation
         "company_research": None,  # Phase 5.1: Layer 3.0 structured signals
         "company_summary": None,  # Legacy (populated from company_research)
         "company_url": None,  # Legacy (populated from company_research)
@@ -121,8 +132,10 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "secondary_contacts": None,  # Phase 7: Layer 5 secondary contacts
         "people": None,  # Legacy: Layer 5 (deprecated, use primary_contacts + secondary_contacts)
         "outreach_packages": None,  # Phase 7/9: Per-contact outreach
+        "fallback_cover_letters": None,  # Fallback letters when contacts are unavailable
         "cover_letter": None,
         "cv_path": None,
+        "cv_reasoning": None,  # Phase 8.2: STAR-driven CV tailoring rationale
         "drive_folder_url": None,
         "sheet_row_id": None,
 

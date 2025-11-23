@@ -14,7 +14,7 @@ Phase 7 Enhancements:
 
 import json
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field, field_validator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -23,6 +23,56 @@ from firecrawl import FirecrawlApp
 
 from src.common.config import Config
 from src.common.state import JobState
+
+
+# ===== FIRECRAWL RESPONSE NORMALIZER =====
+
+def _extract_search_results(search_response: Any) -> List[Any]:
+    """
+    Normalize FireCrawl search responses across SDK versions into a list of result objects.
+
+    Supports:
+      - New client (v4.8.0+): response.web (list of objects with .url / .markdown)
+      - Older client (v4.7.x and earlier): response.data
+      - Dict responses: {"web": [...]} or {"data": [...]}
+      - Bare lists: [ {...}, {...} ]
+
+    Args:
+        search_response: Response from FirecrawlApp.search()
+
+    Returns:
+        List of search result objects
+
+    Example:
+        >>> search_response = app.search("company team")
+        >>> results = _extract_search_results(search_response)
+        >>> for result in results:
+        ...     if hasattr(result, 'markdown'):
+        ...         print(result.markdown)
+    """
+    if not search_response:
+        return []
+
+    # Attribute-based shapes (Pydantic models)
+    # New SDK v4.8.0+: response.web, response.news, response.images
+    results = getattr(search_response, "web", None)
+    if results is None and hasattr(search_response, "data"):
+        # Older SDK: response.data
+        results = getattr(search_response, "data", None)
+
+    # Dict shape (for test mocks or API changes)
+    if results is None and isinstance(search_response, dict):
+        results = (
+            search_response.get("web")
+            or search_response.get("data")
+            or search_response.get("results")
+        )
+
+    # Bare list shape (unlikely but defensive)
+    if results is None and isinstance(search_response, list):
+        results = search_response
+
+    return results or []
 
 
 # ===== PYDANTIC MODELS =====
@@ -153,14 +203,27 @@ Output JSON format:
 
 SYSTEM_PROMPT_OUTREACH = """You are an expert career strategist crafting personalized outreach messages.
 
-Your task: Generate hyper-personalized outreach citing specific achievements and metrics.
+Your task: Generate hyper-personalized outreach citing specific achievements and metrics from the candidate's master CV or curated achievements.
 
-**REQUIREMENTS:**
-- LinkedIn messages: 150-550 characters (Phase 9 constraint)
-- Email subjects: ≤100 characters
-- Cite specific STAR metrics (e.g., "75% incident reduction", "24x faster deployments")
+**STRICT REQUIREMENTS (validation will reject non-compliant outputs):**
+- LinkedIn messages: 150-550 characters (count carefully!)
+- Email subjects: 5-10 words, ≤100 characters, MUST reference a pain point
+  - Example (8 words): "Proven Experience Scaling Infrastructure for High-Growth SaaS"
+  - Example (7 words): "Reducing Incidents 75% Through DevOps Transformation"
+- Email body: 95-205 words (target 120-150 for safety)
+  - Count words carefully! Aim for 3-4 short paragraphs
+  - Include 1-2 concrete metrics from the candidate's experience
 - Reference company signals or role context when available
-- Be direct, technical, and metric-driven"""
+- Be direct, technical, and metric-driven
+
+**PHASE 9 CONTENT CONSTRAINTS (CRITICAL):**
+- NO EMOJIS in any message (LinkedIn or email)
+- NO GENERIC PLACEHOLDERS like "Contact's Name", "Director's Name", "[Company]", "[Date]"
+  - If you don't have a real name, use specific role: "VP Engineering at [Company Name]"
+- LinkedIn messages MUST end with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+- Email subject MUST be pain-focused (mention at least one pain point keyword)
+- Keep professional, metric-driven tone
+- ALWAYS use the actual contact name or role-based addressee (e.g., "VP Engineering at Stripe")"""
 
 USER_PROMPT_OUTREACH_TEMPLATE = """Generate personalized outreach for this contact:
 
@@ -180,22 +243,31 @@ Pain Points:
 Company Context:
 {company_research_summary}
 
-=== CANDIDATE'S TOP ACHIEVEMENTS ===
+=== CANDIDATE EVIDENCE (Master CV or curated achievements) ===
 {selected_stars_summary}
 
 === YOUR TASK ===
 Generate outreach that:
-1. References ONE specific STAR metric in LinkedIn message
-2. Addresses job pain points with concrete achievements
+1. References at least one concrete metric from the candidate's experience in the LinkedIn message
+2. Addresses job pain points with concrete achievements grounded in supplied evidence
 3. Shows awareness of company context (funding, growth, timing)
 4. Personalizes to this contact's role and recent signals
 
+**CRITICAL: Count words/characters carefully before outputting!**
+
 Output JSON format:
 {{
-  "linkedin_message": "...",  // 150-550 chars, cite metric
-  "subject": "...",           // ≤100 chars
-  "email_body": "..."         // 3-4 short paragraphs, cite 2-3 achievements
-}}"""
+  "linkedin_message": "...",  // 150-550 chars, cite metric, MUST end with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+  "subject": "...",           // 5-10 WORDS (count!), ≤100 chars, pain-focused
+  "email_body": "..."         // 95-205 WORDS (count!), 3-4 paragraphs, cite 2-3 achievements
+}}
+
+**VALIDATION CHECKLIST** (your output will be rejected if these fail):
+- ✓ LinkedIn message: 150-550 characters AND ends with contact info
+- ✓ Email subject: 5-10 words AND references a pain point keyword
+- ✓ Email body: 95-205 words AND cites specific metrics
+- ✓ NO generic placeholders (use actual name or "VP Engineering at {company}")
+- ✓ NO emojis anywhere"""
 
 
 class PeopleMapper:
@@ -258,28 +330,47 @@ class PeopleMapper:
             return None
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
-    def _search_linkedin_contacts(self, company: str, department: str = "engineering") -> Optional[str]:
+    def _search_linkedin_contacts(
+        self,
+        company: str,
+        department: str = "engineering",
+        title: Optional[str] = None
+    ) -> Optional[str]:
         """
         Search LinkedIn for company employees using FireCrawl search.
 
         Args:
             company: Company name
             department: Department to search (e.g., "engineering", "product")
+            title: Specific job title to target (optional)
 
         Returns:
             Markdown content from LinkedIn search results
         """
         try:
-            query = f'{company} LinkedIn team {department}'
+            # LLM-style query focused on finding the best people to contact
+            role_focus = title or department
+            query = (
+                f"who are the best 5 people to send my cover letter to for {role_focus} at {company} "
+                f"(hiring manager, department head, director/VP, recruiter, head of talent). "
+                f"Return LinkedIn pages that show active team leads or recruiting contacts."
+            )
             search_response = self.firecrawl.search(query, limit=2)
 
-            if search_response and search_response.data:
+            # Use normalizer to extract results (handles SDK version differences)
+            results = _extract_search_results(search_response)
+
+            if results:
                 # Find LinkedIn URL
-                for result in search_response.data:
-                    if hasattr(result, 'url') and 'linkedin.com' in result.url.lower():
-                        # Return markdown content
-                        if hasattr(result, 'markdown'):
-                            return result.markdown[:1500]
+                for result in results:
+                    # Defensive URL extraction (handles both object attributes and dict keys)
+                    url = getattr(result, "url", None) or (result.get("url") if isinstance(result, dict) else None)
+
+                    if url and 'linkedin.com' in url.lower():
+                        # Return markdown content (handle both attribute and dict access)
+                        markdown = getattr(result, 'markdown', None) or (result.get('markdown') if isinstance(result, dict) else None)
+                        if markdown:
+                            return markdown[:1500]
 
             return None
 
@@ -300,13 +391,22 @@ class PeopleMapper:
             Markdown content about hiring manager
         """
         try:
-            query = f'{company} {title} hiring manager'
+            # LLM-style query explicitly asking for hiring manager / decision makers
+            query = (
+                f"best people to send a cover letter to for {title} at {company} "
+                f"(hiring manager, VP Engineering, Director of Engineering, recruiter, Head of Talent)"
+            )
             search_response = self.firecrawl.search(query, limit=2)
 
-            if search_response and search_response.data:
-                # Return first result
-                if hasattr(search_response.data[0], 'markdown'):
-                    return search_response.data[0].markdown[:1000]
+            # Use normalizer to extract results (handles SDK version differences)
+            results = _extract_search_results(search_response)
+
+            if results:
+                # Return first result (handle both attribute and dict access)
+                first_result = results[0]
+                markdown = getattr(first_result, 'markdown', None) or (first_result.get('markdown') if isinstance(first_result, dict) else None)
+                if markdown:
+                    return markdown[:1000]
 
             return None
 
@@ -326,16 +426,27 @@ class PeopleMapper:
             Markdown content from Crunchbase team page
         """
         try:
-            query = f'{company} Crunchbase team'
+            # LLM-style query focusing on leadership team information
+            query = (
+                f"{company} leadership team on Crunchbase "
+                f"(VP Engineering, CTO, Head of Talent, Directors)"
+            )
             search_response = self.firecrawl.search(query, limit=2)
 
-            if search_response and search_response.data:
+            # Use normalizer to extract results (handles SDK version differences)
+            results = _extract_search_results(search_response)
+
+            if results:
                 # Find Crunchbase URL
-                for result in search_response.data:
-                    if hasattr(result, 'url') and 'crunchbase.com' in result.url.lower():
-                        # Return markdown content
-                        if hasattr(result, 'markdown'):
-                            return result.markdown[:1500]
+                for result in results:
+                    # Defensive URL extraction (handles both object attributes and dict keys)
+                    url = getattr(result, "url", None) or (result.get("url") if isinstance(result, dict) else None)
+
+                    if url and 'crunchbase.com' in url.lower():
+                        # Return markdown content (handle both attribute and dict access)
+                        markdown = getattr(result, 'markdown', None) or (result.get('markdown') if isinstance(result, dict) else None)
+                        if markdown:
+                            return markdown[:1500]
 
             return None
 
@@ -364,7 +475,7 @@ class PeopleMapper:
 
         return deduplicated
 
-    def _discover_contacts(self, state: JobState) -> str:
+    def _discover_contacts(self, state: JobState) -> Tuple[str, bool]:
         """
         Multi-source contact discovery using FireCrawl (Phase 7.2.2).
 
@@ -375,7 +486,7 @@ class PeopleMapper:
         4. Crunchbase team
 
         Returns:
-            Formatted string of raw contact snippets for LLM
+            Tuple of (raw contact snippets, found_any_contacts)
         """
         company = state.get("company", "")
         title = state.get("title", "")
@@ -392,7 +503,7 @@ class PeopleMapper:
             print(f"    ✓ Scraped company team page ({len(team_page)} chars)")
 
         # Source 2: LinkedIn
-        linkedin_content = self._search_linkedin_contacts(company, "engineering")
+        linkedin_content = self._search_linkedin_contacts(company, "engineering", title)
         if linkedin_content:
             raw_content_parts.append(f"[SOURCE: LinkedIn]\n{linkedin_content}\n")
             print(f"    ✓ Searched LinkedIn ({len(linkedin_content)} chars)")
@@ -411,9 +522,9 @@ class PeopleMapper:
 
         if not raw_content_parts:
             print("    ⚠️  No contacts found via FireCrawl (will use role-based fallback)")
-            return f"No specific contacts found. Use role-based identifiers for {company}."
+            return f"No specific contacts found. Use role-based identifiers for {company}.", False
 
-        return "\n---\n".join(raw_content_parts)
+        return "\n---\n".join(raw_content_parts), True
 
     # ===== LLM CLASSIFICATION AND ENRICHMENT =====
 
@@ -450,10 +561,17 @@ class PeopleMapper:
         """Format pain points as bullets."""
         return "\n".join(f"- {p}" for p in pain_points[:5])
 
-    def _format_stars_summary(self, stars: List[Dict]) -> str:
+    def _candidate_profile_snippet(self, profile: str) -> str:
+        """Return a trimmed snippet of the master CV for grounding."""
+        if not profile:
+            return "Master CV not available for outreach context."
+        profile = profile.strip()
+        return profile[:800] + ("..." if len(profile) > 800 else "")
+
+    def _format_stars_summary(self, stars: List[Dict], candidate_profile: str = "") -> str:
         """Format STAR records for outreach context."""
         if not stars:
-            return "No STAR records available."
+            return self._candidate_profile_snippet(candidate_profile)
 
         summaries = []
         for i, star in enumerate(stars[:3], 1):
@@ -464,6 +582,72 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
             summaries.append(summary)
 
         return "\n\n".join(summaries)
+
+    def _generate_fallback_cover_letters(self, state: JobState) -> List[str]:
+        """
+        Create three fallback cover letters when no contacts are discoverable.
+
+        Uses the master CV, pain points, and company context to stay personalized
+        without relying on named contacts.
+        """
+        candidate_profile = self._candidate_profile_snippet(state.get("candidate_profile", ""))
+        pain_points = self._format_pain_points(state.get("pain_points", []))
+        company_research = self._format_company_research_summary(state.get("company_research"))
+        role_research = self._format_role_research_summary(state.get("role_research"))
+
+        messages = [
+            SystemMessage(content="You are drafting concise fallback cover letters for cold outreach."),
+            HumanMessage(content=f"""FireCrawl could not find individual contacts.
+
+Draft THREE distinct cover letter options (120-180 words each) for the role {state.get('title', '')} at {state.get('company', '')}.
+Ground every statement in the provided pain points, research, and master CV. Avoid inventing facts.
+
+Pain Points:
+{pain_points}
+
+Company Research:
+{company_research}
+
+Role Research:
+{role_research}
+
+Candidate (Master CV):
+{candidate_profile}
+
+Each option must:
+- Be concise and specific
+- Include at least one concrete metric from the candidate's experience if available
+- End with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+
+Return the three letters separated by \"---\" lines.
+""")
+        ]
+
+        try:
+            response = self.llm.invoke(messages)
+            response_text = response.content.strip()
+            letters = [letter.strip() for letter in re.split(r'\n-{3,}\n', response_text) if letter.strip()]
+
+            if len(letters) < 3 and response_text:
+                # Try splitting by numbered options as a fallback
+                alt_letters = re.split(r'\n\d\.\s', response_text)
+                if alt_letters:
+                    letters.extend([l.strip() for l in alt_letters if l.strip()])
+
+            # Ensure exactly three options
+            while len(letters) < 3:
+                letters.append(f"Cover letter option {len(letters)+1} for {state.get('title', 'the role')} at {state.get('company', '')}.\n\n{candidate_profile[:200]}")
+
+            return letters[:3]
+        except Exception as e:
+            print(f"   ⚠️  Fallback cover letter generation failed: {e}")
+            basic_letter = (
+                f"Hi {state.get('company', '')} team,\n\n"
+                f"I'm interested in the {state.get('title', 'role')} role. Drawing from my background ({candidate_profile[:180]}...), "
+                f"I can address your needs around {pain_points.splitlines()[0] if pain_points else 'priority initiatives'}.\n\n"
+                f"taimooralam@example.com | https://calendly.com/taimooralam/15min"
+            )
+            return [basic_letter] * 3
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
     def _classify_contacts(self, raw_contacts: str, state: JobState) -> Dict[str, List[Dict]]:
@@ -528,6 +712,101 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
 
     # ===== OUTREACH GENERATION =====
 
+    def _validate_content_constraints(self, message: str, channel: str) -> None:
+        """
+        Validate Phase 9 content constraints.
+
+        Args:
+            message: Message to validate
+            channel: "linkedin" or "email"
+
+        Raises:
+            ValueError: If validation fails (triggers retry)
+        """
+        # Check for emojis (Phase 9)
+        emoji_pattern = re.compile(
+            "["
+            "\U0001F600-\U0001F64F"  # emoticons
+            "\U0001F300-\U0001F5FF"  # symbols & pictographs
+            "\U0001F680-\U0001F6FF"  # transport & map symbols
+            "\U0001F700-\U0001F77F"  # alchemical symbols
+            "\U0001F780-\U0001F7FF"  # Geometric Shapes Extended
+            "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
+            "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
+            "\U0001FA00-\U0001FA6F"  # Chess Symbols
+            "\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
+            "\U00002702-\U000027B0"  # Dingbats
+            "\U000024C2-\U0001F251"
+            "]+"
+        )
+
+        if emoji_pattern.search(message):
+            raise ValueError(f"{channel} message contains emojis (not allowed)")
+
+        # Check for disallowed placeholders (only [Your Name] and role-based names allowed)
+        # Role-based names like "VP Engineering at PayFlow" are valid addressees, not placeholders
+        placeholders = re.findall(r'\[([^\]]+)\]', message)
+
+        # Common role titles that indicate a role-based addressee (not a placeholder)
+        role_keywords = [
+            'vp', 'vice president', 'director', 'manager', 'engineer', 'lead', 'head',
+            'chief', 'cto', 'ceo', 'cfo', 'coo', 'coordinator', 'specialist', 'analyst',
+            'architect', 'developer', 'designer', 'recruiter', 'hr', 'talent', 'people',
+            'principal', 'senior', 'staff', 'team lead', 'product', 'engineering',
+            'technical', 'operations', 'strategy', 'marketing', 'sales', 'at '
+        ]
+
+        disallowed = []
+        for p in placeholders:
+            p_lower = p.lower()
+            # Allow [Your Name]
+            if p_lower == "your name":
+                continue
+            # Allow role-based addressees (contain role keywords)
+            if any(keyword in p_lower for keyword in role_keywords):
+                continue
+            # Otherwise, it's a disallowed placeholder
+            disallowed.append(p)
+
+        if disallowed:
+            raise ValueError(
+                f"{channel} message contains disallowed placeholders: {disallowed}. "
+                f"Only [Your Name] and role-based titles (e.g., 'VP Engineering at Company') are allowed."
+            )
+
+        # Check for possessive placeholders (not in brackets but still generic)
+        # Examples: "Contact's Name", "Director's Name", "Manager's Name"
+        possessive_placeholders = re.findall(
+            r"\b(Contact|Director|Manager|Recruiter|Hiring Manager|VP|Engineer|Lead|Team Lead|Representative|Person)'s (Name|name|Email|email)",
+            message
+        )
+
+        if possessive_placeholders:
+            found_possessives = [f"{role}'s {field}" for role, field in possessive_placeholders]
+            raise ValueError(
+                f"{channel} message contains generic possessive placeholders: {found_possessives}. "
+                f"Use actual names or specific role-based addressees like 'VP Engineering at {company}'."
+            )
+
+    def _validate_linkedin_closing(self, message: str) -> None:
+        """
+        Validate that LinkedIn message ends with required contact info (Phase 9).
+
+        Args:
+            message: LinkedIn message
+
+        Raises:
+            ValueError: If closing line is missing
+        """
+        required_email = "taimooralam@example.com"
+        required_calendly = "calendly.com/taimooralam/15min"
+
+        if required_email not in message or required_calendly not in message:
+            raise ValueError(
+                "LinkedIn message must end with: "
+                "taimooralam@example.com | https://calendly.com/taimooralam/15min"
+            )
+
     def _validate_linkedin_message(self, message: str) -> str:
         """Validate and trim LinkedIn message to ≤550 chars (Phase 9)."""
         if len(message) <= 550:
@@ -538,6 +817,94 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
         if last_period > 400:
             return trimmed[:last_period + 1]
         return trimmed + "..."
+
+    def _validate_email_body_length(self, email_body: str) -> str:
+        """
+        Validate email body length (95-205 words - Phase 9 with 5% tolerance).
+
+        Args:
+            email_body: Email body text
+
+        Returns:
+            The validated email body
+
+        Raises:
+            ValueError: If word count is outside 95-205 range
+        """
+        words = email_body.split()
+        word_count = len(words)
+
+        if word_count < 95:
+            raise ValueError(
+                f"Email body too short ({word_count} words). "
+                f"Requires 95-205 words (ROADMAP target: 100-200, 5% tolerance)."
+            )
+
+        if word_count > 205:
+            raise ValueError(
+                f"Email body too long ({word_count} words). "
+                f"Requires 95-205 words (ROADMAP target: 100-200, 5% tolerance)."
+            )
+
+        return email_body
+
+    def _validate_email_subject_words(self, subject: str, pain_points: List[str]) -> str:
+        """
+        Validate email subject word count and pain-focus (5-10 words - Phase 9 with tolerance).
+
+        Args:
+            subject: Email subject line
+            pain_points: List of job pain points for pain-focus check
+
+        Returns:
+            The validated subject
+
+        Raises:
+            ValueError: If word count is outside 5-10 range or lacks pain-focus
+        """
+        words = subject.split()
+        word_count = len(words)
+
+        if word_count < 5:
+            raise ValueError(
+                f"Email subject too short ({word_count} words). "
+                f"Requires 5-10 words (ROADMAP target: 6-10, 1-word tolerance)."
+            )
+
+        if word_count > 10:
+            raise ValueError(
+                f"Email subject too long ({word_count} words). "
+                f"ROADMAP requires 6-10 words."
+            )
+
+        # If no pain points are available (e.g., Layer 2 failed),
+        # treat the subject as valid based on length alone.
+        # This prevents hard failures when upstream analysis is missing.
+        if pain_points:
+            # Check pain-focus: subject must reference at least one pain point
+            subject_lower = subject.lower()
+            has_pain_focus = False
+
+            for pain_point in pain_points:
+                # Check for exact phrase or significant keywords (3+ chars)
+                pain_keywords = [word for word in pain_point.lower().split() if len(word) >= 3]
+
+                # Check if any keyword appears in subject
+                for keyword in pain_keywords:
+                    if keyword in subject_lower:
+                        has_pain_focus = True
+                        break
+
+                if has_pain_focus:
+                    break
+
+            if not has_pain_focus:
+                raise ValueError(
+                    f"Email subject must be pain-focused (reference at least one pain point). "
+                    f"Subject: '{subject}', Pain points: {pain_points[:3]}"
+                )
+
+        return subject
 
     def _validate_email_subject(self, subject: str) -> str:
         """Validate and trim email subject to ≤100 chars."""
@@ -572,7 +939,10 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
                 company=state.get("company", ""),
                 pain_points=self._format_pain_points(state.get("pain_points", [])),
                 company_research_summary=self._format_company_research_summary(state.get("company_research")),
-                selected_stars_summary=self._format_stars_summary(state.get("selected_stars", []))
+                selected_stars_summary=self._format_stars_summary(
+                    state.get("selected_stars", []),
+                    state.get("candidate_profile", "")
+                )
             ))
         ]
 
@@ -594,10 +964,27 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
 
             data = json.loads(response_text)
 
-            # Validate lengths
-            linkedin_msg = self._validate_linkedin_message(data.get("linkedin_message", ""))
-            email_subject = self._validate_email_subject(data.get("subject", ""))
-            email_body = data.get("email_body", "")
+            # Get raw content
+            linkedin_msg_raw = data.get("linkedin_message", "")
+            email_subject_raw = data.get("subject", "")
+            email_body_raw = data.get("email_body", "")
+
+            # Validate Phase 9 content constraints (emojis, placeholders)
+            self._validate_content_constraints(linkedin_msg_raw, "linkedin")
+            self._validate_content_constraints(email_body_raw, "email")
+
+            # Validate LinkedIn closing line (Phase 9)
+            self._validate_linkedin_closing(linkedin_msg_raw)
+
+            # Validate Phase 9 ROADMAP word count requirements
+            pain_points = state.get("pain_points", [])
+            validated_subject = self._validate_email_subject_words(email_subject_raw, pain_points)
+            validated_body = self._validate_email_body_length(email_body_raw)
+
+            # Validate and trim lengths
+            linkedin_msg = self._validate_linkedin_message(linkedin_msg_raw)
+            email_subject = self._validate_email_subject(validated_subject)
+            email_body = validated_body
 
             return {
                 "contact_name": contact["name"],
@@ -646,7 +1033,18 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
 
         try:
             # Step 1: Multi-source discovery
-            raw_contacts = self._discover_contacts(state)
+            raw_contacts, found_contacts = self._discover_contacts(state)
+
+            if not found_contacts:
+                print("\n  ⚠️  Skipping contact classification - generating fallback cover letters only.")
+                fallback_letters = self._generate_fallback_cover_letters(state)
+                return {
+                    "primary_contacts": [],
+                    "secondary_contacts": [],
+                    "people": [],
+                    "outreach_packages": [],
+                    "fallback_cover_letters": fallback_letters
+                }
 
             # Step 2: Classify contacts
             print("\n  🏷️  Classifying contacts into primary/secondary...")
@@ -695,7 +1093,8 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
                 "primary_contacts": enriched_primary,
                 "secondary_contacts": enriched_secondary,
                 "people": enriched_primary + enriched_secondary,  # Legacy field
-                "outreach_packages": None  # Future: per-contact packages
+                "outreach_packages": None,  # Future: per-contact packages
+                "fallback_cover_letters": []
             }
 
         except Exception as e:
@@ -705,6 +1104,7 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
                 "secondary_contacts": [],
                 "people": [],
                 "outreach_packages": [],
+                "fallback_cover_letters": [],
                 "errors": state.get("errors", []) + [f"People mapping error: {str(e)}"]
             }
 

@@ -2,309 +2,139 @@
 Layer 6: Outreach & CV Generator
 
 Generates personalized cover letter and tailored CV based on all previous analysis.
-This is the SIMPLIFIED version for today's vertical slice.
 
-FUTURE: Will expand to include per-person outreach templates, richer CV formatting.
+Phase 8.1: Enhanced cover letter generator with validation gates.
+Phase 8.2: STAR-driven CV generator (to be implemented).
 """
 
-import os
-import tempfile
-from datetime import datetime
+import re
+from pathlib import Path
 from typing import Dict, Any, Tuple
-from docx import Document
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.layer6.cover_letter_generator import CoverLetterGenerator
 
 
-# ===== OUTREACH GENERATION PROMPTS =====
-
-OUTREACH_SYSTEM_PROMPT = """You are an expert career consultant and professional writer specializing in compelling cover letters.
-
-Your task: Write a concise, professional 3-paragraph cover letter that demonstrates strong fit for the role.
-
-Structure:
-- Paragraph 1: Express interest in the specific role and company, mentioning a key company detail
-- Paragraph 2: Highlight 2-3 most relevant experiences that address the job's pain points
-- Paragraph 3: Express enthusiasm and call to action
-
-Style:
-- Professional but warm
-- Specific and evidence-based (use concrete achievements)
-- Confident without being arrogant
-- 250-350 words total
-
-Do NOT include:
-- Address/date header (we'll add that separately)
-- Signature block
-- Generic platitudes
-"""
-
-OUTREACH_USER_PROMPT_TEMPLATE = """Write a 3-paragraph cover letter for this opportunity:
-
-=== JOB DETAILS ===
-Title: {title}
-Company: {company}
-Company Summary: {company_summary}
-
-=== PAIN POINTS (What they need) ===
-{pain_points}
-
-=== CANDIDATE PROFILE ===
-{candidate_profile}
-
-=== FIT ANALYSIS ===
-Score: {fit_score}/100
-Rationale: {fit_rationale}
-
-=== YOUR TASK ===
-Write a compelling 3-paragraph cover letter that:
-1. Shows genuine interest in {company} and the {title} role
-2. Highlights specific achievements that address their pain points
-3. Demonstrates why this is a strong mutual fit
-
-Cover Letter:
-"""
+CV_SYSTEM_PROMPT = """You are a CV-tailoring assistant. Your job is to create a non-hallucinated, ATS-friendly, personalized CV using only the data provided in the user prompt (job dossier, master CV, and any supporting analysis). Do multi-step reasoning: classify the role, align titles, select and prioritize skills, craft profile and experience sections, and ensure every statement is grounded in the supplied inputs. Compact bullets (STAR-style), keep them factual (may tighten/boost impact modestly without inventing), and mirror the job’s terminology. If any required input is missing, state that and proceed with what you have. Output only the completed CV and a brief integrity check outlining any uncertainties; do not add extra commentary"""
 
 
-class OutreachGenerator:
-    """Generates personalized cover letter."""
+class MarkdownCVGenerator:
+    """LLM-driven CV generator that outputs markdown to ./applications/<company>/<role>/CV.md."""
 
     def __init__(self):
-        """Initialize LLM for cover letter generation."""
         self.llm = ChatOpenAI(
             model=Config.DEFAULT_MODEL,
-            temperature=Config.CREATIVE_TEMPERATURE,  # 0.7 for creative writing
+            temperature=Config.ANALYTICAL_TEMPERATURE,
             api_key=Config.get_llm_api_key(),
             base_url=Config.get_llm_base_url(),
         )
+        self.prompt_path = Path("prompts/cv-creator.prompt.md")
 
-    def _format_pain_points(self, pain_points: list) -> str:
-        """Format pain points as numbered list."""
-        if not pain_points:
-            return "No specific pain points identified."
-        return "\n".join(f"{i}. {point}" for i, point in enumerate(pain_points, 1))
+    def _load_prompt_template(self) -> str:
+        if self.prompt_path.exists():
+            return self.prompt_path.read_text(encoding="utf-8")
+        return "Instructions not found (prompts/cv-creator.prompt.md). Use provided context to tailor the CV."
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        reraise=True
-    )
-    def generate_cover_letter(self, state: JobState) -> str:
-        """
-        Generate cover letter using LLM.
+    def _sanitize_path(self, value: str) -> str:
+        safe = value.replace("/", "_").replace("\\", "_").replace(" ", "_").replace(",", "").replace(".", "")
+        return safe[:80] or "role"
 
-        Args:
-            state: JobState with all previous layer outputs
+    def _build_user_prompt(self, state: JobState) -> str:
+        pain_points = "\n".join(state.get("pain_points") or [])
+        strategic_needs = "\n".join(state.get("strategic_needs") or [])
+        risks = "\n".join(state.get("risks_if_unfilled") or [])
+        success_metrics = "\n".join(state.get("success_metrics") or [])
 
-        Returns:
-            Cover letter text (3 paragraphs)
-        """
-        pain_points_text = self._format_pain_points(state.get("pain_points", []))
-
-        messages = [
-            SystemMessage(content=OUTREACH_SYSTEM_PROMPT),
-            HumanMessage(
-                content=OUTREACH_USER_PROMPT_TEMPLATE.format(
-                    title=state["title"],
-                    company=state["company"],
-                    company_summary=state.get("company_summary", "No company information available."),
-                    pain_points=pain_points_text,
-                    candidate_profile=state.get("candidate_profile", "No candidate profile provided."),
-                    fit_score=state.get("fit_score", "N/A"),
-                    fit_rationale=state.get("fit_rationale", "No fit analysis available.")
-                )
+        company_research = state.get("company_research") or {}
+        company_research_text = company_research.get("summary", "")
+        if company_research.get("signals"):
+            signals = "; ".join(
+                f"{sig.get('type', 'signal')}: {sig.get('description', '')}"
+                for sig in company_research["signals"]
             )
+            company_research_text += f"\nSignals: {signals}"
+
+        role_research = state.get("role_research") or {}
+        role_research_text = role_research.get("summary", "")
+        if role_research.get("business_impact"):
+            role_research_text += "\nImpact: " + "; ".join(role_research["business_impact"])
+        if role_research.get("why_now"):
+            role_research_text += f"\nWhy now: {role_research['why_now']}"
+
+        prompt_template = self._load_prompt_template()
+
+        return f"""{prompt_template}
+
+JOB DOSSIER:
+- Title: {state.get('title', '')}
+- Company: {state.get('company', '')}
+- Job URL: {state.get('job_url', '')}
+- Source: {state.get('source', '')}
+
+PAIN POINTS:
+{pain_points or 'Not extracted'}
+
+STRATEGIC NEEDS:
+{strategic_needs or 'Not extracted'}
+
+RISKS IF UNFILLED:
+{risks or 'Not extracted'}
+
+SUCCESS METRICS:
+{success_metrics or 'Not extracted'}
+
+COMPANY RESEARCH:
+{company_research_text or 'No research available'}
+
+ROLE RESEARCH:
+{role_research_text or 'No role research available'}
+
+MASTER CV:
+{state.get('candidate_profile', '')}
+"""
+
+    def _extract_integrity_check(self, content: str) -> str:
+        match = re.search(r'(Integrity Check|Integrity)\s*[:\-]?\s*(.*)', content, re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(2).strip()
+        return "Integrity check not provided."
+
+    def generate_cv(self, state: JobState) -> Tuple[str, str]:
+        user_prompt = self._build_user_prompt(state)
+        messages = [
+            SystemMessage(content=CV_SYSTEM_PROMPT),
+            HumanMessage(content=user_prompt)
         ]
 
         response = self.llm.invoke(messages)
-        cover_letter = response.content.strip()
+        cv_content = response.content.strip()
+        integrity = self._extract_integrity_check(cv_content)
 
-        return cover_letter
+        company_clean = self._sanitize_path(state.get("company", "company"))
+        role_clean = self._sanitize_path(state.get("title", "role"))
+        output_dir = Path("applications") / company_clean / role_clean
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "CV.md"
+        output_path.write_text(cv_content, encoding="utf-8")
 
-
-class CVGenerator:
-    """Generates tailored CV document."""
-
-    def __init__(self):
-        """Initialize CV generator."""
-        pass
-
-    def _parse_candidate_profile(self, profile: str) -> Dict[str, Any]:
-        """
-        Parse candidate profile text into structured data.
-
-        Returns dict with: name, email, phone, linkedin, experience, skills, achievements, work_history, education
-        """
-        # Simple parsing - extract key sections
-        data = {
-            "name": "Candidate Name",
-            "email": "",
-            "phone": "",
-            "linkedin": "",
-            "experience": "",
-            "skills": "",
-            "achievements": [],
-            "work_history": [],
-            "education": []
-        }
-
-        # Extract name (first line after "Name:")
-        if "Name:" in profile:
-            name_line = profile.split("Name:")[1].split("\n")[0].strip()
-            data["name"] = name_line
-
-        # Extract email
-        if "Email:" in profile:
-            email_line = profile.split("Email:")[1].split("\n")[0].strip()
-            data["email"] = email_line
-
-        # Extract phone
-        if "Phone:" in profile:
-            phone_line = profile.split("Phone:")[1].split("\n")[0].strip()
-            data["phone"] = phone_line
-
-        # Extract LinkedIn
-        if "LinkedIn:" in profile:
-            linkedin_line = profile.split("LinkedIn:")[1].split("\n")[0].strip()
-            data["linkedin"] = linkedin_line
-
-        # Extract experience summary
-        if "Experience:" in profile:
-            exp_line = profile.split("Experience:")[1].split("\n")[0].strip()
-            data["experience"] = exp_line
-
-        # Extract skills
-        if "Key Skills:" in profile:
-            skills_line = profile.split("Key Skills:")[1].split("\n")[0].strip()
-            data["skills"] = skills_line
-
-        # Extract achievements (lines starting with -)
-        achievements = []
-        if "Notable Achievements:" in profile or "Achievements:" in profile:
-            section = profile.split("Achievements:")[1] if "Achievements:" in profile else ""
-            if "Notable Achievements:" in profile:
-                section = profile.split("Notable Achievements:")[1]
-
-            for line in section.split("\n"):
-                line = line.strip()
-                if line.startswith("-"):
-                    achievements.append(line[1:].strip())
-        data["achievements"] = achievements[:4]  # Limit to top 4
-
-        return data
-
-    def generate_cv(self, state: JobState) -> str:
-        """
-        Generate tailored CV document.
-
-        Args:
-            state: JobState with candidate profile and job details
-
-        Returns:
-            Path to generated .docx file
-        """
-        # Parse candidate profile
-        candidate = self._parse_candidate_profile(state.get("candidate_profile", ""))
-
-        # Create document
-        doc = Document()
-
-        # Set margins
-        sections = doc.sections
-        for section in sections:
-            section.top_margin = Inches(0.5)
-            section.bottom_margin = Inches(0.5)
-            section.left_margin = Inches(0.75)
-            section.right_margin = Inches(0.75)
-
-        # === HEADER ===
-        # Name
-        name_para = doc.add_paragraph(candidate["name"])
-        name_para.runs[0].font.size = Pt(18)
-        name_para.runs[0].font.bold = True
-        name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        # Contact info
-        contact_parts = []
-        if candidate["email"]:
-            contact_parts.append(candidate["email"])
-        if candidate["phone"]:
-            contact_parts.append(candidate["phone"])
-        if candidate["linkedin"]:
-            contact_parts.append(candidate["linkedin"])
-
-        if contact_parts:
-            contact_para = doc.add_paragraph(" | ".join(contact_parts))
-            if contact_para.runs:
-                contact_para.runs[0].font.size = Pt(10)
-            contact_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-        doc.add_paragraph()  # Blank line
-
-        # === JOB-SPECIFIC SUMMARY ===
-        doc.add_heading("Professional Summary", level=2)
-
-        # Custom summary paragraph highlighting fit for THIS job
-        summary_text = (
-            f"Experienced marketing professional with {candidate.get('experience', '8+ years experience')} "
-            f"applying for the {state['title']} role at {state['company']}. "
-            f"Proven track record in {candidate.get('skills', 'performance marketing, data analysis, and strategic planning')}. "
-        )
-
-        if state.get("fit_score") and state.get("fit_score") >= 80:
-            summary_text += f"Strong alignment with this opportunity (fit score: {state['fit_score']}/100)."
-
-        doc.add_paragraph(summary_text)
-
-        # === CORE COMPETENCIES ===
-        if candidate["skills"]:
-            doc.add_heading("Core Competencies", level=2)
-            doc.add_paragraph(candidate["skills"])
-
-        # === KEY ACHIEVEMENTS ===
-        if candidate["achievements"]:
-            doc.add_heading("Key Achievements", level=2)
-            for achievement in candidate["achievements"]:
-                p = doc.add_paragraph(achievement, style='List Bullet')
-                p.runs[0].font.size = Pt(11)
-
-        # === EXPERIENCE SUMMARY ===
-        doc.add_heading("Professional Experience", level=2)
-        doc.add_paragraph(
-            f"Detailed work history available upon request. "
-            f"Highlights include leadership in performance marketing, "
-            f"data-driven campaign optimization, and team management across multiple organizations."
-        )
-
-        # === EDUCATION ===
-        doc.add_heading("Education", level=2)
-        doc.add_paragraph("MBA, Marketing\nBS, Business Administration")
-
-        # Generate unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        company_clean = state["company"].replace(" ", "_").replace("/", "_")
-        filename = f"CV_{company_clean}_{timestamp}.docx"
-
-        # Save to temp directory
-        output_path = os.path.join(tempfile.gettempdir(), filename)
-        doc.save(output_path)
-
-        return output_path
+        return str(output_path), integrity
 
 
 class Generator:
-    """Main class orchestrating cover letter and CV generation."""
+    """
+    Main class orchestrating cover letter and CV generation.
+
+    Phase 8.1: Uses enhanced CoverLetterGenerator with validation gates.
+    Phase 8.2: Uses MarkdownCVGenerator grounded in the master CV and job dossier.
+    """
 
     def __init__(self):
         """Initialize both generators."""
-        self.outreach_gen = OutreachGenerator()
-        self.cv_gen = CVGenerator()
+        self.cover_letter_gen = CoverLetterGenerator()  # Phase 8.1: Enhanced cover letter generator
+        self.cv_gen = MarkdownCVGenerator()  # Markdown CV generator grounded in master CV
 
     def generate_outputs(self, state: JobState) -> Dict[str, Any]:
         """
@@ -314,20 +144,22 @@ class Generator:
             state: JobState with all previous layer outputs
 
         Returns:
-            Dict with cover_letter and cv_path keys
+            Dict with cover_letter, cv_path, and cv_reasoning keys (Phase 8.2)
         """
         try:
             print(f"   Generating cover letter...")
-            cover_letter = self.outreach_gen.generate_cover_letter(state)
+            cover_letter = self.cover_letter_gen.generate_cover_letter(state)
             print(f"   ✓ Cover letter generated ({len(cover_letter)} chars)")
 
             print(f"   Generating tailored CV...")
-            cv_path = self.cv_gen.generate_cv(state)
+            cv_path, cv_reasoning = self.cv_gen.generate_cv(state)
             print(f"   ✓ CV generated: {cv_path}")
+            print(f"   ✓ CV reasoning: {cv_reasoning[:100]}...")
 
             return {
                 "cover_letter": cover_letter,
-                "cv_path": cv_path
+                "cv_path": cv_path,
+                "cv_reasoning": cv_reasoning  # Phase 8.2: STAR selection rationale
             }
 
         except Exception as e:

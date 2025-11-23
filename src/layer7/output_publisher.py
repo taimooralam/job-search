@@ -1,48 +1,66 @@
 """
 Layer 7: Output Publisher
 
-Publishes outputs to Google Drive and Google Sheets.
-This is the SIMPLIFIED version for today's vertical slice.
-
-FUTURE: Will expand to include notifications (Telegram), metadata storage in MongoDB.
+Publishes outputs to:
+1. Local file system (./applications/<company>/<role>/)
+2. MongoDB (updates job record with generated outputs)
+3. Google Drive (uploads files)
+4. Google Sheets (logs tracking row)
 """
 
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional
+from pathlib import Path
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from tenacity import retry, stop_after_attempt, wait_exponential
+from pymongo import MongoClient
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.layer7.dossier_generator import DossierGenerator
 
 
 class OutputPublisher:
     """
-    Publishes job application outputs to Google Drive and Sheets.
+    Publishes job application outputs to local disk, MongoDB, Google Drive and Sheets.
     """
 
     def __init__(self):
-        """Initialize Google API clients."""
-        # Set up credentials
-        scopes = [
-            'https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/spreadsheets'
-        ]
+        """Initialize Google API clients and MongoDB connection."""
+        self.enable_remote = Config.ENABLE_REMOTE_PUBLISHING
 
-        self.creds = Credentials.from_service_account_file(
-            Config.GOOGLE_CREDENTIALS_PATH,
-            scopes=scopes
-        )
+        if self.enable_remote:
+            # Set up Google credentials
+            scopes = [
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/spreadsheets'
+            ]
 
-        # Initialize Drive API client
-        self.drive_service = build('drive', 'v3', credentials=self.creds)
+            self.creds = Credentials.from_service_account_file(
+                Config.GOOGLE_CREDENTIALS_PATH,
+                scopes=scopes
+            )
 
-        # Initialize Sheets client (using gspread for simpler API)
-        self.sheets_client = gspread.authorize(self.creds)
+            # Initialize Drive API client
+            self.drive_service = build('drive', 'v3', credentials=self.creds)
+
+            # Initialize Sheets client (using gspread for simpler API)
+            self.sheets_client = gspread.authorize(self.creds)
+        else:
+            self.creds = None
+            self.drive_service = None
+            self.sheets_client = None
+
+        # Initialize MongoDB client
+        self.mongo_client = MongoClient(Config.MONGODB_URI)
+        self.db = self.mongo_client['jobs']
+
+        # Initialize dossier generator
+        self.dossier_gen = DossierGenerator()
 
     def _find_or_create_folder(self, folder_name: str, parent_folder_id: Optional[str] = None) -> str:
         """
@@ -144,6 +162,243 @@ class OutputPublisher:
         """Get web URL for a folder."""
         return f"https://drive.google.com/drive/folders/{folder_id}"
 
+    def _save_files_locally(self, state: JobState, dossier_content: str) -> Dict[str, str]:
+        """
+        Save all outputs to local file system.
+
+        Creates directory structure: ./applications/<company>/<role>/
+        Saves: dossier.txt, cover_letter.txt, contacts_outreach.txt, CV
+
+        Args:
+            state: JobState with all outputs
+            dossier_content: Generated dossier text
+
+        Returns:
+            Dict with local file paths
+        """
+        # Create directory structure with sanitized names (no spaces, safe chars)
+        company_safe = (state['company']
+                       .replace('/', '_')
+                       .replace('\\', '_')
+                       .replace(' ', '_')
+                       .replace(',', '')
+                       .replace('.', ''))
+
+        role_safe = (state['title'][:50]
+                    .replace('/', '_')
+                    .replace('\\', '_')
+                    .replace(' ', '_')
+                    .replace(',', '')
+                    .replace('.', ''))
+
+        local_dir = Path('./applications') / company_safe / role_safe
+        local_dir.mkdir(parents=True, exist_ok=True)
+
+        print(f"   Saving files locally to: {local_dir}")
+
+        saved_paths = {}
+
+        # 1. Save dossier
+        dossier_path = local_dir / 'dossier.txt'
+        with open(dossier_path, 'w', encoding='utf-8') as f:
+            f.write(dossier_content)
+        saved_paths['dossier'] = str(dossier_path)
+        print(f"   ✓ Saved dossier: {dossier_path}")
+
+        # 2. Save cover letter
+        if state.get('cover_letter'):
+            cover_letter_path = local_dir / 'cover_letter.txt'
+            with open(cover_letter_path, 'w', encoding='utf-8') as f:
+                f.write(state['cover_letter'])
+            saved_paths['cover_letter'] = str(cover_letter_path)
+            print(f"   ✓ Saved cover letter: {cover_letter_path}")
+
+        # 2b. Save fallback cover letters when no contacts were found
+        if state.get('fallback_cover_letters'):
+            fallback_path = local_dir / 'fallback_cover_letters.txt'
+            with open(fallback_path, 'w', encoding='utf-8') as f:
+                f.write("\n\n---\n\n".join(state['fallback_cover_letters']))
+            saved_paths['fallback_cover_letters'] = str(fallback_path)
+            print(f"   ✓ Saved fallback cover letters: {fallback_path}")
+
+        # 3. Save contacts outreach
+        if state.get('people'):
+            contacts_content = self._format_contacts_file(state['people'], state)
+            contacts_path = local_dir / 'contacts_outreach.txt'
+            with open(contacts_path, 'w', encoding='utf-8') as f:
+                f.write(contacts_content)
+            saved_paths['contacts'] = str(contacts_path)
+            print(f"   ✓ Saved contacts: {contacts_path}")
+
+        # 4. Verify CV exists (already saved to correct location by Layer 6)
+        if state.get('cv_path') and os.path.exists(state['cv_path']):
+            saved_paths['cv'] = state['cv_path']
+            print(f"   ✓ CV already saved: {state['cv_path']}")
+
+        return saved_paths
+
+    def _persist_to_mongodb(self, state: JobState, dossier_content: str) -> bool:
+        """
+        Update MongoDB job record with generated outputs.
+
+        Updates level-2 collection with:
+        - generated_dossier
+        - cover_letter
+        - fit_analysis (score + rationale)
+        - selected_stars (STAR IDs)
+        - people (contact names and roles)
+        - pain_points (4 dimensions: pain_points, strategic_needs, risks_if_unfilled, success_metrics)
+        - company_summary
+        - pipeline_run_at timestamp
+        - pipeline_status
+
+        Args:
+            state: JobState with all outputs
+            dossier_content: Generated dossier text
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            job_id = state['job_id']
+
+            # Try to convert to int (your schema uses int jobId)
+            try:
+                job_id_int = int(job_id)
+            except ValueError:
+                job_id_int = None
+
+            # Find the job record
+            collection = self.db['level-2']
+            job_record = None
+
+            for jid in [job_id_int, job_id]:
+                if jid:
+                    job_record = collection.find_one({"jobId": jid})
+                    if job_record:
+                        break
+
+            if not job_record:
+                print(f"   ⚠️  Job {job_id} not found in MongoDB level-2 collection")
+                return False
+
+            # Prepare update data
+            update_data = {
+                'pipeline_run_at': datetime.now(),
+                'generated_dossier': dossier_content,
+                'pipeline_status': state.get('status', 'completed'),
+            }
+
+            # Add fit analysis
+            if state.get('fit_score') is not None:
+                update_data['fit_score'] = state['fit_score']
+
+            if state.get('fit_rationale'):
+                update_data['fit_rationale'] = state['fit_rationale']
+
+            # Add cover letter
+            if state.get('cover_letter'):
+                update_data['cover_letter'] = state['cover_letter']
+
+            # Add selected STAR IDs
+            if state.get('selected_stars'):
+                update_data['selected_star_ids'] = [
+                    star['id'] for star in state['selected_stars']
+                ]
+
+            # Add contact info (names and roles only, not full outreach)
+            if state.get('people'):
+                update_data['contacts'] = [
+                    {
+                        'name': person['name'],
+                        'role': person['role'],
+                        'linkedin_url': person['linkedin_url']
+                    }
+                    for person in state['people']
+                ]
+
+            # Add pain points (4 dimensions - Phase 1.3)
+            if state.get('pain_points'):
+                update_data['pain_points'] = state['pain_points']
+
+            if state.get('strategic_needs'):
+                update_data['strategic_needs'] = state['strategic_needs']
+
+            if state.get('risks_if_unfilled'):
+                update_data['risks_if_unfilled'] = state['risks_if_unfilled']
+
+            if state.get('success_metrics'):
+                update_data['success_metrics'] = state['success_metrics']
+
+            # Add company summary
+            if state.get('company_summary'):
+                update_data['company_summary'] = state['company_summary']
+
+            # Add Drive/Sheets references
+            if state.get('drive_folder_url'):
+                update_data['drive_folder_url'] = state['drive_folder_url']
+
+            if state.get('sheet_row_id'):
+                update_data['sheet_row_id'] = state['sheet_row_id']
+
+            # Perform update
+            result = collection.update_one(
+                {"_id": job_record['_id']},
+                {"$set": update_data}
+            )
+
+            if result.modified_count > 0:
+                print(f"   ✓ Updated MongoDB record (jobId: {job_id})")
+                return True
+            else:
+                print(f"   ⚠️  MongoDB record not modified (may already have same data)")
+                return True  # Still success, just no changes needed
+
+        except Exception as e:
+            print(f"   ⚠️  MongoDB update failed: {str(e)}")
+            return False
+
+    def _format_contacts_file(self, people: list, state: JobState) -> str:
+        """Format per-person outreach into a single file."""
+        lines = []
+        lines.append("="*80)
+        lines.append(f"OUTREACH CONTACTS: {state['company']} - {state['title']}")
+        lines.append("="*80)
+        lines.append("")
+
+        for i, person in enumerate(people, 1):
+            lines.append(f"\n{'='*80}")
+            lines.append(f"CONTACT #{i}")
+            lines.append(f"{'='*80}\n")
+
+            lines.append(f"NAME: {person['name']}")
+            lines.append(f"ROLE: {person['role']}")
+            lines.append(f"LINKEDIN: {person['linkedin_url']}")
+            lines.append(f"WHY RELEVANT: {person['why_relevant']}")
+            lines.append("")
+
+            lines.append("-" * 80)
+            lines.append("LINKEDIN MESSAGE (150-200 chars):")
+            lines.append("-" * 80)
+            lines.append(person['linkedin_message'])
+            lines.append("")
+
+            lines.append("-" * 80)
+            lines.append(f"EMAIL")
+            lines.append("-" * 80)
+            lines.append(f"Subject: {person['email_subject']}")
+            lines.append("")
+            lines.append(person['email_body'])
+            lines.append("")
+
+            lines.append("-" * 80)
+            lines.append("REASONING:")
+            lines.append("-" * 80)
+            lines.append(person['reasoning'])
+            lines.append("")
+
+        return "\n".join(lines)
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -187,21 +442,76 @@ class OutputPublisher:
 
     def publish(self, state: JobState) -> Dict[str, Any]:
         """
-        Main function to publish outputs to Drive and Sheets.
+        Main function to publish outputs to all destinations.
 
-        Creates folder structure: /applications/<company>/<role>/
-        Uploads cover letter and CV
-        Logs tracking row to Sheets
+        1. Generates comprehensive dossier
+        2. Saves files locally (./applications/<company>/<role>/)
+        3. Persists to MongoDB (updates job record)
+        4. Uploads to Google Drive
+        5. Logs to Google Sheets
 
         Args:
-            state: JobState with cover_letter and cv_path
+            state: JobState with all outputs
 
         Returns:
-            Dict with drive_folder_url and sheet_row_id
+            Dict with file paths, drive_folder_url, sheet_row_id, and any errors
         """
+        result = {}
+        errors = []
+
         try:
-            # Step 1: Create folder structure
-            print(f"   Creating folder structure...")
+            # Step 0: Generate comprehensive dossier
+            print(f"   Generating dossier...")
+            dossier_content = self.dossier_gen.generate_dossier(state)
+            result['dossier_generated'] = True
+            print(f"   ✓ Dossier generated ({len(dossier_content)} chars)")
+
+        except Exception as e:
+            error_msg = f"Dossier generation failed: {str(e)[:100]}"
+            print(f"   ⚠️  {error_msg}")
+            errors.append(error_msg)
+            dossier_content = "Dossier generation failed"
+            result['dossier_generated'] = False
+
+        try:
+            # Step 1: Save files locally
+            print(f"   Saving files to local disk...")
+            local_paths = self._save_files_locally(state, dossier_content)
+            result['local_paths'] = local_paths
+            result['local_save_success'] = True
+
+        except Exception as e:
+            error_msg = f"Local file save failed: {str(e)[:100]}"
+            print(f"   ⚠️  {error_msg}")
+            errors.append(error_msg)
+            result['local_save_success'] = False
+
+        try:
+            # Step 2: Persist to MongoDB
+            print(f"   Updating MongoDB...")
+            mongo_success = self._persist_to_mongodb(state, dossier_content)
+            result['mongodb_persisted'] = mongo_success
+
+        except Exception as e:
+            error_msg = f"MongoDB persistence failed: {str(e)[:100]}"
+            print(f"   ⚠️  {error_msg}")
+            errors.append(error_msg)
+            result['mongodb_persisted'] = False
+
+        # If remote publishing is disabled, exit early after local + Mongo
+        if not self.enable_remote:
+            result['drive_folder_url'] = None
+            result['sheet_row_id'] = None
+            if errors:
+                existing_errors = state.get("errors") or []
+                if isinstance(existing_errors, str):
+                    existing_errors = [existing_errors]
+                result["errors"] = existing_errors + errors
+            return result
+
+        try:
+            # Step 3: Create Google Drive folder structure
+            print(f"   Creating Google Drive folders...")
 
             # Find or create 'applications' folder
             applications_folder_id = self._find_or_create_folder(
@@ -226,8 +536,25 @@ class OutputPublisher:
             print(f"   ✓ Role folder: {role_folder_id}")
 
             folder_url = self._get_folder_url(role_folder_id)
+            result['drive_folder_url'] = folder_url
 
-            # Step 2: Upload cover letter
+            # Step 4: Upload dossier to Drive
+            try:
+                print(f"   Uploading dossier to Drive...")
+                dossier_temp_path = local_paths.get('dossier')
+                if dossier_temp_path and os.path.exists(dossier_temp_path):
+                    self._upload_file_to_drive(
+                        dossier_temp_path,
+                        role_folder_id,
+                        "dossier.txt"
+                    )
+                    print(f"   ✓ Dossier uploaded")
+            except Exception as e:
+                error_msg = f"Dossier upload failed: {str(e)[:100]}"
+                print(f"   ⚠️  {error_msg}")
+                errors.append(error_msg)
+
+            # Step 5: Upload cover letter
             upload_errors = []
             if state.get("cover_letter"):
                 try:
@@ -235,9 +562,15 @@ class OutputPublisher:
 
                     # Save cover letter to temp file
                     import tempfile
+                    company_safe_temp = (state['company']
+                                        .replace(' ', '_')
+                                        .replace(',', '')
+                                        .replace('.', '')
+                                        .replace('/', '_')
+                                        .replace('\\', '_'))
                     cover_letter_path = os.path.join(
                         tempfile.gettempdir(),
-                        f"cover_letter_{state['company'].replace(' ', '_')}.txt"
+                        f"cover_letter_{company_safe_temp}.txt"
                     )
                     with open(cover_letter_path, 'w') as f:
                         f.write(state["cover_letter"])
@@ -256,14 +589,20 @@ class OutputPublisher:
                     print(f"   ⚠️  {error_msg}")
                     upload_errors.append(error_msg)
 
-            # Step 3: Upload CV
+            # Step 6: Upload CV
             if state.get("cv_path") and os.path.exists(state["cv_path"]):
                 try:
                     print(f"   Uploading CV...")
+                    company_safe_cv = (state['company']
+                                      .replace(' ', '_')
+                                      .replace(',', '')
+                                      .replace('.', '')
+                                      .replace('/', '_')
+                                      .replace('\\', '_'))
                     self._upload_file_to_drive(
                         state["cv_path"],
                         role_folder_id,
-                        f"CV_{state['company'].replace(' ', '_')}.docx"
+                        f"CV_{company_safe_cv}.docx"
                     )
                     print(f"   ✓ CV uploaded")
                 except Exception as e:
@@ -271,27 +610,62 @@ class OutputPublisher:
                     print(f"   ⚠️  {error_msg}")
                     upload_errors.append(error_msg)
 
-            # Step 4: Log to Google Sheets
+            # Step 7: Upload per-person outreach files (Phase 1.3)
+            people = state.get("people", [])
+            if people:
+                try:
+                    print(f"   Generating outreach files for {len(people)} contacts...")
+
+                    # Create a consolidated contacts file
+                    import tempfile
+                    contacts_content = self._format_contacts_file(people, state)
+                    company_safe_contacts = (state['company']
+                                            .replace(' ', '_')
+                                            .replace(',', '')
+                                            .replace('.', '')
+                                            .replace('/', '_')
+                                            .replace('\\', '_'))
+                    contacts_path = os.path.join(
+                        tempfile.gettempdir(),
+                        f"contacts_{company_safe_contacts}.txt"
+                    )
+                    with open(contacts_path, 'w') as f:
+                        f.write(contacts_content)
+
+                    self._upload_file_to_drive(
+                        contacts_path,
+                        role_folder_id,
+                        "contacts_outreach.txt"
+                    )
+                    print(f"   ✓ Contact outreach file uploaded")
+
+                    # Cleanup
+                    os.remove(contacts_path)
+
+                except Exception as e:
+                    error_msg = f"Contacts upload failed: {str(e)[:100]}"
+                    print(f"   ⚠️  {error_msg}")
+                    upload_errors.append(error_msg)
+
+            # Step 8: Log to Google Sheets
             print(f"   Logging to Google Sheets...")
             sheet_row_id = self._log_to_sheets(state, folder_url)
             print(f"   ✓ Logged to row {sheet_row_id}")
 
-            result = {
-                "drive_folder_url": folder_url,
-                "sheet_row_id": sheet_row_id
-            }
+            result['sheet_row_id'] = sheet_row_id
 
-            # Add upload errors if any (non-fatal warnings)
-            if upload_errors:
+            # Add all collected errors
+            all_errors = errors + upload_errors
+            if all_errors:
                 existing_errors = state.get("errors") or []
                 if isinstance(existing_errors, str):
                     existing_errors = [existing_errors]
-                result["errors"] = existing_errors + upload_errors
+                result["errors"] = existing_errors + all_errors
 
             return result
 
         except Exception as e:
-            error_msg = f"Layer 7 (Output Publisher) failed: {str(e)}"
+            error_msg = f"Layer 7 (Output Publisher) catastrophic failure: {str(e)}"
             print(f"   ✗ {error_msg}")
 
             errors_list = state.get("errors") or []
@@ -299,9 +673,12 @@ class OutputPublisher:
                 errors_list = [errors_list]
 
             return {
+                "dossier_generated": False,
+                "local_save_success": False,
+                "mongodb_persisted": False,
                 "drive_folder_url": None,
                 "sheet_row_id": None,
-                "errors": errors_list + [error_msg]
+                "errors": errors_list + errors + [error_msg]
             }
 
 
@@ -324,16 +701,43 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
     publisher = OutputPublisher()
     updates = publisher.publish(state)
 
-    # Print results
-    if updates.get("drive_folder_url"):
-        print(f"\n📁 Drive Folder: {updates['drive_folder_url']}")
-    else:
-        print("\n⚠️  No Drive folder created")
+    # Print results summary
+    print("\n" + "="*60)
+    print("LAYER 7 OUTPUT SUMMARY")
+    print("="*60)
 
-    if updates.get("sheet_row_id"):
-        print(f"📊 Sheets Row: {updates['sheet_row_id']}")
+    # Dossier
+    if updates.get("dossier_generated"):
+        print("✅ Dossier: Generated")
     else:
-        print("\n⚠️  No Sheets row logged")
+        print("❌ Dossier: Failed")
+
+    # Local files
+    if updates.get("local_save_success"):
+        local_paths = updates.get("local_paths", {})
+        print(f"✅ Local Files: {len(local_paths)} files saved")
+        if local_paths.get('dossier'):
+            print(f"   📄 Dossier: {local_paths['dossier']}")
+    else:
+        print("❌ Local Files: Save failed")
+
+    # MongoDB
+    if updates.get("mongodb_persisted"):
+        print("✅ MongoDB: Job record updated")
+    else:
+        print("⚠️  MongoDB: Update failed or skipped")
+
+    # Drive
+    if updates.get("drive_folder_url"):
+        print(f"✅ Drive Folder: {updates['drive_folder_url']}")
+    else:
+        print("⚠️  Drive: No folder created")
+
+    # Sheets
+    if updates.get("sheet_row_id"):
+        print(f"✅ Sheets: Logged to row {updates['sheet_row_id']}")
+    else:
+        print("⚠️  Sheets: Not logged")
 
     print("="*60 + "\n")
 
