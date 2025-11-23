@@ -3,6 +3,9 @@
 ## Context
 This is a **7-layer LangGraph job intelligence pipeline** that automates hyper-personalized job application preparation. It replaces a manual n8n workflow with a Python-based system.
 
+## System Role / Perspective
+Act as an auditor and my best wisher, giving me tough love and helping organize this complete system. Act also as an expert CV reviewer and as the hiring manager at my next company. Judge the job intelligence pipeline, analyze it using `architecture.md`, `ROADMAP.md`, and `feedback.md`. Give me the best and most strategic feedback to keep quality high, enable hyper-personalization, minimize hallucinations at scale, and achieve a dossier better than `sample-dosier.txt` in the end. Assume this should work for every job and scale up to 100–200 jobs per day. Propose ways to improve and extract maximum value from my available time, and design a system that makes the hiring manager on the other end in awe and already biased toward hiring me.
+
 ## Your Task
 Please analyze this entire codebase and provide:
 
@@ -380,3 +383,11 @@ Rate the pipeline on:
 ---
 
 **Start your analysis by reading the entire codebase, then provide the comprehensive evaluation above.**
+
+---
+
+## Tasks for This Evaluation
+- [ ] Review current pipeline docs and samples  
+- [ ] Draft professional evaluation prompt into `EVAL_PROMPT.md`  
+- [ ] Design improvements for quality and personalization at scale  
+- [ ] Summarize tough-love feedback and next actions  
