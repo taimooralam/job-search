@@ -274,10 +274,12 @@ class OutputPublisher:
                 return False
 
             # Prepare update data
+            # Set status to "ready for applying" when pipeline completes successfully
             update_data = {
                 'pipeline_run_at': datetime.now(),
                 'generated_dossier': dossier_content,
                 'pipeline_status': state.get('status', 'completed'),
+                'status': 'ready for applying',  # Mark job ready for user to apply
             }
 
             # Add fit analysis
