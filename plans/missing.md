@@ -3,7 +3,7 @@
 This file tracks only **what is missing or partially implemented** compared to `ROADMAP.md`.
 Completed items have been removed. See git history for detailed completion records.
 
-**Last Updated**: 2025-11-23
+**Last Updated**: 2025-11-24
 
 ---
 
@@ -175,8 +175,49 @@ Completed items have been removed. See git history for detailed completion recor
 
 ## Phase 15 – Advanced Features & Polish
 
-### Not Started
-- All features (tier auto-tuning, advanced STAR matching, dossier customization, UI)
+### 15.1 Local UI Layer – ✅ COMPLETE (24 Nov 2025)
+- Flask + PyMongo + HTMX + Tailwind CSS (CDN) implementation in `frontend/`
+- **API Endpoints**:
+  - `GET /api/jobs` - List/search/sort/paginate jobs
+  - `GET /api/jobs/<id>` - Get single job details
+  - `PUT /api/jobs/<id>` - Update job (remarks, notes, status, priority)
+  - `POST /api/jobs/delete` - Bulk delete jobs by ID
+  - `POST /api/jobs/status` - Update job status
+  - `GET /api/jobs/statuses` - Get valid status values
+  - `GET /api/stats` - Database statistics
+- **Features**:
+  - Table view with columns: Created, Company, Role/Title, Location, Job ID, Status, Score
+  - Free-text search across company, title, location, jobId
+  - Sortable columns (click headers to toggle asc/desc)
+  - Pagination with page sizes: 5, 10, 50, 100
+  - Multi-select checkboxes with bulk delete
+  - Inline status dropdown with 7 statuses (not processed, marked for applying, to be deleted, applied, interview scheduled, rejected, offer received)
+  - **Job Detail Page**: Click any row to view full job details with:
+    - All job fields displayed
+    - Editable remarks and notes fields
+    - Status and priority dropdowns
+    - Raw JSON view (expandable)
+    - Delete button with confirmation
+  - Delete confirmation modal
+  - Toast notifications for actions
+  - **Mobile-responsive design**: Toolbar stacks vertically, table columns hide on small screens
+- **Deployment**:
+  - Vercel configuration (`vercel.json`, `api/index.py`)
+  - GitHub Actions CI/CD workflow (`.github/workflows/frontend-ci.yml`)
+  - Auto-deploy to Vercel on push to main
+- **Files**:
+  - `frontend/app.py` - Flask application
+  - `frontend/templates/` - Jinja2 templates with HTMX
+  - `frontend/seed_jobs.py` - Sample data seeder
+  - `frontend/tests/test_api.py` - 27 API smoke tests
+  - `frontend/README.md` - Run instructions + Vercel deployment guide
+  - `frontend/.env.example` - Configuration template
+- **Run**: `python -m frontend.app` (default port 5000)
+
+### Remaining Gaps
+- Tier auto-tuning not implemented
+- Advanced STAR matching UI not implemented
+- Dossier customization UI not implemented
 
 ---
 
@@ -214,10 +255,13 @@ Completed items have been removed. See git history for detailed completion recor
 - MongoDB persistence needs expansion
 - Local file output needs additional files
 
-### ❌ Not Started (Phases 11-16)
+### 🚧 Partially Complete (Phase 15)
+- Local UI layer complete (Flask + HTMX)
+- Tier auto-tuning, advanced STAR matching UI not started
+
+### ❌ Not Started (Phases 11-14, 16)
 - Tier system & batch processing
 - Caching & optimization
 - Full test suite with CI
 - Production deployment
-- Advanced features
 - Documentation

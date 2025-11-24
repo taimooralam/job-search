@@ -163,6 +163,32 @@ Integrity Check: All facts verified against master CV. No fabrications. Dates an
 
 
 @pytest.fixture
+def messy_cv_response():
+    """LLM response that ignores template headings and needs normalization."""
+    return """
+Here is the revised CV in Markdown format:
+
+**Taimoor Alam**  
+Engineering Leader / Application Security | Cloud | Leadership  
+German National | Languages: English (C1), German (B2)  
+
+---
+**Profile**  
+Security-focused engineering leader who reduced MTTR by 60% and embedded secure SDLC.
+
+**Professional Experience**
+**Technical Lead (Addressable TV)**
+Seven.One Entertainment Group — Munich, DE | 2020–Present  
+• Led zero-downtime microservices migration, reducing incidents by 75%.
+
+**Education & Certifications**
+- MSc. Computer Science — TU Munich
+
+Integrity Check: Verified against master CV; no fabricated employers or dates.
+"""
+
+
+@pytest.fixture
 def cleanup_test_output():
     """Cleanup test output directory after tests."""
     yield
@@ -238,6 +264,31 @@ class TestMarkdownCVGenerator:
 
         assert integrity is not None
         assert "fabrication" in integrity.lower() or "verified" in integrity.lower()
+
+    @patch('src.layer6.generator.ChatOpenAI')
+    def test_normalizes_markdown_for_template(self, mock_llm_class, sample_job_state, mock_evidence_response, messy_cv_response, cleanup_test_output):
+        """Generator normalizes loosely formatted markdown to template-friendly headings."""
+        from src.layer6.generator import MarkdownCVGenerator
+
+        mock_llm = MagicMock()
+        evidence = MagicMock()
+        evidence.content = mock_evidence_response
+        messy = MagicMock()
+        messy.content = messy_cv_response
+        mock_llm.invoke.side_effect = [evidence, messy, messy]
+        mock_llm_class.return_value = mock_llm
+
+        generator = MarkdownCVGenerator()
+        cv_path, _ = generator.generate_cv(sample_job_state)
+
+        content = Path(cv_path).read_text()
+
+        assert content.startswith("# Taimoor Alam")
+        assert "## Profile" in content
+        assert "## Professional Experience" in content
+        assert "### Technical Lead (Addressable TV) — Seven.One Entertainment Group — Munich, DE | 2020–Present" in content
+        assert "•" not in content
+        assert "---" not in content
 
     @patch('src.layer6.generator.ChatOpenAI')
     def test_includes_pain_points_in_prompt(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
