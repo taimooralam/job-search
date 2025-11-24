@@ -109,9 +109,13 @@
                     </div>
                 </td>
 
-                <!-- Location -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hide-mobile">
-                    {{ job.location or '-' }}
+                <!-- Location (show last 25 chars if longer) -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hide-mobile" title="{{ job.location or '' }}">
+                    {% if job.location and job.location|length > 25 %}
+                        ...{{ job.location[-25:] }}
+                    {% else %}
+                        {{ job.location or '-' }}
+                    {% endif %}
                 </td>
 
                 <!-- Job URL -->

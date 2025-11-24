@@ -32,6 +32,7 @@ MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/jobs")
 JOB_STATUSES = [
     "not processed",
     "marked for applying",
+    "ready for applying",
     "to be deleted",
     "applied",
     "interview scheduled",
@@ -340,7 +341,10 @@ def update_job(job_id: str):
         return jsonify({"error": "No data provided"}), 400
 
     # Whitelist of editable fields
-    editable_fields = ["status", "remarks", "notes", "priority"]
+    editable_fields = [
+        "status", "remarks", "notes", "priority",
+        "company", "title", "location", "score", "url", "jobUrl"
+    ]
     update_data = {}
 
     for field in editable_fields:
