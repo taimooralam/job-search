@@ -22,8 +22,9 @@
                     <h1 class="text-2xl font-bold text-white">{{ job.title or 'Untitled Position' }}</h1>
                     <p class="text-indigo-100 mt-1">{{ job.company or 'Unknown Company' }}</p>
                 </div>
-                {% if job.jobUrl %}
-                <a href="{{ job.jobUrl }}" target="_blank"
+                {% set header_job_url = job.url or job.jobUrl %}
+                {% if header_job_url %}
+                <a href="{{ header_job_url }}" target="_blank"
                    class="inline-flex items-center px-4 py-2 bg-white text-indigo-600 rounded-md hover:bg-indigo-50 transition">
                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -130,38 +131,86 @@
             <div class="mb-6">
                 <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Job Details</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Job ID (read-only) -->
                     <div class="p-3 bg-gray-50 rounded-lg">
                         <span class="block text-xs text-gray-500 mb-1">Job ID</span>
                         <span class="text-sm font-mono">{{ job.jobId or '-' }}</span>
                     </div>
+                    <!-- Dedupe Key (read-only) -->
                     <div class="p-3 bg-gray-50 rounded-lg">
                         <span class="block text-xs text-gray-500 mb-1">Dedupe Key</span>
                         <span class="text-sm font-mono break-all">{{ job.dedupeKey or '-' }}</span>
                     </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <span class="block text-xs text-gray-500 mb-1">Company</span>
-                        <span class="text-sm">{{ job.company or '-' }}</span>
+                    <!-- Company (editable) -->
+                    <div class="p-3 bg-gray-50 rounded-lg editable-field" data-field="company">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Company</span>
+                            <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="field-value text-sm">{{ job.company or '-' }}</span>
+                        <input type="text" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job.company or '' }}">
                     </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <span class="block text-xs text-gray-500 mb-1">Role/Title</span>
-                        <span class="text-sm">{{ job.title or '-' }}</span>
+                    <!-- Title (editable) -->
+                    <div class="p-3 bg-gray-50 rounded-lg editable-field" data-field="title">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Role/Title</span>
+                            <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="field-value text-sm">{{ job.title or '-' }}</span>
+                        <input type="text" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job.title or '' }}">
                     </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <span class="block text-xs text-gray-500 mb-1">Location</span>
-                        <span class="text-sm">{{ job.location or '-' }}</span>
+                    <!-- Location (editable) -->
+                    <div class="p-3 bg-gray-50 rounded-lg editable-field" data-field="location">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Location</span>
+                            <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="field-value text-sm">{{ job.location or '-' }}</span>
+                        <input type="text" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job.location or '' }}">
                     </div>
-                    <div class="p-3 bg-gray-50 rounded-lg">
-                        <span class="block text-xs text-gray-500 mb-1">Score</span>
-                        <span class="text-sm">{{ job.score if job.score is not none else '-' }}</span>
+                    <!-- Score (editable) -->
+                    <div class="p-3 bg-gray-50 rounded-lg editable-field" data-field="score">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Score</span>
+                            <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="field-value text-sm">{{ job.score if job.score is not none else '-' }}</span>
+                        <input type="number" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job.score if job.score is not none else '' }}">
                     </div>
-                    {% if job.jobUrl %}
-                    <div class="p-3 bg-gray-50 rounded-lg md:col-span-2">
-                        <span class="block text-xs text-gray-500 mb-1">Job URL</span>
-                        <a href="{{ job.jobUrl }}" target="_blank" class="text-sm text-indigo-600 hover:underline break-all">
-                            {{ job.jobUrl }}
-                        </a>
+                    <!-- Job URL (editable) -->
+                    <div class="p-3 bg-gray-50 rounded-lg md:col-span-2 editable-field" data-field="url">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-gray-500">Job URL</span>
+                            <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        {% set job_url = job.url or job.jobUrl %}
+                        {% if job_url %}
+                        <a href="{{ job_url }}" target="_blank" class="field-value text-sm text-indigo-600 hover:underline break-all">{{ job_url }}</a>
+                        {% else %}
+                        <span class="field-value text-sm">-</span>
+                        {% endif %}
+                        <input type="url" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job_url or '' }}">
                     </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -291,6 +340,107 @@
 
         container.classList.toggle('hidden');
         chevron.classList.toggle('rotate-90');
+    }
+
+    // ============================================================================
+    // Inline Editing
+    // ============================================================================
+
+    // Enable edit mode for a field
+    function enableEdit(fieldElement) {
+        const valueEl = fieldElement.querySelector('.field-value');
+        const inputEl = fieldElement.querySelector('.field-input');
+        const editBtn = fieldElement.querySelector('.edit-btn');
+
+        // Hide value, show input
+        valueEl.classList.add('hidden');
+        inputEl.classList.remove('hidden');
+        editBtn.classList.add('hidden');
+
+        // Focus and select input
+        inputEl.focus();
+        inputEl.select();
+
+        // Handle blur (auto-save)
+        inputEl.addEventListener('blur', () => saveFieldEdit(fieldElement), { once: true });
+
+        // Handle Enter key
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputEl.blur();
+            }
+            if (e.key === 'Escape') {
+                cancelFieldEdit(fieldElement);
+            }
+        });
+    }
+
+    // Save the field edit
+    async function saveFieldEdit(fieldElement) {
+        const field = fieldElement.dataset.field;
+        const valueEl = fieldElement.querySelector('.field-value');
+        const inputEl = fieldElement.querySelector('.field-input');
+        const editBtn = fieldElement.querySelector('.edit-btn');
+
+        let newValue = inputEl.value.trim();
+
+        // Convert score to number if applicable
+        if (field === 'score' && newValue !== '') {
+            newValue = parseInt(newValue, 10);
+            if (isNaN(newValue)) newValue = null;
+        }
+
+        try {
+            const response = await fetch(`/api/jobs/${jobId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ [field]: newValue || null })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update displayed value
+                if (field === 'url' && newValue) {
+                    valueEl.innerHTML = `<a href="${escapeHtml(newValue)}" target="_blank" class="text-indigo-600 hover:underline break-all">${escapeHtml(newValue)}</a>`;
+                } else {
+                    valueEl.textContent = newValue || '-';
+                }
+                showToast(`${field} updated`);
+            } else {
+                showToast(result.error || 'Update failed', 'error');
+            }
+        } catch (err) {
+            showToast('Update failed: ' + err.message, 'error');
+        }
+
+        // Show value, hide input
+        valueEl.classList.remove('hidden');
+        inputEl.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+    }
+
+    // Cancel field edit (restore original value)
+    function cancelFieldEdit(fieldElement) {
+        const valueEl = fieldElement.querySelector('.field-value');
+        const inputEl = fieldElement.querySelector('.field-input');
+        const editBtn = fieldElement.querySelector('.edit-btn');
+
+        // Restore input to original displayed value
+        inputEl.value = valueEl.textContent === '-' ? '' : valueEl.textContent;
+
+        // Show value, hide input
+        valueEl.classList.remove('hidden');
+        inputEl.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+    }
+
+    // Escape HTML for safe display
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 </script>
 {% endblock %}

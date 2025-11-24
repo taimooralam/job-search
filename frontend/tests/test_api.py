@@ -271,10 +271,12 @@ class TestGetStatsAPI:
         mock_database, mock_collection = mock_db
 
         # Mock count_documents for different calls
+        # 8 statuses now: not processed, marked for applying, ready for applying,
+        # to be deleted, applied, interview scheduled, rejected, offer received
         mock_collection.count_documents.side_effect = [
             1000,  # level-1 count
             150,   # level-2 count
-            100, 30, 5, 10, 3, 2, 0,  # status counts
+            100, 30, 15, 5, 10, 3, 2, 0,  # status counts (8 statuses)
             0,     # no status count
         ]
 

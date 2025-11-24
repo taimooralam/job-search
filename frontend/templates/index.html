@@ -84,8 +84,20 @@
     <div id="filter-panel" class="hidden bg-white rounded-lg shadow p-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Date Range Filter -->
-            <div class="space-y-2">
+            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
                 <label class="block text-sm font-medium text-gray-700">Date Range</label>
+                <!-- Quick filter buttons -->
+                <div class="flex flex-wrap gap-1 mb-2">
+                    <button type="button" onclick="setQuickDateFilter(1, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1h</button>
+                    <button type="button" onclick="setQuickDateFilter(2, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">2h</button>
+                    <button type="button" onclick="setQuickDateFilter(3, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">3h</button>
+                    <button type="button" onclick="setQuickDateFilter(6, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">6h</button>
+                    <button type="button" onclick="setQuickDateFilter(12, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">12h</button>
+                    <button type="button" onclick="setQuickDateFilter(1, 'week')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1w</button>
+                    <button type="button" onclick="setQuickDateFilter(2, 'week')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">2w</button>
+                    <button type="button" onclick="setQuickDateFilter(1, 'month')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1m</button>
+                </div>
+                <!-- Date picker inputs -->
                 <div class="flex items-center gap-2">
                     <input type="date"
                            id="date-from"
@@ -361,6 +373,42 @@
 
     function escapeJs(text) {
         return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // ============================================================================
+    // Event Listeners
+    // ============================================================================
+    // Quick Date Filter
+    // ============================================================================
+
+    // Set quick date filter (hours, weeks, or months ago)
+    function setQuickDateFilter(amount, unit) {
+        const now = new Date();
+        let fromDate = new Date();
+
+        switch (unit) {
+            case 'hour':
+                fromDate.setHours(now.getHours() - amount);
+                break;
+            case 'week':
+                fromDate.setDate(now.getDate() - (amount * 7));
+                break;
+            case 'month':
+                fromDate.setMonth(now.getMonth() - amount);
+                break;
+        }
+
+        // Format as YYYY-MM-DD for the date input
+        const formatDate = (d) => d.toISOString().split('T')[0];
+
+        document.getElementById('date-from').value = formatDate(fromDate);
+        document.getElementById('date-to').value = formatDate(now);
+
+        // Update active filter count
+        updateActiveFilterCount();
+
+        // Trigger table refresh
+        triggerTableRefresh();
     }
 
     // ============================================================================
