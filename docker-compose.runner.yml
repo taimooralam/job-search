@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    env_file:
+      - .env
+    environment:
+      - MAX_CONCURRENCY=3
+      - LOG_BUFFER_LIMIT=500
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./applications:/app/applications
+      - ./credentials:/app/credentials:ro
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped

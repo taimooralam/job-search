@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    env_file:
+      - .env
+    environment:
+      - MAX_CONCURRENCY=3
+      - LOG_BUFFER_LIMIT=500
+      - REDIS_URL=redis://redis:6379/5
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./applications:/app/applications
+      - ./credentials:/app/credentials:ro
+    restart: unless-stopped
+    networks:
+      - n8n-prod_default
+
+networks:
+  n8n-prod_default:
+    external: true
