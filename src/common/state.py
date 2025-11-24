@@ -149,6 +149,7 @@ class JobState(TypedDict):
     # FUTURE: Will add per-person outreach templates
     cover_letter: Optional[str]      # 3-paragraph outreach draft
     cv_path: Optional[str]           # Path to generated tailored CV file
+    cv_text: Optional[str]           # Full CV content (markdown) for MongoDB persistence
     cv_reasoning: Optional[str]      # Phase 8.2: Rationale for STAR selection, competency mix, gap mitigation
 
     # ===== LAYER 7: Publisher =====

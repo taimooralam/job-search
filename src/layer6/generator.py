@@ -8,6 +8,7 @@ Phase 8.2: STAR-driven CV generator (to be implemented).
 """
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -518,6 +519,19 @@ def generator_node(state: JobState) -> Dict[str, Any]:
 
     generator = Generator()
     updates = generator.generate_outputs(state)
+
+    # Read CV content from disk for MongoDB persistence
+    cv_path = updates.get("cv_path")
+    if cv_path and os.path.exists(cv_path):
+        try:
+            cv_text = Path(cv_path).read_text(encoding="utf-8")
+            updates["cv_text"] = cv_text
+            print(f"   ✓ CV text loaded ({len(cv_text)} chars)")
+        except Exception as e:
+            print(f"   ⚠️  Failed to read CV text: {e}")
+            updates["cv_text"] = None
+    else:
+        updates["cv_text"] = None
 
     # Print results
     if updates.get("cover_letter"):

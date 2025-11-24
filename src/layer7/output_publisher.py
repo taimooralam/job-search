@@ -291,6 +291,16 @@ class OutputPublisher:
             if state.get('cover_letter'):
                 update_data['cover_letter'] = state['cover_letter']
 
+            # Add CV text and path for frontend display and persistence
+            if state.get('cv_text'):
+                update_data['cv_text'] = state['cv_text']
+
+            if state.get('cv_path'):
+                update_data['cv_path'] = state['cv_path']
+
+            if state.get('cv_reasoning'):
+                update_data['cv_reasoning'] = state['cv_reasoning']
+
             # Add selected STAR IDs
             if state.get('selected_stars'):
                 update_data['selected_star_ids'] = [

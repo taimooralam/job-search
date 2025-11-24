@@ -607,6 +607,30 @@ class TestMarkdownCVGeneratorIntegration:
             assert "cv_reasoning" in updates
             assert "cover_letter" in updates
 
+    @patch('src.layer6.generator.ChatOpenAI')
+    def test_generator_node_returns_cv_text(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+        """Test generator_node returns cv_text for MongoDB persistence."""
+        from src.layer6.generator import generator_node
+
+        mock_llm = MagicMock()
+        evidence = MagicMock()
+        evidence.content = mock_evidence_response
+        final_cv = MagicMock()
+        final_cv.content = mock_llm_response
+        mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
+        mock_llm_class.return_value = mock_llm
+
+        with patch('src.layer6.cover_letter_generator.CoverLetterGenerator.generate_cover_letter') as mock_cl:
+            mock_cl.return_value = "Sample cover letter with 75% improvement at AdTech Co"
+
+            updates = generator_node(sample_job_state)
+
+            # Verify cv_text is included in updates for MongoDB persistence
+            assert "cv_text" in updates
+            assert updates["cv_text"] is not None
+            assert len(updates["cv_text"]) > 0
+            assert "Taimoor Alam" in updates["cv_text"]
+
 
 # ===== QUALITY GATE TESTS =====
 

@@ -110,7 +110,7 @@ Completed items have been removed. See git history for detailed completion recor
 ### 10.2 Remaining Gaps
 - **JobState.dossier_path**: Field not added to JobState TypedDict
 - **Local output files**: Missing `application_form_fields.txt` and `outreach/` subfolder per-contact files
-- **MongoDB persistence**: Missing `outreach_packages`, `cv_path`, `run_id`, `pipeline_runs` collection writes
+- ~~**MongoDB persistence**: Missing `outreach_packages`, `cv_path`, `run_id`, `pipeline_runs` collection writes~~ **PARTIALLY FIXED 2025-11-24**: Added `cv_text`, `cv_path`, and `cv_reasoning` persistence to MongoDB in Layer 7 output_publisher. Still missing: `outreach_packages`, `run_id`, `pipeline_runs` collection writes.
 - **Per-section validation**: No validation metadata or tier/status fields per section
 - **FireCrawl query logging**: Queries used not logged in dossier
 
