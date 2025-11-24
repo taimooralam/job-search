@@ -7,7 +7,7 @@
 > **Operational note (current build)**  
 > - STAR selector is temporarily disabled via `Config.ENABLE_STAR_SELECTOR=False`; downstream layers lean on the master CV instead of STAR citations.  
 > - Google Drive/Sheets publishing is switched off (`ENABLE_REMOTE_PUBLISHING=False`); outputs stay in `./applications/<company>/<role>/`.  
-> - CV generation now runs two-pass (JSON evidence → QA’d bullets) with JD text injected; outputs `CV.md` (no `.docx`) via OpenRouter `CV_MODEL` (`anthropic/claude-3-opus-20240229` by default).  
+> - CV generation now runs two-pass (JSON evidence → QA'd bullets) with JD text injected; outputs `CV.md` (no `.docx`) via OpenRouter `CV_MODEL` (`anthropic/claude-3-5-haiku-20241022` by default).  
 > - FireCrawl queries use privacy-safe natural language, and the original job URL is scraped into the dossier when available.  
 > - People discovery now falls back to three master-CV-grounded cover letters if no contacts are found.  
 > - FireCrawl outreach discovery for People Mapper is disabled by default (`DISABLE_FIRECRAWL_OUTREACH=true`); role-based synthetic contacts and generic outreach are generated without scraping.  
