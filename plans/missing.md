@@ -10,7 +10,7 @@ Completed items have been removed. See git history for detailed completion recor
 ## Operational Deviations (by design)
 
 - **STAR selector paused**: Layer 2.5 disabled via `ENABLE_STAR_SELECTOR=false`; downstream uses master-cv.md fallback
-- **CV format**: Generates `CV.md` (not `.docx`) via two-pass JSON→bullet flow (job description injected) with QA guardrails (strong verb + metric + pain/success tie-in) using `prompts/cv-creator.prompt.md` + `master-cv.md` and default OpenRouter model `anthropic/claude-3-opus-20240229`
+- **CV format**: Generates `CV.md` (not `.docx`) via two-pass JSON→bullet flow (job description injected) with QA guardrails (strong verb + metric + pain/success tie-in) using `prompts/cv-creator.prompt.md` + `master-cv.md` and default OpenRouter model `anthropic/claude-3-5-haiku-20241022`
 - **Remote publishing disabled**: `ENABLE_REMOTE_PUBLISHING=false`; outputs in `./applications/<company>/<role>/`
 - **People discovery fallback**: When no contacts found, returns 3 fallback cover letters grounded in master CV
 
