@@ -61,3 +61,4 @@ assets/*.docx
 
 # Node (if any frontend)
 node_modules/
+.vercel
