@@ -73,8 +73,8 @@ class Config:
     # Default models per layer (can be overridden)
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gpt-4o")  # GPT-4o for quality
     CHEAP_MODEL: str = os.getenv("CHEAP_MODEL", "gpt-4o-mini")  # Mini for simple tasks
-    # CV generation uses Anthropic Claude Opus via OpenRouter by default
-    CV_MODEL: str = os.getenv("CV_MODEL", "anthropic/claude-3-opus-20240229")
+    # CV generation uses Anthropic Claude Haiku via OpenRouter by default
+    CV_MODEL: str = os.getenv("CV_MODEL", "anthropic/claude-3-5-haiku-20241022")
 
     # Temperature settings
     CREATIVE_TEMPERATURE: float = 0.7  # For outreach generation
