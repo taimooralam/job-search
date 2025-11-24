@@ -22,6 +22,7 @@ credentials/
 *.json
 !package.json
 !tsconfig.json
+!vercel.json
 
 # IDE / Editor
 .idea/
@@ -61,4 +62,4 @@ assets/*.docx
 
 # Node (if any frontend)
 node_modules/
-.vercel
+.vercel/
