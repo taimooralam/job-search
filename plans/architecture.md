@@ -9,7 +9,7 @@ You have a **7-layer AI job-intelligence pipeline** that automates personalized 
 - **Privacy-safe FireCrawl**: Search queries in Layers 3 and 5 use natural-language, non-outreach phrasing. Layer 3 also scrapes the original job URL to capture the written JD text for dossiers.
 - **People Mapper scraping off**: `DISABLE_FIRECRAWL_OUTREACH=true` disables FireCrawl contact discovery; Layer 5 emits role-based synthetic contacts and generic outreach instead of scraped leads.
 - **Local-only outputs**: Google Drive/Sheets publishing is disabled by default (`ENABLE_REMOTE_PUBLISHING=False`); artifacts are saved only under `./applications/<company>/<role>/`.
-- **CV generation (two-pass + QA)**: Layer 6 now pulls the full job description into the CV prompt, runs a two-pass flow (JSON evidence → formatted bullets) with QA guards (strong verb + metric + pain/success tie-in), and outputs `CV.md` with an integrity check. Defaults to OpenRouter `CV_MODEL` (`anthropic/claude-3-opus-20240229`).
+- **CV generation (two-pass + QA)**: Layer 6 now pulls the full job description into the CV prompt, runs a two-pass flow (JSON evidence → formatted bullets) with QA guards (strong verb + metric + pain/success tie-in), and outputs `CV.md` with an integrity check. Defaults to OpenRouter `CV_MODEL` (`anthropic/claude-3-5-haiku-20241022`).
 - **Contact fallbacks**: If contact discovery fails, Layer 5 returns three fallback cover letters and records them for publishing.
 
 ## The 7+ Layers (Your Process)
