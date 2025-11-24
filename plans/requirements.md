@@ -85,6 +85,14 @@
 - Formats: LinkedIn cover letter text only (no email drafts), tailored CV (.docx or PDF), tracker row entry. Tone: professional, specific to pain points/company and recipient; letter must respect LinkedIn character limits and include the candidate's email address and Calendly URL at the end.
 - Review loop: Human review/edits before any sending; all drafts stored in Drive with timestamps.
 
+### UI Layer (Local Server)
+- Build a local-only Flask app in `frontend/` backed by `pymongo`, with a simple front-end framework of choice to visualize Level 2 job data.
+- Provide general free-text search across jobs plus column sorting on `createdAt`, `jobUrl`, `dedupeKey`, `jobId`, `location`, `role/title`, and `company name/firm`.
+- Display a table with at least the above fields plus a `status` column supporting string values like `"not processed"`, `"marked for applying"`, `"to be deleted"`, `"applied"`, etc.
+- Allow selecting multiple jobs for deletion, with server-side removal.
+- Support pagination controls for 5, 10, 50, and 100 rows per page.
+- Runs locally on the user's machine (no external hosting).
+
 ## Acceptance Criteria (Phase 1.3)
 
 ### End-to-End Pipeline Requirements

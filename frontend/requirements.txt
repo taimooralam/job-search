@@ -1,0 +1,6 @@
+# Requirements for Job Search UI
+# Used by Vercel deployment
+
+flask>=3.0.0
+pymongo>=4.6.0
+python-dotenv>=1.0.0

@@ -1,0 +1,300 @@
+<!-- Job table with sortable headers and data rows -->
+{# Build filter query string for HTMX calls #}
+{% set filter_params = [] %}
+{% if current_date_from %}{% set _ = filter_params.append('date_from=' ~ current_date_from) %}{% endif %}
+{% if current_date_to %}{% set _ = filter_params.append('date_to=' ~ current_date_to) %}{% endif %}
+{% for loc in current_locations %}{% set _ = filter_params.append('locations=' ~ (loc | urlencode)) %}{% endfor %}
+{% set filter_query = ('&' ~ filter_params | join('&')) if filter_params else '' %}
+
+<table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50 sticky-header">
+        <tr>
+            <!-- Select all checkbox -->
+            <th scope="col" class="px-4 py-3 w-10">
+                <input type="checkbox"
+                       id="select-all"
+                       onchange="toggleSelectAll(this)"
+                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            </th>
+
+            {% set sort_fields = [
+                ('createdAt', 'Created', 'hide-mobile'),
+                ('company', 'Company', ''),
+                ('title', 'Role/Title', ''),
+                ('location', 'Location', 'hide-mobile'),
+                ('url', 'URL', 'hide-mobile'),
+                ('jobId', 'Job ID', 'hide-mobile'),
+                ('status', 'Status', ''),
+                ('score', 'Score', 'hide-mobile')
+            ] %}
+
+            {% for field, label, css_class in sort_fields %}
+            {% set is_active = current_sort == field %}
+            {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
+            <th scope="col"
+                class="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 {{ 'sort-active' if is_active }} {{ css_class }}"
+                hx-get="/partials/job-rows?sort={{ field }}&direction={{ new_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                hx-target="#job-table-container"
+                hx-indicator=".htmx-indicator">
+                <div class="flex items-center gap-1">
+                    {{ label }}
+                    <span class="sort-icon">
+                        {% if is_active %}
+                            {% if current_direction == 'desc' %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            {% else %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                            </svg>
+                            {% endif %}
+                        {% else %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                            </svg>
+                        {% endif %}
+                    </span>
+                </div>
+            </th>
+            {% endfor %}
+
+            <!-- Actions column -->
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+            </th>
+        </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+        {% if jobs %}
+            {% for job in jobs %}
+            {% set job_url = job.url or job.jobUrl %}
+            <tr class="job-row hover:bg-gray-50 cursor-pointer"
+                data-job-id="{{ job._id }}"
+                onclick="navigateToJob(event, '{{ job._id }}')">
+                <!-- Checkbox -->
+                <td class="px-4 py-3" onclick="event.stopPropagation()">
+                    <input type="checkbox"
+                           class="row-checkbox h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                           data-job-id="{{ job._id }}"
+                           onchange="toggleRowSelection(this)">
+                </td>
+
+                <!-- Created At -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hide-mobile">
+                    {% if job.createdAt %}
+                        {{ job.createdAt[:10] }}
+                    {% else %}
+                        <span class="text-gray-300">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Company -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">
+                        {{ job.company or '-' }}
+                    </div>
+                </td>
+
+                <!-- Role/Title -->
+                <td class="px-2 sm:px-4 py-3">
+                    <div class="text-sm text-gray-900 max-w-[150px] sm:max-w-xs truncate" title="{{ job.title or '' }}">
+                        {% if job_url %}
+                        <a href="{{ job_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline" onclick="event.stopPropagation()">
+                            {{ job.title or '-' }}
+                        </a>
+                        {% else %}
+                        {{ job.title or '-' }}
+                        {% endif %}
+                    </div>
+                </td>
+
+                <!-- Location -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm text-gray-500 hide-mobile">
+                    {{ job.location or '-' }}
+                </td>
+
+                <!-- Job URL -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile" onclick="event.stopPropagation()">
+                    {% if job_url %}
+                    <a href="{{ job_url }}" target="_blank"
+                       class="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1 max-w-[120px]"
+                       title="{{ job_url }}">
+                        <span class="truncate text-xs">{{ job_url | replace('https://', '') | replace('http://', '') | truncate(20, True, '...') }}</span>
+                        <svg class="flex-shrink-0 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                    {% else %}
+                    <span class="text-gray-300">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Job ID -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap hide-mobile">
+                    <span class="text-xs font-mono text-gray-500" title="{{ job.jobId or '' }}">
+                        {{ (job.jobId or '-')[:12] }}{% if job.jobId and job.jobId|length > 12 %}...{% endif %}
+                    </span>
+                </td>
+
+                <!-- Status -->
+                <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                    {% set status = job.status or 'not processed' %}
+                    {% set status_class = status | replace(' ', '-') %}
+                    <select class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
+                            onchange="updateStatus('{{ job._id }}', this.value)"
+                            style="min-width: 130px;">
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+
+                <!-- Score -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile">
+                    {% if job.score is not none %}
+                        {% if job.score >= 80 %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ job.score }}</span>
+                        {% elif job.score >= 60 %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ job.score }}</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ job.score }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-gray-300">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Actions -->
+                <td class="px-4 py-3 whitespace-nowrap text-sm" onclick="event.stopPropagation()">
+                    {% if job_url %}
+                    <a href="{{ job_url }}" target="_blank"
+                       class="text-indigo-600 hover:text-indigo-800 mr-2"
+                       title="Open job posting">
+                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                    <a href="/job/{{ job._id }}"
+                       class="text-gray-600 hover:text-indigo-800"
+                       title="View details">
+                        <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="10" class="px-4 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No jobs found</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {% if current_query or current_date_from or current_date_to or current_locations %}
+                            No jobs match your filters. Try adjusting your search criteria.
+                        {% else %}
+                            No jobs in the database yet. Add jobs via the pipeline or seed script.
+                        {% endif %}
+                    </p>
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% if pagination.total_count > 0 %}
+<div class="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+    <div class="flex-1 flex justify-between sm:hidden">
+        {% if pagination.has_prev %}
+        <button hx-get="/partials/job-rows?page={{ pagination.page - 1 }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                hx-target="#job-table-container"
+                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Previous
+        </button>
+        {% endif %}
+        {% if pagination.has_next %}
+        <button hx-get="/partials/job-rows?page={{ pagination.page + 1 }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                hx-target="#job-table-container"
+                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Next
+        </button>
+        {% endif %}
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm text-gray-700">
+                Showing
+                <span class="font-medium">{{ (pagination.page - 1) * pagination.page_size + 1 }}</span>
+                to
+                <span class="font-medium">{{ [pagination.page * pagination.page_size, pagination.total_count] | min }}</span>
+                of
+                <span class="font-medium">{{ pagination.total_count }}</span>
+                results
+            </p>
+        </div>
+        <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <!-- Previous button -->
+                <button {% if not pagination.has_prev %}disabled{% endif %}
+                        hx-get="/partials/job-rows?page={{ pagination.page - 1 }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                        hx-target="#job-table-container"
+                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Page numbers -->
+                {% set start_page = [1, pagination.page - 2] | max %}
+                {% set end_page = [pagination.total_pages, pagination.page + 2] | min %}
+
+                {% if start_page > 1 %}
+                <button hx-get="/partials/job-rows?page=1&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                        hx-target="#job-table-container"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    1
+                </button>
+                {% if start_page > 2 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                {% endif %}
+                {% endif %}
+
+                {% for p in range(start_page, end_page + 1) %}
+                <button hx-get="/partials/job-rows?page={{ p }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                        hx-target="#job-table-container"
+                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium {{ 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' if p == pagination.page else 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                    {{ p }}
+                </button>
+                {% endfor %}
+
+                {% if end_page < pagination.total_pages %}
+                {% if end_page < pagination.total_pages - 1 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                {% endif %}
+                <button hx-get="/partials/job-rows?page={{ pagination.total_pages }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                        hx-target="#job-table-container"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {{ pagination.total_pages }}
+                </button>
+                {% endif %}
+
+                <!-- Next button -->
+                <button {% if not pagination.has_next %}disabled{% endif %}
+                        hx-get="/partials/job-rows?page={{ pagination.page + 1 }}&sort={{ current_sort }}&direction={{ current_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
+                        hx-target="#job-table-container"
+                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -63,6 +63,7 @@ STRONG_VERBS = {
 LLM_PREAMBLE_PATTERNS = [
     r"^Here is the updated CV.*?:\s*\n+",
     r"^Here is the CV.*?:\s*\n+",
+    r"^Here is the revised CV.*?:\s*\n+",
     r"^Here's the updated CV.*?:\s*\n+",
     r"^Here's the CV.*?:\s*\n+",
     r"^Based on the provided inputs.*?:\s*\n+",
@@ -252,6 +253,150 @@ MASTER CV:
                 issues.append(f"Bullet {idx + 1} missing reference to pain point or success metric.")
         return issues
 
+    def _strip_emphasis(self, text: str) -> str:
+        """Remove simple markdown emphasis markers used in headings."""
+        return text.replace("**", "").replace("__", "").strip()
+
+    def _looks_like_role_meta(self, line: str) -> bool:
+        """Return True for company/location/date lines that should be merged into headings."""
+        normalized = line.lower()
+        has_date_hint = any(char.isdigit() for char in normalized) or "|" in normalized
+        return ("—" in normalized or " - " in normalized) and has_date_hint
+
+    def _looks_like_role_title(self, line: str) -> bool:
+        """Heuristic to detect role title lines inside experience sections."""
+        if line.startswith("#") or line.startswith("-"):
+            return False
+        return any(keyword in line.lower() for keyword in ["engineer", "lead", "manager", "architect", "director", "cto", "founder"])
+
+    def _merge_role_lines(self, lines: List[str]) -> List[str]:
+        """Merge role title line with the following company/date line for cleaner headings."""
+        merged: List[str] = []
+        skip_next = False
+
+        for idx, line in enumerate(lines):
+            if skip_next:
+                skip_next = False
+                continue
+
+            current = line.strip()
+            if idx + 1 < len(lines):
+                nxt = lines[idx + 1].strip()
+                if self._looks_like_role_title(current) and self._looks_like_role_meta(nxt):
+                    merged.append(f"{self._strip_emphasis(current)} — {self._strip_emphasis(nxt)}")
+                    skip_next = True
+                    continue
+
+            merged.append(current)
+
+        return merged
+
+    def _normalize_markdown_for_template(self, cv_content: str, state: JobState) -> str:
+        """
+        Standardize markdown structure so pandoc + Word template render cleanly.
+
+        - Converts bold section labels to headings
+        - Merges multi-line role headings into a single H3
+        - Normalizes bullets to '- ' and removes horizontal rules
+        """
+        raw_lines = [line.rstrip() for line in cv_content.replace("\r\n", "\n").splitlines()]
+
+        # Drop obvious preambles and horizontal rules that don't map to template styles
+        filtered = []
+        for line in raw_lines:
+            stripped = line.strip()
+            if not stripped or stripped in {"---", "***"}:
+                continue
+            if re.match(r"here is the .*cv", stripped, flags=re.IGNORECASE):
+                continue
+            filtered.append(stripped)
+
+        if not filtered:
+            return cv_content.strip()
+
+        merged_lines = self._merge_role_lines(filtered)
+        section_aliases = {
+            "profile": "Profile",
+            "professional summary": "Professional Summary",
+            "summary": "Professional Summary",
+            "core skills": "Core Skills",
+            "skills": "Core Skills",
+            "professional experience": "Professional Experience",
+            "experience": "Professional Experience",
+            "education": "Education & Certifications",
+            "education & certifications": "Education & Certifications",
+            "integrity check": "Integrity Check",
+        }
+
+        normalized: List[str] = []
+        idx = 0
+
+        # Ensure top-level heading for candidate name
+        while idx < len(merged_lines) and not merged_lines[idx].strip():
+            idx += 1
+        if idx < len(merged_lines):
+            first_line = merged_lines[idx]
+            name_text = self._strip_emphasis(first_line.lstrip("#").strip())
+            if not name_text:
+                name_text = self._strip_emphasis(first_line)
+            normalized.append(f"# {name_text}")
+            idx += 1
+
+        last_section = ""
+
+        while idx < len(merged_lines):
+            line = merged_lines[idx].strip()
+            idx += 1
+            if not line:
+                continue
+
+            # Preserve existing heading levels
+            if line.startswith("#"):
+                normalized.append(line)
+                if line.startswith("##"):
+                    last_section = self._strip_emphasis(line.lstrip("#").strip()).lower()
+                continue
+
+            # Bold section labels -> H2
+            bold_section = re.match(r"^\*\*(.+?)\*\*:?$", line)
+            if bold_section:
+                title = bold_section.group(1).strip()
+                normalized_title = section_aliases.get(title.lower(), title)
+                normalized.append(f"## {normalized_title}")
+                last_section = normalized_title.lower()
+                continue
+
+            # Integrity check heading and inline content
+            if line.lower().startswith("integrity check"):
+                normalized.append("## Integrity Check")
+                tail = line.split(":", 1)[1].strip() if ":" in line else ""
+                if tail:
+                    normalized.append(tail)
+                last_section = "integrity check"
+                continue
+
+            # Role headings inside experience
+            if last_section == "professional experience" and (self._looks_like_role_meta(line) or self._looks_like_role_title(line)):
+                normalized.append(f"### {self._strip_emphasis(line)}")
+                continue
+
+            # Normalize bullets
+            if re.match(r"^[•\-]\s+", line):
+                bullet_text = re.sub(r"^[•\-]\s+", "", line)
+                normalized.append(f"- {bullet_text}")
+                continue
+
+            normalized.append(line)
+
+        # Collapse extra blank lines to keep markdown tidy
+        final_lines: List[str] = []
+        for line in normalized:
+            if line == "" and (not final_lines or final_lines[-1] == ""):
+                continue
+            final_lines.append(line)
+
+        return "\n".join(final_lines).strip() + "\n"
+
     def generate_cv(self, state: JobState) -> Tuple[str, str]:
         user_prompt = self._build_user_prompt(state)
         pain_points_list: List[str] = state.get("pain_points") or []
@@ -289,6 +434,7 @@ ROLE BULLET EVIDENCE JSON (DO NOT IGNORE):
 
         # Strip LLM preambles like "Here is the updated CV..."
         cv_content = _strip_llm_preamble(cv_content)
+        cv_content = self._normalize_markdown_for_template(cv_content, state)
 
         company_clean = self._sanitize_path(state.get("company", "company"))
         role_clean = self._sanitize_path(state.get("title", "role"))

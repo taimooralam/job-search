@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-3 sm:space-y-4">
+    <!-- Toolbar -->
+    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
+            <!-- Search - Full width on mobile -->
+            <div class="w-full sm:flex-1 sm:min-w-[200px]">
+                <div class="relative">
+                    <input type="text"
+                           id="search-input"
+                           placeholder="Search jobs..."
+                           class="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base sm:text-sm"
+                           hx-get="/partials/job-rows"
+                           hx-trigger="keyup changed delay:300ms, search"
+                           hx-target="#job-table-container"
+                           hx-include=".filter-input"
+                           name="query">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter toggle button -->
+            <button type="button"
+                    onclick="toggleFilters()"
+                    class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                <span>Filters</span>
+                <span id="active-filter-count" class="hidden px-1.5 py-0.5 text-xs bg-indigo-600 text-white rounded-full"></span>
+            </button>
+
+            <!-- Bottom row on mobile: page size, selection, delete -->
+            <div class="flex flex-wrap items-center justify-between sm:justify-start gap-3 sm:gap-4">
+                <!-- Page size selector -->
+                <div class="flex items-center gap-2">
+                    <label for="page-size-select" class="text-sm text-gray-600">Show:</label>
+                    <select id="page-size-select"
+                            name="page_size"
+                            class="filter-input border border-gray-300 rounded-md py-2 sm:py-1.5 pl-3 pr-8 text-sm focus:ring-2 focus:ring-indigo-500"
+                            hx-get="/partials/job-rows"
+                            hx-trigger="change"
+                            hx-target="#job-table-container"
+                            hx-include=".filter-input">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                <!-- Selection info & delete button -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <span class="text-xs sm:text-sm text-gray-600">
+                        <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
+                    </span>
+                    <button id="delete-selected-btn"
+                            onclick="openDeleteModal()"
+                            disabled
+                            class="px-3 py-2 sm:py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="hidden sm:inline">Delete Selected</span>
+                        <span class="sm:hidden">Delete</span>
+                    </button>
+                </div>
+
+                <!-- Loading indicator -->
+                <div class="htmx-indicator">
+                    <svg class="animate-spin h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Panel (collapsible) -->
+    <div id="filter-panel" class="hidden bg-white rounded-lg shadow p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Date Range Filter -->
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Date Range</label>
+                <div class="flex items-center gap-2">
+                    <input type="date"
+                           id="date-from"
+                           name="date_from"
+                           class="filter-input flex-1 border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                           hx-get="/partials/job-rows"
+                           hx-trigger="change"
+                           hx-target="#job-table-container"
+                           hx-include=".filter-input">
+                    <span class="text-gray-400">to</span>
+                    <input type="date"
+                           id="date-to"
+                           name="date_to"
+                           class="filter-input flex-1 border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                           hx-get="/partials/job-rows"
+                           hx-trigger="change"
+                           hx-target="#job-table-container"
+                           hx-include=".filter-input">
+                </div>
+            </div>
+
+            <!-- Location Multi-Select Filter -->
+            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                <label class="block text-sm font-medium text-gray-700">Location</label>
+                <div class="relative">
+                    <button type="button"
+                            id="location-dropdown-btn"
+                            onclick="toggleLocationDropdown()"
+                            class="w-full flex items-center justify-between border border-gray-300 rounded-md py-2 px-3 text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500">
+                        <span id="location-btn-text" class="truncate text-gray-500">Select locations...</span>
+                        <svg class="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div id="location-dropdown"
+                         class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                        <div class="p-2 border-b border-gray-200">
+                            <input type="text"
+                                   id="location-search"
+                                   placeholder="Search locations..."
+                                   class="w-full border border-gray-300 rounded py-1.5 px-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                   oninput="filterLocations(this.value)">
+                        </div>
+                        <div id="location-options" class="py-1">
+                            <!-- Options loaded dynamically -->
+                            <div class="px-3 py-2 text-sm text-gray-500">Loading locations...</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden inputs for selected locations (populated by JS) -->
+                <div id="selected-locations-inputs"></div>
+            </div>
+
+            <!-- Clear Filters -->
+            <div class="flex items-end">
+                <button type="button"
+                        onclick="clearAllFilters()"
+                        class="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <div id="job-table-container"
+                 hx-get="/partials/job-rows"
+                 hx-trigger="load, refresh from:body"
+                 hx-indicator=".htmx-indicator">
+                <!-- Table content loaded via HTMX -->
+                <div class="p-8 text-center text-gray-500">
+                    <svg class="animate-spin h-8 w-8 mx-auto text-indigo-600" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-2">Loading jobs...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================================
+    // Filter State Management
+    // ============================================================================
+
+    let allLocations = [];
+    let selectedLocations = new Set();
+
+    // Toggle filter panel visibility
+    function toggleFilters() {
+        const panel = document.getElementById('filter-panel');
+        panel.classList.toggle('hidden');
+    }
+
+    // ============================================================================
+    // Location Multi-Select Dropdown
+    // ============================================================================
+
+    // Load locations from API
+    async function loadLocations() {
+        try {
+            const response = await fetch('/api/locations');
+            const data = await response.json();
+            allLocations = data.locations || [];
+            renderLocationOptions(allLocations);
+        } catch (err) {
+            console.error('Failed to load locations:', err);
+            document.getElementById('location-options').innerHTML =
+                '<div class="px-3 py-2 text-sm text-red-500">Failed to load locations</div>';
+        }
+    }
+
+    // Render location options in dropdown
+    function renderLocationOptions(locations) {
+        const container = document.getElementById('location-options');
+        if (locations.length === 0) {
+            container.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">No locations found</div>';
+            return;
+        }
+
+        container.innerHTML = locations.map(loc => `
+            <label class="location-option flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                   data-location="${escapeHtml(loc.location)}">
+                <input type="checkbox"
+                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                       value="${escapeHtml(loc.location)}"
+                       ${selectedLocations.has(loc.location) ? 'checked' : ''}
+                       onchange="toggleLocation('${escapeJs(loc.location)}', this.checked)">
+                <span class="ml-2 text-sm text-gray-700 truncate flex-1">${escapeHtml(loc.location)}</span>
+                <span class="ml-2 text-xs text-gray-400">(${loc.count})</span>
+            </label>
+        `).join('');
+    }
+
+    // Toggle location dropdown visibility
+    function toggleLocationDropdown() {
+        const dropdown = document.getElementById('location-dropdown');
+        dropdown.classList.toggle('hidden');
+
+        // Close when clicking outside
+        if (!dropdown.classList.contains('hidden')) {
+            setTimeout(() => {
+                document.addEventListener('click', closeLocationDropdownOnClickOutside);
+            }, 0);
+        }
+    }
+
+    function closeLocationDropdownOnClickOutside(event) {
+        const dropdown = document.getElementById('location-dropdown');
+        const btn = document.getElementById('location-dropdown-btn');
+
+        if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+            dropdown.classList.add('hidden');
+            document.removeEventListener('click', closeLocationDropdownOnClickOutside);
+        }
+    }
+
+    // Filter locations by search text
+    function filterLocations(searchText) {
+        const filtered = allLocations.filter(loc =>
+            loc.location.toLowerCase().includes(searchText.toLowerCase())
+        );
+        renderLocationOptions(filtered);
+    }
+
+    // Toggle a location selection
+    function toggleLocation(location, isSelected) {
+        if (isSelected) {
+            selectedLocations.add(location);
+        } else {
+            selectedLocations.delete(location);
+        }
+        updateLocationButtonText();
+        updateSelectedLocationInputs();
+        updateActiveFilterCount();
+        triggerTableRefresh();
+    }
+
+    // Update the button text to show selected locations
+    function updateLocationButtonText() {
+        const btn = document.getElementById('location-btn-text');
+        const count = selectedLocations.size;
+
+        if (count === 0) {
+            btn.textContent = 'Select locations...';
+            btn.className = 'truncate text-gray-500';
+        } else if (count === 1) {
+            btn.textContent = Array.from(selectedLocations)[0];
+            btn.className = 'truncate text-gray-900';
+        } else {
+            btn.textContent = `${count} locations selected`;
+            btn.className = 'truncate text-gray-900';
+        }
+    }
+
+    // Update hidden inputs for form submission
+    function updateSelectedLocationInputs() {
+        const container = document.getElementById('selected-locations-inputs');
+        container.innerHTML = Array.from(selectedLocations).map(loc =>
+            `<input type="hidden" class="filter-input" name="locations" value="${escapeHtml(loc)}">`
+        ).join('');
+    }
+
+    // ============================================================================
+    // Filter Actions
+    // ============================================================================
+
+    // Clear all filters
+    function clearAllFilters() {
+        // Clear date inputs
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+
+        // Clear locations
+        selectedLocations.clear();
+        updateLocationButtonText();
+        updateSelectedLocationInputs();
+
+        // Uncheck all location checkboxes
+        document.querySelectorAll('#location-options input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Clear search
+        document.getElementById('search-input').value = '';
+
+        // Update filter count
+        updateActiveFilterCount();
+
+        // Refresh table
+        triggerTableRefresh();
+    }
+
+    // Update active filter count badge
+    function updateActiveFilterCount() {
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+        const locationCount = selectedLocations.size;
+
+        let count = 0;
+        if (dateFrom || dateTo) count++;
+        if (locationCount > 0) count++;
+
+        const badge = document.getElementById('active-filter-count');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    // Trigger HTMX table refresh with current filters
+    function triggerTableRefresh() {
+        htmx.trigger('#job-table-container', 'refresh');
+    }
+
+    // ============================================================================
+    // Utility Functions
+    // ============================================================================
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function escapeJs(text) {
+        return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // ============================================================================
+    // Event Listeners
+    // ============================================================================
+
+    // Update filter count when date inputs change
+    document.getElementById('date-from')?.addEventListener('change', updateActiveFilterCount);
+    document.getElementById('date-to')?.addEventListener('change', updateActiveFilterCount);
+
+    // Load locations on page load
+    document.addEventListener('DOMContentLoaded', loadLocations);
+
+    // Make table refresh include filters via HTMX
+    document.body.addEventListener('htmx:configRequest', function(event) {
+        if (event.target.id === 'job-table-container') {
+            // Include all filter values
+            const dateFrom = document.getElementById('date-from')?.value || '';
+            const dateTo = document.getElementById('date-to')?.value || '';
+
+            if (dateFrom) event.detail.parameters['date_from'] = dateFrom;
+            if (dateTo) event.detail.parameters['date_to'] = dateTo;
+
+            // Include selected locations
+            selectedLocations.forEach(loc => {
+                if (!event.detail.parameters['locations']) {
+                    event.detail.parameters['locations'] = [];
+                }
+                if (Array.isArray(event.detail.parameters['locations'])) {
+                    event.detail.parameters['locations'].push(loc);
+                } else {
+                    event.detail.parameters['locations'] = [event.detail.parameters['locations'], loc];
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

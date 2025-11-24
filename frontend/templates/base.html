@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Job Search Manager{% endblock %}</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Custom styles -->
+    <style>
+        /* Sticky header for table */
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Loading indicator */
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+        .htmx-indicator {
+            display: none;
+        }
+
+        /* Row hover effect */
+        .job-row:hover {
+            background-color: rgb(249 250 251);
+        }
+
+        /* Sort icons */
+        .sort-icon {
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .sort-active .sort-icon {
+            opacity: 1;
+        }
+
+        /* Status badge colors */
+        .status-not-processed { background-color: #e5e7eb; color: #374151; }
+        .status-marked-for-applying { background-color: #dbeafe; color: #1e40af; }
+        .status-to-be-deleted { background-color: #fee2e2; color: #991b1b; }
+        .status-applied { background-color: #d1fae5; color: #065f46; }
+        .status-interview-scheduled { background-color: #fef3c7; color: #92400e; }
+        .status-rejected { background-color: #fecaca; color: #991b1b; }
+        .status-offer-received { background-color: #a7f3d0; color: #047857; }
+
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Mobile responsive table */
+        @media (max-width: 768px) {
+            .hide-mobile {
+                display: none !important;
+            }
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .job-row td {
+                padding: 0.5rem 0.25rem;
+            }
+        }
+
+        /* Touch-friendly buttons on mobile */
+        @media (max-width: 640px) {
+            .mobile-stack {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .mobile-full {
+                width: 100%;
+            }
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-14 sm:h-16 justify-between items-center">
+                    <a href="/" class="flex items-center">
+                        <span class="text-xl sm:text-2xl font-bold text-indigo-600">JobSearch</span>
+                        <span class="hidden sm:inline ml-2 text-sm text-gray-500">Level-2 Manager</span>
+                    </a>
+                    <div id="stats-container" class="text-xs sm:text-sm text-gray-500">
+                        <!-- Stats loaded via HTMX -->
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Delete confirmation modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-backdrop fixed inset-0" onclick="closeDeleteModal()"></div>
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative z-10">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Delete</h3>
+                <p class="text-gray-600 mb-4">
+                    Are you sure you want to delete <span id="delete-count" class="font-semibold">0</span> selected job(s)?
+                    This action cannot be undone.
+                </p>
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeDeleteModal()"
+                            class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDelete()"
+                            class="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        // Track selected job IDs
+        let selectedJobIds = new Set();
+
+        // Update selection count in toolbar
+        function updateSelectionCount() {
+            const countEl = document.getElementById('selection-count');
+            const deleteBtn = document.getElementById('delete-selected-btn');
+            const count = selectedJobIds.size;
+
+            if (countEl) {
+                countEl.textContent = count;
+            }
+            if (deleteBtn) {
+                deleteBtn.disabled = count === 0;
+                deleteBtn.classList.toggle('opacity-50', count === 0);
+                deleteBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
+        }
+
+        // Toggle individual row selection
+        function toggleRowSelection(checkbox) {
+            const jobId = checkbox.dataset.jobId;
+            if (checkbox.checked) {
+                selectedJobIds.add(jobId);
+            } else {
+                selectedJobIds.delete(jobId);
+            }
+            updateSelectionCount();
+            updateSelectAllCheckbox();
+        }
+
+        // Toggle all visible rows
+        function toggleSelectAll(checkbox) {
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            rowCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+                const jobId = cb.dataset.jobId;
+                if (checkbox.checked) {
+                    selectedJobIds.add(jobId);
+                } else {
+                    selectedJobIds.delete(jobId);
+                }
+            });
+            updateSelectionCount();
+        }
+
+        // Update select-all checkbox state
+        function updateSelectAllCheckbox() {
+            const selectAll = document.getElementById('select-all');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            if (selectAll && rowCheckboxes.length > 0) {
+                const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = someChecked && !allChecked;
+            }
+        }
+
+        // Open delete confirmation modal
+        function openDeleteModal() {
+            if (selectedJobIds.size === 0) return;
+            document.getElementById('delete-count').textContent = selectedJobIds.size;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        // Close delete modal
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        // Confirm and execute delete
+        async function confirmDelete() {
+            if (selectedJobIds.size === 0) return;
+
+            try {
+                const response = await fetch('/api/jobs/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_ids: Array.from(selectedJobIds) })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Clear selection
+                    selectedJobIds.clear();
+                    updateSelectionCount();
+
+                    // Refresh table via HTMX
+                    htmx.trigger('#job-table-container', 'refresh');
+
+                    // Show success message
+                    showToast(`Deleted ${result.deleted_count} job(s)`);
+                } else {
+                    showToast(result.error || 'Delete failed', 'error');
+                }
+            } catch (err) {
+                showToast('Delete failed: ' + err.message, 'error');
+            }
+
+            closeDeleteModal();
+        }
+
+        // Update job status
+        async function updateStatus(jobId, newStatus) {
+            try {
+                const response = await fetch('/api/jobs/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, status: newStatus })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(`Status updated to "${newStatus}"`);
+                    // Refresh stats
+                    htmx.trigger('#stats-container', 'refresh');
+                } else {
+                    showToast(result.error || 'Status update failed', 'error');
+                }
+            } catch (err) {
+                showToast('Status update failed: ' + err.message, 'error');
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg z-50 transition-opacity duration-300 ${
+                type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Clear selections when table refreshes
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.target.id === 'job-table-container') {
+                // Restore checkbox states for selected items
+                selectedJobIds.forEach(id => {
+                    const checkbox = document.querySelector(`input[data-job-id="${id}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                updateSelectAllCheckbox();
+            }
+        });
+
+        // Navigate to job detail page
+        function navigateToJob(event, jobId) {
+            // Don't navigate if clicking on interactive elements
+            const target = event.target;
+            const tagName = target.tagName.toLowerCase();
+
+            if (tagName === 'a' || tagName === 'button' || tagName === 'input' || tagName === 'select') {
+                return;
+            }
+
+            // Check if clicking inside a link or button
+            if (target.closest('a') || target.closest('button') || target.closest('select')) {
+                return;
+            }
+
+            // Navigate to job detail page
+            window.location.href = `/job/${jobId}`;
+        }
+
+        // Load initial stats
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('stats-container').innerHTML =
+                        `Level-2: <span class="font-semibold">${data.level2_count.toLocaleString()}</span> jobs`;
+                });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
