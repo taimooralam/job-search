@@ -1,12 +1,9 @@
 """
-FastAPI runner service skeleton for the job pipeline.
+FastAPI runner service for the job pipeline.
 
-Provides stub endpoints for kicking off jobs, checking status, streaming logs,
-and (placeholder) artifact retrieval. Concurrency is guarded via an asyncio
-semaphore to keep the number of simultaneous runs under control (default 3).
-
-This is a scaffold: hook `_simulate_run` up to the real pipeline/docker launch
-logic and wire artifact storage/serving before production use.
+Provides endpoints for kicking off jobs, checking status, streaming logs,
+and artifact retrieval. Concurrency is guarded via an asyncio semaphore
+to keep the number of simultaneous runs under control (default 3).
 """
 
 import asyncio
@@ -16,9 +13,20 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import AsyncIterator, Dict, List, Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
+
+from .models import (
+    HealthResponse,
+    RunBulkRequest,
+    RunJobRequest,
+    RunResponse,
+    StatusResponse,
+)
+from .executor import execute_pipeline
+from .persistence import persist_run_to_mongo
+from .auth import verify_token
 
 
 MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "3"))
@@ -26,42 +34,16 @@ LOG_BUFFER_LIMIT = int(os.getenv("LOG_BUFFER_LIMIT", "500"))
 
 app = FastAPI(title="Pipeline Runner", version="0.1.0")
 
-
-class RunJobRequest(BaseModel):
-    """Request body for kicking off a single job run."""
-
-    job_id: str = Field(..., description="Job identifier to process.")
-    profile_ref: Optional[str] = Field(
-        None, description="Optional profile reference/path to pass to the pipeline."
+# Configure CORS
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",")
+if ALLOWED_ORIGINS and ALLOWED_ORIGINS[0]:  # Only add if configured
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
-    source: Optional[str] = Field(None, description="Origin of the request.")
-
-
-class RunBulkRequest(BaseModel):
-    """Request body for kicking off multiple job runs."""
-
-    job_ids: List[str] = Field(..., min_items=1, description="Job identifiers to process.")
-    profile_ref: Optional[str] = Field(None, description="Optional profile reference/path.")
-    source: Optional[str] = Field(None, description="Origin of the request.")
-
-
-class RunResponse(BaseModel):
-    """Response after enqueuing a job run."""
-
-    run_id: str
-    status_url: str
-    log_stream_url: str
-
-
-class StatusResponse(BaseModel):
-    """Status payload for a job run."""
-
-    run_id: str
-    job_id: str
-    status: str
-    started_at: datetime
-    updated_at: datetime
-    artifacts: Dict[str, str]
 
 
 @dataclass
@@ -111,41 +93,63 @@ def _update_status(run_id: str, status: str, artifacts: Optional[Dict[str, str]]
     if artifacts:
         state.artifacts.update(artifacts)
 
+    # Persist to MongoDB asynchronously (best effort)
+    try:
+        persist_run_to_mongo(
+            job_id=state.job_id,
+            run_id=run_id,
+            status=status,
+            started_at=state.started_at,
+            updated_at=state.updated_at,
+            artifacts=state.artifacts,
+        )
+    except Exception as e:
+        # Log but don't fail on persistence errors
+        print(f"Warning: MongoDB persistence failed: {e}")
 
-async def _simulate_run(run_id: str) -> None:
+
+async def _execute_pipeline_task(
+    run_id: str, job_id: str, profile_ref: Optional[str]
+) -> None:
     """
-    Placeholder async task that simulates a pipeline run.
+    Execute real pipeline as subprocess with log streaming.
 
-    Replace this with real pipeline execution (e.g., docker run scripts/run_pipeline.py)
-    and wire log forwarding + artifact paths.
+    Args:
+        run_id: Unique run identifier
+        job_id: Job to process
+        profile_ref: Optional profile path
     """
     try:
         _update_status(run_id, "running")
-        _append_log(run_id, "Starting pipeline (stub)...")
-        await asyncio.sleep(0.5)
-        _append_log(run_id, "Layer 2...done (stub)")
-        await asyncio.sleep(0.3)
-        _append_log(run_id, "Layer 3...done (stub)")
-        await asyncio.sleep(0.3)
-        _append_log(run_id, "Layer 4...done (stub)")
-        await asyncio.sleep(0.3)
-        _append_log(run_id, "Layer 6...done (stub)")
-        await asyncio.sleep(0.3)
-        _append_log(run_id, "Layer 7 (output)...done (stub)")
-        _update_status(
-            run_id,
-            "completed",
-            artifacts={
-                "cv_md_url": f"/artifacts/{run_id}/cv.md",
-                "cv_pdf_url": f"/artifacts/{run_id}/cv.pdf",
-                "dossier_pdf_url": f"/artifacts/{run_id}/dossier.pdf",
-            },
+        _append_log(run_id, f"Starting pipeline for job {job_id}...")
+
+        # Create log callback that captures run_id in closure
+        def log_callback(message: str) -> None:
+            _append_log(run_id, message)
+
+        # Execute pipeline subprocess
+        success, artifacts = await execute_pipeline(
+            job_id=job_id,
+            profile_ref=profile_ref,
+            log_callback=log_callback,
         )
-        _append_log(run_id, "Pipeline complete (stub).")
-    except Exception as exc:  # noqa: BLE001 - capture any failure for visibility
-        _append_log(run_id, f"Run failed: {exc}")
+
+        # Update status based on result
+        if success:
+            _update_status(run_id, "completed", artifacts)
+            _append_log(run_id, "✅ Pipeline execution complete")
+        else:
+            _update_status(run_id, "failed")
+            _append_log(run_id, "❌ Pipeline execution failed")
+
+    except asyncio.TimeoutError:
+        _append_log(run_id, "❌ Pipeline timed out")
+        _update_status(run_id, "failed")
+    except Exception as exc:
+        _append_log(run_id, f"❌ Unexpected error: {exc}")
         _update_status(run_id, "failed")
     finally:
+        # Always release semaphore
         _semaphore.release()
 
 
@@ -174,13 +178,13 @@ async def _enqueue_run(
     )
 
     _append_log(run_id, f"Run created for job {job_id} (source={source}, profile={profile_ref})")
-    background_tasks.add_task(_simulate_run, run_id)
+    background_tasks.add_task(_execute_pipeline_task, run_id, job_id, profile_ref)
     return run_id
 
 
-@app.post("/jobs/run", response_model=RunResponse)
+@app.post("/jobs/run", response_model=RunResponse, dependencies=[Depends(verify_token)])
 async def run_job(request: RunJobRequest, background_tasks: BackgroundTasks) -> RunResponse:
-    """Kick off a single job run."""
+    """Kick off a single job run. Requires authentication."""
     run_id = await _enqueue_run(
         job_id=request.job_id,
         profile_ref=request.profile_ref,
@@ -194,11 +198,11 @@ async def run_job(request: RunJobRequest, background_tasks: BackgroundTasks) -> 
     )
 
 
-@app.post("/jobs/run-bulk")
+@app.post("/jobs/run-bulk", dependencies=[Depends(verify_token)])
 async def run_jobs_bulk(
     request: RunBulkRequest, background_tasks: BackgroundTasks
 ) -> Dict[str, List[RunResponse]]:
-    """Kick off multiple job runs; each gets its own run_id."""
+    """Kick off multiple job runs; each gets its own run_id. Requires authentication."""
     responses: List[RunResponse] = []
     for job_id in request.job_ids:
         run_id = await _enqueue_run(
@@ -261,7 +265,73 @@ async def stream_logs(run_id: str) -> StreamingResponse:
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+@app.get("/health", response_model=HealthResponse)
+async def health_check() -> HealthResponse:
+    """
+    Health check endpoint for container orchestration.
+
+    Returns service status and capacity information.
+    """
+    return HealthResponse(
+        status="healthy",
+        active_runs=MAX_CONCURRENCY - _semaphore._value,
+        max_concurrency=MAX_CONCURRENCY,
+        timestamp=datetime.utcnow(),
+    )
+
+
 @app.get("/artifacts/{run_id}/{filename}")
-async def get_artifact(run_id: str, filename: str) -> None:
-    """Placeholder artifact handler; implement file serving or signed URLs here."""
-    raise HTTPException(status_code=501, detail="Artifact serving not implemented yet.")
+async def get_artifact(run_id: str, filename: str):
+    """
+    Serve artifact files with path validation.
+
+    Security:
+    - Validates run_id exists
+    - Ensures file path is within applications/ directory
+    - Prevents path traversal attacks
+    """
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+
+    # Verify run exists
+    state = _runs.get(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Get job ID from state
+    job_id = state.job_id
+
+    # Construct safe path within applications directory
+    applications_dir = Path("applications").resolve()
+
+    # Search for the file in job-specific directories
+    target_file = None
+    for company_dir in applications_dir.iterdir():
+        if not company_dir.is_dir():
+            continue
+        for role_dir in company_dir.iterdir():
+            if not role_dir.is_dir():
+                continue
+
+            candidate_file = role_dir / filename
+            if candidate_file.exists():
+                # Security: Ensure file is within allowed directory
+                try:
+                    candidate_file.resolve().relative_to(applications_dir)
+                    target_file = candidate_file
+                    break
+                except ValueError:
+                    # File is outside applications/ directory
+                    raise HTTPException(status_code=403, detail="Access denied")
+
+        if target_file:
+            break
+
+    if not target_file or not target_file.exists():
+        raise HTTPException(status_code=404, detail="Artifact not found")
+
+    return FileResponse(
+        target_file,
+        filename=filename,
+        media_type="application/octet-stream"
+    )

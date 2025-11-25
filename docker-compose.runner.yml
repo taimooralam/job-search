@@ -10,17 +10,27 @@ services:
     environment:
       - MAX_CONCURRENCY=3
       - LOG_BUFFER_LIMIT=500
+      - PIPELINE_TIMEOUT_SECONDS=600
     ports:
-      - "8000:8000"
+      # Bind to localhost only for security - use Traefik for external access
+      - "127.0.0.1:8000:8000"
     volumes:
+      # Pipeline artifacts
       - ./applications:/app/applications
+      # Google credentials (if using Drive/Sheets)
       - ./credentials:/app/credentials:ro
-    depends_on:
-      - redis
+      # Master CV for pipeline
+      - ./master-cv.md:/app/master-cv.md:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
+    networks:
+      - n8n-prod_default
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
+networks:
+  n8n-prod_default:
+    external: true
