@@ -451,6 +451,12 @@
         document.getElementById('date-from').value = formatDate(fromDate);
         document.getElementById('date-to').value = formatDate(now);
 
+        // Update active state for buttons
+        document.querySelectorAll('.quick-date-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
         // Update active filter count
         updateActiveFilterCount();
 
@@ -462,6 +468,11 @@
     function clearDateFilter() {
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
+
+        // Remove active state from all quick date buttons
+        document.querySelectorAll('.quick-date-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
 
         // Update active filter count
         updateActiveFilterCount();

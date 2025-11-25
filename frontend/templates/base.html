@@ -157,6 +157,33 @@
             gap: 0.5rem;
             align-items: center;
         }
+
+        /* Quick date filter button active states */
+        .quick-date-btn.active {
+            font-weight: 600;
+            box-shadow: 0 0 0 2px currentColor;
+        }
+
+        /* Blue buttons (hour filters) active state */
+        .quick-date-btn.active.bg-blue-50 {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+
+        /* Green buttons (week filters) active state */
+        .quick-date-btn.active.bg-green-50 {
+            background-color: #10b981 !important;
+            color: white !important;
+            border-color: #10b981 !important;
+        }
+
+        /* Purple buttons (month filters) active state */
+        .quick-date-btn.active.bg-purple-50 {
+            background-color: #a855f7 !important;
+            color: white !important;
+            border-color: #a855f7 !important;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
