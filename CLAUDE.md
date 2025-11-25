@@ -35,3 +35,6 @@ Guidance for using Claude Code with this repository.
 - **After completing work**: Review and update `missing.md` to check off completed items and keep implementation tracking current.
 - Use TDD approach to implementing the system
 - whenever you run tests or python remember to use .venv virtual environment
+- whenever you git commit, commit without claude signature
+- whenever you git commit, plan atomic commits
+- remember not to add claude signature to commits
