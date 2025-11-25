@@ -3,7 +3,7 @@
 This file tracks only **what is missing or partially implemented** compared to `ROADMAP.md`.
 Completed items have been removed. See git history for detailed completion records.
 
-**Last Updated**: 2025-11-24
+**Last Updated**: 2025-11-25
 
 ---
 
@@ -147,11 +147,12 @@ Completed items have been removed. See git history for detailed completion recor
 ## Phase 13 – Testing & QA
 
 ### Partially Implemented
-- **Unit tests**: Good coverage for Layers 2-7 (~150+ tests)
-- **Integration tests**: Layer-specific e2e tests added (11 tests)
+- **Unit tests**: Good coverage for Layers 2-7 (~150+ tests) + runner service (18 tests)
+- **Integration tests**: Layer-specific e2e tests added (11 tests) + runner integration tests (4 tests)
+- **CI integration**: GitHub Actions for runner service only (`.github/workflows/runner-ci.yml`)
 
 ### Not Started
-- **CI integration**: No GitHub Actions pytest workflow
+- **CI for main pipeline**: No GitHub Actions pytest workflow for main pipeline
 - **Coverage**: No coverage measurement or 80% target enforcement
 - **Hallucination tests**: No systematic hallucination detection suite
 - **Cost validation**: No automated cost measurement tests
@@ -160,13 +161,35 @@ Completed items have been removed. See git history for detailed completion recor
 
 ## Phase 14 – Production Deployment & Monitoring
 
-### Not Started
-- **Dockerfile**: Not created
-- **docker-compose.yml**: Not created
-- **VPS deployment guide**: Not written
-- **systemd unit files**: Not created
+### 14.1 VPS Runner Service – ✅ COMPLETE (25 Nov 2025)
+- **FastAPI runner service** (`runner_service/`)
+  - `app.py`: 5 REST endpoints (run, status, logs, artifacts, health)
+  - `executor.py`: Real subprocess pipeline execution with log streaming
+  - `auth.py`: JWT bearer token authentication
+  - `persistence.py`: MongoDB status persistence
+  - `models.py`: Pydantic request/response schemas
+- **Docker infrastructure**
+  - `Dockerfile.runner`: Production image with Playwright/Chromium (3.1GB)
+  - `docker-compose.runner.yml`: VPS deployment config
+  - `docker-compose.runner.local.yml`: Local testing config
+  - `.env.runner.example`: Configuration template
+- **Testing**: 18/18 unit tests passing
+  - API endpoint tests
+  - Pipeline executor tests
+  - Authentication tests
+  - Integration tests (4 optional)
+- **CI/CD**: GitHub Actions workflow (`.github/workflows/runner-ci.yml`)
+  - Test → Build → Deploy pipeline
+  - Docker image published to ghcr.io
+  - SSH deployment to VPS on main branch
+- **Deployment plan**: `plans/deployment-plan.md` (Phases 1-3 complete)
+
+### Remaining Gaps
+- **VPS deployment verification**: Runner not yet deployed to VPS (CI/CD ready)
+- **Frontend integration**: No process buttons in UI yet (Phase 7 pending)
+- **systemd unit files**: Not created for VPS service management
 - **Cron scheduling**: Not configured
-- **Structured logging**: Print-based only
+- **Structured logging**: Uses print statements (no JSON logger)
 - **LangSmith dashboards**: No custom dashboards
 - **Alerting**: No Telegram bot or error alerts
 - **Cost budget enforcement**: No daily caps or alerts
