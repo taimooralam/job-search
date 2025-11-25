@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Job Search Manager</title>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* Subtle background pattern */
+        body {
+            background-image:
+                linear-gradient(to right, rgb(243 244 246) 1px, transparent 1px),
+                linear-gradient(to bottom, rgb(243 244 246) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</head>
+<body class="h-full flex items-center justify-center">
+    <div class="w-full max-w-md">
+        <!-- Login Card -->
+        <div class="bg-white shadow-2xl rounded-lg overflow-hidden">
+            <!-- Header -->
+            <div class="bg-indigo-600 px-8 py-6">
+                <div class="flex items-center justify-center">
+                    <svg class="h-10 w-10 text-white mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">JobSearch</h1>
+                        <p class="text-indigo-200 text-sm">Level-2 Manager</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="px-8 py-8">
+                {% if error %}
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-lg px-4 py-3 flex items-start">
+                    <svg class="h-5 w-5 text-red-400 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="font-semibold">Authentication Failed</p>
+                        <p class="text-sm">{{ error }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="POST" action="/login" class="space-y-6">
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Password
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                required
+                                autofocus
+                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
+                                       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+                                       text-gray-900 placeholder-gray-400
+                                       transition duration-150 ease-in-out"
+                                placeholder="Enter password"
+                            >
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">
+                            Enter the password configured in your environment variables.
+                        </p>
+                    </div>
+
+                    <div>
+                        <button
+                            type="submit"
+                            class="w-full flex justify-center items-center px-4 py-2.5 border border-transparent
+                                   rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600
+                                   hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2
+                                   focus:ring-indigo-500 transition duration-150 ease-in-out"
+                        >
+                            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                            Sign In
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-8 py-4 bg-gray-50 border-t border-gray-200">
+                <p class="text-xs text-center text-gray-500">
+                    Job Search Management System &middot; Secure Access Required
+                </p>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="mt-6 text-center">
+            <p class="text-xs text-gray-500">
+                <svg class="h-4 w-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                </svg>
+                Secured with session-based authentication
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus password input on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('password').focus();
+        });
+
+        // Clear password field after failed attempt
+        {% if error %}
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('password').value = '';
+        });
+        {% endif %}
+    </script>
+</body>
+</html>
