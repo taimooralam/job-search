@@ -96,6 +96,62 @@
                         Last updated: {{ job.updatedAt[:19] | replace('T', ' ') }}
                     </div>
                     {% endif %}
+                    <div class="ml-auto">
+                        <button onclick="processJobDetail('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
+                            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Process Job
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline Status (shown when processing) -->
+            <div id="pipeline-status-container" class="hidden mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-200 rounded-lg">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-indigo-900 uppercase tracking-wide flex items-center gap-2">
+                            <svg class="h-5 w-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Pipeline Status
+                        </h2>
+                        <p id="pipeline-status-text" class="text-sm text-indigo-700 mt-1">Initializing...</p>
+                    </div>
+                    <span id="pipeline-run-id" class="text-xs font-mono text-indigo-600 bg-white px-2 py-1 rounded"></span>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-indigo-700 mb-1">
+                        <span>Progress</span>
+                        <span id="pipeline-progress-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-white rounded-full h-2 overflow-hidden">
+                        <div id="pipeline-progress-bar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Logs Terminal -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-semibold text-indigo-900 uppercase">Live Logs</label>
+                        <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 underline">Expand/Collapse</button>
+                    </div>
+                    <div id="logs-container" class="bg-black rounded-md p-3 font-mono text-xs text-green-400 h-48 overflow-y-auto">
+                        <div id="logs-content">Waiting for logs...</div>
+                    </div>
+                </div>
+
+                <!-- Artifacts -->
+                <div id="artifacts-container" class="hidden">
+                    <h3 class="text-xs font-semibold text-indigo-900 uppercase mb-2">Artifacts</h3>
+                    <div id="artifacts-list" class="grid grid-cols-2 gap-2">
+                        <!-- Artifact download buttons will be inserted here -->
+                    </div>
                 </div>
             </div>
 
@@ -442,5 +498,199 @@
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // ============================================================================
+    // Pipeline Processing
+    // ============================================================================
+
+    let statusPollingInterval = null;
+    let eventSource = null;
+
+    // Process job through pipeline
+    async function processJobDetail(jobId, jobTitle) {
+        const confirmed = confirm(
+            `Process job through pipeline?\n\n` +
+            `Job: ${jobTitle}\n\n` +
+            `This will trigger the full processing pipeline on the VPS runner.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            showToast('Starting pipeline...', 'info');
+
+            const response = await fetch('/api/runner/jobs/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_id: jobId,
+                    level: 2
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.run_id) {
+                showToast(`Pipeline started! Run ID: ${result.run_id}`);
+                // Show pipeline status UI and start monitoring
+                monitorPipeline(result.run_id);
+            } else {
+                showToast(result.error || 'Failed to start pipeline', 'error');
+            }
+        } catch (err) {
+            showToast('Pipeline failed: ' + err.message, 'error');
+        }
+    }
+
+    // Monitor pipeline execution
+    function monitorPipeline(runId) {
+        // Show pipeline status container
+        const container = document.getElementById('pipeline-status-container');
+        container.classList.remove('hidden');
+
+        // Update run ID display
+        document.getElementById('pipeline-run-id').textContent = `Run: ${runId}`;
+
+        // Start log streaming
+        startLogStreaming(runId);
+
+        // Poll status every 2 seconds
+        statusPollingInterval = setInterval(() => pollPipelineStatus(runId), 2000);
+        pollPipelineStatus(runId); // Initial poll
+    }
+
+    // Poll pipeline status
+    async function pollPipelineStatus(runId) {
+        try {
+            const response = await fetch(`/api/runner/jobs/${runId}/status`);
+            const data = await response.json();
+
+            if (response.ok) {
+                updatePipelineUI(data);
+
+                // Stop polling if complete or failed
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(statusPollingInterval);
+                    statusPollingInterval = null;
+
+                    // Stop log streaming
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+
+                    // Show artifacts if completed
+                    if (data.status === 'completed' && data.artifacts) {
+                        displayArtifacts(runId, data.artifacts);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Status poll failed:', err);
+        }
+    }
+
+    // Update pipeline UI with status data
+    function updatePipelineUI(data) {
+        const statusText = document.getElementById('pipeline-status-text');
+        const progressBar = document.getElementById('pipeline-progress-bar');
+        const progressPercent = document.getElementById('pipeline-progress-percent');
+
+        // Update status text
+        statusText.textContent = `Status: ${data.status}`;
+
+        // Update progress
+        const progress = Math.round((data.progress || 0) * 100);
+        progressBar.style.width = `${progress}%`;
+        progressPercent.textContent = `${progress}%`;
+
+        // Change color based on status
+        if (data.status === 'completed') {
+            progressBar.classList.remove('bg-indigo-600');
+            progressBar.classList.add('bg-green-600');
+            statusText.textContent = 'Status: Completed ✓';
+        } else if (data.status === 'failed') {
+            progressBar.classList.remove('bg-indigo-600');
+            progressBar.classList.add('bg-red-600');
+            statusText.textContent = `Status: Failed - ${data.error || 'Unknown error'}`;
+        }
+    }
+
+    // Start SSE log streaming
+    function startLogStreaming(runId) {
+        const logsContent = document.getElementById('logs-content');
+        logsContent.textContent = '';
+
+        eventSource = new EventSource(`/api/runner/jobs/${runId}/logs`);
+
+        eventSource.addEventListener('log', (event) => {
+            const logLine = document.createElement('div');
+            logLine.textContent = event.data;
+            logsContent.appendChild(logLine);
+
+            // Auto-scroll to bottom
+            const logsContainer = document.getElementById('logs-container');
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        });
+
+        eventSource.addEventListener('error', (event) => {
+            console.error('Log stream error:', event);
+            const errorLine = document.createElement('div');
+            errorLine.className = 'text-red-400';
+            errorLine.textContent = 'Log streaming ended or encountered an error';
+            logsContent.appendChild(errorLine);
+
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        });
+    }
+
+    // Display artifacts
+    function displayArtifacts(runId, artifacts) {
+        const container = document.getElementById('artifacts-container');
+        const list = document.getElementById('artifacts-list');
+
+        if (!artifacts || artifacts.length === 0) return;
+
+        container.classList.remove('hidden');
+        list.innerHTML = '';
+
+        artifacts.forEach(artifact => {
+            const button = document.createElement('a');
+            button.href = `/api/runner/jobs/${runId}/artifacts/${artifact}`;
+            button.download = artifact;
+            button.className = 'inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-white hover:bg-indigo-50 transition';
+            button.innerHTML = `
+                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                ${artifact}
+            `;
+            list.appendChild(button);
+        });
+    }
+
+    // Toggle logs full screen
+    function toggleLogsFull() {
+        const logsContainer = document.getElementById('logs-container');
+        if (logsContainer.classList.contains('h-48')) {
+            logsContainer.classList.remove('h-48');
+            logsContainer.classList.add('h-96');
+        } else {
+            logsContainer.classList.remove('h-96');
+            logsContainer.classList.add('h-48');
+        }
+    }
+
+    // Check if run_id in URL params and start monitoring
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const runId = urlParams.get('run_id');
+        if (runId) {
+            monitorPipeline(runId);
+        }
+    });
 </script>
 {% endblock %}
