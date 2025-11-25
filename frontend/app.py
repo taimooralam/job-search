@@ -163,16 +163,18 @@ def list_jobs():
 
     # Build MongoDB query
     mongo_query: Dict[str, Any] = {}
+    and_conditions = []
 
     # Free-text search
     if search_query:
         # Search across multiple fields
-        mongo_query["$or"] = [
+        search_or = [
             {"title": {"$regex": search_query, "$options": "i"}},
             {"company": {"$regex": search_query, "$options": "i"}},
             {"location": {"$regex": search_query, "$options": "i"}},
             {"jobId": {"$regex": search_query, "$options": "i"}},
         ]
+        and_conditions.append({"$or": search_or})
 
     # Date range filter (ISO string comparison works lexicographically)
     if date_from or date_to:
@@ -183,26 +185,34 @@ def list_jobs():
         if date_to:
             # Convert YYYY-MM-DD to end of day ISO string
             date_filter["$lte"] = f"{date_to}T23:59:59.999Z"
-        mongo_query["createdAt"] = date_filter
+        and_conditions.append({"createdAt": date_filter})
 
     # Location filter (multi-select)
     if locations:
-        mongo_query["location"] = {"$in": locations}
+        and_conditions.append({"location": {"$in": locations}})
 
     # Status filter (multi-select with default exclusions)
     # Note: null/missing status means "not processed"
     if statuses:
         if "not processed" in statuses:
             # Include explicit "not processed" OR null/empty/missing status
-            mongo_query["$or"] = [
+            status_or = [
                 {"status": {"$in": statuses}},
                 {"status": {"$exists": False}},
                 {"status": None},
                 {"status": ""}
             ]
+            and_conditions.append({"$or": status_or})
         else:
             # Only match exact status values
-            mongo_query["status"] = {"$in": statuses}
+            and_conditions.append({"status": {"$in": statuses}})
+
+    # Combine all conditions with $and if there are multiple
+    if len(and_conditions) > 1:
+        mongo_query["$and"] = and_conditions
+    elif len(and_conditions) == 1:
+        # If only one condition, use it directly
+        mongo_query = and_conditions[0]
 
     # Map frontend field names to MongoDB field names
     field_mapping = {
