@@ -16,6 +16,7 @@ on:
       - 'runner_service/**'
       - 'Dockerfile.runner'
       - 'src/**'
+  workflow_dispatch:  # Allow manual workflow triggers
 
 env:
   REGISTRY: ghcr.io
