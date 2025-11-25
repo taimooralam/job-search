@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask pymongo python-dotenv pytest pytest-mock
+          pip install flask pymongo python-dotenv pytest pytest-mock requests
 
       - name: Run tests
         run: |
