@@ -10,7 +10,12 @@ Guidance for using Claude Code with this repository.
 ## Implementation Tracking
 - **`missing.md`**: This file tracks all implementation gaps between the current codebase and `ROADMAP.md`. It's organized by phase and lists what's missing, partially implemented, or differs from the full roadmap spec.
 - **IMPORTANT**: After completing any task or feature, **always check `missing.md`** and update it to mark items as complete or remove them from the gaps list. This ensures the tracking document stays current and we can quickly see what's left to implement.
+- The deployment for the pipeline to VPS hostinger is in plans/deployment-plan.md.
 - When reviewing progress, consult `missing.md` first to understand current state vs target state.
+
+## Plans
+- All the planning is done in the plans/ directory.
+- Allt the reporting is done in the reports/ directory.
 
 ## Architecture Snapshot
 - Orchestration: LangGraph nodes per layer (focus today on Layers 2–6: pain-point mining, company/role research, fit scoring, outreach + CV drafting). State passed explicitly; retries per node; error capture/logging.
