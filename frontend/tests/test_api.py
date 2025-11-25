@@ -20,9 +20,12 @@ from frontend.app import app, JOB_STATUSES, serialize_job
 
 @pytest.fixture
 def client():
-    """Create a test client for the Flask app."""
+    """Create an authenticated test client for the Flask app."""
     app.config['TESTING'] = True
     with app.test_client() as client:
+        # Set up authenticated session
+        with client.session_transaction() as sess:
+            sess['authenticated'] = True
         yield client
 
 
@@ -271,12 +274,12 @@ class TestGetStatsAPI:
         mock_database, mock_collection = mock_db
 
         # Mock count_documents for different calls
-        # 8 statuses now: not processed, marked for applying, ready for applying,
-        # to be deleted, applied, interview scheduled, rejected, offer received
+        # 9 statuses: not processed, marked for applying, ready for applying,
+        # to be deleted, discarded, applied, interview scheduled, rejected, offer received
         mock_collection.count_documents.side_effect = [
             1000,  # level-1 count
             150,   # level-2 count
-            100, 30, 15, 5, 10, 3, 2, 0,  # status counts (8 statuses)
+            100, 30, 15, 5, 8, 10, 3, 2, 0,  # status counts (9 statuses)
             0,     # no status count
         ]
 
