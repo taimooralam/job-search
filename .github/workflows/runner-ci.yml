@@ -89,6 +89,17 @@ jobs:
     # environment: production  # Commented out to use repository secrets directly
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy master-cv.md to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "master-cv.md"
+          target: "/root/job-runner/"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
