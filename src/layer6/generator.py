@@ -456,9 +456,16 @@ class Generator:
     """
 
     def __init__(self):
-        """Initialize both generators."""
+        """Initialize generators."""
         self.cover_letter_gen = CoverLetterGenerator()  # Phase 8.1: Enhanced cover letter generator
         self.cv_gen = MarkdownCVGenerator()  # Markdown CV generator grounded in master CV
+
+        # HTML CV generator for web display and PDF export
+        try:
+            from src.layer6.html_cv_generator import HTMLCVGenerator
+            self.html_cv_gen = HTMLCVGenerator()
+        except ImportError:
+            self.html_cv_gen = None  # Fallback if HTML generator not available
 
     def generate_outputs(self, state: JobState) -> Dict[str, Any]:
         """
@@ -480,9 +487,20 @@ class Generator:
             print(f"   ✓ CV generated: {cv_path}")
             print(f"   ✓ CV reasoning: {cv_reasoning[:100]}...")
 
+            # Generate HTML CV for web display and PDF export
+            html_cv_path = None
+            if self.html_cv_gen:
+                try:
+                    print(f"   Generating HTML CV...")
+                    html_cv_path, _ = self.html_cv_gen.generate_html_cv(state)
+                    print(f"   ✓ HTML CV generated: {html_cv_path}")
+                except Exception as e:
+                    print(f"   ⚠️  HTML CV generation failed: {e}")
+
             return {
                 "cover_letter": cover_letter,
                 "cv_path": cv_path,
+                "html_cv_path": html_cv_path,  # New: HTML CV for web display
                 "cv_reasoning": cv_reasoning  # Phase 8.2: STAR selection rationale
             }
 
