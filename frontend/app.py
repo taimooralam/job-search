@@ -690,10 +690,202 @@ def job_detail(job_id: str):
     if not job:
         return render_template("error.html", error="Job not found"), 404
 
+    # Check if HTML CV exists
+    serialized_job = serialize_job(job)
+    has_html_cv = False
+    if job.get("company") and job.get("title"):
+        import os
+        from pathlib import Path
+
+        company_clean = job["company"].replace(" ", "_").replace("/", "_")
+        title_clean = job["title"].replace(" ", "_").replace("/", "_")
+        cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
+
+        if cv_path.exists():
+            has_html_cv = True
+            serialized_job["has_html_cv"] = True
+
     return render_template(
         "job_detail.html",
-        job=serialize_job(job),
+        job=serialized_job,
         statuses=JOB_STATUSES
+    )
+
+
+@app.route("/api/jobs/<job_id>/cv")
+@login_required
+def get_job_cv(job_id: str):
+    """Serve the HTML CV for a job."""
+    from flask import send_file
+    from pathlib import Path
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Build CV path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
+
+    if not cv_path.exists():
+        return jsonify({"error": "CV not found"}), 404
+
+    return send_file(cv_path, mimetype="text/html")
+
+
+@app.route("/api/jobs/<job_id>/cv", methods=["PUT"])
+@login_required
+def update_job_cv(job_id: str):
+    """Update the HTML CV content after editing."""
+    from pathlib import Path
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Get updated HTML content from request
+    data = request.get_json()
+    html_content = data.get("html_content")
+
+    if not html_content:
+        return jsonify({"error": "Missing html_content"}), 400
+
+    # Build CV path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
+
+    # Write updated content
+    try:
+        cv_path.write_text(html_content, encoding='utf-8')
+        return jsonify({"success": True, "message": "CV updated successfully"})
+    except Exception as e:
+        return jsonify({"error": f"Failed to save CV: {str(e)}"}), 500
+
+
+@app.route("/api/jobs/<job_id>/cv/pdf", methods=["POST"])
+@login_required
+def generate_cv_pdf(job_id: str):
+    """Generate PDF from HTML CV."""
+    from pathlib import Path
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Build CV path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    cv_html_path = Path("../applications") / company_clean / title_clean / "CV.html"
+    cv_pdf_path = Path("../applications") / company_clean / title_clean / "CV.pdf"
+
+    if not cv_html_path.exists():
+        return jsonify({"error": "HTML CV not found"}), 404
+
+    # Generate PDF using playwright
+    try:
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+
+            # Load the HTML file
+            page.goto(f"file://{cv_html_path.absolute()}")
+
+            # Generate PDF with print media
+            page.pdf(
+                path=str(cv_pdf_path),
+                format="A4",
+                print_background=True,
+                margin={"top": "1cm", "right": "1cm", "bottom": "1cm", "left": "1cm"}
+            )
+
+            browser.close()
+
+        return jsonify({
+            "success": True,
+            "message": "PDF generated successfully",
+            "pdf_path": str(cv_pdf_path)
+        })
+    except Exception as e:
+        return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
+
+
+@app.route("/api/jobs/<job_id>/cv/download")
+@login_required
+def download_cv_pdf(job_id: str):
+    """Download the CV PDF."""
+    from flask import send_file
+    from pathlib import Path
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Build PDF path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    cv_pdf_path = Path("../applications") / company_clean / title_clean / "CV.pdf"
+
+    if not cv_pdf_path.exists():
+        return jsonify({"error": "PDF not found"}), 404
+
+    # Send file for download
+    return send_file(
+        cv_pdf_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"CV_{company_clean}_{title_clean}.pdf"
     )
 
 
