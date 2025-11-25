@@ -4,8 +4,13 @@ Python-based LangGraph pipeline that assembles job-specific dossiers, outreach, 
 
 ## Execution Surfaces
 - CLI: `python scripts/run_pipeline.py --job-id <id> [--profile path]` loads jobs from MongoDB (`level-2`/`level-1`) and runs the LangGraph workflow.
-- Runner service (`runner_service/`): FastAPI wrapper that executes the CLI in a subprocess with log streaming, concurrency guard, and artifact lookup.
-- Frontend (`frontend/app.py`): Flask + HTMX table over MongoDB for browsing/updating job records and statuses.
+- Runner service (`runner_service/`): FastAPI wrapper that executes the CLI in a subprocess with log streaming, concurrency guard, artifact lookup, and JWT authentication. Deployed via Docker on VPS with CI/CD automation.
+- Frontend (`frontend/app.py`): Flask + HTMX UI deployed on Vercel with:
+  - Password-protected session authentication
+  - Job browsing/filtering with quick time filters (1h-1m range)
+  - Health status indicators for VPS runner, MongoDB, and n8n (30s refresh)
+  - Process job buttons with pipeline status UI and log streaming capability
+  - Responsive design with loading animations
 
 ## Feature Flags & Defaults (`src/common/config.py`)
 - `ENABLE_STAR_SELECTOR=false` → skip the STAR selector node; downstream layers fall back to master CV achievements.
@@ -46,7 +51,12 @@ Python-based LangGraph pipeline that assembles job-specific dossiers, outreach, 
 
 ## Reliability & Testing
 - Tenacity retries around all LLM calls; CLI invokes `Config.validate()` before running. Logging is via `print` statements (no structured logger or metrics).
-- Test coverage spans star parsing, layers 2–7, outreach packaging, and the runner service (unit + integration suites under `tests/`). GitHub Actions exist for the frontend and runner; no CI workflow runs the main pipeline tests.
+- Test coverage spans star parsing, layers 2–7, outreach packaging, runner service (18/18 tests), and frontend (32/32 tests). GitHub Actions CI/CD exists for both frontend (with Vercel deployment) and runner (with VPS deployment); no CI workflow runs the main pipeline tests yet.
+
+## Deployment Status
+- **Runner Service**: Docker image built, CI/CD configured with GitHub Actions, ready for VPS deployment (pending environment variable configuration and trigger)
+- **Frontend**: Vercel configuration complete, CI/CD operational, pending environment variable setup (LOGIN_PASSWORD, FLASK_SECRET_KEY, MONGODB_URI, RUNNER_URL, RUNNER_API_SECRET)
+- **Integration**: Process buttons UI implemented but not yet wired to runner API endpoints; SSE log streaming viewer pending
 
 ## Not Implemented / Out-of-Scope Today
 - Layer 1 job ingestion and Layer 1.5 application-form mining are not present in the pipeline or state.
