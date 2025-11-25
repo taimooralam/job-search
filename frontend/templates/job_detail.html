@@ -155,6 +155,59 @@
                 </div>
             </div>
 
+            <!-- CV Section -->
+            {% if job.has_html_cv %}
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated CV</h2>
+                    <div class="flex gap-2">
+                        <button id="edit-cv-btn" onclick="toggleCVEdit()"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition">
+                            <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                            <span id="edit-cv-text">Edit CV</span>
+                        </button>
+                        <button id="save-cv-btn" onclick="saveCVChanges()"
+                                class="hidden inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition">
+                            <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Save Changes
+                        </button>
+                        <button onclick="generatePDF()"
+                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition">
+                            <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                            Generate PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CV Preview Container -->
+                <div id="cv-preview-container" class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <!-- CV will be loaded here via iframe -->
+                    <iframe id="cv-iframe"
+                            src="/api/jobs/{{ job._id }}/cv"
+                            class="w-full border-0"
+                            style="height: 800px;"
+                            onload="initCVEditor()"></iframe>
+                </div>
+
+                <!-- Loading overlay -->
+                <div id="cv-loading-overlay" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                    <div class="text-center">
+                        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-sm text-gray-600">Processing...</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Remarks Section -->
             <div class="mb-6">
                 <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Notes & Remarks</h2>
@@ -707,5 +760,132 @@
             monitorPipeline(runId);
         }
     });
+
+    // ============================================================================
+    // CV Editor Functions
+    // ============================================================================
+
+    let cvEditMode = false;
+    let cvIframeDoc = null;
+
+    // Initialize CV editor after iframe loads
+    function initCVEditor() {
+        const iframe = document.getElementById('cv-iframe');
+        if (!iframe) return;
+
+        try {
+            cvIframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            // Initially disable all contenteditable elements
+            if (cvIframeDoc) {
+                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable="true"]');
+                editableElements.forEach(el => {
+                    el.setAttribute('contenteditable', 'false');
+                });
+            }
+        } catch (e) {
+            console.error('Failed to access iframe document:', e);
+        }
+    }
+
+    // Toggle CV edit mode
+    function toggleCVEdit() {
+        cvEditMode = !cvEditMode;
+
+        const editBtn = document.getElementById('edit-cv-btn');
+        const editText = document.getElementById('edit-cv-text');
+        const saveBtn = document.getElementById('save-cv-btn');
+
+        if (cvEditMode) {
+            // Enable editing
+            editText.textContent = 'Cancel Edit';
+            editBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            editBtn.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+            saveBtn.classList.remove('hidden');
+
+            // Enable contenteditable in iframe
+            if (cvIframeDoc) {
+                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable]');
+                editableElements.forEach(el => {
+                    el.setAttribute('contenteditable', 'true');
+                });
+            }
+        } else {
+            // Disable editing
+            editText.textContent = 'Edit CV';
+            editBtn.classList.remove('bg-red-50', 'text-red-700', 'border-red-200');
+            editBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            saveBtn.classList.add('hidden');
+
+            // Disable contenteditable in iframe
+            if (cvIframeDoc) {
+                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable]');
+                editableElements.forEach(el => {
+                    el.setAttribute('contenteditable', 'false');
+                });
+            }
+        }
+    }
+
+    // Save CV changes
+    async function saveCVChanges() {
+        if (!cvIframeDoc) {
+            showToast('CV document not loaded', 'error');
+            return;
+        }
+
+        try {
+            // Get the full HTML content from iframe
+            const htmlContent = cvIframeDoc.documentElement.outerHTML;
+
+            // Show loading
+            showToast('Saving CV changes...', 'info');
+
+            const response = await fetch(`/api/jobs/${jobId}/cv`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ html_content: htmlContent })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('CV saved successfully');
+
+                // Exit edit mode
+                toggleCVEdit();
+            } else {
+                showToast(result.error || 'Failed to save CV', 'error');
+            }
+        } catch (err) {
+            showToast('Save failed: ' + err.message, 'error');
+        }
+    }
+
+    // Generate PDF from CV
+    async function generatePDF() {
+        try {
+            showToast('Generating PDF...', 'info');
+
+            const response = await fetch(`/api/jobs/${jobId}/cv/pdf`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('PDF generated successfully');
+
+                // Open download link after a short delay
+                setTimeout(() => {
+                    window.location.href = `/api/jobs/${jobId}/cv/download`;
+                }, 500);
+            } else {
+                showToast(result.error || 'PDF generation failed', 'error');
+            }
+        } catch (err) {
+            showToast('PDF generation failed: ' + err.message, 'error');
+        }
+    }
 </script>
 {% endblock %}
