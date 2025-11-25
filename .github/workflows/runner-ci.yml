@@ -85,7 +85,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: production
+    # environment: production  # Commented out to use repository secrets directly
 
     steps:
       - name: Deploy to VPS
