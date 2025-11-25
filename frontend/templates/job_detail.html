@@ -623,7 +623,8 @@
 
         eventSource = new EventSource(`/api/runner/jobs/${runId}/logs`);
 
-        eventSource.addEventListener('log', (event) => {
+        // Listen for unnamed 'message' events (default SSE event type)
+        eventSource.onmessage = (event) => {
             const logLine = document.createElement('div');
             logLine.textContent = event.data;
             logsContent.appendChild(logLine);
@@ -631,6 +632,20 @@
             // Auto-scroll to bottom
             const logsContainer = document.getElementById('logs-container');
             logsContainer.scrollTop = logsContainer.scrollHeight;
+        };
+
+        // Listen for named 'end' event
+        eventSource.addEventListener('end', (event) => {
+            const endLine = document.createElement('div');
+            endLine.className = 'text-yellow-400';
+            endLine.textContent = `Pipeline ${event.data}`;
+            logsContent.appendChild(endLine);
+
+            // Close the connection
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
         });
 
         eventSource.addEventListener('error', (event) => {
