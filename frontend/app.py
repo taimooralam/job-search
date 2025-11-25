@@ -176,15 +176,28 @@ def list_jobs():
         ]
         and_conditions.append({"$or": search_or})
 
-    # Date range filter (ISO string comparison works lexicographically)
-    if date_from or date_to:
+    # Date range filter - prefer datetime inputs for precision, fall back to date inputs
+    datetime_from = request.args.get("datetime_from", "").strip()
+    datetime_to = request.args.get("datetime_to", "").strip()
+
+    # Use datetime inputs if available, otherwise use date inputs
+    effective_from = datetime_from if datetime_from else date_from
+    effective_to = datetime_to if datetime_to else date_to
+
+    if effective_from or effective_to:
         date_filter: Dict[str, str] = {}
-        if date_from:
-            # Convert YYYY-MM-DD to start of day ISO string
-            date_filter["$gte"] = f"{date_from}T00:00:00.000Z"
-        if date_to:
-            # Convert YYYY-MM-DD to end of day ISO string
-            date_filter["$lte"] = f"{date_to}T23:59:59.999Z"
+        if effective_from:
+            # If already has time component, use as-is; otherwise append start of day
+            if 'T' in effective_from:
+                date_filter["$gte"] = effective_from
+            else:
+                date_filter["$gte"] = f"{effective_from}T00:00:00.000Z"
+        if effective_to:
+            # If already has time component, use as-is; otherwise append end of day
+            if 'T' in effective_to:
+                date_filter["$lte"] = effective_to
+            else:
+                date_filter["$lte"] = f"{effective_to}T23:59:59.999Z"
         and_conditions.append({"createdAt": date_filter})
 
     # Location filter (multi-select)
