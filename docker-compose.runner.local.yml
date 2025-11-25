@@ -2,9 +2,8 @@ version: "3.9"
 
 services:
   runner:
-    build:
-      context: .
-      dockerfile: Dockerfile.runner
+    image: job-search-runner:latest
+    container_name: job-runner
     env_file:
       - .env
     environment:
@@ -12,14 +11,10 @@ services:
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
     ports:
-      # Bind to localhost only for security - use Traefik for external access
       - "127.0.0.1:8000:8000"
     volumes:
-      # Pipeline artifacts
       - ./applications:/app/applications
-      # Google credentials (if using Drive/Sheets)
       - ./credentials:/app/credentials:ro
-      # Master CV for pipeline
       - ./master-cv.md:/app/master-cv.md:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -28,11 +23,3 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-    networks:
-      - n8n-prod_default
-
-networks:
-  n8n-prod_default:
-    external: true
-    # For local testing without n8n, comment out 'external: true' and uncomment below:
-    # driver: bridge
