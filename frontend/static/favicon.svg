@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#4f46e5" rx="20"/>
+  <g fill="white">
+    <!-- Briefcase icon -->
+    <rect x="25" y="45" width="50" height="35" rx="3"/>
+    <rect x="40" y="35" width="20" height="12" rx="2"/>
+    <rect x="35" y="55" width="30" height="8" rx="1"/>
+  </g>
+</svg>

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Job Search Manager{% endblock %}</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -45,7 +48,9 @@
         /* Status badge colors */
         .status-not-processed { background-color: #e5e7eb; color: #374151; }
         .status-marked-for-applying { background-color: #dbeafe; color: #1e40af; }
+        .status-ready-for-applying { background-color: #bfdbfe; color: #1e3a8a; }
         .status-to-be-deleted { background-color: #fee2e2; color: #991b1b; }
+        .status-discarded { background-color: #f3f4f6; color: #6b7280; }
         .status-applied { background-color: #d1fae5; color: #065f46; }
         .status-interview-scheduled { background-color: #fef3c7; color: #92400e; }
         .status-rejected { background-color: #fecaca; color: #991b1b; }
@@ -80,11 +85,91 @@
                 width: 100%;
             }
         }
+
+        /* Page loading overlay */
+        #page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+
+        #page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Health indicator styles */
+        .health-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .health-indicator:hover {
+            transform: scale(1.05);
+        }
+
+        .health-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .health-healthy { background-color: #10b981; }
+        .health-unhealthy { background-color: #ef4444; }
+        .health-unknown { background-color: #94a3b8; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .health-status {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full">
+    <!-- Page loading overlay -->
+    <div id="page-loader">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-gray-600 font-medium">Loading...</p>
+        </div>
+    </div>
+
     <div class="min-h-full">
         <!-- Navigation -->
         <nav class="bg-white shadow-sm border-b border-gray-200">
@@ -94,8 +179,30 @@
                         <span class="text-xl sm:text-2xl font-bold text-indigo-600">JobSearch</span>
                         <span class="hidden sm:inline ml-2 text-sm text-gray-500">Level-2 Manager</span>
                     </a>
-                    <div id="stats-container" class="text-xs sm:text-sm text-gray-500">
-                        <!-- Stats loaded via HTMX -->
+                    <div class="flex items-center gap-4">
+                        <!-- Health indicators -->
+                        <div id="health-status" class="health-status hidden sm:flex">
+                            <!-- Health indicators loaded via JavaScript -->
+                        </div>
+                        <div id="stats-container" class="text-xs sm:text-sm text-gray-500">
+                            <!-- Stats loaded via HTMX -->
+                        </div>
+                        <form method="POST" action="/logout" class="m-0">
+                            <button
+                                type="submit"
+                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md
+                                       text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50
+                                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                                       transition duration-150 ease-in-out"
+                                title="Logout"
+                            >
+                                <svg class="h-4 w-4 sm:mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                <span class="hidden sm:inline">Logout</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -305,14 +412,115 @@
             window.location.href = `/job/${jobId}`;
         }
 
+        // Process job through pipeline
+        async function processJob(jobId, jobTitle) {
+            // Confirmation dialog
+            const confirmed = confirm(
+                `Process job through pipeline?\n\n` +
+                `Job: ${jobTitle}\n\n` +
+                `This will trigger the full processing pipeline on the VPS runner.`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast('Starting pipeline...', 'info');
+
+                // Trigger pipeline via proxy
+                const response = await fetch('/api/runner/jobs/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_id: jobId,
+                        level: 2  // Process at level 2
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.run_id) {
+                    showToast(`Pipeline started! Run ID: ${result.run_id}`);
+                    // Redirect to job detail page to see progress
+                    setTimeout(() => {
+                        window.location.href = `/job/${jobId}?run_id=${result.run_id}`;
+                    }, 1500);
+                } else {
+                    showToast(result.error || 'Failed to start pipeline', 'error');
+                }
+            } catch (err) {
+                showToast('Pipeline failed: ' + err.message, 'error');
+            }
+        }
+
+        // Load health indicators
+        async function updateHealthStatus() {
+            const healthContainer = document.getElementById('health-status');
+            if (!healthContainer) return;
+
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                const indicators = [];
+
+                // VPS Health
+                const vpsClass = data.vps?.status === 'healthy' ? 'health-healthy' :
+                                 data.vps?.status === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
+                indicators.push(`
+                    <div class="health-indicator" title="VPS Runner: ${data.vps?.status || 'unknown'}">
+                        <div class="health-dot ${vpsClass}"></div>
+                        <span class="text-gray-700">VPS</span>
+                    </div>
+                `);
+
+                // MongoDB Health
+                const mongoClass = data.mongodb?.status === 'healthy' ? 'health-healthy' :
+                                   data.mongodb?.status === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
+                indicators.push(`
+                    <div class="health-indicator" title="MongoDB: ${data.mongodb?.status || 'unknown'}">
+                        <div class="health-dot ${mongoClass}"></div>
+                        <span class="text-gray-700">DB</span>
+                    </div>
+                `);
+
+                // n8n Health (if available)
+                if (data.n8n) {
+                    const n8nClass = data.n8n?.status === 'healthy' ? 'health-healthy' :
+                                     data.n8n?.status === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
+                    indicators.push(`
+                        <div class="health-indicator" title="n8n: ${data.n8n?.status || 'unknown'}">
+                            <div class="health-dot ${n8nClass}"></div>
+                            <span class="text-gray-700">n8n</span>
+                        </div>
+                    `);
+                }
+
+                healthContainer.innerHTML = indicators.join('');
+            } catch (err) {
+                console.error('Failed to load health status:', err);
+            }
+        }
+
         // Load initial stats
         document.addEventListener('DOMContentLoaded', function() {
+            // Hide page loader
+            setTimeout(() => {
+                document.getElementById('page-loader').classList.add('hidden');
+            }, 500);
+
+            // Load stats
             fetch('/api/stats')
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('stats-container').innerHTML =
                         `Level-2: <span class="font-semibold">${data.level2_count.toLocaleString()}</span> jobs`;
                 });
+
+            // Load health status
+            updateHealthStatus();
+
+            // Refresh health status every 30 seconds
+            setInterval(updateHealthStatus, 30000);
         });
     </script>
 

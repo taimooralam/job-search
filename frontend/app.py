@@ -13,17 +13,45 @@ Stack: Flask + HTMX + Tailwind CSS (CDN)
 
 import os
 from datetime import datetime
+from functools import wraps
 from typing import Any, Dict, List, Optional
 
+import requests
 from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from pymongo import ASCENDING, DESCENDING, MongoClient
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+
+# Import and register blueprints
+try:
+    from runner import runner_bp
+    print(f"✅ Imported runner blueprint")
+    app.register_blueprint(runner_bp)
+    print(f"✅ Registered runner blueprint with prefix: {runner_bp.url_prefix}")
+
+    # Count runner routes in app
+    runner_routes = [str(rule) for rule in app.url_map.iter_rules() if 'runner' in str(rule)]
+    print(f"✅ App now has {len(runner_routes)} runner routes")
+    for route in runner_routes:
+        print(f"   - {route}")
+except Exception as e:
+    print(f"❌ Error registering runner blueprint: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Session configuration
+app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_ENV", "development") == "production"
+app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 31  # 31 days
+
+# Authentication configuration
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "change-me-in-production")
 
 # MongoDB configuration
 MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/jobs")
@@ -34,6 +62,7 @@ JOB_STATUSES = [
     "marked for applying",
     "ready for applying",
     "to be deleted",
+    "discarded",
     "applied",
     "interview scheduled",
     "rejected",
@@ -67,10 +96,29 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ============================================================================
+# Authentication
+# ============================================================================
+
+def login_required(f):
+    """
+    Decorator to require authentication for routes.
+
+    Redirects to login page if user is not authenticated.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("authenticated"):
+            return redirect(url_for("login_page"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ============================================================================
 # API Endpoints
 # ============================================================================
 
 @app.route("/api/jobs", methods=["GET"])
+@login_required
 def list_jobs():
     """
     List jobs with search, sort, and pagination.
@@ -101,6 +149,13 @@ def list_jobs():
 
     # Location filter (can be multiple values)
     locations = request.args.getlist("locations")
+
+    # Status filter (can be multiple values)
+    # Default: exclude 'discarded', 'applied', 'interview scheduled'
+    statuses = request.args.getlist("statuses")
+    if not statuses:
+        # If no statuses specified, use default exclusion list
+        statuses = [s for s in JOB_STATUSES if s not in ["discarded", "applied", "interview scheduled"]]
 
     # Validate page_size
     if page_size not in [5, 10, 50, 100]:
@@ -133,6 +188,21 @@ def list_jobs():
     # Location filter (multi-select)
     if locations:
         mongo_query["location"] = {"$in": locations}
+
+    # Status filter (multi-select with default exclusions)
+    # Note: null/missing status means "not processed"
+    if statuses:
+        if "not processed" in statuses:
+            # Include explicit "not processed" OR null/empty/missing status
+            mongo_query["$or"] = [
+                {"status": {"$in": statuses}},
+                {"status": {"$exists": False}},
+                {"status": None},
+                {"status": ""}
+            ]
+        else:
+            # Only match exact status values
+            mongo_query["status"] = {"$in": statuses}
 
     # Map frontend field names to MongoDB field names
     field_mapping = {
@@ -195,6 +265,7 @@ def list_jobs():
 
 
 @app.route("/api/jobs/delete", methods=["POST"])
+@login_required
 def delete_jobs():
     """
     Bulk delete jobs by ID.
@@ -236,6 +307,7 @@ def delete_jobs():
 
 
 @app.route("/api/jobs/status", methods=["POST"])
+@login_required
 def update_job_status():
     """
     Update job status.
@@ -287,12 +359,14 @@ def update_job_status():
 
 
 @app.route("/api/jobs/statuses", methods=["GET"])
+@login_required
 def get_statuses():
     """Return the list of valid job statuses."""
     return jsonify({"statuses": JOB_STATUSES})
 
 
 @app.route("/api/jobs/<job_id>", methods=["GET"])
+@login_required
 def get_job(job_id: str):
     """
     Get a single job by ID.
@@ -317,6 +391,7 @@ def get_job(job_id: str):
 
 
 @app.route("/api/jobs/<job_id>", methods=["PUT"])
+@login_required
 def update_job(job_id: str):
     """
     Update a job's editable fields.
@@ -380,6 +455,7 @@ def update_job(job_id: str):
 
 
 @app.route("/api/locations", methods=["GET"])
+@login_required
 def get_locations():
     """
     Get unique locations from the database with counts.
@@ -404,6 +480,7 @@ def get_locations():
 
 
 @app.route("/api/stats", methods=["GET"])
+@login_required
 def get_stats():
     """Get database statistics."""
     db = get_db()
@@ -436,17 +513,100 @@ def get_stats():
     })
 
 
+@app.route("/api/health", methods=["GET"])
+@login_required
+def get_health():
+    """Get health status of all services."""
+    health_data = {}
+
+    # Check VPS Runner
+    try:
+        runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+        response = requests.get(f"{runner_url}/health", timeout=5)
+        health_data["vps"] = {
+            "status": "healthy" if response.status_code == 200 else "unhealthy",
+            "url": runner_url
+        }
+    except Exception as e:
+        health_data["vps"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+    # Check MongoDB
+    try:
+        db = get_db()
+        # Try a simple operation
+        db.command("ping")
+        health_data["mongodb"] = {
+            "status": "healthy",
+            "uri": os.getenv("MONGODB_URI", "").split("@")[-1] if "@" in os.getenv("MONGODB_URI", "") else "local"
+        }
+    except Exception as e:
+        health_data["mongodb"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+
+    # Check n8n (if configured)
+    n8n_url = os.getenv("N8N_URL", "")
+    if n8n_url:
+        try:
+            response = requests.get(f"{n8n_url}/healthz", timeout=5)
+            health_data["n8n"] = {
+                "status": "healthy" if response.status_code == 200 else "unhealthy",
+                "url": n8n_url
+            }
+        except Exception as e:
+            health_data["n8n"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }
+
+    return jsonify(health_data)
+
+
+# ============================================================================
+# Authentication Routes
+# ============================================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login_page():
+    """Handle login page and authentication."""
+    if request.method == "GET":
+        # Show login form
+        return render_template("login.html", error=None)
+
+    # Handle POST - check password
+    password = request.form.get("password", "")
+    if password == LOGIN_PASSWORD:
+        session["authenticated"] = True
+        session.permanent = True
+        return redirect(url_for("index"))
+    else:
+        return render_template("login.html", error="Invalid password"), 401
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    """Handle logout."""
+    session.clear()
+    return redirect(url_for("login_page"))
+
+
 # ============================================================================
 # HTML Routes (HTMX-powered)
 # ============================================================================
 
 @app.route("/")
+@login_required
 def index():
     """Render the main job table page."""
     return render_template("index.html", statuses=JOB_STATUSES)
 
 
 @app.route("/partials/job-rows", methods=["GET"])
+@login_required
 def job_rows_partial():
     """
     HTMX partial: Return only the table rows for job data.
@@ -469,10 +629,12 @@ def job_rows_partial():
         current_date_from=request.args.get("date_from", ""),
         current_date_to=request.args.get("date_to", ""),
         current_locations=request.args.getlist("locations"),
+        current_statuses=request.args.getlist("statuses"),
     )
 
 
 @app.route("/partials/pagination", methods=["GET"])
+@login_required
 def pagination_partial():
     """HTMX partial: Return pagination controls."""
     response = list_jobs()
@@ -489,6 +651,7 @@ def pagination_partial():
 
 
 @app.route("/job/<job_id>")
+@login_required
 def job_detail(job_id: str):
     """Render the job detail page."""
     db = get_db()
@@ -521,5 +684,12 @@ if __name__ == "__main__":
 
     print(f"Starting Job Search UI on http://localhost:{port}")
     print(f"MongoDB URI: {MONGO_URI[:30]}...")
+
+    # Debug: Print registered routes
+    print("\n🔍 Registered routes:")
+    for rule in app.url_map.iter_rules():
+        if 'runner' in str(rule):
+            print(f"  ✅ {rule.methods} {rule}")
+    print()
 
     app.run(host="0.0.0.0", port=port, debug=debug)
