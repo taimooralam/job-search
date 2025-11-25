@@ -4,6 +4,31 @@
 <div class="space-y-3 sm:space-y-4">
     <!-- Toolbar -->
     <div class="bg-white rounded-lg shadow p-3 sm:p-4">
+        <!-- Top row: Quick Time Filters -->
+        <div class="mb-3 pb-3 border-b border-gray-200">
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Quick Time Filters</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <!-- Hour filters (blue) -->
+                    <button type="button" onclick="setQuickDateFilter(1, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">1h</button>
+                    <button type="button" onclick="setQuickDateFilter(2, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">2h</button>
+                    <button type="button" onclick="setQuickDateFilter(3, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">3h</button>
+                    <button type="button" onclick="setQuickDateFilter(6, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">6h</button>
+                    <button type="button" onclick="setQuickDateFilter(12, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">12h</button>
+
+                    <!-- Week filters (green) -->
+                    <button type="button" onclick="setQuickDateFilter(1, 'week')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-md transition">1w</button>
+                    <button type="button" onclick="setQuickDateFilter(2, 'week')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-md transition">2w</button>
+
+                    <!-- Month filters (purple) -->
+                    <button type="button" onclick="setQuickDateFilter(1, 'month')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-md transition">1m</button>
+
+                    <!-- Clear filter -->
+                    <button type="button" onclick="clearDateFilter()" class="px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-md transition">Clear</button>
+                </div>
+            </div>
+        </div>
+
         <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
             <!-- Search - Full width on mobile -->
             <div class="w-full sm:flex-1 sm:min-w-[200px]">
@@ -32,7 +57,7 @@
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                 </svg>
-                <span>Filters</span>
+                <span>More Filters</span>
                 <span id="active-filter-count" class="hidden px-1.5 py-0.5 text-xs bg-indigo-600 text-white rounded-full"></span>
             </button>
 
@@ -85,19 +110,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Date Range Filter -->
             <div class="space-y-2 sm:col-span-2 lg:col-span-1">
-                <label class="block text-sm font-medium text-gray-700">Date Range</label>
-                <!-- Quick filter buttons -->
-                <div class="flex flex-wrap gap-1 mb-2">
-                    <button type="button" onclick="setQuickDateFilter(1, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1h</button>
-                    <button type="button" onclick="setQuickDateFilter(2, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">2h</button>
-                    <button type="button" onclick="setQuickDateFilter(3, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">3h</button>
-                    <button type="button" onclick="setQuickDateFilter(6, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">6h</button>
-                    <button type="button" onclick="setQuickDateFilter(12, 'hour')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">12h</button>
-                    <button type="button" onclick="setQuickDateFilter(1, 'week')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1w</button>
-                    <button type="button" onclick="setQuickDateFilter(2, 'week')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">2w</button>
-                    <button type="button" onclick="setQuickDateFilter(1, 'month')" class="quick-date-btn px-2 py-1 text-xs bg-gray-100 hover:bg-indigo-100 hover:text-indigo-700 rounded transition">1m</button>
-                </div>
-                <!-- Date picker inputs -->
+                <label class="block text-sm font-medium text-gray-700">Custom Date Range</label>
                 <div class="flex items-center gap-2">
                     <input type="date"
                            id="date-from"
@@ -116,6 +129,40 @@
                            hx-trigger="change"
                            hx-target="#job-table-container"
                            hx-include=".filter-input">
+                </div>
+            </div>
+
+            <!-- Status Multi-Select Filter -->
+            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                <label class="block text-sm font-medium text-gray-700">Status</label>
+                <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    {% for status in statuses %}
+                    <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox"
+                               name="statuses"
+                               value="{{ status }}"
+                               class="filter-input status-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                               {% if status not in ['discarded', 'applied', 'interview scheduled'] %}checked{% endif %}
+                               onchange="updateStatusFilter()"
+                               hx-get="/partials/job-rows"
+                               hx-trigger="change"
+                               hx-target="#job-table-container"
+                               hx-include=".filter-input">
+                        <span class="text-sm text-gray-700">{{ status }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <div class="flex gap-2 mt-2">
+                    <button type="button"
+                            onclick="selectAllStatuses()"
+                            class="text-xs text-indigo-600 hover:text-indigo-800 underline">
+                        Select All
+                    </button>
+                    <button type="button"
+                            onclick="deselectAllStatuses()"
+                            class="text-xs text-gray-600 hover:text-gray-800 underline">
+                        Deselect All
+                    </button>
                 </div>
             </div>
 
@@ -411,6 +458,40 @@
         triggerTableRefresh();
     }
 
+    // Clear date filter
+    function clearDateFilter() {
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+
+        // Update active filter count
+        updateActiveFilterCount();
+
+        // Trigger table refresh
+        triggerTableRefresh();
+    }
+
+    // Status filter functions
+    function updateStatusFilter() {
+        updateActiveFilterCount();
+        // HTMX will handle the refresh automatically via hx-trigger="change"
+    }
+
+    function selectAllStatuses() {
+        document.querySelectorAll('.status-checkbox').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateActiveFilterCount();
+        triggerTableRefresh();
+    }
+
+    function deselectAllStatuses() {
+        document.querySelectorAll('.status-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateActiveFilterCount();
+        triggerTableRefresh();
+    }
+
     // ============================================================================
     // Event Listeners
     // ============================================================================
@@ -441,6 +522,20 @@
                     event.detail.parameters['locations'].push(loc);
                 } else {
                     event.detail.parameters['locations'] = [event.detail.parameters['locations'], loc];
+                }
+            });
+
+            // Include selected statuses
+            const selectedStatuses = Array.from(document.querySelectorAll('.status-checkbox:checked'))
+                .map(cb => cb.value);
+            selectedStatuses.forEach(status => {
+                if (!event.detail.parameters['statuses']) {
+                    event.detail.parameters['statuses'] = [];
+                }
+                if (Array.isArray(event.detail.parameters['statuses'])) {
+                    event.detail.parameters['statuses'].push(status);
+                } else {
+                    event.detail.parameters['statuses'] = [event.detail.parameters['statuses'], status];
                 }
             });
         }
