@@ -801,16 +801,25 @@
         // Update status text
         statusText.textContent = `Status: ${data.status}`;
 
-        // Update progress
-        const progress = Math.round((data.progress || 0) * 100);
-        progressBar.style.width = `${progress}%`;
-        progressPercent.textContent = `${progress}%`;
+        // Update progress - default to 100% if completed/failed
+        let progress = data.progress;
+        if (data.status === 'completed' || data.status === 'failed') {
+            progress = progress || 1.0;  // Default to 100% if not provided
+        }
+        const progressValue = Math.round((progress || 0) * 100);
+        progressBar.style.width = `${progressValue}%`;
+        progressPercent.textContent = `${progressValue}%`;
 
         // Change color based on status
         if (data.status === 'completed') {
             progressBar.classList.remove('bg-indigo-600');
             progressBar.classList.add('bg-green-600');
-            statusText.textContent = 'Status: Completed ✓';
+            statusText.textContent = 'Status: Completed ✓ - Reloading page...';
+
+            // Reload page after 2 seconds to show new pipeline data
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } else if (data.status === 'failed') {
             progressBar.classList.remove('bg-indigo-600');
             progressBar.classList.add('bg-red-600');
