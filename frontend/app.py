@@ -690,6 +690,13 @@ def job_detail(job_id: str):
     if not job:
         return render_template("error.html", error="Job not found"), 404
 
+    # Backward compatibility: migrate old 'contacts' field to new format
+    if job and 'contacts' in job and not job.get('primary_contacts') and not job.get('secondary_contacts'):
+        # Split contacts: first 4 as primary, rest as secondary
+        all_contacts = job.get('contacts', [])
+        job['primary_contacts'] = all_contacts[:4]
+        job['secondary_contacts'] = all_contacts[4:]
+
     # Check if HTML CV exists
     serialized_job = serialize_job(job)
     has_html_cv = False

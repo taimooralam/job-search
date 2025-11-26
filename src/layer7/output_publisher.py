@@ -309,16 +309,12 @@ class OutputPublisher:
                     star['id'] for star in state['selected_stars']
                 ]
 
-            # Add contact info (names and roles only, not full outreach)
-            if state.get('people'):
-                update_data['contacts'] = [
-                    {
-                        'name': person['name'],
-                        'role': person['role'],
-                        'linkedin_url': person['linkedin_url']
-                    }
-                    for person in state['people']
-                ]
+            # Add primary and secondary contacts with FULL outreach data
+            if state.get('primary_contacts'):
+                update_data['primary_contacts'] = state['primary_contacts']
+
+            if state.get('secondary_contacts'):
+                update_data['secondary_contacts'] = state['secondary_contacts']
 
             # Add pain points (4 dimensions - Phase 1.3)
             if state.get('pain_points'):
