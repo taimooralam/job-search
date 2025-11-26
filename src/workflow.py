@@ -5,6 +5,7 @@ Orchestrates all 7 layers in a sequential workflow.
 Today's vertical slice: Layers 2, 3, 4, 6, 7 (skipping Layer 5 - People Mapper).
 """
 
+import os
 import uuid
 try:
     from langsmith import uuid7
@@ -15,6 +16,14 @@ from typing import Dict, Any
 from langgraph.graph import StateGraph, END
 from src.common.config import Config
 from src.common.state import JobState
+from src.common.logger import setup_logging, get_logger
+
+# Initialize logging
+log_level = os.getenv("LOG_LEVEL", "INFO")
+log_format = os.getenv("LOG_FORMAT", "simple")  # "simple" or "json"
+setup_logging(level=log_level, format=log_format)
+
+logger = get_logger(__name__)
 
 # Import all layer node functions
 from src.layer2.pain_point_miner import pain_point_miner_node
@@ -97,6 +106,9 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     run_id = str(uuid7()) if uuid7 else str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat() + 'Z'
 
+    # Create run-specific logger
+    run_logger = get_logger(__name__, run_id=run_id)
+
     print("\n" + "="*70)
     print("🚀 STARTING JOB INTELLIGENCE PIPELINE")
     print("="*70)
@@ -105,6 +117,11 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     print(f"Run ID: {run_id}")
     print(f"Started: {created_at}")
     print("="*70 + "\n")
+
+    run_logger.info(
+        f"Starting pipeline for job {job_data.get('job_id')}: "
+        f"{job_data.get('title')} at {job_data.get('company')}"
+    )
 
     # Initialize state
     initial_state: JobState = {
@@ -155,6 +172,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
 
     # Execute workflow
     try:
+        run_logger.info("Executing LangGraph workflow")
         final_state = app.invoke(initial_state)
 
         # Update status based on errors
@@ -166,16 +184,37 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
                 not final_state.get("cover_letter")
             )
             final_state["status"] = "failed" if critical_missing else "partial"
+            run_logger.warning(f"Pipeline completed with errors: {final_state.get('errors')}")
         else:
             final_state["status"] = "completed"
+            run_logger.info("Pipeline completed successfully")
 
     except Exception as e:
+        run_logger.exception(f"Pipeline failed with exception: {e}")
         print(f"\n❌ Pipeline failed with exception: {e}")
         # Create minimal final state with error
         final_state = initial_state.copy()
         final_state["errors"] = [f"Pipeline exception: {str(e)}"]
         final_state["status"] = "failed"
         raise
+
+    # Write final state to JSON file for runner service to read
+    import json
+    from pathlib import Path
+    state_output_path = Path(f".pipeline_state_{final_state.get('job_id', 'unknown')}.json")
+    try:
+        # Convert datetime objects to ISO strings for JSON serialization
+        serializable_state = {}
+        for key, value in final_state.items():
+            if isinstance(value, datetime):
+                serializable_state[key] = value.isoformat()
+            else:
+                serializable_state[key] = value
+
+        state_output_path.write_text(json.dumps(serializable_state, indent=2, default=str))
+        print(f"\n💾 Pipeline state written to: {state_output_path}")
+    except Exception as e:
+        print(f"\n⚠️  Failed to write pipeline state: {e}")
 
     # Print summary
     print("\n" + "="*70)
