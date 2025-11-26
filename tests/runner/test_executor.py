@@ -17,7 +17,7 @@ async def test_execute_pipeline_with_invalid_job():
         logs.append(message)
 
     # Execute with non-existent job
-    success, artifacts = await execute_pipeline(
+    success, artifacts, pipeline_state = await execute_pipeline(
         job_id="nonexistent-job-9999999",
         profile_ref=None,
         log_callback=log_callback
@@ -26,6 +26,7 @@ async def test_execute_pipeline_with_invalid_job():
     # Should fail
     assert success is False
     assert len(artifacts) == 0
+    assert pipeline_state is None
     assert len(logs) > 0
     # Should have captured the command execution
     assert any("Executing:" in log for log in logs)
@@ -52,7 +53,7 @@ async def test_execute_pipeline_timeout():
 
     # This should timeout with a 1 second limit
     # Using a job that would normally take longer
-    success, artifacts = await exec_pipe(
+    success, artifacts, pipeline_state = await exec_pipe(
         job_id="test-job-timeout",
         profile_ref=None,
         log_callback=log_callback
@@ -66,6 +67,7 @@ async def test_execute_pipeline_timeout():
 
     # Should fail due to timeout or other error
     assert success is False
+    assert pipeline_state is None
 
 
 def test_discover_artifacts_empty_directory():
