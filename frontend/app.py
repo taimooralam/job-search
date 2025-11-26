@@ -906,6 +906,131 @@ def download_cv_pdf(job_id: str):
     )
 
 
+@app.route("/api/jobs/<job_id>/cover-letter/pdf", methods=["POST"])
+@login_required
+def generate_cover_letter_pdf(job_id: str):
+    """Generate PDF from cover letter text."""
+    from pathlib import Path
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.enums import TA_LEFT
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Get cover letter text
+    cover_letter = job.get("cover_letter")
+    if not cover_letter:
+        return jsonify({"error": "No cover letter found"}), 404
+
+    # Build output path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    output_dir = Path("../applications") / company_clean / title_clean
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = output_dir / "cover_letter.pdf"
+
+    try:
+        # Create PDF using ReportLab
+        doc = SimpleDocTemplate(
+            str(pdf_path),
+            pagesize=A4,
+            topMargin=1*inch,
+            bottomMargin=1*inch,
+            leftMargin=1*inch,
+            rightMargin=1*inch
+        )
+
+        # Prepare styles
+        styles = getSampleStyleSheet()
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontSize=11,
+            leading=14,
+            alignment=TA_LEFT,
+            spaceAfter=12
+        )
+
+        # Build content
+        story = []
+
+        # Split cover letter into paragraphs
+        paragraphs = cover_letter.split('\n\n')
+        for para in paragraphs:
+            if para.strip():
+                story.append(Paragraph(para.strip(), body_style))
+                story.append(Spacer(1, 12))
+
+        # Build PDF
+        doc.build(story)
+
+        return jsonify({
+            "success": True,
+            "message": "Cover letter PDF generated successfully",
+            "pdf_path": str(pdf_path)
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
+
+
+@app.route("/api/jobs/<job_id>/cover-letter/download")
+@login_required
+def download_cover_letter_pdf(job_id: str):
+    """Download the cover letter PDF."""
+    from flask import send_file
+    from pathlib import Path
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Build PDF path
+    if not job.get("company") or not job.get("title"):
+        return jsonify({"error": "Job missing company or title"}), 400
+
+    company_clean = job["company"].replace(" ", "_").replace("/", "_")
+    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    pdf_path = Path("../applications") / company_clean / title_clean / "cover_letter.pdf"
+
+    if not pdf_path.exists():
+        return jsonify({"error": "PDF not found. Generate it first."}), 404
+
+    # Send file for download
+    return send_file(
+        pdf_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"CoverLetter_{company_clean}_{title_clean}.pdf"
+    )
+
+
 # ============================================================================
 # Application Entry Point
 # ============================================================================
