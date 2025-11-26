@@ -342,7 +342,7 @@ def test_linkedin_message_requires_closing_line():
 
     message_without_closing = "Hi Jane, I have relevant experience. Let's chat!"
 
-    with pytest.raises(ValueError, match="contact information"):
+    with pytest.raises(ValueError, match="LinkedIn message must state you have applied for the role"):
         generator._validate_linkedin_closing(message_without_closing)
 
 
@@ -360,7 +360,7 @@ def test_linkedin_message_accepts_alternate_closing_format():
     """Test alternate valid closing formats."""
     generator = OutreachGenerator()
 
-    message = "Great to connect! Contact: taimooralam@example.com or book time: https://calendly.com/taimooralam/15min"
+    message = "Great to connect! I've applied for this role. Book time: https://calendly.com/taimooralam/15min"
 
     # Should not raise
     generator._validate_linkedin_closing(message)
