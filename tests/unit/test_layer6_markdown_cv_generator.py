@@ -9,7 +9,7 @@ Tests the MarkdownCVGenerator which:
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, Mock
 from pathlib import Path
 import os
 import shutil
@@ -18,6 +18,38 @@ from src.common.state import JobState
 
 
 # ===== FIXTURES =====
+
+@pytest.fixture
+def mock_llm_providers():
+    """
+    Mock both ChatAnthropic and ChatOpenAI to prevent real API calls.
+
+    This fixture ensures tests run without making real API requests,
+    preventing costs and failures when API credits are low.
+    """
+    with patch('src.layer6.generator.ChatAnthropic') as mock_anthropic, \
+         patch('src.layer6.generator.ChatOpenAI') as mock_openai, \
+         patch('src.layer6.generator.Config') as mock_config:
+
+        # Configure mock Config to use OpenAI by default (simpler for tests)
+        mock_config.get_cv_llm_provider.return_value = "openai"
+        mock_config.get_cv_llm_api_key.return_value = "test-api-key"
+        mock_config.get_cv_llm_base_url.return_value = "https://api.openai.com/v1"
+        mock_config.DEFAULT_MODEL = "gpt-4"
+        mock_config.ANALYTICAL_TEMPERATURE = 0.3
+
+        # Create mock LLM instances
+        mock_llm_instance = MagicMock()
+        mock_anthropic.return_value = mock_llm_instance
+        mock_openai.return_value = mock_llm_instance
+
+        yield {
+            'anthropic': mock_anthropic,
+            'openai': mock_openai,
+            'config': mock_config,
+            'instance': mock_llm_instance
+        }
+
 
 @pytest.fixture
 def sample_job_state():
@@ -203,19 +235,18 @@ def cleanup_test_output():
 class TestMarkdownCVGenerator:
     """Test MarkdownCVGenerator class."""
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_generates_cv_successfully(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_generates_cv_successfully(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """MarkdownCVGenerator.generate_cv returns valid path and integrity check."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        # Mock LLM to return valid CV
-        mock_llm = MagicMock()
+        # Configure mock LLM responses
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         cv_path, integrity = generator.generate_cv(sample_job_state)
@@ -225,18 +256,17 @@ class TestMarkdownCVGenerator:
         assert "TechCorp" in cv_path
         assert Path(cv_path).exists()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_outputs_to_correct_directory(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_outputs_to_correct_directory(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """CV is saved to ./applications/<company>/<role>/CV.md."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
@@ -246,18 +276,17 @@ class TestMarkdownCVGenerator:
         assert expected_dir.exists()
         assert (expected_dir / "CV.md").exists()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_extracts_integrity_check(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_extracts_integrity_check(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Generator extracts integrity check from LLM response."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         _, integrity = generator.generate_cv(sample_job_state)
@@ -265,18 +294,17 @@ class TestMarkdownCVGenerator:
         assert integrity is not None
         assert "fabrication" in integrity.lower() or "verified" in integrity.lower()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_normalizes_markdown_for_template(self, mock_llm_class, sample_job_state, mock_evidence_response, messy_cv_response, cleanup_test_output):
+    def test_normalizes_markdown_for_template(self, mock_llm_providers, sample_job_state, mock_evidence_response, messy_cv_response, cleanup_test_output):
         """Generator normalizes loosely formatted markdown to template-friendly headings."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         messy = MagicMock()
         messy.content = messy_cv_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, messy, messy]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
@@ -290,18 +318,17 @@ class TestMarkdownCVGenerator:
         assert "•" not in content
         assert "---" not in content
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_includes_pain_points_in_prompt(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_includes_pain_points_in_prompt(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Generator includes pain points in LLM prompt."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -312,18 +339,17 @@ class TestMarkdownCVGenerator:
 
         assert "velocity" in prompt_text.lower() or "40%" in prompt_text
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_includes_company_research_in_prompt(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_includes_company_research_in_prompt(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Generator includes company research in LLM prompt."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -333,18 +359,17 @@ class TestMarkdownCVGenerator:
 
         assert "Series B" in prompt_text or "funding" in prompt_text.lower()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_includes_master_cv_in_prompt(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_includes_master_cv_in_prompt(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Generator includes master CV (candidate_profile) in LLM prompt."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -361,18 +386,18 @@ class TestMarkdownCVGenerator:
 class TestMarkdownCVGeneratorEdgeCases:
     """Test edge cases for CV generator."""
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_handles_missing_pain_points(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_handles_missing_pain_points(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Generator handles missing pain points gracefully."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         # Remove pain points
         state = sample_job_state.copy()
@@ -384,18 +409,18 @@ class TestMarkdownCVGeneratorEdgeCases:
         assert cv_path is not None
         assert Path(cv_path).exists()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_handles_missing_company_research(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_handles_missing_company_research(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Generator handles missing company research gracefully."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         # Remove company research
         state = sample_job_state.copy()
@@ -407,18 +432,18 @@ class TestMarkdownCVGeneratorEdgeCases:
         assert cv_path is not None
         assert Path(cv_path).exists()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_sanitizes_company_name_for_path(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_sanitizes_company_name_for_path(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Generator sanitizes company name for file system path."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         # Company with special characters
         state = sample_job_state.copy()
@@ -436,19 +461,18 @@ class TestMarkdownCVGeneratorEdgeCases:
         if test_dir.exists():
             shutil.rmtree(test_dir)
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_handles_no_integrity_check_in_response(self, mock_llm_class, sample_job_state, mock_evidence_response, cleanup_test_output):
+    def test_handles_no_integrity_check_in_response(self, mock_llm_providers, sample_job_state, mock_evidence_response, cleanup_test_output):
         """Generator handles response without explicit verification section."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         mock_response = MagicMock()
         # Content without any "integrity" keyword to avoid regex match
         mock_response.content = "# CV Content\n\nThis is plain CV text without verification."
         evidence = MagicMock()
         evidence.content = mock_evidence_response
+
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, mock_response, mock_response]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         cv_path, integrity = generator.generate_cv(sample_job_state)
@@ -456,8 +480,7 @@ class TestMarkdownCVGeneratorEdgeCases:
         assert cv_path is not None
         assert "not provided" in integrity.lower()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_retries_on_invalid_evidence_json(self, mock_llm_class, sample_job_state, mock_llm_response, cleanup_test_output):
+    def test_retries_on_invalid_evidence_json(self, mock_llm_providers, sample_job_state, mock_llm_response, cleanup_test_output):
         """Generator retries evidence generation when required fields are missing."""
         from src.layer6.generator import MarkdownCVGenerator
 
@@ -469,9 +492,8 @@ class TestMarkdownCVGeneratorEdgeCases:
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
 
-        mock_llm = MagicMock()
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [bad_evidence, good_evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
 
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
@@ -486,18 +508,18 @@ class TestMarkdownCVGeneratorEdgeCases:
 class TestMarkdownCVGeneratorPrompt:
     """Test prompt building logic."""
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_prompt_includes_job_dossier(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_prompt_includes_job_dossier(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Prompt includes all job dossier fields."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -510,18 +532,18 @@ class TestMarkdownCVGeneratorPrompt:
         assert "TechCorp" in prompt_text  # Company
         assert "linkedin" in prompt_text.lower()  # Source or URL
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_prompt_includes_role_research(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_prompt_includes_role_research(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Prompt includes role research with business impact."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -533,18 +555,18 @@ class TestMarkdownCVGeneratorPrompt:
         assert "team building" in prompt_text.lower() or "deployment" in prompt_text.lower()
         assert "Why now" in prompt_text or "why now" in prompt_text.lower()
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_prompt_includes_job_description(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response):
+    def test_prompt_includes_job_description(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response):
         """Prompt includes full job description text."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         generator.generate_cv(sample_job_state)
@@ -561,18 +583,18 @@ class TestMarkdownCVGeneratorPrompt:
 class TestMarkdownCVGeneratorIntegration:
     """Integration tests for full CV generation flow."""
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_full_cv_generation_flow(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_full_cv_generation_flow(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Test complete flow from state to saved CV."""
         from src.layer6.generator import Generator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         # Use the main Generator class that orchestrates both cover letter and CV
         with patch('src.layer6.cover_letter_generator.CoverLetterGenerator.generate_cover_letter') as mock_cl:
@@ -585,18 +607,18 @@ class TestMarkdownCVGeneratorIntegration:
             assert result.get("cv_reasoning") is not None
             assert result.get("cover_letter") is not None
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_generator_node_returns_state_updates(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_generator_node_returns_state_updates(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Test LangGraph node function returns proper state updates."""
         from src.layer6.generator import generator_node
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         with patch('src.layer6.cover_letter_generator.CoverLetterGenerator.generate_cover_letter') as mock_cl:
             mock_cl.return_value = "Sample cover letter with 75% improvement at AdTech Co"
@@ -607,18 +629,18 @@ class TestMarkdownCVGeneratorIntegration:
             assert "cv_reasoning" in updates
             assert "cover_letter" in updates
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_generator_node_returns_cv_text(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_generator_node_returns_cv_text(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Test generator_node returns cv_text for MongoDB persistence."""
         from src.layer6.generator import generator_node
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         with patch('src.layer6.cover_letter_generator.CoverLetterGenerator.generate_cover_letter') as mock_cl:
             mock_cl.return_value = "Sample cover letter with 75% improvement at AdTech Co"
@@ -638,18 +660,18 @@ class TestMarkdownCVGeneratorIntegration:
 class TestMarkdownCVGeneratorQualityGates:
     """Quality gate tests for CV generator."""
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_quality_gate_master_cv_grounding(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_quality_gate_master_cv_grounding(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Quality gate: Generated CV should be grounded in master CV."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         cv_path, integrity = generator.generate_cv(sample_job_state)
@@ -663,18 +685,18 @@ class TestMarkdownCVGeneratorQualityGates:
         # CV should contain candidate name
         assert "Taimoor Alam" in cv_content
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_quality_gate_cv_contains_metrics(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_quality_gate_cv_contains_metrics(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Quality gate: Generated CV should contain quantified metrics."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
@@ -686,18 +708,18 @@ class TestMarkdownCVGeneratorQualityGates:
         metrics = re.findall(r'\d+%|\d+x|\$\d+[MKB]?|\d+K', cv_content)
         assert len(metrics) >= 2, f"CV should have at least 2 metrics, found: {metrics}"
 
-    @patch('src.layer6.generator.ChatOpenAI')
-    def test_quality_gate_cv_structure(self, mock_llm_class, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
+    def test_quality_gate_cv_structure(self, mock_llm_providers, sample_job_state, mock_llm_response, mock_evidence_response, cleanup_test_output):
         """Quality gate: Generated CV should have proper structure."""
         from src.layer6.generator import MarkdownCVGenerator
 
-        mock_llm = MagicMock()
         evidence = MagicMock()
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
+        
+        mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-        mock_llm_class.return_value = mock_llm
+
 
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
