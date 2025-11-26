@@ -18,19 +18,21 @@ def persist_run_to_mongo(
     started_at: datetime,
     updated_at: datetime,
     artifacts: Dict[str, str],
+    pipeline_state: Optional[Dict] = None,
 ) -> None:
     """
-    Update MongoDB with run status and artifact URLs.
+    Update MongoDB with run status, artifact URLs, and pipeline results.
 
     Persists to the level-2 collection for processed jobs.
 
     Args:
-        job_id: Job identifier
+        job_id: Job identifier (MongoDB ObjectId as string)
         run_id: Pipeline run identifier
         status: Run status (queued, running, completed, failed)
         started_at: When the run started
         updated_at: Last update timestamp
         artifacts: Dictionary of artifact URLs
+        pipeline_state: Complete pipeline state with results (pain_points, fit_score, etc.)
     """
     mongodb_uri = os.getenv("MONGODB_URI")
     if not mongodb_uri:
@@ -38,14 +40,17 @@ def persist_run_to_mongo(
         return
 
     try:
+        from bson import ObjectId
+
         client = MongoClient(mongodb_uri)
         db = client["jobs"]
 
-        # Convert job_id to int if possible (schema uses int jobId)
+        # Convert job_id to ObjectId (new schema uses ObjectId _id)
         try:
-            job_id_int = int(job_id)
-        except ValueError:
-            job_id_int = job_id
+            object_id = ObjectId(job_id)
+        except Exception:
+            # Fallback to string if conversion fails
+            object_id = job_id
 
         # Build update document
         update_doc = {
@@ -54,6 +59,7 @@ def persist_run_to_mongo(
                 "pipeline_status": status,
                 "pipeline_started_at": started_at,
                 "pipeline_updated_at": updated_at,
+                "updatedAt": updated_at,
             }
         }
 
@@ -61,25 +67,58 @@ def persist_run_to_mongo(
         if status in {"completed", "failed"}:
             update_doc["$set"]["pipeline_completed_at"] = updated_at
 
+        # Update job status when pipeline completes successfully
+        if status == "completed":
+            update_doc["$set"]["status"] = "ready for applying"
+
         # Add artifact URLs if present
         if artifacts:
             update_doc["$set"]["artifact_urls"] = artifacts
 
-        # Update level-2 collection (processed jobs)
+        # Add pipeline results if provided (pain_points, fit_score, contacts, etc.)
+        if pipeline_state and status == "completed":
+            # Extract relevant fields from pipeline state
+            state_fields = {
+                "pain_points": pipeline_state.get("pain_points"),
+                "strategic_needs": pipeline_state.get("strategic_needs"),
+                "risks_if_unfilled": pipeline_state.get("risks_if_unfilled"),
+                "success_metrics": pipeline_state.get("success_metrics"),
+                "fit_score": pipeline_state.get("fit_score"),
+                "fit_rationale": pipeline_state.get("fit_rationale"),
+                "fit_category": pipeline_state.get("fit_category"),
+                "primary_contacts": pipeline_state.get("primary_contacts"),
+                "secondary_contacts": pipeline_state.get("secondary_contacts"),
+                "company_research": pipeline_state.get("company_research"),
+                "role_research": pipeline_state.get("role_research"),
+                "selected_stars": pipeline_state.get("selected_stars"),
+                "star_to_pain_mapping": pipeline_state.get("star_to_pain_mapping"),
+                "cover_letter": pipeline_state.get("cover_letter"),
+                "cv_path": pipeline_state.get("cv_path"),
+                "cv_text": pipeline_state.get("cv_text"),
+                "cv_reasoning": pipeline_state.get("cv_reasoning"),
+            }
+
+            # Only add non-None values
+            for key, value in state_fields.items():
+                if value is not None:
+                    update_doc["$set"][key] = value
+
+        # Update level-2 collection (processed jobs) using _id
         result = db["level-2"].update_one(
-            {"jobId": job_id_int},
+            {"_id": object_id},
             update_doc,
             upsert=False  # Don't create if doesn't exist
         )
 
         if result.matched_count == 0:
-            # Job not in level-2, might be in level-1
-            # For now, we only update level-2 jobs
-            pass
+            # Job not found with ObjectId, log warning
+            print(f"Warning: Job {job_id} not found in level-2 collection")
 
     except Exception as e:
         # Log error but don't fail the run
         print(f"Warning: Failed to persist to MongoDB: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def get_redis_connection():

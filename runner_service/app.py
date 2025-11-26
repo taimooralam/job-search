@@ -7,6 +7,7 @@ to keep the number of simultaneous runs under control (default 3).
 """
 
 import asyncio
+import logging
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -27,6 +28,14 @@ from .models import (
 from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 
 MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "3"))
@@ -83,8 +92,13 @@ def _append_log(run_id: str, message: str) -> None:
         state.logs = state.logs[-LOG_BUFFER_LIMIT:]
 
 
-def _update_status(run_id: str, status: str, artifacts: Optional[Dict[str, str]] = None) -> None:
-    """Update run status and optional artifacts."""
+def _update_status(
+    run_id: str,
+    status: str,
+    artifacts: Optional[Dict[str, str]] = None,
+    pipeline_state: Optional[Dict] = None
+) -> None:
+    """Update run status, optional artifacts, and pipeline state."""
     state = _runs.get(run_id)
     if not state:
         return
@@ -102,10 +116,12 @@ def _update_status(run_id: str, status: str, artifacts: Optional[Dict[str, str]]
             started_at=state.started_at,
             updated_at=state.updated_at,
             artifacts=state.artifacts,
+            pipeline_state=pipeline_state,
         )
+        logger.debug(f"[{run_id[:8]}] Persisted state to MongoDB (status={status})")
     except Exception as e:
         # Log but don't fail on persistence errors
-        print(f"Warning: MongoDB persistence failed: {e}")
+        logger.error(f"[{run_id[:8]}] MongoDB persistence failed: {e}")
 
 
 async def _execute_pipeline_task(
@@ -120,6 +136,7 @@ async def _execute_pipeline_task(
         profile_ref: Optional profile path
     """
     try:
+        logger.info(f"[{run_id[:8]}] Starting pipeline task for job {job_id}")
         _update_status(run_id, "running")
         _append_log(run_id, f"Starting pipeline for job {job_id}...")
 
@@ -128,7 +145,7 @@ async def _execute_pipeline_task(
             _append_log(run_id, message)
 
         # Execute pipeline subprocess
-        success, artifacts = await execute_pipeline(
+        success, artifacts, pipeline_state = await execute_pipeline(
             job_id=job_id,
             profile_ref=profile_ref,
             log_callback=log_callback,
@@ -136,21 +153,26 @@ async def _execute_pipeline_task(
 
         # Update status based on result
         if success:
-            _update_status(run_id, "completed", artifacts)
+            logger.info(f"[{run_id[:8]}] Pipeline completed successfully for job {job_id}")
+            _update_status(run_id, "completed", artifacts, pipeline_state)
             _append_log(run_id, "✅ Pipeline execution complete")
         else:
+            logger.warning(f"[{run_id[:8]}] Pipeline failed for job {job_id}")
             _update_status(run_id, "failed")
             _append_log(run_id, "❌ Pipeline execution failed")
 
     except asyncio.TimeoutError:
+        logger.error(f"[{run_id[:8]}] Pipeline timed out for job {job_id}")
         _append_log(run_id, "❌ Pipeline timed out")
         _update_status(run_id, "failed")
     except Exception as exc:
+        logger.exception(f"[{run_id[:8]}] Unexpected error for job {job_id}: {exc}")
         _append_log(run_id, f"❌ Unexpected error: {exc}")
         _update_status(run_id, "failed")
     finally:
         # Always release semaphore
         _semaphore.release()
+        logger.debug(f"[{run_id[:8]}] Released semaphore")
 
 
 async def _enqueue_run(
@@ -165,6 +187,7 @@ async def _enqueue_run(
 
     acquired = await _semaphore.acquire()
     if not acquired:  # pragma: no cover - defensive; acquire returns None
+        logger.warning(f"Runner at capacity, rejecting job {job_id}")
         raise HTTPException(status_code=429, detail="Runner busy")
 
     run_id = uuid.uuid4().hex
@@ -177,6 +200,7 @@ async def _enqueue_run(
         artifacts={},
     )
 
+    logger.info(f"[{run_id[:8]}] Enqueued run for job {job_id} (source={source})")
     _append_log(run_id, f"Run created for job {job_id} (source={source}, profile={profile_ref})")
     background_tasks.add_task(_execute_pipeline_task, run_id, job_id, profile_ref)
     return run_id

@@ -21,7 +21,7 @@ async def execute_pipeline(
     job_id: str,
     profile_ref: Optional[str],
     log_callback,
-) -> tuple[bool, Dict[str, str]]:
+) -> tuple[bool, Dict[str, str], Optional[Dict]]:
     """
     Execute the pipeline as a subprocess and stream logs.
 
@@ -31,7 +31,7 @@ async def execute_pipeline(
         log_callback: Function to call with each log line (e.g., _append_log)
 
     Returns:
-        Tuple of (success: bool, artifacts: Dict[str, str])
+        Tuple of (success: bool, artifacts: Dict[str, str], pipeline_state: Optional[Dict])
     """
     try:
         # Build command
@@ -70,20 +70,24 @@ async def execute_pipeline(
             process.kill()
             await process.wait()
             log_callback(f"❌ Pipeline timed out after {PIPELINE_TIMEOUT}s")
-            return False, {}
+            return False, {}, None
 
         # Check exit code
         if process.returncode == 0:
             log_callback("✅ Pipeline completed successfully")
             artifacts = discover_artifacts(job_id)
-            return True, artifacts
+            # Load pipeline state for persistence to MongoDB
+            pipeline_state = load_pipeline_state(job_id)
+            if pipeline_state:
+                log_callback(f"📊 Loaded pipeline state with {len(pipeline_state)} fields")
+            return True, artifacts, pipeline_state
         else:
             log_callback(f"❌ Pipeline failed with exit code {process.returncode}")
-            return False, {}
+            return False, {}, None
 
     except Exception as exc:
         log_callback(f"❌ Pipeline execution error: {exc}")
-        return False, {}
+        return False, {}, None
 
 
 def discover_artifacts(job_id: str) -> Dict[str, str]:
@@ -139,6 +143,32 @@ def discover_artifacts(job_id: str) -> Dict[str, str]:
                     artifacts[artifact_key] = filename
 
     return artifacts
+
+
+def load_pipeline_state(job_id: str) -> Optional[Dict]:
+    """
+    Load the pipeline state from the JSON file written by the pipeline.
+
+    Args:
+        job_id: Job identifier
+
+    Returns:
+        Dictionary with pipeline state or None if not found
+    """
+    import json
+
+    state_file = Path(f".pipeline_state_{job_id}.json")
+    if not state_file.exists():
+        return None
+
+    try:
+        state_data = json.loads(state_file.read_text())
+        # Clean up the state file after reading
+        state_file.unlink()
+        return state_data
+    except Exception as e:
+        print(f"Warning: Failed to load pipeline state: {e}")
+        return None
 
 
 def get_artifact_path(job_id: str, filename: str) -> Optional[Path]:
