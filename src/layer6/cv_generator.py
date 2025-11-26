@@ -18,6 +18,7 @@ from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 from pydantic import BaseModel, Field, validator
 from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
@@ -103,13 +104,40 @@ class CVGenerator:
     """
 
     def __init__(self):
-        """Initialize CV generator with LLM client."""
-        self.llm = ChatOpenAI(
-            model=getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL),
-            temperature=getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE),
-            base_url=Config.get_cv_llm_base_url(),
-            api_key=Config.get_cv_llm_api_key()
-        )
+        """
+        Initialize CV generator with LLM client.
+
+        Selects LLM provider based on Config:
+        - Anthropic (direct): Uses ChatAnthropic with Anthropic API key
+        - OpenRouter (proxy): Uses ChatOpenAI with OpenRouter base URL
+        - OpenAI (direct): Uses ChatOpenAI with OpenAI API key
+        """
+        provider = Config.get_cv_llm_provider()
+        model = getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL)
+        temperature = getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE)
+        api_key = Config.get_cv_llm_api_key()
+
+        if provider == "anthropic":
+            # Use direct Anthropic SDK
+            self.llm = ChatAnthropic(
+                model=model,
+                temperature=temperature,
+                anthropic_api_key=api_key
+            )
+            print(f"  Using Anthropic API directly (model: {model})")
+        else:
+            # Use OpenAI SDK (for OpenAI or OpenRouter)
+            base_url = Config.get_cv_llm_base_url()
+            self.llm = ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                base_url=base_url,
+                api_key=api_key
+            )
+            if provider == "openrouter":
+                print(f"  Using OpenRouter proxy (model: {model})")
+            else:
+                print(f"  Using OpenAI API directly (model: {model})")
 
     # ===== COMPETENCY MIX ANALYSIS =====
 

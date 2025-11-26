@@ -107,9 +107,14 @@ class TestListJobsAPI:
         response = client.get('/api/jobs?query=google')
 
         assert response.status_code == 200
-        # Verify the find was called with search query
+        # Verify the find was called with search query (now nested in $and)
         call_args = mock_collection.find.call_args
-        assert "$or" in call_args[0][0]
+        query = call_args[0][0]
+        assert "$and" in query
+        # Check that one of the $and conditions contains the search $or
+        and_conditions = query["$and"]
+        search_condition = next((c for c in and_conditions if "$or" in c and any("$regex" in cond.get("title", {}) for cond in c["$or"] if "title" in cond)), None)
+        assert search_condition is not None
 
     def test_list_jobs_pagination(self, client, mock_db):
         """Test pagination parameters."""
@@ -501,14 +506,18 @@ class TestListJobsFilters:
         response = client.get('/api/jobs?date_from=2025-01-01&date_to=2025-01-31')
 
         assert response.status_code == 200
-        # Verify the query included date filter
+        # Verify the query included date filter (now nested in $and)
         call_args = mock_collection.find.call_args
         query = call_args[0][0]
-        assert "createdAt" in query
-        assert "$gte" in query["createdAt"]
-        assert "$lte" in query["createdAt"]
-        assert query["createdAt"]["$gte"] == "2025-01-01T00:00:00.000Z"
-        assert query["createdAt"]["$lte"] == "2025-01-31T23:59:59.999Z"
+        assert "$and" in query
+        # Find the createdAt condition within $and array
+        and_conditions = query["$and"]
+        date_condition = next((c for c in and_conditions if "createdAt" in c), None)
+        assert date_condition is not None
+        assert "$gte" in date_condition["createdAt"]
+        assert "$lte" in date_condition["createdAt"]
+        assert date_condition["createdAt"]["$gte"] == "2025-01-01T00:00:00.000Z"
+        assert date_condition["createdAt"]["$lte"] == "2025-01-31T23:59:59.999Z"
 
     def test_list_jobs_with_location_filter(self, client, mock_db):
         """Test filtering jobs by location."""
@@ -524,13 +533,17 @@ class TestListJobsFilters:
         response = client.get('/api/jobs?locations=Remote&locations=New+York')
 
         assert response.status_code == 200
-        # Verify the query included location filter
+        # Verify the query included location filter (now nested in $and)
         call_args = mock_collection.find.call_args
         query = call_args[0][0]
-        assert "location" in query
-        assert "$in" in query["location"]
-        assert "Remote" in query["location"]["$in"]
-        assert "New York" in query["location"]["$in"]
+        assert "$and" in query
+        # Find the location condition within $and array
+        and_conditions = query["$and"]
+        location_condition = next((c for c in and_conditions if "location" in c), None)
+        assert location_condition is not None
+        assert "$in" in location_condition["location"]
+        assert "Remote" in location_condition["location"]["$in"]
+        assert "New York" in location_condition["location"]["$in"]
 
     def test_list_jobs_with_combined_filters(self, client, mock_db):
         """Test filtering jobs with multiple filters."""
@@ -550,7 +563,15 @@ class TestListJobsFilters:
         assert response.status_code == 200
         call_args = mock_collection.find.call_args
         query = call_args[0][0]
-        # Should have text search, date filter, and location filter
-        assert "$or" in query  # Text search
-        assert "createdAt" in query  # Date filter
-        assert "location" in query  # Location filter
+        # All filters should be nested in $and
+        assert "$and" in query
+        and_conditions = query["$and"]
+        # Check for text search $or (contains $regex for title)
+        search_condition = next((c for c in and_conditions if "$or" in c and any("$regex" in cond.get("title", {}) for cond in c["$or"] if "title" in cond)), None)
+        assert search_condition is not None
+        # Check for date filter
+        date_condition = next((c for c in and_conditions if "createdAt" in c), None)
+        assert date_condition is not None
+        # Check for location filter
+        location_condition = next((c for c in and_conditions if "location" in c), None)
+        assert location_condition is not None

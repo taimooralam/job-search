@@ -6,13 +6,13 @@ Complete guide for deploying the job-intelligence pipeline to Hostinger VPS, inc
 
 ## Prerequisites Checklist
 
-- [ ] VPS SSH access (`ssh root@72.61.92.76`)
-- [ ] GitHub repository secrets configured:
+- [x] VPS SSH access (`ssh root@72.61.92.76`)
+- [x] GitHub repository secrets configured:
   - `VPS_HOST`
   - `VPS_USER`
   - `VPS_SSH_KEY`
-- [ ] Vercel project created
-- [ ] All API keys ready:
+- [x] Vercel project created
+- [x] All API keys ready:
   - MongoDB URI
   - OpenAI API Key
   - OpenRouter API Key
@@ -21,7 +21,7 @@ Complete guide for deploying the job-intelligence pipeline to Hostinger VPS, inc
 
 ---
 
-## Step 1: Configure VPS Environment Variables
+## Step 1: Configure VPS Environment Variables ✅ COMPLETED
 
 SSH into your VPS and create the `.env` file:
 
@@ -94,7 +94,7 @@ ssh root@72.61.92.76 "ls -lh /root/job-runner/master-cv.md"
 
 ---
 
-## Step 3: Configure Vercel Environment Variables
+## Step 3: Configure Vercel Environment Variables ✅ COMPLETED
 
 Go to your Vercel project dashboard:
 1. Navigate to: **Settings > Environment Variables**
@@ -112,7 +112,7 @@ Go to your Vercel project dashboard:
 
 ---
 
-## Step 4: Deploy to VPS via CI/CD
+## Step 4: Deploy to VPS via CI/CD ✅ COMPLETED
 
 Your GitHub Actions workflow will automatically deploy when you push to main:
 
@@ -139,7 +139,7 @@ git push origin main
 
 ---
 
-## Step 5: Verify VPS Health
+## Step 5: Verify VPS Health ✅ COMPLETED
 
 Once deployment completes, check the health endpoint:
 

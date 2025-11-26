@@ -27,8 +27,13 @@ class Config:
     # ===== LLM APIs =====
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+
+    # LLM Provider Selection for CV Generation
+    # Priority: USE_ANTHROPIC > USE_OPENROUTER > OpenAI (default)
     # OpenRouter is limited to CV generation; all other layers use OpenAI directly
     USE_OPENROUTER: bool = os.getenv("USE_OPENROUTER", "false").lower() == "true"
+    USE_ANTHROPIC: bool = os.getenv("USE_ANTHROPIC", "true").lower() == "true"  # Default to true to avoid OpenRouter rate limits
 
     # ===== Web Scraping =====
     FIRECRAWL_API_KEY: str = os.getenv("FIRECRAWL_API_KEY", "")
@@ -73,8 +78,11 @@ class Config:
     # Default models per layer (can be overridden)
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gpt-4o")  # GPT-4o for quality
     CHEAP_MODEL: str = os.getenv("CHEAP_MODEL", "gpt-4o-mini")  # Mini for simple tasks
-    # CV generation uses Anthropic Claude Haiku via OpenRouter by default
-    CV_MODEL: str = os.getenv("CV_MODEL", "anthropic/claude-3-5-haiku-20241022")
+
+    # CV generation model selection
+    # For direct Anthropic: "claude-3-5-haiku-20241022"
+    # For OpenRouter: "anthropic/claude-3-5-haiku-20241022"
+    CV_MODEL: str = os.getenv("CV_MODEL", "claude-3-5-haiku-20241022")
 
     # Temperature settings
     CREATIVE_TEMPERATURE: float = 0.7  # For outreach generation
@@ -140,18 +148,42 @@ class Config:
         """
         Get the API key for CV generation.
 
-        Uses OpenRouter when enabled and configured, otherwise falls back to OpenAI.
+        Priority: Anthropic > OpenRouter > OpenAI
         """
+        if cls.USE_ANTHROPIC and cls.ANTHROPIC_API_KEY:
+            return cls.ANTHROPIC_API_KEY
         if cls.USE_OPENROUTER and cls.OPENROUTER_API_KEY:
             return cls.OPENROUTER_API_KEY
         return cls.OPENAI_API_KEY
 
     @classmethod
     def get_cv_llm_base_url(cls) -> Optional[str]:
-        """Get the LLM base URL for CV generation (OpenRouter when configured)."""
+        """
+        Get the LLM base URL for CV generation.
+
+        Returns:
+            - "https://openrouter.ai/api/v1" when using OpenRouter
+            - None when using direct Anthropic or OpenAI APIs
+        """
+        if cls.USE_ANTHROPIC and cls.ANTHROPIC_API_KEY:
+            return None  # Use direct Anthropic SDK
         if cls.USE_OPENROUTER and cls.OPENROUTER_API_KEY:
             return "https://openrouter.ai/api/v1"
         return None
+
+    @classmethod
+    def get_cv_llm_provider(cls) -> str:
+        """
+        Get the LLM provider being used for CV generation.
+
+        Returns:
+            "anthropic", "openrouter", or "openai"
+        """
+        if cls.USE_ANTHROPIC and cls.ANTHROPIC_API_KEY:
+            return "anthropic"
+        if cls.USE_OPENROUTER and cls.OPENROUTER_API_KEY:
+            return "openrouter"
+        return "openai"
 
     @classmethod
     def summary(cls) -> str:
