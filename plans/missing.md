@@ -57,6 +57,24 @@
 - [ ] .docx CV export not implemented
 - [ ] Rate limiting for FireCrawl/LLM calls
 
+### CV Rich Text Editor (NEW - See `plans/editor-solution.md`)
+- [ ] **Phase 1: Foundation** - TipTap editor, side panel UI, open/close/expand
+- [ ] **Phase 2: Rich Text** - Google Fonts, font family/size selectors, lists, indentation
+- [ ] **Phase 3: Persistence** - Auto-save (3s debounce), MongoDB `cv_editor_state` field, save indicator
+- [ ] **Phase 4: PDF Export** - Playwright on VPS, pixel-perfect rendering, ATS-compatible
+- [ ] **Phase 5: Polish** - Ruler, keyboard shortcuts, unit/integration tests
+
+**Estimated: 16-23 hours total**
+
+Key Requirements:
+- Notion-style collapsible side panel (expandable to full screen)
+- Floating slidable toolbar with B/I/U, bullet points, numbered lists
+- Professional fonts (Inter, Roboto, Open Sans, etc.)
+- Tabbing and ruler feature
+- Auto-save with visual indicator (●/○/◐)
+- Exact state restoration from MongoDB (content + styles)
+- PDF export to local machine
+
 ---
 
 ## Layer-Specific Notes
