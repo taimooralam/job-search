@@ -323,6 +323,155 @@
                 </div>
             </div>
 
+            <!-- Pain Points -->
+            {% if job.pain_points %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Key Pain Points
+                </h2>
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <ul class="space-y-2">
+                        {% for pain_point in job.pain_points %}
+                        <li class="flex items-start text-sm text-gray-700">
+                            <svg class="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>{{ pain_point }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Opportunity/Fit Analysis -->
+            {% if job.fit_score is not none or job.fit_rationale %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Opportunity & Fit Analysis
+                </h2>
+                <div class="p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+                    {% if job.fit_score is not none %}
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-gray-700">Fit Score:</span>
+                        <span class="px-3 py-1 rounded-full text-sm font-bold
+                            {% if job.fit_score >= 80 %}bg-green-100 text-green-800
+                            {% elif job.fit_score >= 60 %}bg-blue-100 text-blue-800
+                            {% elif job.fit_score >= 40 %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ job.fit_score }}/100
+                            {% if job.fit_category %}({{ job.fit_category|capitalize }}){% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if job.fit_rationale %}
+                    <div class="text-sm text-gray-700 leading-relaxed">
+                        {{ job.fit_rationale }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- People Mapper / Contacts -->
+            {% if job.primary_contacts or job.secondary_contacts %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    Key Contacts & Outreach
+                </h2>
+
+                <!-- Primary Contacts -->
+                {% if job.primary_contacts %}
+                <div class="mb-4">
+                    <h3 class="text-xs font-semibold text-indigo-700 uppercase mb-2">Primary Contacts (Hiring-Related)</h3>
+                    <div class="space-y-3">
+                        {% for contact in job.primary_contacts %}
+                        <div class="p-4 bg-white border border-indigo-200 rounded-lg hover:shadow-md transition">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">{{ contact.name or contact.contact_name }}</h4>
+                                    <p class="text-sm text-gray-600">{{ contact.role or contact.contact_role }}</p>
+                                </div>
+                                {% if contact.linkedin_url %}
+                                <a href="{{ contact.linkedin_url }}" target="_blank"
+                                   class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
+                                    <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                    </svg>
+                                    LinkedIn
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% if contact.why_relevant %}
+                            <p class="text-xs text-gray-600 mb-2"><strong>Why relevant:</strong> {{ contact.why_relevant }}</p>
+                            {% endif %}
+                            {% if contact.linkedin_message %}
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-800">View LinkedIn Message</summary>
+                                <div class="mt-2 p-3 bg-gray-50 rounded text-xs text-gray-700">{{ contact.linkedin_message }}</div>
+                            </details>
+                            {% endif %}
+                            {% if contact.email_subject and contact.email_body %}
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-800">View Email Outreach</summary>
+                                <div class="mt-2 space-y-2">
+                                    <div class="p-2 bg-gray-50 rounded">
+                                        <span class="text-xs font-semibold text-gray-700">Subject:</span>
+                                        <p class="text-xs text-gray-600 mt-1">{{ contact.email_subject }}</p>
+                                    </div>
+                                    <div class="p-3 bg-gray-50 rounded">
+                                        <span class="text-xs font-semibold text-gray-700">Body:</span>
+                                        <p class="text-xs text-gray-700 mt-1 whitespace-pre-wrap">{{ contact.email_body }}</p>
+                                    </div>
+                                </div>
+                            </details>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Secondary Contacts -->
+                {% if job.secondary_contacts %}
+                <div>
+                    <h3 class="text-xs font-semibold text-gray-600 uppercase mb-2">Secondary Contacts (Cross-Functional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {% for contact in job.secondary_contacts %}
+                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-900">{{ contact.name or contact.contact_name }}</h4>
+                                    <p class="text-xs text-gray-600">{{ contact.role or contact.contact_role }}</p>
+                                </div>
+                                {% if contact.linkedin_url %}
+                                <a href="{{ contact.linkedin_url }}" target="_blank" class="text-gray-400 hover:text-indigo-600 transition">
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                    </svg>
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% if contact.why_relevant %}
+                            <p class="text-xs text-gray-500 mt-1">{{ contact.why_relevant }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- Job Description -->
             {% if job.description %}
             <div class="mb-6">
