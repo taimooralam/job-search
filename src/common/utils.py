@@ -32,4 +32,9 @@ def sanitize_path_component(value: str, max_length: int = 80) -> str:
     safe = re.sub(r'[^\w\s-]', '_', value)
     # Replace spaces with underscores
     safe = safe.replace(" ", "_")
-    return safe[:max_length] or "unknown"
+    # Truncate to max length
+    safe = safe[:max_length]
+    # Return "unknown" if empty or only underscores/spaces
+    if not safe or safe.replace("_", "").replace(" ", "") == "":
+        return "unknown"
+    return safe

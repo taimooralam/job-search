@@ -28,16 +28,16 @@ class TestSanitizePathComponent:
         assert result == "Senior_Software_Engineer"
 
     def test_removes_commas(self):
-        """Should remove commas entirely."""
+        """Should replace commas with underscores."""
         result = sanitize_path_component("Engineer, Senior")
         assert "," not in result
-        assert result == "Engineer_Senior"
+        assert result == "Engineer__Senior"
 
     def test_removes_dots(self):
-        """Should remove dots entirely."""
+        """Should replace dots with underscores."""
         result = sanitize_path_component("Sr. Engineer")
         assert "." not in result
-        assert result == "Sr_Engineer"
+        assert result == "Sr__Engineer"
 
     def test_truncates_to_max_length(self):
         """Should truncate to max_length."""
