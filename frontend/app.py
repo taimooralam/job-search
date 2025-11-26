@@ -441,7 +441,8 @@ def update_job(job_id: str):
     # Whitelist of editable fields
     editable_fields = [
         "status", "remarks", "notes", "priority",
-        "company", "title", "location", "score", "url", "jobUrl"
+        "company", "title", "location", "score", "url", "jobUrl",
+        "cover_letter"  # Added for Module 3: Cover Letter Editing
     ]
     update_data = {}
 
@@ -697,9 +698,11 @@ def job_detail(job_id: str):
         job['primary_contacts'] = all_contacts[:4]
         job['secondary_contacts'] = all_contacts[4:]
 
-    # Check if HTML CV exists
+    # Load HTML CV content if exists
     serialized_job = serialize_job(job)
     has_html_cv = False
+    cv_html_content = None
+
     if job.get("company") and job.get("title"):
         import os
         from pathlib import Path
@@ -711,6 +714,13 @@ def job_detail(job_id: str):
         if cv_path.exists():
             has_html_cv = True
             serialized_job["has_html_cv"] = True
+            # Load CV HTML content for direct embedding (Module 2: Fix CV Editing)
+            try:
+                cv_html_content = cv_path.read_text(encoding='utf-8')
+                serialized_job["cv_html_content"] = cv_html_content
+            except Exception as e:
+                print(f"Error loading CV content: {e}")
+                serialized_job["cv_html_content"] = None
 
     return render_template(
         "job_detail.html",
