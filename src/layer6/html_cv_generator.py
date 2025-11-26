@@ -286,6 +286,24 @@ class HTMLCVGenerator:
             background: #e6fffa;
             outline: 2px solid #38b2ac;
         }}
+
+        /* Skills Grid */
+        .skills-grid {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }}
+
+        .skill-badge {{
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid #cbd5e0;
+        }}
     </style>
 </head>
 <body>
@@ -300,6 +318,12 @@ class HTMLCVGenerator:
         <section class="cv-section">
             <h2 class="cv-section-title">Professional Summary</h2>
             <p class="cv-summary" contenteditable="true">{summary}</p>
+        </section>
+
+        <!-- Skills -->
+        <section class="cv-section">
+            <h2 class="cv-section-title">Core Competencies</h2>
+            {self._extract_skills(state["candidate_profile"], state["job_description"])}
         </section>
 
         <!-- Key Achievements -->
@@ -380,10 +404,22 @@ class HTMLCVGenerator:
         return html
 
     def _generate_minimal_html_cv(self, state: JobState, competency_mix) -> Tuple[str, str]:
-        """Generate minimal HTML CV when no STARs available."""
+        """Generate enhanced HTML CV when no STARs available."""
         candidate_name, contact_info = self.cv_generator._extract_candidate_header(
             state["candidate_profile"]
         )
+
+        # Generate professional summary
+        summary = self.cv_generator._generate_professional_summary(
+            state["title"],
+            state["company"],
+            state.get("fit_score"),
+            competency_mix
+        )
+
+        # Get skills and education
+        skills_html = self._extract_skills(state["candidate_profile"], state["job_description"])
+        education = self.cv_generator._extract_education(state["candidate_profile"])
 
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -392,39 +428,177 @@ class HTMLCVGenerator:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV - {candidate_name} - {state['title']}</title>
     <style>
+        * {{margin: 0; padding: 0; box-sizing: border-box;}}
         body {{
-            font-family: Arial, sans-serif;
-            max-width: 850px;
-            margin: 2rem auto;
-            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
             background: #f7fafc;
+            padding: 2rem;
         }}
         .cv-container {{
+            max-width: 850px;
+            margin: 0 auto;
             background: white;
             padding: 3rem;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }}
-        h1 {{font-size: 2.5rem; color: #1a202c; text-align: center;}}
-        h2 {{font-size: 1.5rem; color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;}}
-        p {{line-height: 1.6; color: #4a5568;}}
+        .cv-header {{
+            text-align: center;
+            border-bottom: 3px solid #2b6cb0;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }}
+        h1 {{
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }}
+        .cv-contact {{
+            font-size: 0.95rem;
+            color: #4a5568;
+        }}
+        .cv-section {{
+            margin-bottom: 2rem;
+        }}
+        h2 {{
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2b6cb0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }}
+        p {{
+            line-height: 1.8;
+            color: #4a5568;
+        }}
+        .skills-grid {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }}
+        .skill-badge {{
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid #cbd5e0;
+        }}
+        .notice {{
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #856404;
+            font-size: 0.9rem;
+        }}
+        [contenteditable="true"]:hover {{
+            background: #edf2f7;
+            outline: 1px dashed #2b6cb0;
+        }}
+        [contenteditable="true"]:focus {{
+            background: #e6fffa;
+            outline: 2px solid #38b2ac;
+        }}
+        @media print {{
+            body {{background: white; padding: 0;}}
+            .cv-container {{box-shadow: none; max-width: 100%;}}
+            .notice {{display: none;}}
+        }}
     </style>
 </head>
 <body>
     <div class="cv-container">
-        <h1>{candidate_name}</h1>
-        <p style="text-align: center; color: #718096;">{contact_info}</p>
-        <br>
-        <h2>Professional Summary</h2>
-        <p>Applying for {state['title']} at {state['company']}. Detailed achievement metrics (STAR records) are being populated.</p>
+        <header class="cv-header">
+            <h1 contenteditable="true">{candidate_name}</h1>
+            <p class="cv-contact" contenteditable="true">{contact_info}</p>
+        </header>
+
+        <div class="notice">
+            <strong>⚠️ Note:</strong> This is a preliminary CV. Detailed achievement metrics (STAR records) will be added once your experience history is populated in the knowledge base.
+        </div>
+
+        <section class="cv-section">
+            <h2>Professional Summary</h2>
+            <p contenteditable="true">{summary}</p>
+        </section>
+
+        <section class="cv-section">
+            <h2>Core Competencies</h2>
+            {skills_html}
+        </section>
+
+        <section class="cv-section">
+            <h2>Education & Certifications</h2>
+            <div contenteditable="true">
+"""
+
+        # Format education with line breaks
+        education_lines = education.split('\n')
+        for line in education_lines:
+            if line.strip():
+                html += f"                <p>{line.strip()}</p>\n"
+
+        html += f"""            </div>
+        </section>
+
+        <div style="display: none;">
+            <meta name="job-id" content="{state.get('job_id', '')}">
+            <meta name="company" content="{state['company']}">
+            <meta name="role" content="{state['title']}">
+            <meta name="generated-at" content="{datetime.now().isoformat()}">
+        </div>
     </div>
 </body>
 </html>"""
 
         html_path = self._save_html_cv(state, html)
 
-        cv_reasoning = f"Minimal HTML CV generated for {state['title']} at {state['company']} due to missing STAR data."
+        cv_reasoning = f"Enhanced minimal CV generated for {state['title']} at {state['company']} with profile summary, skills, and education. STAR records to be added when available."
 
         return html_path, cv_reasoning
+
+    def _extract_skills(self, profile: str, job_description: str = "") -> str:
+        """
+        Extract skills from candidate profile and format as HTML.
+
+        Looks for common skill indicators in the profile text.
+        Returns HTML string with skill badges/list.
+        """
+        skills = []
+
+        # Common technical skills to look for
+        tech_keywords = [
+            'Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'Go', 'Rust',
+            'React', 'Vue', 'Angular', 'Node.js', 'Django', 'Flask',
+            'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'Terraform',
+            'PostgreSQL', 'MongoDB', 'Redis', 'MySQL',
+            'Git', 'CI/CD', 'Jenkins', 'GitHub Actions',
+            'Machine Learning', 'AI', 'Data Science', 'NLP',
+            'Microservices', 'REST API', 'GraphQL', 'gRPC',
+            'Agile', 'Scrum', 'Leadership', 'Team Management'
+        ]
+
+        profile_lower = profile.lower()
+        for keyword in tech_keywords:
+            if keyword.lower() in profile_lower:
+                skills.append(keyword)
+
+        if not skills:
+            return '<p class="text-gray-500">Skills being updated...</p>'
+
+        # Create skill badges HTML
+        html = '<div class="skills-grid">\n'
+        for skill in skills[:15]:  # Limit to top 15
+            html += f'  <span class="skill-badge">{skill}</span>\n'
+        html += '</div>'
+
+        return html
 
     def _save_html_cv(self, state: JobState, html_content: str) -> str:
         """
