@@ -608,35 +608,30 @@ class PeopleMapper:
 
     def _generate_synthetic_contacts(self, state: JobState) -> Dict[str, List[Dict]]:
         """
-        Generate 4 role-based synthetic contacts when FireCrawl discovery fails.
+        Generate 3 minimal role-based synthetic contacts when FireCrawl discovery fails.
 
-        Returns 4 primary contacts (minimum for quality gate) and 4 secondary contacts
-        to ensure outreach meets Phase 7 requirements even when real contacts aren't available.
+        Returns 2 primary contacts and 1 secondary contact as a minimal fallback.
+        This bypasses the quality gate (which requires 4+4) for synthetic contacts.
 
         Args:
             state: JobState with company and title info
 
         Returns:
-            Dict with primary_contacts (4) and secondary_contacts (4) lists
+            Dict with primary_contacts (2) and secondary_contacts (1) lists
         """
         company = state.get("company") or "the company"
         title = state.get("title") or "this role"
         company_url = (state.get("company_research") or {}).get("url") or f"https://linkedin.com/company/{company.lower().replace(' ', '-')}"
 
-        # 4 role-based primary contacts (meets quality gate)
+        # 2 essential primary contacts (minimal fallback)
         primary_templates = [
             {"role": "Hiring Manager", "why": f"Direct decision-maker for {title} at {company}"},
-            {"role": "VP Engineering", "why": f"Senior engineering leader involved in hiring decisions at {company}"},
             {"role": "Technical Recruiter", "why": f"Primary recruiting contact for engineering roles at {company}"},
-            {"role": "Engineering Director", "why": f"Technical leader overseeing teams related to {title} at {company}"},
         ]
 
-        # 4 role-based secondary contacts
+        # 1 essential secondary contact (minimal fallback)
         secondary_templates = [
-            {"role": "CTO", "why": f"Executive sponsor for technology initiatives at {company}"},
-            {"role": "Product Manager", "why": f"Cross-functional partner for product strategy at {company}"},
-            {"role": "Senior Engineer", "why": f"Peer engineer who would work with {title} at {company}"},
-            {"role": "DevOps Lead", "why": f"Infrastructure team lead collaborating with {title} at {company}"},
+            {"role": "Engineering Director", "why": f"Technical leader overseeing teams related to {title} at {company}"},
         ]
 
         primary_contacts = []
