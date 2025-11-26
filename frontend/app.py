@@ -95,6 +95,30 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def sanitize_for_path(text: str) -> str:
+    """
+    Sanitize text for use in filesystem paths.
+
+    Removes special characters (except word chars, spaces, hyphens)
+    and replaces spaces with underscores.
+
+    Args:
+        text: Raw text (company name, job title, etc.)
+
+    Returns:
+        Sanitized string safe for filesystem paths
+
+    Example:
+        >>> sanitize_for_path("Director of Engineering (Software)")
+        "Director_of_Engineering__Software_"
+    """
+    import re
+    # Remove special characters except word characters, spaces, and hyphens
+    cleaned = re.sub(r'[^\w\s-]', '_', text)
+    # Replace spaces with underscores
+    return cleaned.replace(" ", "_")
+
+
 # ============================================================================
 # Authentication
 # ============================================================================
@@ -705,10 +729,12 @@ def job_detail(job_id: str):
 
     if job.get("company") and job.get("title"):
         import os
+        import re
         from pathlib import Path
 
-        company_clean = job["company"].replace(" ", "_").replace("/", "_")
-        title_clean = job["title"].replace(" ", "_").replace("/", "_")
+        # Sanitize company and title for filesystem
+        company_clean = sanitize_for_path(job["company"])
+        title_clean = sanitize_for_path(job["title"])
         cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
 
         if cv_path.exists():
@@ -753,8 +779,8 @@ def get_job_cv(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
 
     if not cv_path.exists():
@@ -793,8 +819,8 @@ def update_job_cv(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     cv_path = Path("../applications") / company_clean / title_clean / "CV.html"
 
     # Write updated content
@@ -828,8 +854,8 @@ def generate_cv_pdf(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     cv_html_path = Path("../applications") / company_clean / title_clean / "CV.html"
     cv_pdf_path = Path("../applications") / company_clean / title_clean / "CV.pdf"
 
@@ -890,8 +916,8 @@ def download_cv_pdf(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     cv_pdf_path = Path("../applications") / company_clean / title_clean / "CV.pdf"
 
     if not cv_pdf_path.exists():
@@ -940,8 +966,8 @@ def generate_cover_letter_pdf(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     output_dir = Path("../applications") / company_clean / title_clean
     output_dir.mkdir(parents=True, exist_ok=True)
     pdf_path = output_dir / "cover_letter.pdf"
@@ -1015,8 +1041,8 @@ def download_cover_letter_pdf(job_id: str):
     if not job.get("company") or not job.get("title"):
         return jsonify({"error": "Job missing company or title"}), 400
 
-    company_clean = job["company"].replace(" ", "_").replace("/", "_")
-    title_clean = job["title"].replace(" ", "_").replace("/", "_")
+    company_clean = sanitize_for_path(job["company"])
+    title_clean = sanitize_for_path(job["title"])
     pdf_path = Path("../applications") / company_clean / title_clean / "cover_letter.pdf"
 
     if not pdf_path.exists():
