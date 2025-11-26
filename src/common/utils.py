@@ -23,11 +23,13 @@ def sanitize_path_component(value: str, max_length: int = 80) -> str:
     Example:
         >>> sanitize_path_component("Technology Strategy/Enterprise Architect")
         'Technology_Strategy_Enterprise_Architect'
+        >>> sanitize_path_component("Director of Engineering (Software)")
+        'Director_of_Engineering__Software_'
     """
-    safe = (value
-            .replace("/", "_")
-            .replace("\\", "_")
-            .replace(" ", "_")
-            .replace(",", "")
-            .replace(".", ""))
+    import re
+    # Remove all special characters except word chars, spaces, and hyphens
+    # This matches the frontend's sanitization for consistency
+    safe = re.sub(r'[^\w\s-]', '_', value)
+    # Replace spaces with underscores
+    safe = safe.replace(" ", "_")
     return safe[:max_length] or "unknown"
