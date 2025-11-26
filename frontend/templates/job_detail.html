@@ -186,13 +186,14 @@
                 </div>
 
                 <!-- CV Preview Container -->
-                <div id="cv-preview-container" class="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                    <!-- CV will be loaded here via iframe -->
-                    <iframe id="cv-iframe"
-                            src="/api/jobs/{{ job._id }}/cv"
-                            class="w-full border-0"
-                            style="height: 800px;"
-                            onload="initCVEditor()"></iframe>
+                <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 800px;">
+                    {% if job.cv_html_content %}
+                        {{ job.cv_html_content | safe }}
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <p>No CV generated yet. Run the pipeline to generate a CV.</p>
+                        </div>
+                    {% endif %}
                 </div>
 
                 <!-- Loading overlay -->
@@ -205,6 +206,49 @@
                         <p class="text-sm text-gray-600">Processing...</p>
                     </div>
                 </div>
+            </div>
+            {% endif %}
+
+            <!-- Cover Letter Section -->
+            {% if job.cover_letter %}
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        <svg class="inline-block h-4 w-4 mr-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Cover Letter
+                    </h2>
+                    <div class="flex gap-2">
+                        <button id="edit-cl-btn" onclick="toggleCoverLetterEdit()"
+                                class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 transition">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            <span id="edit-cl-text">Edit</span>
+                        </button>
+                        <button id="save-cl-btn" onclick="saveCoverLetterChanges()"
+                                class="hidden inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 transition">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Save
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display Mode -->
+                <div id="cl-display" class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <pre id="cl-text" class="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">{{ job.cover_letter }}</pre>
+                </div>
+
+                <!-- Edit Mode (hidden by default) -->
+                <textarea id="cl-textarea"
+                          class="hidden w-full h-64 p-4 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                          placeholder="Enter cover letter text...">{{ job.cover_letter }}</textarea>
+
+                <!-- Validation Warnings (shown after save) -->
+                <div id="cl-warnings" class="hidden mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800"></div>
             </div>
             {% endif %}
 
@@ -924,35 +968,20 @@
     // ============================================================================
 
     let cvEditMode = false;
-    let cvIframeDoc = null;
 
-    // Initialize CV editor after iframe loads
-    function initCVEditor() {
-        const iframe = document.getElementById('cv-iframe');
-        if (!iframe) return;
-
-        try {
-            cvIframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-            // Initially disable all contenteditable elements
-            if (cvIframeDoc) {
-                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable="true"]');
-                editableElements.forEach(el => {
-                    el.setAttribute('contenteditable', 'false');
-                });
-            }
-        } catch (e) {
-            console.error('Failed to access iframe document:', e);
-        }
-    }
-
-    // Toggle CV edit mode
+    // Toggle CV edit mode (Module 2: Direct DOM manipulation, no iframe)
     function toggleCVEdit() {
         cvEditMode = !cvEditMode;
 
         const editBtn = document.getElementById('edit-cv-btn');
         const editText = document.getElementById('edit-cv-text');
         const saveBtn = document.getElementById('save-cv-btn');
+        const cvContainer = document.getElementById('cv-container');
+
+        if (!cvContainer) {
+            showToast('CV container not found', 'error');
+            return;
+        }
 
         if (cvEditMode) {
             // Enable editing
@@ -961,13 +990,11 @@
             editBtn.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
             saveBtn.classList.remove('hidden');
 
-            // Enable contenteditable in iframe
-            if (cvIframeDoc) {
-                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable]');
-                editableElements.forEach(el => {
-                    el.setAttribute('contenteditable', 'true');
-                });
-            }
+            // Enable contenteditable elements
+            const editableElements = cvContainer.querySelectorAll('[contenteditable]');
+            editableElements.forEach(el => {
+                el.setAttribute('contenteditable', 'true');
+            });
         } else {
             // Disable editing
             editText.textContent = 'Edit CV';
@@ -975,26 +1002,26 @@
             editBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
             saveBtn.classList.add('hidden');
 
-            // Disable contenteditable in iframe
-            if (cvIframeDoc) {
-                const editableElements = cvIframeDoc.querySelectorAll('[contenteditable]');
-                editableElements.forEach(el => {
-                    el.setAttribute('contenteditable', 'false');
-                });
-            }
+            // Disable contenteditable elements
+            const editableElements = cvContainer.querySelectorAll('[contenteditable]');
+            editableElements.forEach(el => {
+                el.setAttribute('contenteditable', 'false');
+            });
         }
     }
 
-    // Save CV changes
+    // Save CV changes (Module 2: Direct DOM access)
     async function saveCVChanges() {
-        if (!cvIframeDoc) {
-            showToast('CV document not loaded', 'error');
+        const cvContainer = document.getElementById('cv-container');
+
+        if (!cvContainer) {
+            showToast('CV container not found', 'error');
             return;
         }
 
         try {
-            // Get the full HTML content from iframe
-            const htmlContent = cvIframeDoc.documentElement.outerHTML;
+            // Get the full HTML content from the cv-container
+            const htmlContent = cvContainer.innerHTML;
 
             // Show loading
             showToast('Saving CV changes...', 'info');
@@ -1043,6 +1070,119 @@
             }
         } catch (err) {
             showToast('PDF generation failed: ' + err.message, 'error');
+        }
+    }
+
+    // ============================================================================
+    // Cover Letter Editing
+    // ============================================================================
+
+    let clEditMode = false;
+
+    function toggleCoverLetterEdit() {
+        clEditMode = !clEditMode;
+
+        const editBtn = document.getElementById('edit-cl-btn');
+        const editText = document.getElementById('edit-cl-text');
+        const saveBtn = document.getElementById('save-cl-btn');
+        const displayDiv = document.getElementById('cl-display');
+        const textArea = document.getElementById('cl-textarea');
+        const warningsDiv = document.getElementById('cl-warnings');
+
+        if (clEditMode) {
+            // Enter edit mode
+            editText.textContent = 'Cancel';
+            editBtn.classList.remove('text-purple-700', 'bg-purple-50', 'border-purple-200');
+            editBtn.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
+            saveBtn.classList.remove('hidden');
+            displayDiv.classList.add('hidden');
+            textArea.classList.remove('hidden');
+            warningsDiv.classList.add('hidden');
+            textArea.focus();
+        } else {
+            // Exit edit mode (cancel)
+            editText.textContent = 'Edit';
+            editBtn.classList.remove('text-red-700', 'bg-red-50', 'border-red-200');
+            editBtn.classList.add('text-purple-700', 'bg-purple-50', 'border-purple-200');
+            saveBtn.classList.add('hidden');
+            displayDiv.classList.remove('hidden');
+            textArea.classList.add('hidden');
+            // Reset textarea to original value
+            textArea.value = document.getElementById('cl-text').textContent;
+        }
+    }
+
+    async function saveCoverLetterChanges() {
+        const textArea = document.getElementById('cl-textarea');
+        const newText = textArea.value.trim();
+
+        if (!newText) {
+            showToast('Cover letter cannot be empty', 'error');
+            return;
+        }
+
+        showToast('Saving cover letter...', 'info');
+
+        try {
+            const response = await fetch(`/api/jobs/${jobId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cover_letter: newText })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Update display
+                document.getElementById('cl-text').textContent = newText;
+                showToast('Cover letter saved');
+
+                // Validate and show warnings
+                validateCoverLetter(newText);
+
+                // Exit edit mode
+                toggleCoverLetterEdit();
+            } else {
+                showToast(result.error || 'Failed to save', 'error');
+            }
+        } catch (err) {
+            showToast('Save failed: ' + err.message, 'error');
+        }
+    }
+
+    function validateCoverLetter(text) {
+        const warnings = [];
+        const words = text.split(/\s+/).length;
+
+        // Word count check
+        if (words < 180) warnings.push('Cover letter is short (' + words + ' words, recommended: 180-420)');
+        if (words > 420) warnings.push('Cover letter is long (' + words + ' words, recommended: 180-420)');
+
+        // Metrics check
+        if (!/\d+%|\d+x|\$\d+|\d+\s*(years?|months?|days?|hours?)/i.test(text)) {
+            warnings.push('No quantified metrics found (add percentages, multipliers, or dollar amounts)');
+        }
+
+        // Calendly check
+        if (!text.includes('calendly.com/taimooralam')) {
+            warnings.push('Missing Calendly link (required for call-to-action)');
+        }
+
+        // Boilerplate check
+        const boilerplate = ['excited to apply', 'dream job', 'perfect fit', 'passionate about', 'eager to'];
+        const found = boilerplate.filter(phrase => text.toLowerCase().includes(phrase));
+        if (found.length > 2) {
+            warnings.push('Contains generic phrases: ' + found.join(', '));
+        }
+
+        // Show warnings
+        const warningsDiv = document.getElementById('cl-warnings');
+        if (warnings.length > 0) {
+            warningsDiv.innerHTML = '<strong>Validation Warnings:</strong><ul class="list-disc ml-4 mt-1">' +
+                warnings.map(w => '<li>' + w + '</li>').join('') + '</ul>';
+            warningsDiv.classList.remove('hidden');
+        } else {
+            warningsDiv.classList.add('hidden');
         }
     }
 </script>
