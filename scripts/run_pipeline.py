@@ -33,34 +33,31 @@ def load_job_from_mongo(job_id: str) -> dict:
     Load job data from MongoDB.
 
     Args:
-        job_id: LinkedIn job ID (can be string or int)
+        job_id: MongoDB ObjectId as string (e.g., "691356b0d156e3f08a0bdb3c")
 
     Returns:
         Dict with job data
     """
+    from bson import ObjectId
+
     # Connect to MongoDB
     client = MongoClient(Config.MONGODB_URI)
     db = client['jobs']
 
-    # Try to convert job_id to int (your schema uses int jobId)
+    # Try to convert job_id to ObjectId
     try:
-        job_id_int = int(job_id)
-    except ValueError:
-        job_id_int = None
+        object_id = ObjectId(job_id)
+    except Exception as e:
+        raise ValueError(f"Invalid ObjectId format: {job_id}. Error: {e}")
 
     # Search in level-2 first (filtered/scored jobs), then level-1
     job = None
     collection_name = None
 
     for coll_name in ['level-2', 'level-1']:
-        # Try both string and int versions
-        for jid in [job_id, job_id_int]:
-            if jid:
-                job = db[coll_name].find_one({"jobId": jid})
-                if job:
-                    collection_name = coll_name
-                    break
+        job = db[coll_name].find_one({"_id": object_id})
         if job:
+            collection_name = coll_name
             break
 
     if not job:
@@ -74,7 +71,7 @@ def load_job_from_mongo(job_id: str) -> dict:
 
     # Extract relevant fields (matching your schema)
     job_data = {
-        "job_id": str(job.get("jobId", "")),
+        "job_id": str(job.get("_id", "")),  # Use MongoDB _id
         "title": job.get("title", ""),
         "company": job.get("company", ""),
         "description": job.get("job_description", ""),
