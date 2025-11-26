@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV - # Candidate Profile - Senior Software Engineer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: #f7fafc;
+            padding: 2rem;
+        }
+
+        .cv-container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 3rem;
+        }
+
+        .cv-header {
+            text-align: center;
+            border-bottom: 3px solid #2b6cb0;
+            padding-bottom: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .cv-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .cv-contact {
+            font-size: 0.95rem;
+            color: #4a5568;
+        }
+
+        .cv-section {
+            margin-bottom: 2rem;
+        }
+
+        .cv-section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2b6cb0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cv-summary {
+            font-size: 1.05rem;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+
+        .cv-achievements {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .cv-achievements li {
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+
+        .cv-achievements li:before {
+            content: "▪";
+            position: absolute;
+            left: 0;
+            color: #2b6cb0;
+            font-weight: bold;
+        }
+
+        .cv-experience-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .cv-experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .cv-role {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .cv-company {
+            color: #2b6cb0;
+            font-weight: 500;
+        }
+
+        .cv-period {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .cv-experience-bullets {
+            list-style: none;
+            padding-left: 1.5rem;
+        }
+
+        .cv-experience-bullets li {
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+
+        .cv-experience-bullets li:before {
+            content: "•";
+            position: absolute;
+            left: -1rem;
+            color: #2b6cb0;
+        }
+
+        .cv-education {
+            color: #4a5568;
+        }
+
+        /* Print styles for PDF generation */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .cv-container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+        }
+
+        /* Editable indicator */
+        [contenteditable="true"]:hover {
+            background: #edf2f7;
+            outline: 1px dashed #2b6cb0;
+        }
+
+        [contenteditable="true"]:focus {
+            background: #e6fffa;
+            outline: 2px solid #38b2ac;
+        }
+    </style>
+</head>
+<body>
+    <div class="cv-container">
+        <!-- Header -->
+        <header class="cv-header">
+            <h1 class="cv-name" contenteditable="true"># Candidate Profile</h1>
+            <p class="cv-contact" contenteditable="true">** john.doe@example.com | **Phone:** +1-555-0123</p>
+        </header>
+
+        <!-- Professional Summary -->
+        <section class="cv-section">
+            <h2 class="cv-section-title">Professional Summary</h2>
+            <p class="cv-summary" contenteditable="true">Seasoned technical professional with demonstrated expertise in technical and leadership, targeting Senior Software Engineer opportunities. Proven track record of delivering measurable business impact through technical leadership and data-driven decision-making.</p>
+        </section>
+
+        <!-- Key Achievements -->
+        <section class="cv-section">
+            <h2 class="cv-section-title">Key Achievements</h2>
+            <ul class="cv-achievements">
+            </ul>
+        </section>
+
+        <!-- Professional Experience -->
+        <section class="cv-section">
+            <h2 class="cv-section-title">Professional Experience</h2>
+            <div class="cv-experience-item">
+                <div class="cv-experience-header">
+                    <div>
+                        <span class="cv-role" contenteditable="true">Lead Software Engineer</span> |
+                        <span class="cv-company" contenteditable="true">Previous Corp</span>
+                    </div>
+                    <span class="cv-period" contenteditable="true">2020-2024</span>
+                </div>
+                <ul class="cv-experience-bullets">
+                    <li contenteditable="true">Legacy monolithic system causing scaling issues. Tasked with redesign architecture to support 10x traffic growth</li>
+                </ul>
+            </div>
+            <div class="cv-experience-item">
+                <div class="cv-experience-header">
+                    <div>
+                        <span class="cv-role" contenteditable="true">Software Engineer</span> |
+                        <span class="cv-company" contenteditable="true">StartupCo</span>
+                    </div>
+                    <span class="cv-period" contenteditable="true">2018-2020</span>
+                </div>
+                <ul class="cv-experience-bullets">
+                    <li contenteditable="true">Manual deployment process causing frequent production incidents. Tasked with implement ci/cd pipeline and automated testing</li>
+                </ul>
+            </div>
+            <div class="cv-experience-item">
+                <div class="cv-experience-header">
+                    <div>
+                        <span class="cv-role" contenteditable="true">Junior Software Engineer</span> |
+                        <span class="cv-company" contenteditable="true">BigTech Corp</span>
+                    </div>
+                    <span class="cv-period" contenteditable="true">2016-2018</span>
+                </div>
+                <ul class="cv-experience-bullets">
+                    <li contenteditable="true">Payment processing system had 30-second latency. Tasked with optimize payment flow to meet sub-second sla</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Education -->
+        <section class="cv-section">
+            <h2 class="cv-section-title">Education & Certifications</h2>
+            <div class="cv-education" contenteditable="true">
+                <p>**B.S. Computer Science** - Stanford University (2015)</p>
+                <p>**M.S. Computer Science** - MIT (2017)</p>
+                <p>AWS Certified Solutions Architect</p>
+            </div>
+        </section>
+
+        <!-- Metadata (hidden, for tracking) -->
+        <div style="display: none;">
+            <meta name="job-id" content="test-12345">
+            <meta name="company" content="TechCorp Inc">
+            <meta name="role" content="Senior Software Engineer">
+            <meta name="generated-at" content="2025-11-26T08:59:23.196932">
+        </div>
+    </div>
+</body>
+</html>
