@@ -968,9 +968,19 @@ def generate_cover_letter_pdf(job_id: str):
 
     company_clean = sanitize_for_path(job["company"])
     title_clean = sanitize_for_path(job["title"])
-    output_dir = Path("../applications") / company_clean / title_clean
-    output_dir.mkdir(parents=True, exist_ok=True)
-    pdf_path = output_dir / "cover_letter.pdf"
+
+    # Use /tmp for serverless environments (Vercel), fallback to ../applications for local
+    import tempfile
+    is_serverless = os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+
+    if is_serverless:
+        # Write to /tmp in serverless environments
+        pdf_path = Path(tempfile.gettempdir()) / f"cover_letter_{company_clean}_{title_clean}.pdf"
+    else:
+        # Write to applications directory locally
+        output_dir = Path("../applications") / company_clean / title_clean
+        output_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = output_dir / "cover_letter.pdf"
 
     try:
         # Create PDF using ReportLab
@@ -997,11 +1007,14 @@ def generate_cover_letter_pdf(job_id: str):
         # Build content
         story = []
 
-        # Split cover letter into paragraphs
+        # Split cover letter into paragraphs and escape HTML entities
+        import html
         paragraphs = cover_letter.split('\n\n')
         for para in paragraphs:
             if para.strip():
-                story.append(Paragraph(para.strip(), body_style))
+                # Escape HTML entities to prevent ReportLab parsing issues
+                safe_para = html.escape(para.strip())
+                story.append(Paragraph(safe_para, body_style))
                 story.append(Spacer(1, 12))
 
         # Build PDF
@@ -1043,7 +1056,15 @@ def download_cover_letter_pdf(job_id: str):
 
     company_clean = sanitize_for_path(job["company"])
     title_clean = sanitize_for_path(job["title"])
-    pdf_path = Path("../applications") / company_clean / title_clean / "cover_letter.pdf"
+
+    # Check /tmp first (serverless), then applications directory (local)
+    import tempfile
+    is_serverless = os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+
+    if is_serverless:
+        pdf_path = Path(tempfile.gettempdir()) / f"cover_letter_{company_clean}_{title_clean}.pdf"
+    else:
+        pdf_path = Path("../applications") / company_clean / title_clean / "cover_letter.pdf"
 
     if not pdf_path.exists():
         return jsonify({"error": "PDF not found. Generate it first."}), 404
