@@ -28,14 +28,16 @@
 | Issue | Impact | Fix |
 |-------|--------|-----|
 | Anthropic credits low | CV generation fails | Add credits or use `USE_ANTHROPIC=false` |
-| CV tests unmocked | Tests fail in CI | Add pytest mocks (Step 4 in next-steps.md) |
 
 ---
 
 ## Remaining Gaps (Non-Blocking)
 
 ### Testing
-- [ ] CV generator tests need mocking to avoid real API calls
+- [x] CV generator tests need mocking to avoid real API calls ✅ **COMPLETED 2025-11-26**
+  - Added `mock_llm_providers` fixture mocking ChatAnthropic and ChatOpenAI
+  - All 188 unit tests pass without real API calls
+  - Added 30+ new tests for CV editing API and HTML CV generator
 - [ ] Integration tests not in GitHub Actions CI
 - [ ] No coverage tracking
 
