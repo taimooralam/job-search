@@ -209,6 +209,8 @@ class TestPydanticModels:
 class TestFireCrawlContactDiscovery:
     """Test multi-source FireCrawl contact discovery."""
 
+    @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
+    @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
     def test_searches_company_team_page(self, mock_firecrawl_class, sample_job_state, firecrawl_team_page_result):
         """Scrapes company team/about page for contacts."""
@@ -227,51 +229,79 @@ class TestFireCrawlContactDiscovery:
         assert raw_contacts is not None
         assert "Sarah Chen" in raw_contacts or "VP Engineering" in raw_contacts
 
+    @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
+    @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    def test_searches_linkedin_with_firecrawl(self, mock_firecrawl_class, sample_job_state, firecrawl_linkedin_result):
-        """Uses FireCrawl search to find LinkedIn company page."""
+    def test_searches_linkedin_with_firecrawl(self, mock_firecrawl_class, sample_job_state):
+        """Uses FireCrawl search to find LinkedIn profiles (Option A - metadata extraction)."""
         mock_firecrawl = MagicMock()
         mock_search_response = MagicMock()
+
+        # Mock search results with realistic LinkedIn profile metadata
+        mock_linkedin_result = MagicMock()
+        mock_linkedin_result.url = "https://www.linkedin.com/in/sarahchen"
+        mock_linkedin_result.title = "Sarah Chen - VP Engineering at TechCorp"
+        mock_linkedin_result.description = "VP Engineering at TechCorp · Experience: TechCorp · Location: San Francisco"
+
         # Support both old and new SDK formats
-        mock_search_response.web = [firecrawl_linkedin_result]
-        mock_search_response.data = [firecrawl_linkedin_result]
+        mock_search_response.web = [mock_linkedin_result]
+        mock_search_response.data = [mock_linkedin_result]
         mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mapper = PeopleMapper()
-        raw_contacts = mapper._search_linkedin_contacts(
+        contacts = mapper._search_linkedin_contacts(
             company="TechCorp",
             department="engineering"
         )
 
-        # Should have searched for LinkedIn
+        # Should have searched for LinkedIn with SEO-style queries
         mock_firecrawl.search.assert_called()
         call_args = mock_firecrawl.search.call_args[0][0]
         assert "TechCorp" in call_args
-        assert "LinkedIn" in call_args or "engineering" in call_args
+        assert "site:linkedin.com/in" in call_args or "LinkedIn" in call_args
 
+        # Should return list of contact dicts (Option A improvement)
+        assert isinstance(contacts, list)
+        if contacts:  # If extraction succeeded
+            assert "name" in contacts[0]
+            assert "role" in contacts[0]
+            assert "linkedin_url" in contacts[0]
+
+    @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
+    @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
     def test_searches_for_hiring_manager(self, mock_firecrawl_class, sample_job_state):
-        """Searches for hiring manager using title + company."""
+        """Searches for hiring manager using title + company (Option A - metadata extraction)."""
         mock_firecrawl = MagicMock()
         mock_search_response = MagicMock()
+
+        # Mock senior leadership search result
+        mock_leader_result = MagicMock()
+        mock_leader_result.url = "https://www.linkedin.com/in/johnsmith"
+        mock_leader_result.title = "John Smith - CTO at TechCorp"
+        mock_leader_result.description = "Chief Technology Officer at TechCorp"
+
         # Support both old and new SDK formats
-        mock_search_response.web = []
-        mock_search_response.data = []
+        mock_search_response.web = [mock_leader_result]
+        mock_search_response.data = [mock_leader_result]
         mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mapper = PeopleMapper()
-        mapper._search_hiring_manager(
+        contacts = mapper._search_hiring_manager(
             company="TechCorp",
             title="Senior Software Engineer"
         )
 
-        # Should search for hiring manager
+        # Should search for senior leadership with SEO-style query
         mock_firecrawl.search.assert_called()
         call_args = mock_firecrawl.search.call_args[0][0]
         assert "TechCorp" in call_args
-        assert "hiring manager" in call_args.lower() or "Senior Software Engineer" in call_args
+        assert "CTO" in call_args or "VP Engineering" in call_args or "LinkedIn" in call_args
+
+        # Should return list of contact dicts (Option A improvement)
+        assert isinstance(contacts, list)
 
     @patch('src.layer5.people_mapper.FirecrawlApp')
     def test_deduplicates_contacts_across_sources(self, mock_firecrawl_class, sample_job_state):
@@ -293,6 +323,8 @@ class TestFireCrawlContactDiscovery:
         assert names.count("Sarah Chen") == 1
         assert names.count("John Smith") == 1
 
+    @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
+    @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
     def test_searches_crunchbase_team(self, mock_firecrawl_class, sample_job_state):
         """Uses FireCrawl search to find Crunchbase team page."""
