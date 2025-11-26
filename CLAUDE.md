@@ -45,3 +45,4 @@ Guidance for using Claude Code with this repository.
 - whenever you git commit, plan atomic commits
 - remember not to add claude signature to commits
 - before committing always run unit tests
+- when testing during development do not test integration or bulk tests
