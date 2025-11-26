@@ -237,6 +237,89 @@ applications/
 
 ---
 
+## CV Rich Text Editor (Planned)
+
+**Documentation**: See `plans/editor-solution.md` for full specification.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Job Detail Page                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────┐  ┌─────────────────────────────────────┐   │
+│  │   Main Content Area         │  │   CV Editor Side Panel (Right)     │   │
+│  │   - Cover Letter            │  │  ┌───────────────────────────────┐  │   │
+│  │   - Pain Points             │  │  │ [✕] [↔ Expand]  [Export PDF]  │  │   │
+│  │   - Contacts                │  │  │ ● Saved 3s ago                │  │   │
+│  │                             │  │  ├───────────────────────────────┤  │   │
+│  │  [Edit CV] ─────────────────┼──┤  │ Toolbar: Font | B | I | U | • │  │   │
+│  │                             │  │  ├───────────────────────────────┤  │   │
+│  │                             │  │  │                               │  │   │
+│  │                             │  │  │  TipTap Rich Text Editor      │  │   │
+│  │                             │  │  │  (Letter/A4 Preview)          │  │   │
+│  │                             │  │  │                               │  │   │
+│  │                             │  │  └───────────────────────────────┘  │   │
+│  └─────────────────────────────┘  └─────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Rich Text | TipTap v2 (ProseMirror) | Professional editing with JSON output |
+| Fonts | Google Fonts | Inter, Roboto, Open Sans, etc. |
+| PDF Export | html2pdf.js | Client-side PDF generation |
+| Persistence | MongoDB | `cv_editor_state` field in `level-2` |
+| UI Framework | Vanilla JS + Tailwind | Consistent with existing frontend |
+
+### Data Flow
+
+```
+Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
+                                                  ↓
+                                       cv_editor_state migration
+                                                  ↓
+                          TipTap Editor  ←  GET /api/jobs/{id}/cv-editor
+                                  ↓
+                           User edits
+                                  ↓
+                    Auto-save (3s debounce)  →  PUT /api/jobs/{id}/cv-editor  →  MongoDB
+                                  ↓
+                           Export PDF  →  Local machine
+```
+
+### MongoDB Schema Addition
+
+```javascript
+// level-2 collection
+{
+  cv_editor_state: {
+    version: 1,
+    content: { type: "doc", content: [...] },  // TipTap JSON
+    documentStyles: {
+      fontFamily: "Inter",
+      fontSize: 11,
+      lineHeight: 1.5,
+      margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 }
+    },
+    lastSavedAt: ISODate
+  }
+}
+```
+
+### Key Features
+
+- **Notion-style side panel**: Collapsible, expandable to full screen
+- **Auto-save**: 3-second debounce with visual indicator (●/○/◐)
+- **State restoration**: Exact content + styles recreated from MongoDB
+- **PDF export**: Client-side via html2pdf.js
+
+---
+
 ## Reliability
 
 - **Retries**: tenacity with exponential backoff on all LLM calls
