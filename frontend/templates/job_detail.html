@@ -234,6 +234,13 @@
                             </svg>
                             Save
                         </button>
+                        <button onclick="generateCoverLetterPDF()"
+                                class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                            Export PDF
+                        </button>
                     </div>
                 </div>
 
@@ -1183,6 +1190,32 @@
             warningsDiv.classList.remove('hidden');
         } else {
             warningsDiv.classList.add('hidden');
+        }
+    }
+
+    // Generate PDF from cover letter
+    async function generateCoverLetterPDF() {
+        try {
+            showToast('Generating cover letter PDF...', 'info');
+
+            const response = await fetch(`/api/jobs/${jobId}/cover-letter/pdf`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast('PDF generated successfully');
+
+                // Open download link after a short delay
+                setTimeout(() => {
+                    window.location.href = `/api/jobs/${jobId}/cover-letter/download`;
+                }, 500);
+            } else {
+                showToast(result.error || 'PDF generation failed', 'error');
+            }
+        } catch (err) {
+            showToast('PDF generation failed: ' + err.message, 'error');
         }
     }
 </script>
