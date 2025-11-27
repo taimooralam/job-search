@@ -29,6 +29,70 @@ The 7-layer LangGraph pipeline is **fully implemented**:
 
 ---
 
+## LinkedIn Outreach Generation Specification
+
+### Character Limits (CRITICAL)
+
+All LinkedIn outreach messages must respect character limits enforced by LinkedIn:
+
+| Message Type | Character Limit | Status |
+|--------------|-----------------|--------|
+| Connection Request | **300 characters** (HARD LIMIT) | Enforced in Layer 6 |
+| InMail Body | **1900 characters** (HARD LIMIT) | Enforced in Layer 6 |
+| InMail Subject | **200 characters** (HARD LIMIT) | Enforced in Layer 6 |
+| Direct Message | No hard limit | Recommend 500-1000 chars |
+
+### Mandatory Signature
+
+All generated messages MUST include:
+```
+Best. Taimoor Alam
+```
+- **Format**: Exactly as shown (with period after "Best")
+- **Placement**: After Calendly URL (connection requests) or at end of message (InMail)
+- **Non-negotiable**: Signature must be in EVERY outreach message
+
+### Calendly URL
+
+- **Required in**: All connection requests and InMail call-to-action paragraphs
+- **Source**: Environment variable `CALENDLY_URL` or config default
+- **Format**: Full URL (e.g., `https://calendly.com/taimooralam/30min`)
+- **Placement**: Before signature in connection requests
+
+### Message Templates
+
+**Connection Request (300 char limit)**:
+```
+Hi {FirstName}, I saw your {Role} role at {Company} and your work on {PainPoint}. I'd love to connect and discuss how I can help with {Value}. Book time: {CalendlyURL} Best. Taimoor Alam
+```
+
+**InMail (1900 char body limit)**:
+```
+Subject: {Role} - {PainPoint} Solution Architect
+
+Hi {FirstName},
+
+{Paragraph 1: Hook - reference specific pain point or achievement}
+
+{Paragraph 2: Value - map candidate's relevant experience to their needs}
+
+{Paragraph 3: Call-to-action - Calendly link and next steps}
+
+Best. Taimoor Alam
+{CalendlyURL}
+```
+
+### Validation
+
+Pre-send validation (enforced in Layer 6):
+- Message length ≤ 300 chars (connection) or ≤ 1900 chars (InMail)
+- Signature "Best. Taimoor Alam" present
+- Calendly URL included
+- No placeholder tokens remaining
+- Professional grammar and spelling
+
+---
+
 ## Immediate Priorities
 
 See `plans/next-steps.md` for detailed steps:
