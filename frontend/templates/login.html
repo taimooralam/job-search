@@ -9,21 +9,94 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* Import design system CSS custom properties from base.html */
+        :root {
+            --color-primary-600: #4f46e5;
+            --color-primary-700: #4338ca;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-error-50: #fef2f2;
+            --color-error-200: #fecaca;
+            --color-error-700: #b91c1c;
+            --radius-lg: 0.5rem;
+            --radius-2xl: 1rem;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         /* Subtle background pattern */
         body {
             background-image:
-                linear-gradient(to right, rgb(243 244 246) 1px, transparent 1px),
-                linear-gradient(to bottom, rgb(243 244 246) 1px, transparent 1px);
+                linear-gradient(to right, var(--color-gray-100) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--color-gray-100) 1px, transparent 1px);
             background-size: 32px 32px;
+        }
+
+        /* Card component */
+        .card {
+            background-color: white;
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            transition: all var(--transition-base);
+        }
+
+        /* Form input */
+        .form-input {
+            display: block;
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #111827;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-base);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary-600);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Button */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-base);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--color-primary-700) 0%, #3730a3 100%);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
     </style>
 </head>
-<body class="h-full flex items-center justify-center">
+<body class="h-full flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <!-- Login Card -->
-        <div class="bg-white shadow-2xl rounded-lg overflow-hidden">
+        <div class="card overflow-hidden">
             <!-- Header -->
-            <div class="bg-indigo-600 px-8 py-6">
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-6">
                 <div class="flex items-center justify-center">
                     <svg class="h-10 w-10 text-white mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -31,7 +104,7 @@
                     </svg>
                     <div>
                         <h1 class="text-2xl font-bold text-white">JobSearch</h1>
-                        <p class="text-indigo-200 text-sm">Level-2 Manager</p>
+                        <p class="text-indigo-100 text-sm mt-0.5">Level-2 Manager</p>
                     </div>
                 </div>
             </div>
@@ -44,8 +117,8 @@
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                     </svg>
                     <div>
-                        <p class="font-semibold">Authentication Failed</p>
-                        <p class="text-sm">{{ error }}</p>
+                        <p class="font-semibold text-sm">Authentication Failed</p>
+                        <p class="text-sm mt-0.5">{{ error }}</p>
                     </div>
                 </div>
                 {% endif %}
@@ -68,10 +141,7 @@
                                 name="password"
                                 required
                                 autofocus
-                                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg
-                                       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                                       text-gray-900 placeholder-gray-400
-                                       transition duration-150 ease-in-out"
+                                class="form-input pl-10"
                                 placeholder="Enter password"
                             >
                         </div>
@@ -83,10 +153,7 @@
                     <div>
                         <button
                             type="submit"
-                            class="w-full flex justify-center items-center px-4 py-2.5 border border-transparent
-                                   rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600
-                                   hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2
-                                   focus:ring-indigo-500 transition duration-150 ease-in-out"
+                            class="btn btn-primary w-full px-4 py-2.5 text-sm font-medium"
                         >
                             <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -101,14 +168,14 @@
             <!-- Footer -->
             <div class="px-8 py-4 bg-gray-50 border-t border-gray-200">
                 <p class="text-xs text-center text-gray-500">
-                    Job Search Management System &middot; Secure Access Required
+                    Job Search Management System · Secure Access Required
                 </p>
             </div>
         </div>
 
         <!-- Security Notice -->
         <div class="mt-6 text-center">
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-gray-500 flex items-center justify-center">
                 <svg class="h-4 w-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
                 </svg>
