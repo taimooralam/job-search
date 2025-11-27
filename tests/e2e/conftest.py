@@ -27,19 +27,8 @@ pytest_plugins = ["pytest_playwright"]
 
 def pytest_addoption(parser):
     """Add custom command-line options."""
-    parser.addoption(
-        "--headed",
-        action="store_true",
-        default=False,
-        help="Run browsers in headed mode (visible)",
-    )
-    parser.addoption(
-        "--slow-mo",
-        action="store",
-        default=0,
-        type=int,
-        help="Slow down Playwright operations by specified milliseconds",
-    )
+    # Note: pytest-playwright already provides --headed, --browser, --slowmo, etc.
+    # We only add custom options here that aren't provided by the plugin
     parser.addoption(
         "--base-url",
         action="store",
@@ -54,10 +43,13 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def browser_launch_args(pytestconfig):
-    """Configure browser launch arguments."""
+    """
+    Configure browser launch arguments.
+
+    Note: pytest-playwright handles --headed and --slowmo options automatically.
+    This fixture only adds custom args not provided by the plugin.
+    """
     return {
-        "headless": not pytestconfig.getoption("--headed"),
-        "slow_mo": pytestconfig.getoption("--slow-mo"),
         "args": [
             "--disable-blink-features=AutomationControlled",  # Avoid detection
         ],
