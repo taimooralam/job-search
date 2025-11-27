@@ -1,219 +1,220 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-3 sm:space-y-4">
-    <!-- Toolbar -->
-    <div class="bg-white rounded-lg shadow p-3 sm:p-4">
-        <!-- Top row: Quick Time Filters -->
-        <div class="mb-3 pb-3 border-b border-gray-200">
-            <div class="flex flex-col gap-2">
-                <label class="text-xs font-medium text-gray-600 uppercase tracking-wide">Quick Time Filters</label>
-                <div class="flex flex-wrap gap-1.5">
-                    <!-- Hour filters (blue) -->
-                    <button type="button" onclick="setQuickDateFilter(this, 1, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">1h</button>
-                    <button type="button" onclick="setQuickDateFilter(this, 2, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">2h</button>
-                    <button type="button" onclick="setQuickDateFilter(this, 3, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">3h</button>
-                    <button type="button" onclick="setQuickDateFilter(this, 6, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">6h</button>
-                    <button type="button" onclick="setQuickDateFilter(this, 12, 'hour')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-md transition">12h</button>
+<div class="space-y-4">
+    <!-- Toolbar Card -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Top row: Quick Time Filters -->
+            <div class="mb-4 pb-4 border-b border-gray-200">
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Quick Time Filters</label>
+                    <div class="flex flex-wrap gap-2">
+                        <!-- Hour filters (blue) -->
+                        <button type="button" onclick="setQuickDateFilter(this, 1, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">1h</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 2, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">2h</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 3, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">3h</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 6, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">6h</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 12, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">12h</button>
 
-                    <!-- Week filters (green) -->
-                    <button type="button" onclick="setQuickDateFilter(this, 1, 'week')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-md transition">1w</button>
-                    <button type="button" onclick="setQuickDateFilter(this, 2, 'week')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-md transition">2w</button>
+                        <!-- Week filters (green) -->
+                        <button type="button" onclick="setQuickDateFilter(this, 1, 'week')" class="quick-date-btn btn btn-sm btn-ghost border border-green-200 text-green-700 hover:bg-green-50">1w</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 2, 'week')" class="quick-date-btn btn btn-sm btn-ghost border border-green-200 text-green-700 hover:bg-green-50">2w</button>
 
-                    <!-- Month filters (purple) -->
-                    <button type="button" onclick="setQuickDateFilter(this, 1, 'month')" class="quick-date-btn px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-md transition">1m</button>
+                        <!-- Month filters (purple) -->
+                        <button type="button" onclick="setQuickDateFilter(this, 1, 'month')" class="quick-date-btn btn btn-sm btn-ghost border border-purple-200 text-purple-700 hover:bg-purple-50">1m</button>
 
-                    <!-- Clear filter -->
-                    <button type="button" onclick="clearDateFilter()" class="px-3 py-1.5 text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-md transition">Clear</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
-            <!-- Search - Full width on mobile -->
-            <div class="w-full sm:flex-1 sm:min-w-[200px]">
-                <div class="relative">
-                    <input type="text"
-                           id="search-input"
-                           placeholder="Search jobs..."
-                           class="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-base sm:text-sm"
-                           hx-get="/partials/job-rows"
-                           hx-trigger="keyup changed delay:300ms, search"
-                           hx-target="#job-table-container"
-                           hx-include=".filter-input"
-                           name="query">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+                        <!-- Clear filter -->
+                        <button type="button" onclick="clearDateFilter()" class="btn btn-sm btn-ghost">Clear</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Filter toggle button -->
-            <button type="button"
-                    onclick="toggleFilters()"
-                    class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                </svg>
-                <span>More Filters</span>
-                <span id="active-filter-count" class="hidden px-1.5 py-0.5 text-xs bg-indigo-600 text-white rounded-full"></span>
-            </button>
-
-            <!-- Bottom row on mobile: page size, selection, delete -->
-            <div class="flex flex-wrap items-center justify-between sm:justify-start gap-3 sm:gap-4">
-                <!-- Page size selector -->
-                <div class="flex items-center gap-2">
-                    <label for="page-size-select" class="text-sm text-gray-600">Show:</label>
-                    <select id="page-size-select"
-                            name="page_size"
-                            class="filter-input border border-gray-300 rounded-md py-2 sm:py-1.5 pl-3 pr-8 text-sm focus:ring-2 focus:ring-indigo-500"
-                            hx-get="/partials/job-rows"
-                            hx-trigger="change"
-                            hx-target="#job-table-container"
-                            hx-include=".filter-input">
-                        <option value="5">5</option>
-                        <option value="10" selected>10</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
+            <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-4">
+                <!-- Search - Full width on mobile -->
+                <div class="w-full sm:flex-1 sm:min-w-[200px]">
+                    <div class="relative">
+                        <input type="text"
+                               id="search-input"
+                               placeholder="Search jobs..."
+                               class="form-input pl-10"
+                               hx-get="/partials/job-rows"
+                               hx-trigger="keyup changed delay:300ms, search"
+                               hx-target="#job-table-container"
+                               hx-include=".filter-input"
+                               name="query">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Selection info & delete button -->
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <span class="text-xs sm:text-sm text-gray-600">
-                        <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
-                    </span>
-                    <button id="delete-selected-btn"
-                            onclick="openDeleteModal()"
-                            disabled
-                            class="px-3 py-2 sm:py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span class="hidden sm:inline">Delete Selected</span>
-                        <span class="sm:hidden">Delete</span>
-                    </button>
-                </div>
-
-                <!-- Loading indicator -->
-                <div class="htmx-indicator">
-                    <svg class="animate-spin h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <!-- Filter toggle button -->
+                <button type="button"
+                        onclick="toggleFilters()"
+                        class="btn btn-secondary btn-md">
+                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
+                    <span>More Filters</span>
+                    <span id="active-filter-count" class="hidden badge badge-primary ml-2"></span>
+                </button>
+
+                <!-- Bottom row on mobile: page size, selection, delete -->
+                <div class="flex flex-wrap items-center justify-between sm:justify-start gap-4">
+                    <!-- Page size selector -->
+                    <div class="flex items-center gap-2">
+                        <label for="page-size-select" class="text-sm text-gray-600 font-medium">Show:</label>
+                        <select id="page-size-select"
+                                name="page_size"
+                                class="filter-input form-select py-1.5"
+                                hx-get="/partials/job-rows"
+                                hx-trigger="change"
+                                hx-target="#job-table-container"
+                                hx-include=".filter-input">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+
+                    <!-- Selection info & delete button -->
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-600">
+                            <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
+                        </span>
+                        <button id="delete-selected-btn"
+                                onclick="openDeleteModal()"
+                                disabled
+                                class="btn btn-danger btn-md">
+                            <span class="hidden sm:inline">Delete Selected</span>
+                            <span class="sm:hidden">Delete</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div class="htmx-indicator">
+                        <div class="spinner spinner-sm"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Filter Panel (collapsible) -->
-    <div id="filter-panel" class="hidden bg-white rounded-lg shadow p-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Date Range Filter -->
-            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
-                <label class="block text-sm font-medium text-gray-700">Custom Date Range</label>
-                <div class="flex items-center gap-2">
-                    <input type="date"
-                           id="date-from"
-                           name="date_from"
-                           class="filter-input flex-1 border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
-                           hx-get="/partials/job-rows"
-                           hx-trigger="change"
-                           hx-target="#job-table-container"
-                           hx-include=".filter-input">
-                    <span class="text-gray-400">to</span>
-                    <input type="date"
-                           id="date-to"
-                           name="date_to"
-                           class="filter-input flex-1 border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
-                           hx-get="/partials/job-rows"
-                           hx-trigger="change"
-                           hx-target="#job-table-container"
-                           hx-include=".filter-input">
-                    <!-- Hidden datetime inputs for precise time filtering -->
-                    <input type="hidden" id="datetime-from" name="datetime_from" class="filter-input">
-                    <input type="hidden" id="datetime-to" name="datetime_to" class="filter-input">
-                </div>
-            </div>
-
-            <!-- Status Multi-Select Filter -->
-            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
-                <label class="block text-sm font-medium text-gray-700">Status</label>
-                <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
-                    {% for status in statuses %}
-                    <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                        <input type="checkbox"
-                               name="statuses"
-                               value="{{ status }}"
-                               class="filter-input status-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                               {% if status not in ['discarded', 'applied', 'interview scheduled'] %}checked{% endif %}
-                               onchange="updateStatusFilter()"
+    <div id="filter-panel" class="hidden card">
+        <div class="card-body">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Date Range Filter -->
+                <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                    <label class="form-label">Custom Date Range</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date"
+                               id="date-from"
+                               name="date_from"
+                               class="filter-input form-input"
                                hx-get="/partials/job-rows"
                                hx-trigger="change"
                                hx-target="#job-table-container"
                                hx-include=".filter-input">
-                        <span class="text-sm text-gray-700">{{ status }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-                <div class="flex gap-2 mt-2">
-                    <button type="button"
-                            onclick="selectAllStatuses()"
-                            class="text-xs text-indigo-600 hover:text-indigo-800 underline">
-                        Select All
-                    </button>
-                    <button type="button"
-                            onclick="deselectAllStatuses()"
-                            class="text-xs text-gray-600 hover:text-gray-800 underline">
-                        Deselect All
-                    </button>
-                </div>
-            </div>
-
-            <!-- Location Multi-Select Filter -->
-            <div class="space-y-2 sm:col-span-2 lg:col-span-1">
-                <label class="block text-sm font-medium text-gray-700">Location</label>
-                <div class="relative">
-                    <button type="button"
-                            id="location-dropdown-btn"
-                            onclick="toggleLocationDropdown()"
-                            class="w-full flex items-center justify-between border border-gray-300 rounded-md py-2 px-3 text-sm bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500">
-                        <span id="location-btn-text" class="truncate text-gray-500">Select locations...</span>
-                        <svg class="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-                    <div id="location-dropdown"
-                         class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        <div class="p-2 border-b border-gray-200">
-                            <input type="text"
-                                   id="location-search"
-                                   placeholder="Search locations..."
-                                   class="w-full border border-gray-300 rounded py-1.5 px-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                                   oninput="filterLocations(this.value)">
-                        </div>
-                        <div id="location-options" class="py-1">
-                            <!-- Options loaded dynamically -->
-                            <div class="px-3 py-2 text-sm text-gray-500">Loading locations...</div>
-                        </div>
+                        <span class="text-gray-400">to</span>
+                        <input type="date"
+                               id="date-to"
+                               name="date_to"
+                               class="filter-input form-input"
+                               hx-get="/partials/job-rows"
+                               hx-trigger="change"
+                               hx-target="#job-table-container"
+                               hx-include=".filter-input">
+                        <!-- Hidden datetime inputs for precise time filtering -->
+                        <input type="hidden" id="datetime-from" name="datetime_from" class="filter-input">
+                        <input type="hidden" id="datetime-to" name="datetime_to" class="filter-input">
                     </div>
                 </div>
-                <!-- Hidden inputs for selected locations (populated by JS) -->
-                <div id="selected-locations-inputs"></div>
-            </div>
 
-            <!-- Clear Filters -->
-            <div class="flex items-end">
-                <button type="button"
-                        onclick="clearAllFilters()"
-                        class="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition">
-                    Clear Filters
-                </button>
+                <!-- Status Multi-Select Filter -->
+                <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                    <label class="form-label">Status</label>
+                    <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                        {% for status in statuses %}
+                        <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+                            <input type="checkbox"
+                                   name="statuses"
+                                   value="{{ status }}"
+                                   class="filter-input status-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                   {% if status not in ['discarded', 'applied', 'interview scheduled'] %}checked{% endif %}
+                                   onchange="updateStatusFilter()"
+                                   hx-get="/partials/job-rows"
+                                   hx-trigger="change"
+                                   hx-target="#job-table-container"
+                                   hx-include=".filter-input">
+                            <span class="text-sm text-gray-700">{{ status }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button"
+                                onclick="selectAllStatuses()"
+                                class="text-xs text-indigo-600 hover:text-indigo-800 underline font-medium">
+                            Select All
+                        </button>
+                        <button type="button"
+                                onclick="deselectAllStatuses()"
+                                class="text-xs text-gray-600 hover:text-gray-800 underline font-medium">
+                            Deselect All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Location Multi-Select Filter -->
+                <div class="space-y-2 sm:col-span-2 lg:col-span-1">
+                    <label class="form-label">Location</label>
+                    <div class="relative">
+                        <button type="button"
+                                id="location-dropdown-btn"
+                                onclick="toggleLocationDropdown()"
+                                class="form-select w-full flex items-center justify-between">
+                            <span id="location-btn-text" class="truncate text-gray-500">Select locations...</span>
+                            <svg class="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="location-dropdown"
+                             class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div class="p-2 border-b border-gray-200">
+                                <input type="text"
+                                       id="location-search"
+                                       placeholder="Search locations..."
+                                       class="form-input py-1.5"
+                                       oninput="filterLocations(this.value)">
+                            </div>
+                            <div id="location-options" class="py-1">
+                                <!-- Options loaded dynamically -->
+                                <div class="px-3 py-2 text-sm text-gray-500">Loading locations...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Hidden inputs for selected locations (populated by JS) -->
+                    <div id="selected-locations-inputs"></div>
+                </div>
+
+                <!-- Clear Filters -->
+                <div class="flex items-end">
+                    <button type="button"
+                            onclick="clearAllFilters()"
+                            class="btn btn-ghost btn-md">
+                        Clear Filters
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Job Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="card">
         <div class="overflow-x-auto">
             <div id="job-table-container"
                  hx-get="/partials/job-rows"
@@ -221,11 +222,8 @@
                  hx-indicator=".htmx-indicator">
                 <!-- Table content loaded via HTMX -->
                 <div class="p-8 text-center text-gray-500">
-                    <svg class="animate-spin h-8 w-8 mx-auto text-indigo-600" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p class="mt-2">Loading jobs...</p>
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="mt-2 text-sm font-medium text-gray-600">Loading jobs...</p>
                 </div>
             </div>
         </div>
@@ -275,7 +273,7 @@
         }
 
         container.innerHTML = locations.map(loc => `
-            <label class="location-option flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+            <label class="location-option flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer transition-colors"
                    data-location="${escapeHtml(loc.location)}">
                 <input type="checkbox"
                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
