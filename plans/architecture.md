@@ -445,6 +445,113 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
 }
 ```
 
+### Phase 3: Document-Level Styles (Complete as of 2025-11-27)
+
+**Status**: Production-ready with 28 unit tests passing
+
+**Features Implemented**:
+
+1. **Line Height Control** (4 preset options)
+   - Single (1.0) - Tight spacing
+   - Standard (1.15) - Default, Microsoft Word "single" spacing
+   - 1.5 Lines (1.5) - Readable spacing
+   - Double (2.0) - Generous spacing
+
+2. **Document Margins** (Independent controls)
+   - Top, Right, Bottom, Left margins
+   - Range: 0.5" to 2.0" in 0.25" increments
+   - Default: 1.0" all sides (ATS-friendly standard)
+   - Implemented as CSS padding to preserve editor background
+
+3. **Page Size Selector**
+   - Letter: 8.5" × 11" (US standard)
+   - A4: 210mm × 297mm (International standard)
+   - Controls max-width and min-height in CSS
+
+4. **Header/Footer Text**
+   - Optional header text input (appears at top of CV)
+   - Optional footer text input (appears at bottom of CV)
+   - Auto-saved to MongoDB
+   - Used in Phase 4 PDF export
+
+**UI Design**:
+
+- Collapsible "Document Settings (Page Layout)" toolbar section
+- 4 margin dropdowns (top, right, bottom, left)
+- Line height dropdown with descriptive labels
+- Page size dropdown (Letter/A4)
+- Header/footer text inputs (show/hide toggle)
+
+**Technical Architecture**:
+
+```javascript
+// Key JavaScript Functions (cv-editor.js)
+getCurrentLineHeight()       // Returns current line height value
+getCurrentMargins()          // Returns {top, right, bottom, left}
+getCurrentPageSize()         // Returns "letter" or "a4"
+applyDocumentStyles()        // Applies inline styles to .ProseMirror
+saveEditorState()            // Includes Phase 3 fields in save
+restoreDocumentStyles()      // Restores styles on editor load
+```
+
+**Default Values**:
+
+```javascript
+{
+  documentStyles: {
+    lineHeight: 1.15,        // Standard Microsoft Word spacing
+    margins: {
+      top: 1.0,              // 1 inch (standard resume format)
+      right: 1.0,
+      bottom: 1.0,
+      left: 1.0
+    },
+    pageSize: "letter"       // US Letter 8.5" × 11"
+  },
+  header: "",                // Optional
+  footer: ""                 // Optional
+}
+```
+
+**MongoDB Schema Extensions**:
+
+```javascript
+cv_editor_state: {
+  version: 1,
+  content: { /* TipTap JSON */ },
+  documentStyles: {
+    lineHeight: 1.15,        // float
+    margins: {               // inches
+      top: 1.0,
+      right: 1.0,
+      bottom: 1.0,
+      left: 1.0
+    },
+    pageSize: "letter"       // "letter" | "a4"
+  },
+  header: "Optional text",   // string (optional)
+  footer: "Optional text",   // string (optional)
+  lastSavedAt: ISODate("2025-11-27T...")
+}
+```
+
+**Integration with Phase 4 (PDF Export)**:
+
+- Phase 4 PDF generation uses Phase 3 `documentStyles` fields
+- Margins apply to page layout in PDF
+- Line height applied to all paragraphs
+- Page size determines PDF dimensions
+- Header/footer text included in PDF output
+
+**Test Coverage**: 28 tests across 6 categories
+- Margin controls: 5 tests
+- Line height adjustment: 5 tests
+- Page size selector: 6 tests
+- Header/footer support: 4 tests
+- Phase 3 integration: 3 tests
+- CSS application: 3 tests
+- Backward compatibility: 2 tests
+
 ### Implemented Features (Phase 1-2)
 
 **Phase 1 (Complete)**:
@@ -472,12 +579,13 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
 - [x] 38 unit tests (100% passing)
 
 **Phase 3 (Complete - 2025-11-27)**:
-- [x] Document-level margin controls (top, right, bottom, left)
-- [x] Line height adjustment (1.0 to 2.5)
+- [x] Document-level margin controls (top, right, bottom, left) with 0.25" increments
+- [x] Line height adjustment (4 presets: 1.0, 1.15, 1.5, 2.0)
 - [x] Page size selector (Letter 8.5×11", A4 210×297mm)
-- [x] Page preview with ruler
-- [x] Header/footer text support
-- [x] Custom font and font size per document
+- [x] Header text input (optional, appears at top)
+- [x] Footer text input (optional, appears at bottom)
+- [x] Real-time CSS application to editor preview
+- [x] MongoDB persistence of document styles
 - [x] 28 unit tests (100% passing)
 
 **Phase 4 (Complete - 2025-11-27)**:
