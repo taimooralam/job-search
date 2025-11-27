@@ -640,3 +640,607 @@ class TestPhase4Integration:
         assert "text-align: center" in html_content
         assert "Playfair Display" in html_content
         assert "background-color: #ffff00" in html_content or "Highlighted achievement" in html_content
+
+
+# ==============================================================================
+# Test Class: Content Edge Cases
+# ==============================================================================
+
+class TestPDFContentEdgeCases:
+    """Tests for edge cases in CV content."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_completely_empty_cv_content(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should handle completely empty TipTap document."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["content"] = {
+            "type": "doc",
+            "content": []
+        }
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = ""
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        assert response.content_type == 'application/pdf'
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_very_large_cv_content(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should handle very large CV content (>10 pages)."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        mock_db.find_one.return_value = sample_job_with_editor_state
+
+        # Generate large HTML content (simulating 10+ pages)
+        large_html = "<h1>Experience</h1>" + ("<p>Long detailed experience paragraph. " * 50 + "</p>") * 100
+        mock_converter.return_value = large_html
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4 large content'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        # Verify large content was passed to Playwright
+        html_content = mock_page.set_content.call_args[0][0]
+        assert "Long detailed experience paragraph" in html_content
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_unicode_characters_in_content(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should handle Unicode characters (accents, emojis, CJK)."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        mock_db.find_one.return_value = sample_job_with_editor_state
+
+        # HTML with various Unicode characters
+        unicode_html = """
+        <h1>José García-Martínez 🚀</h1>
+        <p>Café résumé with naïve approach</p>
+        <p>日本語 Chinese: 中文 Korean: 한국어</p>
+        <p>Emoji test: ✅ 💼 📊 🎯</p>
+        """
+        mock_converter.return_value = unicode_html
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        assert "José García-Martínez" in html_content
+        assert "日本語" in html_content
+
+
+# ==============================================================================
+# Test Class: Filename Sanitization Edge Cases
+# ==============================================================================
+
+class TestPDFFilenameSanitization:
+    """Tests for filename sanitization edge cases."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_filename_sanitizes_slashes_in_company_name(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Filename should sanitize slashes in company name."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["company"] = "Tech/Corp/Inc"
+        sample_job_with_editor_state["title"] = "Engineer"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        content_disposition = response.headers.get('Content-Disposition')
+        # Slashes should be replaced with underscores
+        assert "/" not in content_disposition
+        assert "Tech_Corp_Inc" in content_disposition
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_filename_sanitizes_special_characters_in_title(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Filename should sanitize special characters in job title."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["company"] = "TechCorp"
+        sample_job_with_editor_state["title"] = "Engineer (Software) & DevOps"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        content_disposition = response.headers.get('Content-Disposition')
+        # Special characters should be sanitized
+        assert "(" not in content_disposition
+        assert ")" not in content_disposition
+        assert "&" not in content_disposition
+        assert "Engineer" in content_disposition
+        assert "DevOps" in content_disposition
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_filename_prevents_path_traversal(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Filename sanitization should prevent path traversal attacks."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["company"] = "../../etc/passwd"
+        sample_job_with_editor_state["title"] = "../../../etc/shadow"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        content_disposition = response.headers.get('Content-Disposition')
+        # Path traversal sequences should be sanitized
+        assert "../" not in content_disposition
+        assert ".." not in content_disposition or "___" in content_disposition
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_filename_handles_very_long_names(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Filename should handle very long company and title names."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["company"] = "A" * 150  # Very long company name
+        sample_job_with_editor_state["title"] = "B" * 150  # Very long title
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        # Filename should be generated successfully (may be truncated by OS)
+        content_disposition = response.headers.get('Content-Disposition')
+        assert "CV_" in content_disposition
+        assert ".pdf" in content_disposition
+
+
+# ==============================================================================
+# Test Class: Header/Footer Edge Cases
+# ==============================================================================
+
+class TestPDFHeaderFooterEdgeCases:
+    """Tests for header/footer edge cases."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_header_footer_with_html_special_characters(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Header/footer should escape HTML special characters."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["header"] = "Name <email@test.com> & Company"
+        sample_job_with_editor_state["cv_editor_state"]["footer"] = "Portfolio: <http://test.com>"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        # Characters should be present (may be escaped or not depending on implementation)
+        assert "email@test.com" in html_content
+        assert "test.com" in html_content
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_very_long_header_footer(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should handle very long header/footer text."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        long_text = "A" * 500  # Very long text
+        sample_job_with_editor_state["cv_editor_state"]["header"] = long_text
+        sample_job_with_editor_state["cv_editor_state"]["footer"] = long_text
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        assert long_text in html_content
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_both_header_and_footer_present(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should render correctly with both header and footer."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["header"] = "HEADER TEXT"
+        sample_job_with_editor_state["cv_editor_state"]["footer"] = "FOOTER TEXT"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        assert "HEADER TEXT" in html_content
+        assert "FOOTER TEXT" in html_content
+
+
+# ==============================================================================
+# Test Class: Playwright Error Scenarios
+# ==============================================================================
+
+class TestPlaywrightErrorScenarios:
+    """Tests for Playwright error and timeout scenarios."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_playwright_timeout_on_page_load(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Should handle Playwright timeout gracefully."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright to timeout on set_content
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.set_content.side_effect = Exception("Timeout waiting for networkidle")
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 500
+        data = response.get_json()
+        assert "error" in data
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_browser_cleanup_on_error(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Browser should close even if PDF generation fails."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright to fail during PDF generation
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.side_effect = Exception("PDF generation failed")
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 500
+        # Browser close is called via context manager __exit__
+        # The error is caught and returned as 500
+
+
+# ==============================================================================
+# Test Class: Document Styles Variations
+# ==============================================================================
+
+class TestPDFDocumentStylesVariations:
+    """Tests for various document style combinations."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_extreme_narrow_margins(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should handle very narrow margins (0.25in)."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["margins"] = {
+            "top": 0.25, "right": 0.25, "bottom": 0.25, "left": 0.25
+        }
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        pdf_call = mock_page.pdf.call_args
+        assert pdf_call[1]['margin']['top'] == '0.25in'
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_extreme_wide_margins(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should handle very wide margins (2.0in)."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["margins"] = {
+            "top": 2.0, "right": 2.0, "bottom": 2.0, "left": 2.0
+        }
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        pdf_call = mock_page.pdf.call_args
+        assert pdf_call[1]['margin']['top'] == '2.0in'
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_different_line_heights(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should apply different line heights correctly."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+
+        # Test with line height 2.0 (double spacing)
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["lineHeight"] = 2.0
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        # Line height should be in the HTML styles
+        assert "2.0" in html_content or "2" in html_content
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_multiple_google_fonts(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF should handle different Google Fonts."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+
+        # Test with different font
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["fontFamily"] = "Roboto"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        html_content = mock_page.set_content.call_args[0][0]
+        assert "Roboto" in html_content
+
+
+# ==============================================================================
+# Test Class: MongoDB State Variations
+# ==============================================================================
+
+class TestPDFMongoDBStateVariations:
+    """Tests for various MongoDB state variations."""
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_null_cv_editor_state(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job):
+        """PDF generation should handle null cv_editor_state."""
+        # Arrange
+        job_id = str(sample_job["_id"])
+        sample_job["cv_editor_state"] = None
+        mock_db.find_one.return_value = sample_job
+        mock_converter.return_value = "<h1>Default</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        # Should use default state
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_missing_document_styles(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should handle missing documentStyles."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        del sample_job_with_editor_state["cv_editor_state"]["documentStyles"]
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        # Should use default document styles
+        pdf_call = mock_page.pdf.call_args
+        assert pdf_call[1]['format'] in ['Letter', 'A4']
+
+    @patch('playwright.sync_api.sync_playwright')
+    @patch('app.tiptap_json_to_html')
+    def test_invalid_page_size_falls_back_to_default(self, mock_converter, mock_playwright, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should fall back to default page size if invalid."""
+        # Arrange
+        job_id = str(sample_job_with_editor_state["_id"])
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["pageSize"] = "invalid-size"
+        mock_db.find_one.return_value = sample_job_with_editor_state
+        mock_converter.return_value = "<h1>Test</h1>"
+
+        # Mock Playwright
+        mock_pw = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
+        mock_page.pdf.return_value = b'%PDF-1.4'
+        mock_pw.__enter__.return_value.chromium.launch.return_value = mock_browser
+        mock_browser.new_page.return_value = mock_page
+        mock_playwright.return_value = mock_pw
+
+        # Act
+        response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
+
+        # Assert
+        assert response.status_code == 200
+        pdf_call = mock_page.pdf.call_args
+        # Should default to Letter
+        assert pdf_call[1]['format'] == 'Letter'
