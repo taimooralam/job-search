@@ -94,6 +94,57 @@ All agent-specific documentation has been organized into:
 - [ ] .docx CV export not implemented
 - [ ] STAR selector: No embeddings, caching, or graph edges
 
+### Frontend & UI Enhancements
+
+#### Pipeline Progress Indicator (PENDING)
+
+**Status**: Not started
+**Priority**: Medium (UX enhancement)
+**Estimated Duration**: 2-3 hours
+
+**Description**:
+Visual progress indicator for the 7-layer LangGraph pipeline execution displayed on the job detail page. Shows real-time status as each layer executes with visual indicators for success/failure states.
+
+**Requirements**:
+- Display pipeline progress bar showing all 7 layers:
+  1. Layer 1: Job Intake & Validation
+  2. Layer 2: Pain Point Mining
+  3. Layer 2.5: STAR Story Selection
+  4. Layer 3: Company & Role Research
+  5. Layer 4: Fit Scoring & Analysis
+  6. Layer 5: Strategic Positioning
+  7. Layer 6: Outreach & CV Generation
+- Real-time status updates as pipeline executes
+- Visual indicators:
+  - Pending/queued (gray)
+  - Currently executing (blue/animated)
+  - Completed successfully (green checkmark)
+  - Failed with error (red X)
+- Show error messages inline when layer fails
+- Display alongside existing terminal output from runner
+- Responsive design for mobile/tablet
+
+**Technical Approach**:
+- WebSocket or Server-Sent Events (SSE) for real-time updates
+- Runner service emits layer status events
+- Frontend subscribes to status updates
+- CSS animations for smooth transitions
+- Fallback to polling if WebSocket unavailable
+
+**UI Location**: Job detail page, below "Run Pipeline" button (above terminal output)
+
+**Dependencies**:
+- Runner service must emit layer-level status events
+- Frontend WebSocket/SSE connection to runner
+- State management for pipeline progress (extend JobState or new field)
+
+**Design Reference**: Similar to GitHub Actions progress indicator or CI/CD pipeline visualizations
+
+**Related**:
+- Frontend-runner integration (already complete)
+- Pipeline execution tracking in MongoDB
+- Runner service status event emission
+
 ### CV Rich Text Editor (Phase 1 COMPLETE - 2025-11-26)
 
 #### Phase 1: TipTap Foundation + Side Panel UI ✅ COMPLETE
