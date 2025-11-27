@@ -32,12 +32,13 @@ def sanitize_for_path(text: str) -> str:
     return cleaned.replace(" ", "_")
 
 
-def tiptap_json_to_html(tiptap_content: dict) -> str:
+def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 100) -> str:
     """
     Convert TipTap JSON to HTML for display compatibility.
 
     Args:
         tiptap_content: TipTap document JSON
+        max_depth: Maximum recursion depth to prevent stack overflow (default 100)
 
     Returns:
         HTML string
@@ -47,7 +48,11 @@ def tiptap_json_to_html(tiptap_content: dict) -> str:
 
     html_parts = []
 
-    def process_node(node):
+    def process_node(node, depth=0):
+        # Prevent infinite recursion
+        if depth > max_depth:
+            return "<!-- Maximum nesting depth exceeded -->"
+
         node_type = node.get("type")
         content = node.get("content", [])
         attrs = node.get("attrs", {})
@@ -84,7 +89,7 @@ def tiptap_json_to_html(tiptap_content: dict) -> str:
 
         # Process block nodes
         elif node_type == "paragraph":
-            inner_html = "".join(process_node(child) for child in content)
+            inner_html = "".join(process_node(child, depth + 1) for child in content)
             text_align = attrs.get("textAlign", "left")
             if text_align != "left":
                 style_attr = f' style="text-align: {text_align};"'
@@ -93,7 +98,7 @@ def tiptap_json_to_html(tiptap_content: dict) -> str:
 
         elif node_type == "heading":
             level = attrs.get("level", 1)
-            inner_html = "".join(process_node(child) for child in content)
+            inner_html = "".join(process_node(child, depth + 1) for child in content)
             text_align = attrs.get("textAlign", "left")
             if text_align != "left":
                 style_attr = f' style="text-align: {text_align};"'
@@ -101,15 +106,15 @@ def tiptap_json_to_html(tiptap_content: dict) -> str:
             return f"<h{level}>{inner_html}</h{level}>"
 
         elif node_type == "bulletList":
-            items_html = "".join(process_node(child) for child in content)
+            items_html = "".join(process_node(child, depth + 1) for child in content)
             return f"<ul>{items_html}</ul>"
 
         elif node_type == "orderedList":
-            items_html = "".join(process_node(child) for child in content)
+            items_html = "".join(process_node(child, depth + 1) for child in content)
             return f"<ol>{items_html}</ol>"
 
         elif node_type == "listItem":
-            inner_html = "".join(process_node(child) for child in content)
+            inner_html = "".join(process_node(child, depth + 1) for child in content)
             return f"<li>{inner_html}</li>"
 
         elif node_type == "hardBreak":
@@ -120,7 +125,7 @@ def tiptap_json_to_html(tiptap_content: dict) -> str:
 
         else:
             # Unknown node type, process children
-            return "".join(process_node(child) for child in content)
+            return "".join(process_node(child, depth + 1) for child in content)
 
     # Process all top-level nodes
     for node in tiptap_content.get("content", []):

@@ -426,8 +426,21 @@ async def generate_cv_pdf(job_id: str):
                 }
             }
 
-        # Convert TipTap JSON to HTML
-        html_content = tiptap_json_to_html(editor_state["content"])
+        # Convert TipTap JSON to HTML with recursion protection
+        try:
+            html_content = tiptap_json_to_html(editor_state["content"])
+        except RecursionError as e:
+            logger.error(f"Recursion error in PDF generation for job {job_id}: {str(e)}")
+            raise HTTPException(
+                status_code=400,
+                detail="CV document structure is too deeply nested. Please simplify the document structure and try again."
+            )
+        except Exception as e:
+            logger.error(f"Error converting TipTap JSON to HTML for job {job_id}: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to process CV content: {str(e)}"
+            )
 
         # Get document styles
         doc_styles = editor_state.get("documentStyles", {})
