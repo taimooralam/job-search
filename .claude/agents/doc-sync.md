@@ -148,7 +148,7 @@ Before updating docs, understand:
 ## Output Format
 
 ```markdown
-# Documentation Sync Report
+# Documentation Sync Report (in the reports/ folder)
 
 ## Changes Made
 

@@ -2,11 +2,71 @@
 
 Guidance for using Claude Code with this repository.
 
+## Agent Delegation System
+
+**IMPORTANT**: This project uses specialized subagents. Before starting work, reason about which agent is best suited for the task.
+
+### Available Agents
+
+| Agent | Model | When to Use |
+|-------|-------|-------------|
+| `session-continuity` | haiku | Start of session, context lost, need project briefing |
+| `job-search-architect` | sonnet | System design, requirements analysis, architecture decisions |
+| `pipeline-analyst` | sonnet | After pipeline runs, validating outputs, investigating failures |
+| `test-generator` | sonnet | Writing tests after implementing features |
+| `doc-sync` | haiku | Updating missing.md, architecture.md after work |
+| `frontend-developer` | sonnet | TipTap editor, Tailwind UI, Flask templates |
+| `architecture-debugger` | sonnet | Cross-cutting bugs, integration issues, system failures |
+
+### Delegation Decision Tree
+
+```
+User Request
+    │
+    ├─ "Brief me / where were we?" ──────────→ session-continuity
+    │
+    ├─ "Design / architect / how should we..." ──→ job-search-architect
+    │
+    ├─ "Check pipeline / validate outputs" ───→ pipeline-analyst
+    │
+    ├─ "Write tests for..." ─────────────────→ test-generator
+    │
+    ├─ "Update docs / mark as complete" ─────→ doc-sync
+    │
+    ├─ "Build UI / implement editor" ────────→ frontend-developer
+    │
+    ├─ "Debug / fix / why is X failing" ─────→ architecture-debugger
+    │
+    └─ Simple/direct tasks ──────────────────→ Handle directly (no agent)
+```
+
+### Delegation Rules
+
+1. **Always reason first**: Before delegating, think about which agent is best suited
+2. **Don't over-delegate**: Simple tasks (read a file, make a small edit) don't need agents
+3. **Chain agents when needed**: Complex work may need multiple agents sequentially
+4. **Trust agent outputs**: Agents are specialized; incorporate their recommendations
+5. **Proactive delegation**: Use agents without being asked when the situation fits
+
+### Example Reasoning
+
+```
+User: "I just implemented the CV editor, what's next?"
+
+Reasoning:
+- User completed a feature → need to update documentation
+- Should use doc-sync to update missing.md
+- Then could use test-generator to write tests
+- No need for architecture discussion (feature already built)
+
+Action: Delegate to doc-sync first, then test-generator
+```
+
 ## Current Context
 
-- Goal for today (18 Nov): complete the full of 7-layer LangGraph pipeline (see `architecture.md`, `requirements.md`, `ROADMAP.md`).
-- Inputs: MongoDB jobs (see `sample.json` schema), partial candidate profile from LinkedIn/current CV (full knowledge graph coming later).
-- Integrations: FireCrawl, OpenRouter (GPT-4/Anthropic), LangSmith, Google Drive/Sheets, MongoDB. All config via env vars; no secrets in code.
+- Goal: Complete the Job Intelligence Pipeline (7-layer LangGraph) with professional CV editor
+- Inputs: MongoDB jobs, candidate profile from master-cv.md
+- Integrations: FireCrawl, OpenRouter, LangSmith, Google Drive/Sheets, MongoDB. All config via env vars; no secrets in code.
 
 ## Implementation Tracking
 
