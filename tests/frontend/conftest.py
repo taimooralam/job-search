@@ -54,16 +54,32 @@ def authenticated_client(client):
 
 @pytest.fixture
 def mock_db(mocker):
-    """Mock MongoDB connection and collection."""
-    mock_client = mocker.patch("app.MongoClient")
+    """
+    Mock MongoDB connection and collection for all Flask routes.
+
+    This fixture mocks:
+    1. MongoClient at the module level to prevent real DB connections
+    2. get_db() to return a mocked database instance
+    3. The collection chain (db['level-2']) to return a mock collection
+
+    Tests using template rendering routes (e.g., /job/<id>) need this fixture
+    to avoid "Connection refused" errors when Flask tries to query MongoDB.
+    """
+    # Create mock collection with common methods
     mock_collection = MagicMock()
 
-    # Setup the chain: client['jobs']['level-2'] -> collection
+    # Default return value for find_one (can be overridden in tests)
+    mock_collection.find_one.return_value = None
+
+    # Setup the mock database instance
     mock_db_instance = MagicMock()
     mock_db_instance.__getitem__.return_value = mock_collection
+
+    # Mock MongoClient to prevent real connections
+    mock_client = mocker.patch("app.MongoClient")
     mock_client.return_value.__getitem__.return_value = mock_db_instance
 
-    # Setup get_db() to return the mocked database
+    # Mock get_db() to return the mocked database
     mocker.patch("app.get_db", return_value=mock_db_instance)
 
     return mock_collection
@@ -71,7 +87,12 @@ def mock_db(mocker):
 
 @pytest.fixture
 def sample_job():
-    """Sample job document without editor state."""
+    """
+    Sample job document without editor state.
+
+    Includes all fields required by job_detail.html template to prevent
+    Jinja2 UndefinedError exceptions during template rendering tests.
+    """
     return {
         "_id": ObjectId(),
         "jobId": "test_job_001",
@@ -80,6 +101,8 @@ def sample_job():
         "location": "Remote",
         "url": "https://example.com/jobs/123",
         "status": "not processed",
+        "score": 75,  # Required by template
+        "fit_score": 80,  # Optional field used by template
         "createdAt": datetime(2025, 11, 26, 10, 0, 0),
         "updatedAt": datetime(2025, 11, 26, 10, 0, 0),
         "cv_text": "# John Doe\n\n## Experience\n\n- 5 years Python\n- 3 years FastAPI"

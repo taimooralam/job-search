@@ -28,10 +28,11 @@ from unittest.mock import MagicMock, patch
 class TestDocumentMarginControls:
     """Tests for document-level margin controls."""
 
-    def test_margin_controls_present_in_toolbar(self, authenticated_client):
+    def test_margin_controls_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have margin input controls."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -163,10 +164,11 @@ class TestDocumentMarginControls:
         # Assert
         assert response.status_code == 200
 
-    def test_margin_increments_by_quarter_inch(self, authenticated_client):
+    def test_margin_increments_by_quarter_inch(self, authenticated_client, mock_db, sample_job):
         """Margin dropdowns should increment by 0.25 inches."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -186,10 +188,11 @@ class TestDocumentMarginControls:
 class TestLineHeightAdjustment:
     """Tests for document-level line height controls."""
 
-    def test_line_height_selector_present_in_toolbar(self, authenticated_client):
+    def test_line_height_selector_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have line height dropdown."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -214,10 +217,11 @@ class TestLineHeightAdjustment:
         data = response.get_json()
         assert data["editor_state"]["documentStyles"]["lineHeight"] == 1.15
 
-    def test_line_height_options_available(self, authenticated_client):
+    def test_line_height_options_available(self, authenticated_client, mock_db, sample_job):
         """Line height selector should have options: 1.0, 1.15, 1.5, 2.0."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -288,10 +292,11 @@ class TestLineHeightAdjustment:
 class TestPageSizeSelector:
     """Tests for page size selector (Letter vs A4)."""
 
-    def test_page_size_selector_present_in_toolbar(self, authenticated_client):
+    def test_page_size_selector_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have page size dropdown."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -316,10 +321,11 @@ class TestPageSizeSelector:
         data = response.get_json()
         assert data["editor_state"]["documentStyles"]["pageSize"] == "letter"
 
-    def test_page_size_options_available(self, authenticated_client):
+    def test_page_size_options_available(self, authenticated_client, mock_db, sample_job):
         """Page size selector should have Letter and A4 options."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -365,10 +371,11 @@ class TestPageSizeSelector:
         saved_state = mock_db.update_one.call_args[0][1]["$set"]["cv_editor_state"]
         assert saved_state["documentStyles"]["pageSize"] == "a4"
 
-    def test_page_size_letter_dimensions(self, authenticated_client):
+    def test_page_size_letter_dimensions(self, authenticated_client, mock_db, sample_job):
         """Letter page size should be 8.5" x 11"."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -377,10 +384,11 @@ class TestPageSizeSelector:
         # Assert - Check that Letter dimensions are mentioned
         assert '8.5' in html and '11' in html
 
-    def test_page_size_a4_dimensions(self, authenticated_client):
+    def test_page_size_a4_dimensions(self, authenticated_client, mock_db, sample_job):
         """A4 page size should be 210mm x 297mm."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -397,10 +405,11 @@ class TestPageSizeSelector:
 class TestHeaderFooterSupport:
     """Tests for basic header/footer support."""
 
-    def test_header_footer_toggle_present(self, authenticated_client):
+    def test_header_footer_toggle_present(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have header/footer toggle controls."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -718,10 +727,11 @@ class TestPhase3Integration:
 class TestPhase3CSSApplication:
     """Tests for CSS application of Phase 3 styles (verifying HTML output)."""
 
-    def test_margin_css_applied_to_editor_container(self, authenticated_client):
+    def test_margin_css_applied_to_editor_container(self, authenticated_client, mock_db, sample_job):
         """Editor container should have CSS padding based on margins."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -731,10 +741,11 @@ class TestPhase3CSSApplication:
         # Check that editor container has padding styles
         assert 'padding' in html or 'p-8' in html  # Tailwind or inline padding
 
-    def test_line_height_css_applied_to_paragraphs(self, authenticated_client):
+    def test_line_height_css_applied_to_paragraphs(self, authenticated_client, mock_db, sample_job):
         """Paragraphs should have line-height CSS applied."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -744,10 +755,11 @@ class TestPhase3CSSApplication:
         # Check for line-height in CSS or inline styles
         assert 'line-height' in html.lower()
 
-    def test_page_size_affects_editor_container_width(self, authenticated_client):
+    def test_page_size_affects_editor_container_width(self, authenticated_client, mock_db, sample_job):
         """Editor container width should match page size."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
