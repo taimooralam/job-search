@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Editor Loading Animation Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">CV Editor Loading Animation Test</h1>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-lg font-semibold mb-4">Test Controls</h2>
+            <div class="flex gap-4 mb-6">
+                <button onclick="showLoading()"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                    Show Loading State
+                </button>
+                <button onclick="showEditor()"
+                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                    Show Editor (Loaded)
+                </button>
+                <button onclick="showError()"
+                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    Show Error State
+                </button>
+            </div>
+
+            <!-- Editor Container (mimics the actual CV editor) -->
+            <div id="cv-editor-content"
+                 class="bg-white border border-gray-200 rounded-lg shadow-inner min-h-[600px]"
+                 style="max-width: 8.5in;">
+                <div class="p-8">
+                    <p class="text-gray-500 text-center">Click a button above to test loading states</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simplified CVEditor methods for testing
+        const container = document.getElementById('cv-editor-content');
+
+        function showLoading() {
+            container.innerHTML = `
+                <div id="cv-editor-loading"
+                     class="flex flex-col items-center justify-center h-full p-8"
+                     role="status"
+                     aria-live="polite"
+                     aria-label="Loading CV editor">
+
+                    <!-- Skeleton Content (mimics CV structure) -->
+                    <div class="w-full max-w-2xl space-y-6 animate-pulse">
+                        <!-- Skeleton Header -->
+                        <div class="space-y-3">
+                            <div class="h-8 bg-gray-300 rounded w-3/4"></div>
+                            <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                        </div>
+
+                        <!-- Skeleton Section 1 -->
+                        <div class="space-y-2 mt-6">
+                            <div class="h-6 bg-gray-300 rounded w-1/3"></div>
+                            <div class="h-4 bg-gray-200 rounded w-full"></div>
+                            <div class="h-4 bg-gray-200 rounded w-full"></div>
+                            <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                        </div>
+
+                        <!-- Skeleton Section 2 -->
+                        <div class="space-y-2 mt-6">
+                            <div class="h-6 bg-gray-300 rounded w-2/5"></div>
+                            <div class="h-4 bg-gray-200 rounded w-4/5"></div>
+                            <div class="h-4 bg-gray-200 rounded w-4/5"></div>
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+
+                        <!-- Skeleton List -->
+                        <div class="space-y-2 mt-6">
+                            <div class="h-6 bg-gray-300 rounded w-1/4"></div>
+                            <div class="flex items-start space-x-2">
+                                <div class="w-2 h-2 bg-gray-300 rounded-full mt-2"></div>
+                                <div class="flex-1 h-4 bg-gray-200 rounded"></div>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <div class="w-2 h-2 bg-gray-300 rounded-full mt-2"></div>
+                                <div class="flex-1 h-4 bg-gray-200 rounded"></div>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <div class="w-2 h-2 bg-gray-300 rounded-full mt-2"></div>
+                                <div class="flex-1 h-4 bg-gray-200 rounded w-4/5"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Indicator -->
+                    <div class="flex items-center justify-center mt-8 text-indigo-600">
+                        <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-sm font-medium">Loading your CV...</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">This may take a few seconds</p>
+                </div>
+            `;
+        }
+
+        function showEditor() {
+            // First show loading
+            showLoading();
+
+            // Simulate loading delay (1.5 seconds)
+            setTimeout(() => {
+                const loading = document.getElementById('cv-editor-loading');
+                if (loading) {
+                    // Smooth fade-out
+                    loading.style.opacity = '0';
+                    loading.style.transition = 'opacity 0.3s ease-out';
+
+                    setTimeout(() => {
+                        container.innerHTML = `
+                            <div class="p-8">
+                                <h1 class="text-3xl font-bold mb-4">John Doe</h1>
+                                <p class="text-gray-600 mb-6">Senior Software Engineer | john@example.com</p>
+
+                                <h2 class="text-2xl font-bold mb-3 mt-6">EXPERIENCE</h2>
+                                <ul class="list-disc ml-6 space-y-2">
+                                    <li>Led development of microservices architecture</li>
+                                    <li>Improved system performance by 40%</li>
+                                    <li>Mentored 5 junior developers</li>
+                                </ul>
+
+                                <h2 class="text-2xl font-bold mb-3 mt-6">SKILLS</h2>
+                                <ul class="list-disc ml-6 space-y-2">
+                                    <li>Python, JavaScript, TypeScript</li>
+                                    <li>React, Flask, FastAPI</li>
+                                    <li>MongoDB, PostgreSQL</li>
+                                </ul>
+
+                                <p class="text-green-600 font-semibold mt-8">Editor loaded successfully!</p>
+                            </div>
+                        `;
+                    }, 300);
+                }
+            }, 1500);
+        }
+
+        function showError() {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <div class="text-red-600 mb-4">
+                        <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Failed to Load CV</h3>
+                    <p class="text-gray-600 mb-4 max-w-md">Network timeout: Could not connect to MongoDB server</p>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-4 text-left max-w-md">
+                        <p class="font-semibold text-gray-800 mb-2">Common causes:</p>
+                        <ul class="list-disc ml-4 text-sm text-gray-700 space-y-1">
+                            <li>Browser extension blocking CDN scripts (ad blocker, VPN, privacy tool)</li>
+                            <li>Corporate firewall blocking external resources</li>
+                            <li>Network connectivity issues</li>
+                            <li>MongoDB connection problems</li>
+                        </ul>
+                        <p class="font-semibold text-gray-800 mt-4 mb-2">Try these steps:</p>
+                        <ol class="list-decimal ml-4 text-sm text-gray-700 space-y-1">
+                            <li>Disable browser extensions temporarily</li>
+                            <li>Refresh the page (Ctrl/Cmd + R)</li>
+                            <li>Try a different browser</li>
+                            <li>Check browser console for specific errors</li>
+                        </ol>
+                    </div>
+                    <button onclick="location.reload()"
+                            class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        Reload Page
+                    </button>
+                </div>
+            `;
+        }
+
+        // Show loading state on page load
+        showLoading();
+        setTimeout(() => {
+            const loading = document.getElementById('cv-editor-loading');
+            if (loading) {
+                loading.style.opacity = '0';
+                loading.style.transition = 'opacity 0.3s ease-out';
+                setTimeout(() => {
+                    container.innerHTML = `
+                        <div class="p-8">
+                            <p class="text-gray-500 text-center">Click a button above to test loading states</p>
+                        </div>
+                    `;
+                }, 300);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
