@@ -576,34 +576,48 @@
 </div>
 
 <!-- CV Rich Text Editor Side Panel -->
+<!-- Phase 5: Skip link for accessibility -->
+<a href="#cv-editor-content" class="skip-link">Skip to CV editor</a>
+
 <div id="cv-editor-overlay"
      class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-200"
-     onclick="closeCVEditorPanel()">
+     onclick="closeCVEditorPanel()"
+     role="presentation"
+     aria-hidden="true">
 </div>
 
 <div id="cv-editor-panel"
      class="fixed inset-y-0 right-0 w-11/12 sm:w-2/3 lg:w-1/2 bg-white shadow-2xl
-            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+     role="dialog"
+     aria-labelledby="cv-editor-title"
+     aria-modal="true">
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <div class="flex items-center space-x-4">
+    <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-2 sm:space-x-4">
             <button onclick="closeCVEditorPanel()"
-                    class="text-gray-400 hover:text-gray-600 transition"
+                    class="text-gray-400 hover:text-gray-600 transition p-2"
+                    aria-label="Close CV editor (Escape key)"
                     title="Close (Esc)">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
-            <h2 class="text-lg font-semibold text-gray-900">Edit CV</h2>
+            <h2 id="cv-editor-title" class="text-base sm:text-lg font-semibold text-gray-900">Edit CV</h2>
         </div>
 
-        <div class="flex items-center space-x-4">
-            <span id="cv-save-indicator" class="text-sm text-gray-500">
-                <span class="text-green-500">● Saved</span>
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <span id="cv-save-indicator"
+                  class="text-xs sm:text-sm text-gray-500"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true">
+                <span class="text-green-500" aria-label="CV saved successfully">● Saved</span>
             </span>
             <button onclick="toggleCVPanelSize()"
-                    class="text-gray-400 hover:text-gray-600 transition"
+                    class="hidden sm:block text-gray-400 hover:text-gray-600 transition p-2"
+                    aria-label="Toggle panel size"
                     title="Expand/Collapse">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -611,24 +625,32 @@
                 </svg>
             </button>
             <button onclick="exportCVToPDF()"
-                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium
-                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition">
-                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium
+                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    aria-label="Export CV as PDF">
+                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                 </svg>
-                Export PDF
+                <span class="hidden sm:inline">Export PDF</span>
+                <span class="sm:hidden">PDF</span>
             </button>
         </div>
     </div>
 
-    <!-- Toolbar (Phase 2: Enhanced) -->
-    <div class="px-6 py-3 border-b border-gray-200 bg-white">
+    <!-- Toolbar (Phase 2: Enhanced, Phase 5: Accessible + Mobile) -->
+    <div class="px-4 sm:px-6 py-3 border-b border-gray-200 bg-white cv-toolbar"
+         role="toolbar"
+         aria-label="Text formatting controls"
+         aria-controls="cv-editor-content">
         <div class="flex flex-wrap items-center gap-2">
             <!-- Font Group -->
             <div class="flex gap-1">
+                <label for="cv-font-family" class="sr-only">Font family</label>
                 <select id="cv-font-family" onchange="applyCVFormat('fontFamily', this.value)"
-                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-48">
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-48"
+                        aria-label="Select font family">
                     <optgroup label="Serif (Professional)">
                         <option value="Crimson Text">Crimson Text</option>
                         <option value="EB Garamond">EB Garamond</option>
@@ -698,8 +720,10 @@
                         <option value="Comfortaa">Comfortaa</option>
                     </optgroup>
                 </select>
+                <label for="cv-font-size" class="sr-only">Font size</label>
                 <select id="cv-font-size" onchange="applyCVFormat('fontSize', this.value)"
-                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-20">
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-20"
+                        aria-label="Select font size">
                     <option value="8pt">8pt</option>
                     <option value="9pt">9pt</option>
                     <option value="10pt">10pt</option>
@@ -718,19 +742,25 @@
             <div class="w-px h-6 bg-gray-300"></div>
 
             <!-- Formatting Group -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="Text formatting">
                 <button onclick="applyCVFormat('bold')" data-format="bold"
-                        class="p-1.5 rounded hover:bg-gray-200 transition font-bold"
+                        class="p-1.5 rounded hover:bg-gray-200 transition font-bold min-w-[2.75rem]"
+                        aria-label="Bold (Ctrl+B)"
+                        aria-pressed="false"
                         title="Bold (Ctrl+B)">
                     B
                 </button>
                 <button onclick="applyCVFormat('italic')" data-format="italic"
-                        class="p-1.5 rounded hover:bg-gray-200 transition italic"
+                        class="p-1.5 rounded hover:bg-gray-200 transition italic min-w-[2.75rem]"
+                        aria-label="Italic (Ctrl+I)"
+                        aria-pressed="false"
                         title="Italic (Ctrl+I)">
                     I
                 </button>
                 <button onclick="applyCVFormat('underline')" data-format="underline"
-                        class="p-1.5 rounded hover:bg-gray-200 transition underline"
+                        class="p-1.5 rounded hover:bg-gray-200 transition underline min-w-[2.75rem]"
+                        aria-label="Underline (Ctrl+U)"
+                        aria-pressed="false"
                         title="Underline (Ctrl+U)">
                     U
                 </button>
@@ -739,19 +769,25 @@
             <div class="w-px h-6 bg-gray-300"></div>
 
             <!-- Headings Group -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="Heading levels">
                 <button onclick="applyCVFormat('heading1')" data-heading="1"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold min-w-[2.75rem]"
+                        aria-label="Heading 1"
+                        aria-pressed="false"
                         title="Heading 1">
                     H1
                 </button>
                 <button onclick="applyCVFormat('heading2')" data-heading="2"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold min-w-[2.75rem]"
+                        aria-label="Heading 2"
+                        aria-pressed="false"
                         title="Heading 2">
                     H2
                 </button>
                 <button onclick="applyCVFormat('heading3')" data-heading="3"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold min-w-[2.75rem]"
+                        aria-label="Heading 3"
+                        aria-pressed="false"
                         title="Heading 3">
                     H3
                 </button>
@@ -760,95 +796,119 @@
             <div class="w-px h-6 bg-gray-300"></div>
 
             <!-- Lists Group -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="List formatting">
                 <button onclick="applyCVFormat('bulletList')" data-format="bulletList"
                         class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm"
+                        aria-label="Bullet list"
+                        aria-pressed="false"
                         title="Bullet List">
-                    • List
+                    <span aria-hidden="true">•</span> List
                 </button>
                 <button onclick="applyCVFormat('orderedList')" data-format="orderedList"
                         class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm"
+                        aria-label="Numbered list"
+                        aria-pressed="false"
                         title="Numbered List">
-                    1. List
+                    <span aria-hidden="true">1.</span> List
                 </button>
             </div>
 
-            <div class="w-px h-6 bg-gray-300"></div>
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
 
             <!-- Alignment Group (Phase 2) -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="Text alignment">
                 <button onclick="applyCVFormat('textAlign', 'left')" data-align="left"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align left"
+                        aria-pressed="false"
                         title="Align Left">
-                    ⬅
+                    <span aria-hidden="true">⬅</span>
                 </button>
                 <button onclick="applyCVFormat('textAlign', 'center')" data-align="center"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align center"
+                        aria-pressed="false"
                         title="Align Center">
-                    ↔
+                    <span aria-hidden="true">↔</span>
                 </button>
                 <button onclick="applyCVFormat('textAlign', 'right')" data-align="right"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align right"
+                        aria-pressed="false"
                         title="Align Right">
-                    ➡
+                    <span aria-hidden="true">➡</span>
                 </button>
                 <button onclick="applyCVFormat('textAlign', 'justify')" data-align="justify"
-                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Justify"
+                        aria-pressed="false"
                         title="Justify">
-                    ⬌
+                    <span aria-hidden="true">⬌</span>
                 </button>
             </div>
 
             <div class="w-px h-6 bg-gray-300"></div>
 
             <!-- Indentation Group (Phase 2) -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="Text indentation">
                 <button onclick="cvEditorInstance?.decreaseIndent()"
                         class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        aria-label="Decrease indent (Shift+Tab)"
                         title="Decrease Indent (Shift+Tab)">
-                    ⬅ Outdent
+                    <span aria-hidden="true">⬅</span> <span class="hidden sm:inline">Outdent</span>
                 </button>
                 <button onclick="cvEditorInstance?.increaseIndent()"
                         class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        aria-label="Increase indent (Tab)"
                         title="Increase Indent (Tab)">
-                    Indent ➡
+                    <span class="hidden sm:inline">Indent</span> <span aria-hidden="true">➡</span>
                 </button>
             </div>
 
-            <div class="w-px h-6 bg-gray-300"></div>
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
 
             <!-- Color Group (Phase 2) -->
-            <div class="flex gap-1">
+            <div class="flex gap-1" role="group" aria-label="Text and highlight colors">
                 <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       aria-label="Text color picker"
                        title="Text Color">
-                    A <span class="ml-1 text-xs">▼</span>
+                    <span aria-hidden="true">A</span> <span class="ml-1 text-xs" aria-hidden="true">▼</span>
                     <input type="color" id="cv-text-color" value="#1a1a1a"
                            onchange="applyCVFormat('color', this.value)"
+                           aria-label="Select text color"
                            class="hidden">
                 </label>
                 <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       aria-label="Highlight color picker"
                        title="Highlight Color">
-                    🖍
+                    <span aria-hidden="true">🖍</span>
                     <input type="color" id="cv-highlight-color" value="#ffff00"
                            onchange="applyCVFormat('highlight', this.value)"
+                           aria-label="Select highlight color"
                            class="hidden">
                 </label>
                 <button onclick="applyCVFormat('removeHighlight')"
                         class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs border border-gray-300"
+                        aria-label="Remove highlight"
                         title="Remove Highlight">
-                    ✕
+                    <span aria-hidden="true">✕</span>
                 </button>
             </div>
         </div>
 
         <!-- Phase 3: Document-Level Styles Toolbar -->
-        <div class="px-6 py-3 border-b border-gray-200 bg-gray-100">
-            <details class="group" open>
-                <summary class="cursor-pointer text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 hover:text-indigo-600">
-                    <span class="inline-block transform transition-transform group-open:rotate-90">▶</span>
+        <div class="px-4 sm:px-6 py-3 border-b border-gray-200 bg-gray-100 cv-document-settings"
+             role="region"
+             aria-labelledby="document-settings-heading">
+            <details class="group">
+                <summary class="cursor-pointer text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 hover:text-indigo-600"
+                         id="document-settings-heading"
+                         aria-expanded="false"
+                         aria-controls="document-settings-content">
+                    <span class="inline-block transform transition-transform group-open:rotate-90" aria-hidden="true">▶</span>
                     Document Settings (Page Layout)
                 </summary>
-                <div class="flex flex-wrap items-center gap-4 pl-5">
+                <div id="document-settings-content" class="flex flex-wrap items-center gap-4 pl-5">
                     <!-- Line Height -->
                     <div class="flex flex-col gap-1">
                         <label for="cv-line-height" class="text-xs text-gray-600">Line Height</label>

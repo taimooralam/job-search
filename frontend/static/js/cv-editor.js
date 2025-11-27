@@ -7,6 +7,7 @@
  * - Auto-save to MongoDB after 3 seconds of inactivity
  * - Save indicator with visual feedback
  * - State restoration from MongoDB
+ * - Phase 5: Keyboard shortcuts, mobile responsiveness, WCAG 2.1 AA accessibility
  */
 
 class CVEditor {
@@ -65,7 +66,11 @@ class CVEditor {
                 editorProps: {
                     attributes: {
                         class: 'prose max-w-none focus:outline-none min-h-full p-8',
-                        style: `font-family: 'Inter', sans-serif; font-size: 11pt;`
+                        style: `font-family: 'Inter', sans-serif; font-size: 11pt;`,
+                        // Phase 5: Accessibility attributes
+                        role: 'textbox',
+                        'aria-label': 'CV content editor',
+                        'aria-multiline': 'true'
                     },
                     handleKeyDown: (view, event) => {
                         // Tab: Increase indent
@@ -539,7 +544,7 @@ class CVEditor {
     }
 
     /**
-     * Update save indicator UI
+     * Update save indicator UI (Phase 5: Enhanced with ARIA live region)
      */
     updateSaveIndicator(status) {
         const indicator = document.getElementById('cv-save-indicator');
@@ -549,27 +554,69 @@ class CVEditor {
             unsaved: {
                 icon: '○',
                 text: 'Unsaved',
-                class: 'text-gray-500'
+                class: 'text-gray-500',
+                ariaLabel: 'CV has unsaved changes'
             },
             saving: {
                 icon: '◐',
                 text: 'Saving...',
-                class: 'text-blue-500 animate-pulse'
+                class: 'text-blue-500 animate-pulse',
+                ariaLabel: 'Saving CV to server'
             },
             saved: {
                 icon: '●',
                 text: 'Saved',
-                class: 'text-green-500'
+                class: 'text-green-500',
+                ariaLabel: 'CV saved successfully'
             },
             error: {
                 icon: '⚠️',
                 text: 'Error',
-                class: 'text-red-500'
+                class: 'text-red-500',
+                ariaLabel: 'Error saving CV'
             }
         };
 
         const state = states[status] || states.saved;
-        indicator.innerHTML = `<span class="${state.class}">${state.icon} ${state.text}</span>`;
+
+        // Update indicator with ARIA attributes
+        indicator.innerHTML = `<span class="${state.class}" aria-label="${state.ariaLabel}">${state.icon} ${state.text}</span>`;
+
+        // Update aria-live region for screen readers (only announce important states)
+        if (status === 'saved' || status === 'error') {
+            this.announceToScreenReader(state.text);
+        }
+    }
+
+    /**
+     * Announce message to screen readers via aria-live region (Phase 5)
+     */
+    announceToScreenReader(message) {
+        let liveRegion = document.getElementById('cv-editor-sr-announcements');
+
+        // Create live region if it doesn't exist
+        if (!liveRegion) {
+            liveRegion = document.createElement('div');
+            liveRegion.id = 'cv-editor-sr-announcements';
+            liveRegion.setAttribute('role', 'status');
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            liveRegion.style.position = 'absolute';
+            liveRegion.style.left = '-10000px';
+            liveRegion.style.width = '1px';
+            liveRegion.style.height = '1px';
+            liveRegion.style.overflow = 'hidden';
+            document.body.appendChild(liveRegion);
+        }
+
+        // Announce message
+        liveRegion.textContent = message;
+
+        // Clear after 1 second to allow for repeated announcements
+        setTimeout(() => {
+            liveRegion.textContent = '';
+        }, 1000);
     }
 
     /**
@@ -704,7 +751,7 @@ class CVEditor {
     }
 
     /**
-     * Update toolbar button active states (Phase 2)
+     * Update toolbar button active states (Phase 2, Phase 5: ARIA support)
      */
     updateToolbarState() {
         if (!this.editor) return;
@@ -717,6 +764,8 @@ class CVEditor {
                 const isActive = this.editor.isActive({ textAlign: align });
                 btn.classList.toggle('bg-blue-100', isActive);
                 btn.classList.toggle('border-blue-300', isActive);
+                // Phase 5: Update ARIA pressed state
+                btn.setAttribute('aria-pressed', isActive.toString());
             }
         });
 
@@ -726,6 +775,8 @@ class CVEditor {
             if (btn) {
                 const isActive = this.editor.isActive(format);
                 btn.classList.toggle('bg-gray-300', isActive);
+                // Phase 5: Update ARIA pressed state
+                btn.setAttribute('aria-pressed', isActive.toString());
             }
         });
 
@@ -735,6 +786,8 @@ class CVEditor {
             if (btn) {
                 const isActive = this.editor.isActive('heading', { level });
                 btn.classList.toggle('bg-gray-300', isActive);
+                // Phase 5: Update ARIA pressed state
+                btn.setAttribute('aria-pressed', isActive.toString());
             }
         });
     }
@@ -1073,18 +1126,35 @@ function showToast(message, type = 'info') {
     }
 }
 
-// Keyboard shortcuts
+// ============================================================================
+// Phase 5: Keyboard Shortcuts
+// ============================================================================
+// The following shortcuts are supported:
+// - Ctrl/Cmd+B: Bold (handled by TipTap)
+// - Ctrl/Cmd+I: Italic (handled by TipTap)
+// - Ctrl/Cmd+U: Underline (handled by TipTap)
+// - Ctrl/Cmd+Z: Undo (handled by TipTap)
+// - Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z: Redo (handled by TipTap)
+// - Ctrl/Cmd+S: Save CV manually
+// - Esc: Close editor panel
+// - Tab: Increase indent (handled in editor)
+// - Shift+Tab: Decrease indent (handled in editor)
+// ============================================================================
+
 document.addEventListener('keydown', (e) => {
     if (!cvEditorInstance || !cvEditorInstance.editor) return;
 
-    // Ctrl+S to save
+    // Ctrl+S to save (override browser default)
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         cvEditorInstance.save();
+        cvEditorInstance.announceToScreenReader('CV saved');
+        return;
     }
 
     // Esc to close panel
     if (e.key === 'Escape') {
         closeCVEditorPanel();
+        return;
     }
 });
