@@ -46,24 +46,25 @@ def pytest_addoption(parser):
 # ==============================================================================
 
 @pytest.fixture(scope="session")
-def browser_launch_args(pytestconfig):
+def browser_type_launch_args(pytestconfig):
     """
-    Configure browser launch arguments.
+    Configure browser launch arguments per browser type.
 
-    Note: pytest-playwright handles --headed and --slowmo options automatically.
-    This fixture only adds custom args not provided by the plugin.
+    Note: Different browsers support different launch arguments.
+    - Chromium: Supports --disable-blink-features
+    - Firefox/WebKit: Don't support Chromium-specific flags
     """
-    return {
-        "args": [
-            "--disable-blink-features=AutomationControlled",  # Avoid detection
-        ],
-    }
+    browser_name = pytestconfig.getoption("--browser", default="chromium")[0]
 
-
-@pytest.fixture(scope="session")
-def browser_type_launch_args(browser_launch_args):
-    """Browser type launch args (used by pytest-playwright)."""
-    return browser_launch_args
+    if browser_name == "chromium":
+        return {
+            "args": [
+                "--disable-blink-features=AutomationControlled",  # Avoid detection
+            ],
+        }
+    else:
+        # Firefox and WebKit don't support Chromium flags
+        return {}
 
 
 # ==============================================================================
