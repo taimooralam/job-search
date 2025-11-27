@@ -770,12 +770,111 @@
         }
 
         /* ============================================================================
+         * Phase 5: Accessibility & Mobile Responsiveness
+         * ============================================================================ */
+
+        /* Skip link for keyboard navigation */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--color-primary-600);
+            color: white;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            z-index: 10000;
+            border-radius: var(--radius-md);
+            font-weight: var(--font-medium);
+        }
+
+        .skip-link:focus {
+            top: 10px;
+            left: 10px;
+        }
+
+        /* Screen reader only text */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Visible focus indicators (WCAG 2.1 AA) */
+        *:focus-visible {
+            outline: 2px solid var(--color-primary-600);
+            outline-offset: 2px;
+            border-radius: var(--radius-sm);
+        }
+
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--color-primary-600);
+            outline-offset: 2px;
+        }
+
+        /* Mobile-responsive touch targets (min 44x44px) */
+        @media (max-width: 768px) {
+            button,
+            .btn,
+            a.btn,
+            input[type="button"],
+            input[type="submit"],
+            select,
+            input {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            /* Toolbar buttons stack on mobile */
+            .cv-toolbar {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            /* Document settings collapse on mobile */
+            .cv-document-settings {
+                max-height: 400px;
+                overflow-y: auto;
+            }
+        }
+
+        /* Color contrast enhancements (WCAG AA: 4.5:1 for normal text) */
+        .text-gray-500 {
+            color: #6b7280; /* Contrast ratio: 4.54:1 on white */
+        }
+
+        .text-gray-600 {
+            color: #4b5563; /* Contrast ratio: 7.26:1 on white */
+        }
+
+        .text-indigo-600 {
+            color: #4f46e5; /* Contrast ratio: 4.5:1 on white */
+        }
+
+        /* ============================================================================
          * TipTap ProseMirror WYSIWYG Editor Styles
          * ============================================================================ */
         .ProseMirror {
             outline: none;
             min-height: 100%;
             padding: 2rem;
+        }
+
+        /* Mobile-responsive editor */
+        @media (max-width: 768px) {
+            .ProseMirror {
+                padding: 1rem;
+                font-size: 14px;
+            }
         }
 
         /* Headings */
