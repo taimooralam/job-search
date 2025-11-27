@@ -119,12 +119,12 @@ def sample_job_with_editor_state():
             "documentStyles": {
                 "fontFamily": "Inter",
                 "fontSize": 11,
-                "lineHeight": 1.4,
+                "lineHeight": 1.15,
                 "margins": {
-                    "top": 0.75,
-                    "right": 0.75,
-                    "bottom": 0.75,
-                    "left": 0.75
+                    "top": 1.0,
+                    "right": 1.0,
+                    "bottom": 1.0,
+                    "left": 1.0
                 },
                 "pageSize": "letter"
             },
@@ -154,12 +154,12 @@ def default_editor_state():
         "documentStyles": {
             "fontFamily": "Inter",
             "fontSize": 11,
-            "lineHeight": 1.4,
+            "lineHeight": 1.15,  # Phase 3: Standard resume spacing
             "margins": {
-                "top": 0.75,
-                "right": 0.75,
-                "bottom": 0.75,
-                "left": 0.75
+                "top": 1.0,  # Phase 3: Standard 1-inch margins
+                "right": 1.0,
+                "bottom": 1.0,
+                "left": 1.0
             },
             "pageSize": "letter"
         }
@@ -288,12 +288,12 @@ def sample_job_with_phase2_formatting():
             "documentStyles": {
                 "fontFamily": "Inter",
                 "fontSize": 11,
-                "lineHeight": 1.4,
+                "lineHeight": 1.15,
                 "margins": {
-                    "top": 0.75,
-                    "right": 0.75,
-                    "bottom": 0.75,
-                    "left": 0.75
+                    "top": 1.0,
+                    "right": 1.0,
+                    "bottom": 1.0,
+                    "left": 1.0
                 },
                 "pageSize": "letter"
             },
