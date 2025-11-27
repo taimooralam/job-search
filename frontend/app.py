@@ -867,11 +867,30 @@ def update_job_cv(job_id: str):
         return jsonify({"error": f"Failed to save CV: {str(e)}"}), 500
 
 
-@app.route("/api/jobs/<job_id>/cv/pdf", methods=["POST"])
+@app.route("/api/jobs/<job_id>/cv-editor/pdf", methods=["POST"])
 @login_required
-def generate_cv_pdf(job_id: str):
-    """Generate PDF from HTML CV."""
-    from pathlib import Path
+def generate_cv_pdf_from_editor(job_id: str):
+    """
+    Generate PDF from CV editor state using Playwright (Phase 4).
+
+    This endpoint:
+    1. Fetches cv_editor_state from MongoDB
+    2. Converts TipTap JSON to HTML with Phase 2+3 styles
+    3. Generates PDF using Playwright with proper page settings
+    4. Returns PDF as downloadable attachment
+
+    Page Settings:
+    - Paper size: Letter (8.5" × 11") or A4 from documentStyles.pageSize
+    - Margins: from documentStyles.margins
+    - Print background graphics: Yes (for highlights, colors)
+    - Scale: 1.0 (100% - no scaling)
+
+    Returns:
+        PDF file with filename: CV_<Company>_<Title>.pdf
+    """
+    from flask import send_file
+    from io import BytesIO
+    from playwright.sync_api import sync_playwright
 
     db = get_db()
     collection = db["level-2"]
@@ -886,46 +905,265 @@ def generate_cv_pdf(job_id: str):
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
-    # Build CV path
-    if not job.get("company") or not job.get("title"):
-        return jsonify({"error": "Job missing company or title"}), 400
+    # Get editor state (or use default if not present)
+    editor_state = job.get("cv_editor_state")
+    if not editor_state or not editor_state.get("content"):
+        # Use default empty state
+        editor_state = {
+            "content": {"type": "doc", "content": []},
+            "documentStyles": {
+                "fontFamily": "Inter",
+                "fontSize": 11,
+                "lineHeight": 1.15,
+                "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
+                "pageSize": "letter"
+            }
+        }
 
-    company_clean = sanitize_for_path(job["company"])
-    title_clean = sanitize_for_path(job["title"])
-    cv_html_path = Path("../applications") / company_clean / title_clean / "CV.html"
-    cv_pdf_path = Path("../applications") / company_clean / title_clean / "CV.pdf"
+    # Convert TipTap JSON to HTML
+    html_content = tiptap_json_to_html(editor_state["content"])
 
-    if not cv_html_path.exists():
-        return jsonify({"error": "HTML CV not found"}), 404
+    # Get document styles
+    doc_styles = editor_state.get("documentStyles", {})
+    page_size = doc_styles.get("pageSize", "letter")
+    margins = doc_styles.get("margins", {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0})
+    line_height = doc_styles.get("lineHeight", 1.15)
+    font_family = doc_styles.get("fontFamily", "Inter")
+    font_size = doc_styles.get("fontSize", 11)
 
-    # Generate PDF using playwright
+    # Get header and footer
+    header_text = editor_state.get("header", "")
+    footer_text = editor_state.get("footer", "")
+
+    # Build complete HTML document with styles
+    full_html = build_pdf_html_template(
+        html_content,
+        font_family,
+        font_size,
+        line_height,
+        header_text,
+        footer_text
+    )
+
     try:
-        from playwright.sync_api import sync_playwright
-
+        # Generate PDF using Playwright
         with sync_playwright() as p:
             browser = p.chromium.launch()
             page = browser.new_page()
 
-            # Load the HTML file
-            page.goto(f"file://{cv_html_path.absolute()}")
+            # Set HTML content
+            page.set_content(full_html, wait_until='networkidle')
 
-            # Generate PDF with print media
-            page.pdf(
-                path=str(cv_pdf_path),
-                format="A4",
+            # Wait for fonts to load
+            page.wait_for_load_state('networkidle')
+
+            # Generate PDF with settings from Phase 3
+            pdf_format = 'A4' if page_size == 'a4' else 'Letter'
+            pdf_bytes = page.pdf(
+                format=pdf_format,
                 print_background=True,
-                margin={"top": "1cm", "right": "1cm", "bottom": "1cm", "left": "1cm"}
+                margin={
+                    'top': f"{margins.get('top', 1.0)}in",
+                    'right': f"{margins.get('right', 1.0)}in",
+                    'bottom': f"{margins.get('bottom', 1.0)}in",
+                    'left': f"{margins.get('left', 1.0)}in"
+                }
             )
 
             browser.close()
 
-        return jsonify({
-            "success": True,
-            "message": "PDF generated successfully",
-            "pdf_path": str(cv_pdf_path)
-        })
+        # Build filename: CV_<Company>_<Title>.pdf
+        company_clean = sanitize_for_path(job.get("company", "Company"))
+        title_clean = sanitize_for_path(job.get("title", "Position"))
+        filename = f"CV_{company_clean}_{title_clean}.pdf"
+
+        # Return PDF as downloadable file
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
     except Exception as e:
         return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
+
+
+def build_pdf_html_template(
+    content_html: str,
+    font_family: str,
+    font_size: int,
+    line_height: float,
+    header_text: str = "",
+    footer_text: str = ""
+) -> str:
+    """
+    Build complete HTML document for PDF generation with embedded styles.
+
+    Includes:
+    - Google Fonts link for font embedding
+    - CSS styles for formatting
+    - Header/footer if present
+    - Content HTML from TipTap
+
+    Args:
+        content_html: HTML content from TipTap JSON
+        font_family: Font family name (e.g., "Inter", "Merriweather")
+        font_size: Font size in points
+        line_height: Line height multiplier (e.g., 1.15, 1.5)
+        header_text: Optional header text
+        footer_text: Optional footer text
+
+    Returns:
+        Complete HTML document string
+    """
+    # Build Google Fonts URL (support multiple fonts)
+    # Common Phase 2 fonts that need embedding
+    all_fonts = [
+        font_family,
+        'Inter',  # Default body font
+        'Roboto', 'Open Sans', 'Lato', 'Montserrat',  # Sans-serif
+        'Merriweather', 'Playfair Display', 'Lora',  # Serif
+    ]
+    fonts_param = '|'.join(set(all_fonts))  # Deduplicate
+    google_fonts_url = f"https://fonts.googleapis.com/css2?family={fonts_param.replace(' ', '+')}:wght@400;700&display=swap"
+
+    html = f"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV</title>
+
+    <!-- Google Fonts for embedding -->
+    <link href="{google_fonts_url}" rel="stylesheet">
+
+    <style>
+        @page {{
+            size: Letter;
+            margin: 0;
+        }}
+
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+
+        body {{
+            font-family: '{font_family}', sans-serif;
+            font-size: {font_size}pt;
+            line-height: {line_height};
+            color: #1a1a1a;
+            background: white;
+        }}
+
+        .page-container {{
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }}
+
+        .header {{
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }}
+
+        .footer {{
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            padding: 8px 0;
+            border-top: 1px solid #ddd;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }}
+
+        .content {{
+            padding: 0;
+        }}
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {{
+            font-weight: 700;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }}
+
+        h1 {{ font-size: {font_size * 1.8}pt; }}
+        h2 {{ font-size: {font_size * 1.5}pt; }}
+        h3 {{ font-size: {font_size * 1.3}pt; }}
+
+        p {{
+            margin-bottom: 8px;
+        }}
+
+        ul, ol {{
+            margin-left: 20px;
+            margin-bottom: 8px;
+        }}
+
+        li {{
+            margin-bottom: 4px;
+        }}
+
+        /* Preserve TipTap formatting */
+        strong {{ font-weight: 700; }}
+        em {{ font-style: italic; }}
+        u {{ text-decoration: underline; }}
+
+        mark {{
+            background-color: #ffff00;
+            padding: 2px 4px;
+        }}
+
+        /* Text alignment */
+        .text-left {{ text-align: left; }}
+        .text-center {{ text-align: center; }}
+        .text-right {{ text-align: right; }}
+        .text-justify {{ text-align: justify; }}
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        """
+
+    # Add header if present
+    if header_text:
+        html += f"""
+        <div class="header">
+            {header_text}
+        </div>
+        """
+
+    # Add main content
+    html += f"""
+        <div class="content">
+            {content_html}
+        </div>
+        """
+
+    # Add footer if present
+    if footer_text:
+        html += f"""
+        <div class="footer">
+            {footer_text}
+        </div>
+        """
+
+    html += """
+    </div>
+</body>
+</html>
+    """
+
+    return html
 
 
 @app.route("/api/jobs/<job_id>/cv/download")
@@ -1252,11 +1490,9 @@ def get_cv_editor_state(job_id: str):
     if not is_valid_state and job.get("cv_text"):
         editor_state = migrate_cv_text_to_editor_state(job.get("cv_text"))
 
-        # Persist the migrated state to avoid re-migration on every load
-        collection.update_one(
-            {"_id": object_id},
-            {"$set": {"cv_editor_state": editor_state}}
-        )
+        # Note: We don't persist the migrated state on GET to avoid unnecessary writes
+        # Migration is cheap and happens on-demand
+        # Persistence happens when user explicitly saves via PUT endpoint
 
     # If still no state, return default empty state (Phase 3 defaults)
     if not editor_state:
@@ -1316,16 +1552,16 @@ def save_cv_editor_state(job_id: str):
     # Add server timestamp
     data["lastSavedAt"] = datetime.utcnow()
 
-    # Convert TipTap JSON to HTML for display compatibility
+    # Convert TipTap JSON to HTML for backward compatibility with cv_text field
     cv_html = tiptap_json_to_html(data["content"])
 
-    # Update job document with both editor state and HTML
+    # Update job document with both editor state and HTML representation
     result = collection.update_one(
         {"_id": object_id},
         {
             "$set": {
                 "cv_editor_state": data,
-                "cv_text": cv_html,  # Sync with display field
+                "cv_text": cv_html,  # Keep cv_text in sync with editor content
                 "updatedAt": datetime.utcnow()
             }
         }

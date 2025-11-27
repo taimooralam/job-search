@@ -861,10 +861,10 @@ Second paragraph"""
         styles = result["documentStyles"]
         assert styles["fontFamily"] == "Inter"
         assert styles["fontSize"] == 11
-        assert styles["lineHeight"] == 1.4
+        assert styles["lineHeight"] == 1.15  # Phase 3 default: standard resume spacing
         assert styles["pageSize"] == "letter"
         assert "margins" in styles
-        assert styles["margins"]["top"] == 0.75
+        assert styles["margins"]["top"] == 1.0  # Phase 3 default: 1-inch margins
 
     def test_migrates_heading_not_mistaken_for_h2(self):
         """Should not mistake # for ## due to startswith logic."""
@@ -944,8 +944,10 @@ class TestCvEditorApiEndpoints:
         content = data["editor_state"]["content"]["content"]
         assert len(content) > 0
 
-        # Verify update_one was called to persist migration
-        mock_db.update_one.assert_called_once()
+        # Note: GET doesn't persist the migration to avoid unnecessary writes
+        # Migration happens on-demand and is cheap
+        # Persistence happens when user saves via PUT endpoint
+        mock_db.update_one.assert_not_called()
 
     def test_get_cv_editor_state_returns_default_for_empty_job(self, authenticated_client, mock_db):
         """Should return default empty state when job has no cv_text."""
