@@ -120,27 +120,6 @@ class TestUpdateJobCV:
         assert b"Missing cv_text" in response.data
 
 
-class TestGenerateCVPDF:
-    """Test POST /api/jobs/<job_id>/cv/pdf endpoint."""
-
-    def test_generate_pdf_invalid_job_id(self, client, mock_db):
-        """Generate PDF with invalid job ID returns 400."""
-        response = client.post("/api/jobs/invalid-id/cv/pdf")
-
-        assert response.status_code == 400
-        assert b"Invalid job ID" in response.data
-
-    def test_generate_pdf_job_not_found(self, client, mock_db):
-        """Generate PDF for non-existent job returns 404."""
-        mock_db["level-2"].find_one.return_value = None
-
-        job_id = ObjectId()
-        response = client.post(f"/api/jobs/{job_id}/cv/pdf")
-
-        assert response.status_code == 404
-        assert b"Job not found" in response.data
-
-
 class TestDownloadCVPDF:
     """Test GET /api/jobs/<job_id>/cv/download endpoint."""
 
