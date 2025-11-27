@@ -12,6 +12,7 @@ Stack: Flask + HTMX + Tailwind CSS (CDN)
 """
 
 import os
+import time
 from datetime import datetime
 from functools import wraps
 from typing import Any, Dict, List, Optional
@@ -21,6 +22,7 @@ from bson import ObjectId
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from pymongo import ASCENDING, DESCENDING, MongoClient
+from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 
 # Load environment variables
 load_dotenv()
@@ -71,9 +73,64 @@ JOB_STATUSES = [
 
 
 def get_db():
-    """Get MongoDB database connection."""
-    client = MongoClient(MONGO_URI)
-    return client["jobs"]
+    """
+    Get MongoDB database connection with retry logic for DNS issues.
+
+    Common after VPN disconnect: DNS servers may be temporarily unavailable.
+    Retry with exponential backoff to allow DNS cache to flush.
+
+    Returns:
+        MongoDB database instance
+
+    Raises:
+        ConfigurationError: If MongoDB connection fails after retries
+    """
+    max_retries = 3
+    retry_delay = 2  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            # Set shorter timeouts to fail fast (5s instead of 30s default)
+            client = MongoClient(
+                MONGO_URI,
+                serverSelectionTimeoutMS=5000,  # 5 second timeout
+                connectTimeoutMS=5000,
+                socketTimeoutMS=5000
+            )
+
+            # Test connection with ping
+            client.admin.command('ping')
+
+            return client["jobs"]
+
+        except (ConfigurationError, ServerSelectionTimeoutError) as e:
+            error_str = str(e)
+            is_dns_error = (
+                "DNS" in error_str or
+                "resolution lifetime expired" in error_str or
+                "getaddrinfo failed" in error_str
+            )
+
+            if is_dns_error:
+                if attempt < max_retries - 1:
+                    print(f"⚠️  DNS resolution failed (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
+                    print(f"   Hint: Run 'sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder' to clear DNS cache")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    print(f"❌ MongoDB connection failed after {max_retries} attempts")
+                    print(f"   Error: {e}")
+                    print(f"   Troubleshooting:")
+                    print(f"   1. Flush DNS cache: sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder")
+                    print(f"   2. Change DNS servers to 8.8.8.8 (Google DNS) in System Settings")
+                    print(f"   3. Verify MongoDB connection: mongosh \"$MONGODB_URI\" --eval \"db.adminCommand('ping')\"")
+                    print(f"   4. Restart Flask app after fixing DNS")
+                    raise
+            else:
+                # Non-DNS error, fail immediately
+                raise
+
+    raise ConfigurationError("MongoDB connection failed - DNS resolution issue")
 
 
 def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
@@ -1055,6 +1112,362 @@ def download_cover_letter_pdf(job_id: str):
         as_attachment=True,
         download_name=f"CoverLetter_{company_clean}_{title_clean}.pdf"
     )
+
+
+# ============================================================================
+# CV Rich Text Editor API Endpoints
+# ============================================================================
+
+def tiptap_json_to_html(tiptap_content: dict) -> str:
+    """
+    Convert TipTap JSON to HTML for display compatibility.
+
+    Args:
+        tiptap_content: TipTap document JSON
+
+    Returns:
+        HTML string
+    """
+    if not tiptap_content or tiptap_content.get("type") != "doc":
+        return ""
+
+    html_parts = []
+
+    def process_node(node):
+        node_type = node.get("type")
+        content = node.get("content", [])
+        attrs = node.get("attrs", {})
+        marks = node.get("marks", [])
+
+        # Process text nodes
+        if node_type == "text":
+            text = node.get("text", "")
+            # Apply marks (bold, italic, etc.)
+            for mark in marks:
+                mark_type = mark.get("type")
+                if mark_type == "bold":
+                    text = f"<strong>{text}</strong>"
+                elif mark_type == "italic":
+                    text = f"<em>{text}</em>"
+                elif mark_type == "underline":
+                    text = f"<u>{text}</u>"
+                elif mark_type == "textStyle":
+                    # Handle font family, font size, color
+                    style_parts = []
+                    mark_attrs = mark.get("attrs", {})
+                    if mark_attrs.get("fontFamily"):
+                        style_parts.append(f"font-family: {mark_attrs['fontFamily']}")
+                    if mark_attrs.get("fontSize"):
+                        style_parts.append(f"font-size: {mark_attrs['fontSize']}")
+                    if mark_attrs.get("color"):
+                        style_parts.append(f"color: {mark_attrs['color']}")
+                    if style_parts:
+                        text = f"<span style='{'; '.join(style_parts)}'>{text}</span>"
+                elif mark_type == "highlight":
+                    color = mark.get("attrs", {}).get("color", "yellow")
+                    text = f"<mark style='background-color: {color}'>{text}</mark>"
+            return text
+
+        # Process block nodes
+        elif node_type == "paragraph":
+            inner_html = "".join(process_node(child) for child in content)
+            text_align = attrs.get("textAlign", "left")
+            if text_align != "left":
+                style_attr = f' style="text-align: {text_align};"'
+                return f"<p{style_attr}>{inner_html}</p>"
+            return f"<p>{inner_html}</p>"
+
+        elif node_type == "heading":
+            level = attrs.get("level", 1)
+            inner_html = "".join(process_node(child) for child in content)
+            text_align = attrs.get("textAlign", "left")
+            if text_align != "left":
+                style_attr = f' style="text-align: {text_align};"'
+                return f"<h{level}{style_attr}>{inner_html}</h{level}>"
+            return f"<h{level}>{inner_html}</h{level}>"
+
+        elif node_type == "bulletList":
+            items_html = "".join(process_node(child) for child in content)
+            return f"<ul>{items_html}</ul>"
+
+        elif node_type == "orderedList":
+            items_html = "".join(process_node(child) for child in content)
+            return f"<ol>{items_html}</ol>"
+
+        elif node_type == "listItem":
+            inner_html = "".join(process_node(child) for child in content)
+            return f"<li>{inner_html}</li>"
+
+        elif node_type == "hardBreak":
+            return "<br>"
+
+        elif node_type == "horizontalRule":
+            return "<hr>"
+
+        else:
+            # Unknown node type, process children
+            return "".join(process_node(child) for child in content)
+
+    # Process all top-level nodes
+    for node in tiptap_content.get("content", []):
+        html_parts.append(process_node(node))
+
+    return "".join(html_parts)
+
+
+@app.route("/api/jobs/<job_id>/cv-editor", methods=["GET"])
+@login_required
+def get_cv_editor_state(job_id: str):
+    """
+    Get CV editor state for a job.
+
+    Returns:
+        JSON with editor_state containing TipTap JSON document
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    editor_state = job.get("cv_editor_state")
+
+    # Validate editor state structure
+    is_valid_state = (
+        editor_state
+        and isinstance(editor_state, dict)
+        and "content" in editor_state
+        and isinstance(editor_state["content"], dict)
+        and editor_state["content"].get("type") == "doc"
+    )
+
+    # If no valid editor state exists, migrate from cv_text (markdown)
+    if not is_valid_state and job.get("cv_text"):
+        editor_state = migrate_cv_text_to_editor_state(job.get("cv_text"))
+
+        # Persist the migrated state to avoid re-migration on every load
+        collection.update_one(
+            {"_id": object_id},
+            {"$set": {"cv_editor_state": editor_state}}
+        )
+
+    # If still no state, return default empty state
+    if not editor_state:
+        editor_state = {
+            "version": 1,
+            "content": {
+                "type": "doc",
+                "content": []
+            },
+            "documentStyles": {
+                "fontFamily": "Inter",
+                "fontSize": 11,
+                "lineHeight": 1.4,
+                "margins": {
+                    "top": 0.75,
+                    "right": 0.75,
+                    "bottom": 0.75,
+                    "left": 0.75
+                },
+                "pageSize": "letter"
+            }
+        }
+
+    return jsonify({
+        "success": True,
+        "editor_state": editor_state
+    })
+
+
+@app.route("/api/jobs/<job_id>/cv-editor", methods=["PUT"])
+@login_required
+def save_cv_editor_state(job_id: str):
+    """
+    Save CV editor state to MongoDB.
+
+    Request Body:
+        version: Editor state version (integer)
+        content: TipTap JSON document
+        documentStyles: Document-level styles
+
+    Returns:
+        JSON with success status and savedAt timestamp
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    data = request.get_json()
+
+    if not data or "content" not in data:
+        return jsonify({"error": "Missing content in request body"}), 400
+
+    # Add server timestamp
+    data["lastSavedAt"] = datetime.utcnow()
+
+    # Convert TipTap JSON to HTML for display compatibility
+    cv_html = tiptap_json_to_html(data["content"])
+
+    # Update job document with both editor state and HTML
+    result = collection.update_one(
+        {"_id": object_id},
+        {
+            "$set": {
+                "cv_editor_state": data,
+                "cv_text": cv_html,  # Sync with display field
+                "updatedAt": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "savedAt": data["lastSavedAt"].isoformat()
+    })
+
+
+def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
+    """
+    Migrate markdown CV text to TipTap editor state.
+
+    Converts markdown to TipTap JSON, parsing line-by-line to handle:
+    - Headings (# ## ###)
+    - Bullet lists (-)
+    - Bold/italic text (**)
+    - Regular paragraphs
+
+    Args:
+        cv_text: Markdown CV content
+
+    Returns:
+        TipTap editor state dictionary
+    """
+    lines = cv_text.split('\n')
+    content = []
+    current_list = None
+    i = 0
+
+    def parse_inline_marks(text):
+        """Parse bold and italic marks from text."""
+        marks_content = []
+        # Simple regex-based parsing for bold (**text**) and italic (*text*)
+        import re
+
+        # For now, just return plain text node
+        # TODO: Implement proper inline mark parsing
+        return [{"type": "text", "text": text}]
+
+    while i < len(lines):
+        line = lines[i].strip()
+
+        if not line:
+            # Empty line closes current list
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            i += 1
+            continue
+
+        # Heading level 1
+        if line.startswith('# ') and not line.startswith('##'):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 1},
+                "content": parse_inline_marks(line[2:].strip())
+            })
+
+        # Heading level 2
+        elif line.startswith('## ') and not line.startswith('###'):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": parse_inline_marks(line[3:].strip())
+            })
+
+        # Heading level 3
+        elif line.startswith('### '):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 3},
+                "content": parse_inline_marks(line[4:].strip())
+            })
+
+        # Bullet point
+        elif line.startswith('- '):
+            list_item = {
+                "type": "listItem",
+                "content": [{
+                    "type": "paragraph",
+                    "content": parse_inline_marks(line[2:].strip())
+                }]
+            }
+
+            if current_list is None:
+                current_list = {
+                    "type": "bulletList",
+                    "content": [list_item]
+                }
+            else:
+                current_list["content"].append(list_item)
+
+        # Regular paragraph
+        else:
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "paragraph",
+                "content": parse_inline_marks(line)
+            })
+
+        i += 1
+
+    # Close any open list at end
+    if current_list:
+        content.append(current_list)
+
+    return {
+        "version": 1,
+        "content": {
+            "type": "doc",
+            "content": content
+        },
+        "documentStyles": {
+            "fontFamily": "Inter",
+            "fontSize": 11,
+            "lineHeight": 1.4,
+            "margins": {
+                "top": 0.75,
+                "right": 0.75,
+                "bottom": 0.75,
+                "left": 0.75
+            },
+            "pageSize": "letter"
+        }
+    }
 
 
 # ============================================================================

@@ -14,6 +14,102 @@
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
+    <!-- TipTap Editor (Using esm.sh CDN with importmap for browser extension compatibility) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "@tiptap/core": "https://esm.sh/@tiptap/core@2.1.13",
+        "@tiptap/starter-kit": "https://esm.sh/@tiptap/starter-kit@2.1.13",
+        "@tiptap/extension-underline": "https://esm.sh/@tiptap/extension-underline@2.1.13",
+        "@tiptap/extension-text-align": "https://esm.sh/@tiptap/extension-text-align@2.1.13",
+        "@tiptap/extension-font-family": "https://esm.sh/@tiptap/extension-font-family@2.1.13",
+        "@tiptap/extension-text-style": "https://esm.sh/@tiptap/extension-text-style@2.1.13",
+        "@tiptap/extension-color": "https://esm.sh/@tiptap/extension-color@2.1.13",
+        "@tiptap/extension-highlight": "https://esm.sh/@tiptap/extension-highlight@2.1.13"
+      }
+    }
+    </script>
+    <script type="module">
+      // Load TipTap modules and expose to window for legacy code
+      import { Editor } from '@tiptap/core';
+      import StarterKit from '@tiptap/starter-kit';
+      import Underline from '@tiptap/extension-underline';
+      import TextAlign from '@tiptap/extension-text-align';
+      import FontFamily from '@tiptap/extension-font-family';
+      import TextStyle from '@tiptap/extension-text-style';
+      import Color from '@tiptap/extension-color';
+      import Highlight from '@tiptap/extension-highlight';
+
+      // Expose to window for cv-editor.js
+      window.tiptap = { Editor };
+      window.tiptapStarterKit = { StarterKit };
+      window.tiptapUnderline = { Underline };
+      window.tiptapTextAlign = { TextAlign };
+      window.tiptapFontFamily = { FontFamily };
+      window.tiptapTextStyle = { TextStyle };
+      window.tiptapColor = { Color };
+      window.tiptapHighlight = { Highlight };
+
+      // Signal that TipTap is loaded
+      window.dispatchEvent(new Event('tiptap-loaded'));
+      console.log('✅ TipTap loaded via ESM');
+    </script>
+
+    <!-- Custom TipTap FontSize Extension (inline implementation) -->
+    <script type="module">
+    // FontSize extension for TipTap - waits for TipTap to load
+    import TextStyle from '@tiptap/extension-text-style';
+
+    const FontSize = TextStyle.extend({
+        name: 'fontSize',
+        addOptions() {
+            return {
+                types: ['textStyle'],
+            }
+        },
+        addGlobalAttributes() {
+            return [
+                {
+                    types: this.options.types,
+                    attributes: {
+                        fontSize: {
+                            default: null,
+                            parseHTML: element => element.style.fontSize?.replace(/['"]+/g, ''),
+                            renderHTML: attributes => {
+                                if (!attributes.fontSize) {
+                                    return {}
+                                }
+                                return {
+                                    style: `font-size: ${attributes.fontSize}`,
+                                }
+                            },
+                        },
+                    },
+                },
+            ]
+        },
+        addCommands() {
+            return {
+                setFontSize: fontSize => ({ chain }) => {
+                    return chain().setMark('textStyle', { fontSize }).run()
+                },
+                unsetFontSize: () => ({ chain }) => {
+                    return chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run()
+                },
+            }
+        },
+    });
+
+    // Expose to window for cv-editor.js
+    window.tiptapFontSize = { FontSize };
+    console.log('✅ FontSize extension loaded');
+    </script>
+
+    <!-- Google Fonts for CV Editor (60+ Professional Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&family=Lato:wght@400;700&family=Montserrat:wght@400;600;700&family=Raleway:wght@400;600;700&family=Nunito:wght@400;600;700&family=Poppins:wght@400;600;700&family=Work+Sans:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=Karla:wght@400;700&family=Rubik:wght@400;600;700&family=DM+Sans:wght@400;700&family=Manrope:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;700&family=Outfit:wght@400;600;700&family=Archivo:wght@400;600;700&family=Public+Sans:wght@400;600;700&family=Red+Hat+Display:wght@400;700&family=Crimson+Text:wght@400;600;700&family=EB+Garamond:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;500;600;700&family=Spectral:wght@400;600;700&family=Source+Serif+Pro:wght@400;600;700&family=PT+Serif:wght@400;700&family=Bitter:wght@400;700&family=Arvo:wght@400;700&family=Cardo:wght@400;700&family=Cormorant+Garamond:wght@400;600;700&family=Neuton:wght@400;700&family=Vollkorn:wght@400;600;700&family=Fira+Code:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Source+Code+Pro:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=Roboto+Mono:wght@400;600&family=Inconsolata:wght@400;700&family=Bebas+Neue&family=Archivo+Black&family=Righteous&family=Josefin+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&family=Anton&family=Kanit:wght@400;600;700&family=Roboto+Condensed:wght@400;700&family=PT+Sans+Narrow:wght@400;700&family=Fira+Sans+Condensed:wght@400;700&family=Barlow+Condensed:wght@400;600;700&family=Nunito+Sans:wght@400;600;700&family=Quicksand:wght@400;600;700&family=Varela+Round&family=Comfortaa:wght@400;700&display=swap" rel="stylesheet">
+
     <!-- Custom styles -->
     <style>
         /* Sticky header for table */
@@ -183,6 +279,369 @@
             background-color: #a855f7 !important;
             color: white !important;
             border-color: #a855f7 !important;
+        }
+
+        /* ============================================================================
+         * TipTap ProseMirror WYSIWYG Editor Styles
+         * ============================================================================ */
+        .ProseMirror {
+            outline: none;
+            min-height: 100%;
+            padding: 2rem;
+        }
+
+        /* Headings */
+        .ProseMirror h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0.67em 0;
+            line-height: 1.2;
+        }
+
+        .ProseMirror h2 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0.5em 0;
+            line-height: 1.3;
+        }
+
+        .ProseMirror h3 {
+            font-size: 1.25em;
+            font-weight: bold;
+            margin: 0.4em 0;
+            line-height: 1.4;
+        }
+
+        /* Paragraphs */
+        .ProseMirror p {
+            margin: 0.5em 0;
+            line-height: 1.6;
+        }
+
+        .ProseMirror p:first-child {
+            margin-top: 0;
+        }
+
+        .ProseMirror p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Inline formatting */
+        .ProseMirror strong {
+            font-weight: bold;
+        }
+
+        .ProseMirror em {
+            font-style: italic;
+        }
+
+        .ProseMirror u {
+            text-decoration: underline;
+        }
+
+        /* Lists */
+        .ProseMirror ul,
+        .ProseMirror ol {
+            padding-left: 1.5em;
+            margin: 0.5em 0;
+        }
+
+        .ProseMirror ul {
+            list-style-type: disc;
+        }
+
+        .ProseMirror ol {
+            list-style-type: decimal;
+        }
+
+        .ProseMirror li {
+            margin: 0.25em 0;
+            line-height: 1.6;
+        }
+
+        .ProseMirror li > p {
+            margin: 0;
+        }
+
+        /* Nested lists */
+        .ProseMirror ul ul,
+        .ProseMirror ol ul,
+        .ProseMirror ul ol,
+        .ProseMirror ol ol {
+            margin: 0.25em 0;
+        }
+
+        /* Highlight/Mark */
+        .ProseMirror mark {
+            background-color: yellow;
+            padding: 0.1em 0.2em;
+            border-radius: 2px;
+        }
+
+        /* Text alignment */
+        .ProseMirror [style*="text-align: left"] {
+            text-align: left;
+        }
+
+        .ProseMirror [style*="text-align: center"] {
+            text-align: center;
+        }
+
+        .ProseMirror [style*="text-align: right"] {
+            text-align: right;
+        }
+
+        .ProseMirror [style*="text-align: justify"] {
+            text-align: justify;
+        }
+
+        /* Placeholder for empty editor */
+        .ProseMirror p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder);
+            float: left;
+            color: #adb5bd;
+            pointer-events: none;
+            height: 0;
+        }
+
+        /* Code blocks */
+        .ProseMirror code {
+            background-color: #f3f4f6;
+            padding: 0.1em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .ProseMirror pre {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .ProseMirror pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Blockquotes */
+        .ProseMirror blockquote {
+            border-left: 3px solid #d1d5db;
+            padding-left: 1em;
+            margin-left: 0;
+            color: #6b7280;
+        }
+
+        /* Hard breaks */
+        .ProseMirror br {
+            content: '';
+        }
+
+        /* Selection */
+        .ProseMirror ::selection {
+            background-color: #b4d5fe;
+        }
+
+        /* Focus state */
+        .ProseMirror:focus {
+            outline: none;
+        }
+
+        /* Links (if enabled) */
+        .ProseMirror a {
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .ProseMirror a:hover {
+            color: #2563eb;
+        }
+
+        /* ============================================================================
+         * Main CV Display Styles (Matches TipTap Editor WYSIWYG)
+         * Applied to the read-only CV display on the detail page
+         * ============================================================================ */
+        #cv-markdown-display,
+        #cv-container {
+            line-height: 1.6;
+        }
+
+        /* Headings */
+        #cv-markdown-display h1,
+        #cv-container h1 {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0.67em 0;
+            line-height: 1.2;
+        }
+
+        #cv-markdown-display h2,
+        #cv-container h2 {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0.5em 0;
+            line-height: 1.3;
+        }
+
+        #cv-markdown-display h3,
+        #cv-container h3 {
+            font-size: 1.25em;
+            font-weight: bold;
+            margin: 0.4em 0;
+            line-height: 1.4;
+        }
+
+        /* Paragraphs */
+        #cv-markdown-display p,
+        #cv-container p {
+            margin: 0.5em 0;
+            line-height: 1.6;
+        }
+
+        #cv-markdown-display p:first-child,
+        #cv-container p:first-child {
+            margin-top: 0;
+        }
+
+        #cv-markdown-display p:last-child,
+        #cv-container p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Inline formatting */
+        #cv-markdown-display strong,
+        #cv-container strong {
+            font-weight: bold;
+        }
+
+        #cv-markdown-display em,
+        #cv-container em {
+            font-style: italic;
+        }
+
+        #cv-markdown-display u,
+        #cv-container u {
+            text-decoration: underline;
+        }
+
+        /* Lists */
+        #cv-markdown-display ul,
+        #cv-markdown-display ol,
+        #cv-container ul,
+        #cv-container ol {
+            padding-left: 1.5em;
+            margin: 0.5em 0;
+        }
+
+        #cv-markdown-display ul,
+        #cv-container ul {
+            list-style-type: disc;
+        }
+
+        #cv-markdown-display ol,
+        #cv-container ol {
+            list-style-type: decimal;
+        }
+
+        #cv-markdown-display li,
+        #cv-container li {
+            margin: 0.25em 0;
+            line-height: 1.6;
+            list-style-position: outside;
+        }
+
+        #cv-markdown-display li > p,
+        #cv-container li > p {
+            margin: 0;
+        }
+
+        /* Nested lists */
+        #cv-markdown-display ul ul,
+        #cv-markdown-display ol ul,
+        #cv-markdown-display ul ol,
+        #cv-markdown-display ol ol,
+        #cv-container ul ul,
+        #cv-container ol ul,
+        #cv-container ul ol,
+        #cv-container ol ol {
+            margin: 0.25em 0;
+        }
+
+        /* Highlight/Mark */
+        #cv-markdown-display mark,
+        #cv-container mark {
+            background-color: yellow;
+            padding: 0.1em 0.2em;
+            border-radius: 2px;
+        }
+
+        /* Text alignment */
+        #cv-markdown-display [style*="text-align: left"],
+        #cv-container [style*="text-align: left"] {
+            text-align: left;
+        }
+
+        #cv-markdown-display [style*="text-align: center"],
+        #cv-container [style*="text-align: center"] {
+            text-align: center;
+        }
+
+        #cv-markdown-display [style*="text-align: right"],
+        #cv-container [style*="text-align: right"] {
+            text-align: right;
+        }
+
+        #cv-markdown-display [style*="text-align: justify"],
+        #cv-container [style*="text-align: justify"] {
+            text-align: justify;
+        }
+
+        /* Code blocks */
+        #cv-markdown-display code,
+        #cv-container code {
+            background-color: #f3f4f6;
+            padding: 0.1em 0.4em;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        #cv-markdown-display pre,
+        #cv-container pre {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        #cv-markdown-display pre code,
+        #cv-container pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Blockquotes */
+        #cv-markdown-display blockquote,
+        #cv-container blockquote {
+            border-left: 3px solid #d1d5db;
+            padding-left: 1em;
+            margin-left: 0;
+            color: #6b7280;
+        }
+
+        /* Links */
+        #cv-markdown-display a,
+        #cv-container a {
+            color: #3b82f6;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #cv-markdown-display a:hover,
+        #cv-container a:hover {
+            color: #2563eb;
         }
     </style>
 
