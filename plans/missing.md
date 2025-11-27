@@ -145,6 +145,146 @@ Visual progress indicator for the 7-layer LangGraph pipeline execution displayed
 - Pipeline execution tracking in MongoDB
 - Runner service status event emission
 
+#### UI/UX Design Refresh & Modern Styling (PENDING)
+
+**Status**: Not started
+**Priority**: High (User experience and product appeal)
+**Estimated Duration**: 8-12 hours
+
+**Description**:
+Comprehensive design refresh to modernize the UI/UX with sleek, elegant, production-quality styling that makes the job application process delightful. Transform the application into a visually appealing, modern interface with intuitive navigation and consistent design system.
+
+**Goals**:
+- Elevate visual appeal and perceived product quality
+- Create intuitive, user-friendly navigation and interactions
+- Establish consistent design system across all pages
+- Improve visual hierarchy, readability, and spacing
+- Enhance user delight through animations and micro-interactions
+
+**Design Principles**:
+- **Modern**: Clean lines, appropriate whitespace, contemporary design patterns
+- **Intuitive**: Self-evident interactions, clear call-to-actions, logical workflows
+- **Sleek**: Minimal visual clutter, focused layouts, purposeful animations
+- **Elegant**: Sophisticated color palette, refined typography, balanced composition
+- **Production-Ready**: Polished, bug-free, consistent across browsers/devices
+- **Delightful**: Smooth transitions, micro-interactions, satisfying feedback
+
+**Scope**:
+
+1. **Design System Foundation**:
+   - Color palette: Primary, secondary, accent, neutral scales with semantic usage
+   - Typography: Font families, sizes, weights, line heights for hierarchy
+   - Spacing system: Consistent margins, padding, gaps (8px-based scale recommended)
+   - Component library: Reusable buttons, cards, forms, modals, navigation
+   - Icons: Consistent icon set (Heroicons, Lucide, or custom SVGs)
+   - Shadows and depth: Subtle elevation for layering
+
+2. **Page-Level Improvements**:
+   - Job list/dashboard: Card-based layout with filters, search, sorting
+   - Job detail page: Clear information architecture, visual hierarchy, section grouping
+   - CV editor: Modern toolbar design, clean panel layout, visual feedback
+   - Authentication pages: Welcoming, professional, on-brand
+   - Settings/profile: Organized layout, easy navigation, clear sections
+
+3. **Interactive Elements & Feedback**:
+   - Button states: Hover, active, disabled, loading with visual feedback
+   - Form inputs: Clear labels, validation feedback, helpful error states
+   - Loading states: Skeleton screens, progress indicators, spinners
+   - Animations: Page transitions, component entrances, smooth interactions
+   - Micro-interactions: Button clicks, tooltips, notifications, hover effects
+
+4. **Responsive & Accessible Design**:
+   - Mobile-first responsive approach (320px, 640px, 1024px, 1280px breakpoints)
+   - Tablet optimization with appropriate spacing and touch targets
+   - Desktop layouts with proper use of horizontal space
+   - Touch-friendly button and input targets (min 44x44px)
+   - WCAG 2.1 AA compliance:
+     - Color contrast ratios (4.5:1 for text)
+     - Keyboard navigation fully supported
+     - Screen reader compatibility
+     - Focus indicators visible
+
+5. **Technical Implementation**:
+   - Tailwind CSS utility classes (extend existing, refine configuration)
+   - CSS custom properties (variables) for theming and customization
+   - Component-based styling patterns
+   - Dark mode support structure (Phase 2 enhancement)
+   - Performance-optimized CSS without unnecessary bloat
+
+**Design Inspiration References**:
+- Linear (linear.app) - Clean, minimal SaaS design
+- Notion (notion.so) - Elegant content creation interface
+- Stripe Dashboard - Professional, polished SaaS UI
+- Vercel Dashboard - Modern developer experience
+- Figma (figma.com) - Sophisticated collaboration UI
+
+**Implementation Breakdown**:
+
+1. **Phase A: Design System** (2-3 hours)
+   - Define color palette with semantic meaning
+   - Typography scale and usage guidelines
+   - Spacing and sizing system
+   - Component designs
+
+2. **Phase B: Component Library** (2-3 hours)
+   - Reusable button component patterns
+   - Card component with variants
+   - Form input components with states
+   - Navigation components
+
+3. **Phase C: Page Refactoring** (2-3 hours)
+   - Job list/dashboard redesign
+   - Job detail page layout improvements
+   - CV editor UI refinement
+   - Authentication flow design
+
+4. **Phase D: Polish & Testing** (1-2 hours)
+   - Cross-browser testing
+   - Mobile device testing
+   - Accessibility audit
+   - Performance optimization
+
+**Deliverables**:
+- Updated Tailwind configuration with new design tokens
+- Refactored base.html and all page templates
+- CSS style guide with usage examples
+- Component library documentation
+- Design system specification document
+
+**Dependencies**:
+- Tailwind CSS (already installed - v3.x)
+- Optional: Headless UI for accessible components
+- Optional: Framer Motion for advanced animations
+- Design tool reference (Figma file or design specs)
+
+**Related Components**:
+- CV Rich Text Editor (styled, needs integration with design system)
+- Pipeline Progress Indicator (visual consistency)
+- All frontend templates and pages
+
+**Testing & Validation**:
+- Visual regression testing across pages
+- Cross-browser testing (Chrome, Firefox, Safari, Edge)
+- Mobile device testing (iOS Safari, Chrome Mobile)
+- Accessibility audit (axe DevTools, WAVE, manual review)
+- User feedback on new design before finalization
+
+**Priority Justification**:
+High priority because:
+- User experience directly impacts engagement and retention
+- Professional appearance increases confidence in the application
+- Consistent design system enables faster future development
+- Competitive differentiation in crowded job application space
+- Improved usability reduces support burden
+
+**Success Criteria**:
+- Design system fully implemented in Tailwind config
+- All pages consistently styled per design system
+- Mobile responsive and touch-friendly
+- WCAG 2.1 AA accessibility compliance verified
+- Cross-browser testing passing (Chrome, Firefox, Safari, Edge)
+- User feedback positive on visual appeal and usability
+
 ### CV Rich Text Editor (Phase 1 COMPLETE - 2025-11-26)
 
 #### Phase 1: TipTap Foundation + Side Panel UI ✅ COMPLETE
