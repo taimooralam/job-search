@@ -26,15 +26,19 @@ pytest_plugins = ["pytest_playwright"]
 # ==============================================================================
 
 def pytest_addoption(parser):
-    """Add custom command-line options."""
-    # Note: pytest-playwright already provides --headed, --browser, --slowmo, etc.
-    # We only add custom options here that aren't provided by the plugin
-    parser.addoption(
-        "--base-url",
-        action="store",
-        default="https://job-search-inky-sigma.vercel.app",
-        help="Base URL for E2E tests",
-    )
+    """
+    Add custom command-line options.
+
+    Note: pytest-playwright already provides:
+    - --headed (run browser in visible mode)
+    - --browser (choose chromium/firefox/webkit)
+    - --slowmo (slow down operations)
+    - --base-url (base URL for tests)
+    - Many others...
+
+    We don't need to register any custom options here.
+    """
+    pass  # No custom options needed
 
 
 # ==============================================================================
@@ -90,8 +94,13 @@ def browser_context_args(browser_context_args):
 
 @pytest.fixture(autouse=True)
 def set_base_url(pytestconfig, monkeypatch):
-    """Set BASE_URL environment variable for tests."""
-    base_url = pytestconfig.getoption("--base-url")
+    """
+    Set BASE_URL environment variable for tests.
+
+    pytest-playwright provides --base-url option.
+    Default to production URL if not specified.
+    """
+    base_url = pytestconfig.getoption("--base-url", default="https://job-search-inky-sigma.vercel.app")
     monkeypatch.setenv("E2E_BASE_URL", base_url)
 
 
