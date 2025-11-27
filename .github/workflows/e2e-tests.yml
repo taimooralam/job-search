@@ -1,0 +1,276 @@
+name: E2E Tests (CV Editor)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'tests/e2e/**'
+      - '.github/workflows/e2e-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'tests/e2e/**'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  e2e-chromium:
+    name: E2E Tests (Chromium)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run E2E tests on Chromium
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          E2E_BASE_URL: https://job-search-inky-sigma.vercel.app
+          CI: true
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            --browser chromium \
+            --screenshot on \
+            --video retain-on-failure \
+            --output test-results \
+            --tb=short
+
+      - name: Upload screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-chromium
+          path: test-results/screenshots/
+          retention-days: 7
+
+      - name: Upload videos (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-videos-chromium
+          path: test-results/videos/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-chromium
+          path: test-results/
+          retention-days: 7
+
+  e2e-firefox:
+    name: E2E Tests (Firefox)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps firefox
+
+      - name: Run E2E tests on Firefox
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          E2E_BASE_URL: https://job-search-inky-sigma.vercel.app
+          CI: true
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            --browser firefox \
+            --screenshot on \
+            --video retain-on-failure \
+            --output test-results-firefox \
+            --tb=short \
+            -m "not webkit"  # Skip webkit-specific tests
+
+      - name: Upload screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-firefox
+          path: test-results-firefox/screenshots/
+          retention-days: 7
+
+      - name: Upload videos (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-videos-firefox
+          path: test-results-firefox/videos/
+          retention-days: 7
+
+  e2e-webkit:
+    name: E2E Tests (WebKit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps webkit
+
+      - name: Run E2E tests on WebKit
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          E2E_BASE_URL: https://job-search-inky-sigma.vercel.app
+          CI: true
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            --browser webkit \
+            --screenshot on \
+            --video retain-on-failure \
+            --output test-results-webkit \
+            --tb=short \
+            -m "not firefox"  # Skip firefox-specific tests
+
+      - name: Upload screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-webkit
+          path: test-results-webkit/screenshots/
+          retention-days: 7
+
+      - name: Upload videos (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-videos-webkit
+          path: test-results-webkit/videos/
+          retention-days: 7
+
+  e2e-mobile:
+    name: E2E Tests (Mobile)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run mobile E2E tests
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          E2E_BASE_URL: https://job-search-inky-sigma.vercel.app
+          CI: true
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            -m mobile \
+            --browser chromium \
+            --screenshot on \
+            --video retain-on-failure \
+            --output test-results-mobile \
+            --tb=short
+
+      - name: Upload screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-mobile
+          path: test-results-mobile/screenshots/
+          retention-days: 7
+
+  e2e-accessibility:
+    name: E2E Tests (Accessibility)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps chromium
+
+      - name: Run accessibility E2E tests
+        env:
+          LOGIN_PASSWORD: ${{ secrets.LOGIN_PASSWORD }}
+          E2E_BASE_URL: https://job-search-inky-sigma.vercel.app
+          CI: true
+        run: |
+          pytest tests/e2e/ \
+            -v \
+            -m accessibility \
+            --browser chromium \
+            --screenshot on \
+            --output test-results-a11y \
+            --tb=short
+
+      - name: Upload screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-accessibility
+          path: test-results-a11y/screenshots/
+          retention-days: 7
