@@ -117,7 +117,7 @@ class TestUpdateJobCV:
         response = client.put(f"/api/jobs/{job_id}/cv", json={})
 
         assert response.status_code == 400
-        assert b"Missing html_content" in response.data
+        assert b"Missing cv_text" in response.data
 
 
 class TestGenerateCVPDF:
