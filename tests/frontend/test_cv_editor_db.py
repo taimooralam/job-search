@@ -113,13 +113,13 @@ class TestMongoDBPersistence:
         assert "lastSavedAt" in saved_state
         assert isinstance(saved_state["lastSavedAt"], datetime)
 
-    def test_cv_editor_preserves_existing_cv_text(
+    def test_cv_editor_updates_cv_text_with_html(
         self, authenticated_client, mock_db, sample_job
     ):
-        """Should not delete legacy cv_text field when saving editor state."""
+        """Should update cv_text field with HTML when saving editor state."""
         # Arrange
         job_id = str(sample_job["_id"])
-        sample_job["cv_text"] = "# Legacy CV\n\nThis should be preserved."
+        sample_job["cv_text"] = "# Legacy CV\n\nThis should be updated."
         mock_db.find_one.return_value = sample_job
 
         mock_result = MagicMock()
@@ -142,11 +142,12 @@ class TestMongoDBPersistence:
         # Assert
         assert response.status_code == 200
 
-        # Verify cv_text was NOT in the update (so it gets preserved)
+        # Verify cv_text was updated with HTML content
         call_args = mock_db.update_one.call_args
         update_doc = call_args[0][1]["$set"]
 
-        assert "cv_text" not in update_doc  # Should NOT overwrite cv_text
+        assert "cv_text" in update_doc  # Should update cv_text with HTML
+        assert isinstance(update_doc["cv_text"], str)  # Should be HTML string
 
     def test_cv_editor_state_includes_timestamp(
         self, authenticated_client, mock_db, sample_job

@@ -1000,7 +1000,7 @@ function applyDocumentStyle(styleType) {
 }
 
 /**
- * Export CV to PDF
+ * Export CV to PDF (Phase 4: Playwright-based PDF generation)
  */
 async function exportCVToPDF() {
     if (!cvEditorInstance) {
@@ -1008,9 +1008,69 @@ async function exportCVToPDF() {
         return;
     }
 
-    // For Phase 1, show a placeholder message
-    // TODO: Implement PDF export in Phase 4
-    alert('PDF export will be implemented in Phase 4. For now, you can save your CV and use the existing "Export PDF" button.');
+    try {
+        // Show loading state
+        showToast('Generating PDF...', 'info');
+
+        // Trigger auto-save first to ensure latest content is saved
+        await cvEditorInstance.save();
+
+        // Call PDF generation endpoint
+        const response = await fetch(`/api/jobs/${cvEditorInstance.jobId}/cv-editor/pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'PDF generation failed');
+        }
+
+        // Download the PDF file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'CV.pdf';
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('PDF downloaded successfully!', 'success');
+
+    } catch (error) {
+        console.error('PDF export failed:', error);
+        showToast(`PDF export failed: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'info') {
+    // Use existing showToast function if available, otherwise alert
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
+    } else {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+        if (type === 'error') {
+            alert(message);
+        }
+    }
 }
 
 // Keyboard shortcuts

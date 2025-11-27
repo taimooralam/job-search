@@ -13,6 +13,7 @@ firecrawl-py>=0.0.5
 # Document Generation
 python-docx>=1.1.0
 pypandoc>=1.13
+playwright>=1.40.0
 
 # Google APIs
 google-auth>=2.28.0
