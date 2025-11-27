@@ -871,120 +871,70 @@ def update_job_cv(job_id: str):
 @login_required
 def generate_cv_pdf_from_editor(job_id: str):
     """
-    Generate PDF from CV editor state using Playwright (Phase 4).
+    Proxy PDF generation request to runner service (Phase 4).
 
-    This endpoint:
-    1. Fetches cv_editor_state from MongoDB
-    2. Converts TipTap JSON to HTML with Phase 2+3 styles
-    3. Generates PDF using Playwright with proper page settings
-    4. Returns PDF as downloadable attachment
-
-    Page Settings:
-    - Paper size: Letter (8.5" × 11") or A4 from documentStyles.pageSize
-    - Margins: from documentStyles.margins
-    - Print background graphics: Yes (for highlights, colors)
-    - Scale: 1.0 (100% - no scaling)
+    The runner service (VPS with Playwright installed) handles PDF generation.
+    This endpoint proxies the request and streams the response back to the user.
 
     Returns:
-        PDF file with filename: CV_<Company>_<Title>.pdf
+        PDF file streamed from runner service
     """
+    import requests
     from flask import send_file
     from io import BytesIO
-    from playwright.sync_api import sync_playwright
 
-    db = get_db()
-    collection = db["level-2"]
+    # Get runner service URL from environment
+    runner_url = os.getenv("RUNNER_SERVICE_URL", "http://72.61.92.76:8000")
+    endpoint = f"{runner_url}/api/jobs/{job_id}/cv-editor/pdf"
 
-    try:
-        object_id = ObjectId(job_id)
-    except Exception:
-        return jsonify({"error": "Invalid job ID format"}), 400
-
-    job = collection.find_one({"_id": object_id})
-
-    if not job:
-        return jsonify({"error": "Job not found"}), 404
-
-    # Get editor state (or use default if not present)
-    editor_state = job.get("cv_editor_state")
-    if not editor_state or not editor_state.get("content"):
-        # Use default empty state
-        editor_state = {
-            "content": {"type": "doc", "content": []},
-            "documentStyles": {
-                "fontFamily": "Inter",
-                "fontSize": 11,
-                "lineHeight": 1.15,
-                "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
-                "pageSize": "letter"
-            }
-        }
-
-    # Convert TipTap JSON to HTML
-    html_content = tiptap_json_to_html(editor_state["content"])
-
-    # Get document styles
-    doc_styles = editor_state.get("documentStyles", {})
-    page_size = doc_styles.get("pageSize", "letter")
-    margins = doc_styles.get("margins", {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0})
-    line_height = doc_styles.get("lineHeight", 1.15)
-    font_family = doc_styles.get("fontFamily", "Inter")
-    font_size = doc_styles.get("fontSize", 11)
-
-    # Get header and footer
-    header_text = editor_state.get("header", "")
-    footer_text = editor_state.get("footer", "")
-
-    # Build complete HTML document with styles
-    full_html = build_pdf_html_template(
-        html_content,
-        font_family,
-        font_size,
-        line_height,
-        header_text,
-        footer_text
-    )
+    # Get authentication token from session (if using token auth)
+    # For now, assume runner accepts the same session or use API key
+    runner_token = os.getenv("RUNNER_API_TOKEN")
+    headers = {}
+    if runner_token:
+        headers["Authorization"] = f"Bearer {runner_token}"
 
     try:
-        # Generate PDF using Playwright
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
+        # Proxy request to runner service
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            timeout=30,  # 30 second timeout for PDF generation
+            stream=True
+        )
 
-            # Set HTML content
-            page.set_content(full_html, wait_until='networkidle')
+        if response.status_code != 200:
+            # Try to get error message from runner
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", "PDF generation failed")
+            except:
+                error_msg = f"PDF generation failed with status {response.status_code}"
 
-            # Wait for fonts to load
-            page.wait_for_load_state('networkidle')
+            return jsonify({"error": error_msg}), response.status_code
 
-            # Generate PDF with settings from Phase 3
-            pdf_format = 'A4' if page_size == 'a4' else 'Letter'
-            pdf_bytes = page.pdf(
-                format=pdf_format,
-                print_background=True,
-                margin={
-                    'top': f"{margins.get('top', 1.0)}in",
-                    'right': f"{margins.get('right', 1.0)}in",
-                    'bottom': f"{margins.get('bottom', 1.0)}in",
-                    'left': f"{margins.get('left', 1.0)}in"
-                }
-            )
+        # Extract filename from Content-Disposition header
+        content_disposition = response.headers.get('Content-Disposition', '')
+        filename = "CV.pdf"  # Default
+        if 'filename=' in content_disposition:
+            # Parse filename from header
+            import re
+            match = re.search(r'filename="?([^"]+)"?', content_disposition)
+            if match:
+                filename = match.group(1)
 
-            browser.close()
-
-        # Build filename: CV_<Company>_<Title>.pdf
-        company_clean = sanitize_for_path(job.get("company", "Company"))
-        title_clean = sanitize_for_path(job.get("title", "Position"))
-        filename = f"CV_{company_clean}_{title_clean}.pdf"
-
-        # Return PDF as downloadable file
+        # Stream PDF back to user
         return send_file(
-            BytesIO(pdf_bytes),
+            BytesIO(response.content),
             mimetype='application/pdf',
             as_attachment=True,
             download_name=filename
         )
 
+    except requests.Timeout:
+        return jsonify({"error": "PDF generation timed out (>30s)"}), 504
+    except requests.RequestException as e:
+        return jsonify({"error": f"Failed to connect to runner service: {str(e)}"}), 503
     except Exception as e:
         return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
 

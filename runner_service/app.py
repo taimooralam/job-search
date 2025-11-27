@@ -359,3 +359,140 @@ async def get_artifact(run_id: str, filename: str):
         filename=filename,
         media_type="application/octet-stream"
     )
+
+
+# ============================================================================
+# PDF Generation Endpoint (Phase 4 - CV Editor)
+# ============================================================================
+
+@app.post("/api/jobs/{job_id}/cv-editor/pdf", dependencies=[Depends(verify_token)])
+async def generate_cv_pdf(job_id: str):
+    """
+    Generate PDF from CV editor state using Playwright (Phase 4).
+
+    This endpoint:
+    1. Fetches cv_editor_state from MongoDB
+    2. Converts TipTap JSON to HTML with Phase 2+3 styles
+    3. Generates PDF using Playwright with proper page settings
+    4. Returns PDF as downloadable attachment
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+
+    Returns:
+        StreamingResponse with PDF binary data
+    """
+    from io import BytesIO
+    from playwright.sync_api import sync_playwright
+    from bson import ObjectId
+    from pymongo import MongoClient
+    from .pdf_helpers import (
+        tiptap_json_to_html,
+        build_pdf_html_template,
+        sanitize_for_path
+    )
+
+    # Get MongoDB connection
+    mongo_uri = os.getenv("MONGO_URI")
+    if not mongo_uri:
+        raise HTTPException(status_code=500, detail="MongoDB not configured")
+
+    try:
+        client = MongoClient(mongo_uri)
+        db = client[os.getenv("MONGO_DB_NAME", "job_search")]
+        collection = db["level-2"]
+
+        # Validate and fetch job
+        try:
+            object_id = ObjectId(job_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid job ID format")
+
+        job = collection.find_one({"_id": object_id})
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Get editor state (or use default if not present)
+        editor_state = job.get("cv_editor_state")
+        if not editor_state or not editor_state.get("content"):
+            editor_state = {
+                "content": {"type": "doc", "content": []},
+                "documentStyles": {
+                    "fontFamily": "Inter",
+                    "fontSize": 11,
+                    "lineHeight": 1.15,
+                    "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
+                    "pageSize": "letter"
+                }
+            }
+
+        # Convert TipTap JSON to HTML
+        html_content = tiptap_json_to_html(editor_state["content"])
+
+        # Get document styles
+        doc_styles = editor_state.get("documentStyles", {})
+        page_size = doc_styles.get("pageSize", "letter")
+        margins = doc_styles.get("margins", {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0})
+        line_height = doc_styles.get("lineHeight", 1.15)
+        font_family = doc_styles.get("fontFamily", "Inter")
+        font_size = doc_styles.get("fontSize", 11)
+
+        # Get header and footer
+        header_text = editor_state.get("header", "")
+        footer_text = editor_state.get("footer", "")
+
+        # Build complete HTML document with styles
+        full_html = build_pdf_html_template(
+            html_content,
+            font_family,
+            font_size,
+            line_height,
+            header_text,
+            footer_text
+        )
+
+        # Generate PDF using Playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+
+            # Set HTML content
+            page.set_content(full_html, wait_until='networkidle')
+
+            # Wait for fonts to load
+            page.wait_for_load_state('networkidle')
+
+            # Generate PDF with settings from Phase 3
+            pdf_format = 'A4' if page_size == 'a4' else 'Letter'
+            pdf_bytes = page.pdf(
+                format=pdf_format,
+                print_background=True,
+                margin={
+                    'top': f"{margins.get('top', 1.0)}in",
+                    'right': f"{margins.get('right', 1.0)}in",
+                    'bottom': f"{margins.get('bottom', 1.0)}in",
+                    'left': f"{margins.get('left', 1.0)}in"
+                }
+            )
+
+            browser.close()
+
+        # Build filename: CV_<Company>_<Title>.pdf
+        company_clean = sanitize_for_path(job.get("company", "Company"))
+        title_clean = sanitize_for_path(job.get("title", "Position"))
+        filename = f"CV_{company_clean}_{title_clean}.pdf"
+
+        # Return PDF as streaming response
+        return StreamingResponse(
+            BytesIO(pdf_bytes),
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"PDF generation failed for job {job_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
