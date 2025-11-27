@@ -101,10 +101,10 @@ Contact discovery and outreach generation:
 - Email: 5-10 word subject + 95-205 word body
 - Validation: No emojis, no placeholders, pain-point focus
 
-### Layer 6: Generator
+### Layer 6: Generator & LinkedIn Outreach
 **Files**: `src/layer6/generator.py`, `src/layer6/outreach_generator.py`
 
-CV and Cover Letter generation:
+CV, Cover Letter, and LinkedIn outreach generation:
 
 **CV Generator** (`MarkdownCVGenerator`):
 - Two-pass flow: Evidence JSON → QA pass
@@ -116,6 +116,51 @@ CV and Cover Letter generation:
 - Multiple validation gates
 - Company mention check, JD specificity check
 - Master CV grounding validation
+
+**LinkedIn Outreach Generator**:
+
+**Character Limits** (ENFORCED):
+- Connection requests: 300 characters (hard limit, LinkedIn enforces)
+- InMail messages: 1900 characters for body, 200 for subject
+- Direct messages: No hard limit (recommend 500-1000 chars)
+
+**Required Components**:
+1. Personalized greeting: "Hi {FirstName},"
+2. Hook: Reference pain point or specific achievement (1-2 sentences)
+3. Value proposition: Candidate's relevant experience (2-3 sentences for InMail, 1 sentence for connection)
+4. Call-to-action: Calendly URL with context
+5. Signature: **"Best. Taimoor Alam"** (with period, MANDATORY in all messages)
+
+**Connection Request Format** (300 char max):
+```
+Hi {FirstName}, I saw your {Role} at {Company} and your work on {PainPoint}.
+Let's connect and discuss {Value}.
+Book time: {CalendlyURL}
+Best. Taimoor Alam
+```
+
+**InMail Format** (1900 char max for body):
+```
+Subject: {Role} - {PainPoint} Solution
+
+Hi {FirstName},
+
+[Hook paragraph - reference specific achievement or pain point]
+
+[Value paragraph - map candidate's experience to their needs]
+
+[CTA paragraph - Calendly link and next steps]
+
+Best. Taimoor Alam
+{CalendlyURL}
+```
+
+**Post-Generation Validation**:
+- Length check: `len(message) <= 300` (connection) or `<= 1900` (InMail)
+- Signature presence: `"Best. Taimoor Alam"` must be in final message
+- Calendly URL presence: `calendly_url` must be included
+- Token replacement: No `{Token}` placeholders remain
+- If validation fails: Regenerate with stricter length constraints
 
 ### Layer 7: Publisher
 **File**: `src/layer7/publisher.py`
@@ -237,9 +282,9 @@ applications/
 
 ---
 
-## CV Rich Text Editor (Planned)
+## CV Rich Text Editor (Phase 1 - COMPLETE as of 2025-11-26)
 
-**Documentation**: See `plans/editor-solution.md` for full specification.
+**Status**: Phase 1 foundation complete and tested. Phases 2-5 pending.
 
 ### Architecture Overview
 
@@ -268,55 +313,194 @@ applications/
 
 ### Technology Stack
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Rich Text | TipTap v2 (ProseMirror) | Professional editing with JSON output |
-| Fonts | Google Fonts | Inter, Roboto, Open Sans, etc. |
-| PDF Export | html2pdf.js | Client-side PDF generation |
-| Persistence | MongoDB | `cv_editor_state` field in `level-2` |
-| UI Framework | Vanilla JS + Tailwind | Consistent with existing frontend |
+| Component | Technology | Status |
+|-----------|------------|--------|
+| Rich Text | TipTap v2 (ProseMirror) + StarterKit | Complete (Phase 1) |
+| Fonts | Google Fonts (6 fonts) | Complete (Phase 1); Phase 2 will expand to 60+ |
+| PDF Export | html2pdf.js (client-side) | Phase 4 (pending) |
+| Persistence | MongoDB `cv_editor_state` field | Complete (Phase 1) |
+| UI Framework | Vanilla JS + Tailwind | Complete (Phase 1) |
 
 ### Data Flow
 
 ```
 Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
                                                   ↓
-                                       cv_editor_state migration
+                                       cv_editor_state migration (auto on first access)
                                                   ↓
                           TipTap Editor  ←  GET /api/jobs/{id}/cv-editor
                                   ↓
-                           User edits
+                           User edits (B/I/U, headings, lists)
                                   ↓
                     Auto-save (3s debounce)  →  PUT /api/jobs/{id}/cv-editor  →  MongoDB
                                   ↓
-                           Export PDF  →  Local machine
+                           Save indicator updates (● synced, ◐ saving)
 ```
 
-### MongoDB Schema Addition
+### API Endpoints (Phase 1 Complete)
 
-```javascript
-// level-2 collection
+#### GET `/api/jobs/<job_id>/cv-editor`
+**Purpose**: Retrieve editor state or migrate from legacy markdown format
+**Response**:
+```json
 {
-  cv_editor_state: {
-    version: 1,
-    content: { type: "doc", content: [...] },  // TipTap JSON
-    documentStyles: {
-      fontFamily: "Inter",
-      fontSize: 11,
-      lineHeight: 1.5,
-      margins: { top: 0.75, right: 0.75, bottom: 0.75, left: 0.75 }
+  "success": true,
+  "editor_state": {
+    "version": 1,
+    "content": { "type": "doc", "content": [...] },
+    "documentStyles": {
+      "fontFamily": "Inter",
+      "fontSize": 11,
+      "lineHeight": 1.5,
+      "margins": { "top": 0.75, "right": 0.75, "bottom": 0.75, "left": 0.75 }
     },
-    lastSavedAt: ISODate
+    "lastSavedAt": "2025-11-26T15:30:00Z"
   }
 }
 ```
 
-### Key Features
+#### PUT `/api/jobs/<job_id>/cv-editor`
+**Purpose**: Save editor state to MongoDB
+**Request**:
+```json
+{
+  "version": 1,
+  "content": { "type": "doc", "content": [...] },
+  "documentStyles": { "fontFamily": "Inter", "fontSize": 11 }
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "savedAt": "2025-11-26T15:30:03Z",
+  "message": "CV editor state saved successfully"
+}
+```
 
-- **Notion-style side panel**: Collapsible, expandable to full screen
-- **Auto-save**: 3-second debounce with visual indicator (●/○/◐)
-- **State restoration**: Exact content + styles recreated from MongoDB
-- **PDF export**: Client-side via html2pdf.js
+### MongoDB Schema Addition (Phase 1 Complete)
+
+```javascript
+// level-2 collection - new field
+{
+  _id: ObjectId,
+  job_id: string,
+  // ... existing fields ...
+
+  cv_editor_state: {
+    version: 1,                           // Schema version for migrations
+    content: {                            // TipTap JSON document
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 1 },
+          content: [{ type: "text", text: "John Doe" }]
+        },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Software Engineer" }]
+        }
+        // ... more nodes ...
+      ]
+    },
+    documentStyles: {
+      fontFamily: "Inter",                // Font from Google Fonts
+      fontSize: 11,                       // Points
+      lineHeight: 1.5,                    // Line spacing
+      margins: {
+        top: 0.75,                        // Inches
+        right: 0.75,
+        bottom: 0.75,
+        left: 0.75
+      },
+      pageSize: "letter"                  // letter | a4
+    },
+    lastSavedAt: ISODate("2025-11-26T15:30:03Z")
+  }
+}
+```
+
+### Implemented Features (Phase 1-2)
+
+**Phase 1 (Complete)**:
+- [x] TipTap editor initialization with StarterKit extensions
+- [x] Basic formatting: bold, italic, underline
+- [x] Block formatting: headings (h1-h3), bullet lists, numbered lists
+- [x] Side panel UI with slide-in/collapse animation
+- [x] Auto-save with 3-second debounce
+- [x] Visual save indicator (● synced, ◐ saving, error on fail)
+- [x] MongoDB persistence to `cv_editor_state` field
+- [x] Markdown-to-TipTap migration for legacy CVs
+- [x] GET/PUT API endpoints with validation
+- [x] 46 comprehensive unit tests (100% passing)
+
+**Phase 2 (Code Complete - Known Runtime Issues)**:
+- [x] Font library expanded (6 → 60+ Google Fonts)
+- [x] Font size selector (8-24pt)
+- [x] Font color / highlight with color picker
+- [x] Text alignment (left/center/right/justify)
+- [x] Indentation controls (Tab/Shift+Tab)
+- [x] Toolbar reorganized into 7 logical groups
+- [ ] ❌ Content loading from MongoDB (BLOCKER - not showing in editor)
+- [ ] ❌ Error handling on editor open (BLOCKER - unspecified error)
+- [ ] ❓ Save indicator visibility (UX issue - status unclear)
+
+**Pending (Phase 3+)**:
+- [ ] Document-level margins and line height
+- [ ] Page size selector (Letter/A4)
+- [ ] PDF export (server-side via Playwright)
+- [ ] Keyboard shortcuts
+- [ ] Version history / undo-redo persistence
+- [ ] E2E tests
+
+### Phase 2 Troubleshooting (Known Issues)
+
+**Issue #1: CV Content Not Loading**
+- **Symptom**: Editor panel opens, but no CV content appears
+- **Check List**:
+  1. Browser DevTools Console → Look for JavaScript errors
+  2. Network tab → Verify GET `/api/jobs/<id>/cv-editor` returns 200 OK with valid JSON
+  3. Response payload → Check if `editor_state` contains `content` nodes
+  4. TipTap init → Verify `editor.setContent()` executes after load
+  5. CSS → Check for hidden/display:none on editor container
+- **Likely Cause**: API response missing content, or TipTap not initializing with data
+- **Fix Path**: architecture-debugger to trace API call and editor initialization
+
+**Issue #2: Error on Editor Open**
+- **Symptom**: Unspecified error message appears when opening editor
+- **Check List**:
+  1. Browser DevTools Console → Capture exact error message and stack trace
+  2. Network tab → Look for failed requests (404, 500, etc.)
+  3. CDN scripts → Verify Google Fonts and TipTap extensions loaded (Status 200)
+  4. Extensions → Test if TipTap extensions (FontSize, Highlight) initialized correctly
+- **Likely Cause**: Missing CDN resource, extension initialization failure, or API error
+- **Fix Path**: architecture-debugger to capture error details and trace source
+
+**Issue #3: Save Indicator Unclear**
+- **Symptom**: User unsure if auto-save is working or indicator visible
+- **Check List**:
+  1. DOM → Verify `#cv-save-indicator` element exists in HTML
+  2. CSS → Check visibility (not `display:none`, `visibility:hidden`, `opacity:0`)
+  3. Save trigger → Test by editing text, wait 3 seconds
+  4. Indicator update → Check if text/color changes during save
+  5. Persistence → Verify data actually saved to MongoDB after indicator shows "Saved"
+- **Likely Cause**: Indicator hidden by CSS, or save logic not triggering
+- **Fix Path**: frontend-developer to improve CSS visibility and save feedback
+
+### Test Coverage (Phase 1)
+
+| Test Suite | Tests | Coverage |
+|-----------|-------|----------|
+| API endpoints | 18 | 100% |
+| Markdown migration | 17 | 100% |
+| MongoDB integration | 11 | 100% |
+| **Total** | **46** | **100%** |
+
+**Execution Time**: 0.73 seconds
+**Framework**: pytest with mock LLM providers
+
+**Phase 2 Test Status**: Unit tests pending (blocked by bug investigation)
 
 ---
 
