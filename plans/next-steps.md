@@ -1,14 +1,101 @@
-# Next Steps - Working Pipeline Today
+# Next Steps - Immediate Priorities
 
-**Last Updated**: 2025-11-26
-**Goal**: Get pipeline running end-to-end locally and deployed
+**Last Updated**: 2025-11-27
+**Current Focus**: Complete Phase 2 CV Editor fixes to enable user feedback
+
+> **Documentation Structure Note**: All agent-specific plans and reports are now organized in:
+> - Plans: `plans/agents/{agent-name}/`
+> - Reports: `reports/agents/{agent-name}/`
+>
+> See `plans/agents/README.md` for detailed guidelines.
 
 ---
 
-## Current Blockers
+## Current Blockers (Priority Order)
 
-1. **Anthropic API credits low** - CV generator tests and production failing
-2. **CV generator tests unmocked** - Using real API calls instead of mocks
+1. **CRITICAL - TipTap Editor Not WYSIWYG** (Issue #2)
+   - Text formatting stored but not visible in editor
+   - Need: Add CSS for `.ProseMirror` content nodes
+   - Assigned to: frontend-developer
+   - Effort: 1-2 hours
+   - Blocks: Phase 2 usability, Phase 3 design
+
+2. **HIGH - CV Display Not Updating Immediately** (Issue #1)
+   - Changes visible only after page reload
+   - Need: Add JS event handler to update display on editor close
+   - Assigned to: frontend-developer
+   - Effort: 1-2 hours
+   - Blocks: User experience
+
+3. **Anthropic API credits low** - CV generator tests and production failing
+4. **CV generator tests unmocked** - Using real API calls instead of mocks
+
+---
+
+## Priority 1: CV Editor Phase 2 Fixes (TODAY/TOMORROW)
+
+### Issue #2: Editor Not WYSIWYG (CRITICAL - 1-2 hours)
+
+**Problem**: Text formatting (bold, italic, headings, etc.) stored in data model but not visible in editor
+
+**Solution**: Add CSS for ProseMirror content nodes
+
+**Action**:
+```bash
+# Option A: Add inline styles to base.html
+# In frontend/templates/base.html, add <style> block with:
+.ProseMirror strong { font-weight: bold; }
+.ProseMirror em { font-style: italic; }
+.ProseMirror u { text-decoration: underline; }
+.ProseMirror h1 { font-size: 2em; font-weight: bold; }
+.ProseMirror h2 { font-size: 1.5em; font-weight: bold; }
+.ProseMirror h3 { font-size: 1.25em; font-weight: bold; }
+.ProseMirror ul { list-style-type: disc; padding-left: 2rem; }
+.ProseMirror ol { list-style-type: decimal; padding-left: 2rem; }
+
+# Option B: Create dedicated CSS file (recommended)
+touch frontend/static/css/prosemirror-styles.css
+# Add all styles above, plus styles for alignment, indentation, custom fonts, sizes, highlight
+```
+
+**Test**: Edit CV → Type text → Click Bold → Verify text appears bold immediately
+
+---
+
+### Issue #1: CV Display Not Updating on Close (HIGH - 1-2 hours)
+
+**Problem**: Changes visible only after full page reload
+
+**Solution**: Add JS event handler to update display on editor close
+
+**Action**:
+```bash
+# In frontend/static/js/cv-editor.js:
+# 1. Add function to convert TipTap JSON to HTML
+# 2. Add event listener for editor panel close
+# 3. Call update function when panel closes
+# 4. Update #cv-markdown-display div with new HTML
+
+# Example approach:
+# - Listen for closePanel event
+# - Get editor.getJSON()
+# - Convert to HTML (use tiptapJsonToHtml() from app.py)
+# - Set document.getElementById('cv-markdown-display').innerHTML = html
+```
+
+**Test**: Edit CV → Close editor → Verify display updates immediately (no reload needed)
+
+---
+
+### Follow-Up: Add Test Coverage (test-generator)
+
+```bash
+# After both issues fixed:
+# 1. Write tests for display update on close
+# 2. Write tests for CSS rendering
+# 3. Run full Phase 2 test suite (38+ tests)
+# 4. Verify Phase 1 regression tests pass (46 tests)
+```
 
 ---
 
