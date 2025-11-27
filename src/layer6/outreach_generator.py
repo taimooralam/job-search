@@ -221,7 +221,7 @@ class OutreachGenerator:
         # Ensure LinkedIn closing line is present; if not, append it.
         # This makes the system robust even when upstream generators omit the closing.
         if "calendly.com" not in linkedin_message.lower() or "applied" not in linkedin_message.lower():
-            closing = f"I have applied for this role. Calendly: {self.candidate_calendly}"
+            closing = f"I have applied for this role. Calendly: {self.candidate_calendly}\nBest. Taimoor Alam"
             if closing not in linkedin_message:
                 linkedin_message = linkedin_message.rstrip() + "\n\n" + closing
 
