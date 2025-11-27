@@ -2,6 +2,11 @@
 
 {% block title %}{{ job.title or 'Job' }} at {{ job.company or 'Unknown' }} - Job Search{% endblock %}
 
+{% block extra_head %}
+<!-- Pipeline Progress Indicator CSS -->
+<link rel="stylesheet" href="/static/css/pipeline-progress.css">
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <!-- Back navigation -->
@@ -108,49 +113,182 @@
                 </div>
             </div>
 
-            <!-- Pipeline Status (shown when processing) -->
-            <div id="pipeline-status-container" class="hidden mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-indigo-200 rounded-lg">
-                <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h2 class="text-sm font-semibold text-indigo-900 uppercase tracking-wide flex items-center gap-2">
-                            <svg class="h-5 w-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Pipeline Status
-                        </h2>
-                        <p id="pipeline-status-text" class="text-sm text-indigo-700 mt-1">Initializing...</p>
+            <!-- Pipeline Progress Indicator (shown when processing) -->
+            <div id="pipeline-progress-container" class="hidden mb-6">
+                <div class="card">
+                    <div class="card-header flex items-start justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+                                <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                Pipeline Execution Progress
+                            </h2>
+                            <p class="text-sm text-gray-600 mt-1">7-layer intelligence pipeline processing job application</p>
+                        </div>
+                        <span id="pipeline-run-id" class="text-xs font-mono text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-200"></span>
                     </div>
-                    <span id="pipeline-run-id" class="text-xs font-mono text-indigo-600 bg-white px-2 py-1 rounded"></span>
-                </div>
 
-                <!-- Progress Bar -->
-                <div class="mb-4">
-                    <div class="flex justify-between text-xs text-indigo-700 mb-1">
-                        <span>Progress</span>
-                        <span id="pipeline-progress-percent">0%</span>
-                    </div>
-                    <div class="w-full bg-white rounded-full h-2 overflow-hidden">
-                        <div id="pipeline-progress-bar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                </div>
+                    <div class="card-body">
+                        <!-- Overall Progress Bar -->
+                        <div class="pipeline-overall-progress">
+                            <div class="pipeline-overall-progress-text">
+                                <span class="font-medium">Overall Progress</span>
+                                <span id="pipeline-overall-percent" class="font-semibold text-indigo-700">0%</span>
+                            </div>
+                            <div class="pipeline-overall-progress-bar-container">
+                                <div id="pipeline-overall-progress-bar" class="pipeline-overall-progress-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
 
-                <!-- Logs Terminal -->
-                <div class="mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="text-xs font-semibold text-indigo-900 uppercase">Live Logs</label>
-                        <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 underline">Expand/Collapse</button>
-                    </div>
-                    <div id="logs-container" class="bg-black rounded-md p-3 font-mono text-xs text-green-400 h-48 overflow-y-auto">
-                        <div id="logs-content">Waiting for logs...</div>
-                    </div>
-                </div>
+                        <!-- Pipeline Stepper -->
+                        <ol class="pipeline-stepper" id="pipeline-stepper">
+                            <!-- Layer 1: Intake -->
+                            <li class="pipeline-step pending" data-layer="intake">
+                                <div class="step-icon">1</div>
+                                <div class="step-content">
+                                    <div class="step-title">Intake</div>
+                                    <div class="step-description">Parse job posting and candidate profile</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
 
-                <!-- Artifacts -->
-                <div id="artifacts-container" class="hidden">
-                    <h3 class="text-xs font-semibold text-indigo-900 uppercase mb-2">Artifacts</h3>
-                    <div id="artifacts-list" class="grid grid-cols-2 gap-2">
-                        <!-- Artifact download buttons will be inserted here -->
+                            <!-- Layer 2: Pain Point Mining -->
+                            <li class="pipeline-step pending" data-layer="pain_points">
+                                <div class="step-icon">2</div>
+                                <div class="step-content">
+                                    <div class="step-title">Pain Point Mining</div>
+                                    <div class="step-description">Extract company and role pain points</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Layer 3: Company Research -->
+                            <li class="pipeline-step pending" data-layer="company_research">
+                                <div class="step-icon">3</div>
+                                <div class="step-content">
+                                    <div class="step-title">Company Research</div>
+                                    <div class="step-description">Research company via FireCrawl</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Layer 4: Role Research -->
+                            <li class="pipeline-step pending" data-layer="role_research">
+                                <div class="step-icon">4</div>
+                                <div class="step-content">
+                                    <div class="step-title">Role Research</div>
+                                    <div class="step-description">Research specific role requirements</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Layer 5: Fit Scoring -->
+                            <li class="pipeline-step pending" data-layer="fit_scoring">
+                                <div class="step-icon">5</div>
+                                <div class="step-content">
+                                    <div class="step-title">Fit Scoring</div>
+                                    <div class="step-description">Score candidate fit (0-100)</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Layer 6: People Mapping -->
+                            <li class="pipeline-step pending" data-layer="people_mapping">
+                                <div class="step-icon">6</div>
+                                <div class="step-content">
+                                    <div class="step-title">People Mapping</div>
+                                    <div class="step-description">Find LinkedIn recruiters and contacts</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Layer 7: CV/Outreach Generation -->
+                            <li class="pipeline-step pending" data-layer="cv_outreach_generation">
+                                <div class="step-icon">7</div>
+                                <div class="step-content">
+                                    <div class="step-title">CV &amp; Outreach Generation</div>
+                                    <div class="step-description">Generate personalized CV and outreach messages</div>
+                                    <div class="step-status">Pending</div>
+                                    <div class="step-error"></div>
+                                    <div class="step-metadata">
+                                        <div class="step-metadata-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span class="step-duration">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ol>
+
+                        <!-- Logs Terminal (collapsed by default) -->
+                        <div class="mt-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Live Logs</h3>
+                                <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                    <span id="logs-toggle-text">Show</span>
+                                </button>
+                            </div>
+                            <div id="logs-container" class="hidden bg-gray-900 rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto">
+                                <div id="logs-content">Waiting for logs...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1259,19 +1397,222 @@
 
     // Monitor pipeline execution
     function monitorPipeline(runId) {
-        // Show pipeline status container
-        const container = document.getElementById('pipeline-status-container');
+        // Show pipeline progress container
+        const container = document.getElementById('pipeline-progress-container');
         container.classList.remove('hidden');
 
         // Update run ID display
         document.getElementById('pipeline-run-id').textContent = `Run: ${runId}`;
 
+        // Reset all steps to pending
+        resetPipelineSteps();
+
         // Start log streaming
         startLogStreaming(runId);
 
-        // Poll status every 2 seconds
+        // OPTION 1: Use Server-Sent Events (SSE) for real-time updates
+        // Uncomment when backend SSE endpoint is ready
+        // connectPipelineSSE(runId);
+
+        // OPTION 2: Poll status every 2 seconds (current fallback)
         statusPollingInterval = setInterval(() => pollPipelineStatus(runId), 2000);
         pollPipelineStatus(runId); // Initial poll
+    }
+
+    // Reset all pipeline steps to pending state
+    function resetPipelineSteps() {
+        const steps = document.querySelectorAll('.pipeline-step');
+        steps.forEach(step => {
+            step.className = 'pipeline-step pending';
+            step.querySelector('.step-status').textContent = 'Pending';
+            step.querySelector('.step-error').textContent = '';
+            step.querySelector('.step-error').style.display = 'none';
+            step.querySelector('.step-duration').textContent = '--';
+        });
+
+        // Reset overall progress
+        document.getElementById('pipeline-overall-percent').textContent = '0%';
+        document.getElementById('pipeline-overall-progress-bar').style.width = '0%';
+    }
+
+    // Connect to SSE endpoint for real-time pipeline updates
+    function connectPipelineSSE(runId) {
+        // Close existing connection if any
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        // Connect to SSE endpoint (to be implemented in backend)
+        eventSource = new EventSource(`/api/runner/jobs/${runId}/progress`);
+
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handlePipelineProgressUpdate(data);
+            } catch (err) {
+                console.error('Failed to parse SSE data:', err);
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error('SSE connection error:', err);
+            // Fallback to polling on connection error
+            eventSource.close();
+            if (!statusPollingInterval) {
+                statusPollingInterval = setInterval(() => pollPipelineStatus(runId), 2000);
+            }
+        };
+    }
+
+    // Handle pipeline progress update from SSE or polling
+    function handlePipelineProgressUpdate(data) {
+        if (!data) return;
+
+        // Update specific layer if provided
+        if (data.layer && data.status) {
+            updatePipelineStep(data.layer, data.status, data.error, data.duration);
+        }
+
+        // Update overall progress
+        if (data.progress !== undefined) {
+            updateOverallProgress(data.progress);
+        }
+
+        // Handle completion
+        if (data.status === 'complete' || data.status === 'completed') {
+            handlePipelineComplete();
+        }
+
+        // Handle failure
+        if (data.status === 'failed') {
+            handlePipelineFailed(data.error);
+        }
+    }
+
+    // Update individual pipeline step
+    function updatePipelineStep(layerName, status, errorMessage, duration) {
+        const step = document.querySelector(`[data-layer="${layerName}"]`);
+        if (!step) {
+            console.warn(`Layer not found: ${layerName}`);
+            return;
+        }
+
+        // Remove all state classes
+        step.classList.remove('pending', 'executing', 'success', 'failed', 'skipped');
+
+        // Add new state class
+        step.classList.add(status);
+
+        // Update status text
+        const statusEl = step.querySelector('.step-status');
+        const statusText = {
+            pending: 'Pending',
+            executing: 'Executing...',
+            success: 'Complete',
+            failed: 'Failed',
+            skipped: 'Skipped'
+        };
+        statusEl.textContent = statusText[status] || status;
+
+        // Update error message if failed
+        const errorEl = step.querySelector('.step-error');
+        if (status === 'failed' && errorMessage) {
+            errorEl.textContent = errorMessage;
+            errorEl.style.display = 'block';
+        } else {
+            errorEl.style.display = 'none';
+        }
+
+        // Update duration if provided
+        if (duration) {
+            const durationEl = step.querySelector('.step-duration');
+            durationEl.textContent = formatDuration(duration);
+        }
+
+        // Auto-scroll to executing step
+        if (status === 'executing') {
+            step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    // Update overall progress bar
+    function updateOverallProgress(percent) {
+        const percentEl = document.getElementById('pipeline-overall-percent');
+        const progressBar = document.getElementById('pipeline-overall-progress-bar');
+
+        percentEl.textContent = `${Math.round(percent)}%`;
+        progressBar.style.width = `${percent}%`;
+    }
+
+    // Calculate overall progress based on completed steps
+    function calculateOverallProgress() {
+        const steps = document.querySelectorAll('.pipeline-step');
+        const totalSteps = steps.length;
+        let completedSteps = 0;
+
+        steps.forEach(step => {
+            if (step.classList.contains('success')) {
+                completedSteps++;
+            } else if (step.classList.contains('executing')) {
+                completedSteps += 0.5; // Half credit for in-progress
+            }
+        });
+
+        const progress = (completedSteps / totalSteps) * 100;
+        updateOverallProgress(progress);
+    }
+
+    // Handle pipeline completion
+    function handlePipelineComplete() {
+        // Stop polling
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+            statusPollingInterval = null;
+        }
+
+        // Close SSE connection
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+
+        // Update overall progress to 100%
+        updateOverallProgress(100);
+
+        // Show success toast
+        showToast('Pipeline completed successfully!', 'success');
+
+        // Reload page after 3 seconds to show new results
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+    }
+
+    // Handle pipeline failure
+    function handlePipelineFailed(errorMessage) {
+        // Stop polling
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+            statusPollingInterval = null;
+        }
+
+        // Close SSE connection
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+
+        // Show error toast
+        showToast(errorMessage || 'Pipeline failed', 'error');
+    }
+
+    // Format duration in seconds to human-readable format
+    function formatDuration(seconds) {
+        if (seconds < 1) return '<1s';
+        if (seconds < 60) return `${Math.round(seconds)}s`;
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.round(seconds % 60);
+        return `${minutes}m ${secs}s`;
     }
 
     // Poll pipeline status
@@ -1281,62 +1622,33 @@
             const data = await response.json();
 
             if (response.ok) {
-                updatePipelineUI(data);
+                // Update pipeline progress using new stepper UI
+                handlePipelineProgressUpdate(data);
+
+                // If backend provides layer-specific status, update individual steps
+                if (data.layers && Array.isArray(data.layers)) {
+                    data.layers.forEach(layer => {
+                        updatePipelineStep(layer.name, layer.status, layer.error, layer.duration);
+                    });
+                    // Recalculate overall progress based on steps
+                    calculateOverallProgress();
+                } else {
+                    // Fallback: calculate progress from overall status
+                    const progressValue = data.progress ? Math.round(data.progress * 100) : 0;
+                    updateOverallProgress(progressValue);
+                }
 
                 // Stop polling if complete or failed
                 if (data.status === 'completed' || data.status === 'failed') {
-                    clearInterval(statusPollingInterval);
-                    statusPollingInterval = null;
-
-                    // Stop log streaming
-                    if (eventSource) {
-                        eventSource.close();
-                        eventSource = null;
-                    }
-
-                    // Show artifacts if completed
-                    if (data.status === 'completed' && data.artifacts) {
-                        displayArtifacts(runId, data.artifacts);
+                    if (data.status === 'completed') {
+                        handlePipelineComplete();
+                    } else {
+                        handlePipelineFailed(data.error);
                     }
                 }
             }
         } catch (err) {
             console.error('Status poll failed:', err);
-        }
-    }
-
-    // Update pipeline UI with status data
-    function updatePipelineUI(data) {
-        const statusText = document.getElementById('pipeline-status-text');
-        const progressBar = document.getElementById('pipeline-progress-bar');
-        const progressPercent = document.getElementById('pipeline-progress-percent');
-
-        // Update status text
-        statusText.textContent = `Status: ${data.status}`;
-
-        // Update progress - default to 100% if completed/failed
-        let progress = data.progress;
-        if (data.status === 'completed' || data.status === 'failed') {
-            progress = progress || 1.0;  // Default to 100% if not provided
-        }
-        const progressValue = Math.round((progress || 0) * 100);
-        progressBar.style.width = `${progressValue}%`;
-        progressPercent.textContent = `${progressValue}%`;
-
-        // Change color based on status
-        if (data.status === 'completed') {
-            progressBar.classList.remove('bg-indigo-600');
-            progressBar.classList.add('bg-green-600');
-            statusText.textContent = 'Status: Completed ✓ - Reloading page...';
-
-            // Reload page after 2 seconds to show new pipeline data
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else if (data.status === 'failed') {
-            progressBar.classList.remove('bg-indigo-600');
-            progressBar.classList.add('bg-red-600');
-            statusText.textContent = `Status: Failed - ${data.error || 'Unknown error'}`;
         }
     }
 
@@ -1411,15 +1723,17 @@
         });
     }
 
-    // Toggle logs full screen
+    // Toggle logs visibility
     function toggleLogsFull() {
         const logsContainer = document.getElementById('logs-container');
-        if (logsContainer.classList.contains('h-48')) {
-            logsContainer.classList.remove('h-48');
-            logsContainer.classList.add('h-96');
+        const toggleText = document.getElementById('logs-toggle-text');
+
+        if (logsContainer.classList.contains('hidden')) {
+            logsContainer.classList.remove('hidden');
+            toggleText.textContent = 'Hide';
         } else {
-            logsContainer.classList.remove('h-96');
-            logsContainer.classList.add('h-48');
+            logsContainer.classList.add('hidden');
+            toggleText.textContent = 'Show';
         }
     }
 
