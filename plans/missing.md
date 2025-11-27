@@ -1,8 +1,9 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-11-27
+**Last Updated**: 2025-11-27 (Phase 4 Complete)
 
 > **See also**:
+>
 > - `plans/architecture.md` - System architecture
 > - `plans/next-steps.md` - Immediate action items
 
@@ -24,13 +25,15 @@
 - [x] CV Rich Text Editor Phase 2 - Code Implementation ✅ **COMPLETED 2025-11-27** (60+ fonts, formatting toolbar, 38 unit tests passing; 2 UX issues identified)
 - [x] LinkedIn Outreach with Signature ✅ **COMPLETED 2025-11-27** (Character limits documented, signature requirement specified)
 - [x] Agent Documentation Organization ✅ **COMPLETED 2025-11-27** (plans/agents/ and reports/agents/ structure established)
+- [x] CV Rich Text Editor Phase 3 ✅ **COMPLETED 2025-11-27** (28 unit tests passing; document-level styles working)
+- [x] CV Rich Text Editor Phase 4 ✅ **COMPLETED 2025-11-27** (22 unit tests passing; PDF export via Playwright)
 
 ---
 
 ## Current Blockers
 
-| Issue | Impact | Fix |
-|-------|--------|-----|
+| Issue                 | Impact              | Fix                                      |
+| --------------------- | ------------------- | ---------------------------------------- |
 | Anthropic credits low | CV generation fails | Add credits or use `USE_ANTHROPIC=false` |
 
 ---
@@ -40,10 +43,12 @@
 **Status**: COMPLETE
 
 All agent-specific documentation has been organized into:
+
 - `plans/agents/{agent-name}/` - Implementation plans, testing guides, strategies
 - `reports/agents/{agent-name}/` - Reports, summaries, analysis results
 
 **Files Moved to Proper Locations**:
+
 - `reports/agents/doc-sync/` - Documentation sync reports
 - `reports/agents/frontend-developer/` - Frontend implementation reports
 - `reports/agents/architecture-debugger/` - Deployment and DNS fix reports
@@ -57,6 +62,7 @@ All agent-specific documentation has been organized into:
 ## Remaining Gaps (Non-Blocking)
 
 ### Testing
+
 - [x] CV generator tests need mocking to avoid real API calls ✅ **COMPLETED 2025-11-26**
   - Added `mock_llm_providers` fixture mocking ChatAnthropic and ChatOpenAI
   - All 188 unit tests pass without real API calls
@@ -65,34 +71,39 @@ All agent-specific documentation has been organized into:
 - [ ] No coverage tracking
 
 ### Observability
+
 - [ ] All layers use `print()` instead of structured logging
 - [ ] No metrics, alerts, or cost tracking
 - [ ] Config validation only in CLI, not runner
 
 ### Data Completeness
+
 - [ ] `JobState` missing: `tier`, `dossier_path`, `cv_text`, `application_form_fields`
 - [ ] `pipeline_runs` collection unused
 - [ ] Outreach packages not persisted to MongoDB
 
 ### Features (Backlog)
-- [ ] STAR selector: No embeddings, caching, or graph edges
-- [ ] Layer 1.5: Application form mining not implemented
-- [ ] .docx CV export not implemented
+
 - [ ] Rate limiting for FireCrawl/LLM calls
 - [x] LinkedIn outreach character limit requirements documented ✅ **COMPLETED 2025-11-27**
   - Connection request: 300 char limit specified
   - InMail: 1900 char body limit specified
   - Mandatory signature: "Best. Taimoor Alam"
   - Full implementation guide: plans/layer6-linkedin-outreach.md
+- [ ] Layer 1.5: Application form mining not implemented
+- [ ] .docx CV export not implemented
+- [ ] STAR selector: No embeddings, caching, or graph edges
 
 ### CV Rich Text Editor (Phase 1 COMPLETE - 2025-11-26)
 
 #### Phase 1: TipTap Foundation + Side Panel UI ✅ COMPLETE
+
 **Status**: Implemented and fully tested
 **Completion Date**: 2025-11-26
 **Test Coverage**: 46 unit tests (100% passing, 0.73s execution time)
 
 **Delivered Features**:
+
 - TipTap editor with StarterKit extensions (bold, italic, underline, headings)
 - Bullet lists (• List button) - unordered list formatting
 - Numbered lists (1. List button) - ordered list formatting
@@ -105,6 +116,7 @@ All agent-specific documentation has been organized into:
 - Visual save indicator with timestamp
 
 **Files Modified/Created**:
+
 - `frontend/templates/base.html` - TipTap CDN scripts + Google Fonts integration
 - `frontend/static/js/cv-editor.js` - NEW (450+ lines)
 - `frontend/templates/job_detail.html` - Side panel UI integration
@@ -114,6 +126,7 @@ All agent-specific documentation has been organized into:
 - `tests/frontend/test_cv_editor_db.py` - NEW (11 tests for MongoDB persistence)
 
 **Key Accomplishments**:
+
 - All editor state changes auto-save after 3-second debounce
 - Migration from legacy markdown CV format is automatic
 - API endpoints validated with comprehensive unit tests
@@ -122,12 +135,14 @@ All agent-specific documentation has been organized into:
 - Bullet and numbered lists confirmed working (tested 2025-11-26)
 
 **User Feedback (Manual Testing - 2025-11-26)**:
+
 - Confirmed bullet points (• List) and numbered lists (1. List) are present and functional
 - User initially thought lists were missing, but discovered they work correctly
 - User feedback on button labels: "List 1 and 2" reference suggests labels could be clearer
 - No functional bug - this was user discovery of existing features
 
 #### Phase 2: Enhanced Text Formatting ✅ COMPLETE + TESTED (2025-11-27)
+
 **Status**: Code fully implemented, unit tested (38 tests passing), and all blocking issues RESOLVED
 **Implementation Date**: 2025-11-27
 **Code Status**: Complete with all UX issues fixed
@@ -135,6 +150,7 @@ All agent-specific documentation has been organized into:
 **Analysis Date**: 2025-11-27 (comprehensive codebase review confirms issues resolved)
 
 **Delivered Features**:
+
 - 60+ professional Google Fonts organized by category (Serif, Sans-Serif, Monospace, Display, Condensed, Rounded)
 - Font size selector (8-24pt) with custom TipTap extension
 - Text alignment controls (left/center/right/justify) with active state highlighting
@@ -144,6 +160,7 @@ All agent-specific documentation has been organized into:
 - 60+ Google Fonts (test coverage: 38 tests, all passing)
 
 **Files Modified/Created**:
+
 - `frontend/templates/base.html` (lines 17-106) - ESM import maps, 60+ Google Fonts, TipTap Highlight extension
 - `frontend/templates/base.html` (lines 284-461) - Comprehensive `.ProseMirror` CSS styles for WYSIWYG rendering
 - `frontend/static/js/cv-editor.js` - FontSize/Highlight extensions, indent functions, `updateMainCVDisplay()` (600+ lines total)
@@ -152,12 +169,13 @@ All agent-specific documentation has been organized into:
 
 **Resolved Issues Analysis (2025-11-27)**:
 
-| Issue | Status | Root Cause | Resolution |
-|-------|--------|-----------|-----------|
-| #1: CV Display Not Updating Immediately | RESOLVED | Missing event handler on editor close | `updateMainCVDisplay()` function added to `closeCVEditorPanel()` (cv-editor.js:674) - converts TipTap JSON to HTML and updates `#cv-markdown-display` |
+| Issue                                           | Status   | Root Cause                                | Resolution                                                                                                                                                                |
+| ----------------------------------------------- | -------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #1: CV Display Not Updating Immediately         | RESOLVED | Missing event handler on editor close     | `updateMainCVDisplay()` function added to `closeCVEditorPanel()` (cv-editor.js:674) - converts TipTap JSON to HTML and updates `#cv-markdown-display`                     |
 | #2: Editor Not WYSIWYG - Formatting Not Visible | RESOLVED | Missing CSS for ProseMirror content nodes | 178 lines of `.ProseMirror` CSS rules added to base.html (lines 287-464) covering all formatting: bold, italic, underline, headings, lists, alignment, colors, highlights |
 
 **Verification**:
+
 - Issue #1: `updateMainCVDisplay()` function present and functional (cv-editor.js:689-719)
 - Issue #2: CSS styles verified for: `.ProseMirror strong`, `.ProseMirror em`, `.ProseMirror h1-h3`, `.ProseMirror ul/ol`, `.ProseMirror mark`, text alignment, and more
 - Google Fonts CSS loaded with 60+ fonts (base.html:109-111)
@@ -166,14 +184,17 @@ All agent-specific documentation has been organized into:
 **Test Status**: 38 unit tests written and passing for Phase 2 features (all code issues resolved)
 **Code Status**: All features committed and fully functional
 **Next Steps**:
+
 1. Integration testing with manual user validation (if not already done)
 2. Mark Phase 2 as PRODUCTION READY
 3. Begin Phase 3: Document-level styles
 
 #### Phase 3: Document-Level Styles (PENDING - BLOCKED)
+
 **Status**: Not started, blocked by Phase 2 bug fixes
 **Estimated Duration**: 4-6 hours (can design in parallel, blocked on testing)
 **Requirements**:
+
 - Document margin controls
 - Line height adjustment
 - Page size selector (Letter, A4)
@@ -181,42 +202,68 @@ All agent-specific documentation has been organized into:
 - Header/footer support
 
 **Blocking Issues**:
+
 - Phase 2 runtime bugs must be fixed and tested first
 - Cannot validate Phase 3 without working Phase 2 foundation
 
-#### Phase 4: PDF Export via Playwright (PENDING)
-**Status**: Not started
-**Estimated Duration**: 4-6 hours
-**Requirements**:
-- Server-side PDF rendering via Playwright
-- Pixel-perfect layout matching on-screen rendering
-- ATS-compatible output format
-- Font embedding in PDF
-- Local and remote export options
+#### Phase 4: PDF Export via Playwright ✅ COMPLETE (2025-11-27)
+
+**Status**: Code complete and tested (22 tests passing)
+**Implementation Date**: 2025-11-27
+**Actual Duration**: ~4 hours
+
+**Delivered Features**:
+- Server-side PDF generation using Playwright (Chromium)
+- ATS-compatible PDF output with selectable text
+- 60+ Google Fonts properly embedded in PDFs
+- Page size support: Letter (8.5×11") and A4 (210×297mm)
+- Custom margins, line height, and document styles from Phase 3
+- Optional header/footer text inclusion
+- Export button integrated in CV editor toolbar
+- Filename format: `CV_<Company>_<Title>.pdf`
+- Comprehensive error handling
+
+**Files Modified/Created**:
+- `frontend/app.py` - PDF generation endpoint `POST /api/jobs/<job_id>/cv-editor/pdf`
+- `frontend/static/js/cv-editor.js` - `exportCVToPDF()` function with auto-save
+- `tests/frontend/test_cv_editor_phase4.py` - 22 comprehensive tests
+- `requirements.txt` - Added `playwright>=1.40.0`
+
+**Test Status**: 22/22 tests passing (100%)
+**Dependencies**: Playwright 1.56.0, Chromium 141.0.7390.37 installed
+
+**Technical Details**:
+- Uses `build_pdf_html_template()` to generate complete HTML from TipTap JSON
+- Playwright configured with: `format=pageSize, margin=custom, printBackground=True`
+- Auto-save before export ensures latest content is included
+- Download filename: `CV_<Company>_<Title>.pdf`
+- Comprehensive error handling with toast notifications
 
 #### Phase 5: Polish + Comprehensive Testing (PENDING)
+
 **Status**: Not started
 **Estimated Duration**: 3-5 hours
 **Requirements**:
+
 - Keyboard shortcuts (Ctrl+B, Ctrl+I, etc.)
 - Version history / undo-redo beyond browser
 - E2E tests via Selenium/Playwright
 - Mobile responsiveness testing
 - Accessibility (WCAG 2.1 AA) compliance
 
-**Total Estimated Remaining**: 14-21 hours for Phases 2-5
+**Total Estimated Remaining**: 3-5 hours for Phase 5 only
 
 ---
 
 ## Layer-Specific Notes
 
-| Layer | Status | Gap |
-|-------|--------|-----|
-| 2 (Pain Points) | Complete | None |
-| 2.5 (STAR) | Complete | No embeddings/caching, disabled by default |
-| 3 (Company) | Complete | None |
-| 3.5 (Role) | Complete | None |
-| 4 (Fit) | Complete | STAR citation advisory only |
-| 5 (People) | Complete | FireCrawl off by default, no rate limiting |
-| 6 (Generator) | Complete | Anthropic credits needed, no .docx |
-| 7 (Publisher) | Complete | No Drive/Sheets by default |
+| Layer           | Status   | Gap                                        |
+| --------------- | -------- | ------------------------------------------ |
+| 2 (Pain Points) | Complete | None                                       |
+| 2.5 (STAR)      | Complete | No embeddings/caching, disabled by default |
+| 3 (Company)     | Complete | None                                       |
+| 3.5 (Role)      | Complete | None                                       |
+| 4 (Fit)         | Complete | STAR citation advisory only                |
+| 5 (People)      | Complete | FireCrawl off by default, no rate limiting |
+| 6 (Generator)   | Complete | Anthropic credits needed, no .docx         |
+| 7 (Publisher)   | Complete | No Drive/Sheets by default                 |
