@@ -91,6 +91,12 @@ class CVEditor {
             // Store initial content for comparison
             this.lastSavedContent = JSON.stringify(this.editor.getJSON());
 
+            // Phase 3: Restore document-level styles
+            this.restoreDocumentStyles(editorState);
+
+            // Phase 3: Apply document styles to editor
+            this.applyDocumentStyles();
+
             // Hide loading animation, show editor
             this.hideLoadingState();
 
@@ -103,6 +109,51 @@ class CVEditor {
             this.showErrorState(error.message || 'Failed to initialize CV editor');
             this.updateSaveIndicator('error');
             throw error;
+        }
+    }
+
+    /**
+     * Restore document-level styles from saved state (Phase 3)
+     */
+    restoreDocumentStyles(editorState) {
+        if (!editorState.documentStyles) return;
+
+        const styles = editorState.documentStyles;
+
+        // Restore line height
+        const lineHeightSelect = document.getElementById('cv-line-height');
+        if (lineHeightSelect && styles.lineHeight) {
+            lineHeightSelect.value = styles.lineHeight;
+        }
+
+        // Restore margins
+        if (styles.margins) {
+            const marginTop = document.getElementById('cv-margin-top');
+            const marginRight = document.getElementById('cv-margin-right');
+            const marginBottom = document.getElementById('cv-margin-bottom');
+            const marginLeft = document.getElementById('cv-margin-left');
+
+            if (marginTop) marginTop.value = styles.margins.top || 1.0;
+            if (marginRight) marginRight.value = styles.margins.right || 1.0;
+            if (marginBottom) marginBottom.value = styles.margins.bottom || 1.0;
+            if (marginLeft) marginLeft.value = styles.margins.left || 1.0;
+        }
+
+        // Restore page size
+        const pageSizeSelect = document.getElementById('cv-page-size');
+        if (pageSizeSelect && styles.pageSize) {
+            pageSizeSelect.value = styles.pageSize;
+        }
+
+        // Restore header and footer
+        if (editorState.header) {
+            const headerInput = document.getElementById('cv-header-text');
+            if (headerInput) headerInput.value = editorState.header;
+        }
+
+        if (editorState.footer) {
+            const footerInput = document.getElementById('cv-footer-text');
+            if (footerInput) footerInput.value = editorState.footer;
         }
     }
 
@@ -329,7 +380,7 @@ class CVEditor {
     }
 
     /**
-     * Save editor state to MongoDB
+     * Save editor state to MongoDB (Phases 1, 2, 3)
      */
     async save() {
         this.saveStatus = 'saving';
@@ -342,6 +393,16 @@ class CVEditor {
                 documentStyles: this.getDocumentStyles(),
                 lastModified: new Date().toISOString(),
             };
+
+            // Phase 3: Add header and footer if present
+            const headerText = this.getHeaderText();
+            const footerText = this.getFooterText();
+            if (headerText) {
+                editorState.header = headerText;
+            }
+            if (footerText) {
+                editorState.footer = footerText;
+            }
 
             const response = await fetch(`/api/jobs/${this.jobId}/cv-editor`, {
                 method: 'PUT',
@@ -372,21 +433,109 @@ class CVEditor {
     }
 
     /**
-     * Get current document styles
+     * Get current document styles (Phases 2 & 3)
      */
     getDocumentStyles() {
+        // Get current values from UI controls (if they exist)
+        const lineHeight = this.getCurrentLineHeight();
+        const margins = this.getCurrentMargins();
+        const pageSize = this.getCurrentPageSize();
+
         return {
             fontFamily: 'Inter',
             fontSize: 11,
-            lineHeight: 1.4,
-            margins: {
-                top: 0.75,
-                right: 0.75,
-                bottom: 0.75,
-                left: 0.75
-            },
-            pageSize: 'letter'
+            lineHeight: lineHeight,
+            margins: margins,
+            pageSize: pageSize
         };
+    }
+
+    /**
+     * Get current line height from UI control
+     */
+    getCurrentLineHeight() {
+        const lineHeightSelect = document.getElementById('cv-line-height');
+        if (lineHeightSelect) {
+            return parseFloat(lineHeightSelect.value);
+        }
+        return 1.15; // Default: standard resume spacing
+    }
+
+    /**
+     * Get current margins from UI controls
+     */
+    getCurrentMargins() {
+        const topMargin = document.getElementById('cv-margin-top');
+        const rightMargin = document.getElementById('cv-margin-right');
+        const bottomMargin = document.getElementById('cv-margin-bottom');
+        const leftMargin = document.getElementById('cv-margin-left');
+
+        return {
+            top: topMargin ? parseFloat(topMargin.value) : 1.0,
+            right: rightMargin ? parseFloat(rightMargin.value) : 1.0,
+            bottom: bottomMargin ? parseFloat(bottomMargin.value) : 1.0,
+            left: leftMargin ? parseFloat(leftMargin.value) : 1.0
+        };
+    }
+
+    /**
+     * Get current page size from UI control
+     */
+    getCurrentPageSize() {
+        const pageSizeSelect = document.getElementById('cv-page-size');
+        if (pageSizeSelect) {
+            return pageSizeSelect.value;
+        }
+        return 'letter'; // Default: US Letter (8.5" x 11")
+    }
+
+    /**
+     * Get header text (Phase 3)
+     */
+    getHeaderText() {
+        const headerInput = document.getElementById('cv-header-text');
+        return headerInput ? headerInput.value : '';
+    }
+
+    /**
+     * Get footer text (Phase 3)
+     */
+    getFooterText() {
+        const footerInput = document.getElementById('cv-footer-text');
+        return footerInput ? footerInput.value : '';
+    }
+
+    /**
+     * Apply document-level styles to editor container (Phase 3)
+     */
+    applyDocumentStyles() {
+        if (!this.container) return;
+
+        const lineHeight = this.getCurrentLineHeight();
+        const margins = this.getCurrentMargins();
+        const pageSize = this.getCurrentPageSize();
+
+        // Apply line height to all paragraphs
+        const editorElement = this.container.querySelector('.ProseMirror');
+        if (editorElement) {
+            editorElement.style.lineHeight = lineHeight;
+
+            // Apply margins as padding
+            editorElement.style.paddingTop = `${margins.top}in`;
+            editorElement.style.paddingRight = `${margins.right}in`;
+            editorElement.style.paddingBottom = `${margins.bottom}in`;
+            editorElement.style.paddingLeft = `${margins.left}in`;
+
+            // Apply page size
+            if (pageSize === 'a4') {
+                editorElement.style.maxWidth = '210mm';
+                editorElement.style.minHeight = '297mm';
+            } else {
+                // Letter (8.5" x 11")
+                editorElement.style.maxWidth = '8.5in';
+                editorElement.style.minHeight = '11in';
+            }
+        }
     }
 
     /**
@@ -834,6 +983,19 @@ function toggleCVPanelSize() {
 function applyCVFormat(command, value = null) {
     if (cvEditorInstance) {
         cvEditorInstance.applyFormat(command, value);
+    }
+}
+
+/**
+ * Apply document-level style changes (Phase 3)
+ */
+function applyDocumentStyle(styleType) {
+    if (cvEditorInstance) {
+        // Apply styles to editor immediately
+        cvEditorInstance.applyDocumentStyles();
+
+        // Trigger auto-save
+        cvEditorInstance.scheduleAutoSave();
     }
 }
 

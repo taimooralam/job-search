@@ -1258,7 +1258,7 @@ def get_cv_editor_state(job_id: str):
             {"$set": {"cv_editor_state": editor_state}}
         )
 
-    # If still no state, return default empty state
+    # If still no state, return default empty state (Phase 3 defaults)
     if not editor_state:
         editor_state = {
             "version": 1,
@@ -1269,12 +1269,12 @@ def get_cv_editor_state(job_id: str):
             "documentStyles": {
                 "fontFamily": "Inter",
                 "fontSize": 11,
-                "lineHeight": 1.4,
+                "lineHeight": 1.15,  # Phase 3: Standard resume spacing
                 "margins": {
-                    "top": 0.75,
-                    "right": 0.75,
-                    "bottom": 0.75,
-                    "left": 0.75
+                    "top": 1.0,  # Phase 3: Standard 1-inch margins
+                    "right": 1.0,
+                    "bottom": 1.0,
+                    "left": 1.0
                 },
                 "pageSize": "letter"
             }
@@ -1458,12 +1458,12 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
         "documentStyles": {
             "fontFamily": "Inter",
             "fontSize": 11,
-            "lineHeight": 1.4,
+            "lineHeight": 1.15,  # Phase 3: Standard resume spacing
             "margins": {
-                "top": 0.75,
-                "right": 0.75,
-                "bottom": 0.75,
-                "left": 0.75
+                "top": 1.0,  # Phase 3: Standard 1-inch margins
+                "right": 1.0,
+                "bottom": 1.0,
+                "left": 1.0
             },
             "pageSize": "letter"
         }
