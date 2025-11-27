@@ -378,8 +378,9 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
 }
 ```
 
-#### POST `/api/jobs/<job_id>/cv-editor/pdf` (Phase 4 - NEW)
+#### POST `/api/jobs/<job_id>/cv-editor/pdf` (Phase 4 - Migrated to Runner Service)
 **Purpose**: Generate and download PDF from current CV editor state
+**Architecture**: Frontend proxies requests to runner service (VPS)
 **Request**:
 ```json
 {
@@ -393,6 +394,7 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
 - 200 OK - PDF generated successfully
 - 400 Bad Request - Invalid editor state or missing fields
 - 500 Internal Server Error - Playwright rendering failed
+- 503 Service Unavailable - Runner service unreachable
 **Error Response**:
 ```json
 {
@@ -401,6 +403,175 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
   "code": "ERROR_CODE"
 }
 ```
+
+### PDF Generation Architecture
+
+**Location**: Runner Service (VPS 72.61.92.76)
+
+**Why Runner, Not Frontend?**
+- Vercel serverless functions don't support browser automation (no system-level access)
+- Playwright requires Chromium browser binary (~130 MB) - not available on Vercel
+- Runner service already has Playwright installed (Dockerfile.runner lines 32-33)
+- VPS has full control over dependencies, execution time, and resource allocation
+- Better resource utilization and cost efficiency for PDF generation
+
+**Architecture Flow:**
+
+```
+┌─────────────────────────────┐
+│  Frontend (Vercel)          │
+│  - User clicks Export PDF    │
+│  - Validates editor state    │
+│  - Shows loading toast       │
+└──────────────┬──────────────┘
+               │
+               ▼
+         HTTP Request
+    POST /api/jobs/{id}/
+      cv-editor/pdf
+               │
+               ▼
+┌─────────────────────────────────┐
+│  Frontend Proxy (app.py)        │
+│  - Routes request to runner     │
+│  - Handles timeout/errors       │
+│  - Streams response back        │
+└──────────────┬──────────────────┘
+               │
+     env: RUNNER_SERVICE_URL
+     (http://72.61.92.76:8000)
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  Runner Service (VPS FastAPI)           │
+│  POST /api/jobs/{id}/cv-editor/pdf      │
+│  - Fetch job from MongoDB               │
+│  - Fetch cv_editor_state                │
+│  - Convert TipTap JSON → HTML           │
+│  - Embed 60+ Google Fonts               │
+│  - Launch Playwright/Chromium           │
+│  - Render to PDF with margins/styles    │
+│  - Return binary PDF                    │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+        PDF Binary Stream
+               │
+               ▼
+   Browser Download: CV_<Company>_<Title>.pdf
+```
+
+**Endpoints:**
+
+**Frontend (Proxy Only):**
+```
+POST https://job-search-inky-sigma.vercel.app/api/jobs/{id}/cv-editor/pdf
+Content-Type: application/json
+
+{
+  "version": 1,
+  "content": { ... },
+  "documentStyles": { ... }
+}
+
+Response: Binary PDF file (streams from runner)
+```
+
+**Runner Service (Actual Generation):**
+```
+POST http://72.61.92.76:8000/api/jobs/{id}/cv-editor/pdf
+Content-Type: application/json
+
+{
+  "version": 1,
+  "content": { ... },
+  "documentStyles": { ... }
+}
+
+Response: Binary PDF file (Playwright generated)
+```
+
+**Implementation Files:**
+
+- **Runner Service Helpers**: `runner_service/pdf_helpers.py` (349 lines)
+  - `sanitize_for_path()` - Sanitize company/role for filesystem paths
+  - `tiptap_json_to_html()` - Convert TipTap JSON document to HTML with styling
+  - `build_pdf_html_template()` - Build complete HTML document with embedded fonts and styles
+
+- **Runner Service Endpoint**: `runner_service/app.py` lines 368-498
+  - Fetch `cv_editor_state` from MongoDB
+  - Validate request body
+  - Convert TipTap JSON to HTML
+  - Generate PDF with Playwright
+  - Return PDF binary with proper headers
+
+- **Frontend Proxy**: `frontend/app.py` lines 870-939
+  - `POST /api/jobs/{id}/cv-editor/pdf` endpoint
+  - Forward request to runner service
+  - Handle timeout/error cases
+  - Stream PDF response to user
+  - Proper Content-Disposition header for download
+
+**Dependencies:**
+
+- **Runner Service**: Playwright 1.40.0+ (already in Dockerfile.runner)
+- **Runner Service**: Chromium browser (installed by Playwright)
+- **Frontend**: `requests` library for HTTP proxy (standard in Flask)
+- **Both**: MongoDB driver for fetching job data
+
+**Configuration (Environment Variables):**
+
+**Frontend (app.py)**:
+```bash
+RUNNER_SERVICE_URL=http://72.61.92.76:8000    # Runner service base URL
+RUNNER_API_TOKEN=<optional-jwt-token>         # Optional: For runner authentication
+```
+
+**Runner Service (app.py)**:
+```bash
+MONGO_URI=mongodb+srv://...                   # MongoDB connection
+MONGO_DB_NAME=job_search                      # Database name
+PLAYWRIGHT_HEADLESS=true                      # Always headless in production
+```
+
+**PDF Generation Details:**
+
+1. **HTML Template** (from `build_pdf_html_template`):
+   - DOCTYPE, meta tags, viewport settings
+   - 60+ Google Fonts embedded via CSS
+   - `documentStyles` applied as CSS (margins, line-height, page size)
+   - Header/footer text (if provided)
+   - TipTap content converted to semantic HTML
+   - Print-optimized CSS for ATS compatibility
+
+2. **Playwright Configuration**:
+   - Format: `letter` (8.5" × 11") or `a4` (210mm × 297mm)
+   - Margins: From `documentStyles.margins` (converted to inches/mm)
+   - Print background: `true` (preserves styling)
+   - Scale: `1.0` (pixel-perfect rendering)
+   - Timeout: 30 seconds
+
+3. **Output Quality**:
+   - ATS-compatible (selectable text, no image-based rendering)
+   - Fonts embedded (no font substitution issues)
+   - Colors preserved (heading colors, highlights, alignment)
+   - Page breaks handled automatically by Chromium
+
+**Error Handling:**
+
+| Error | Root Cause | User Message |
+|-------|-----------|--------------|
+| 400 Bad Request | Invalid editor state | "Invalid CV editor state" |
+| 404 Not Found | Job not in MongoDB | "Job not found" |
+| 500 Playwright Error | PDF rendering failed | "PDF generation failed" |
+| 503 Runner Unavailable | Runner service down | "PDF service temporarily unavailable" |
+
+**Testing:**
+
+- 22 unit tests for Phase 4 PDF export (`tests/frontend/test_cv_editor_phase4.py`)
+- Tests cover: HTML conversion, CSS application, error handling, edge cases
+- Mock Playwright for deterministic testing
+- All tests passing (100%)
 
 ### MongoDB Schema Addition (Phase 1 Complete)
 

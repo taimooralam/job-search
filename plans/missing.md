@@ -27,6 +27,7 @@
 - [x] Agent Documentation Organization ✅ **COMPLETED 2025-11-27** (plans/agents/ and reports/agents/ structure established)
 - [x] CV Rich Text Editor Phase 3 ✅ **COMPLETED 2025-11-27** (28 unit tests passing; document-level styles working)
 - [x] CV Rich Text Editor Phase 4 ✅ **COMPLETED 2025-11-27** (22 unit tests passing; PDF export via Playwright)
+- [x] CV Rich Text Editor Phase 4 - Migration to Runner Service ✅ **COMPLETED 2025-11-27** (Moved PDF generation from frontend to runner service)
 
 ---
 
@@ -434,14 +435,33 @@ High priority because:
 
 **Next Steps**: Phase 3 complete, ready for Phase 4 (PDF Export)
 
-#### Phase 4: PDF Export via Playwright ✅ COMPLETE (2025-11-27)
+#### Phase 4: PDF Export via Playwright ✅ COMPLETE & MIGRATED TO RUNNER (2025-11-27)
 
-**Status**: Code complete and tested (22 tests passing)
-**Implementation Date**: 2025-11-27
-**Actual Duration**: ~4 hours
+**Status**: Code complete, tested (22 tests passing), and migrated to runner service
+**Initial Implementation Date**: 2025-11-27
+**Migration Date**: 2025-11-27
+**Actual Duration**: ~8 hours (initial implementation + migration)
+
+**Initial Implementation (Frontend - Option A - DEPRECATED)**:
+- Initially implemented in `frontend/app.py` using local Playwright
+- Problem: Vercel serverless functions don't support browser automation
+- Playwright requires Chromium binary (~130 MB) not available on Vercel
+- Solution: Migrated to runner service where Playwright already installed
+
+**Current Implementation (Runner Service - Option B - ACTIVE)**:
+
+**Location**: Runner Service (VPS 72.61.92.76)
+
+**Architecture Decision:**
+PDF generation moved from frontend (Vercel) to runner service (VPS) because:
+- Vercel is a serverless platform with no system-level access for Chromium
+- Runner service already has Playwright 1.40.0+ installed in Docker
+- VPS provides full control over dependencies and resource allocation
+- Better performance and cost efficiency for compute-heavy PDF rendering
 
 **Delivered Features**:
-- Server-side PDF generation using Playwright (Chromium)
+- Server-side PDF generation using Playwright (Chromium) on runner
+- Frontend proxies requests to runner service via HTTP
 - ATS-compatible PDF output with selectable text
 - 60+ Google Fonts properly embedded in PDFs
 - Page size support: Letter (8.5×11") and A4 (210×297mm)
@@ -449,23 +469,62 @@ High priority because:
 - Optional header/footer text inclusion
 - Export button integrated in CV editor toolbar
 - Filename format: `CV_<Company>_<Title>.pdf`
-- Comprehensive error handling
+- Comprehensive error handling with fallback messaging
 
 **Files Modified/Created**:
-- `frontend/app.py` - PDF generation endpoint `POST /api/jobs/<job_id>/cv-editor/pdf`
-- `frontend/static/js/cv-editor.js` - `exportCVToPDF()` function with auto-save
-- `tests/frontend/test_cv_editor_phase4.py` - 22 comprehensive tests
-- `requirements.txt` - Added `playwright>=1.40.0`
+
+*Runner Service*:
+- `runner_service/pdf_helpers.py` (349 lines) - NEW
+  - `sanitize_for_path()` - Path sanitization for filenames
+  - `tiptap_json_to_html()` - Convert TipTap JSON to HTML with embedded fonts
+  - `build_pdf_html_template()` - Build complete HTML document for PDF rendering
+- `runner_service/app.py` (lines 368-498) - PDF generation endpoint
+  - `POST /api/jobs/{id}/cv-editor/pdf`
+  - Fetches cv_editor_state from MongoDB
+  - Generates PDF with Playwright
+  - Returns binary PDF with proper headers
+
+*Frontend*:
+- `frontend/app.py` (lines 870-939) - PDF proxy endpoint
+  - `POST /api/jobs/{id}/cv-editor/pdf`
+  - Forwards request to runner service
+  - Handles timeout/error cases
+  - Streams PDF response to user
+- `frontend/static/js/cv-editor.js` - `exportCVToPDF()` function unchanged
 
 **Test Status**: 22/22 tests passing (100%)
-**Dependencies**: Playwright 1.56.0, Chromium 141.0.7390.37 installed
+**Dependencies**:
+- Runner: Playwright 1.40.0+, Chromium installed in Dockerfile.runner
+- Frontend: `requests` library (standard Flask dependency)
 
 **Technical Details**:
-- Uses `build_pdf_html_template()` to generate complete HTML from TipTap JSON
+- Runner generates HTML from TipTap JSON with embedded Google Fonts
 - Playwright configured with: `format=pageSize, margin=custom, printBackground=True`
-- Auto-save before export ensures latest content is included
+- Auto-save before export ensures latest content included
 - Download filename: `CV_<Company>_<Title>.pdf`
-- Comprehensive error handling with toast notifications
+- Comprehensive error handling with proper HTTP status codes
+
+**Configuration (Environment Variables)**:
+```bash
+# Frontend (app.py)
+RUNNER_SERVICE_URL=http://72.61.92.76:8000
+
+# Runner Service (app.py)
+MONGO_URI=mongodb+srv://...
+MONGO_DB_NAME=job_search
+PLAYWRIGHT_HEADLESS=true
+```
+
+**Endpoint Details**:
+- **Frontend Endpoint**: `POST /api/jobs/{id}/cv-editor/pdf` (proxy only)
+- **Runner Endpoint**: `POST http://72.61.92.76:8000/api/jobs/{id}/cv-editor/pdf` (actual generation)
+
+**Benefits of Migration**:
+- Eliminates Vercel serverless limitations
+- Leverages existing Playwright installation
+- Better PDF rendering consistency on dedicated VPS
+- Improves frontend performance (offloads compute)
+- Easier to scale PDF generation independently
 
 #### Phase 5: Polish + Comprehensive Testing (PENDING)
 
