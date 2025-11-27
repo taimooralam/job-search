@@ -237,10 +237,11 @@ class TestCVEditorAPIEndpoints:
 class TestPhase2FontControls:
     """Tests for font family and font size selectors."""
 
-    def test_font_family_selector_contains_60_plus_fonts(self, authenticated_client):
+    def test_font_family_selector_contains_60_plus_fonts(self, authenticated_client, mock_db, sample_job):
         """Font selector dropdown should have 60+ font options."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -260,10 +261,11 @@ class TestPhase2FontControls:
         assert 'Roboto Condensed' in html
         assert 'Quicksand' in html
 
-    def test_font_family_organized_by_category(self, authenticated_client):
+    def test_font_family_organized_by_category(self, authenticated_client, mock_db, sample_job):
         """Fonts should be organized into optgroups by category."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -277,10 +279,11 @@ class TestPhase2FontControls:
         assert '<optgroup label="Condensed (Space-Saving)">' in html
         assert '<optgroup label="Rounded (Friendly)">' in html
 
-    def test_font_size_selector_has_12_options(self, authenticated_client):
+    def test_font_size_selector_has_12_options(self, authenticated_client, mock_db, sample_job):
         """Font size selector should have options from 8pt to 24pt."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -290,10 +293,11 @@ class TestPhase2FontControls:
         for size in ['8pt', '9pt', '10pt', '11pt', '12pt', '13pt', '14pt', '16pt', '18pt', '20pt', '22pt', '24pt']:
             assert f'value="{size}"' in html
 
-    def test_default_font_is_inter(self, authenticated_client):
+    def test_default_font_is_inter(self, authenticated_client, mock_db, sample_job):
         """Default font family should be Inter."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -302,10 +306,11 @@ class TestPhase2FontControls:
         # Assert
         assert 'value="Inter" selected' in html
 
-    def test_default_font_size_is_11pt(self, authenticated_client):
+    def test_default_font_size_is_11pt(self, authenticated_client, mock_db, sample_job):
         """Default font size should be 11pt."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -359,10 +364,11 @@ class TestPhase2FontControls:
 class TestPhase2TextAlignment:
     """Tests for text alignment controls."""
 
-    def test_alignment_buttons_present_in_toolbar(self, authenticated_client):
+    def test_alignment_buttons_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have left/center/right/justify alignment buttons."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -436,10 +442,11 @@ class TestPhase2TextAlignment:
 class TestPhase2Indentation:
     """Tests for indentation controls (Tab/Shift+Tab + toolbar buttons)."""
 
-    def test_indent_buttons_present_in_toolbar(self, authenticated_client):
+    def test_indent_buttons_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have indent/outdent buttons."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -509,10 +516,11 @@ class TestPhase2Indentation:
 class TestPhase2HighlightColor:
     """Tests for highlight color picker."""
 
-    def test_highlight_color_picker_present_in_toolbar(self, authenticated_client):
+    def test_highlight_color_picker_present_in_toolbar(self, authenticated_client, mock_db, sample_job):
         """Toolbar should have highlight color picker."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -523,10 +531,11 @@ class TestPhase2HighlightColor:
         assert 'Highlight Color' in html
         assert 'Remove Highlight' in html
 
-    def test_default_highlight_color_is_yellow(self, authenticated_client):
+    def test_default_highlight_color_is_yellow(self, authenticated_client, mock_db, sample_job):
         """Default highlight color should be yellow (#ffff00)."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -735,10 +744,11 @@ class TestAutoSaveFunctionality:
 class TestSaveIndicator:
     """Tests for save indicator states (addresses user issue #3)."""
 
-    def test_save_indicator_element_present(self, authenticated_client):
+    def test_save_indicator_element_present(self, authenticated_client, mock_db, sample_job):
         """Save indicator element should be present in HTML."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
@@ -747,10 +757,11 @@ class TestSaveIndicator:
         # Assert
         assert 'id="cv-save-indicator"' in html
 
-    def test_save_indicator_shows_saved_state_by_default(self, authenticated_client):
+    def test_save_indicator_shows_saved_state_by_default(self, authenticated_client, mock_db, sample_job):
         """Initial save indicator should show 'Saved' state."""
         # Arrange
-        job_id = str(ObjectId())
+        job_id = str(sample_job["_id"])
+        mock_db.find_one.return_value = sample_job
 
         # Act
         response = authenticated_client.get(f"/job/{job_id}")
