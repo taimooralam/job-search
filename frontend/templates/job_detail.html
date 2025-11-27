@@ -161,7 +161,7 @@
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated CV</h2>
                     <div class="flex gap-2">
-                        <button id="edit-cv-btn" onclick="toggleCVEdit()"
+                        <button id="edit-cv-btn" onclick="openCVEditorPanel()"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
@@ -574,6 +574,285 @@
         </button>
     </div>
 </div>
+
+<!-- CV Rich Text Editor Side Panel -->
+<div id="cv-editor-overlay"
+     class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-200"
+     onclick="closeCVEditorPanel()">
+</div>
+
+<div id="cv-editor-panel"
+     class="fixed inset-y-0 right-0 w-11/12 sm:w-2/3 lg:w-1/2 bg-white shadow-2xl
+            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-4">
+            <button onclick="closeCVEditorPanel()"
+                    class="text-gray-400 hover:text-gray-600 transition"
+                    title="Close (Esc)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <h2 class="text-lg font-semibold text-gray-900">Edit CV</h2>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <span id="cv-save-indicator" class="text-sm text-gray-500">
+                <span class="text-green-500">● Saved</span>
+            </span>
+            <button onclick="toggleCVPanelSize()"
+                    class="text-gray-400 hover:text-gray-600 transition"
+                    title="Expand/Collapse">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+            </button>
+            <button onclick="exportCVToPDF()"
+                    class="inline-flex items-center px-3 py-1.5 text-sm font-medium
+                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Toolbar (Phase 2: Enhanced) -->
+    <div class="px-6 py-3 border-b border-gray-200 bg-white">
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Font Group -->
+            <div class="flex gap-1">
+                <select id="cv-font-family" onchange="applyCVFormat('fontFamily', this.value)"
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-48">
+                    <optgroup label="Serif (Professional)">
+                        <option value="Crimson Text">Crimson Text</option>
+                        <option value="EB Garamond">EB Garamond</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Spectral">Spectral</option>
+                        <option value="Source Serif Pro">Source Serif Pro</option>
+                        <option value="PT Serif">PT Serif</option>
+                        <option value="Bitter">Bitter</option>
+                        <option value="Arvo">Arvo</option>
+                        <option value="Cardo">Cardo</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="Neuton">Neuton</option>
+                        <option value="Vollkorn">Vollkorn</option>
+                    </optgroup>
+                    <optgroup label="Sans-Serif (Modern)">
+                        <option value="Inter" selected>Inter</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Lato">Lato</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Work Sans">Work Sans</option>
+                        <option value="IBM Plex Sans">IBM Plex Sans</option>
+                        <option value="Karla">Karla</option>
+                        <option value="Rubik">Rubik</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="Manrope">Manrope</option>
+                        <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Archivo">Archivo</option>
+                        <option value="Public Sans">Public Sans</option>
+                        <option value="Red Hat Display">Red Hat Display</option>
+                    </optgroup>
+                    <optgroup label="Monospace (Technical)">
+                        <option value="Fira Code">Fira Code</option>
+                        <option value="JetBrains Mono">JetBrains Mono</option>
+                        <option value="Source Code Pro">Source Code Pro</option>
+                        <option value="IBM Plex Mono">IBM Plex Mono</option>
+                        <option value="Roboto Mono">Roboto Mono</option>
+                        <option value="Inconsolata">Inconsolata</option>
+                    </optgroup>
+                    <optgroup label="Display (Creative)">
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Archivo Black">Archivo Black</option>
+                        <option value="Righteous">Righteous</option>
+                        <option value="Josefin Sans">Josefin Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Anton">Anton</option>
+                        <option value="Kanit">Kanit</option>
+                    </optgroup>
+                    <optgroup label="Condensed (Space-Saving)">
+                        <option value="Roboto Condensed">Roboto Condensed</option>
+                        <option value="PT Sans Narrow">PT Sans Narrow</option>
+                        <option value="Fira Sans Condensed">Fira Sans Condensed</option>
+                        <option value="Barlow Condensed">Barlow Condensed</option>
+                    </optgroup>
+                    <optgroup label="Rounded (Friendly)">
+                        <option value="Nunito Sans">Nunito Sans</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Varela Round">Varela Round</option>
+                        <option value="Comfortaa">Comfortaa</option>
+                    </optgroup>
+                </select>
+                <select id="cv-font-size" onchange="applyCVFormat('fontSize', this.value)"
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-20">
+                    <option value="8pt">8pt</option>
+                    <option value="9pt">9pt</option>
+                    <option value="10pt">10pt</option>
+                    <option value="11pt" selected>11pt</option>
+                    <option value="12pt">12pt</option>
+                    <option value="13pt">13pt</option>
+                    <option value="14pt">14pt</option>
+                    <option value="16pt">16pt</option>
+                    <option value="18pt">18pt</option>
+                    <option value="20pt">20pt</option>
+                    <option value="22pt">22pt</option>
+                    <option value="24pt">24pt</option>
+                </select>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Formatting Group -->
+            <div class="flex gap-1">
+                <button onclick="applyCVFormat('bold')" data-format="bold"
+                        class="p-1.5 rounded hover:bg-gray-200 transition font-bold"
+                        title="Bold (Ctrl+B)">
+                    B
+                </button>
+                <button onclick="applyCVFormat('italic')" data-format="italic"
+                        class="p-1.5 rounded hover:bg-gray-200 transition italic"
+                        title="Italic (Ctrl+I)">
+                    I
+                </button>
+                <button onclick="applyCVFormat('underline')" data-format="underline"
+                        class="p-1.5 rounded hover:bg-gray-200 transition underline"
+                        title="Underline (Ctrl+U)">
+                    U
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Headings Group -->
+            <div class="flex gap-1">
+                <button onclick="applyCVFormat('heading1')" data-heading="1"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        title="Heading 1">
+                    H1
+                </button>
+                <button onclick="applyCVFormat('heading2')" data-heading="2"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        title="Heading 2">
+                    H2
+                </button>
+                <button onclick="applyCVFormat('heading3')" data-heading="3"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm font-semibold"
+                        title="Heading 3">
+                    H3
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Lists Group -->
+            <div class="flex gap-1">
+                <button onclick="applyCVFormat('bulletList')" data-format="bulletList"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm"
+                        title="Bullet List">
+                    • List
+                </button>
+                <button onclick="applyCVFormat('orderedList')" data-format="orderedList"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-sm"
+                        title="Numbered List">
+                    1. List
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Alignment Group (Phase 2) -->
+            <div class="flex gap-1">
+                <button onclick="applyCVFormat('textAlign', 'left')" data-align="left"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        title="Align Left">
+                    ⬅
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'center')" data-align="center"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        title="Align Center">
+                    ↔
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'right')" data-align="right"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        title="Align Right">
+                    ➡
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'justify')" data-align="justify"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent"
+                        title="Justify">
+                    ⬌
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Indentation Group (Phase 2) -->
+            <div class="flex gap-1">
+                <button onclick="cvEditorInstance?.decreaseIndent()"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        title="Decrease Indent (Shift+Tab)">
+                    ⬅ Outdent
+                </button>
+                <button onclick="cvEditorInstance?.increaseIndent()"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        title="Increase Indent (Tab)">
+                    Indent ➡
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            <!-- Color Group (Phase 2) -->
+            <div class="flex gap-1">
+                <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       title="Text Color">
+                    A <span class="ml-1 text-xs">▼</span>
+                    <input type="color" id="cv-text-color" value="#1a1a1a"
+                           onchange="applyCVFormat('color', this.value)"
+                           class="hidden">
+                </label>
+                <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       title="Highlight Color">
+                    🖍
+                    <input type="color" id="cv-highlight-color" value="#ffff00"
+                           onchange="applyCVFormat('highlight', this.value)"
+                           class="hidden">
+                </label>
+                <button onclick="applyCVFormat('removeHighlight')"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs border border-gray-300"
+                        title="Remove Highlight">
+                    ✕
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor Content Area -->
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div id="cv-editor-content"
+             class="bg-white border border-gray-200 rounded-lg shadow-inner
+                    min-h-full mx-auto"
+             style="max-width: 8.5in; min-height: 11in;">
+            <!-- TipTap renders here -->
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1231,4 +1510,7 @@
         }
     }
 </script>
+
+<!-- CV Rich Text Editor Script -->
+<script src="/static/js/cv-editor.js"></script>
 {% endblock %}
