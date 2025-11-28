@@ -79,29 +79,42 @@ def _extract_search_results(search_response: Any) -> List[Any]:
 
 # ===== PYDANTIC SCHEMA VALIDATION (Phase 5.1) =====
 
+class ReasoningBlockModel(BaseModel):
+    """Pydantic model for reasoning block (Phase 5.2 enhanced prompts)."""
+    sources_analyzed: List[str] = Field(default_factory=list, description="URLs analyzed")
+    source_quality: Dict[str, str] = Field(default_factory=dict, description="Quality assessment per source")
+    missing_context: List[str] = Field(default_factory=list, description="Information gaps identified")
+    assumptions: List[str] = Field(default_factory=list, description="Assumptions made")
+    confidence_level: str = Field(default="unknown", description="Overall confidence: high/medium/low")
+
+
 class CompanySignalModel(BaseModel):
     """Pydantic model for company signal validation."""
     type: str = Field(..., description="Signal type: funding, acquisition, leadership_change, product_launch, partnership, growth")
     description: str = Field(..., min_length=1, description="Brief description of the signal")
     date: str = Field(default="unknown", description="ISO date or 'unknown'")
     source: str = Field(..., min_length=1, description="Source URL where signal was found")
+    business_context: str = Field(default="", description="What this signal reveals about company trajectory")
 
 
 class CompanyResearchOutput(BaseModel):
     """
-    Pydantic schema for company research output (Phase 5.1).
+    Pydantic schema for company research output (Phase 5.2 enhanced).
 
     ROADMAP Phase 5 Quality Gates:
     - JSON-only output (no text outside JSON object)
     - Structured signals with source attribution
     - No hallucinated facts (only from scraped content)
     - Each signal must have a source URL
+    - Reasoning block for transparency (Phase 5.2)
 
     Schema Enforcement:
+    - reasoning: Optional reasoning block (Phase 5.2+)
     - summary: 2-3 sentence company overview
     - signals: List of CompanySignal objects (0-10 items)
     - url: Primary company URL
     """
+    reasoning: Optional[ReasoningBlockModel] = Field(default=None, description="Reasoning block for enhanced prompts")
     summary: str = Field(..., min_length=10, description="2-3 sentence company summary")
     signals: List[CompanySignalModel] = Field(default_factory=list, max_length=10, description="0-10 company signals with sources")
     url: str = Field(..., min_length=1, description="Primary company URL")
@@ -111,105 +124,164 @@ class CompanyResearchOutput(BaseModel):
 
 # Phase 5.1: Multi-source signal extraction prompts
 
-SYSTEM_PROMPT_COMPANY_SIGNALS = """You are a business intelligence analyst specializing in extracting structured company signals.
+SYSTEM_PROMPT_COMPANY_SIGNALS = """You are a business intelligence analyst. Extract company signals showing business momentum, strategic priorities, and culture fit. Prioritize facts over speculation.
 
-Your task: Analyze scraped content from multiple sources and extract:
-1. A 2-3 sentence company summary (what they do, market position, size if mentioned)
-2. Structured business signals with SOURCE ATTRIBUTION
+**REASONING-FIRST APPROACH**:
+Before output, analyze:
+1. Source quality (high/medium/low per URL)
+2. Missing context/information gaps
+3. Assumptions made
+4. Overall confidence (high/medium/low)
 
-**CRITICAL RULES:**
-1. Output ONLY a valid JSON object - no text before or after
-2. Only use facts explicitly stated in the provided scraped content
-3. DO NOT invent any details (funding amounts, dates, names, products) not in the scraped text
-4. For each signal, you MUST cite the source URL where you found it
-5. If a detail (date, amount, investor name) is not in the scraped text, set it to "unknown"
+**ANTI-HALLUCINATION RULES**:
+- Output ONLY valid JSON
+- Use ONLY explicit facts from scraped content
+- NEVER invent details not in sources
+- Every signal MUST cite source URL
+- Unknown details = "unknown", not guesses
+- If unsure, say "I don't know" in reasoning
 
-**SIGNAL TYPES:**
-- "funding": Funding rounds, investments, capital raises
-- "acquisition": Company acquisitions (as buyer or seller)
-- "leadership_change": New executives, board changes, departures
-- "product_launch": New products, features, or service launches
-- "partnership": Strategic partnerships, collaborations
-- "growth": Headcount growth, revenue milestones, expansion
+**SIGNAL TYPES**:
+- "funding": Capital raises, investments → signals growth trajectory, runway
+- "acquisition": M&A activity → signals strategy, market consolidation
+- "leadership_change": Executive moves → signals strategy shifts, culture changes
+- "product_launch": New offerings → signals innovation velocity
+- "partnership": Strategic alliances → signals ecosystem positioning
+- "growth": Headcount, revenue, expansion → signals scaling needs
 
-**OUTPUT FORMAT:**
-{
-  "summary": "2-3 sentence company summary",
+**FEW-SHOT EXAMPLE**:
+
+INPUT:
+Company: Acme Corp
+Content: "Acme Corp raised $50M Series B led by Sequoia in Jan 2024. Serves 10,000+ customers..."
+
+OUTPUT:
+{{
+  "reasoning": {{
+    "sources_analyzed": ["https://acme.com"],
+    "source_quality": {{"https://acme.com": "high"}},
+    "missing_context": ["competitor landscape"],
+    "assumptions": [],
+    "confidence_level": "high"
+  }},
+  "summary": "Acme Corp is a B2B SaaS company serving 10,000+ customers, recently raising $50M Series B.",
   "signals": [
-    {
+    {{
       "type": "funding",
-      "description": "Exact fact from scraped content",
-      "date": "YYYY-MM-DD or 'unknown'",
-      "source": "URL where this fact was found"
-    }
+      "description": "Raised $50M Series B led by Sequoia in January 2024",
+      "date": "2024-01",
+      "source": "https://acme.com",
+      "business_context": "Strong investor confidence; extended runway for growth"
+    }}
   ],
-  "url": "primary company URL"
-}
+  "url": "https://acme.com"
+}}
 
-**HALLUCINATION PREVENTION:**
-- If scraped content doesn't mention a signal, don't invent it
-- If a field is unclear, use "unknown" not a guess
-- Description must be a direct fact from the scraped content
-- Every signal MUST have a source URL from the provided sources
+**YOUR OUTPUT FORMAT** (ALL FIELDS REQUIRED):
+{{
+  "reasoning": {{
+    "sources_analyzed": ["url1", "url2"],
+    "source_quality": {{"url1": "high|medium|low"}},
+    "missing_context": ["list of gaps"],
+    "assumptions": ["list of assumptions"],
+    "confidence_level": "high|medium|low"
+  }},
+  "summary": "2-3 sentences emphasizing market position",
+  "signals": [{{type, description, date, source, business_context}}, ...],
+  "url": "primary URL"
+}}
 
-**BEST-EFFORT EXTRACTION:**
-- If you find ANY factual information (company description, products, team size, technology stack), extract at least one signal
-- Even general facts ("the company operates in X industry", "they serve Y market") count as valid signals with type "growth"
-- An empty signals array is only acceptable if the scraped content truly contains no factual information
+**CRITICAL**: You MUST include ALL 4 fields (reasoning, summary, signals, url).
+Do NOT return only the reasoning block - the full JSON with all fields is required.
 
-NO TEXT OUTSIDE THE JSON OBJECT."""
+**BEST-EFFORT EXTRACTION**:
+- Extract AT LEAST ONE signal if ANY facts exist
+- General facts count as "growth" signals
+- Empty signals only if content is completely non-informational
 
-# Phase 5 enhancement: STAR-aware signal extraction prompts
-SYSTEM_PROMPT_COMPANY_SIGNALS_STAR_AWARE = """You are a business intelligence analyst specializing in extracting structured company signals.
+NO TEXT OUTSIDE JSON."""
 
-Your task: Analyze scraped content from multiple sources and extract:
-1. A 2-3 sentence company summary (what they do, market position, size if mentioned)
-2. Structured business signals with SOURCE ATTRIBUTION
-3. **Pay special attention to signals in the candidate's domain areas** (listed below)
+# Phase 5 enhancement: STAR-aware signal extraction prompts (IMPROVED with reasoning-first)
+SYSTEM_PROMPT_COMPANY_SIGNALS_STAR_AWARE = """You are a business intelligence analyst. Extract company signals showing business momentum, strategic priorities, and culture fit. Prioritize facts over speculation.
 
-**CANDIDATE'S STRONGEST DOMAINS:**
+**CANDIDATE CONTEXT** (prioritize signals in these domains):
 {candidate_domains}
-
-**CANDIDATE'S PROVEN OUTCOME TYPES:**
 {candidate_outcomes}
 
-Prioritize extracting signals that align with these domains and outcomes, as they will help demonstrate fit.
+**REASONING-FIRST APPROACH**:
+Before output, analyze:
+1. Source quality (high/medium/low per URL)
+2. Missing context/information gaps
+3. Assumptions made
+4. Overall confidence (high/medium/low)
 
-**CRITICAL RULES:**
-1. Output ONLY a valid JSON object - no text before or after
-2. Only use facts explicitly stated in the provided scraped content
-3. DO NOT invent any details (funding amounts, dates, names, products) not in the scraped text
-4. For each signal, you MUST cite the source URL where you found it
-5. If a detail (date, amount, investor name) is not in the scraped text, set it to "unknown"
+**ANTI-HALLUCINATION RULES**:
+- Output ONLY valid JSON
+- Use ONLY explicit facts from scraped content
+- NEVER invent details not in sources
+- Every signal MUST cite source URL
+- Unknown details = "unknown", not guesses
+- If unsure, say "I don't know" in reasoning
 
-**SIGNAL TYPES:**
-- "funding": Funding rounds, investments, capital raises
-- "acquisition": Company acquisitions (as buyer or seller)
-- "leadership_change": New executives, board changes, departures
-- "product_launch": New products, features, or service launches
-- "partnership": Strategic partnerships, collaborations
-- "growth": Headcount growth, revenue milestones, expansion
+**SIGNAL TYPES**:
+- "funding": Capital raises, investments → signals growth trajectory, runway
+- "acquisition": M&A activity → signals strategy, market consolidation
+- "leadership_change": Executive moves → signals strategy shifts, culture changes
+- "product_launch": New offerings → signals innovation velocity
+- "partnership": Strategic alliances → signals ecosystem positioning
+- "growth": Headcount, revenue, expansion → signals scaling needs
 
-**OUTPUT FORMAT:**
-{
-  "summary": "2-3 sentence company summary",
+**FEW-SHOT EXAMPLE**:
+
+INPUT:
+Company: Acme Corp
+Content: "Acme Corp raised $50M Series B led by Sequoia in Jan 2024. Serves 10,000+ customers..."
+
+OUTPUT:
+{{
+  "reasoning": {{
+    "sources_analyzed": ["https://acme.com"],
+    "source_quality": {{"https://acme.com": "high"}},
+    "missing_context": ["competitor landscape"],
+    "assumptions": [],
+    "confidence_level": "high"
+  }},
+  "summary": "Acme Corp is a B2B SaaS company serving 10,000+ customers, recently raising $50M Series B.",
   "signals": [
-    {
+    {{
       "type": "funding",
-      "description": "Exact fact from scraped content",
-      "date": "YYYY-MM-DD or 'unknown'",
-      "source": "URL where this fact was found"
-    }
+      "description": "Raised $50M Series B led by Sequoia in January 2024",
+      "date": "2024-01",
+      "source": "https://acme.com",
+      "business_context": "Strong investor confidence; extended runway for growth"
+    }}
   ],
-  "url": "primary company URL"
-}
+  "url": "https://acme.com"
+}}
 
-**BEST-EFFORT EXTRACTION:**
-- If you find ANY factual information, extract at least one signal
-- Even general facts count as valid signals with type "growth"
-- An empty signals array is only acceptable if the scraped content truly contains no factual information
+**YOUR OUTPUT FORMAT** (ALL FIELDS REQUIRED):
+{{
+  "reasoning": {{
+    "sources_analyzed": ["url1", "url2"],
+    "source_quality": {{"url1": "high|medium|low"}},
+    "missing_context": ["list of gaps"],
+    "assumptions": ["list of assumptions"],
+    "confidence_level": "high|medium|low"
+  }},
+  "summary": "2-3 sentences emphasizing market position",
+  "signals": [{{type, description, date, source, business_context}}, ...],
+  "url": "primary URL"
+}}
 
-NO TEXT OUTSIDE THE JSON OBJECT."""
+**CRITICAL**: You MUST include ALL 4 fields (reasoning, summary, signals, url).
+Do NOT return only the reasoning block - the full JSON with all fields is required.
+
+**BEST-EFFORT EXTRACTION**:
+- Extract AT LEAST ONE signal if ANY facts exist
+- General facts count as "growth" signals
+- Empty signals only if content is completely non-informational
+
+NO TEXT OUTSIDE JSON."""
 
 USER_PROMPT_COMPANY_SIGNALS_TEMPLATE = """Analyze the following scraped content and extract company signals:
 
@@ -294,6 +366,58 @@ class CompanyResearcher:
         self.cache_collection = self.mongo_client["jobs"]["company_cache"]
         # Create TTL index on cached_at field (7 days)
         self.cache_collection.create_index("cached_at", expireAfterSeconds=7*24*60*60)
+
+    def _assess_content_quality(self, content: str) -> str:
+        """
+        Phase 5.2: Content quality gate to detect boilerplate.
+
+        Detects low-value content (cookie policies, legal text, paywalls)
+        and assigns quality score for filtering.
+
+        Args:
+            content: Scraped content text
+
+        Returns:
+            "high", "medium", or "low" quality score
+        """
+        if not content or len(content) < 100:
+            return "low"
+
+        content_lower = content.lower()
+
+        # Low-value boilerplate indicators
+        boilerplate_phrases = [
+            "cookie policy", "privacy policy", "terms of service",
+            "we use cookies", "accept all cookies", "manage preferences",
+            "gdpr", "this website uses cookies", "cookie settings",
+            "please enable javascript", "javascript is required"
+        ]
+
+        boilerplate_count = sum(1 for phrase in boilerplate_phrases if phrase in content_lower)
+
+        # High boilerplate density = low quality
+        if boilerplate_count >= 3:
+            return "low"
+        elif boilerplate_count >= 1:
+            return "medium"
+
+        # Business content indicators
+        business_phrases = [
+            "funding", "raised", "series", "customers", "revenue",
+            "partnership", "acquisition", "launched", "product",
+            "team", "employees", "growth", "market", "ceo",
+            "founded", "investor", "valuation", "expansion"
+        ]
+
+        business_count = sum(1 for phrase in business_phrases if phrase in content_lower)
+
+        # High business density = high quality
+        if business_count >= 3:
+            return "high"
+        elif business_count >= 1:
+            return "medium"
+
+        return "low"
 
     def _extract_star_context(self, state: JobState) -> tuple[Optional[str], Optional[str]]:
         """
@@ -440,12 +564,18 @@ class CompanyResearcher:
         wait=wait_exponential(multiplier=1, min=2, max=5),
         reraise=True
     )
-    def _scrape_website(self, url: str) -> Optional[str]:
+    def _scrape_website(self, url: str, char_limit: int = 3000) -> Optional[str]:
         """
         Scrape company website using FireCrawl.
 
-        Returns cleaned text content or None if scraping fails.
-        Retries once on failure.
+        Phase 5.2: Increased character limit for better content extraction.
+
+        Args:
+            url: URL to scrape
+            char_limit: Character limit (default 3000, increased from 2000)
+
+        Returns:
+            Cleaned text content or None if scraping fails
         """
         try:
             # Use FireCrawl's scrape endpoint
@@ -458,8 +588,8 @@ class CompanyResearcher:
             # Extract markdown content from Document object
             if result and hasattr(result, 'markdown'):
                 content = result.markdown
-                # Limit to first 2000 chars to avoid huge prompts
-                return content[:2000] if content else None
+                # Phase 5.2: Increased limit (2000 → 3000) for better extraction
+                return content[:char_limit] if content else None
 
             return None
 
@@ -611,67 +741,59 @@ class CompanyResearcher:
 
     def _scrape_multiple_sources(self, company: str) -> Dict[str, Dict[str, str]]:
         """
-        Scrape company information from multiple sources (Phase 5.1).
+        Scrape company information from multiple sources (Phase 5.2 IMPROVED).
 
-        Queries (LLM-style but keyword-rich):
-        1. "official website and homepage for {company} (company site, about, careers)"
-        2. "LinkedIn company profile for {company} (company page, people, about)"
-        3. "{company} Crunchbase organization profile (funding, investors, overview)"
-        4. "recent news about {company} funding, acquisitions, expansion, product launches, leadership changes"
+        Phase 5.2 improvements:
+        - Keyword-based search queries (not LLM-style questions)
+        - Search operators for precision (site:, "quotes", OR, etc.)
+        - Content quality gate filtering
+        - Increased character limits for better extraction
+
+        Queries (keyword-based with operators):
+        1. "{company}" (about OR careers OR company) - Official site
+        2. "{company}" site:linkedin.com/company - LinkedIn
+        3. "{company}" site:crunchbase.com/organization - Crunchbase
+        4. "{company}" (funding OR acquisition OR partnership) 2024 - Recent news
 
         Returns:
-            Dict with source_name -> {"url": str, "content": str}
-            Omits sources where scraping failed.
+            Dict with source_name -> {"url": str, "content": str, "quality": str}
+            Only includes sources with medium/high quality (low-quality filtered out).
         """
-        # Build queries per ROADMAP Phase 5.1 (LLM-style)
+        # Phase 5.2: Keyword-based queries with search operators
         queries = {
-            "official_site": (
-                f"official website and homepage for {company} "
-                f"(company site, about, careers)"
-            ),
-            "linkedin": (
-                f"Where is the official LinkedIn page for {company}? "
-                f"Find the company page that lists people and the about section."
-            ),
-            "crunchbase": (
-                f"Locate the Crunchbase profile for {company} with funding, investors, and overview."
-            ),
-            "news": (
-                f"What recent news stories mention {company} (funding, acquisitions, expansion, product launches, leadership changes)?"
-            ),
+            "official_site": f'"{company}" (about OR careers OR company)',
+            "linkedin": f'"{company}" site:linkedin.com/company',
+            "crunchbase": f'"{company}" site:crunchbase.com/organization',
+            "news": f'"{company}" (funding OR acquisition OR partnership OR launch) 2024',
         }
 
         scraped_data = {}
 
         for source_name, query in queries.items():
             try:
-                self.logger.info(f"Searching {source_name}: {query[:80]}...")
+                self.logger.info(f"Searching {source_name}: {query[:60]}...")
 
-                if source_name == "official_site":
-                    # Use direct URL construction for official site
-                    url = self._construct_company_url(company)
-                    content = self._scrape_website(url)
+                # Phase 5.2: All sources use FireCrawl search (no direct URL construction)
+                search_results = self._search_with_firecrawl(query, source_name)
 
-                    if content:
+                if search_results:
+                    url = search_results['url']
+                    content = search_results['content']
+
+                    # Phase 5.2: Apply content quality gate
+                    quality = self._assess_content_quality(content)
+                    self.logger.info(f"Scraped {len(content)} chars from {source_name} (quality: {quality})")
+
+                    # Only keep medium/high quality sources
+                    if quality in ['medium', 'high']:
                         scraped_data[source_name] = {
                             "url": url,
-                            "content": content
+                            "content": content,
+                            "quality": quality
                         }
-                        self.logger.info(f"Scraped {len(content)} chars from {source_name}")
-                else:
-                    # Phase 5.1: Use FireCrawl search for LinkedIn, Crunchbase, news
-                    search_results = self._search_with_firecrawl(query, source_name)
-
-                    if search_results:
-                        # Extract top result
-                        url = search_results['url']
-                        content = search_results['content']
-
-                        scraped_data[source_name] = {
-                            "url": url,
-                            "content": content
-                        }
-                        self.logger.info(f"Scraped {len(content)} chars from {source_name}")
+                        self.logger.info(f"✓ Kept {source_name} (quality: {quality})")
+                    else:
+                        self.logger.info(f"✗ Filtered {source_name} (low quality)")
 
             except Exception as e:
                 self.logger.warning(f"Failed to scrape {source_name}: {e}")
@@ -687,27 +809,32 @@ class CompanyResearcher:
         star_outcomes: Optional[str] = None
     ) -> CompanyResearchOutput:
         """
-        Extract company signals from scraped content using LLM (Phase 5.1).
+        Extract company signals from scraped content using LLM (Phase 5.2 enhanced).
 
-        Phase 5 enhancement: Supports STAR-aware prompts when candidate context available.
+        Phase 5.2 enhancements:
+        - Reasoning-first prompts with transparency
+        - Quality assessment per source
+        - Few-shot examples
+        - STAR-aware when candidate context available
 
         Args:
             company: Company name
-            scraped_data: Dict of {source_name: {"url": str, "content": str}}
+            scraped_data: Dict of {source_name: {"url": str, "content": str, "quality": str}}
             star_domains: Optional candidate domain areas from selected STARs
             star_outcomes: Optional candidate outcome types from selected STARs
 
         Returns:
-            CompanyResearchOutput with validated signals
+            CompanyResearchOutput with validated signals and reasoning block
 
         Raises:
             ValueError: If LLM output is invalid JSON or fails validation
         """
-        # Build concatenated content with source tags
+        # Phase 5.2: Build concatenated content with quality indicators
         content_sections = []
         for source_name, data in scraped_data.items():
+            quality_tag = f"[quality: {data.get('quality', 'unknown')}]"
             content_sections.append(
-                f"=== SOURCE: {source_name} ({data['url']}) ===\n{data['content']}\n"
+                f"=== SOURCE: {source_name} ({data['url']}) {quality_tag} ===\n{data['content']}\n"
             )
 
         scraped_content = "\n".join(content_sections)
@@ -723,12 +850,13 @@ class CompanyResearcher:
             system_prompt = SYSTEM_PROMPT_COMPANY_SIGNALS
 
         # Call LLM for signal extraction
+        # Phase 5.2: Increased content limit (5000 → 8000) for better extraction
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(
                 content=USER_PROMPT_COMPANY_SIGNALS_TEMPLATE.format(
                     company=company,
-                    scraped_content=scraped_content[:5000]  # Limit to avoid huge prompts
+                    scraped_content=scraped_content[:8000]  # Phase 5.2: Increased limit
                 )
             )
         ]
@@ -736,18 +864,19 @@ class CompanyResearcher:
         response = self.llm.invoke(messages)
         llm_output = response.content.strip()
 
-        # Extract JSON from response (in case LLM adds extra text)
-        json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
+        # Phase 5.2: Simple JSON parsing (Python's json module handles nested structures)
+        # Remove markdown code blocks if present
+        if llm_output.startswith("```"):
+            llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
+            llm_output = re.sub(r'\s*```$', '', llm_output)
+            llm_output = llm_output.strip()
 
-        if json_match:
-            json_str = json_match.group(0)
-        else:
-            json_str = llm_output
-
-        # Parse JSON
+        # Parse JSON directly - Python handles nested structures automatically
         try:
-            data = json.loads(json_str)
+            data = json.loads(llm_output)
         except json.JSONDecodeError as e:
+            self.logger.error(f"JSON parsing failed: {e}")
+            self.logger.error(f"LLM output:\n{llm_output}")
             raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_output[:500]}")
 
         # Validate with Pydantic
@@ -759,6 +888,11 @@ class CompanyResearcher:
                 field = ' -> '.join(str(x) for x in error['loc'])
                 msg = error['msg']
                 error_messages.append(f"{field}: {msg}")
+
+            self.logger.error(f"Pydantic validation failed:")
+            self.logger.error(f"Errors: {error_messages}")
+            self.logger.error(f"Full LLM output:\n{llm_output}")
+            self.logger.error(f"Parsed data:\n{json.dumps(data, indent=2)}")
 
             raise ValueError(
                 f"CompanyResearch schema validation failed:\n" +
