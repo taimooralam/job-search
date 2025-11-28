@@ -7,6 +7,51 @@
 <link rel="stylesheet" href="/static/css/pipeline-progress.css">
 <!-- CV Editor Styles - Phase 5.2: Mobile Responsiveness & Accessibility -->
 <link rel="stylesheet" href="/static/css/cv-editor.css">
+<!-- CV Preview Styles -->
+<style>
+.cv-preview-content {
+    padding: 1in;
+    max-width: 8.5in;
+    margin: 0 auto;
+    background: white;
+    min-height: 11in;
+}
+
+.cv-preview-content p {
+    margin-bottom: 0.5em;
+}
+
+.cv-preview-content h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.cv-preview-content h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-top: 0.8em;
+    margin-bottom: 0.4em;
+}
+
+.cv-preview-content h3 {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+}
+
+.cv-preview-content ul,
+.cv-preview-content ol {
+    margin-left: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.cv-preview-content li {
+    margin-bottom: 0.25em;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -301,19 +346,12 @@
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated CV</h2>
                     <div class="flex gap-2">
-                        <button id="edit-cv-btn" onclick="openCVEditorPanel('{{ job._id }}')"
+                        <button onclick="openCVEditorPanel('{{ job._id }}')"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                             </svg>
-                            <span id="edit-cv-text">Edit CV</span>
-                        </button>
-                        <button id="save-cv-btn" onclick="saveCVChanges()"
-                                class="hidden inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 transition">
-                            <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Save Changes
+                            Edit CV
                         </button>
                         <button onclick="exportCVToPDF()"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition">
@@ -325,32 +363,130 @@
                     </div>
                 </div>
 
-                <!-- CV Preview Container (Markdown rendered) -->
-                <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white p-8 prose max-w-none" style="max-height: 800px;">
-                    {% if job.cv_content %}
-                        <div id="cv-markdown-display" class="markdown-body">
-                            <!-- Will be rendered by JavaScript from Markdown -->
+                <!-- CV Preview Container (TipTap rendered with styles) -->
+                <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 800px;">
+                    {% if job.has_cv %}
+                        <div id="cv-display-area" class="cv-preview-content">
+                            <!-- Will be rendered by TipTap from editor state -->
                         </div>
-                        <textarea id="cv-markdown-editor" class="hidden w-full h-96 p-4 font-mono text-sm border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500">{{ job.cv_content }}</textarea>
                         <script>
-                            // Store CV content for editing
-                            window.cvContent = {{ job.cv_content | tojson }};
+                            // Render CV content from editor state (WYSIWYG)
+                            async function renderCVPreview() {
+                                try {
+                                    // Fetch editor state from backend
+                                    const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
+                                    if (!response.ok) {
+                                        console.error('Failed to load CV editor state');
+                                        return;
+                                    }
 
-                            // Simple Markdown to HTML converter (basic formatting)
-                            function renderMarkdown(markdown) {
-                                return markdown
-                                    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
-                                    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3">$1</h2>')
-                                    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4">$1</h1>')
-                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                    .replace(/^\- (.*$)/gim, '<li class="ml-4">$1</li>')
-                                    .replace(/\n\n/g, '</p><p class="mb-3">')
-                                    .replace(/^(.+)$/gim, '<p class="mb-2">$1</p>');
+                                    const data = await response.json();
+                                    const editorState = data.editor_state;
+
+                                    if (!editorState || !editorState.content) {
+                                        console.error('No editor state content found');
+                                        return;
+                                    }
+
+                                    // Convert TipTap JSON to HTML using client-side converter
+                                    const htmlContent = tiptapJsonToHtml(editorState.content);
+
+                                    // Apply document styles
+                                    const displayArea = document.getElementById('cv-display-area');
+                                    displayArea.innerHTML = htmlContent;
+
+                                    // Apply document-level styles
+                                    if (editorState.documentStyles) {
+                                        const styles = editorState.documentStyles;
+                                        displayArea.style.fontFamily = styles.fontFamily || 'Inter, sans-serif';
+                                        displayArea.style.fontSize = (styles.fontSize || 11) + 'pt';
+                                        displayArea.style.lineHeight = styles.lineHeight || 1.5;
+                                        displayArea.style.color = styles.colorText || '#1f2a38';
+                                        displayArea.style.padding = `${styles.margins?.top || 1}in ${styles.margins?.right || 1}in ${styles.margins?.bottom || 1}in ${styles.margins?.left || 1}in`;
+                                    }
+
+                                } catch (error) {
+                                    console.error('Error rendering CV preview:', error);
+                                    document.getElementById('cv-display-area').innerHTML =
+                                        '<p class="text-gray-500 text-center p-8">Error loading CV preview</p>';
+                                }
+                            }
+
+                            // Helper function to convert TipTap JSON to HTML (client-side)
+                            function tiptapJsonToHtml(content) {
+                                if (!content || content.type !== 'doc') {
+                                    return '';
+                                }
+
+                                function processNode(node) {
+                                    const type = node.type;
+                                    const children = node.content || [];
+                                    const attrs = node.attrs || {};
+                                    const marks = node.marks || [];
+
+                                    // Text node
+                                    if (type === 'text') {
+                                        let text = node.text || '';
+                                        // Apply marks
+                                        marks.forEach(mark => {
+                                            if (mark.type === 'bold') text = `<strong>${text}</strong>`;
+                                            if (mark.type === 'italic') text = `<em>${text}</em>`;
+                                            if (mark.type === 'underline') text = `<u>${text}</u>`;
+                                            if (mark.type === 'textStyle') {
+                                                const markAttrs = mark.attrs || {};
+                                                const styles = [];
+                                                if (markAttrs.fontFamily) styles.push(`font-family: ${markAttrs.fontFamily}`);
+                                                if (markAttrs.fontSize) styles.push(`font-size: ${markAttrs.fontSize}`);
+                                                if (markAttrs.color) styles.push(`color: ${markAttrs.color}`);
+                                                if (styles.length > 0) {
+                                                    text = `<span style="${styles.join('; ')}">${text}</span>`;
+                                                }
+                                            }
+                                            if (mark.type === 'highlight') {
+                                                const color = mark.attrs?.color || 'yellow';
+                                                text = `<mark style="background-color: ${color}">${text}</mark>`;
+                                            }
+                                        });
+                                        return text;
+                                    }
+
+                                    // Block nodes
+                                    const innerHtml = children.map(processNode).join('');
+
+                                    if (type === 'paragraph') {
+                                        const align = attrs.textAlign || 'left';
+                                        return align === 'left'
+                                            ? `<p>${innerHtml}</p>`
+                                            : `<p style="text-align: ${align}">${innerHtml}</p>`;
+                                    }
+                                    if (type === 'heading') {
+                                        const level = attrs.level || 1;
+                                        const align = attrs.textAlign || 'left';
+                                        return align === 'left'
+                                            ? `<h${level}>${innerHtml}</h${level}>`
+                                            : `<h${level} style="text-align: ${align}">${innerHtml}</h${level}>`;
+                                    }
+                                    if (type === 'bulletList') return `<ul>${innerHtml}</ul>`;
+                                    if (type === 'orderedList') return `<ol>${innerHtml}</ol>`;
+                                    if (type === 'listItem') return `<li>${innerHtml}</li>`;
+                                    if (type === 'hardBreak') return '<br>';
+                                    if (type === 'horizontalRule') return '<hr>';
+
+                                    return innerHtml;
+                                }
+
+                                return content.content.map(processNode).join('');
                             }
 
                             // Render on page load
-                            document.getElementById('cv-markdown-display').innerHTML = renderMarkdown(window.cvContent);
+                            document.addEventListener('DOMContentLoaded', renderCVPreview);
+
+                            // Listen for CV content updates from editor
+                            window.addEventListener('cvContentUpdated', (event) => {
+                                if (event.detail.jobId === '{{ job._id }}') {
+                                    renderCVPreview();  // Refresh display
+                                }
+                            });
                         </script>
                     {% else %}
                         <div class="p-8 text-center text-gray-500">
@@ -1219,6 +1355,47 @@
 <script>
     const jobId = "{{ job._id }}";
 
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+
+        // Map type to toast class
+        const typeClass = type === 'error' ? 'toast-error' : type === 'info' ? 'toast-info' : 'toast-success';
+        toast.className = `toast ${typeClass}`;
+
+        // Icon based on type
+        const icons = {
+            success: `<svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>`,
+            error: `<svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>`,
+            info: `<svg class="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>`
+        };
+
+        toast.innerHTML = `
+            ${icons[type] || icons.success}
+            <span class="text-sm font-medium text-gray-900">${message}</span>
+            <button onclick="this.parentElement.remove()" class="ml-auto text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(2rem)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
     // Update a single job field
     async function updateJobField(field, value) {
         try {
@@ -1432,9 +1609,23 @@
                 })
             });
 
+            // Check for network errors
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage;
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.error || errorData.detail || `Server error: ${response.status}`;
+                } catch {
+                    errorMessage = `Server error: ${response.status} - ${errorText}`;
+                }
+                showToast(errorMessage, 'error');
+                return;
+            }
+
             const result = await response.json();
 
-            if (response.ok && result.run_id) {
+            if (result.run_id) {
                 showToast(`Pipeline started! Run ID: ${result.run_id}`);
                 // Show pipeline status UI and start monitoring
                 monitorPipeline(result.run_id);
@@ -1442,7 +1633,8 @@
                 showToast(result.error || 'Failed to start pipeline', 'error');
             }
         } catch (err) {
-            showToast('Pipeline failed: ' + err.message, 'error');
+            console.error('Pipeline execution error:', err);
+            showToast(`Pipeline failed: ${err.message}`, 'error');
         }
     }
 
@@ -1865,86 +2057,8 @@
     // ============================================================================
     // CV Editor Functions
     // ============================================================================
-
-    let cvEditMode = false;
-
-    // Toggle CV edit mode (Module 2: Direct DOM manipulation, no iframe)
-    function toggleCVEdit() {
-        cvEditMode = !cvEditMode;
-
-        const editBtn = document.getElementById('edit-cv-btn');
-        const editText = document.getElementById('edit-cv-text');
-        const saveBtn = document.getElementById('save-cv-btn');
-        const markdownDisplay = document.getElementById('cv-markdown-display');
-        const markdownEditor = document.getElementById('cv-markdown-editor');
-
-        if (!markdownDisplay || !markdownEditor) {
-            showToast('CV editor not found', 'error');
-            return;
-        }
-
-        if (cvEditMode) {
-            // Enable editing - show textarea, hide display
-            editText.textContent = 'Cancel Edit';
-            editBtn.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
-            editBtn.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
-            saveBtn.classList.remove('hidden');
-
-            markdownDisplay.classList.add('hidden');
-            markdownEditor.classList.remove('hidden');
-        } else {
-            // Disable editing - show display, hide textarea
-            editText.textContent = 'Edit CV';
-            editBtn.classList.remove('bg-red-50', 'text-red-700', 'border-red-200');
-            editBtn.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
-            saveBtn.classList.add('hidden');
-
-            markdownDisplay.classList.remove('hidden');
-            markdownEditor.classList.add('hidden');
-        }
-    }
-
-    // Save CV changes (Markdown content)
-    async function saveCVChanges() {
-        const markdownEditor = document.getElementById('cv-markdown-editor');
-        const markdownDisplay = document.getElementById('cv-markdown-display');
-
-        if (!markdownEditor) {
-            showToast('CV editor not found', 'error');
-            return;
-        }
-
-        try {
-            // Get the markdown content from textarea
-            const markdownContent = markdownEditor.value;
-
-            // Show loading
-            showToast('Saving CV changes...', 'info');
-
-            const response = await fetch(`/api/jobs/${jobId}/cv`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cv_text: markdownContent })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showToast('CV saved successfully');
-
-                // Update the display with new content
-                window.cvContent = markdownContent;
-                markdownDisplay.innerHTML = renderMarkdown(markdownContent);
-
-                // Exit edit mode
-                toggleCVEdit();
-            } else {
-                showToast(result.error || 'Failed to save CV', 'error');
-            }
-        } catch (err) {
-            showToast('Save failed: ' + err.message, 'error');
-        }
-    }
+    // Note: CV editing is now handled by the TipTap editor side panel
+    // See cv-editor.js and the side panel in this template
 
     // Export CV to PDF
     async function exportCVToPDF() {
@@ -2130,6 +2244,15 @@
             showToast('PDF generation failed: ' + err.message, 'error');
         }
     }
+
+    // Expose inline handlers explicitly so they survive HTMX swaps & module scopes
+    window.updateJobField = updateJobField;
+    window.saveRemarks = saveRemarks;
+    window.deleteJob = deleteJob;
+    window.toggleRawData = toggleRawData;
+    window.enableEdit = enableEdit;
+    window.processJobDetail = processJobDetail;
+    window.generateCoverLetterPDF = generateCoverLetterPDF;
 </script>
 
 <!-- Phase 5.1: Page Break Calculator Module -->
