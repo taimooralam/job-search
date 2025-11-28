@@ -658,7 +658,7 @@ PDF generation moved from frontend (Vercel) to runner service (VPS) because:
 **Configuration (Environment Variables)**:
 ```bash
 # Frontend (app.py)
-RUNNER_SERVICE_URL=http://72.61.92.76:8000
+RUNNER_URL=http://72.61.92.76:8000
 
 # Runner Service (app.py)
 MONGO_URI=mongodb+srv://...

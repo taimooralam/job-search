@@ -417,7 +417,7 @@ PLAYWRIGHT_HEADLESS=true
 LOGIN_PASSWORD=<secure>
 FLASK_SECRET_KEY=<hex>
 MONGODB_URI=mongodb+srv://...
-RUNNER_SERVICE_URL=http://72.61.92.76:8000
+RUNNER_URL=http://72.61.92.76:8000
 RUNNER_API_SECRET=<same-as-vps>                  # Changed from RUNNER_API_TOKEN (2025-11-28)
 ```
 
