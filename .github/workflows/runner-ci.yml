@@ -5,17 +5,25 @@ on:
     branches: [main]
     paths:
       - 'runner_service/**'
+      - 'pdf_service/**'
       - 'Dockerfile.runner'
+      - 'Dockerfile.pdf-service'
       - 'docker-compose.runner.yml'
       - 'scripts/run_pipeline.py'
       - 'src/**'
+      - 'tests/runner/**'
+      - 'tests/pdf_service/**'
       - '.github/workflows/runner-ci.yml'
   pull_request:
     branches: [main]
     paths:
       - 'runner_service/**'
+      - 'pdf_service/**'
       - 'Dockerfile.runner'
+      - 'Dockerfile.pdf-service'
       - 'src/**'
+      - 'tests/runner/**'
+      - 'tests/pdf_service/**'
   workflow_dispatch:  # Allow manual workflow triggers
 
 env:
@@ -39,11 +47,18 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx
 
-      - name: Run unit tests only (exclude integration tests)
+      - name: Run unit tests (runner + PDF service)
         run: |
-          # Run only unit tests to conserve CI/CD minutes
+          # Run unit tests for both runner and PDF service
           # Integration tests (tests/runner/test_integration.py) are excluded
-          python -m pytest tests/runner/test_executor.py tests/runner/test_runner_api.py -v --tb=short
+          # PDF service tests: 48 tests (17 endpoints + 31 helpers)
+          # Runner integration tests: 8 tests (PDF proxy)
+          python -m pytest \
+            tests/runner/test_executor.py \
+            tests/runner/test_runner_api.py \
+            tests/runner/test_pdf_integration.py \
+            tests/pdf_service/ \
+            -v --tb=short
         env:
           RUNNER_API_SECRET: test-secret
           ENVIRONMENT: development
