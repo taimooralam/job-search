@@ -13,6 +13,7 @@ Phase 7 Enhancements:
 """
 
 import json
+import logging
 import re
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field, field_validator
@@ -23,6 +24,7 @@ from firecrawl import FirecrawlApp
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.common.logger import get_logger
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -290,6 +292,9 @@ class PeopleMapper:
 
     def __init__(self):
         """Initialize LLM and FireCrawl."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.llm = ChatOpenAI(
             model=Config.DEFAULT_MODEL,
             temperature=0.4,  # Slightly creative for outreach
@@ -435,7 +440,7 @@ class PeopleMapper:
             return None
 
         except Exception as e:
-            print(f"  ⚠️  Team page scraping failed: {e}")
+            self.logger.warning(f"Team page scraping failed: {e}")
             return None
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
@@ -477,7 +482,7 @@ class PeopleMapper:
 
             for query in queries:
                 try:
-                    print(f"[FireCrawl][PeopleMapper] LinkedIn query: {query}")
+                    self.logger.info(f"[FireCrawl] LinkedIn query: {query[:80]}...")
                     search_response = self.firecrawl.search(query, limit=5)
 
                     # Use normalizer to extract results (handles SDK version differences)
@@ -488,17 +493,17 @@ class PeopleMapper:
                         contact = self._extract_contact_from_search_result(result, company)
                         if contact:
                             contacts.append(contact)
-                            print(f"    ✓ Found: {contact['name']} - {contact['role']}")
+                            self.logger.info(f"Found: {contact['name']} - {contact['role']}")
 
                 except Exception as e:
-                    print(f"    ⚠️  Query failed: {e}")
+                    self.logger.warning(f"Query failed: {e}")
                     continue
 
-            print(f"  ✓ Found {len(contacts)} contacts from LinkedIn search")
+            self.logger.info(f"Found {len(contacts)} contacts from LinkedIn search")
             return contacts
 
         except Exception as e:
-            print(f"  ⚠️  LinkedIn search failed: {e}")
+            self.logger.warning(f"LinkedIn search failed: {e}")
             return []
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
@@ -523,7 +528,7 @@ class PeopleMapper:
         try:
             # Use targeted query for senior leadership
             query = QUERY_TEMPLATES["senior_leadership"].format(company=company)
-            print(f"[FireCrawl][PeopleMapper] Hiring manager query: {query}")
+            self.logger.info(f"[FireCrawl] Hiring manager query: {query[:80]}...")
 
             search_response = self.firecrawl.search(query, limit=5)
             results = _extract_search_results(search_response)
@@ -533,13 +538,13 @@ class PeopleMapper:
                 contact = self._extract_contact_from_search_result(result, company)
                 if contact:
                     contacts.append(contact)
-                    print(f"    ✓ Found: {contact['name']} - {contact['role']}")
+                    self.logger.info(f"Found: {contact['name']} - {contact['role']}")
 
-            print(f"  ✓ Found {len(contacts)} senior contacts")
+            self.logger.info(f"Found {len(contacts)} senior contacts")
             return contacts
 
         except Exception as e:
-            print(f"  ⚠️  Hiring manager search failed: {e}")
+            self.logger.warning(f"Hiring manager search failed: {e}")
             return []
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
@@ -561,7 +566,7 @@ class PeopleMapper:
                 f"{company} leadership team on Crunchbase "
                 f"(VP Engineering, CTO, Head of Talent, Directors)"
             )
-            print(f"[FireCrawl][PeopleMapper] Crunchbase search query: {query}")
+            self.logger.info(f"[FireCrawl] Crunchbase search query: {query[:80]}...")
             search_response = self.firecrawl.search(query, limit=2)
 
             # Use normalizer to extract results (handles SDK version differences)
@@ -582,7 +587,7 @@ class PeopleMapper:
             return None
 
         except Exception as e:
-            print(f"  ⚠️  Crunchbase team search failed: {e}")
+            self.logger.warning(f"Crunchbase team search failed: {e}")
             return None
 
     def _deduplicate_contacts(self, raw_contacts: List[Dict[str, str]]) -> List[Dict[str, str]]:
@@ -677,7 +682,7 @@ class PeopleMapper:
             Tuple of (formatted contact data for LLM, found_any_contacts)
         """
         if self.firecrawl_disabled or not self.firecrawl:
-            print("  🔌 FireCrawl outreach discovery disabled (role-based contacts only).")
+            self.logger.info("FireCrawl outreach discovery disabled (role-based contacts only)")
             return "FireCrawl discovery is disabled. Use role-based identifiers.", False
 
         company = state.get("company", "")
@@ -687,13 +692,13 @@ class PeopleMapper:
         all_contacts = []
         raw_content_parts = []
 
-        print("  🔍 Discovering contacts from multiple sources (Option A - improved)...")
+        self.logger.info("Discovering contacts from multiple sources (Option A - improved)")
 
         # Source 1: Company team page (legacy - still useful for smaller companies)
         team_page = self._scrape_company_team_page(company, company_url)
         if team_page:
             raw_content_parts.append(f"[SOURCE: Company Team Page]\n{team_page}\n")
-            print(f"    ✓ Scraped company team page ({len(team_page)} chars)")
+            self.logger.info(f"Scraped company team page ({len(team_page)} chars)")
 
         # Source 2: LinkedIn contacts (recruiters + leadership)
         linkedin_contacts = self._search_linkedin_contacts(company, "engineering", title)
@@ -721,15 +726,15 @@ class PeopleMapper:
         crunchbase_content = self._search_crunchbase_team(company)
         if crunchbase_content:
             raw_content_parts.append(f"[SOURCE: Crunchbase Team]\n{crunchbase_content}\n")
-            print(f"    ✓ Searched Crunchbase team ({len(crunchbase_content)} chars)")
+            self.logger.info(f"Searched Crunchbase team ({len(crunchbase_content)} chars)")
 
         # Deduplicate contacts
         if all_contacts:
             all_contacts = self._deduplicate_contacts(all_contacts)
-            print(f"  ✓ Total unique contacts found: {len(all_contacts)}")
+            self.logger.info(f"Total unique contacts found: {len(all_contacts)}")
 
         if not raw_content_parts:
-            print("    ⚠️  No contacts found via FireCrawl (will use role-based fallback)")
+            self.logger.warning("No contacts found via FireCrawl (will use role-based fallback)")
             return f"No specific contacts found. Use role-based identifiers for {company}.", False
 
         return "\n---\n".join(raw_content_parts), True
@@ -848,7 +853,7 @@ Return the three letters separated by \"---\" lines.
 
             return letters[:3]
         except Exception as e:
-            print(f"   ⚠️  Fallback cover letter generation failed: {e}")
+            self.logger.warning(f"Fallback cover letter generation failed: {e}")
             basic_letter = (
                 f"Hi {state.get('company', '')} team,\n\n"
                 f"I'm interested in the {state.get('title', 'role')} role. Drawing from my background ({candidate_profile[:180]}...), "
@@ -1207,7 +1212,7 @@ Return the three letters separated by \"---\" lines.
 
         except Exception as e:
             # Fallback: generate minimal outreach
-            print(f"  ⚠️  Outreach generation failed for {contact['name']}: {e}")
+            self.logger.warning(f"Outreach generation failed for {contact['name']}: {e}")
             return {
                 "contact_name": contact["name"],
                 "contact_role": contact["role"],
@@ -1234,11 +1239,11 @@ Return the three letters separated by \"---\" lines.
         Returns:
             Dict with primary_contacts, secondary_contacts, outreach_packages
         """
-        print(f"\n{'='*80}")
-        print(f"LAYER 5: PEOPLE MAPPER (Phase 7)")
-        print(f"{'='*80}")
+        self.logger.info("="*80)
+        self.logger.info("LAYER 5: PEOPLE MAPPER (Phase 7)")
+        self.logger.info("="*80)
         if self.firecrawl_disabled:
-            print("  🔌 FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only).")
+            self.logger.info("FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only)")
 
         try:
             # Step 1: Multi-source discovery
@@ -1256,24 +1261,24 @@ Return the three letters separated by \"---\" lines.
                     if self.firecrawl_disabled
                     else "No contacts found via FireCrawl - using role-based synthetic contacts."
                 )
-                print(f"\n  ⚠️  {fallback_reason}")
+                self.logger.warning(fallback_reason)
                 synthetic = self._generate_synthetic_contacts(state)
                 primary_contacts = synthetic["primary_contacts"]
                 secondary_contacts = synthetic["secondary_contacts"]
-                print(f"    ✓ Generated {len(primary_contacts)} synthetic primary contacts")
-                print(f"    ✓ Generated {len(secondary_contacts)} synthetic secondary contacts")
+                self.logger.info(f"Generated {len(primary_contacts)} synthetic primary contacts")
+                self.logger.info(f"Generated {len(secondary_contacts)} synthetic secondary contacts")
 
                 # Also generate fallback cover letters for reference
                 fallback_letters = self._generate_fallback_cover_letters(state, fallback_reason)
 
                 # Generate outreach for synthetic contacts
-                print("\n  📧 Generating personalized outreach for synthetic contacts...")
+                self.logger.info("Generating personalized outreach for synthetic contacts")
                 all_contacts = primary_contacts + secondary_contacts
                 enriched_primary = []
                 enriched_secondary = []
 
                 for i, contact in enumerate(all_contacts, 1):
-                    print(f"    Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
+                    self.logger.info(f"Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
                     try:
                         outreach = self._generate_outreach_package(contact, state)
                         enriched_contact = {**contact, **outreach}
@@ -1282,13 +1287,13 @@ Return the three letters separated by \"---\" lines.
                         else:
                             enriched_secondary.append(enriched_contact)
                     except Exception as e:
-                        print(f"      ⚠️  Failed to generate outreach: {e}")
+                        self.logger.warning(f"Failed to generate outreach: {e}")
                         if i <= len(primary_contacts):
                             enriched_primary.append(contact)
                         else:
                             enriched_secondary.append(contact)
 
-                print(f"\n  ✅ Completed synthetic contact outreach generation")
+                self.logger.info("Completed synthetic contact outreach generation")
 
                 return {
                     "primary_contacts": enriched_primary,
@@ -1299,24 +1304,24 @@ Return the three letters separated by \"---\" lines.
                 }
 
             # Step 2: Classify contacts
-            print("\n  🏷️  Classifying contacts into primary/secondary...")
+            self.logger.info("Classifying contacts into primary/secondary")
             classified = self._classify_contacts(raw_contacts, state)
 
             primary_contacts = classified["primary_contacts"]
             secondary_contacts = classified["secondary_contacts"]
 
-            print(f"    ✓ {len(primary_contacts)} primary contacts (hiring-related)")
-            print(f"    ✓ {len(secondary_contacts)} secondary contacts (cross-functional)")
+            self.logger.info(f"{len(primary_contacts)} primary contacts (hiring-related)")
+            self.logger.info(f"{len(secondary_contacts)} secondary contacts (cross-functional)")
 
             # Step 3: Generate outreach for all contacts
-            print("\n  📧 Generating personalized outreach...")
+            self.logger.info("Generating personalized outreach")
 
             all_contacts = primary_contacts + secondary_contacts
             enriched_primary = []
             enriched_secondary = []
 
             for i, contact in enumerate(all_contacts, 1):
-                print(f"    Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
+                self.logger.info(f"Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
 
                 try:
                     outreach = self._generate_outreach_package(contact, state)
@@ -1331,14 +1336,14 @@ Return the three letters separated by \"---\" lines.
                         enriched_secondary.append(enriched_contact)
 
                 except Exception as e:
-                    print(f"      ⚠️  Failed to generate outreach: {e}")
+                    self.logger.warning(f"Failed to generate outreach: {e}")
                     # Add contact without outreach
                     if i <= len(primary_contacts):
                         enriched_primary.append(contact)
                     else:
                         enriched_secondary.append(contact)
 
-            print(f"\n  ✅ Generated outreach for {len(enriched_primary + enriched_secondary)} contacts")
+            self.logger.info(f"Generated outreach for {len(enriched_primary + enriched_secondary)} contacts")
 
             # Step 4: Return updates
             return {
@@ -1350,7 +1355,7 @@ Return the three letters separated by \"---\" lines.
             }
 
         except Exception as e:
-            print(f"\n  ❌ People mapping failed: {e}")
+            self.logger.error(f"People mapping failed: {e}")
             return {
                 "primary_contacts": [],
                 "secondary_contacts": [],
@@ -1373,5 +1378,9 @@ def people_mapper_node(state: JobState) -> Dict[str, Any]:
     Returns:
         State updates with primary_contacts, secondary_contacts, outreach_packages
     """
+    # Note: Detailed logging happens inside PeopleMapper.map_people()
+    # Node-level logger mainly for entry/exit tracking
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer5")
+
     mapper = PeopleMapper()
     return mapper.map_people(state)

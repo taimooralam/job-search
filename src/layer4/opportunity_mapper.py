@@ -10,6 +10,7 @@ Phase 6 Enhancements:
 - Detects and rejects generic boilerplate rationales
 """
 
+import logging
 import re
 from typing import Dict, Any, Tuple, List, Optional
 from langchain_openai import ChatOpenAI
@@ -18,6 +19,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.common.logger import get_logger
 
 
 # ===== PROMPT DESIGN =====
@@ -104,6 +106,9 @@ class OpportunityMapper:
 
     def __init__(self):
         """Initialize LLM for fit analysis."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.llm = ChatOpenAI(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for objective analysis
@@ -369,9 +374,9 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         if validation_errors:
             # For production usage we treat these as quality warnings, not hard failures.
             # This keeps the pipeline flowing even if the LLM misses some formatting rules.
-            print("   ⚠️  Fit rationale quality warnings:")
+            self.logger.warning("Fit rationale quality warnings:")
             for msg in validation_errors:
-                print(f"      - {msg}")
+                self.logger.warning(f"  - {msg}")
 
         # Phase 6: Derive category from score
         category = self._derive_fit_category(score)
@@ -389,13 +394,13 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             Dict with fit_score, fit_rationale, and fit_category keys
         """
         try:
-            print(f"   Analyzing fit for: {state['title']} at {state['company']}")
+            self.logger.info(f"Analyzing fit for: {state['title']} at {state['company']}")
 
             score, rationale, category = self._analyze_fit(state)
 
-            print(f"   ✓ Generated fit score: {score}/100 ({category})")
-            print(f"   ✓ Generated rationale ({len(rationale)} chars)")
-            print(f"   ✓ Rationale validation: see any quality warnings above")
+            self.logger.info(f"Generated fit score: {score}/100 ({category})")
+            self.logger.info(f"Generated rationale ({len(rationale)} chars)")
+            self.logger.info("Rationale validation: see any quality warnings above")
 
             return {
                 "fit_score": score,
@@ -406,7 +411,7 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         except Exception as e:
             # Complete failure - log error and return None
             error_msg = f"Layer 4 (Opportunity Mapper) failed: {str(e)}"
-            print(f"   ✗ {error_msg}")
+            self.logger.error(error_msg)
 
             return {
                 "fit_score": None,
@@ -428,22 +433,24 @@ def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 4: Opportunity Mapper (Phase 6)")
-    print("="*60)
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer4")
+
+    logger.info("="*60)
+    logger.info("LAYER 4: Opportunity Mapper (Phase 6)")
+    logger.info("="*60)
 
     mapper = OpportunityMapper()
     updates = mapper.map_opportunity(state)
 
-    # Print results
+    # Log results
     if updates.get("fit_score") is not None:
-        print(f"\nFit Score: {updates['fit_score']}/100")
-        print(f"Fit Category: {updates.get('fit_category', 'N/A').upper()}")
-        print(f"\nFit Rationale:")
-        print(f"  {updates['fit_rationale']}")
+        logger.info(f"Fit Score: {updates['fit_score']}/100")
+        logger.info(f"Fit Category: {updates.get('fit_category', 'N/A').upper()}")
+        logger.info("Fit Rationale:")
+        logger.info(f"  {updates['fit_rationale']}")
     else:
-        print("\n⚠️  No fit analysis generated")
+        logger.warning("No fit analysis generated")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates

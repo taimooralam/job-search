@@ -9,6 +9,7 @@ Phase 4 Update: Added formal JSON schema validation with Pydantic
 """
 
 import json
+import logging
 import re
 from typing import List, Dict, Any
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -18,6 +19,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.state import JobState
+from src.common.logger import get_logger
 
 
 # ===== SCHEMA VALIDATION =====
@@ -243,18 +245,20 @@ class PainPointMiner:
             # Parse and validate JSON response (Pydantic handles all validation)
             parsed_data = self._parse_json_response(llm_response)
 
-            print(f"✓ Extracted pain-point analysis (schema validated):")
-            print(f"   - Pain points: {len(parsed_data['pain_points'])}")
-            print(f"   - Strategic needs: {len(parsed_data['strategic_needs'])}")
-            print(f"   - Risks if unfilled: {len(parsed_data['risks_if_unfilled'])}")
-            print(f"   - Success metrics: {len(parsed_data['success_metrics'])}")
+            logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer2")
+            logger.info("Extracted pain-point analysis (schema validated):")
+            logger.info(f"  Pain points: {len(parsed_data['pain_points'])}")
+            logger.info(f"  Strategic needs: {len(parsed_data['strategic_needs'])}")
+            logger.info(f"  Risks if unfilled: {len(parsed_data['risks_if_unfilled'])}")
+            logger.info(f"  Success metrics: {len(parsed_data['success_metrics'])}")
 
             return parsed_data
 
         except Exception as e:
             # Log error and return empty lists (don't block pipeline)
             error_msg = f"Layer 2 (Pain-Point Miner) failed: {str(e)}"
-            print(f"✗ {error_msg}")
+            logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer2")
+            logger.error(error_msg)
 
             return {
                 "pain_points": [],
@@ -279,27 +283,28 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 2: Pain-Point Miner (JSON Mode)")
-    print("="*60)
-    print(f"Job: {state['title']} at {state['company']}")
-    print(f"Description length: {len(state['job_description'])} chars")
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer2")
+    logger.info("="*60)
+    logger.info("LAYER 2: Pain-Point Miner (JSON Mode)")
+    logger.info("="*60)
+    logger.info(f"Job: {state['title']} at {state['company']}")
+    logger.info(f"Description length: {len(state['job_description'])} chars")
 
     miner = PainPointMiner()
     updates = miner.extract_pain_points(state)
 
-    # Print results
+    # Log results
     if updates.get("pain_points"):
-        print("\nExtracted Pain Points:")
+        logger.info("Extracted Pain Points:")
         for i, point in enumerate(updates["pain_points"], 1):
-            print(f"  {i}. {point}")
+            logger.info(f"  {i}. {point}")
 
-        print("\nExtracted Strategic Needs:")
+        logger.info("Extracted Strategic Needs:")
         for i, need in enumerate(updates.get("strategic_needs", []), 1):
-            print(f"  {i}. {need}")
+            logger.info(f"  {i}. {need}")
     else:
-        print("\n⚠️  No pain-point analysis extracted")
+        logger.warning("No pain-point analysis extracted")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates
