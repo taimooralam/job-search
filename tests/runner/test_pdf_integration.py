@@ -333,3 +333,64 @@ class TestRunnerPDFProxyIntegration:
         assert payload["tiptap_json"]["type"] == "doc"
         assert payload["documentStyles"]["fontFamily"] == "Inter"
         assert payload["documentStyles"]["fontSize"] == 11
+
+    @patch("httpx.AsyncClient")
+    def test_runner_migrates_cv_text_when_cv_editor_state_missing(
+        self, mock_httpx, runner_client, mock_mongodb
+    ):
+        """Test that runner migrates cv_text (markdown) when cv_editor_state is missing.
+
+        This allows users to export PDF directly from detail page without opening the editor first.
+        The pipeline generates cv_text (markdown) but not cv_editor_state initially.
+        """
+        # Setup MongoDB mock with job that has cv_text but no cv_editor_state
+        mock_mongodb.find_one.return_value = {
+            "_id": "507f1f77bcf86cd799439011",
+            "company": "TechCorp",
+            "title": "Engineer",
+            "cv_text": """# John Doe
+
+## Experience
+
+### Senior Engineer at TechCorp
+- Built scalable systems
+- Led team of 5 engineers
+
+## Education
+
+### BS Computer Science
+Stanford University
+"""
+            # No cv_editor_state field
+        }
+
+        # Setup httpx mock
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = b"%PDF"
+        mock_response.headers = {"Content-Disposition": 'attachment; filename="CV.pdf"'}
+        mock_response.raise_for_status = MagicMock()
+
+        mock_post = AsyncMock(return_value=mock_response)
+        mock_http_client = AsyncMock()
+        mock_http_client.__aenter__.return_value.post = mock_post
+        mock_httpx.return_value = mock_http_client
+
+        # Make request to runner
+        response = runner_client.post(
+            "/api/jobs/507f1f77bcf86cd799439011/cv-editor/pdf"
+        )
+
+        # Verify successful response
+        assert response.status_code == 200
+
+        # Verify migrated state was used (not empty default)
+        payload = mock_post.call_args[1]["json"]
+        assert payload["tiptap_json"]["type"] == "doc"
+        assert len(payload["tiptap_json"]["content"]) > 0  # Should have content from migration
+
+        # Verify heading was migrated
+        first_node = payload["tiptap_json"]["content"][0]
+        assert first_node["type"] == "heading"
+        assert first_node["attrs"]["level"] == 1
+        assert first_node["content"][0]["text"] == "John Doe"
