@@ -1,0 +1,341 @@
+"""
+Unit tests for PDF service endpoints.
+
+Tests health check, render-pdf, and cv-to-pdf endpoints.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock, AsyncMock
+
+
+@pytest.fixture
+def client():
+    """Create test client for PDF service."""
+    from pdf_service.app import app
+    return TestClient(app)
+
+
+class TestHealthEndpoint:
+    """Tests for /health endpoint."""
+
+    def test_health_check_returns_200(self, client):
+        """Test that health check returns 200 OK."""
+        response = client.get("/health")
+        assert response.status_code == 200
+
+    def test_health_check_returns_correct_structure(self, client):
+        """Test that health check returns expected fields."""
+        response = client.get("/health")
+        data = response.json()
+
+        assert data["status"] == "healthy"
+        assert "timestamp" in data
+        assert "active_renders" in data
+        assert "max_concurrent" in data
+        assert isinstance(data["active_renders"], int)
+        assert isinstance(data["max_concurrent"], int)
+
+    def test_health_check_active_renders_within_bounds(self, client):
+        """Test that active_renders is within valid range."""
+        response = client.get("/health")
+        data = response.json()
+
+        assert 0 <= data["active_renders"] <= data["max_concurrent"]
+
+
+class TestRenderPDFEndpoint:
+    """Tests for /render-pdf endpoint."""
+
+    def test_render_pdf_requires_html(self, client):
+        """Test that render-pdf requires HTML content."""
+        response = client.post("/render-pdf", json={})
+        assert response.status_code == 422  # Validation error
+
+    def test_render_pdf_rejects_empty_html(self, client):
+        """Test that render-pdf rejects empty HTML."""
+        response = client.post("/render-pdf", json={"html": ""})
+        assert response.status_code == 400
+        assert "HTML content is required" in response.json()["detail"]
+
+    @patch("playwright.async_api.async_playwright")
+    def test_render_pdf_success(self, mock_playwright, client):
+        """Test successful PDF rendering."""
+        # Mock Playwright
+        mock_browser = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.pdf = AsyncMock(return_value=b"%PDF-1.4 fake pdf content")
+        mock_browser.new_page = AsyncMock(return_value=mock_page)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        response = client.post(
+            "/render-pdf",
+            json={
+                "html": "<h1>Test Document</h1>",
+                "pageSize": "letter",
+                "printBackground": True
+            }
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+        assert "attachment" in response.headers.get("content-disposition", "")
+
+    @patch("playwright.async_api.async_playwright")
+    def test_render_pdf_handles_timeout(self, mock_playwright, client):
+        """Test that render-pdf handles Playwright timeouts."""
+        import asyncio
+
+        # Mock Playwright to raise timeout
+        mock_browser = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.pdf = AsyncMock(side_effect=asyncio.TimeoutError())
+        mock_browser.new_page = AsyncMock(return_value=mock_page)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        response = client.post(
+            "/render-pdf",
+            json={"html": "<h1>Test</h1>"}
+        )
+
+        assert response.status_code == 500
+        assert "timed out" in response.json()["detail"].lower()
+
+    def test_render_pdf_validates_page_size(self, client):
+        """Test that render-pdf accepts valid page sizes."""
+        with patch("playwright.async_api.async_playwright") as mock_playwright:
+            mock_browser = AsyncMock()
+            mock_page = AsyncMock()
+            mock_page.pdf = AsyncMock(return_value=b"%PDF")
+            mock_browser.new_page = AsyncMock(return_value=mock_page)
+            mock_playwright.return_value.__aenter__ = AsyncMock(
+                return_value=MagicMock(
+                    chromium=MagicMock(
+                        launch=AsyncMock(return_value=mock_browser)
+                    )
+                )
+            )
+
+            # Test letter
+            response = client.post(
+                "/render-pdf",
+                json={"html": "<h1>Test</h1>", "pageSize": "letter"}
+            )
+            assert response.status_code == 200
+
+            # Test A4
+            response = client.post(
+                "/render-pdf",
+                json={"html": "<h1>Test</h1>", "pageSize": "a4"}
+            )
+            assert response.status_code == 200
+
+
+class TestCVToPDFEndpoint:
+    """Tests for /cv-to-pdf endpoint."""
+
+    def test_cv_to_pdf_requires_tiptap_json(self, client):
+        """Test that cv-to-pdf requires tiptap_json."""
+        response = client.post("/cv-to-pdf", json={})
+        assert response.status_code == 422  # Validation error
+
+    def test_cv_to_pdf_validates_document_format(self, client):
+        """Test that cv-to-pdf validates TipTap document format."""
+        response = client.post(
+            "/cv-to-pdf",
+            json={"tiptap_json": {"type": "invalid"}}
+        )
+        assert response.status_code == 400
+        assert "Invalid TipTap document format" in response.json()["detail"]
+
+    @patch("playwright.async_api.async_playwright")
+    def test_cv_to_pdf_success(self, mock_playwright, client):
+        """Test successful CV PDF generation."""
+        # Mock Playwright
+        mock_browser = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.pdf = AsyncMock(return_value=b"%PDF-1.4 fake cv pdf")
+        mock_browser.new_page = AsyncMock(return_value=mock_page)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        tiptap_doc = {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "heading",
+                    "attrs": {"level": 1},
+                    "content": [{"type": "text", "text": "John Doe"}]
+                },
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": "Software Engineer"}]
+                }
+            ]
+        }
+
+        response = client.post(
+            "/cv-to-pdf",
+            json={
+                "tiptap_json": tiptap_doc,
+                "documentStyles": {
+                    "fontFamily": "Inter",
+                    "fontSize": 11,
+                    "lineHeight": 1.15,
+                    "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
+                    "pageSize": "letter"
+                },
+                "company": "TechCorp",
+                "role": "Senior Engineer"
+            }
+        )
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+        assert "CV_TechCorp_Senior_Engineer.pdf" in response.headers.get("content-disposition", "")
+
+    def test_cv_to_pdf_handles_recursion_error(self, client):
+        """Test that cv-to-pdf handles deeply nested documents."""
+        with patch("pdf_service.pdf_helpers.tiptap_json_to_html", side_effect=RecursionError()):
+            tiptap_doc = {
+                "type": "doc",
+                "content": []
+            }
+
+            response = client.post(
+                "/cv-to-pdf",
+                json={"tiptap_json": tiptap_doc}
+            )
+
+            assert response.status_code == 400
+            assert "too deeply nested" in response.json()["detail"].lower()
+
+    def test_cv_to_pdf_handles_conversion_error(self, client):
+        """Test that cv-to-pdf handles TipTap conversion errors."""
+        with patch("pdf_service.pdf_helpers.tiptap_json_to_html", side_effect=ValueError("Invalid node type")):
+            tiptap_doc = {
+                "type": "doc",
+                "content": []
+            }
+
+            response = client.post(
+                "/cv-to-pdf",
+                json={"tiptap_json": tiptap_doc}
+            )
+
+            assert response.status_code == 400
+            assert "Failed to process CV content" in response.json()["detail"]
+
+    @patch("playwright.async_api.async_playwright")
+    def test_cv_to_pdf_uses_default_styles(self, mock_playwright, client):
+        """Test that cv-to-pdf uses default styles when not provided."""
+        mock_browser = AsyncMock()
+        mock_page = AsyncMock()
+        mock_page.pdf = AsyncMock(return_value=b"%PDF")
+        mock_browser.new_page = AsyncMock(return_value=mock_page)
+        mock_playwright.return_value.__aenter__ = AsyncMock(
+            return_value=MagicMock(
+                chromium=MagicMock(
+                    launch=AsyncMock(return_value=mock_browser)
+                )
+            )
+        )
+
+        tiptap_doc = {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": "Test"}]
+                }
+            ]
+        }
+
+        response = client.post(
+            "/cv-to-pdf",
+            json={"tiptap_json": tiptap_doc}
+        )
+
+        assert response.status_code == 200
+
+    def test_cv_to_pdf_builds_filename_from_company_role(self, client):
+        """Test that cv-to-pdf builds correct filename."""
+        with patch("playwright.async_api.async_playwright") as mock_playwright:
+            mock_browser = AsyncMock()
+            mock_page = AsyncMock()
+            mock_page.pdf = AsyncMock(return_value=b"%PDF")
+            mock_browser.new_page = AsyncMock(return_value=mock_page)
+            mock_playwright.return_value.__aenter__ = AsyncMock(
+                return_value=MagicMock(
+                    chromium=MagicMock(
+                        launch=AsyncMock(return_value=mock_browser)
+                    )
+                )
+            )
+
+            tiptap_doc = {"type": "doc", "content": []}
+
+            response = client.post(
+                "/cv-to-pdf",
+                json={
+                    "tiptap_json": tiptap_doc,
+                    "company": "Test & Co.",
+                    "role": "Director (Engineering)"
+                }
+            )
+
+            assert response.status_code == 200
+            # Verify sanitized filename
+            cd = response.headers.get("content-disposition", "")
+            assert "CV_Test___Co__Director__Engineering_.pdf" in cd
+
+
+class TestConcurrencyLimits:
+    """Tests for concurrency limits and rate limiting."""
+
+    @patch("pdf_service.app._pdf_semaphore")
+    def test_render_pdf_respects_concurrency_limit(self, mock_semaphore, client):
+        """Test that render-pdf respects MAX_CONCURRENT_PDFS."""
+        # Mock semaphore to appear full
+        mock_semaphore._value = 0
+
+        response = client.post(
+            "/render-pdf",
+            json={"html": "<h1>Test</h1>"}
+        )
+
+        assert response.status_code == 503
+        assert "overloaded" in response.json()["detail"].lower()
+
+    @patch("pdf_service.app._pdf_semaphore")
+    def test_cv_to_pdf_respects_concurrency_limit(self, mock_semaphore, client):
+        """Test that cv-to-pdf respects MAX_CONCURRENT_PDFS."""
+        # Mock semaphore to appear full
+        mock_semaphore._value = 0
+
+        tiptap_doc = {"type": "doc", "content": []}
+
+        response = client.post(
+            "/cv-to-pdf",
+            json={"tiptap_json": tiptap_doc}
+        )
+
+        assert response.status_code == 503
+        assert "overloaded" in response.json()["detail"].lower()
