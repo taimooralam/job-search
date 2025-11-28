@@ -109,19 +109,14 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     # Create run-specific logger
     run_logger = get_logger(__name__, run_id=run_id)
 
-    print("\n" + "="*70)
-    print("🚀 STARTING JOB INTELLIGENCE PIPELINE")
-    print("="*70)
-    print(f"Job: {job_data.get('title')} at {job_data.get('company')}")
-    print(f"Job ID: {job_data.get('job_id')}")
-    print(f"Run ID: {run_id}")
-    print(f"Started: {created_at}")
-    print("="*70 + "\n")
-
-    run_logger.info(
-        f"Starting pipeline for job {job_data.get('job_id')}: "
-        f"{job_data.get('title')} at {job_data.get('company')}"
-    )
+    run_logger.info("="*70)
+    run_logger.info("STARTING JOB INTELLIGENCE PIPELINE")
+    run_logger.info("="*70)
+    run_logger.info(f"Job: {job_data.get('title')} at {job_data.get('company')}")
+    run_logger.info(f"Job ID: {job_data.get('job_id')}")
+    run_logger.info(f"Run ID: {run_id}")
+    run_logger.info(f"Started: {created_at}")
+    run_logger.info("="*70)
 
     # Initialize state
     initial_state: JobState = {
@@ -191,7 +186,6 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
 
     except Exception as e:
         run_logger.exception(f"Pipeline failed with exception: {e}")
-        print(f"\n❌ Pipeline failed with exception: {e}")
         # Create minimal final state with error
         final_state = initial_state.copy()
         final_state["errors"] = [f"Pipeline exception: {str(e)}"]
@@ -212,26 +206,26 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
                 serializable_state[key] = value
 
         state_output_path.write_text(json.dumps(serializable_state, indent=2, default=str))
-        print(f"\n💾 Pipeline state written to: {state_output_path}")
+        run_logger.info(f"Pipeline state written to: {state_output_path}")
     except Exception as e:
-        print(f"\n⚠️  Failed to write pipeline state: {e}")
+        run_logger.warning(f"Failed to write pipeline state: {e}")
 
-    # Print summary
-    print("\n" + "="*70)
-    print("✅ PIPELINE COMPLETE")
-    print("="*70)
-    print(f"Run ID: {final_state.get('run_id')}")
-    print(f"Status: {final_state.get('status')}")
-    print(f"Fit Score: {final_state.get('fit_score')}/100")
-    print(f"Drive Folder: {final_state.get('drive_folder_url')}")
-    print(f"Sheets Row: {final_state.get('sheet_row_id')}")
+    # Log summary
+    run_logger.info("="*70)
+    run_logger.info("PIPELINE COMPLETE")
+    run_logger.info("="*70)
+    run_logger.info(f"Run ID: {final_state.get('run_id')}")
+    run_logger.info(f"Status: {final_state.get('status')}")
+    run_logger.info(f"Fit Score: {final_state.get('fit_score')}/100")
+    run_logger.info(f"Drive Folder: {final_state.get('drive_folder_url')}")
+    run_logger.info(f"Sheets Row: {final_state.get('sheet_row_id')}")
 
     if final_state.get("errors"):
-        print(f"\n⚠️  Warnings/Errors:")
+        run_logger.warning("Warnings/Errors:")
         for error in final_state["errors"]:
-            print(f"  - {error}")
+            run_logger.warning(f"  - {error}")
 
-    print("="*70 + "\n")
+    run_logger.info("="*70)
 
     return final_state
 

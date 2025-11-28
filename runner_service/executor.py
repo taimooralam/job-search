@@ -9,9 +9,12 @@ Handles subprocess execution of the job pipeline with:
 """
 
 import asyncio
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 # Configurable timeout (default 10 minutes)
 PIPELINE_TIMEOUT = int(os.getenv("PIPELINE_TIMEOUT_SECONDS", "600"))
@@ -167,7 +170,7 @@ def load_pipeline_state(job_id: str) -> Optional[Dict]:
         state_file.unlink()
         return state_data
     except Exception as e:
-        print(f"Warning: Failed to load pipeline state: {e}")
+        logger.warning(f"Failed to load pipeline state for job {job_id}: {e}")
         return None
 
 
