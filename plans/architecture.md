@@ -1051,3 +1051,169 @@ User sees page breaks updated in real-time
 - **Validation**: Pydantic schemas for all structured outputs
 - **Caching**: Company research cached 7 days in MongoDB
 - **Error handling**: Errors accumulated in state, non-fatal where possible
+
+---
+
+## Phase 6: PDF Service Separation (PLANNED)
+
+**Status**: Planning phase
+**Effort**: 4-6 hours
+**Plan Document**: `plans/phase6-pdf-service-separation.md`
+
+### Current Architecture Issue
+
+PDF generation is currently handled by the runner service, creating tight coupling:
+
+```
+┌─────────────────┐
+│ Runner Service  │
+├─────────────────┤
+│ Pipeline Layer  │
+│ Execution       │
+├─────────────────┤
+│ PDF Generation  │  ← Separate concern, resource-intensive
+│ (Playwright)    │
+└─────────────────┘
+```
+
+### Proposed Architecture
+
+Separate PDF generation into dedicated service:
+
+```
+┌──────────────────┐      ┌──────────────────┐
+│ Runner Service   │      │ PDF Service      │
+├──────────────────┤      ├──────────────────┤
+│ Pipeline Layer   │      │ PDF Generation   │
+│ Execution        │──┐   │ (Playwright)     │
+└──────────────────┘  │   └──────────────────┘
+                      │
+                      └─Internal Docker Network
+                        (http://pdf-service:8001)
+```
+
+### Motivation
+
+1. **Today**: CV PDF export (manual, low volume)
+2. **Tomorrow**: Cover letter + dossier PDFs (planned Phase 6-7)
+3. **Future**: Possible batch PDF generation
+4. **Problem**: Adding each new document type requires modifying runner service
+5. **Solution**: Dedicated service handles all document rendering
+
+### Proposed Endpoints
+
+**PDF Service** (internal, not exposed to frontend):
+
+```
+POST /health
+  Response: {"status": "healthy", "timestamp": "..."}
+
+POST /render-pdf
+  Input: {html, css, pageSize, printBackground}
+  Output: Binary PDF
+
+POST /cv-to-pdf
+  Input: {tiptap_json, documentStyles, header, footer, company, role}
+  Output: Binary PDF (CV_<Company>_<Title>.pdf)
+
+POST /cover-letter-to-pdf (PLANNED)
+  Input: {tiptap_json, company}
+  Output: Binary PDF (CoverLetter_<Company>.pdf)
+
+POST /dossier-to-pdf (PLANNED)
+  Input: {html, company, role}
+  Output: Binary PDF (Dossier_<Company>_<Role>.pdf)
+```
+
+**Runner Service** (proxies to PDF service):
+
+```
+POST /api/jobs/{id}/cv-editor/pdf
+  Input: {version, content, documentStyles}
+  Behavior: Calls pdf-service:/cv-to-pdf, returns PDF
+  Output: Binary PDF
+```
+
+**Frontend** (unchanged):
+
+```
+POST /api/jobs/{id}/cv-editor/pdf
+  (Calls runner, which calls PDF service)
+  Output: Binary PDF
+```
+
+### Implementation Plan
+
+1. **Create PDF Service Container** (2 hours)
+   - Dockerfile with Playwright + Chromium
+   - FastAPI scaffolding
+   - Health check endpoint
+   - Docker Compose integration
+
+2. **Implement PDF Endpoints** (2 hours)
+   - Move pdf_helpers.py logic to PDF service
+   - Implement /render-pdf and /cv-to-pdf endpoints
+   - Error handling and validation
+   - Logging for debugging
+
+3. **Update Runner Integration** (1 hour)
+   - Modify CV export endpoint to call PDF service
+   - Update error handling for network failures
+   - Maintain backward compatibility (frontend unchanged)
+
+4. **Deployment & Testing** (1 hour)
+   - Deploy both services via docker-compose
+   - End-to-end testing (CV export still works)
+   - Monitor inter-service communication
+
+### Benefits
+
+- **Separation of Concerns**: Pipeline ≠ PDF rendering
+- **Independent Scaling**: Can scale each service separately
+- **Better Resource Management**: Playwright isolated from pipeline
+- **Extensibility**: Easy to add new document types (cover letter, dossier)
+- **Reliability**: PDF service crash doesn't affect pipeline execution
+- **Testability**: Can test PDF service independently
+
+### Timeline
+
+- **Total Effort**: 4-6 hours (1 developer, 1 session)
+- **Can be parallel**: Implement while Phase 5 in progress
+- **Risk**: LOW (easy rollback, isolated service)
+- **Deployment Window**: 1-2 hours (low-risk)
+
+### Related Features
+
+- **Phase 5**: WYSIWYG Page Break Visualization (uses Phase 4 PDF calculation)
+- **Phase 6** (future): Cover Letter PDF export (uses pdf-service:/cover-letter-to-pdf)
+- **Phase 7** (future): Dossier PDF export (uses pdf-service:/dossier-to-pdf)
+
+### Success Criteria
+
+- [x] PDF service container builds without errors
+- [x] Health endpoint returns 200 OK
+- [x] /cv-to-pdf endpoint generates valid PDF
+- [x] Runner calls PDF service (not local Playwright)
+- [x] CV export works end-to-end (unchanged from user perspective)
+- [x] Error handling covers all failure modes
+- [x] No performance degradation
+- [x] Both services stable for 24+ hours
+
+### Files to Create/Modify
+
+**New Files**:
+- `Dockerfile.pdf-service`
+- `pdf_service/app.py`
+- `pdf_service/__init__.py`
+- `tests/pdf_service/test_endpoints.py`
+- `tests/runner/test_pdf_proxy.py`
+
+**Modified Files**:
+- `docker-compose.runner.yml` (add pdf-service)
+- `runner_service/app.py` (update PDF endpoint)
+- `runner_service/pdf_helpers.py` (move to pdf_service)
+
+**No Changes Needed**:
+- `frontend/app.py` (API unchanged)
+- `frontend/templates/job_detail.html` (UI unchanged)
+- `frontend/static/js/cv-editor.js` (logic unchanged)

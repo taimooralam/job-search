@@ -13,13 +13,22 @@
 
 ## Current Blockers (Priority Order)
 
-1. **CRITICAL - Anthropic API credits low**
+1. **CRITICAL - Export PDF Button Not Working on Job Detail Page** (NEW 2025-11-28)
+   - Impact: Users can't export PDF from detail page (core feature broken)
+   - Status: Needs investigation and fix
+   - Workaround: Use Export PDF button in CV editor side panel (works correctly)
+   - Effort: 1-3 hours (depends on root cause)
+   - Plan: `plans/bugs/export-pdf-detail-page.md`
+   - Action: Investigate using browser DevTools (Network, Console), compare with working editor button
+   - Timeline: Fix before Phase 5 release
+
+2. **CRITICAL - Anthropic API credits low**
    - Impact: CV generator may fail in production
    - Status: Blocking Phase 4+ pipeline execution
    - Workaround: Add `USE_ANTHROPIC=false` + configure OpenAI
    - Action: Add credits to Anthropic account or switch LLM provider
 
-2. **LOW - E2E tests disabled**
+3. **LOW - E2E tests disabled**
    - Status: Non-blocking (Phase 1-4 unit tests passing)
    - Impact: Can't verify full user flow via Playwright
    - Plan: Re-enable with smoke test suite for Phase 1-4
@@ -39,12 +48,54 @@
 
 ---
 
+## Priority 0: FIX CRITICAL BUG - Export PDF Button on Detail Page
+
+**Status**: Needs Investigation & Fix
+**Severity**: CRITICAL (breaks core feature)
+**Effort**: 1-3 hours (depends on root cause)
+**Assigned to**: frontend-developer or architecture-debugger
+**Plan Document**: `plans/bugs/export-pdf-detail-page.md`
+
+### Issue
+Export PDF button on job detail page is not working. Users can't export CV from detail page; only workaround is editor side panel button.
+
+### Investigation Steps
+1. Open browser DevTools on detail page
+2. Go to Network tab
+3. Click "Export PDF" button
+4. Look for POST request to `/api/jobs/{id}/cv-editor/pdf`
+   - If request missing: Button handler not firing
+   - If request fails (400/500): API error
+   - If request succeeds: Check if PDF downloads
+5. Check Console tab for JavaScript errors
+6. Compare button code with working editor button (uses `exportCVToPDF()` function)
+
+### Possible Root Causes
+- Button doesn't exist in HTML
+- Click handler not attached
+- Wrong endpoint or missing data
+- CORS/auth issue
+- Function not implemented
+
+### Action
+1. Run investigation checklist from plan document
+2. Identify root cause
+3. Fix and test
+4. Add unit/E2E test for detail page export
+5. Mark as resolved in next-steps
+
+### Timeline
+Should fix immediately (before Phase 5) - this is a regression/blocking issue.
+
+---
+
 ## Priority 1: Phase 5 - WYSIWYG Page Break Visualization
 
 **Status**: Design phase complete, ready for implementation
 **Assigned to**: frontend-developer
 **Effort**: 8-10 hours
 **Plan Document**: `plans/phase5-page-break-visualization.md`
+**Blocked by**: Priority 0 (fix detail page export first)
 
 ### Overview
 Display visual page break indicators in CV editor showing where content breaks across pages when exported to PDF. Provides true WYSIWYG experience matching actual PDF output.
@@ -72,6 +123,57 @@ Display visual page break indicators in CV editor showing where content breaks a
 2. Break down implementation into 5 phases (2 hours each)
 3. Assign to frontend-developer for implementation
 4. Coordinate with PDF export to ensure break positions match
+
+---
+
+## Priority 2: Infrastructure - PDF Service Separation (NEW 2025-11-28)
+
+**Status**: Planning (Ready for Implementation)
+**Severity**: High (Architecture)
+**Effort**: 4-6 hours (1 developer, 1 session)
+**Assigned to**: architecture-debugger or job-search-architect
+**Plan Document**: `plans/phase6-pdf-service-separation.md`
+**Timeline**: Can be done in parallel with Priority 1 (Phase 5)
+
+### Overview
+Separate PDF generation from runner service into dedicated Docker container for better separation of concerns and independent scaling.
+
+### Problem
+- Runner service handles both pipeline execution AND PDF generation (tight coupling)
+- Can't scale PDF independently from pipeline
+- Playwright/Chromium is resource-heavy, impacts pipeline execution
+- Adding cover letter + dossier PDFs will require modifying runner repeatedly
+
+### Proposed Solution
+- New `pdf-service` Docker container with Playwright + Chromium
+- API endpoints:
+  - POST `/render-pdf` (generic HTML/CSS → PDF)
+  - POST `/cv-to-pdf` (TipTap JSON → PDF)
+  - POST `/cover-letter-to-pdf` (planned Phase 6)
+  - POST `/dossier-to-pdf` (planned Phase 7)
+- Runner proxies PDF requests via internal Docker network
+- Frontend unchanged (still calls runner)
+
+### Implementation Breakdown
+1. Create PDF service container with Playwright (2 hours)
+2. Implement PDF endpoints (2 hours)
+3. Update runner integration (1 hour)
+4. Deployment & testing (1 hour)
+5. Add cover letter support (future)
+6. Add dossier support (future)
+
+### Benefits
+- Clear separation of concerns (pipeline ≠ PDF rendering)
+- Independent scaling and resource management
+- Easy to add new document types
+- PDF service isolated, can restart without affecting pipeline
+
+### Success Criteria
+- PDF service container builds without errors
+- /cv-to-pdf endpoint generates valid PDF
+- CV export still works end-to-end (no change from user perspective)
+- Both services stable on VPS
+- Low risk (easy rollback, isolated service)
 
 ---
 
