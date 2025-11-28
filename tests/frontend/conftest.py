@@ -120,6 +120,8 @@ def sample_job_with_editor_state():
         "location": "San Francisco, CA",
         "url": "https://example.com/jobs/456",
         "status": "marked for applying",
+        "score": 85,  # Required by template
+        "fit_score": 90,  # Optional field used by template
         "createdAt": datetime(2025, 11, 26, 11, 0, 0),
         "updatedAt": datetime(2025, 11, 26, 12, 0, 0),
         "cv_text": "# Jane Smith\n\n## Experience\n\n- 8 years engineering",
@@ -200,6 +202,8 @@ def sample_job_with_phase2_formatting():
         "location": "New York, NY",
         "url": "https://example.com/jobs/789",
         "status": "ready for applying",
+        "score": 95,  # Required by template
+        "fit_score": 92,  # Optional field used by template
         "createdAt": datetime(2025, 11, 26, 14, 0, 0),
         "updatedAt": datetime(2025, 11, 26, 15, 0, 0),
         "cv_text": "# Alex Johnson\n\n## Experience\n\n- Led engineering teams",
