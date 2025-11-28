@@ -8,6 +8,7 @@ Publishes outputs to:
 4. Google Sheets (logs tracking row)
 """
 
+import logging
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -22,6 +23,7 @@ from pymongo import MongoClient
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
+from src.common.logger import get_logger
 from src.layer7.dossier_generator import DossierGenerator
 
 
@@ -32,6 +34,9 @@ class OutputPublisher:
 
     def __init__(self):
         """Initialize Google API clients and MongoDB connection."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.enable_remote = Config.ENABLE_REMOTE_PUBLISHING
 
         if self.enable_remote:
@@ -185,7 +190,7 @@ class OutputPublisher:
         local_dir = Path('./applications') / company_safe / role_safe
         local_dir.mkdir(parents=True, exist_ok=True)
 
-        print(f"   Saving files locally to: {local_dir}")
+        self.logger.info(f"Saving files locally to: {local_dir}")
 
         saved_paths = {}
 
@@ -194,7 +199,7 @@ class OutputPublisher:
         with open(dossier_path, 'w', encoding='utf-8') as f:
             f.write(dossier_content)
         saved_paths['dossier'] = str(dossier_path)
-        print(f"   ✓ Saved dossier: {dossier_path}")
+        self.logger.info(f"Saved dossier: {dossier_path}")
 
         # 2. Save cover letter
         if state.get('cover_letter'):
@@ -202,7 +207,7 @@ class OutputPublisher:
             with open(cover_letter_path, 'w', encoding='utf-8') as f:
                 f.write(state['cover_letter'])
             saved_paths['cover_letter'] = str(cover_letter_path)
-            print(f"   ✓ Saved cover letter: {cover_letter_path}")
+            self.logger.info(f"Saved cover letter: {cover_letter_path}")
 
         # 2b. Save fallback cover letters when no contacts were found
         if state.get('fallback_cover_letters'):
@@ -210,7 +215,7 @@ class OutputPublisher:
             with open(fallback_path, 'w', encoding='utf-8') as f:
                 f.write("\n\n---\n\n".join(state['fallback_cover_letters']))
             saved_paths['fallback_cover_letters'] = str(fallback_path)
-            print(f"   ✓ Saved fallback cover letters: {fallback_path}")
+            self.logger.info(f"Saved fallback cover letters: {fallback_path}")
 
         # 3. Save contacts outreach
         if state.get('people'):
@@ -219,12 +224,12 @@ class OutputPublisher:
             with open(contacts_path, 'w', encoding='utf-8') as f:
                 f.write(contacts_content)
             saved_paths['contacts'] = str(contacts_path)
-            print(f"   ✓ Saved contacts: {contacts_path}")
+            self.logger.info(f"Saved contacts: {contacts_path}")
 
         # 4. Verify CV exists (already saved to correct location by Layer 6)
         if state.get('cv_path') and os.path.exists(state['cv_path']):
             saved_paths['cv'] = state['cv_path']
-            print(f"   ✓ CV already saved: {state['cv_path']}")
+            self.logger.info(f"CV already saved: {state['cv_path']}")
 
         return saved_paths
 
@@ -270,7 +275,7 @@ class OutputPublisher:
                         break
 
             if not job_record:
-                print(f"   ⚠️  Job {job_id} not found in MongoDB level-2 collection")
+                self.logger.warning(f"Job {job_id} not found in MongoDB level-2 collection")
                 return False
 
             # Prepare update data
@@ -347,14 +352,14 @@ class OutputPublisher:
             )
 
             if result.modified_count > 0:
-                print(f"   ✓ Updated MongoDB record (jobId: {job_id})")
+                self.logger.info(f"Updated MongoDB record (jobId: {job_id})")
                 return True
             else:
-                print(f"   ⚠️  MongoDB record not modified (may already have same data)")
+                self.logger.info("MongoDB record not modified (may already have same data)")
                 return True  # Still success, just no changes needed
 
         except Exception as e:
-            print(f"   ⚠️  MongoDB update failed: {str(e)}")
+            self.logger.warning(f"MongoDB update failed: {str(e)}")
             return False
 
     def _format_contacts_file(self, people: list, state: JobState) -> str:
@@ -460,40 +465,40 @@ class OutputPublisher:
 
         try:
             # Step 0: Generate comprehensive dossier
-            print(f"   Generating dossier...")
+            self.logger.info("Generating dossier")
             dossier_content = self.dossier_gen.generate_dossier(state)
             result['dossier_generated'] = True
-            print(f"   ✓ Dossier generated ({len(dossier_content)} chars)")
+            self.logger.info(f"Dossier generated ({len(dossier_content)} chars)")
 
         except Exception as e:
             error_msg = f"Dossier generation failed: {str(e)[:100]}"
-            print(f"   ⚠️  {error_msg}")
+            self.logger.warning(error_msg)
             errors.append(error_msg)
             dossier_content = "Dossier generation failed"
             result['dossier_generated'] = False
 
         try:
             # Step 1: Save files locally
-            print(f"   Saving files to local disk...")
+            self.logger.info("Saving files to local disk")
             local_paths = self._save_files_locally(state, dossier_content)
             result['local_paths'] = local_paths
             result['local_save_success'] = True
 
         except Exception as e:
             error_msg = f"Local file save failed: {str(e)[:100]}"
-            print(f"   ⚠️  {error_msg}")
+            self.logger.warning(error_msg)
             errors.append(error_msg)
             result['local_save_success'] = False
 
         try:
             # Step 2: Persist to MongoDB
-            print(f"   Updating MongoDB...")
+            self.logger.info("Updating MongoDB")
             mongo_success = self._persist_to_mongodb(state, dossier_content)
             result['mongodb_persisted'] = mongo_success
 
         except Exception as e:
             error_msg = f"MongoDB persistence failed: {str(e)[:100]}"
-            print(f"   ⚠️  {error_msg}")
+            self.logger.warning(error_msg)
             errors.append(error_msg)
             result['mongodb_persisted'] = False
 
@@ -510,21 +515,21 @@ class OutputPublisher:
 
         try:
             # Step 3: Create Google Drive folder structure
-            print(f"   Creating Google Drive folders...")
+            self.logger.info("Creating Google Drive folders")
 
             # Find or create 'applications' folder
             applications_folder_id = self._find_or_create_folder(
                 'applications',
                 parent_folder_id=Config.GOOGLE_DRIVE_FOLDER_ID
             )
-            print(f"   ✓ Applications folder: {applications_folder_id}")
+            self.logger.info(f"Applications folder: {applications_folder_id}")
 
             # Create company folder
             company_folder_id = self._find_or_create_folder(
                 state["company"],
                 parent_folder_id=applications_folder_id
             )
-            print(f"   ✓ Company folder: {company_folder_id}")
+            self.logger.info(f"Company folder: {company_folder_id}")
 
             # Create role folder (use shared utility for consistent naming)
             role_folder_name = sanitize_path_component(state["title"], max_length=80)
@@ -532,14 +537,14 @@ class OutputPublisher:
                 role_folder_name,
                 parent_folder_id=company_folder_id
             )
-            print(f"   ✓ Role folder: {role_folder_id}")
+            self.logger.info(f"Role folder: {role_folder_id}")
 
             folder_url = self._get_folder_url(role_folder_id)
             result['drive_folder_url'] = folder_url
 
             # Step 4: Upload dossier to Drive
             try:
-                print(f"   Uploading dossier to Drive...")
+                self.logger.info("Uploading dossier to Drive")
                 dossier_temp_path = local_paths.get('dossier')
                 if dossier_temp_path and os.path.exists(dossier_temp_path):
                     self._upload_file_to_drive(
@@ -547,17 +552,17 @@ class OutputPublisher:
                         role_folder_id,
                         "dossier.txt"
                     )
-                    print(f"   ✓ Dossier uploaded")
+                    self.logger.info("Dossier uploaded")
             except Exception as e:
                 error_msg = f"Dossier upload failed: {str(e)[:100]}"
-                print(f"   ⚠️  {error_msg}")
+                self.logger.warning(error_msg)
                 errors.append(error_msg)
 
             # Step 5: Upload cover letter
             upload_errors = []
             if state.get("cover_letter"):
                 try:
-                    print(f"   Uploading cover letter...")
+                    self.logger.info("Uploading cover letter")
 
                     # Save cover letter to temp file
                     import tempfile
@@ -579,19 +584,19 @@ class OutputPublisher:
                         role_folder_id,
                         "cover_letter.txt"
                     )
-                    print(f"   ✓ Cover letter uploaded")
+                    self.logger.info("Cover letter uploaded")
 
                     # Cleanup temp file
                     os.remove(cover_letter_path)
                 except Exception as e:
                     error_msg = f"Cover letter upload failed (folder created): {str(e)[:100]}"
-                    print(f"   ⚠️  {error_msg}")
+                    self.logger.warning(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 6: Upload CV
             if state.get("cv_path") and os.path.exists(state["cv_path"]):
                 try:
-                    print(f"   Uploading CV...")
+                    self.logger.info("Uploading CV")
                     company_safe_cv = (state['company']
                                       .replace(' ', '_')
                                       .replace(',', '')
@@ -603,17 +608,17 @@ class OutputPublisher:
                         role_folder_id,
                         f"CV_{company_safe_cv}.docx"
                     )
-                    print(f"   ✓ CV uploaded")
+                    self.logger.info("CV uploaded")
                 except Exception as e:
                     error_msg = f"CV upload failed (folder created): {str(e)[:100]}"
-                    print(f"   ⚠️  {error_msg}")
+                    self.logger.warning(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 7: Upload per-person outreach files (Phase 1.3)
             people = state.get("people", [])
             if people:
                 try:
-                    print(f"   Generating outreach files for {len(people)} contacts...")
+                    self.logger.info(f"Generating outreach files for {len(people)} contacts")
 
                     # Create a consolidated contacts file
                     import tempfile
@@ -636,20 +641,20 @@ class OutputPublisher:
                         role_folder_id,
                         "contacts_outreach.txt"
                     )
-                    print(f"   ✓ Contact outreach file uploaded")
+                    self.logger.info("Contact outreach file uploaded")
 
                     # Cleanup
                     os.remove(contacts_path)
 
                 except Exception as e:
                     error_msg = f"Contacts upload failed: {str(e)[:100]}"
-                    print(f"   ⚠️  {error_msg}")
+                    self.logger.warning(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 8: Log to Google Sheets
-            print(f"   Logging to Google Sheets...")
+            self.logger.info("Logging to Google Sheets")
             sheet_row_id = self._log_to_sheets(state, folder_url)
-            print(f"   ✓ Logged to row {sheet_row_id}")
+            self.logger.info(f"Logged to row {sheet_row_id}")
 
             result['sheet_row_id'] = sheet_row_id
 
@@ -665,7 +670,7 @@ class OutputPublisher:
 
         except Exception as e:
             error_msg = f"Layer 7 (Output Publisher) catastrophic failure: {str(e)}"
-            print(f"   ✗ {error_msg}")
+            self.logger.error(error_msg)
 
             errors_list = state.get("errors") or []
             if isinstance(errors_list, str):
@@ -693,51 +698,53 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 7: Output Publisher")
-    print("="*60)
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer7")
+
+    logger.info("="*60)
+    logger.info("LAYER 7: Output Publisher")
+    logger.info("="*60)
 
     publisher = OutputPublisher()
     updates = publisher.publish(state)
 
-    # Print results summary
-    print("\n" + "="*60)
-    print("LAYER 7 OUTPUT SUMMARY")
-    print("="*60)
+    # Log results summary
+    logger.info("="*60)
+    logger.info("LAYER 7 OUTPUT SUMMARY")
+    logger.info("="*60)
 
     # Dossier
     if updates.get("dossier_generated"):
-        print("✅ Dossier: Generated")
+        logger.info("✅ Dossier: Generated")
     else:
-        print("❌ Dossier: Failed")
+        logger.error("❌ Dossier: Failed")
 
     # Local files
     if updates.get("local_save_success"):
         local_paths = updates.get("local_paths", {})
-        print(f"✅ Local Files: {len(local_paths)} files saved")
+        logger.info(f"✅ Local Files: {len(local_paths)} files saved")
         if local_paths.get('dossier'):
-            print(f"   📄 Dossier: {local_paths['dossier']}")
+            logger.info(f"   📄 Dossier: {local_paths['dossier']}")
     else:
-        print("❌ Local Files: Save failed")
+        logger.error("❌ Local Files: Save failed")
 
     # MongoDB
     if updates.get("mongodb_persisted"):
-        print("✅ MongoDB: Job record updated")
+        logger.info("✅ MongoDB: Job record updated")
     else:
-        print("⚠️  MongoDB: Update failed or skipped")
+        logger.warning("MongoDB: Update failed or skipped")
 
     # Drive
     if updates.get("drive_folder_url"):
-        print(f"✅ Drive Folder: {updates['drive_folder_url']}")
+        logger.info(f"✅ Drive Folder: {updates['drive_folder_url']}")
     else:
-        print("⚠️  Drive: No folder created")
+        logger.warning("Drive: No folder created")
 
     # Sheets
     if updates.get("sheet_row_id"):
-        print(f"✅ Sheets: Logged to row {updates['sheet_row_id']}")
+        logger.info(f"✅ Sheets: Logged to row {updates['sheet_row_id']}")
     else:
-        print("⚠️  Sheets: Not logged")
+        logger.warning("Sheets: Not logged")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates
