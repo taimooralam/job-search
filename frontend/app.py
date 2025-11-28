@@ -921,7 +921,7 @@ def generate_cv_pdf_from_editor(job_id: str):
     from io import BytesIO
 
     # Get runner service URL from environment
-    runner_url = os.getenv("RUNNER_SERVICE_URL", "http://72.61.92.76:8000")
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
     endpoint = f"{runner_url}/api/jobs/{job_id}/cv-editor/pdf"
 
     # Get authentication token for runner service
