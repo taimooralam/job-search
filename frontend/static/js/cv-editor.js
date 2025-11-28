@@ -484,11 +484,18 @@ class CVEditor {
         const bottomMargin = document.getElementById('cv-margin-bottom');
         const leftMargin = document.getElementById('cv-margin-left');
 
+        // Helper to safely parse float with fallback for empty/invalid values
+        const safeParseFloat = (element, defaultValue) => {
+            if (!element) return defaultValue;
+            const value = parseFloat(element.value);
+            return isNaN(value) ? defaultValue : value;
+        };
+
         return {
-            top: topMargin ? parseFloat(topMargin.value) : 1.0,
-            right: rightMargin ? parseFloat(rightMargin.value) : 1.0,
-            bottom: bottomMargin ? parseFloat(bottomMargin.value) : 1.0,
-            left: leftMargin ? parseFloat(leftMargin.value) : 1.0
+            top: safeParseFloat(topMargin, 1.0),
+            right: safeParseFloat(rightMargin, 1.0),
+            bottom: safeParseFloat(bottomMargin, 1.0),
+            left: safeParseFloat(leftMargin, 1.0)
         };
     }
 
@@ -760,7 +767,7 @@ class CVEditor {
     }
 
     /**
-     * Update toolbar button active states (Phase 2, Phase 5: ARIA support)
+     * Update toolbar button active states (Phase 2, Phase 5: ARIA support + undo/redo)
      */
     updateToolbarState() {
         if (!this.editor) return;
@@ -799,6 +806,33 @@ class CVEditor {
                 btn.setAttribute('aria-pressed', isActive.toString());
             }
         });
+
+        // Phase 5.2: Update undo/redo button states
+        this.updateUndoRedoButtons();
+    }
+
+    /**
+     * Update undo/redo button states based on editor history (Phase 5.2)
+     */
+    updateUndoRedoButtons() {
+        if (!this.editor) return;
+
+        const undoBtn = document.getElementById('cv-undo-btn');
+        const redoBtn = document.getElementById('cv-redo-btn');
+
+        if (undoBtn) {
+            const canUndo = this.editor.can().undo();
+            undoBtn.disabled = !canUndo;
+            undoBtn.classList.toggle('text-gray-600', canUndo);
+            undoBtn.classList.toggle('text-gray-400', !canUndo);
+        }
+
+        if (redoBtn) {
+            const canRedo = this.editor.can().redo();
+            redoBtn.disabled = !canRedo;
+            redoBtn.classList.toggle('text-gray-600', canRedo);
+            redoBtn.classList.toggle('text-gray-400', !canRedo);
+        }
     }
 
     /**
@@ -1200,34 +1234,339 @@ function debouncePageBreakUpdate() {
 }
 
 // ============================================================================
-// Phase 5: Keyboard Shortcuts
-// ============================================================================
-// The following shortcuts are supported:
-// - Ctrl/Cmd+B: Bold (handled by TipTap)
-// - Ctrl/Cmd+I: Italic (handled by TipTap)
-// - Ctrl/Cmd+U: Underline (handled by TipTap)
-// - Ctrl/Cmd+Z: Undo (handled by TipTap)
-// - Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z: Redo (handled by TipTap)
-// - Ctrl/Cmd+S: Save CV manually
-// - Esc: Close editor panel
-// - Tab: Increase indent (handled in editor)
-// - Shift+Tab: Decrease indent (handled in editor)
+// Phase 5.2: Comprehensive Keyboard Shortcuts
 // ============================================================================
 
-document.addEventListener('keydown', (e) => {
-    if (!cvEditorInstance || !cvEditorInstance.editor) return;
+/**
+ * Keyboard shortcuts supported by the CV Editor:
+ *
+ * TEXT FORMATTING:
+ * - Ctrl/Cmd+B: Bold
+ * - Ctrl/Cmd+I: Italic
+ * - Ctrl/Cmd+U: Underline
+ * - Ctrl/Cmd+Shift+X: Strikethrough
+ *
+ * TEXT ALIGNMENT:
+ * - Ctrl/Cmd+Shift+L: Align left
+ * - Ctrl/Cmd+Shift+E: Align center
+ * - Ctrl/Cmd+Shift+R: Align right
+ * - Ctrl/Cmd+Shift+J: Justify
+ *
+ * LISTS:
+ * - Ctrl/Cmd+Shift+7: Numbered list
+ * - Ctrl/Cmd+Shift+8: Bullet list
+ *
+ * DOCUMENT ACTIONS:
+ * - Ctrl/Cmd+S: Save CV (prevents browser save dialog)
+ * - Ctrl/Cmd+Z: Undo (handled by TipTap)
+ * - Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y: Redo (handled by TipTap)
+ * - Ctrl/Cmd+P: Export PDF (prevents browser print dialog)
+ *
+ * NAVIGATION:
+ * - Escape: Close editor panel
+ * - Ctrl/Cmd+/: Toggle keyboard shortcuts reference panel
+ *
+ * INDENTATION:
+ * - Tab: Increase indent (handled in editor)
+ * - Shift+Tab: Decrease indent (handled in editor)
+ */
 
-    // Ctrl+S to save (override browser default)
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        cvEditorInstance.save();
-        cvEditorInstance.announceToScreenReader('CV saved');
-        return;
+/**
+ * Global keyboard shortcut handler for CV editor
+ */
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Only process shortcuts when editor is open
+        const panel = document.getElementById('cv-editor-panel');
+        if (!panel || panel.classList.contains('translate-x-full')) {
+            return;
+        }
+
+        if (!cvEditorInstance || !cvEditorInstance.editor) return;
+
+        const isMac = /Mac/.test(navigator.platform);
+        const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+        // Ctrl/Cmd+S: Save
+        if (modKey && e.key === 's') {
+            e.preventDefault();
+            cvEditorInstance.save();
+            cvEditorInstance.announceToScreenReader('CV saved manually');
+            return;
+        }
+
+        // Ctrl/Cmd+P: Export PDF
+        if (modKey && e.key === 'p') {
+            e.preventDefault();
+            exportCVToPDF();
+            return;
+        }
+
+        // Ctrl/Cmd+/: Toggle keyboard shortcuts reference
+        if (modKey && e.key === '/') {
+            e.preventDefault();
+            toggleKeyboardShortcutsPanel();
+            return;
+        }
+
+        // Escape: Close editor panel
+        if (e.key === 'Escape') {
+            // If shortcuts panel is open, close it first
+            const shortcutsPanel = document.getElementById('keyboard-shortcuts-panel');
+            if (shortcutsPanel && !shortcutsPanel.classList.contains('hidden')) {
+                toggleKeyboardShortcutsPanel();
+                return;
+            }
+            // Otherwise close editor panel
+            closeCVEditorPanel();
+            return;
+        }
+
+        // TEXT ALIGNMENT (Ctrl/Cmd+Shift+L/E/R/J)
+        if (modKey && e.shiftKey) {
+            switch (e.key.toLowerCase()) {
+                case 'l':
+                    e.preventDefault();
+                    cvEditorInstance.applyFormat('textAlign', 'left');
+                    cvEditorInstance.announceToScreenReader('Aligned left');
+                    return;
+                case 'e':
+                    e.preventDefault();
+                    cvEditorInstance.applyFormat('textAlign', 'center');
+                    cvEditorInstance.announceToScreenReader('Aligned center');
+                    return;
+                case 'r':
+                    e.preventDefault();
+                    cvEditorInstance.applyFormat('textAlign', 'right');
+                    cvEditorInstance.announceToScreenReader('Aligned right');
+                    return;
+                case 'j':
+                    e.preventDefault();
+                    cvEditorInstance.applyFormat('textAlign', 'justify');
+                    cvEditorInstance.announceToScreenReader('Justified');
+                    return;
+                case 'x':
+                    e.preventDefault();
+                    cvEditorInstance.editor.chain().focus().toggleStrike().run();
+                    cvEditorInstance.announceToScreenReader('Strikethrough toggled');
+                    return;
+            }
+        }
+
+        // LISTS (Ctrl/Cmd+Shift+7 for numbered, Ctrl/Cmd+Shift+8 for bullet)
+        if (modKey && e.shiftKey) {
+            if (e.key === '7' || e.key === '&') { // & is Shift+7 on some keyboards
+                e.preventDefault();
+                cvEditorInstance.applyFormat('orderedList');
+                cvEditorInstance.announceToScreenReader('Numbered list toggled');
+                return;
+            }
+            if (e.key === '8' || e.key === '*') { // * is Shift+8 on some keyboards
+                e.preventDefault();
+                cvEditorInstance.applyFormat('bulletList');
+                cvEditorInstance.announceToScreenReader('Bullet list toggled');
+                return;
+            }
+        }
+    });
+}
+
+/**
+ * Toggle keyboard shortcuts reference panel
+ */
+function toggleKeyboardShortcutsPanel() {
+    let panel = document.getElementById('keyboard-shortcuts-panel');
+
+    // Create panel if it doesn't exist
+    if (!panel) {
+        panel = createKeyboardShortcutsPanel();
+        document.body.appendChild(panel);
     }
 
-    // Esc to close panel
-    if (e.key === 'Escape') {
-        closeCVEditorPanel();
-        return;
+    // Toggle visibility
+    panel.classList.toggle('hidden');
+
+    // Focus close button when opening
+    if (!panel.classList.contains('hidden')) {
+        const closeButton = panel.querySelector('[data-action="close"]');
+        if (closeButton) {
+            setTimeout(() => closeButton.focus(), 100);
+        }
     }
-});
+}
+
+/**
+ * Create keyboard shortcuts reference panel HTML
+ */
+function createKeyboardShortcutsPanel() {
+    const isMac = /Mac/.test(navigator.platform);
+    const modKey = isMac ? '⌘' : 'Ctrl';
+
+    const panel = document.createElement('div');
+    panel.id = 'keyboard-shortcuts-panel';
+    panel.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 hidden';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-labelledby', 'shortcuts-title');
+
+    panel.innerHTML = `
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
+                <h2 id="shortcuts-title" class="text-xl font-semibold text-gray-900">
+                    Keyboard Shortcuts
+                </h2>
+                <button type="button"
+                        data-action="close"
+                        onclick="toggleKeyboardShortcutsPanel()"
+                        class="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded p-1"
+                        aria-label="Close keyboard shortcuts panel">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-4 space-y-6">
+                <!-- Text Formatting -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Text Formatting</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Bold</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+B</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Italic</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+I</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Underline</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+U</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Strikethrough</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+X</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Alignment -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Text Alignment</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Align Left</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+L</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Align Center</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+E</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Align Right</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+R</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Justify</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+J</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lists -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Lists</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Numbered List</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+7</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Bullet List</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+8</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indentation -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Indentation</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Increase Indent</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">Tab</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Decrease Indent</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">Shift+Tab</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Actions -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Document Actions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Save CV</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+S</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Export PDF</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+P</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Undo</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Z</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Redo</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+Shift+Z</kbd>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Navigation</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Close Editor</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">Esc</kbd>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700">Shortcuts Help</span>
+                            <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded">${modKey}+/</kbd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                <p class="text-sm text-gray-600 text-center">
+                    Press <kbd class="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">${modKey}+/</kbd>
+                    anytime to view this help
+                </p>
+            </div>
+        </div>
+    `;
+
+    // Close on background click
+    panel.addEventListener('click', (e) => {
+        if (e.target === panel) {
+            toggleKeyboardShortcutsPanel();
+        }
+    });
+
+    return panel;
+}
+
+// Initialize keyboard shortcuts when script loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupKeyboardShortcuts);
+} else {
+    setupKeyboardShortcuts();
+}
