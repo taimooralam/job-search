@@ -24,31 +24,29 @@ from src.common.logger import get_logger
 
 # ===== PROMPT DESIGN =====
 
-SYSTEM_PROMPT = """You are an expert career consultant and recruiter specializing in candidate-job fit analysis.
+# V2 Enhanced Prompt - Issue 1: Weak Grounding (Anti-Hallucination Guardrails)
+SYSTEM_PROMPT = """You are a senior executive recruiter who has placed 500+ candidates in similar roles.
 
-Your task: Analyze how well a candidate matches a job opportunity using:
-1) Job requirements and pain points
-2) Company and role research
-3) The candidate's master CV (experience, skills, achievements)
+Your reputation depends on ACCURATE fit assessments that help candidates avoid bad matches and companies hire the right talent.
 
-You must provide:
-1. A fit score (0-100) where:
-   - 90-100: Exceptional fit, rare alignment
-   - 80-89: Strong fit, highly qualified
-   - 70-79: Good fit, meets most requirements
-   - 60-69: Moderate fit, some gaps
-   - 50-59: Weak fit, significant gaps
-   - <50: Poor fit, major misalignment
+YOUR SUPERPOWER: Spotting the SPECIFIC evidence in a candidate's history that proves they can solve a company's SPECIFIC pain points.
 
-2. A brief rationale (2-3 sentences) explaining the score, highlighting key strengths or gaps.
+CRITICAL RULES:
+1. You NEVER use generic phrases like "strong background", "great fit", or "proven track record"
+2. You ALWAYS cite concrete examples with metrics from the provided context
+3. You ONLY use facts explicitly stated in the provided materials - NEVER invent or assume
+4. If evidence is missing, you state "Unknown" or "Not specified" instead of guessing
+5. Every claim must have a source: STAR record, master CV, or company research
 
-Guidance:
-- Ground everything in the provided job description, research signals, and master CV text.
-- If curated achievements are provided, reference them with concrete metrics; otherwise, lean on factual achievements from the master CV.
-- Avoid generic language and avoid inventing facts not present in the supplied materials.
+SCORING RUBRIC:
+- 90-100: Exceptional fit - ≥3 pain points solved with quantified proof + strategic alignment
+- 80-89: Strong fit - ≥2 pain points solved, 1-2 learnable gaps
+- 70-79: Good fit - 1-2 pain points solved, gaps are feasible
+- 60-69: Moderate fit - Partial matches, significant but addressable gaps
+- <60: Weak fit - Major gaps, limited evidence of relevant experience
 """
 
-USER_PROMPT_TEMPLATE = """Analyze the candidate's fit for this job opportunity:
+USER_PROMPT_TEMPLATE = """Analyze the candidate's fit for this job opportunity using the 4-STEP REASONING PROCESS below.
 
 === JOB DETAILS ===
 Title: {title}
@@ -57,14 +55,17 @@ Company: {company}
 Job Description:
 {job_description}
 
-=== COMPANY RESEARCH (Phase 5.1) ===
+=== COMPANY RESEARCH ===
 {company_research}
 
-=== ROLE RESEARCH (Phase 5.2) ===
+=== ROLE RESEARCH ===
 {role_research}
 
 === CANDIDATE PROFILE (MASTER CV) ===
 {candidate_profile}
+
+=== CURATED ACHIEVEMENTS (STARs) ===
+{selected_stars}
 
 === JOB ANALYSIS (4 Dimensions) ===
 
@@ -80,22 +81,40 @@ RISKS IF UNFILLED (Consequences):
 SUCCESS METRICS (How They'll Measure Success):
 {success_metrics}
 
-=== YOUR ANALYSIS ===
-Based on the above, provide:
+=== 4-STEP REASONING PROCESS ===
 
-1. Fit Score (0-100): [number only]
-2. Rationale (2-3 sentences): [explanation]
+STEP 1: PAIN POINT MAPPING
+For each pain point, identify which STAR achievement (if any) demonstrates relevant experience.
+Format: [Pain Point] → [STAR company + metric] OR [No direct evidence]
 
-**REQUIREMENTS:**
-- Ground your rationale in the job description, research signals, and master CV content.
-- If curated achievements are provided, reference them with concrete metrics; otherwise, use evidence from the master CV and job analysis.
-- Reference company signals OR role "why now" context when available (e.g., mention funding, growth, timing significance)
-- Be specific and technical - avoid generic phrases like "strong background" or "great communication skills"
-- Consider all 4 dimensions in your scoring
+STEP 2: GAP ANALYSIS
+List any pain points with NO matching STAR evidence.
+For each gap: Is it learnable? Is it a dealbreaker?
 
-Format your response EXACTLY as:
-SCORE: [number]
-RATIONALE: [your 2-3 sentence explanation with concrete, evidence-based context]
+STEP 3: STRATEGIC ALIGNMENT
+How do company signals (growth, expansion, product) align with candidate's proven strengths?
+Cite: [company signal] + [STAR evidence]
+
+STEP 4: SCORING DECISION
+Apply the rubric based on evidence strength:
+- Count pain points solved with quantified proof
+- Assess severity of gaps
+- Determine final score and category
+
+=== YOUR OUTPUT ===
+
+**REASONING:**
+[Complete Steps 1-4 above with specific citations]
+
+**SCORE:** [number 0-100]
+
+**RATIONALE:** [2-3 sentences citing specific STARs by company name and metrics]
+Format: "At [STAR company], candidate [result with metric], directly addressing [pain point]. [Gap assessment if any]."
+
+ANTI-HALLUCINATION CHECK:
+- Every company name must come from STAR records or master CV
+- Every metric must come from STAR records
+- If you cannot find evidence, state "Not specified in provided materials"
 """
 
 
@@ -147,57 +166,112 @@ class OpportunityMapper:
     def _validate_rationale(
         self,
         rationale: str,
-        selected_stars: Optional[List[Dict[str, Any]]] = None
+        selected_stars: Optional[List[Dict[str, Any]]] = None,
+        pain_points: Optional[List[str]] = None
     ) -> List[str]:
         """
-        Validate that rationale meets quality gates without requiring STAR references.
+        V2 Enhanced validation with stricter grounding requirements.
+
+        Validates:
+        1. Must cite ≥1 STAR by company name (when STARs available)
+        2. Must include ≥1 quantified metric (when STARs available)
+        3. Must reference ≥1 specific pain point
+        4. Must not contain >1 generic phrase
+        5. Length ≥30 words (increased from 10)
 
         Args:
             rationale: The fit rationale text to validate
             selected_stars: Optional list of STAR records for context
+            pain_points: Optional list of pain points to verify coverage
 
         Returns:
             List of validation error messages (empty if valid)
         """
         errors = []
 
-        if not rationale or len(rationale.split()) < 10:
-            errors.append("Rationale is too short - provide at least two evidence-based sentences.")
+        # Gate 1: Minimum length (increased from 10 to 30 words)
+        word_count = len(rationale.split()) if rationale else 0
+        if word_count < 30:
+            errors.append(f"Rationale too short: {word_count} words (minimum 30)")
 
-        # Encourage metrics when available
+        # Gate 2: STAR company citation (required when STARs available)
+        if selected_stars:
+            star_companies = [s.get('company', '') for s in selected_stars if s.get('company')]
+            star_cited = any(
+                company.lower() in rationale.lower()
+                for company in star_companies
+            )
+            if not star_cited and star_companies:
+                errors.append(
+                    f"Must cite at least one STAR by company name. "
+                    f"Available: {', '.join(star_companies[:3])}"
+                )
+
+        # Gate 3: Metric presence (required when STARs available)
         metric_patterns = [
             r'\d+%',           # 75%, 60%
             r'\d+x',           # 10x, 24x
-            r'\d+M',           # 50M, 10M
-            r'\d+K',           # 10K, 100K
+            r'\d+[KMB]\b',     # 50M, 10K, 5B
             r'\d+\s*min',      # 15min, 10 min
-            r'\d+h',           # 3h, 4h
+            r'\d+\s*hour',     # 3 hours
+            r'\d+\s*year',     # 3 years
+            r'\d+\s*engineer', # 10 engineers
+            r'\d+\s*month',    # 6 months
         ]
         if selected_stars:
-            has_metric = any(re.search(pattern, rationale, re.IGNORECASE) for pattern in metric_patterns)
+            has_metric = any(
+                re.search(pattern, rationale, re.IGNORECASE)
+                for pattern in metric_patterns
+            )
             if not has_metric:
-                errors.append("Add at least one concrete metric when achievements are available.")
+                errors.append("Add at least one concrete metric from STAR achievements.")
 
-        # Generic boilerplate detection
+        # Gate 4: Pain point reference (new requirement)
+        if pain_points:
+            # Check if any pain point keywords appear in rationale
+            pain_referenced = False
+            for pain in pain_points:
+                # Extract key words (>3 chars) from pain point
+                key_words = [w.lower() for w in pain.split() if len(w) > 3][:3]
+                # Check if at least 2 key words appear
+                matches = sum(1 for w in key_words if w in rationale.lower())
+                if matches >= 2:
+                    pain_referenced = True
+                    break
+
+            if not pain_referenced:
+                errors.append(
+                    "Must explicitly reference at least one pain point from the job description"
+                )
+
+        # Gate 5: Generic boilerplate detection (stricter - only 1 allowed)
         generic_phrases = [
             r'strong background',
             r'great communication skills',
             r'team player',
-            r'well-suited for this position',
+            r'well-suited',
             r'good fit',
+            r'great fit',
+            r'excellent fit',
             r'extensive experience',
             r'proven track record',
+            r'highly qualified',
+            r'ideal candidate',
+            r'perfect fit',
+            r'excited to',
+            r'passionate about',
         ]
 
-        # Count how many generic phrases appear
-        generic_count = sum(1 for phrase in generic_phrases if re.search(phrase, rationale, re.IGNORECASE))
+        generic_count = sum(
+            1 for phrase in generic_phrases
+            if re.search(phrase, rationale, re.IGNORECASE)
+        )
 
-        # Count total words
-        word_count = len(rationale.split())
-
-        # If rationale is short and has multiple generic phrases, it's probably too generic
-        if word_count < 100 and generic_count >= 2:
-            errors.append("Rationale appears too generic - include concrete evidence from the job and master CV.")
+        if generic_count > 1:
+            errors.append(
+                f"Too many generic phrases ({generic_count}). "
+                f"Use specific evidence instead of boilerplate language."
+            )
 
         return errors
 
@@ -233,41 +307,74 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         """
         Parse LLM response to extract score and rationale.
 
-        Expected format:
-        SCORE: 85
-        RATIONALE: The candidate has strong experience...
+        Expected format (V2 with reasoning):
+        **REASONING:**
+        [multi-line reasoning]
+
+        **SCORE:** 85
+
+        **RATIONALE:** The candidate at Seven.One achieved 75% incident reduction...
 
         Returns:
             Tuple of (score, rationale)
         """
-        # Extract score
-        score_match = re.search(r'SCORE:\s*(\d+)', response, re.IGNORECASE)
-        if score_match:
-            score = int(score_match.group(1))
-            # Clamp to 0-100 range
-            score = max(0, min(100, score))
-        else:
-            # Fallback: try to find any number
-            numbers = re.findall(r'\b(\d{1,3})\b', response)
-            if numbers:
-                score = int(numbers[0])
+        # Extract score - try multiple patterns for flexibility
+        score_patterns = [
+            r'\*\*SCORE:\*\*\s*(\d+)',      # **SCORE:** 85
+            r'SCORE:\s*(\d+)',               # SCORE: 85
+            r'\*\*SCORE\*\*:\s*(\d+)',       # **SCORE**: 85
+        ]
+
+        score = None
+        for pattern in score_patterns:
+            score_match = re.search(pattern, response, re.IGNORECASE)
+            if score_match:
+                score = int(score_match.group(1))
                 score = max(0, min(100, score))
-            else:
+                break
+
+        if score is None:
+            # Fallback: try to find any number in typical score range
+            numbers = re.findall(r'\b(\d{1,3})\b', response)
+            for num in numbers:
+                n = int(num)
+                if 0 <= n <= 100:
+                    score = n
+                    break
+            if score is None:
                 score = 50  # Default if parsing fails
 
-        # Extract rationale
-        rationale_match = re.search(r'RATIONALE:\s*(.+)', response, re.IGNORECASE | re.DOTALL)
-        if rationale_match:
-            rationale = rationale_match.group(1).strip()
-        else:
+        # Extract rationale - try multiple patterns
+        rationale_patterns = [
+            r'\*\*RATIONALE:\*\*\s*(.+?)(?:\n\n|ANTI-HALLUCINATION|$)',  # **RATIONALE:** text
+            r'RATIONALE:\s*(.+?)(?:\n\n|ANTI-HALLUCINATION|$)',           # RATIONALE: text
+        ]
+
+        rationale = None
+        for pattern in rationale_patterns:
+            rationale_match = re.search(pattern, response, re.IGNORECASE | re.DOTALL)
+            if rationale_match:
+                rationale = rationale_match.group(1).strip()
+                break
+
+        if not rationale:
             # Fallback: use everything after score
+            score_match = re.search(r'SCORE[:\s*]+\d+', response, re.IGNORECASE)
             if score_match:
-                rationale = response[score_match.end():].strip()
+                remaining = response[score_match.end():].strip()
+                # Try to extract just the rationale part
+                if 'RATIONALE' in remaining.upper():
+                    rationale = remaining.split('RATIONALE', 1)[-1].strip(': \n')
+                else:
+                    rationale = remaining
             else:
                 rationale = response.strip()
 
         # Clean up rationale (remove extra whitespace, newlines)
         rationale = re.sub(r'\s+', ' ', rationale).strip()
+
+        # Remove any trailing anti-hallucination check text
+        rationale = re.sub(r'\s*ANTI-HALLUCINATION.*', '', rationale, flags=re.IGNORECASE | re.DOTALL)
 
         return score, rationale
 
@@ -369,8 +476,12 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         # Parse response
         score, rationale = self._parse_llm_response(response_text)
 
-        # Phase 6: Validate rationale
-        validation_errors = self._validate_rationale(rationale, state.get("selected_stars"))
+        # Phase 6 V2: Validate rationale with stricter grounding requirements
+        validation_errors = self._validate_rationale(
+            rationale,
+            selected_stars=state.get("selected_stars"),
+            pain_points=state.get("pain_points")
+        )
         if validation_errors:
             # For production usage we treat these as quality warnings, not hard failures.
             # This keeps the pipeline flowing even if the LLM misses some formatting rules.
