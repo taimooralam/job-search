@@ -1,18 +1,24 @@
-Taimoor Alam
-Engineering Leader / Software Architect – Cloud | AdTech | DDD | Leadership
+# Taimoor Alam
+
+#### Engineering Leader / Software Architect – Cloud | AdTech | DDD | Leadership
+
 German National | International relocation (Hybrid, 2 months) | alamtaimoor.de@gmail.com | +49 176 2979 3925 | linkedin.com/in/taimooralam | English (C1), German (B2), Urdu (Native) | MSc. Computer Science TU Munich, Germany
 
-Profile
+### Profile
+
 Engineering leader with 11+ years building high-scale distributed systems and 5+ years managing cross-functional teams in AdTech and SaaS environments. Expert in modernizing legacy architectures through Domain-Driven Design and event-driven microservices, delivering 75% incident reduction and 25% faster delivery. Proven track record architecting AI-powered solutions, implementing observability at billions-per-day scale, and driving technical strategy that preserved €30M revenue through GDPR compliance. Experienced in scaling engineering organizations from startup to enterprise, reducing onboarding time by 50% while maintaining zero downtime for 3 consecutive years.
 
-Core Skills
+### Core Skills
+
 ● Leadership & Strategy: Engineering Management • Team Scaling • Talent Development • Performance Reviews • Cross-functional Collaboration • Stakeholder Management • Hiring and Onboarding
 ● AI & Architecture: Agentic AI • Event-Driven Microservices • Domain-Driven Design • CQRS • Distributed Systems • Cloud-Native Architecture • Legacy Modernization
 ● Platform & Scale: AWS (Lambda, ECS, Kinesis) • Node.js/TypeScript • Python • Real-time Data Processing • Observability • High Availability • Fault Tolerance
 ● Delivery & Innovation: Agile/SCRUM • CI/CD • Test-Driven Development • Data-Driven Decision Making • Technical Debt Reduction • Architecture Governance
 
-Professional Experience
-Technical Lead (Addressable TV) — Seven.One Entertainment Group — Munich, DE | 2020–Present
+### Professional Experience
+
+#### Technical Lead (Addressable TV) — Seven.One Entertainment Group — Munich, DE | 2020–Present
+
 • Led multi-year transformation of large-scale monolithic AdTech platform processing millions of impressions daily into choreographed event-driven microservices in AWS, achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery
 • devised a technical vision and roadmap, aligning with company strategy of increasing reach and consented users, preserved and increased ad impressions despite global industry wide decline in linear TV viewership
 • designed and implemented an Architectural Runway to simultaneously address extensive technical debt and accelerate feature development. Successfully executed a strategic, incremental multi-year roadmap, achieving ~70% refactoring of complex large scale distributed system components while continuously delivering business-critical features, balancing quality with speed of shipping
@@ -51,7 +57,8 @@ Technical Lead (Addressable TV) — Seven.One Entertainment Group — Munich, DE
 • Hardskills: • domain-driven-design • architecture • architectural runway nodejs lambda s3 aws redis ecs eventbridge cloudfront microservices DDD python git terraform
 • Softskills: technical leadership • mentoring • AWS • typescript • javascript • nodejs • jest • lambda • handling technical debt • overhauling legacy systems • mentoring • leading architectural initiatives • requirement analysis • nodejs • python • git • terraform • AWS • lambda • S3 • SCRUM • hiring & interviewing risk analysis and mitigation cmp tcf gdpr
 
-Lead Software – Engineer Samdock (Daypaio) – Munich, DE | 2019–2020
+#### Lead Software – Engineer Samdock (Daypaio) – Munich, DE | 2019–2020
+
 ● Led event storming meetings with all the stakeholders to create the domain and requirements of a CRM that we developed from scrtatch and got running for 25 new production tenants.
 ● Architected and launched event-sourced CRM platform from inception to market using CQRS pattern with NestJS/TypeScript and EventStore, enabling real-time data consistency across microservicesDrove test coverage with Jest; improved stability and release confidence.
 ● Established engineering standards including reusable Angular component library and comprehensive Jest testing framework, achieving 85% code coverage and reducing bugs by 40%.
@@ -64,7 +71,8 @@ Lead Software – Engineer Samdock (Daypaio) – Munich, DE | 2019–2020
 ● Hardskills: • microservices • event-driven archiecture • angular GCP microservices DDD python git terraform css jest
 ● Softskills: technical leadership • mentoring • AWS • typescript • javascript • nodejs • jest • lambda • handling technical debt • overhauling legacy systems • mentoring • leading architectural initiatives • requirement analysis • nodejs • python • git • terraform • AWS • lambda • S3 • SCRUM • hiring & interviewing risk analysis and mitigation cmp tcf gdpr
 
-KI Labs – Intermediate Backend Engineer — Munich, DE | 2018–2019
+#### Intermediate Backend — Engineer KI Labs — Munich, DE | 2018–2019
+
 ● Built REST APIs in Flask over a data pipeline (onion architecture); added JWT auth; automated tests (unit/E2E/snapshots).
 ● Developed comprehensive test suites including unit, E2E, and snapshot tests, reducing production incidents by 35%
 ● Created Swagger-based API documentation system improving developer onboarding and reducing support requests by 40%
@@ -73,13 +81,15 @@ KI Labs – Intermediate Backend Engineer — Munich, DE | 2018–2019
 ● Designed event-driven communication patterns between microservices using message queues
 ● Skills: Python|MongoDB|Git|Cloud Computing|Cloud Development|Cloud Development|NoSQL|Onion Architecture|Software ArchitectureOOP|Web DevelopmentHTML|Agile MethodologiesLinux|BackendInterpersonal Communication|SCRUM
 
-Backend Engineer — Fortis (Research Project)— Munich, DE | 2018
+#### Backend Engineer — Fortis (Research Project)— Munich, DE | 2018
+
 ● Designed Node.js microservices; set up RabbitMQ pub/sub; API standards with Swagger.
 ● Set up RabbitMQ pub/sub messaging for asynchronous microservice communication
 ● Participated in SCRUM ceremonies with regular client demos and feedback incorporation
 ● Skills: MongoDB | Git | Cloud Computing | Cloud Development | JavaScript | NoSQL | Software Architecture | OOP | SQL | Web Development | HTML | Agile Methodologies | Linux | Node.js | Docker Products | Design Patterns | event driven architecture | Backend | Interpersonal Communication
 
-Software Engineer (IoT) — OSRAM — Munich, DE | 2016–2018
+#### Software Engineer (IoT) — OSRAM — Munich, DE | 2016–2018
+
 ● Participated in SCRUM ceremonies with regular client demos and feedback incorporation
 ● Enhanced Erbium CoAP implementation with OSCOAP security features for multicast communication in IoT lighting
 ● Created cross-platform Qt/C++ control application for mobile and desktop, used extensively for business demonstrations
@@ -89,7 +99,8 @@ Software Engineer (IoT) — OSRAM — Munich, DE | 2016–2018
 ● Developed Python-based CoAP-to-UDP translation middleware enabling integration of non-CoAP third-party devices
 ● Skills: Python | Git | Cloud Development | C++ | OOP | Web Development | HTML | Agile Methodologies | Linux | Design Patterns | Backend | Interpersonal Communication | SCRUM
 
-Software Engineer — Clary Icon — Islamabad, PK | 2014–2016
+#### Software Engineer — Clary Icon — Islamabad, PK | 2014–2016
+
 ● Reverse-engineered OpenPhone SIP client creating enhanced UI using Qt C++ widgets framework
 ● Developed WebRTC video recording solution using licode server, REST APIs, and FFmpeg transcoding with MySQL persistence
 ● Built Node.js playback service handling concurrent video streams with timestamp synchronization
@@ -98,6 +109,7 @@ Software Engineer — Clary Icon — Islamabad, PK | 2014–2016
 ● Reduced video processing time by 40% through FFmpeg optimization and parallel processing
 ● Skills: Nodejs | C++ | Qt | HTML | JavaScript | REST | C# | WPF | linux | Visual Studio | SIP | ffmpeg | MongoDB | Git | nodejs | JavaScript | C++ | OOP | SQL | Web Development | Cascading Style Sheets (CSS) | HTML | Linux | Design Patterns | Backend | Interpersonal Communication
 
-Education & Certifications
+### Education & Certifications
+
 ● M.Sc. Computer Science — Technical University of Munich | B.Sc. Computer Software Engineering — GIK Institute
 ● Selected certs: AWS Essentials, ECS & Multi-Region LB, Data Scientist’s Toolbox, R Programming.
