@@ -39,6 +39,9 @@
   - [x] Fixed "Nonein" Parse Error: Defense-in-depth margin validation across 3 layers
   - [x] Fixed Blank PDF from Pipeline: Markdown-to-TipTap migration in runner service
   - [x] All margin validation tested with 48 PDF service tests
+- [x] Process Button Bug Fix ✅ **COMPLETED 2025-11-28** (Added missing showToast function, improved error handling in processJobDetail(); 22 unit tests passing)
+- [x] CV WYSIWYG Sync Bug Fix ✅ **COMPLETED 2025-11-28** (Replaced markdown rendering with TipTap JSON rendering; added renderCVPreview() and tiptapJsonToHtml() functions; 34 unit tests passing)
+- [x] PDF Service Availability Issue Fix ✅ **COMPLETED 2025-11-28** (Root cause: Old docker-compose.runner.yml on VPS + CI/CD not copying compose file. Fixed by: 1) Updated CI/CD to copy docker-compose.runner.yml to VPS, 2) Added Playwright startup validation in pdf_service/app.py, 3) Increased Playwright wait time from 10s to 20s. Result: 58 tests passing [49 PDF service + 9 runner integration]. See plans/pdf-service-debug-plan.md)
 
 ---
 
