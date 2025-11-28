@@ -11,6 +11,7 @@ Provides a table view of Level-2 MongoDB job data with:
 Stack: Flask + HTMX + Tailwind CSS (CDN)
 """
 
+import logging
 import os
 import time
 from datetime import datetime
@@ -28,6 +29,14 @@ from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 load_dotenv()
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Import and register blueprints
 try:
@@ -930,10 +939,13 @@ def generate_cv_pdf_from_editor(job_id: str):
     headers = {}
     if runner_token:
         headers["Authorization"] = f"Bearer {runner_token}"
+        logger.info(f"PDF generation request for job {job_id} - authentication configured")
     else:
-        logger.warning("RUNNER_API_SECRET not set - runner service will reject request")
+        logger.warning(f"RUNNER_API_SECRET not set - runner service may reject request for job {job_id}")
 
     try:
+        logger.info(f"Requesting PDF generation from {endpoint}")
+
         # Proxy request to runner service
         response = requests.post(
             endpoint,
@@ -942,13 +954,24 @@ def generate_cv_pdf_from_editor(job_id: str):
             stream=True
         )
 
+        logger.info(f"Runner service responded with status {response.status_code}")
+
+        if response.status_code == 401:
+            logger.error(f"Authentication failed for job {job_id} - check RUNNER_API_SECRET configuration")
+            return jsonify({
+                "error": "Authentication failed. Please contact support.",
+                "detail": "RUNNER_API_SECRET not configured correctly"
+            }), 401
+
         if response.status_code != 200:
             # Try to get error message from runner
             try:
                 error_data = response.json()
                 error_msg = error_data.get("detail", "PDF generation failed")
+                logger.error(f"PDF generation failed for job {job_id}: {error_msg}")
             except:
                 error_msg = f"PDF generation failed with status {response.status_code}"
+                logger.error(f"PDF generation failed for job {job_id}: status {response.status_code}, body: {response.text[:200]}")
 
             return jsonify({"error": error_msg}), response.status_code
 
@@ -962,6 +985,8 @@ def generate_cv_pdf_from_editor(job_id: str):
             if match:
                 filename = match.group(1)
 
+        logger.info(f"PDF generated successfully for job {job_id}, filename: {filename}")
+
         # Stream PDF back to user
         return send_file(
             BytesIO(response.content),
@@ -971,11 +996,29 @@ def generate_cv_pdf_from_editor(job_id: str):
         )
 
     except requests.Timeout:
-        return jsonify({"error": "PDF generation timed out (>30s)"}), 504
+        logger.error(f"PDF generation timed out for job {job_id} after 30 seconds")
+        return jsonify({
+            "error": "PDF generation timed out (>30s). Please try again.",
+            "detail": "The runner service took too long to respond"
+        }), 504
+    except requests.ConnectionError as e:
+        logger.error(f"Failed to connect to runner service at {runner_url}: {str(e)}")
+        return jsonify({
+            "error": "PDF service unavailable. Please try again later.",
+            "detail": f"Cannot connect to runner service at {runner_url}"
+        }), 503
     except requests.RequestException as e:
-        return jsonify({"error": f"Failed to connect to runner service: {str(e)}"}), 503
+        logger.error(f"Request to runner service failed for job {job_id}: {str(e)}")
+        return jsonify({
+            "error": "Failed to connect to runner service",
+            "detail": str(e)
+        }), 503
     except Exception as e:
-        return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
+        logger.exception(f"Unexpected error during PDF generation for job {job_id}")
+        return jsonify({
+            "error": f"PDF generation failed: {str(e)}",
+            "detail": "An unexpected error occurred"
+        }), 500
 
 
 def build_pdf_html_template(
