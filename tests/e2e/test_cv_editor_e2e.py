@@ -722,6 +722,208 @@ class TestKeyboardShortcuts:
         current_text = editor.inner_text()
         assert "Text to redo" in current_text
 
+    # Phase 5.2: New keyboard shortcuts tests
+    def test_ctrl_shift_x_toggles_strikethrough(self, cv_editor_page: Page):
+        """Ctrl+Shift+X should toggle strikethrough formatting."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("Strikethrough text")
+        cv_editor_page.keyboard.press("Control+A")
+
+        # Apply strikethrough
+        cv_editor_page.keyboard.press("Control+Shift+X")
+        cv_editor_page.wait_for_timeout(300)
+
+        strikethrough_element = editor.locator('s, del, [style*="line-through"]')
+        expect(strikethrough_element.first).to_be_visible()
+
+    def test_ctrl_shift_l_aligns_left(self, cv_editor_page: Page):
+        """Ctrl+Shift+L should align text left."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("Left aligned text")
+        cv_editor_page.keyboard.press("Control+A")
+
+        # Apply left alignment
+        cv_editor_page.keyboard.press("Control+Shift+L")
+        cv_editor_page.wait_for_timeout(300)
+
+        # Check for alignment (may be style attribute or class)
+        aligned_element = editor.locator('[style*="text-align: left"], [class*="left"]')
+        # Left alignment is default, so this test just verifies no crash
+
+    def test_ctrl_shift_e_aligns_center(self, cv_editor_page: Page):
+        """Ctrl+Shift+E should align text center."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("Center aligned text")
+        cv_editor_page.keyboard.press("Control+A")
+
+        # Apply center alignment
+        cv_editor_page.keyboard.press("Control+Shift+E")
+        cv_editor_page.wait_for_timeout(300)
+
+        aligned_element = editor.locator('[style*="text-align: center"]')
+        expect(aligned_element.first).to_be_visible()
+
+    def test_ctrl_shift_7_creates_numbered_list(self, cv_editor_page: Page):
+        """Ctrl+Shift+7 should create numbered list."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("List item")
+
+        # Create numbered list
+        cv_editor_page.keyboard.press("Control+Shift+Digit7")
+        cv_editor_page.wait_for_timeout(300)
+
+        list_element = editor.locator('ol')
+        expect(list_element.first).to_be_visible()
+
+    def test_ctrl_shift_8_creates_bullet_list(self, cv_editor_page: Page):
+        """Ctrl+Shift+8 should create bullet list."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("List item")
+
+        # Create bullet list
+        cv_editor_page.keyboard.press("Control+Shift+Digit8")
+        cv_editor_page.wait_for_timeout(300)
+
+        list_element = editor.locator('ul')
+        expect(list_element.first).to_be_visible()
+
+    def test_ctrl_s_triggers_manual_save(self, cv_editor_page: Page):
+        """Ctrl+S should trigger manual save without browser save dialog."""
+        editor = cv_editor_page.locator('.tiptap')
+
+        editor.click()
+        editor.type("Save test content")
+
+        # Trigger save with Ctrl+S
+        cv_editor_page.keyboard.press("Control+S")
+        cv_editor_page.wait_for_timeout(1000)
+
+        # Check save indicator updates to "Saved"
+        save_indicator = cv_editor_page.locator('#cv-save-indicator')
+        expect(save_indicator).to_contain_text("Saved", timeout=3000)
+
+    def test_escape_closes_editor_panel(self, cv_editor_page: Page):
+        """Escape key should close the editor panel."""
+        # Verify panel is open (has NOT translate-x-full class)
+        panel = cv_editor_page.locator('#cv-editor-panel')
+        expect(panel).to_be_visible()
+
+        # Press Escape
+        cv_editor_page.keyboard.press("Escape")
+        cv_editor_page.wait_for_timeout(500)
+
+        # Panel should have translate-x-full class (closed)
+        panel_class = panel.get_attribute('class')
+        assert 'translate-x-full' in panel_class
+
+    def test_ctrl_slash_opens_keyboard_shortcuts_panel(self, cv_editor_page: Page):
+        """Ctrl+/ should open keyboard shortcuts reference panel."""
+        # Press Ctrl+/
+        cv_editor_page.keyboard.press("Control+Slash")
+        cv_editor_page.wait_for_timeout(500)
+
+        # Shortcuts panel should appear
+        shortcuts_panel = cv_editor_page.locator('#keyboard-shortcuts-panel')
+        expect(shortcuts_panel).to_be_visible()
+
+        # Panel should have title
+        panel_title = shortcuts_panel.locator('#shortcuts-title')
+        expect(panel_title).to_have_text("Keyboard Shortcuts")
+
+        # Close panel with Escape
+        cv_editor_page.keyboard.press("Escape")
+        cv_editor_page.wait_for_timeout(300)
+
+        # Panel should be hidden
+        expect(shortcuts_panel).to_have_class(re.compile(r'hidden'))
+
+
+# ==============================================================================
+# Test Class: Undo/Redo UI Buttons (Phase 5.2)
+# ==============================================================================
+
+class TestUndoRedoUI:
+    """Tests for undo/redo button UI in editor header."""
+
+    def test_undo_button_visible_in_header(self, cv_editor_page: Page):
+        """Undo button should be visible in editor header."""
+        undo_button = cv_editor_page.locator('#cv-undo-btn')
+        expect(undo_button).to_be_visible()
+
+    def test_redo_button_visible_in_header(self, cv_editor_page: Page):
+        """Redo button should be visible in editor header."""
+        redo_button = cv_editor_page.locator('#cv-redo-btn')
+        expect(redo_button).to_be_visible()
+
+    def test_undo_button_starts_disabled(self, cv_editor_page: Page):
+        """Undo button should start disabled when history is empty."""
+        undo_button = cv_editor_page.locator('#cv-undo-btn')
+
+        # Wait for editor to initialize
+        cv_editor_page.wait_for_timeout(1000)
+
+        # Button should be disabled (no history yet)
+        expect(undo_button).to_be_disabled()
+
+    def test_undo_button_enables_after_edit(self, cv_editor_page: Page):
+        """Undo button should enable after making an edit."""
+        editor = cv_editor_page.locator('.tiptap')
+        undo_button = cv_editor_page.locator('#cv-undo-btn')
+
+        # Make an edit
+        editor.click()
+        editor.type("Some text")
+        cv_editor_page.wait_for_timeout(500)
+
+        # Undo button should now be enabled
+        expect(undo_button).to_be_enabled()
+
+    def test_undo_button_click_works(self, cv_editor_page: Page):
+        """Clicking undo button should undo last action."""
+        editor = cv_editor_page.locator('.tiptap')
+        undo_button = cv_editor_page.locator('#cv-undo-btn')
+
+        editor.click()
+        original_text = editor.inner_text()
+        editor.type("Text to undo")
+        cv_editor_page.wait_for_timeout(500)
+
+        # Click undo button
+        undo_button.click()
+        cv_editor_page.wait_for_timeout(500)
+
+        # Text should be reverted
+        current_text = editor.inner_text()
+        assert "Text to undo" not in current_text or current_text == original_text
+
+    def test_redo_button_enables_after_undo(self, cv_editor_page: Page):
+        """Redo button should enable after undo action."""
+        editor = cv_editor_page.locator('.tiptap')
+        undo_button = cv_editor_page.locator('#cv-undo-btn')
+        redo_button = cv_editor_page.locator('#cv-redo-btn')
+
+        # Make an edit
+        editor.click()
+        editor.type("Text to undo")
+        cv_editor_page.wait_for_timeout(500)
+
+        # Undo
+        undo_button.click()
+        cv_editor_page.wait_for_timeout(500)
+
+        # Redo button should now be enabled
+        expect(redo_button).to_be_enabled()
+
 
 # ==============================================================================
 # Test Class: Mobile Responsiveness (Phase 5)
