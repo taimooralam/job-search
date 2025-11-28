@@ -8,6 +8,7 @@ Phase 8.2: STAR-driven CV generator (to be implemented).
 """
 
 import json
+import logging
 import os
 import re
 from pathlib import Path
@@ -19,6 +20,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
+from src.common.logger import get_logger
 from src.layer6.cover_letter_generator import CoverLetterGenerator
 
 
@@ -473,6 +475,9 @@ class Generator:
 
     def __init__(self):
         """Initialize generators."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.cover_letter_gen = CoverLetterGenerator()  # Phase 8.1: Enhanced cover letter generator
         self.cv_gen = MarkdownCVGenerator()  # Markdown CV generator grounded in master CV
 
@@ -494,24 +499,24 @@ class Generator:
             Dict with cover_letter, cv_path, and cv_reasoning keys (Phase 8.2)
         """
         try:
-            print(f"   Generating cover letter...")
+            self.logger.info("Generating cover letter")
             cover_letter = self.cover_letter_gen.generate_cover_letter(state)
-            print(f"   ✓ Cover letter generated ({len(cover_letter)} chars)")
+            self.logger.info(f"Cover letter generated ({len(cover_letter)} chars)")
 
-            print(f"   Generating tailored CV...")
+            self.logger.info("Generating tailored CV")
             cv_path, cv_reasoning = self.cv_gen.generate_cv(state)
-            print(f"   ✓ CV generated: {cv_path}")
-            print(f"   ✓ CV reasoning: {cv_reasoning[:100]}...")
+            self.logger.info(f"CV generated: {cv_path}")
+            self.logger.info(f"CV reasoning: {cv_reasoning[:100]}...")
 
             # Generate HTML CV for web display and PDF export
             html_cv_path = None
             if self.html_cv_gen:
                 try:
-                    print(f"   Generating HTML CV...")
+                    self.logger.info("Generating HTML CV")
                     html_cv_path, _ = self.html_cv_gen.generate_html_cv(state)
-                    print(f"   ✓ HTML CV generated: {html_cv_path}")
+                    self.logger.info(f"HTML CV generated: {html_cv_path}")
                 except Exception as e:
-                    print(f"   ⚠️  HTML CV generation failed: {e}")
+                    self.logger.warning(f"HTML CV generation failed: {e}")
 
             return {
                 "cover_letter": cover_letter,
@@ -522,7 +527,7 @@ class Generator:
 
         except Exception as e:
             error_msg = f"Layer 6 (Generator) failed: {str(e)}"
-            print(f"   ✗ {error_msg}")
+            self.logger.error(error_msg)
 
             errors_list = state.get("errors") or []
             if isinstance(errors_list, str):
@@ -547,9 +552,11 @@ def generator_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 6: Outreach & CV Generator")
-    print("="*60)
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer6")
+
+    logger.info("="*60)
+    logger.info("LAYER 6: Outreach & CV Generator")
+    logger.info("="*60)
 
     generator = Generator()
     updates = generator.generate_outputs(state)
@@ -560,25 +567,25 @@ def generator_node(state: JobState) -> Dict[str, Any]:
         try:
             cv_text = Path(cv_path).read_text(encoding="utf-8")
             updates["cv_text"] = cv_text
-            print(f"   ✓ CV text loaded ({len(cv_text)} chars)")
+            logger.info(f"CV text loaded ({len(cv_text)} chars)")
         except Exception as e:
-            print(f"   ⚠️  Failed to read CV text: {e}")
+            logger.warning(f"Failed to read CV text: {e}")
             updates["cv_text"] = None
     else:
         updates["cv_text"] = None
 
-    # Print results
+    # Log results
     if updates.get("cover_letter"):
-        print(f"\n📄 Cover Letter Preview (first 150 chars):")
-        print(f"  {updates['cover_letter'][:150]}...")
+        logger.info("Cover Letter Preview (first 150 chars):")
+        logger.info(f"  {updates['cover_letter'][:150]}...")
     else:
-        print("\n⚠️  No cover letter generated")
+        logger.warning("No cover letter generated")
 
     if updates.get("cv_path"):
-        print(f"\n📋 CV Generated: {updates['cv_path']}")
+        logger.info(f"CV Generated: {updates['cv_path']}")
     else:
-        print("\n⚠️  No CV generated")
+        logger.warning("No CV generated")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates

@@ -10,6 +10,7 @@ Uses the same STAR selection logic as the .docx generator but outputs
 semantic HTML with embedded CSS for styling.
 """
 
+import logging
 from typing import List, Dict, Tuple
 from pathlib import Path
 from datetime import datetime
@@ -32,6 +33,9 @@ class HTMLCVGenerator:
 
     def __init__(self):
         """Initialize with the existing CV generator for STAR selection logic."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.cv_generator = CVGenerator()
 
     def generate_html_cv(self, state: JobState) -> Tuple[str, str]:
@@ -44,10 +48,12 @@ class HTMLCVGenerator:
         Returns:
             Tuple of (html_cv_path, cv_reasoning)
         """
-        print("\n=== Layer 6: HTML CV Generator ===")
+        self.logger.info("="*60)
+        self.logger.info("HTML CV GENERATOR")
+        self.logger.info("="*60)
 
         # Use existing CVGenerator for competency analysis and STAR selection
-        print("→ Analyzing competency mix and selecting STARs...")
+        self.logger.info("Analyzing competency mix and selecting STARs...")
 
         # Get the .docx generator's internal logic
         competency_mix = self.cv_generator._analyze_competency_mix(
@@ -60,7 +66,7 @@ class HTMLCVGenerator:
         all_stars = state.get("all_stars") or state.get("selected_stars") or []
 
         if not all_stars:
-            print("  ⚠️  No STARs available - generating minimal HTML CV")
+            self.logger.warning("No STARs available - generating minimal HTML CV")
             return self._generate_minimal_html_cv(state, competency_mix)
 
         job_keywords = self.cv_generator._extract_keywords(state["job_description"])
@@ -91,12 +97,12 @@ class HTMLCVGenerator:
         )
 
         # Build HTML CV
-        print("→ Building HTML CV...")
+        self.logger.info("Building HTML CV...")
         html_content = self._build_html_cv(state, competency_mix, selected_stars)
 
         # Save HTML file
         html_path = self._save_html_cv(state, html_content)
-        print(f"  ✅ HTML CV saved: {html_path}")
+        self.logger.info(f"HTML CV saved: {html_path}")
 
         return html_path, cv_reasoning
 

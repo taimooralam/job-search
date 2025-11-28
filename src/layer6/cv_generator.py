@@ -12,6 +12,7 @@ This goes beyond basic CV templating to strategically select and present
 achievements that align with the target role's competency profile.
 """
 
+import logging
 import re
 import json
 from typing import List, Dict, Optional, Tuple
@@ -112,6 +113,9 @@ class CVGenerator:
         - OpenRouter (proxy): Uses ChatOpenAI with OpenRouter base URL
         - OpenAI (direct): Uses ChatOpenAI with OpenAI API key
         """
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         provider = Config.get_cv_llm_provider()
         model = getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL)
         temperature = getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE)
@@ -124,7 +128,7 @@ class CVGenerator:
                 temperature=temperature,
                 anthropic_api_key=api_key
             )
-            print(f"  Using Anthropic API directly (model: {model})")
+            self.logger.info(f"Using Anthropic API directly (model: {model})")
         else:
             # Use OpenAI SDK (for OpenAI or OpenRouter)
             base_url = Config.get_cv_llm_base_url()
@@ -135,9 +139,9 @@ class CVGenerator:
                 api_key=api_key
             )
             if provider == "openrouter":
-                print(f"  Using OpenRouter proxy (model: {model})")
+                self.logger.info(f"Using OpenRouter proxy (model: {model})")
             else:
-                print(f"  Using OpenAI API directly (model: {model})")
+                self.logger.info(f"Using OpenAI API directly (model: {model})")
 
     # ===== COMPETENCY MIX ANALYSIS =====
 
@@ -426,13 +430,13 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
         # If QA failed, raise ValueError to trigger retry
         if not result.is_valid:
             error_msg = f"Hallucination QA failed: {', '.join(result.issues)}"
-            print(f"   ⚠️  {error_msg}")
+            self.logger.warning(f"{error_msg}")
             if result.fabricated_employers:
-                print(f"      Fabricated employers: {result.fabricated_employers}")
+                self.logger.warning(f"  Fabricated employers: {result.fabricated_employers}")
             if result.fabricated_dates:
-                print(f"      Fabricated dates: {result.fabricated_dates}")
+                self.logger.warning(f"  Fabricated dates: {result.fabricated_dates}")
             if result.fabricated_degrees:
-                print(f"      Fabricated degrees: {result.fabricated_degrees}")
+                self.logger.warning(f"  Fabricated degrees: {result.fabricated_degrees}")
             raise ValueError(error_msg)
 
         return result
@@ -500,25 +504,27 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
 
         Returns (cv_path, cv_reasoning) tuple.
         """
-        print("\n=== Layer 6: CV Generator (Phase 8.2) ===")
+        self.logger.info("="*60)
+        self.logger.info("CV GENERATOR (Phase 8.2)")
+        self.logger.info("="*60)
 
         # Step 1: Competency mix analysis
-        print("→ Analyzing job competency mix...")
+        self.logger.info("Analyzing job competency mix...")
         competency_mix = self._analyze_competency_mix(
             job_description=state["job_description"],
             title=state["title"],
             company=state["company"]
         )
-        print(f"  Competency mix: Delivery={competency_mix.delivery}%, Process={competency_mix.process}%, Architecture={competency_mix.architecture}%, Leadership={competency_mix.leadership}%")
+        self.logger.info(f"Competency mix: Delivery={competency_mix.delivery}%, Process={competency_mix.process}%, Architecture={competency_mix.architecture}%, Leadership={competency_mix.leadership}%")
 
         # Step 2: Score and rank STARs (Phase 8.2: Use full STAR library)
-        print("→ Scoring and ranking STARs...")
+        self.logger.info("Scoring and ranking STARs...")
         # NOTE: Use `or []` pattern to handle None values (key may exist with None)
         all_stars = state.get("all_stars") or state.get("selected_stars") or []
 
         # Phase 8.2.3: Handle empty/minimal STAR list gracefully
         if not all_stars:
-            print("  ⚠️  No STARs available - generating minimal CV from profile only")
+            self.logger.warning("No STARs available - generating minimal CV from profile only")
             return self._generate_minimal_cv(state, competency_mix)
 
         # Extract job keywords for scoring
@@ -527,12 +533,12 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
         # Score all STARs against job requirements
         competency_dict = competency_mix.dict()
         star_scores = self._score_stars(all_stars, competency_dict, job_keywords)
-        print(f"  Scored {len(star_scores)} STARs")
+        self.logger.info(f"Scored {len(star_scores)} STARs")
 
         # Rank and select top 3-5 STARs
         top_n = min(5, max(3, len(all_stars)))
         ranked_stars = self._rank_stars(star_scores, top_n=top_n)
-        print(f"  Selected top {len(ranked_stars)} STARs for CV")
+        self.logger.info(f"Selected top {len(ranked_stars)} STARs for CV")
 
         # Get full STAR objects for selected IDs
         star_id_to_record = {star["id"]: star for star in all_stars}
@@ -547,19 +553,19 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
             selected_stars_for_cv = all_stars[:top_n]
 
         # Step 3: Detect gaps
-        print("→ Detecting skill gaps...")
+        self.logger.info("Detecting skill gaps...")
         gaps = self._detect_gaps(
             job_description=state["job_description"],
             selected_stars=selected_stars_for_cv,
             all_stars=all_stars
         )
         if gaps:
-            print(f"  Found {len(gaps)} gaps: {', '.join(gaps[:3])}")
+            self.logger.info(f"Found {len(gaps)} gaps: {', '.join(gaps[:3])}")
         else:
-            print("  No significant gaps detected")
+            self.logger.info("No significant gaps detected")
 
         # Step 4: Generate cv_reasoning
-        print("→ Generating CV reasoning...")
+        self.logger.info("Generating CV reasoning...")
         cv_reasoning = self._generate_cv_reasoning(
             competency_mix=competency_mix.dict(),
             selected_stars=selected_stars_for_cv,
@@ -568,21 +574,21 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
         )
 
         # Step 5: Build CV document
-        print("→ Building CV document...")
+        self.logger.info("Building CV document...")
         cv_doc, cv_text_content = self._build_cv_document(state, competency_mix, selected_stars_for_cv)
 
         # Step 6: Run hallucination QA (on text content)
-        print("→ Running hallucination QA pass...")
+        self.logger.info("Running hallucination QA pass...")
         try:
             qa_result = self._validate_cv_content(cv_text_content, state["candidate_profile"])
-            print("  ✅ Hallucination QA passed")
+            self.logger.info("Hallucination QA passed")
         except ValueError as e:
-            print(f"  ❌ Hallucination QA failed: {e}")
+            self.logger.error(f"Hallucination QA failed: {e}")
             raise
 
         # Step 7: Save CV (.docx)
         cv_path = self._save_cv_document(state, cv_doc)
-        print(f"  ✅ CV saved: {cv_path}")
+        self.logger.info(f"CV saved: {cv_path}")
 
         return cv_path, cv_reasoning
 
@@ -777,7 +783,7 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
 
         Creates a basic CV from candidate_profile only, skipping STAR-based sections.
         """
-        print("→ Building minimal CV from profile...")
+        self.logger.info("Building minimal CV from profile...")
 
         doc = Document()
 
@@ -829,7 +835,7 @@ Output JSON with is_valid, issues, fabricated_employers, fabricated_dates, fabri
 
         # Save CV
         cv_path = self._save_cv_document(state, doc)
-        print(f"  ✅ Minimal CV saved: {cv_path}")
+        self.logger.info(f"Minimal CV saved: {cv_path}")
 
         # Generate cv_reasoning explaining limitation
         cv_reasoning = (

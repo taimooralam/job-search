@@ -14,6 +14,7 @@ Phase 9 master-cv.md integration:
 - Uses same company extraction logic as cover letter generator
 """
 
+import logging
 import re
 from typing import Dict, Any, List, Optional
 
@@ -32,6 +33,9 @@ class OutreachGenerator:
 
     def __init__(self):
         """Initialize outreach generator."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         # Contact info for LinkedIn closing line
         self.candidate_calendly = "https://calendly.com/taimooralam/15min"
 
@@ -183,7 +187,7 @@ class OutreachGenerator:
 
         if not company_mentioned:
             # Only warn, don't raise - outreach may focus on other aspects
-            print(f"    ⚠️  {channel} outreach does not mention a company from candidate's background")
+            self.logger.warning(f"{channel} outreach does not mention a company from candidate's background")
             # For stricter validation, uncomment the raise below:
             # raise ValueError(
             #     f"{channel} outreach must mention at least one company from candidate's background. "
@@ -284,17 +288,17 @@ class OutreachGenerator:
         all_contacts = primary_contacts + secondary_contacts
 
         if not all_contacts:
-            print("  ⚠️  No contacts found in state, skipping outreach packaging")
+            self.logger.warning("No contacts found in state, skipping outreach packaging")
             return []
 
-        print(f"\n{'='*80}")
-        print(f"LAYER 6b: OUTREACH GENERATOR (Phase 9)")
-        print(f"{'='*80}")
-        print(f"  Processing {len(primary_contacts)} primary + {len(secondary_contacts)} secondary contacts")
+        self.logger.info("="*80)
+        self.logger.info("OUTREACH GENERATOR (Phase 9)")
+        self.logger.info("="*80)
+        self.logger.info(f"Processing {len(primary_contacts)} primary + {len(secondary_contacts)} secondary contacts")
         if selected_stars:
-            print(f"  Using {len(selected_stars)} selected STAR(s) for grounding")
+            self.logger.info(f"Using {len(selected_stars)} selected STAR(s) for grounding")
         elif candidate_profile:
-            print(f"  Using master-cv.md fallback for grounding ({len(candidate_profile)} chars)")
+            self.logger.info(f"Using master-cv.md fallback for grounding ({len(candidate_profile)} chars)")
 
         # Create packages for each contact
         for i, contact in enumerate(all_contacts, 1):
@@ -311,21 +315,21 @@ class OutreachGenerator:
                     )
 
                 packages.extend(contact_packages)
-                print(f"    ✓ Created 2 packages for {contact['name']} ({contact['role']})")
+                self.logger.info(f"Created 2 packages for {contact['name']} ({contact['role']})")
 
             except KeyError as e:
-                print(f"    ⚠️  Skipping {contact.get('name', 'Unknown')} - missing outreach fields: {e}")
+                self.logger.warning(f"Skipping {contact.get('name', 'Unknown')} - missing outreach fields: {e}")
                 continue
 
             except ValueError as e:
-                print(f"    ⚠️  Skipping {contact.get('name', 'Unknown')} - validation failed: {e}")
+                self.logger.warning(f"Skipping {contact.get('name', 'Unknown')} - validation failed: {e}")
                 continue
 
             except Exception as e:
-                print(f"    ⚠️  Skipping {contact.get('name', 'Unknown')} - unexpected error: {e}")
+                self.logger.error(f"Skipping {contact.get('name', 'Unknown')} - unexpected error: {e}")
                 continue
 
-        print(f"\n  ✅ Generated {len(packages)} outreach packages ({len(packages)//2} contacts × 2 channels)")
+        self.logger.info(f"Generated {len(packages)} outreach packages ({len(packages)//2} contacts × 2 channels)")
 
         return packages
 
