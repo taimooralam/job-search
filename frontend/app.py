@@ -47,11 +47,42 @@ except Exception as e:
     traceback.print_exc()
 
 # Session configuration
-app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
+flask_secret_key = os.getenv("FLASK_SECRET_KEY")
+
+if not flask_secret_key:
+    # In production (Vercel), this is a critical error
+    if os.getenv("VERCEL") == "1":
+        raise RuntimeError(
+            "CRITICAL: FLASK_SECRET_KEY not set in Vercel environment variables. "
+            "Sessions will be invalidated on every cold start. "
+            "Set FLASK_SECRET_KEY in Vercel dashboard: Settings → Environment Variables"
+        )
+    else:
+        # Local development: Generate random key with warning
+        print("⚠️  WARNING: FLASK_SECRET_KEY not set. Generating random key (sessions will not persist between restarts)")
+        flask_secret_key = os.urandom(24).hex()
+
+app.secret_key = flask_secret_key
+
+# Cookie security settings
 app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_ENV", "development") == "production"
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Allow same-site requests including fetch
+
+# Detect HTTPS: Vercel sets VERCEL=1 and uses HTTPS by default
+is_production = os.getenv("VERCEL") == "1" or os.getenv("FLASK_ENV") == "production"
+app.config["SESSION_COOKIE_SECURE"] = is_production
+
+# SameSite policy: Use "None" for HTTPS (required for fetch POST), "Lax" for HTTP
+# Note: SameSite=None REQUIRES Secure=True (only works on HTTPS)
+if is_production:
+    app.config["SESSION_COOKIE_SAMESITE"] = "None"  # Required for fetch POST on HTTPS
+else:
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"   # For local development (HTTP)
+
 app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 31  # 31 days
+
+# Debug logging for session configuration
+if os.getenv("VERCEL") == "1":
+    print(f"🔍 Session Config: SECURE={app.config['SESSION_COOKIE_SECURE']}, SAMESITE={app.config['SESSION_COOKIE_SAMESITE']}")
 
 # Authentication configuration
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "change-me-in-production")
