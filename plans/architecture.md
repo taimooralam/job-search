@@ -489,7 +489,7 @@ On save: Store both cv_text (for reference) and cv_editor_state (for editing)
 │  - Streams response back        │
 └──────────────┬──────────────────┘
                │
-     env: RUNNER_SERVICE_URL
+     env: RUNNER_URL
      (http://72.61.92.76:8000)
                │
                ▼
@@ -574,7 +574,7 @@ Response: Binary PDF file (Playwright generated)
 
 **Frontend (app.py)**:
 ```bash
-RUNNER_SERVICE_URL=http://72.61.92.76:8000    # Runner service base URL
+RUNNER_URL=http://72.61.92.76:8000            # Runner service base URL
 RUNNER_API_SECRET=<shared-secret>             # REQUIRED: Must match runner service RUNNER_API_SECRET
 ```
 
