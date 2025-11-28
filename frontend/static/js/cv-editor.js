@@ -10,6 +10,9 @@
  * - Phase 5: Keyboard shortcuts, mobile responsiveness, WCAG 2.1 AA accessibility
  */
 
+// Preserve reference to global showToast from base.html before we define our own
+const _globalShowToast = window.showToast;
+
 class CVEditor {
     constructor(jobId, container) {
         this.jobId = jobId;
@@ -1113,12 +1116,16 @@ async function exportCVToPDF() {
 
 /**
  * Show toast notification
+ *
+ * Uses the global showToast from base.html (preserved as _globalShowToast),
+ * otherwise falls back to console/alert.
  */
 function showToast(message, type = 'info') {
-    // Use existing showToast function if available, otherwise alert
-    if (typeof window.showToast === 'function') {
-        window.showToast(message, type);
+    // Use the preserved global showToast from base.html
+    if (typeof _globalShowToast === 'function') {
+        _globalShowToast(message, type);
     } else {
+        // Fallback for when base.html toast isn't available
         console.log(`[${type.toUpperCase()}] ${message}`);
         if (type === 'error') {
             alert(message);
