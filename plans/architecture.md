@@ -541,17 +541,24 @@ PLAYWRIGHT_HEADLESS=true                      # Always headless in production
    - 60+ Google Fonts embedded via CSS
    - `documentStyles` applied as CSS (margins, line-height, page size)
    - Header/footer text (if provided)
-   - TipTap content converted to semantic HTML
+   - TipTap content converted to semantic HTML using iterative stack-based approach (no recursion)
    - Print-optimized CSS for ATS compatibility
 
-2. **Playwright Configuration**:
+2. **TipTap-to-HTML Conversion** (2025-11-28):
+   - **Approach**: Iterative stack-based conversion (eliminates recursion depth limits)
+   - **Why**: Deeply nested TipTap nodes (complex documents) can exceed Python recursion limit
+   - **Implementation**: Uses queue/stack to process nodes iteratively instead of recursively
+   - **Benefit**: Supports arbitrarily deep document nesting without stack overflow errors
+   - **Files**: `runner_service/pdf_helpers.py` - `tiptap_json_to_html()` function
+
+3. **Playwright Configuration**:
    - Format: `letter` (8.5" × 11") or `a4` (210mm × 297mm)
    - Margins: From `documentStyles.margins` (converted to inches/mm)
    - Print background: `true` (preserves styling)
    - Scale: `1.0` (pixel-perfect rendering)
    - Timeout: 30 seconds
 
-3. **Output Quality**:
+4. **Output Quality**:
    - ATS-compatible (selectable text, no image-based rendering)
    - Fonts embedded (no font substitution issues)
    - Colors preserved (heading colors, highlights, alignment)
@@ -827,6 +834,56 @@ cv_editor_state: {
 
 **Execution Time**: ~0.5 seconds
 **Framework**: pytest with mock LLM providers and Playwright fixtures
+
+---
+
+## Testing Strategy
+
+### E2E Testing Status (2025-11-28)
+
+**Current State**: Disabled (workflow in `.github/workflows/e2e-tests.yml.disabled`)
+
+**What Exists**:
+- 48 comprehensive Playwright tests in `tests/e2e/test_cv_editor_e2e.py`
+- Browser configuration and fixtures in `tests/e2e/conftest.py`
+- Test coverage for Phases 1-5 (formatting, fonts, document styles, PDF export, keyboard shortcuts, mobile, accessibility)
+- Markers for cross-browser (Firefox, WebKit), mobile, accessibility, slow tests
+
+**Why Disabled**:
+1. Configuration issues with pytest-playwright integration
+2. Tests written for Phase 5 features (keyboard shortcuts, mobile responsiveness, accessibility) that are not fully implemented
+3. Requires valid test environment (LOGIN_PASSWORD, MongoDB access)
+4. Test data fixtures needed for reliable reproduction
+
+**Re-enablement Plan** (See `plans/e2e-testing-implementation.md`):
+
+1. **Phase 1: Smoke Tests Only** (Phases 1-4 working features)
+   - Keep E2E workflow disabled for now
+   - Create subset of smoke tests for core functionality
+   - Tests: editor load, basic formatting, font changes, document styles
+
+2. **Phase 2: Phase 5 Feature Implementation** (blocked until backend support added)
+   - Implement version history API for undo/redo beyond browser
+   - Add keyboard shortcut handlers to frontend
+   - Validate mobile responsiveness on runner PDF generation
+   - Implement WCAG 2.1 AA compliance in PDF rendering
+
+3. **Phase 3: Test Infrastructure**
+   - Fix conftest.py configuration
+   - Set up test data fixtures with valid MongoDB jobs
+   - Configure CI environment properly
+   - Add screenshot/video capture on failure
+
+4. **Phase 4: Full E2E Re-enablement**
+   - Enable all 48 tests once Phase 5 features complete
+   - Run smoke tests on every PR
+   - Full E2E suite on release builds
+
+**Test Environment Requirements**:
+- `E2E_BASE_URL`: Deployed frontend URL (default: https://job-search-inky-sigma.vercel.app)
+- `LOGIN_PASSWORD`: Valid password for test authentication
+- MongoDB access: Valid job records for testing
+- Playwright: Already in requirements.txt (currently commented out - `.disabled` suffix)
 
 ---
 

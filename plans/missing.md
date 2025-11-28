@@ -28,6 +28,7 @@
 - [x] CV Rich Text Editor Phase 3 ✅ **COMPLETED 2025-11-27** (28 unit tests passing; document-level styles working)
 - [x] CV Rich Text Editor Phase 4 ✅ **COMPLETED 2025-11-27** (22 unit tests passing; PDF export via Playwright)
 - [x] CV Rich Text Editor Phase 4 - Migration to Runner Service ✅ **COMPLETED 2025-11-27** (Moved PDF generation from frontend to runner service)
+- [x] PDF Export Recursion Fix ✅ **COMPLETED 2025-11-28** (Iterative stack-based approach eliminates recursion limit)
 
 ---
 
@@ -70,6 +71,21 @@ All agent-specific documentation has been organized into:
   - Added 30+ new tests for CV editing API and HTML CV generator
 - [ ] Integration tests not in GitHub Actions CI
 - [ ] No coverage tracking
+- [ ] E2E Tests Disabled (2025-11-28)
+  - **Status**: 48 comprehensive Playwright tests exist in `tests/e2e/` but workflow disabled
+  - **Location**: `.github/workflows/e2e-tests.yml.disabled`
+  - **Reason for Disabling**: Configuration issues, tests written for Phase 5 features (mobile, accessibility) that are only partially implemented
+  - **What Exists**:
+    - 48 Playwright tests in `tests/e2e/test_cv_editor_e2e.py` covering Phases 1-5
+    - Comprehensive `conftest.py` with browser configuration, fixtures, markers
+    - Tests for: editor loading, formatting, fonts, alignment, document styles, PDF export, keyboard shortcuts, mobile, accessibility
+  - **What's Needed to Re-enable**:
+    - Fix `conftest.py` configuration (attempted previously, needs review)
+    - Ensure Phase 5 features fully implemented in both backend and frontend
+    - Set up proper test data/fixtures with valid MongoDB job records
+    - Configure CI environment with valid `LOGIN_PASSWORD` and database access
+    - Implement smoke test suite for working features (Phases 1-4 only)
+  - **Recommended Approach**: See `plans/e2e-testing-implementation.md` for detailed re-enablement plan
 
 ### Observability
 
@@ -526,19 +542,26 @@ PLAYWRIGHT_HEADLESS=true
 - Improves frontend performance (offloads compute)
 - Easier to scale PDF generation independently
 
-#### Phase 5: Polish + Comprehensive Testing (PENDING)
+#### Phase 5: Polish + Comprehensive Testing (PENDING - BACKEND SUPPORT NEEDED)
 
-**Status**: Not started
-**Estimated Duration**: 3-5 hours
-**Requirements**:
+**Status**: Frontend features partially implemented; backend support and E2E tests disabled
+**Estimated Duration**: 8-12 hours (backend support + test fixes + re-enablement)
+**Frontend Implementation Status**:
 
-- Keyboard shortcuts (Ctrl+B, Ctrl+I, etc.)
-- Version history / undo-redo beyond browser
-- E2E tests via Selenium/Playwright
-- Mobile responsiveness testing
-- Accessibility (WCAG 2.1 AA) compliance
+- [x] Keyboard shortcuts implemented in frontend (Ctrl+B, Ctrl+I, etc.)
+- [ ] Version history / undo-redo beyond browser (NOT implemented)
+- [ ] E2E tests for Phase 5 features (disabled - see E2E Testing section above)
+- [x] Mobile responsiveness tested but not fully validated
+- [ ] Accessibility (WCAG 2.1 AA) compliance (NOT implemented)
 
-**Total Estimated Remaining**: 3-5 hours for Phase 5 only
+**Backend Work Needed** (blockers for Phase 5 completion):
+- [ ] Implement version history API endpoints (save/restore CV versions)
+- [ ] Add WCAG 2.1 AA compliance testing to runner PDF generation
+- [ ] Mobile-optimized PDF rendering (responsive layout handling)
+- [ ] Accessibility testing infrastructure for E2E tests
+- [ ] Phase 5 E2E test re-enablement and CI/CD integration
+
+**Total Estimated Remaining**: 8-12 hours (5+ hours backend, 3-7 hours testing)
 
 ---
 
