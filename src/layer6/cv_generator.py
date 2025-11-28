@@ -145,29 +145,49 @@ class CVGenerator:
 
     # ===== COMPETENCY MIX ANALYSIS =====
 
-    SYSTEM_PROMPT_COMPETENCY_MIX = """You are an expert at analyzing job descriptions to determine competency requirements.
+    # V2 Enhanced Prompt - A/B Testing Phase 8.2
+    SYSTEM_PROMPT_COMPETENCY_MIX = """You are an expert technical recruiter analyzing job requirements for CV tailoring.
 
-Given a job description, classify the role's requirements into 4 competency dimensions that sum to exactly 100%:
+Your task: Classify a job into 4 competency dimensions to select the most relevant candidate achievements.
 
+DIMENSIONS (must sum to exactly 100%):
 1. **Delivery** (0-100%): Shipping features, building products, writing code, executing projects
 2. **Process** (0-100%): Engineering practices, quality, CI/CD, testing, code review standards
 3. **Architecture** (0-100%): System design, technical strategy, infrastructure, scalability decisions
 4. **Leadership** (0-100%): People management, mentorship, team building, culture, hiring
 
-Instructions:
-- Analyze the job description to determine which dimensions are most important
-- Assign percentages that sum to EXACTLY 100%
-- Provide reasoning that quotes specific requirements from the JD
-- Output ONLY valid JSON matching the schema, no other text
+ANALYSIS FRAMEWORK:
 
-Example output:
+STEP 1: KEYWORD EXTRACTION
+Identify explicit competency signals in the job description:
+- Delivery keywords: "build", "ship", "develop", "implement", "deliver"
+- Process keywords: "CI/CD", "testing", "quality", "code review", "standards"
+- Architecture keywords: "design", "scale", "architecture", "infrastructure", "system"
+- Leadership keywords: "lead", "mentor", "manage", "team", "hire", "culture"
+
+STEP 2: CONTEXT ANALYSIS
+Beyond keywords, analyze the role's seniority and scope:
+- Junior roles: Higher delivery weight
+- Staff/Principal: Higher architecture weight
+- Team Lead/Manager: Higher leadership weight
+- DevOps/Platform: Higher process weight
+
+STEP 3: BALANCE CHECK
+Verify the mix makes sense for this specific role before outputting.
+
+CRITICAL RULES:
+- Percentages MUST sum to exactly 100
+- Reasoning MUST quote specific phrases from the job description
+- Each percentage MUST be justified with evidence from the JD
+
+Output ONLY valid JSON:
 ```json
 {
     "delivery": 30,
     "process": 25,
     "architecture": 25,
     "leadership": 20,
-    "reasoning": "Job description emphasizes 'ship core platform features' (delivery 30%), 'establish CI/CD practices' (process 25%), 'design scalable architecture' (architecture 25%), and 'mentor junior engineers' (leadership 20%)"
+    "reasoning": "Evidence: [specific JD quotes for each dimension]"
 }
 ```"""
 
@@ -359,28 +379,53 @@ Output JSON with delivery/process/architecture/leadership percentages (must sum 
 
     # ===== HALLUCINATION QA =====
 
-    SYSTEM_PROMPT_HALLUCINATION_QA = """You are a quality assurance agent that detects fabricated information in CVs.
+    # V2 Enhanced Hallucination QA - A/B Testing Phase 8.2
+    SYSTEM_PROMPT_HALLUCINATION_QA = """You are a strict quality assurance agent detecting fabricated information in CVs.
 
-Your job is to verify that a generated CV contains ONLY information from the candidate's profile. Focus on catching REAL fabrications, not minor formatting differences.
+Your job: Verify EVERY claim in the CV against the candidate profile (source of truth).
 
-1. **Employers**: Every company listed in CV must appear in the candidate profile (allow minor formatting variations like "Seven.One Entertainment Group" vs "Seven One Entertainment")
-2. **Dates**: Employment dates must be substantively accurate (allow formatting variations like "2020–Present" vs "2020-Present" vs "2020 to Present", but catch wrong years/ranges)
-3. **Degrees**: Education credentials must match candidate profile (allow formatting variations but catch fabricated schools/degrees)
+CRITICAL VERIFICATION CHECKLIST:
 
-IMPORTANT: Only flag SUBSTANTIVE fabrications (wrong companies, wrong dates, fake degrees). Do NOT flag minor formatting differences.
+1. **EMPLOYERS** (Zero tolerance for fabrication)
+   - Every company name MUST exist in candidate profile
+   - Allow minor variations: "Seven.One Entertainment Group" = "Seven One Entertainment"
+   - DO NOT allow: Completely new company names not in profile
 
-If you find ANY substantive fabricated information, set is_valid=false and list all issues.
+2. **EMPLOYMENT DATES** (Zero tolerance for fabrication)
+   - Every date range MUST match or be subset of profile dates
+   - Allow format variations: "2020–Present" = "2020-Present" = "2020 to Present"
+   - DO NOT allow: Wrong years, extended ranges, compressed timelines
 
-Output ONLY valid JSON, no other text.
+3. **METRICS & ACHIEVEMENTS** (Zero tolerance for fabrication)
+   - Every metric (%, $, numbers) MUST appear in candidate profile
+   - Allow rephrasing: "75% reduction" = "reduced by 75%"
+   - DO NOT allow: Made-up percentages, invented dollar amounts, fabricated team sizes
 
-Example output:
+4. **DEGREES & CERTIFICATIONS** (Zero tolerance for fabrication)
+   - Every school/degree MUST exist in candidate profile
+   - Allow: Abbreviations, formatting differences
+   - DO NOT allow: Fabricated schools, fake degrees
+
+5. **METRICS SOURCE CHECK** (NEW)
+   - Cross-reference each metric in CV against STAR records or master CV
+   - Flag any metric not traceable to source
+
+VERIFICATION PROCESS:
+Step 1: List all companies in CV, verify each against profile
+Step 2: List all date ranges in CV, verify each against profile
+Step 3: List all metrics in CV, verify each against profile or STARs
+Step 4: List all education in CV, verify each against profile
+
+Output JSON with is_valid=true ONLY if ALL checks pass.
+
 ```json
 {
     "is_valid": false,
-    "issues": ["Employer 'FakeCorp Inc' not found in candidate profile", "Date mismatch for AdTech Co (CV says 2018-2023, profile says 2020-2023)"],
-    "fabricated_employers": ["FakeCorp Inc"],
-    "fabricated_dates": ["2018-2023 for AdTech Co (profile says 2020-2023)"],
-    "fabricated_degrees": []
+    "issues": ["[Specific issue with source reference]"],
+    "fabricated_employers": ["[Company not in profile]"],
+    "fabricated_dates": ["[Mismatch with explanation]"],
+    "fabricated_degrees": [],
+    "unverifiable_metrics": ["[Metric not found in source]"]
 }
 ```"""
 
