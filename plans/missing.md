@@ -35,6 +35,10 @@
 - [x] Export PDF Button Fix (Detail Page) ✅ **COMPLETED 2025-11-28** (Fixed non-functional export button on job detail page; commit 401b3fda)
 - [x] CV Rich Text Editor Phase 5.1 - Page Break Visualization ✅ **COMPLETED 2025-11-28** (32 unit tests passing; visual indicators for page breaks in editor and detail page; commit c81c1ff4)
 - [x] Phase 6: PDF Service Separation ✅ **COMPLETED 2025-11-28** (56 unit tests passing; separated PDF generation into dedicated microservice with Playwright/Chromium; runner proxies to PDF service; ready for deployment)
+- [x] PDF Generation Bug Fixes (2025-11-28)
+  - [x] Fixed "Nonein" Parse Error: Defense-in-depth margin validation across 3 layers
+  - [x] Fixed Blank PDF from Pipeline: Markdown-to-TipTap migration in runner service
+  - [x] All margin validation tested with 48 PDF service tests
 
 ---
 
