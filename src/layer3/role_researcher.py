@@ -11,6 +11,7 @@ New in Phase 5.2: Complete role research with "why now" analysis.
 """
 
 import json
+import logging
 import re
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
@@ -21,6 +22,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.state import JobState, RoleResearch
+from src.common.logger import get_logger
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -195,6 +197,9 @@ class RoleResearcher:
 
     def __init__(self):
         """Initialize LLM and FireCrawl for role analysis."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.llm = ChatOpenAI(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual analysis
@@ -287,7 +292,7 @@ class RoleResearcher:
 
             for query in queries:
                 try:
-                    print(f"[FireCrawl][RoleResearcher] search query: {query}")
+                    self.logger.info(f"[FireCrawl] Role search query: {query[:80]}...")
 
                     # Use FireCrawl search API
                     search_response = self.firecrawl.search(query, limit=2)
@@ -305,7 +310,7 @@ class RoleResearcher:
                         url = getattr(top_result, "url", None) or (top_result.get("url") if isinstance(top_result, dict) else None)
 
                         if url:
-                            print(f"   Found: {url}")
+                            self.logger.info(f"Found role context: {url}")
 
                             # Scrape the URL
                             scrape_result = self.firecrawl.scrape(
@@ -319,10 +324,10 @@ class RoleResearcher:
                                 # Limit to 1000 chars per query to avoid huge prompts
                                 if content:
                                     scraped_content.append(content[:1000])
-                                    print(f"   ✓ Scraped {len(content[:1000])} chars")
+                                    self.logger.info(f"Scraped {len(content[:1000])} chars")
 
                 except Exception as e:
-                    print(f"   ⚠️  Query failed: {e}")
+                    self.logger.warning(f"Query failed: {e}")
                     continue
 
             if scraped_content:
@@ -331,7 +336,7 @@ class RoleResearcher:
             return None
 
         except Exception as e:
-            print(f"   ⚠️  Role context scraping failed: {e}")
+            self.logger.warning(f"Role context scraping failed: {e}")
             return None
 
     @retry(
@@ -389,7 +394,7 @@ class RoleResearcher:
                 candidate_domains=star_domains,
                 candidate_outcomes=star_outcomes
             )
-            print(f"   Using STAR-aware role prompt (domains: {star_domains[:50]}...)")
+            self.logger.info(f"Using STAR-aware role prompt (domains: {star_domains[:50]}...)")
         else:
             system_prompt = SYSTEM_PROMPT_ROLE_RESEARCH
 
@@ -464,10 +469,10 @@ class RoleResearcher:
             # Phase 5 STAR-awareness: Extract candidate context if available
             star_domains, star_outcomes = self._extract_star_context(state)
             if star_domains:
-                print(f"   STAR context available for role analysis: {len(star_domains.split(', '))} domain(s)")
+                self.logger.info(f"STAR context available for role analysis: {len(star_domains.split(', '))} domain(s)")
 
             # Phase 5.2 ROADMAP: Scrape role-specific context
-            print(f"   Scraping role-specific context for: {state['title']}")
+            self.logger.info(f"Scraping role-specific context for: {state['title']}")
             role_context = None
             try:
                 # Extract industry from job description if available (simple heuristic)
@@ -481,15 +486,15 @@ class RoleResearcher:
                 )
 
                 if role_context:
-                    print(f"   ✓ Scraped {len(role_context)} chars of role context")
+                    self.logger.info(f"Scraped {len(role_context)} chars of role context")
                 else:
-                    print(f"   ⚠️  No role context found, using job description only")
+                    self.logger.info("No role context found, using job description only")
             except Exception as scrape_error:
-                print(f"   ⚠️  Role context scraping failed: {scrape_error}, continuing without it")
+                self.logger.warning(f"Role context scraping failed: {scrape_error}, continuing without it")
                 role_context = None
 
             # Analyze role (Phase 5 STAR-aware)
-            print(f"   Analyzing role: {state['title']}")
+            self.logger.info(f"Analyzing role: {state['title']}")
             role_research_output = self._analyze_role(
                 title=state["title"],
                 company=state["company"],
@@ -500,7 +505,7 @@ class RoleResearcher:
                 star_outcomes=star_outcomes
             )
 
-            print(f"   ✓ Extracted {len(role_research_output.business_impact)} business impact points")
+            self.logger.info(f"Extracted {len(role_research_output.business_impact)} business impact points")
 
             # Convert to TypedDict format for JobState
             role_research: RoleResearch = {
@@ -516,7 +521,7 @@ class RoleResearcher:
         except Exception as e:
             # Log error and return empty (don't block pipeline)
             error_msg = f"Layer 3.5 (Role Researcher) failed: {str(e)}"
-            print(f"   ✗ {error_msg}")
+            self.logger.error(error_msg)
 
             return {
                 "role_research": None,
@@ -536,29 +541,31 @@ def role_researcher_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 3.5: Role Researcher (Phase 5.2)")
-    print("="*60)
-    print(f"Analyzing role: {state['title']} at {state['company']}")
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3.5")
+
+    logger.info("="*60)
+    logger.info("LAYER 3.5: Role Researcher (Phase 5.2)")
+    logger.info("="*60)
+    logger.info(f"Analyzing role: {state['title']} at {state['company']}")
 
     researcher = RoleResearcher()
     updates = researcher.research_role(state)
 
-    # Print results
+    # Log results
     if updates.get("role_research"):
         role_research = updates["role_research"]
-        print("\nRole Summary:")
-        print(f"  {role_research['summary']}")
+        logger.info("Role Summary:")
+        logger.info(f"  {role_research['summary']}")
 
-        print(f"\nBusiness Impact ({len(role_research['business_impact'])} points):")
+        logger.info(f"Business Impact ({len(role_research['business_impact'])} points):")
         for idx, impact in enumerate(role_research['business_impact'], 1):
-            print(f"  {idx}. {impact}")
+            logger.info(f"  {idx}. {impact}")
 
-        print(f"\nWhy Now:")
-        print(f"  {role_research['why_now']}")
+        logger.info("Why Now:")
+        logger.info(f"  {role_research['why_now']}")
     else:
-        print("\n⚠️  No role research generated")
+        logger.warning("No role research generated")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates

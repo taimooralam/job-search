@@ -12,6 +12,7 @@ Previous Phase 1.3: Added MongoDB caching with 7-day TTL.
 """
 
 import json
+import logging
 import re
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
@@ -24,6 +25,7 @@ from pymongo import MongoClient
 
 from src.common.config import Config
 from src.common.state import JobState, CompanySignal, CompanyResearch
+from src.common.logger import get_logger
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -273,6 +275,9 @@ class CompanyResearcher:
 
     def __init__(self):
         """Initialize FireCrawl client, LLM, and MongoDB cache."""
+        # Logger for internal operations (no run_id context yet)
+        self.logger = logging.getLogger(__name__)
+
         # FireCrawl for web scraping
         self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
 
@@ -348,7 +353,7 @@ class CompanyResearcher:
         cached = self.cache_collection.find_one({"company_key": cache_key})
 
         if cached:
-            print(f"   ✓ Cache HIT for {company_name}")
+            self.logger.info(f"Cache HIT for {company_name}")
 
             # Phase 5.1: Check for new structured company_research
             if 'company_research' in cached:
@@ -366,7 +371,7 @@ class CompanyResearcher:
                 'company_url': cached.get('company_url')
             }
 
-        print(f"   ✗ Cache MISS for {company_name}")
+        self.logger.info(f"Cache MISS for {company_name}")
         return None
 
     def _store_cache(
@@ -411,7 +416,7 @@ class CompanyResearcher:
             upsert=True
         )
 
-        print(f"   ✓ Cached research for {company_name}")
+        self.logger.info(f"Cached research for {company_name}")
 
     def _construct_company_url(self, company_name: str) -> str:
         """
@@ -459,7 +464,7 @@ class CompanyResearcher:
             return None
 
         except Exception as e:
-            print(f"   FireCrawl scraping failed: {str(e)}")
+            self.logger.warning(f"FireCrawl scraping failed: {str(e)}")
             raise  # Re-raise for retry logic
 
     @retry(
@@ -486,7 +491,7 @@ class CompanyResearcher:
             if result and hasattr(result, "markdown"):
                 return result.markdown[:4000]
         except Exception as e:
-            print(f"   ⚠️  Job posting scrape failed: {e}")
+            self.logger.warning(f"Job posting scrape failed: {e}")
 
         return None
 
@@ -546,7 +551,7 @@ class CompanyResearcher:
             Dict with {"url": str, "content": str} or None if search/scrape fails
         """
         try:
-            print(f"[FireCrawl][CompanyResearcher] {source_name} search query: {query}")
+            self.logger.info(f"[FireCrawl] {source_name} search query: {query}")
             # Use FireCrawl search API to find relevant URLs
             # Limit to top 3 results to save API calls
             search_response = self.firecrawl.search(query, limit=3)
@@ -555,7 +560,7 @@ class CompanyResearcher:
             results = _extract_search_results(search_response)
 
             if not results:
-                print(f"   No search results for {source_name}")
+                self.logger.info(f"No search results for {source_name}")
                 return None
 
             # Extract the most relevant URL
@@ -584,10 +589,10 @@ class CompanyResearcher:
                     top_result = url
 
             if not top_result:
-                print(f"   No suitable URL found for {source_name}")
+                self.logger.info(f"No suitable URL found for {source_name}")
                 return None
 
-            print(f"   Found URL: {top_result}")
+            self.logger.info(f"Found URL for {source_name}: {top_result}")
 
             # Scrape the top result
             content = self._scrape_website(top_result)
@@ -601,7 +606,7 @@ class CompanyResearcher:
             return None
 
         except Exception as e:
-            print(f"   Search failed for {source_name}: {e}")
+            self.logger.warning(f"Search failed for {source_name}: {e}")
             raise  # Re-raise for retry logic
 
     def _scrape_multiple_sources(self, company: str) -> Dict[str, Dict[str, str]]:
@@ -640,7 +645,7 @@ class CompanyResearcher:
 
         for source_name, query in queries.items():
             try:
-                print(f"   Searching: {query}")
+                self.logger.info(f"Searching {source_name}: {query[:80]}...")
 
                 if source_name == "official_site":
                     # Use direct URL construction for official site
@@ -652,7 +657,7 @@ class CompanyResearcher:
                             "url": url,
                             "content": content
                         }
-                        print(f"   ✓ Scraped {len(content)} chars from {source_name}")
+                        self.logger.info(f"Scraped {len(content)} chars from {source_name}")
                 else:
                     # Phase 5.1: Use FireCrawl search for LinkedIn, Crunchbase, news
                     search_results = self._search_with_firecrawl(query, source_name)
@@ -666,10 +671,10 @@ class CompanyResearcher:
                             "url": url,
                             "content": content
                         }
-                        print(f"   ✓ Scraped {len(content)} chars from {source_name}")
+                        self.logger.info(f"Scraped {len(content)} chars from {source_name}")
 
             except Exception as e:
-                print(f"   ⚠️  Failed to scrape {source_name}: {e}")
+                self.logger.warning(f"Failed to scrape {source_name}: {e}")
                 continue
 
         return scraped_data
@@ -713,7 +718,7 @@ class CompanyResearcher:
                 candidate_domains=star_domains,
                 candidate_outcomes=star_outcomes
             )
-            print(f"   Using STAR-aware prompt (domains: {star_domains[:50]}...)")
+            self.logger.info(f"Using STAR-aware prompt (domains: {star_domains[:50]}...)")
         else:
             system_prompt = SYSTEM_PROMPT_COMPANY_SIGNALS
 
@@ -781,7 +786,7 @@ class CompanyResearcher:
         Returns:
             CompanyResearchOutput with at least 1 signal (or minimal valid output)
         """
-        print(f"   Running fallback signal extraction from official site...")
+        self.logger.info("Running fallback signal extraction from official site")
 
         fallback_prompt = f"""Analyze this official company website content and extract ANY factual information as signals.
 
@@ -832,7 +837,7 @@ Output JSON only:
 
         except (json.JSONDecodeError, ValidationError) as e:
             # Last resort: return minimal valid output
-            print(f"   Fallback parsing failed: {e}, returning minimal output")
+            self.logger.warning(f"Fallback parsing failed: {e}, returning minimal output")
             return CompanyResearchOutput(
                 summary=f"{company} is a business (limited information available from website).",
                 signals=[{
@@ -870,7 +875,7 @@ Output JSON only:
         # Phase 5 STAR-awareness: Extract candidate context if available
         star_domains, star_outcomes = self._extract_star_context(state)
         if star_domains:
-            print(f"   STAR context available: {len(star_domains.split(', '))} domain(s)")
+            self.logger.info(f"STAR context available: {len(star_domains.split(', '))} domain(s)")
 
         # Step 0: Check cache first
         try:
@@ -880,42 +885,42 @@ Output JSON only:
                     cached_data["scraped_job_posting"] = scraped_job_posting
                 return cached_data
         except Exception as e:
-            print(f"   ⚠️  Cache check failed: {e}, proceeding with research")
+            self.logger.warning(f"Cache check failed: {e}, proceeding with research")
 
         # Cache miss - proceed with Phase 5.1 research
         try:
             # Step 1: Multi-source scraping (Phase 5.1)
-            print(f"   Phase 5.1: Multi-source scraping...")
+            self.logger.info("Phase 5.1: Multi-source scraping")
             scraped_data = self._scrape_multiple_sources(company)
 
             if not scraped_data:
                 raise ValueError("No sources successfully scraped")
 
-            print(f"   ✓ Scraped {len(scraped_data)} source(s)")
+            self.logger.info(f"Scraped {len(scraped_data)} source(s)")
 
             # Step 2: Extract signals via LLM (Phase 5.1 + STAR-aware)
-            print(f"   Extracting company signals via LLM...")
+            self.logger.info("Extracting company signals via LLM")
             company_research_output = self._analyze_company_signals(
                 company, scraped_data,
                 star_domains=star_domains,
                 star_outcomes=star_outcomes
             )
 
-            print(f"   ✓ Extracted {len(company_research_output.signals)} signal(s)")
+            self.logger.info(f"Extracted {len(company_research_output.signals)} signal(s)")
 
             # Phase 5 defensive fallback: If 0 signals, try second-pass extraction
             if len(company_research_output.signals) == 0 and 'official_site' in scraped_data:
-                print(f"   ⚠️  No signals extracted, running fallback extraction...")
+                self.logger.warning("No signals extracted, running fallback extraction")
                 company_research_output = self._fallback_signal_extraction(
                     company, scraped_data['official_site']
                 )
-                print(f"   ✓ Fallback extracted {len(company_research_output.signals)} signal(s)")
+                self.logger.info(f"Fallback extracted {len(company_research_output.signals)} signal(s)")
 
             # Step 3: Store in cache (Phase 5.1 format)
             try:
                 self._store_cache(company, company_research=company_research_output)
             except Exception as e:
-                print(f"   ⚠️  Failed to cache results: {e}")
+                self.logger.warning(f"Failed to cache results: {e}")
 
             # Convert to TypedDict format for JobState
             company_research: CompanyResearch = {
@@ -942,8 +947,8 @@ Output JSON only:
 
         except Exception as e:
             # Phase 5.1 failed - fall back to legacy approach (Phase 1.3)
-            print(f"   ⚠️  Phase 5.1 research failed: {e}")
-            print(f"   Falling back to legacy single-source approach...")
+            self.logger.warning(f"Phase 5.1 research failed: {e}")
+            self.logger.info("Falling back to legacy single-source approach")
 
             try:
                 # Legacy single-source scraping
@@ -951,18 +956,18 @@ Output JSON only:
                 website_content = self._scrape_website(company_url)
 
                 if website_content:
-                    print(f"   ✓ Legacy scrape: {len(website_content)} chars from {company_url}")
+                    self.logger.info(f"Legacy scrape: {len(website_content)} chars from {company_url}")
                 else:
-                    print(f"   Using LLM general knowledge fallback...")
+                    self.logger.info("Using LLM general knowledge fallback")
 
                 company_summary = self._summarize_with_llm(company, website_content)
-                print(f"   ✓ Generated summary ({len(company_summary)} chars)")
+                self.logger.info(f"Generated summary ({len(company_summary)} chars)")
 
                 # Store in cache (legacy format)
                 try:
                     self._store_cache(company, summary=company_summary, url=company_url)
                 except Exception as cache_error:
-                    print(f"   ⚠️  Failed to cache results: {cache_error}")
+                    self.logger.warning(f"Failed to cache results: {cache_error}")
 
                 return {
                     "company_summary": company_summary,
@@ -973,7 +978,7 @@ Output JSON only:
             except Exception as legacy_error:
                 # Complete failure - log error and return empty
                 error_msg = f"Layer 3 (Company Researcher) failed: {str(legacy_error)}"
-                print(f"   ✗ {error_msg}")
+                self.logger.error(error_msg)
 
                 return {
                     "company_summary": None,
@@ -995,39 +1000,41 @@ def company_researcher_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    print("\n" + "="*60)
-    print("LAYER 3: Company Researcher (Phase 5.1)")
-    print("="*60)
-    print(f"Researching: {state['company']}")
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3")
+
+    logger.info("="*60)
+    logger.info("LAYER 3: Company Researcher (Phase 5.1)")
+    logger.info("="*60)
+    logger.info(f"Researching: {state['company']}")
 
     researcher = CompanyResearcher()
     updates = researcher.research_company(state)
 
-    # Print results (Phase 5.1 format)
+    # Log results (Phase 5.1 format)
     if updates.get("company_research"):
         company_research = updates["company_research"]
-        print("\nCompany Summary:")
-        print(f"  {company_research['summary']}")
+        logger.info("Company Summary:")
+        logger.info(f"  {company_research['summary']}")
 
         if company_research.get("signals"):
-            print(f"\nCompany Signals ({len(company_research['signals'])} found):")
+            logger.info(f"Company Signals ({len(company_research['signals'])} found):")
             for idx, signal in enumerate(company_research['signals'], 1):
-                print(f"  {idx}. [{signal['type']}] {signal['description']}")
+                logger.info(f"  {idx}. [{signal['type']}] {signal['description']}")
                 if signal.get('date') and signal['date'] != 'unknown':
-                    print(f"     Date: {signal['date']}")
+                    logger.info(f"     Date: {signal['date']}")
 
         if company_research.get("url"):
-            print(f"\nPrimary URL: {company_research['url']}")
+            logger.info(f"Primary URL: {company_research['url']}")
 
     elif updates.get("company_summary"):
         # Legacy format fallback
-        print("\nCompany Summary (legacy format):")
-        print(f"  {updates['company_summary']}")
+        logger.info("Company Summary (legacy format):")
+        logger.info(f"  {updates['company_summary']}")
         if updates.get("company_url"):
-            print(f"\nSource: {updates['company_url']}")
+            logger.info(f"Source: {updates['company_url']}")
     else:
-        print("\n⚠️  No company summary generated")
+        logger.warning("No company summary generated")
 
-    print("="*60 + "\n")
+    logger.info("="*60)
 
     return updates
