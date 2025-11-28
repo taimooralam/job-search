@@ -189,7 +189,9 @@ def build_pdf_html_template(
     font_size: int,
     line_height: float,
     header_text: str = "",
-    footer_text: str = ""
+    footer_text: str = "",
+    page_size: str = "letter",
+    margins: dict = None
 ) -> str:
     """
     Build complete HTML document for PDF generation with embedded styles.
@@ -207,10 +209,15 @@ def build_pdf_html_template(
         line_height: Line height multiplier (e.g., 1.15, 1.5)
         header_text: Optional header text
         footer_text: Optional footer text
+        page_size: Page size ("letter" or "a4")
+        margins: Margins dict with top, right, bottom, left in inches
 
     Returns:
         Complete HTML document string
     """
+    # Default margins if not provided
+    if margins is None:
+        margins = {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
     # Build Google Fonts URL (support multiple fonts)
     # Common Phase 2 fonts that need embedding
     all_fonts = [
@@ -235,8 +242,8 @@ def build_pdf_html_template(
 
     <style>
         @page {{
-            size: Letter;
-            margin: 0;
+            size: {page_size.upper() if page_size.lower() == 'a4' else 'Letter'};
+            margin: {margins['top']}in {margins['right']}in {margins['bottom']}in {margins['left']}in;
         }}
 
         * {{

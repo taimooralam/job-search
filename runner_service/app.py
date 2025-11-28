@@ -463,7 +463,9 @@ async def generate_cv_pdf(job_id: str):
             font_size,
             line_height,
             header_text,
-            footer_text
+            footer_text,
+            page_size,
+            margins
         )
 
         # Generate PDF using Playwright (async API)
