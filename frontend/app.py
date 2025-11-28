@@ -47,9 +47,7 @@ except Exception as e:
     traceback.print_exc()
 
 # Session configuration
-# IMPORTANT: Use a fixed secret key from env var to persist sessions across deployments
-# If FLASK_SECRET_KEY is not set, use a default (NOT SECURE - set env var in production!)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_ENV", "development") == "production"
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Allow same-site requests including fetch

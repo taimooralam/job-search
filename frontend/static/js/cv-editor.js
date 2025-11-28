@@ -1073,8 +1073,7 @@ async function exportCVToPDF() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            credentials: 'include'  // Send session cookies for authentication
+            }
         });
 
         if (!response.ok) {
