@@ -29,6 +29,9 @@
 - [x] CV Rich Text Editor Phase 4 ✅ **COMPLETED 2025-11-27** (22 unit tests passing; PDF export via Playwright)
 - [x] CV Rich Text Editor Phase 4 - Migration to Runner Service ✅ **COMPLETED 2025-11-27** (Moved PDF generation from frontend to runner service)
 - [x] PDF Export Recursion Fix ✅ **COMPLETED 2025-11-28** (Iterative stack-based approach eliminates recursion limit)
+- [x] PDF Margins WYSIWYG via CSS @page ✅ **COMPLETED 2025-11-28** (Changed from parameter-based to CSS-based margin rendering)
+- [x] Playwright Async API Conversion ✅ **COMPLETED 2025-11-28** (Converted to async API for FastAPI compatibility)
+- [x] MongoDB URI Standardization ✅ **COMPLETED 2025-11-28** (Changed MONGO_URI to MONGODB_URI for consistency)
 
 ---
 
@@ -110,6 +113,13 @@ All agent-specific documentation has been organized into:
 - [ ] Layer 1.5: Application form mining not implemented
 - [ ] .docx CV export not implemented
 - [ ] STAR selector: No embeddings, caching, or graph edges
+
+### Newly Identified Gaps (2025-11-28)
+
+- Planning docs stale: `plans/next-steps.md` still lists Phase 2 WYSIWYG issues as blockers; `reports/PROGRESS.md` frozen at Nov 16 with only Layers 2–3 done, conflicting with current repo state.
+- LLM retry policy inconsistent: `src/layer6/cover_letter_generator.py` and `src/layer6/generator.py` call `llm.invoke` without tenacity backoff (see cover letter lines 688-723 and generator lines 226-243, 433-448), violating the guideline that all LLM calls use exponential backoff.
+- Observability still minimal: pipeline layers and runner endpoints rely on `print` instead of structured logging/metrics, hindering prod debugging and cost tracking (previously noted but still unresolved).
+- Action: add tenacity backoff wrappers to all LLM calls in cover letter + CV generation flows to align with repo standards and harden against transient API failures.
 
 ### Frontend & UI Enhancements
 
@@ -542,26 +552,64 @@ PLAYWRIGHT_HEADLESS=true
 - Improves frontend performance (offloads compute)
 - Easier to scale PDF generation independently
 
-#### Phase 5: Polish + Comprehensive Testing (PENDING - BACKEND SUPPORT NEEDED)
+#### Phase 5: Polish + Comprehensive Testing (PENDING - MULTIPLE FEATURES)
 
-**Status**: Frontend features partially implemented; backend support and E2E tests disabled
-**Estimated Duration**: 8-12 hours (backend support + test fixes + re-enablement)
-**Frontend Implementation Status**:
+**Status**: Multiple Phase 5 sub-features identified; partial implementation in progress
+**Total Estimated Duration**: 16-20 hours (all Phase 5 sub-features combined)
 
-- [x] Keyboard shortcuts implemented in frontend (Ctrl+B, Ctrl+I, etc.)
-- [ ] Version history / undo-redo beyond browser (NOT implemented)
+**Phase 5 Sub-Features**:
+
+##### Phase 5.1: WYSIWYG Page Break Visualization (NEW - 2025-11-28)
+
+**Status**: Planning phase, full specification documented
+**Estimated Duration**: 8-10 hours
+**Priority**: High (improves user experience, prevents surprise page breaks in PDF)
+**Plan Document**: See `plans/phase5-page-break-visualization.md`
+
+**Description**:
+Display visual page break indicators in CV editor and detail page showing exactly where content will break across pages in PDF export. Respects page size (Letter/A4) and margin settings.
+
+**Components**:
+- [ ] Page break calculator (calculate break positions from content height)
+- [ ] Page break renderer (insert visual break indicators)
+- [ ] Dynamic update integration (recalculate on content/style changes)
+- [ ] Detail page integration (show breaks in main CV display)
+- [ ] Comprehensive test suite (50+ tests)
+
+**Dependencies Completed**:
+- Phase 3: Document margins, page size, line height (COMPLETE)
+- Phase 4: PDF export respects margins and page size (COMPLETE)
+
+**Technical Approach**:
+- Calculate available page height = (page height - top margin - bottom margin)
+- Measure cumulative content height as TipTap nodes
+- Insert visual break indicators when height exceeds page capacity
+- Reuse Phase 4 PDF calculation logic for consistency
+
+**Integration Points**:
+- PDF export (Phase 4) - validate breaks match visualization
+- Document styles panel - page break updates on margin/line height changes
+- Detail page main CV display - show breaks when viewing
+
+**Related Gaps**:
 - [ ] E2E tests for Phase 5 features (disabled - see E2E Testing section above)
-- [x] Mobile responsiveness tested but not fully validated
-- [ ] Accessibility (WCAG 2.1 AA) compliance (NOT implemented)
+- [ ] Keyboard shortcuts (Ctrl+B, Ctrl+I, etc.) - separate Phase 5 feature
+- [ ] Version history / undo-redo beyond browser - separate Phase 5 feature
 
-**Backend Work Needed** (blockers for Phase 5 completion):
-- [ ] Implement version history API endpoints (save/restore CV versions)
-- [ ] Add WCAG 2.1 AA compliance testing to runner PDF generation
-- [ ] Mobile-optimized PDF rendering (responsive layout handling)
-- [ ] Accessibility testing infrastructure for E2E tests
-- [ ] Phase 5 E2E test re-enablement and CI/CD integration
+##### Phase 5.2: Other Polish Features
 
-**Total Estimated Remaining**: 8-12 hours (5+ hours backend, 3-7 hours testing)
+**Status**: Not started
+**Components Identified**:
+- [ ] Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+Z, etc.) - 2-3 hours
+- [ ] Version history / undo-redo beyond browser (API + frontend) - 3-4 hours
+- [ ] Mobile responsiveness testing - 1-2 hours
+- [ ] Accessibility (WCAG 2.1 AA) compliance - 4-6 hours
+- [ ] E2E test re-enablement and CI/CD integration - 2-3 hours
+
+**Total Estimated Remaining**:
+- Phase 5.1 (Page Breaks): 8-10 hours
+- Phase 5.2 (Other Features): 12-18 hours
+- **Total**: 20-28 hours
 
 ---
 

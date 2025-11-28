@@ -1,7 +1,7 @@
 # Next Steps - Immediate Priorities
 
-**Last Updated**: 2025-11-27
-**Current Focus**: Complete Phase 2 CV Editor fixes to enable user feedback
+**Last Updated**: 2025-11-28
+**Current Focus**: Phase 5 Features (WYSIWYG Page Breaks, 8-10 hours)
 
 > **Documentation Structure Note**: All agent-specific plans and reports are now organized in:
 > - Plans: `plans/agents/{agent-name}/`
@@ -13,89 +13,65 @@
 
 ## Current Blockers (Priority Order)
 
-1. **CRITICAL - TipTap Editor Not WYSIWYG** (Issue #2)
-   - Text formatting stored but not visible in editor
-   - Need: Add CSS for `.ProseMirror` content nodes
-   - Assigned to: frontend-developer
-   - Effort: 1-2 hours
-   - Blocks: Phase 2 usability, Phase 3 design
+1. **CRITICAL - Anthropic API credits low**
+   - Impact: CV generator may fail in production
+   - Status: Blocking Phase 4+ pipeline execution
+   - Workaround: Add `USE_ANTHROPIC=false` + configure OpenAI
+   - Action: Add credits to Anthropic account or switch LLM provider
 
-2. **HIGH - CV Display Not Updating Immediately** (Issue #1)
-   - Changes visible only after page reload
-   - Need: Add JS event handler to update display on editor close
-   - Assigned to: frontend-developer
-   - Effort: 1-2 hours
-   - Blocks: User experience
-
-3. **Anthropic API credits low** - CV generator tests and production failing
-4. **CV generator tests unmocked** - Using real API calls instead of mocks
+2. **LOW - E2E tests disabled**
+   - Status: Non-blocking (Phase 1-4 unit tests passing)
+   - Impact: Can't verify full user flow via Playwright
+   - Plan: Re-enable with smoke test suite for Phase 1-4
+   - See: `plans/e2e-testing-implementation.md`
 
 ---
 
-## Priority 1: CV Editor Phase 2 Fixes (TODAY/TOMORROW)
+## RESOLVED (2025-11-28)
 
-### Issue #2: Editor Not WYSIWYG (CRITICAL - 1-2 hours)
+- ✅ **Phase 2 Issue #2: Editor Not WYSIWYG** - RESOLVED 2025-11-26
+  - Added 178 lines of CSS for `.ProseMirror` content nodes
+  - Status: Working perfectly, all formatting visible in editor
 
-**Problem**: Text formatting (bold, italic, headings, etc.) stored in data model but not visible in editor
-
-**Solution**: Add CSS for ProseMirror content nodes
-
-**Action**:
-```bash
-# Option A: Add inline styles to base.html
-# In frontend/templates/base.html, add <style> block with:
-.ProseMirror strong { font-weight: bold; }
-.ProseMirror em { font-style: italic; }
-.ProseMirror u { text-decoration: underline; }
-.ProseMirror h1 { font-size: 2em; font-weight: bold; }
-.ProseMirror h2 { font-size: 1.5em; font-weight: bold; }
-.ProseMirror h3 { font-size: 1.25em; font-weight: bold; }
-.ProseMirror ul { list-style-type: disc; padding-left: 2rem; }
-.ProseMirror ol { list-style-type: decimal; padding-left: 2rem; }
-
-# Option B: Create dedicated CSS file (recommended)
-touch frontend/static/css/prosemirror-styles.css
-# Add all styles above, plus styles for alignment, indentation, custom fonts, sizes, highlight
-```
-
-**Test**: Edit CV → Type text → Click Bold → Verify text appears bold immediately
+- ✅ **Phase 2 Issue #1: CV Display Not Updating** - RESOLVED 2025-11-26
+  - Added `updateMainCVDisplay()` function to sync editor changes to display
+  - Status: Changes now visible immediately on editor close
 
 ---
 
-### Issue #1: CV Display Not Updating on Close (HIGH - 1-2 hours)
+## Priority 1: Phase 5 - WYSIWYG Page Break Visualization
 
-**Problem**: Changes visible only after full page reload
+**Status**: Design phase complete, ready for implementation
+**Assigned to**: frontend-developer
+**Effort**: 8-10 hours
+**Plan Document**: `plans/phase5-page-break-visualization.md`
 
-**Solution**: Add JS event handler to update display on editor close
+### Overview
+Display visual page break indicators in CV editor showing where content breaks across pages when exported to PDF. Provides true WYSIWYG experience matching actual PDF output.
 
-**Action**:
-```bash
-# In frontend/static/js/cv-editor.js:
-# 1. Add function to convert TipTap JSON to HTML
-# 2. Add event listener for editor panel close
-# 3. Call update function when panel closes
-# 4. Update #cv-markdown-display div with new HTML
+### Key Components
+1. **Page Break Calculator** - Compute break positions from content height
+2. **Page Break Renderer** - Insert visual break indicators in DOM
+3. **Dynamic Update Integration** - Recalculate on content/style changes
+4. **Detail Page Integration** - Show breaks in main CV display
 
-# Example approach:
-# - Listen for closePanel event
-# - Get editor.getJSON()
-# - Convert to HTML (use tiptapJsonToHtml() from app.py)
-# - Set document.getElementById('cv-markdown-display').innerHTML = html
-```
+### Dependencies (All Complete)
+- ✓ Phase 1: TipTap editor foundation
+- ✓ Phase 2: Text formatting and fonts
+- ✓ Phase 3: Document styles (margins, page size, line height)
+- ✓ Phase 4: PDF export with correct page dimensions
 
-**Test**: Edit CV → Close editor → Verify display updates immediately (no reload needed)
+### Testing Strategy
+- 50+ unit tests planned
+- E2E tests for both editor and detail page
+- Cross-browser compatibility validation
+- Multiple page counts (1, 2, 3, 5+ pages)
 
----
-
-### Follow-Up: Add Test Coverage (test-generator)
-
-```bash
-# After both issues fixed:
-# 1. Write tests for display update on close
-# 2. Write tests for CSS rendering
-# 3. Run full Phase 2 test suite (38+ tests)
-# 4. Verify Phase 1 regression tests pass (46 tests)
-```
+### Next Steps
+1. Review full specification in `plans/phase5-page-break-visualization.md`
+2. Break down implementation into 5 phases (2 hours each)
+3. Assign to frontend-developer for implementation
+4. Coordinate with PDF export to ensure break positions match
 
 ---
 
@@ -206,7 +182,7 @@ python -m pytest tests/unit/test_layer6_markdown_cv_generator.py -v --tb=short
 
 ---
 
-## Step 5: Configure VPS Environment
+## Step 5: Configure VPS Environment (Updated 2025-11-28)
 
 **Action**:
 ```bash
@@ -222,7 +198,8 @@ RUNNER_API_SECRET=<run: openssl rand -hex 32>
 CORS_ORIGINS=https://your-app.vercel.app
 
 # Pipeline
-MONGODB_URI=<your-connection-string>
+MONGODB_URI=<your-connection-string>              # CHANGED 2025-11-28: was MONGO_URI
+MONGO_DB_NAME=job_search
 OPENAI_API_KEY=<your-key>
 ANTHROPIC_API_KEY=<your-key-or-empty>
 FIRECRAWL_API_KEY=<your-key>
@@ -230,6 +207,7 @@ FIRECRAWL_API_KEY=<your-key>
 # Feature Flags
 DISABLE_FIRECRAWL_OUTREACH=true
 USE_ANTHROPIC=true
+PLAYWRIGHT_HEADLESS=true
 EOF
 
 # Copy master CV from local
@@ -314,20 +292,22 @@ mongosh "$MONGODB_URI" --eval "
 
 ---
 
-## Quick Reference: Environment Variables
+## Quick Reference: Environment Variables (Updated 2025-11-28)
 
 ### VPS (.env)
 ```bash
 MAX_CONCURRENCY=3
 PIPELINE_TIMEOUT_SECONDS=600
-RUNNER_API_SECRET=<shared-secret>
+RUNNER_API_SECRET=<shared-secret>                 # Changed from RUNNER_API_TOKEN (2025-11-28)
 CORS_ORIGINS=https://your-app.vercel.app
-MONGODB_URI=mongodb+srv://...
+MONGODB_URI=mongodb+srv://...                     # Changed from MONGO_URI (2025-11-28)
+MONGO_DB_NAME=job_search
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...  # Optional
+ANTHROPIC_API_KEY=sk-ant-...                      # Optional
 FIRECRAWL_API_KEY=fc-...
 DISABLE_FIRECRAWL_OUTREACH=true
 USE_ANTHROPIC=true
+PLAYWRIGHT_HEADLESS=true
 ```
 
 ### Vercel
@@ -335,8 +315,8 @@ USE_ANTHROPIC=true
 LOGIN_PASSWORD=<secure>
 FLASK_SECRET_KEY=<hex>
 MONGODB_URI=mongodb+srv://...
-RUNNER_URL=http://72.61.92.76:8000
-RUNNER_API_SECRET=<same-as-vps>
+RUNNER_SERVICE_URL=http://72.61.92.76:8000
+RUNNER_API_SECRET=<same-as-vps>                  # Changed from RUNNER_API_TOKEN (2025-11-28)
 ```
 
 ---
