@@ -109,6 +109,12 @@ class CVEditor {
             this.updateSaveIndicator('saved');
             this.updateToolbarState();
 
+            // Phase 5.1: Initialize page breaks after editor is ready
+            // Wait for layout to stabilize before calculating
+            setTimeout(() => {
+                debouncePageBreakUpdate();
+            }, 500);
+
         } catch (error) {
             console.error('Failed to initialize CV editor:', error);
             this.showErrorState(error.message || 'Failed to initialize CV editor');
@@ -366,6 +372,9 @@ class CVEditor {
             this.saveStatus = 'unsaved';
             this.updateSaveIndicator('unsaved');
             this.scheduleAutoSave();
+
+            // Phase 5.1: Update page breaks when content changes
+            debouncePageBreakUpdate();
         }
     }
 
@@ -1049,6 +1058,9 @@ function applyDocumentStyle(styleType) {
 
         // Trigger auto-save
         cvEditorInstance.scheduleAutoSave();
+
+        // Phase 5.1: Update page breaks when document styles change
+        debouncePageBreakUpdate();
     }
 }
 
@@ -1129,6 +1141,62 @@ function notifyUser(message, type = 'info') {
             alert(message);
         }
     }
+}
+
+// ============================================================================
+// Phase 5.1: WYSIWYG Page Break Visualization
+// NOTE: Page break calculation logic is in page-break-calculator.js
+// This section handles integration with the editor
+// ============================================================================
+
+/**
+ * Update page breaks based on current editor state and document styles
+ * This is called when content or styles change
+ */
+function updatePageBreaks() {
+    if (!cvEditorInstance || !cvEditorInstance.editor) {
+        return;
+    }
+
+    // Ensure PageBreakCalculator is loaded
+    if (typeof window.PageBreakCalculator === 'undefined') {
+        console.warn('[CV Editor] PageBreakCalculator not loaded');
+        return;
+    }
+
+    // Get current document styles
+    const documentStyles = cvEditorInstance.getDocumentStyles();
+
+    // Get the editor content element
+    const editorContent = cvEditorInstance.editor.view.dom;
+    if (!editorContent) {
+        return;
+    }
+
+    // Calculate page breaks using the PageBreakCalculator module
+    const breakPositions = window.PageBreakCalculator.calculatePageBreaks(
+        documentStyles.pageSize || 'letter',
+        documentStyles.margins || {top: 1.0, right: 1.0, bottom: 1.0, left: 1.0},
+        editorContent
+    );
+
+    // Render page breaks in the editor container
+    const editorContainer = cvEditorInstance.container;
+    if (editorContainer && editorContainer.parentElement) {
+        window.PageBreakCalculator.renderPageBreaks(breakPositions, editorContainer.parentElement);
+    }
+}
+
+/**
+ * Debounce helper for page break updates
+ * Updates after 300ms of inactivity (reduced from 500ms for better UX)
+ */
+let pageBreakUpdateTimeout = null;
+function debouncePageBreakUpdate() {
+    clearTimeout(pageBreakUpdateTimeout);
+    pageBreakUpdateTimeout = setTimeout(() => {
+        updatePageBreaks();
+    }, 300); // Update after 300ms of inactivity
 }
 
 // ============================================================================
