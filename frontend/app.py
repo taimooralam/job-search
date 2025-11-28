@@ -1492,16 +1492,20 @@ def get_cv_editor_state(job_id: str):
                 "content": []
             },
             "documentStyles": {
-                "fontFamily": "Inter",
-                "fontSize": 11,
-                "lineHeight": 1.15,  # Phase 3: Standard resume spacing
+                "fontFamily": "Source Sans 3",  # Professional humanist sans for body
+                "headingFont": "Playfair Display",  # Refined serif for headings
+                "fontSize": 11,  # 11pt body text (professional resume standard)
+                "lineHeight": 1.5,  # Improved readability spacing
                 "margins": {
-                    "top": 1.0,  # Phase 3: Standard 1-inch margins
+                    "top": 1.0,  # Standard 1-inch margins
                     "right": 1.0,
                     "bottom": 1.0,
                     "left": 1.0
                 },
-                "pageSize": "letter"
+                "pageSize": "letter",
+                "colorText": "#1f2a38",  # Near-black for better readability
+                "colorMuted": "#4b5563",  # Muted gray for metadata
+                "colorAccent": "#0f766e"  # Deep teal for headings/links
             }
         }
 
@@ -1681,16 +1685,20 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
             "content": content
         },
         "documentStyles": {
-            "fontFamily": "Inter",
-            "fontSize": 11,
-            "lineHeight": 1.15,  # Phase 3: Standard resume spacing
+            "fontFamily": "Source Sans 3",  # Professional humanist sans for body
+            "headingFont": "Playfair Display",  # Refined serif for headings
+            "fontSize": 11,  # 11pt body text (professional resume standard)
+            "lineHeight": 1.5,  # Improved readability spacing
             "margins": {
-                "top": 1.0,  # Phase 3: Standard 1-inch margins
+                "top": 1.0,  # Standard 1-inch margins
                 "right": 1.0,
                 "bottom": 1.0,
                 "left": 1.0
             },
-            "pageSize": "letter"
+            "pageSize": "letter",
+            "colorText": "#1f2a38",  # Near-black for better readability
+            "colorMuted": "#4b5563",  # Muted gray for metadata
+            "colorAccent": "#0f766e"  # Deep teal for headings/links
         }
     }
 

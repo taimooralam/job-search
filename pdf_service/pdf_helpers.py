@@ -219,15 +219,18 @@ def build_pdf_html_template(
     if margins is None:
         margins = {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
     # Build Google Fonts URL (support multiple fonts)
-    # Common Phase 2 fonts that need embedding
+    # Professional typography system fonts
     all_fonts = [
         font_family,
-        'Inter',  # Default body font
-        'Roboto', 'Open Sans', 'Lato', 'Montserrat',  # Sans-serif
-        'Merriweather', 'Playfair Display', 'Lora',  # Serif
+        'Source Sans 3',  # Professional humanist sans (default body)
+        'Playfair Display',  # Refined serif for headings
+        'Work Sans',  # Alternative humanist sans
+        'Cormorant Garamond',  # Alternative refined serif
+        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',  # Common sans-serif
+        'Merriweather', 'Lora', 'EB Garamond',  # Common serif
     ]
     fonts_param = '|'.join(set(all_fonts))  # Deduplicate
-    google_fonts_url = f"https://fonts.googleapis.com/css2?family={fonts_param.replace(' ', '+')}:wght@400;700&display=swap"
+    google_fonts_url = f"https://fonts.googleapis.com/css2?family={fonts_param.replace(' ', '+')}:wght@400;600;700;800&display=swap"
 
     html = f"""
 <!DOCTYPE html>
@@ -241,6 +244,15 @@ def build_pdf_html_template(
     <link href="{google_fonts_url}" rel="stylesheet">
 
     <style>
+        /* Professional CV Design System */
+        :root {{
+            --font-heading: 'Playfair Display', 'Cormorant Garamond', serif;
+            --font-body: '{font_family}', 'Source Sans 3', 'Work Sans', system-ui, sans-serif;
+            --color-text: #1f2a38;
+            --color-muted: #4b5563;
+            --color-accent: #0f766e;
+        }}
+
         @page {{
             size: {page_size.upper() if page_size.lower() == 'a4' else 'Letter'};
             margin: {margins['top']}in {margins['right']}in {margins['bottom']}in {margins['left']}in;
@@ -253,11 +265,13 @@ def build_pdf_html_template(
         }}
 
         body {{
-            font-family: '{font_family}', sans-serif;
+            font-family: var(--font-body);
             font-size: {font_size}pt;
             line-height: {line_height};
-            color: #1a1a1a;
+            color: var(--color-text);
             background: white;
+            max-width: 720px;
+            margin: 0 auto;
         }}
 
         .page-container {{
@@ -270,17 +284,17 @@ def build_pdf_html_template(
         .header {{
             text-align: center;
             font-size: 9pt;
-            color: #666;
+            color: var(--color-muted);
             padding: 8px 0;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }}
 
         .footer {{
             text-align: center;
             font-size: 9pt;
-            color: #666;
+            color: var(--color-muted);
             padding: 8px 0;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid #e5e7eb;
             position: fixed;
             bottom: 0;
             width: 100%;
@@ -290,28 +304,67 @@ def build_pdf_html_template(
             padding: 0;
         }}
 
-        /* Typography */
+        /* Typography Hierarchy */
         h1, h2, h3, h4, h5, h6 {{
+            font-family: var(--font-heading);
+            color: var(--color-accent);
             font-weight: 700;
-            margin-top: 16px;
-            margin-bottom: 8px;
         }}
 
-        h1 {{ font-size: {font_size * 1.8}pt; }}
-        h2 {{ font-size: {font_size * 1.5}pt; }}
-        h3 {{ font-size: {font_size * 1.3}pt; }}
+        h1 {{
+            font-size: 34px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            margin-top: 0;
+        }}
+
+        h2 {{
+            font-size: 20px;
+            font-weight: 700;
+            margin: 16px 0 10px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+        }}
+
+        h2:first-child {{
+            border-top: none;
+            padding-top: 0;
+        }}
+
+        h3 {{
+            font-size: 16px;
+            font-weight: 600;
+            margin: 12px 0 8px;
+        }}
 
         p {{
             margin-bottom: 8px;
         }}
 
+        /* List Styling - Professional bullets */
         ul, ol {{
-            margin-left: 20px;
-            margin-bottom: 8px;
+            padding-left: 20px;
+            margin: 6px 0;
+            list-style-position: outside;
         }}
 
         li {{
-            margin-bottom: 4px;
+            margin: 6px 0;
+            line-height: 1.5;
+        }}
+
+        ul li {{
+            list-style-type: disc;
+        }}
+
+        /* Links - Accent color, underline on hover */
+        a {{
+            color: var(--color-accent);
+            text-decoration: none;
+        }}
+
+        a:hover {{
+            text-decoration: underline;
         }}
 
         /* Preserve TipTap formatting */
@@ -320,8 +373,16 @@ def build_pdf_html_template(
         u {{ text-decoration: underline; }}
 
         mark {{
-            background-color: #ffff00;
+            background-color: #fef3c7;
             padding: 2px 4px;
+        }}
+
+        /* Metadata styling (location, dates, etc.) */
+        .meta {{
+            font-size: 10px;
+            color: var(--color-muted);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }}
 
         /* Text alignment */
