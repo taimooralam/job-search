@@ -408,6 +408,53 @@ Pipeline (Layer 6)  →  cv_text (Markdown)  →  MongoDB
 }
 ```
 
+### Markdown-to-TipTap Migration Pattern (NEW - 2025-11-28)
+
+**Context**: Pipeline Layer 6 generates CVs as Markdown (`cv_text`). User-edited CVs use TipTap JSON format (`cv_editor_state`). Hybrid system requires migration to support both.
+
+**Migration Strategy**: Automatic conversion on first editor access, seamless backward compatibility.
+
+**Locations**:
+
+1. **Frontend** (`frontend/app.py` - GET endpoint):
+   - Fetches job from MongoDB
+   - If `cv_editor_state` exists: Return as-is
+   - If `cv_editor_state` missing but `cv_text` exists: Migrate markdown → TipTap JSON
+   - Send migrated state to editor
+
+2. **Runner Service** (`runner_service/app.py` - PDF generation endpoint):
+   - Function: `migrate_cv_text_to_editor_state()` (lines 368-495)
+   - Fallback chain: `cv_editor_state` → migrate `cv_text` → empty default
+   - Used when generating PDF from detail page (no manual edit required)
+   - Ensures jobs from pipeline can be exported immediately to PDF
+
+**Migration Process**:
+
+```
+Pipeline generates CV as Markdown (cv_text)
+        ↓
+User clicks "Edit CV" or "Export PDF" on detail page
+        ↓
+Backend checks MongoDB:
+  - If cv_editor_state exists: Use it
+  - If cv_text exists but no cv_editor_state: Migrate
+  - If neither exist: Use empty template
+        ↓
+Markdown → TipTap JSON conversion:
+  - Parse markdown lines
+  - Identify block types (heading, paragraph, list)
+  - Convert to TipTap node structure
+  - Preserve formatting (bold, italic, links)
+        ↓
+Return TipTap state to frontend/generate PDF
+        ↓
+On save: Store both cv_text (for reference) and cv_editor_state (for editing)
+```
+
+**Key Design Decision**: Preserve `cv_text` field after migration for backward compatibility and audit trail. Both formats coexist in MongoDB.
+
+**Testing**: 9/9 runner PDF integration tests passing, including new migration test (`tests/runner/test_pdf_integration.py:337-396`)
+
 ### PDF Generation Architecture
 
 **Location**: Runner Service (VPS 72.61.92.76)
@@ -564,7 +611,41 @@ RUNNER_API_SECRET=<shared-secret>             # Authentication token (changed fr
    - Timeout: 30 seconds
    - Async API: Converted to async for FastAPI compatibility (commit 86de8a00)
 
-4. **Output Quality** (Updated 2025-11-28):
+4. **Margin Validation Defense-in-Depth** (NEW - 2025-11-28)
+
+   **Problem Root Cause**: Type conversion chain failure across 3 layers:
+   - JavaScript: `parseFloat("")` returns NaN on empty margin fields
+   - JSON serialization: Converts NaN to null
+   - Python dict.get(): Returns None when value is None (doesn't use default)
+   - String interpolation: `f"{None}in"` produces "Nonein" (fails Playwright validation)
+
+   **Solution**: Three-layer validation ensures None values never reach Playwright:
+
+   **Layer 1 - Frontend (JavaScript Prevention)**:
+   - Location: `frontend/static/js/cv-editor.js` (lines 481-500)
+   - `safeParseFloat()` helper function prevents NaN/null values
+   - Returns default value (1.0) for invalid inputs
+   - Validates before sending to backend
+
+   **Layer 2 - Runner Service (Python Validation)**:
+   - Location: `runner_service/app.py` (lines 498-526)
+   - `sanitize_margins()` function checks for None values
+   - Fallback to 1.0 inch default for any missing margin
+   - Applied in PDF generation endpoint before proxying to PDF service
+
+   **Layer 3 - PDF Service (Playwright Guard)**:
+   - Location: `pdf_service/app.py` (lines 286-291)
+   - `margins.get('top') or 1.0` pattern handles None values
+   - Ensures Playwright never receives malformed strings
+   - Final validation before passing to Playwright API
+
+   **Testing**: 48 PDF service tests verify all margin scenarios:
+   - Empty strings, null values, missing keys
+   - All values together and individually
+   - Edge cases: 0 values, max values, fractional values
+   - All tests passing (100% pass rate)
+
+5. **Output Quality** (Updated 2025-11-28):
    - ATS-compatible (selectable text, no image-based rendering)
    - Fonts embedded (no font substitution issues)
    - Colors preserved (heading colors, highlights, alignment)
