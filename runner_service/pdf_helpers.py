@@ -32,13 +32,15 @@ def sanitize_for_path(text: str) -> str:
     return cleaned.replace(" ", "_")
 
 
-def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 100) -> str:
+def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 50) -> str:
     """
     Convert TipTap JSON to HTML for display compatibility.
 
+    Uses iterative approach to avoid Python's recursion limit.
+
     Args:
         tiptap_content: TipTap document JSON
-        max_depth: Maximum recursion depth to prevent stack overflow (default 100)
+        max_depth: Maximum nesting depth to prevent excessive processing (default 50)
 
     Returns:
         HTML string
@@ -46,90 +48,137 @@ def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 100) -> str:
     if not tiptap_content or tiptap_content.get("type") != "doc":
         return ""
 
-    html_parts = []
+    def process_node_iterative(node):
+        """
+        Iterative node processing using a stack to avoid recursion.
 
-    def process_node(node, depth=0):
-        # Prevent infinite recursion
-        if depth > max_depth:
-            return "<!-- Maximum nesting depth exceeded -->"
+        This prevents hitting Python's recursion limit (~1000 frames)
+        which can occur with deeply nested document structures.
+        """
+        # Stack entries: (node, depth, mode)
+        # mode: 'open' = start processing, 'close' = finish processing
+        stack = [(node, 0, 'open')]
+        result_stack = []
 
-        node_type = node.get("type")
-        content = node.get("content", [])
-        attrs = node.get("attrs", {})
-        marks = node.get("marks", [])
+        while stack:
+            current_node, depth, mode = stack.pop()
 
-        # Process text nodes
-        if node_type == "text":
-            text = node.get("text", "")
-            # Apply marks (bold, italic, etc.)
-            for mark in marks:
-                mark_type = mark.get("type")
-                if mark_type == "bold":
-                    text = f"<strong>{text}</strong>"
-                elif mark_type == "italic":
-                    text = f"<em>{text}</em>"
-                elif mark_type == "underline":
-                    text = f"<u>{text}</u>"
-                elif mark_type == "textStyle":
-                    # Handle font family, font size, color
-                    style_parts = []
-                    mark_attrs = mark.get("attrs", {})
-                    if mark_attrs.get("fontFamily"):
-                        style_parts.append(f"font-family: {mark_attrs['fontFamily']}")
-                    if mark_attrs.get("fontSize"):
-                        style_parts.append(f"font-size: {mark_attrs['fontSize']}")
-                    if mark_attrs.get("color"):
-                        style_parts.append(f"color: {mark_attrs['color']}")
-                    if style_parts:
-                        text = f"<span style='{'; '.join(style_parts)}'>{text}</span>"
-                elif mark_type == "highlight":
-                    color = mark.get("attrs", {}).get("color", "yellow")
-                    text = f"<mark style='background-color: {color}'>{text}</mark>"
-            return text
+            if depth > max_depth:
+                if mode == 'open':
+                    result_stack.append("<!-- Maximum nesting depth exceeded -->")
+                continue
 
-        # Process block nodes
-        elif node_type == "paragraph":
-            inner_html = "".join(process_node(child, depth + 1) for child in content)
-            text_align = attrs.get("textAlign", "left")
-            if text_align != "left":
-                style_attr = f' style="text-align: {text_align};"'
-                return f"<p{style_attr}>{inner_html}</p>"
-            return f"<p>{inner_html}</p>"
+            node_type = current_node.get("type")
+            content = current_node.get("content", [])
+            attrs = current_node.get("attrs", {})
+            marks = current_node.get("marks", [])
 
-        elif node_type == "heading":
-            level = attrs.get("level", 1)
-            inner_html = "".join(process_node(child, depth + 1) for child in content)
-            text_align = attrs.get("textAlign", "left")
-            if text_align != "left":
-                style_attr = f' style="text-align: {text_align};"'
-                return f"<h{level}{style_attr}>{inner_html}</h{level}>"
-            return f"<h{level}>{inner_html}</h{level}>"
+            # Process text nodes
+            if node_type == "text":
+                text = current_node.get("text", "")
+                # Apply marks (bold, italic, etc.)
+                for mark in marks:
+                    mark_type = mark.get("type")
+                    if mark_type == "bold":
+                        text = f"<strong>{text}</strong>"
+                    elif mark_type == "italic":
+                        text = f"<em>{text}</em>"
+                    elif mark_type == "underline":
+                        text = f"<u>{text}</u>"
+                    elif mark_type == "textStyle":
+                        # Handle font family, font size, color
+                        style_parts = []
+                        mark_attrs = mark.get("attrs", {})
+                        if mark_attrs.get("fontFamily"):
+                            style_parts.append(f"font-family: {mark_attrs['fontFamily']}")
+                        if mark_attrs.get("fontSize"):
+                            style_parts.append(f"font-size: {mark_attrs['fontSize']}")
+                        if mark_attrs.get("color"):
+                            style_parts.append(f"color: {mark_attrs['color']}")
+                        if style_parts:
+                            text = f"<span style='{'; '.join(style_parts)}'>{text}</span>"
+                    elif mark_type == "highlight":
+                        color = mark.get("attrs", {}).get("color", "yellow")
+                        text = f"<mark style='background-color: {color}'>{text}</mark>"
+                result_stack.append(text)
 
-        elif node_type == "bulletList":
-            items_html = "".join(process_node(child, depth + 1) for child in content)
-            return f"<ul>{items_html}</ul>"
+            # Process block nodes
+            elif node_type == "paragraph":
+                text_align = attrs.get("textAlign", "left")
+                if mode == 'open':
+                    # Push close marker
+                    stack.append((current_node, depth, 'close'))
+                    # Push children in reverse order
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+                    # Push opening tag
+                    if text_align != "left":
+                        result_stack.append(f'<p style="text-align: {text_align};">')
+                    else:
+                        result_stack.append('<p>')
+                else:  # mode == 'close'
+                    result_stack.append('</p>')
 
-        elif node_type == "orderedList":
-            items_html = "".join(process_node(child, depth + 1) for child in content)
-            return f"<ol>{items_html}</ol>"
+            elif node_type == "heading":
+                level = attrs.get("level", 1)
+                text_align = attrs.get("textAlign", "left")
+                if mode == 'open':
+                    stack.append((current_node, depth, 'close'))
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+                    if text_align != "left":
+                        result_stack.append(f'<h{level} style="text-align: {text_align};">')
+                    else:
+                        result_stack.append(f'<h{level}>')
+                else:
+                    result_stack.append(f'</h{level}>')
 
-        elif node_type == "listItem":
-            inner_html = "".join(process_node(child, depth + 1) for child in content)
-            return f"<li>{inner_html}</li>"
+            elif node_type == "bulletList":
+                if mode == 'open':
+                    stack.append((current_node, depth, 'close'))
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+                    result_stack.append('<ul>')
+                else:
+                    result_stack.append('</ul>')
 
-        elif node_type == "hardBreak":
-            return "<br>"
+            elif node_type == "orderedList":
+                if mode == 'open':
+                    stack.append((current_node, depth, 'close'))
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+                    result_stack.append('<ol>')
+                else:
+                    result_stack.append('</ol>')
 
-        elif node_type == "horizontalRule":
-            return "<hr>"
+            elif node_type == "listItem":
+                if mode == 'open':
+                    stack.append((current_node, depth, 'close'))
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+                    result_stack.append('<li>')
+                else:
+                    result_stack.append('</li>')
 
-        else:
-            # Unknown node type, process children
-            return "".join(process_node(child, depth + 1) for child in content)
+            elif node_type == "hardBreak":
+                result_stack.append("<br>")
+
+            elif node_type == "horizontalRule":
+                result_stack.append("<hr>")
+
+            else:
+                # Unknown node type, process children
+                if mode == 'open' and content:
+                    stack.append((current_node, depth, 'close'))
+                    for child in reversed(content):
+                        stack.append((child, depth + 1, 'open'))
+
+        return "".join(result_stack)
 
     # Process all top-level nodes
+    html_parts = []
     for node in tiptap_content.get("content", []):
-        html_parts.append(process_node(node))
+        html_parts.append(process_node_iterative(node))
 
     return "".join(html_parts)
 
