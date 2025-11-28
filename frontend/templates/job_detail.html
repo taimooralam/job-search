@@ -1835,22 +1835,42 @@
         try {
             showToast('Generating PDF...', 'info');
 
-            const response = await fetch(`/api/jobs/${jobId}/cv/pdf`, {
-                method: 'POST'
+            const response = await fetch(`/api/jobs/${jobId}/cv-editor/pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'  // Required to send session cookies
             });
 
-            const result = await response.json();
-
-            if (result.success) {
-                showToast('PDF generated successfully');
-
-                // Open download link after a short delay
-                setTimeout(() => {
-                    window.location.href = `/api/jobs/${jobId}/cv/download`;
-                }, 500);
-            } else {
-                showToast(result.error || 'PDF generation failed', 'error');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'PDF generation failed');
             }
+
+            // Download the PDF file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            // Get filename from Content-Disposition header or use default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'CV.pdf';
+            if (contentDisposition) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            showToast('PDF downloaded successfully');
         } catch (err) {
             showToast('PDF generation failed: ' + err.message, 'error');
         }
