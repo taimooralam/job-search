@@ -121,6 +121,81 @@ All agent-specific documentation has been organized into:
 - Observability still minimal: pipeline layers and runner endpoints rely on `print` instead of structured logging/metrics, hindering prod debugging and cost tracking (previously noted but still unresolved).
 - Action: add tenacity backoff wrappers to all LLM calls in cover letter + CV generation flows to align with repo standards and harden against transient API failures.
 
+### Critical Issues (2025-11-28)
+
+#### Bug: Export PDF Button Not Working on Job Detail Page
+
+**Status**: Needs Investigation & Fix
+**Severity**: HIGH (Core Feature)
+**Effort**: 1-3 hours (depending on root cause)
+**Plan Document**: `plans/bugs/export-pdf-detail-page.md`
+
+**Issue**: The "Export PDF" button on the job detail page is not functioning. Users cannot export a PDF from the main detail page view; the only working export option is the "Export PDF" button in the CV editor side panel.
+
+**Expected**: User can export CV as PDF directly from job detail page
+**Actual**: Button doesn't respond, no PDF downloads. Side panel button works fine.
+
+**Root Cause Analysis Needed**:
+- Does button exist in HTML?
+- Is click handler attached to button?
+- Does API endpoint receive request?
+- Are request body/headers correct?
+- Is there CORS or auth issue?
+
+**Investigation Checklist**:
+1. Browser DevTools Network tab - check for POST to `/api/jobs/{id}/cv-editor/pdf`
+2. Browser Console - check for JavaScript errors
+3. Source code review - compare working editor button with detail page button
+4. Test endpoint directly with curl
+
+**Workaround**: Users can open CV editor side panel and export from there (works correctly)
+
+**Timeline**: Should fix before Phase 5 release (blocks polished feature)
+
+#### Infrastructure Task: PDF Service Separation (Phase 6)
+
+**Status**: Planning (Ready for Implementation)
+**Severity**: High (Architecture)
+**Effort**: 4-6 hours (1 developer, 1 session)
+**Plan Document**: `plans/phase6-pdf-service-separation.md`
+
+**Objective**: Separate PDF generation from runner service into dedicated Docker container for better separation of concerns and independent scaling.
+
+**Current Problem**:
+- Runner service handles both pipeline execution AND PDF generation (tight coupling)
+- Can't scale PDF independently from pipeline
+- Playwright/Chromium is resource-heavy
+- Future need for cover letter + dossier PDFs requires modifying runner repeatedly
+
+**Proposed Solution**:
+- New `pdf-service` Docker container with Playwright + Chromium
+- API endpoints:
+  - POST `/render-pdf` (generic HTML/CSS → PDF)
+  - POST `/cv-to-pdf` (TipTap JSON → PDF, current use case)
+  - POST `/cover-letter-to-pdf` (planned Phase 6 feature)
+  - POST `/dossier-to-pdf` (planned Phase 7 feature)
+- Runner proxies PDF requests to PDF service via internal Docker network
+- Frontend unchanged (still calls runner, runner calls PDF service)
+
+**Implementation Phases**:
+1. Create PDF service container (2 hours)
+2. Implement PDF endpoints (2 hours)
+3. Update runner integration (1 hour)
+4. Deployment & testing (1 hour)
+5. Add cover letter support (future Phase 6)
+6. Add dossier support (future Phase 7)
+
+**Benefits**:
+- Clear separation of concerns
+- Independent scaling (pipeline ≠ PDF)
+- Better resource management
+- Easier to add new document types
+- PDF service can restart without affecting pipeline
+
+**Timeline**: Can be done in parallel with Phase 5 (1 session, 4-6 hours)
+
+**Risks**: Low (easy rollback, isolated service)
+
 ### Frontend & UI Enhancements
 
 #### Pipeline Progress Indicator (PENDING)
