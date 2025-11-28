@@ -434,12 +434,14 @@ class TestBuildPDFHTMLTemplate:
             line_height=1.5
         )
 
-        assert "font-family: 'Roboto'" in html
+        # Check CSS variables and body styles (professional design system)
+        assert "--font-body: 'Roboto'" in html
         assert "font-size: 12pt" in html
         assert "line-height: 1.5" in html
+        assert "font-family: var(--font-body)" in html
 
     def test_heading_font_sizes(self):
-        """Test that heading font sizes are calculated correctly."""
+        """Test that heading font sizes use professional typography (fixed sizes)."""
         html = build_pdf_html_template(
             content_html="<p>Test</p>",
             font_family="Inter",
@@ -447,9 +449,9 @@ class TestBuildPDFHTMLTemplate:
             line_height=1.15
         )
 
-        # h1 should be 1.8x base font size
-        assert "h1 { font-size: 18.0pt; }" in html
-        # h2 should be 1.5x base font size
-        assert "h2 { font-size: 15.0pt; }" in html
-        # h3 should be 1.3x base font size
-        assert "h3 { font-size: 13.0pt; }" in html
+        # Professional typography uses fixed heading sizes (Codex design system)
+        assert "h1 {" in html and "font-size: 34px" in html
+        assert "h2 {" in html and "font-size: 20px" in html
+        assert "h3 {" in html and "font-size: 16px" in html
+        # Verify heading font family uses serif
+        assert "--font-heading: 'Playfair Display'" in html
