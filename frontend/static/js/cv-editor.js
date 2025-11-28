@@ -897,6 +897,14 @@ async function openCVEditorPanel() {
     if (!cvEditorInstance) {
         cvEditorInstance = new CVEditor(jobId, editorContainer);
         await cvEditorInstance.init();
+
+        // FIX: Sync styles to main display after initialization
+        setTimeout(() => {
+            applyStylesToMainCVDisplay();
+        }, 100);
+    } else {
+        // FIX: Re-sync styles when reopening panel
+        applyStylesToMainCVDisplay();
     }
 }
 
@@ -930,6 +938,7 @@ function closeCVEditorPanel() {
 /**
  * Update main CV display with current editor content
  * Converts TipTap JSON to HTML and updates the #cv-markdown-display element
+ * FIX: Now also applies document styles (line height, margins, etc.) to main display
  */
 function updateMainCVDisplay() {
     if (!cvEditorInstance || !cvEditorInstance.editor) {
@@ -950,6 +959,9 @@ function updateMainCVDisplay() {
             console.warn('CV display element not found');
         }
 
+        // FIX: Apply document styles to main CV display
+        applyStylesToMainCVDisplay();
+
         // Also update the textarea backup (for legacy edit mode)
         const cvTextarea = document.getElementById('cv-markdown-editor');
         if (cvTextarea) {
@@ -961,6 +973,50 @@ function updateMainCVDisplay() {
     } catch (error) {
         console.error('Failed to update main CV display:', error);
     }
+}
+
+/**
+ * Apply document styles to main CV display (outside editor panel)
+ * FIX: This ensures line height, margins, and other document styles
+ * are visible in the main CV preview, not just the editor panel
+ */
+function applyStylesToMainCVDisplay() {
+    if (!cvEditorInstance) {
+        return;
+    }
+
+    const cvContainer = document.getElementById('cv-container');
+    const cvDisplay = document.getElementById('cv-markdown-display');
+
+    if (!cvContainer || !cvDisplay) {
+        return;
+    }
+
+    // Get current document styles from editor
+    const lineHeight = cvEditorInstance.getCurrentLineHeight();
+    const margins = cvEditorInstance.getCurrentMargins();
+    const pageSize = cvEditorInstance.getCurrentPageSize();
+
+    // Apply line height to main display
+    cvDisplay.style.lineHeight = lineHeight;
+
+    // Apply margins as padding to container
+    cvContainer.style.paddingTop = `${margins.top}in`;
+    cvContainer.style.paddingRight = `${margins.right}in`;
+    cvContainer.style.paddingBottom = `${margins.bottom}in`;
+    cvContainer.style.paddingLeft = `${margins.left}in`;
+
+    // Apply page size constraints
+    if (pageSize === 'a4') {
+        cvContainer.style.maxWidth = '210mm';
+        cvContainer.style.minHeight = '297mm';
+    } else {
+        // Letter (8.5" x 11")
+        cvContainer.style.maxWidth = '8.5in';
+        cvContainer.style.minHeight = '11in';
+    }
+
+    console.log(`✅ Applied document styles to main CV display: lineHeight=${lineHeight}, pageSize=${pageSize}`);
 }
 
 /**
@@ -1084,11 +1140,15 @@ function applyCVFormat(command, value = null) {
 
 /**
  * Apply document-level style changes (Phase 3)
+ * FIX: Now also updates main CV display when styles change
  */
 function applyDocumentStyle(styleType) {
     if (cvEditorInstance) {
         // Apply styles to editor immediately
         cvEditorInstance.applyDocumentStyles();
+
+        // FIX: Also apply to main CV display
+        applyStylesToMainCVDisplay();
 
         // Trigger auto-save
         cvEditorInstance.scheduleAutoSave();

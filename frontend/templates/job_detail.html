@@ -155,7 +155,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -174,7 +174,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -193,7 +193,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -212,7 +212,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -231,7 +231,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -250,7 +250,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -269,7 +269,7 @@
                                     <div class="step-error"></div>
                                     <div class="step-metadata">
                                         <div class="step-metadata-item">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             <span class="step-duration">--</span>
@@ -1716,6 +1716,9 @@
             logLine.textContent = event.data;
             logsContent.appendChild(logLine);
 
+            // FIX: Parse log output to update pipeline steps
+            parseLogAndUpdateSteps(event.data);
+
             // Auto-scroll to bottom
             const logsContainer = document.getElementById('logs-container');
             logsContainer.scrollTop = logsContainer.scrollHeight;
@@ -1734,6 +1737,68 @@
                 eventSource = null;
             }
         });
+    }
+
+    /**
+     * Parse log output and update pipeline step states
+     * FIX: Dynamically marks steps as in-progress or complete based on terminal output
+     */
+    function parseLogAndUpdateSteps(logText) {
+        // Map of log patterns to layer names
+        const layerPatterns = {
+            'intake': /Layer 1.*Intake|Starting intake|Intake layer/i,
+            'pain_points': /Layer 2.*Pain|Pain Point Mining|Starting pain/i,
+            'company_research': /Layer 3.*Company|Company Research|Researching company/i,
+            'role_research': /Layer 4.*Role|Role Research|Researching role/i,
+            'fit_scoring': /Layer 5.*Fit|Fit Scoring|Calculating fit/i,
+            'people_mapping': /Layer 6.*People|People Mapping|Finding contacts/i,
+            'cv_outreach_generation': /Layer 7.*CV|Outreach|Generating CV/i
+        };
+
+        // Check for layer start (in-progress)
+        for (const [layerName, pattern] of Object.entries(layerPatterns)) {
+            if (pattern.test(logText)) {
+                // Check if log indicates start
+                if (/starting|running|executing|processing/i.test(logText)) {
+                    updatePipelineStep(layerName, 'executing');
+                    calculateOverallProgress();
+                }
+                // Check if log indicates completion
+                else if (/complete|finished|done|success/i.test(logText)) {
+                    updatePipelineStep(layerName, 'success');
+                    calculateOverallProgress();
+                }
+                // Check if log indicates failure
+                else if (/failed|error|exception/i.test(logText)) {
+                    updatePipelineStep(layerName, 'failed', logText);
+                    calculateOverallProgress();
+                }
+            }
+        }
+
+        // Generic layer completion pattern: "✓ Layer N complete" or "✓ N. LayerName"
+        const completionMatch = logText.match(/[✓✔]\s*(Layer\s*)?(\d+|intake|pain|company|role|fit|people|cv)/i);
+        if (completionMatch) {
+            // Map number to layer name
+            const layerMap = {
+                '1': 'intake',
+                '2': 'pain_points',
+                '3': 'company_research',
+                '4': 'role_research',
+                '5': 'fit_scoring',
+                '6': 'people_mapping',
+                '7': 'cv_outreach_generation'
+            };
+            const layerKey = layerMap[completionMatch[2]] || completionMatch[2].toLowerCase();
+            const layerName = Object.keys(layerPatterns).find(name =>
+                name.includes(layerKey) || layerKey.includes(name.split('_')[0])
+            );
+            if (layerName) {
+                updatePipelineStep(layerName, 'success');
+                calculateOverallProgress();
+            }
+        }
+    }
 
         eventSource.addEventListener('error', (event) => {
             console.error('Log stream error:', event);
