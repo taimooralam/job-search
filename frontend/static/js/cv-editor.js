@@ -876,14 +876,20 @@ let cvEditorInstance = null;
 
 /**
  * Open CV editor side panel
+ * @param {string} jobId - The job ID to load CV for
  */
-async function openCVEditorPanel() {
+async function openCVEditorPanel(jobId) {
     const panel = document.getElementById('cv-editor-panel');
     const overlay = document.getElementById('cv-editor-overlay');
     const editorContainer = document.getElementById('cv-editor-content');
 
     if (!panel || !overlay || !editorContainer) {
         console.error('CV editor panel elements not found');
+        return;
+    }
+
+    if (!jobId) {
+        console.error('Job ID is required to open CV editor');
         return;
     }
 

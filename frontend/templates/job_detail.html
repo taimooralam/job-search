@@ -301,7 +301,7 @@
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Generated CV</h2>
                     <div class="flex gap-2">
-                        <button id="edit-cv-btn" onclick="openCVEditorPanel()"
+                        <button id="edit-cv-btn" onclick="openCVEditorPanel('{{ job._id }}')"
                                 class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
