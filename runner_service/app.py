@@ -383,7 +383,7 @@ async def generate_cv_pdf(job_id: str):
         StreamingResponse with PDF binary data
     """
     from io import BytesIO
-    from playwright.sync_api import sync_playwright
+    from playwright.async_api import async_playwright
     from bson import ObjectId
     from pymongo import MongoClient
     from .pdf_helpers import (
@@ -466,20 +466,20 @@ async def generate_cv_pdf(job_id: str):
             footer_text
         )
 
-        # Generate PDF using Playwright
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
+        # Generate PDF using Playwright (async API)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
 
             # Set HTML content
-            page.set_content(full_html, wait_until='networkidle')
+            await page.set_content(full_html, wait_until='networkidle')
 
             # Wait for fonts to load
-            page.wait_for_load_state('networkidle')
+            await page.wait_for_load_state('networkidle')
 
             # Generate PDF with settings from Phase 3
             pdf_format = 'A4' if page_size == 'a4' else 'Letter'
-            pdf_bytes = page.pdf(
+            pdf_bytes = await page.pdf(
                 format=pdf_format,
                 print_background=True,
                 margin={
@@ -490,7 +490,7 @@ async def generate_cv_pdf(job_id: str):
                 }
             )
 
-            browser.close()
+            await browser.close()
 
         # Build filename: CV_<Company>_<Title>.pdf
         company_clean = sanitize_for_path(job.get("company", "Company"))
