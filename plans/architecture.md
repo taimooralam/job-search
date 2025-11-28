@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-11-27 (Phase 4 Complete)
+**Last Updated**: 2025-11-28 (Phase 4 Complete + Recent Fixes)
 
 ---
 
@@ -527,11 +527,12 @@ RUNNER_SERVICE_URL=http://72.61.92.76:8000    # Runner service base URL
 RUNNER_API_SECRET=<shared-secret>             # REQUIRED: Must match runner service RUNNER_API_SECRET
 ```
 
-**Runner Service (app.py)**:
+**Runner Service (app.py)** (Updated 2025-11-28):
 ```bash
-MONGO_URI=mongodb+srv://...                   # MongoDB connection
+MONGODB_URI=mongodb+srv://...                 # MongoDB connection (changed from MONGO_URI)
 MONGO_DB_NAME=job_search                      # Database name
 PLAYWRIGHT_HEADLESS=true                      # Always headless in production
+RUNNER_API_SECRET=<shared-secret>             # Authentication token (changed from RUNNER_API_TOKEN)
 ```
 
 **PDF Generation Details:**
@@ -551,18 +552,20 @@ PLAYWRIGHT_HEADLESS=true                      # Always headless in production
    - **Benefit**: Supports arbitrarily deep document nesting without stack overflow errors
    - **Files**: `runner_service/pdf_helpers.py` - `tiptap_json_to_html()` function
 
-3. **Playwright Configuration**:
+3. **Playwright Configuration** (Updated 2025-11-28):
    - Format: `letter` (8.5" × 11") or `a4` (210mm × 297mm)
-   - Margins: From `documentStyles.margins` (converted to inches/mm)
+   - Margins: From `documentStyles.margins` applied via CSS `@page` rule (WYSIWYG)
    - Print background: `true` (preserves styling)
    - Scale: `1.0` (pixel-perfect rendering)
    - Timeout: 30 seconds
+   - Async API: Converted to async for FastAPI compatibility (commit 86de8a00)
 
-4. **Output Quality**:
+4. **Output Quality** (Updated 2025-11-28):
    - ATS-compatible (selectable text, no image-based rendering)
    - Fonts embedded (no font substitution issues)
    - Colors preserved (heading colors, highlights, alignment)
    - Page breaks handled automatically by Chromium
+   - Margins via CSS @page rule ensure WYSIWYG rendering (commit 39fc8274)
 
 **Error Handling:**
 
@@ -779,11 +782,166 @@ cv_editor_state: {
 - [x] 22 unit tests (100% passing)
 
 **Pending (Phase 5)**:
+- [ ] WYSIWYG Page Break Visualization (NEW - 2025-11-28) - See section below
 - [ ] Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+Z, etc.)
 - [ ] Version history / undo-redo persistence beyond browser session
 - [ ] E2E tests via Playwright
 - [ ] Mobile responsiveness testing
 - [ ] Accessibility (WCAG 2.1 AA) compliance
+
+### Phase 5: WYSIWYG Page Break Visualization (NEW - 2025-11-28)
+
+**Status**: Planning phase, full specification in `plans/phase5-page-break-visualization.md`
+
+**Feature Overview**:
+Display visual page break indicators in the CV editor and detail page showing exactly where content will break across pages when exported to PDF. Provides true WYSIWYG experience matching actual PDF output.
+
+**Architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      CV Editor with Page Break Visualization                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │ Toolbar: Font | B | I | Margins | Line Height | Page Size | Export  │   │
+│  ├──────────────────────────────────────────────────────────────────────┤   │
+│  │                                                                      │   │
+│  │  ┌────────────────────────────────────────────────────────────────┐ │   │
+│  │  │ TipTap Editor (8.5" x 11" preview)                             │ │   │
+│  │  │                                                                │ │   │
+│  │  │ John Doe                                                       │ │   │
+│  │  │ Senior Software Engineer                                       │ │   │
+│  │  │                                                                │ │   │
+│  │  │ [Content fills first page...]                                 │ │   │
+│  │  │                                                                │ │   │
+│  │  ├────────────────────────────────────────────────────────────────┤ │   │
+│  │  │ PAGE BREAK                                                     │ │   │
+│  │  ├────────────────────────────────────────────────────────────────┤ │   │
+│  │  │                                                                │ │   │
+│  │  │ [Page 2 content...]                                           │ │   │
+│  │  │                                                                │ │   │
+│  │  └────────────────────────────────────────────────────────────────┘ │   │
+│  │                                                                      │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Components**:
+
+1. **Page Break Calculator** (`calculatePageBreaks()`)
+   - Input: TipTap editor state, page size (Letter/A4), margins, document styles
+   - Process:
+     - Calculate available page height = (page height - top margin - bottom margin)
+     - Iterate through TipTap nodes, sum content heights
+     - Record break positions when cumulative height exceeds available height
+   - Output: Array of Y-pixel positions where breaks occur
+   - Example: `[708, 1416, 2124]` for 3-page document
+
+2. **Page Break Renderer** (`renderPageBreaks()`)
+   - Input: Array of break positions
+   - Process:
+     - Insert visual break indicator divs at each position
+     - Apply CSS styling (gray line, "PAGE BREAK" label)
+     - Clean up previous breaks to avoid duplicates
+   - Output: DOM with visual page break indicators
+
+3. **Dynamic Update Integration**
+   - Hooks into existing event handlers:
+     - Content change (TipTap editor)
+     - Margin changes (Document Settings panel)
+     - Line height changes (Document Settings panel)
+     - Page size changes (Document Settings panel)
+   - Debounced (500ms) to prevent excessive recalculation
+
+4. **Detail Page Integration**
+   - Displays page breaks in main CV display area
+   - Reuses calculator and renderer logic
+   - Non-editable view, breaks shown for preview only
+   - Consistent styling with editor breaks
+
+**Data Flow**:
+
+```
+User edits content/styles in CV editor
+        ↓
+Content change event (TipTap or style change)
+        ↓
+Debounce (500ms)
+        ↓
+calculatePageBreaks():
+  ├─ Get page dimensions (letter: 541.8×708px, a4: 793×1123px @ 96DPI)
+  ├─ Get margins and calculate available height
+  ├─ Measure cumulative TipTap node heights
+  └─ Return break positions
+        ↓
+renderPageBreaks():
+  ├─ Clear previous indicators
+  ├─ Insert <div class="page-break-indicator">
+  └─ Apply CSS styling
+        ↓
+User sees page breaks updated in real-time
+```
+
+**CSS Styling**:
+
+```css
+.page-break-indicator {
+  position: absolute;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(to right, #ddd 40%, transparent 40%, transparent 60%, #ddd 60%);
+  border-top: 1px dashed #ccc;
+  margin: 8px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #aaa;
+  pointer-events: none;
+  user-select: none;
+}
+
+.page-break-indicator::after {
+  content: "Page Break";
+  display: block;
+  padding-top: 4px;
+}
+```
+
+**Page Dimensions** (at 96 DPI):
+
+| Size | Width | Height |
+|------|-------|--------|
+| Letter | 8.5" (612px) | 11" (792px) |
+| A4 | 210mm (793px) | 297mm (1122px) |
+
+**Integration** (No API changes - purely client-side):
+- Reuses Phase 3: Document styles (margins, page size, line height)
+- Reuses Phase 4: PDF export (validates break positions)
+- Calculation purely JavaScript, no backend changes needed
+
+**Testing Strategy**:
+- 50+ unit tests: Calculator, Renderer, Integration
+- E2E tests: Editor and detail page functionality
+- Test coverage: Single/multi-page, page sizes, margins, style changes
+
+**Files to Create/Modify**:
+- `frontend/static/js/cv-editor.js` - Page break logic
+- `frontend/templates/base.html` - CSS styling
+- `frontend/templates/job_detail.html` - Detail page integration
+- `tests/frontend/test_cv_editor_phase5.py` - Test suite (new)
+- `plans/phase5-page-break-visualization.md` - Full plan
+
+**Dependencies** (All complete):
+- Phase 3: Document styles
+- Phase 4: PDF export
+
+**Success Criteria**:
+- Page breaks visible in editor matching PDF output
+- Breaks update dynamically on content/style changes
+- All 50+ tests passing
+- No performance degradation
+- Cross-browser compatible
 
 ### Phase 2 Troubleshooting (Known Issues)
 
