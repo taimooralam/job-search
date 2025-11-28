@@ -11,6 +11,7 @@ services:
       - MAX_CONCURRENCY=3
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
+      - PDF_SERVICE_URL=http://pdf-service:8001
     ports:
       # Bind to localhost only for security - use Traefik for external access
       - "127.0.0.1:8000:8000"
@@ -28,10 +29,39 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    depends_on:
+      pdf-service:
+        condition: service_healthy
     networks:
+      - job-pipeline
       - n8n-prod_default
 
+  pdf-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.pdf-service
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PLAYWRIGHT_HEADLESS=true
+      - PLAYWRIGHT_TIMEOUT=30000
+      - MAX_CONCURRENT_PDFS=5
+      - LOG_LEVEL=INFO
+    # No external port exposure - internal Docker network only
+    expose:
+      - "8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - job-pipeline
+
 networks:
+  job-pipeline:
+    driver: bridge
   n8n-prod_default:
     external: true
     # For local testing without n8n, comment out 'external: true' and uncomment below:

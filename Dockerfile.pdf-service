@@ -1,0 +1,47 @@
+# PDF Service Dockerfile with Playwright/Chromium
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Install system dependencies for Playwright/Chromium
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+        libnss3 \
+        libatk-bridge2.0-0 \
+        libgtk-3-0 \
+        libxkbcommon0 \
+        libdrm2 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxrandr2 \
+        libgbm1 \
+        libpango-1.0-0 \
+        libcairo2 \
+        libasound2 \
+        fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+# Note: We only need FastAPI, Playwright for PDF service
+RUN pip install --no-cache-dir \
+    fastapi>=0.115.0 \
+    uvicorn[standard]>=0.24.0 \
+    playwright>=1.40.0 \
+    && python -m playwright install --with-deps chromium
+
+# Copy PDF service code
+COPY pdf_service/ /app/pdf_service/
+
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+CMD ["uvicorn", "pdf_service.app:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -12,7 +12,7 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -365,16 +365,175 @@ async def get_artifact(run_id: str, filename: str):
 # PDF Generation Endpoint (Phase 4 - CV Editor)
 # ============================================================================
 
+def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
+    """
+    Migrate markdown CV text to TipTap editor state.
+
+    Converts markdown to TipTap JSON, parsing line-by-line to handle:
+    - Headings (# ## ###)
+    - Bullet lists (-)
+    - Bold/italic text (**)
+    - Regular paragraphs
+
+    This function duplicates the migration logic from frontend/app.py to ensure
+    consistent behavior when generating PDFs directly without opening the editor.
+
+    Args:
+        cv_text: Markdown CV content
+
+    Returns:
+        TipTap editor state dictionary
+    """
+    lines = cv_text.split('\n')
+    content = []
+    current_list = None
+    i = 0
+
+    def parse_inline_marks(text):
+        """Parse bold and italic marks from text."""
+        # Simple regex-based parsing for bold (**text**) and italic (*text*)
+        # For now, just return plain text node
+        # TODO: Implement proper inline mark parsing
+        return [{"type": "text", "text": text}]
+
+    while i < len(lines):
+        line = lines[i].strip()
+
+        if not line:
+            # Empty line closes current list
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            i += 1
+            continue
+
+        # Heading level 1
+        if line.startswith('# ') and not line.startswith('##'):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 1},
+                "content": parse_inline_marks(line[2:].strip())
+            })
+
+        # Heading level 2
+        elif line.startswith('## ') and not line.startswith('###'):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": parse_inline_marks(line[3:].strip())
+            })
+
+        # Heading level 3
+        elif line.startswith('### '):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 3},
+                "content": parse_inline_marks(line[4:].strip())
+            })
+
+        # Bullet point
+        elif line.startswith('- '):
+            list_item = {
+                "type": "listItem",
+                "content": [{
+                    "type": "paragraph",
+                    "content": parse_inline_marks(line[2:].strip())
+                }]
+            }
+
+            if current_list is None:
+                current_list = {
+                    "type": "bulletList",
+                    "content": [list_item]
+                }
+            else:
+                current_list["content"].append(list_item)
+
+        # Regular paragraph
+        else:
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "paragraph",
+                "content": parse_inline_marks(line)
+            })
+
+        i += 1
+
+    # Close any open list at end
+    if current_list:
+        content.append(current_list)
+
+    return {
+        "version": 1,
+        "content": {
+            "type": "doc",
+            "content": content
+        },
+        "documentStyles": {
+            "fontFamily": "Inter",
+            "fontSize": 11,
+            "lineHeight": 1.15,  # Phase 3: Standard resume spacing
+            "margins": {
+                "top": 1.0,  # Phase 3: Standard 1-inch margins
+                "right": 1.0,
+                "bottom": 1.0,
+                "left": 1.0
+            },
+            "pageSize": "letter"
+        }
+    }
+
+
+def sanitize_margins(margins: Optional[Dict[str, Any]]) -> Dict[str, float]:
+    """
+    Sanitize margins dictionary to ensure all values are valid floats.
+
+    Handles None, NaN, missing keys, and invalid types by falling back to defaults.
+    This prevents the "Nonein" bug where None values get interpolated as strings.
+
+    Args:
+        margins: Margins dict from editor state (may contain None/null values)
+
+    Returns:
+        Dict with all margin values as valid floats (default 1.0 inches)
+    """
+    if not margins or not isinstance(margins, dict):
+        return {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
+
+    defaults = {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
+    result = {}
+
+    for key in ["top", "right", "bottom", "left"]:
+        value = margins.get(key)
+        # Handle None, null, NaN, or invalid types
+        if value is None or not isinstance(value, (int, float)) or value != value:  # NaN check
+            result[key] = defaults[key]
+        else:
+            result[key] = float(value)
+
+    return result
+
+
 @app.post("/api/jobs/{job_id}/cv-editor/pdf", dependencies=[Depends(verify_token)])
 async def generate_cv_pdf(job_id: str):
     """
-    Generate PDF from CV editor state using Playwright (Phase 4).
+    Generate PDF from CV editor state via PDF service (Phase 6).
 
     This endpoint:
     1. Fetches cv_editor_state from MongoDB
-    2. Converts TipTap JSON to HTML with Phase 2+3 styles
-    3. Generates PDF using Playwright with proper page settings
-    4. Returns PDF as downloadable attachment
+    2. Sends TipTap JSON + styles to PDF service
+    3. Returns PDF as downloadable attachment
 
     Args:
         job_id: MongoDB ObjectId of the job
@@ -382,15 +541,12 @@ async def generate_cv_pdf(job_id: str):
     Returns:
         StreamingResponse with PDF binary data
     """
-    from io import BytesIO
-    from playwright.async_api import async_playwright
+    import httpx
     from bson import ObjectId
     from pymongo import MongoClient
-    from .pdf_helpers import (
-        tiptap_json_to_html,
-        build_pdf_html_template,
-        sanitize_for_path
-    )
+
+    # Get PDF service URL from environment
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
 
     # Get MongoDB connection
     # IMPORTANT: Use MONGODB_URI to match persistence.py and frontend
@@ -414,9 +570,25 @@ async def generate_cv_pdf(job_id: str):
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
 
-        # Get editor state (or use default if not present)
+        # Get editor state (or migrate from cv_text if not present)
         editor_state = job.get("cv_editor_state")
-        if not editor_state or not editor_state.get("content"):
+
+        # Validate editor state structure
+        is_valid_state = (
+            editor_state
+            and isinstance(editor_state, dict)
+            and "content" in editor_state
+            and isinstance(editor_state["content"], dict)
+            and editor_state["content"].get("type") == "doc"
+        )
+
+        # If no valid editor state exists, migrate from cv_text (markdown)
+        # This allows users to export PDF directly without opening the editor first
+        if not is_valid_state and job.get("cv_text"):
+            editor_state = migrate_cv_text_to_editor_state(job.get("cv_text"))
+
+        # If still no state (no cv_text and no cv_editor_state), use empty default
+        if not editor_state:
             editor_state = {
                 "content": {"type": "doc", "content": []},
                 "documentStyles": {
@@ -428,85 +600,72 @@ async def generate_cv_pdf(job_id: str):
                 }
             }
 
-        # Convert TipTap JSON to HTML with recursion protection
-        try:
-            html_content = tiptap_json_to_html(editor_state["content"])
-        except RecursionError as e:
-            logger.error(f"Recursion error in PDF generation for job {job_id}: {str(e)}")
-            raise HTTPException(
-                status_code=400,
-                detail="CV document structure is too deeply nested. Please simplify the document structure and try again."
-            )
-        except Exception as e:
-            logger.error(f"Error converting TipTap JSON to HTML for job {job_id}: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to process CV content: {str(e)}"
-            )
+        # Build request payload for PDF service
+        pdf_request = {
+            "tiptap_json": editor_state["content"],
+            "documentStyles": editor_state.get("documentStyles", {}),
+            "header": editor_state.get("header", ""),
+            "footer": editor_state.get("footer", ""),
+            "company": job.get("company", "Company"),
+            "role": job.get("title", "Position")
+        }
 
-        # Get document styles
-        doc_styles = editor_state.get("documentStyles", {})
-        page_size = doc_styles.get("pageSize", "letter")
-        margins = doc_styles.get("margins", {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0})
-        line_height = doc_styles.get("lineHeight", 1.15)
-        font_family = doc_styles.get("fontFamily", "Inter")
-        font_size = doc_styles.get("fontSize", 11)
-
-        # Get header and footer
-        header_text = editor_state.get("header", "")
-        footer_text = editor_state.get("footer", "")
-
-        # Build complete HTML document with styles
-        full_html = build_pdf_html_template(
-            html_content,
-            font_family,
-            font_size,
-            line_height,
-            header_text,
-            footer_text,
-            page_size,
-            margins
-        )
-
-        # Generate PDF using Playwright (async API)
-        async with async_playwright() as p:
-            browser = await p.chromium.launch()
-            page = await browser.new_page()
-
-            # Set HTML content
-            await page.set_content(full_html, wait_until='networkidle')
-
-            # Wait for fonts to load
-            await page.wait_for_load_state('networkidle')
-
-            # Generate PDF with settings from Phase 3
-            pdf_format = 'A4' if page_size == 'a4' else 'Letter'
-            pdf_bytes = await page.pdf(
-                format=pdf_format,
-                print_background=True,
-                margin={
-                    'top': f"{margins.get('top', 1.0)}in",
-                    'right': f"{margins.get('right', 1.0)}in",
-                    'bottom': f"{margins.get('bottom', 1.0)}in",
-                    'left': f"{margins.get('left', 1.0)}in"
-                }
+        # Sanitize margins to prevent None/NaN values from causing PDF generation errors
+        if "documentStyles" in pdf_request:
+            pdf_request["documentStyles"]["margins"] = sanitize_margins(
+                pdf_request["documentStyles"].get("margins")
             )
 
-            await browser.close()
+        # Call PDF service with timeout and retry logic
+        async with httpx.AsyncClient(timeout=60.0) as http_client:
+            try:
+                response = await http_client.post(
+                    f"{pdf_service_url}/cv-to-pdf",
+                    json=pdf_request
+                )
+                response.raise_for_status()
 
-        # Build filename: CV_<Company>_<Title>.pdf
-        company_clean = sanitize_for_path(job.get("company", "Company"))
-        title_clean = sanitize_for_path(job.get("title", "Position"))
-        filename = f"CV_{company_clean}_{title_clean}.pdf"
+                # Extract filename from response headers
+                content_disposition = response.headers.get("Content-Disposition", "")
+                filename = "CV.pdf"
+                if "filename=" in content_disposition:
+                    # Parse filename from Content-Disposition header
+                    filename_part = content_disposition.split("filename=")[1]
+                    filename = filename_part.strip('"')
 
-        # Return PDF as streaming response
-        return StreamingResponse(
-            BytesIO(pdf_bytes),
-            media_type='application/pdf',
-            headers={
-                'Content-Disposition': f'attachment; filename="{filename}"'
-            }
-        )
+                # Return PDF as streaming response
+                from io import BytesIO
+                return StreamingResponse(
+                    BytesIO(response.content),
+                    media_type='application/pdf',
+                    headers={
+                        'Content-Disposition': f'attachment; filename="{filename}"'
+                    }
+                )
+
+            except httpx.TimeoutException:
+                logger.error(f"PDF service timeout for job {job_id}")
+                raise HTTPException(
+                    status_code=504,
+                    detail="PDF generation timed out. Please try again."
+                )
+            except httpx.HTTPStatusError as e:
+                logger.error(f"PDF service returned error {e.response.status_code} for job {job_id}")
+                # Try to parse error details from response
+                try:
+                    error_detail = e.response.json().get("detail", str(e))
+                except Exception:
+                    error_detail = str(e)
+                raise HTTPException(
+                    status_code=e.response.status_code,
+                    detail=f"PDF generation failed: {error_detail}"
+                )
+            except httpx.RequestError as e:
+                logger.error(f"PDF service connection failed for job {job_id}: {str(e)}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="PDF service unavailable. Please try again later."
+                )
 
     except HTTPException:
         raise

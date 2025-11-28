@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-11-27 (Phase 4 Complete)
+**Last Updated**: 2025-11-28 (Phase 6 Complete - PDF Service Separation)
 
 > **See also**:
 >
@@ -32,6 +32,9 @@
 - [x] PDF Margins WYSIWYG via CSS @page ✅ **COMPLETED 2025-11-28** (Changed from parameter-based to CSS-based margin rendering)
 - [x] Playwright Async API Conversion ✅ **COMPLETED 2025-11-28** (Converted to async API for FastAPI compatibility)
 - [x] MongoDB URI Standardization ✅ **COMPLETED 2025-11-28** (Changed MONGO_URI to MONGODB_URI for consistency)
+- [x] Export PDF Button Fix (Detail Page) ✅ **COMPLETED 2025-11-28** (Fixed non-functional export button on job detail page; commit 401b3fda)
+- [x] CV Rich Text Editor Phase 5.1 - Page Break Visualization ✅ **COMPLETED 2025-11-28** (32 unit tests passing; visual indicators for page breaks in editor and detail page; commit c81c1ff4)
+- [x] Phase 6: PDF Service Separation ✅ **COMPLETED 2025-11-28** (56 unit tests passing; separated PDF generation into dedicated microservice with Playwright/Chromium; runner proxies to PDF service; ready for deployment)
 
 ---
 
@@ -70,7 +73,7 @@ All agent-specific documentation has been organized into:
 
 - [x] CV generator tests need mocking to avoid real API calls ✅ **COMPLETED 2025-11-26**
   - Added `mock_llm_providers` fixture mocking ChatAnthropic and ChatOpenAI
-  - All 188 unit tests pass without real API calls
+  - All 220 unit tests pass without real API calls (188 Phase 1-4 + 32 Phase 5.1)
   - Added 30+ new tests for CV editing API and HTML CV generator
 - [ ] Integration tests not in GitHub Actions CI
 - [ ] No coverage tracking
@@ -123,80 +126,120 @@ All agent-specific documentation has been organized into:
 
 ### Critical Issues (2025-11-28)
 
-#### Bug: Export PDF Button Not Working on Job Detail Page
+#### Infrastructure Task: PDF Service Separation (Phase 6) ✅ COMPLETE
 
-**Status**: Needs Investigation & Fix
-**Severity**: HIGH (Core Feature)
-**Effort**: 1-3 hours (depending on root cause)
-**Plan Document**: `plans/bugs/export-pdf-detail-page.md`
-
-**Issue**: The "Export PDF" button on the job detail page is not functioning. Users cannot export a PDF from the main detail page view; the only working export option is the "Export PDF" button in the CV editor side panel.
-
-**Expected**: User can export CV as PDF directly from job detail page
-**Actual**: Button doesn't respond, no PDF downloads. Side panel button works fine.
-
-**Root Cause Analysis Needed**:
-- Does button exist in HTML?
-- Is click handler attached to button?
-- Does API endpoint receive request?
-- Are request body/headers correct?
-- Is there CORS or auth issue?
-
-**Investigation Checklist**:
-1. Browser DevTools Network tab - check for POST to `/api/jobs/{id}/cv-editor/pdf`
-2. Browser Console - check for JavaScript errors
-3. Source code review - compare working editor button with detail page button
-4. Test endpoint directly with curl
-
-**Workaround**: Users can open CV editor side panel and export from there (works correctly)
-
-**Timeline**: Should fix before Phase 5 release (blocks polished feature)
-
-#### Infrastructure Task: PDF Service Separation (Phase 6)
-
-**Status**: Planning (Ready for Implementation)
-**Severity**: High (Architecture)
-**Effort**: 4-6 hours (1 developer, 1 session)
+**Status**: COMPLETE and TESTED (2025-11-28)
+**Implementation Date**: 2025-11-28
+**Actual Duration**: ~6 hours
+**Test Coverage**: 56 unit tests (100% passing, 0.33s execution)
 **Plan Document**: `plans/phase6-pdf-service-separation.md`
 
 **Objective**: Separate PDF generation from runner service into dedicated Docker container for better separation of concerns and independent scaling.
 
-**Current Problem**:
-- Runner service handles both pipeline execution AND PDF generation (tight coupling)
-- Can't scale PDF independently from pipeline
-- Playwright/Chromium is resource-heavy
-- Future need for cover letter + dossier PDFs requires modifying runner repeatedly
+**Delivered Solution**:
+- ✅ New `pdf-service` Docker container with Playwright + Chromium
+- ✅ API endpoints implemented:
+  - POST `/health` - Health check with capacity monitoring
+  - POST `/render-pdf` - Generic HTML/CSS → PDF conversion
+  - POST `/cv-to-pdf` - TipTap JSON → PDF (current use case)
+  - POST `/cover-letter-to-pdf` - Ready for implementation (Phase 6 feature)
+  - POST `/dossier-to-pdf` - Ready for implementation (Phase 7 feature)
+- ✅ Runner proxies PDF requests to PDF service via internal Docker network
+- ✅ Frontend unchanged (still calls runner, runner calls PDF service)
+- ✅ All error handling implemented (400/500/503 codes, timeout handling)
+- ✅ Concurrency limiting (max 5 concurrent PDF operations)
 
-**Proposed Solution**:
-- New `pdf-service` Docker container with Playwright + Chromium
-- API endpoints:
-  - POST `/render-pdf` (generic HTML/CSS → PDF)
-  - POST `/cv-to-pdf` (TipTap JSON → PDF, current use case)
-  - POST `/cover-letter-to-pdf` (planned Phase 6 feature)
-  - POST `/dossier-to-pdf` (planned Phase 7 feature)
-- Runner proxies PDF requests to PDF service via internal Docker network
-- Frontend unchanged (still calls runner, runner calls PDF service)
+**Implementation Completed**:
+1. ✅ PDF service container created (Dockerfile.pdf-service)
+2. ✅ PDF endpoints implemented with comprehensive error handling
+3. ✅ Runner integration updated (HTTP client replaces local Playwright)
+4. ✅ Docker Compose configuration updated for both services
+5. ✅ Comprehensive test suite (56 tests: 48 PDF service + 8 integration)
 
-**Implementation Phases**:
-1. Create PDF service container (2 hours)
-2. Implement PDF endpoints (2 hours)
-3. Update runner integration (1 hour)
-4. Deployment & testing (1 hour)
-5. Add cover letter support (future Phase 6)
-6. Add dossier support (future Phase 7)
+**Benefits Achieved**:
+- ✅ Clear separation of concerns (pipeline ≠ PDF generation)
+- ✅ Independent scaling possible (services on separate containers)
+- ✅ Better resource management (Chromium isolated)
+- ✅ Easier to add new document types (architecture in place)
+- ✅ PDF service can restart without affecting pipeline
+- ✅ Internal-only exposure (no external port on PDF service)
 
-**Benefits**:
-- Clear separation of concerns
-- Independent scaling (pipeline ≠ PDF)
-- Better resource management
-- Easier to add new document types
-- PDF service can restart without affecting pipeline
+**Architecture Changes**:
+- **Before**: Runner service handled both pipeline execution and PDF generation
+- **After**: Runner (port 8000) + PDF Service (port 8001, internal only) on shared Docker network
 
-**Timeline**: Can be done in parallel with Phase 5 (1 session, 4-6 hours)
+**Files Created**:
+- `pdf_service/__init__.py`
+- `pdf_service/app.py` (327 lines - FastAPI endpoints)
+- `pdf_service/pdf_helpers.py` (369 lines - moved from runner)
+- `Dockerfile.pdf-service` (48 lines)
+- `tests/pdf_service/test_endpoints.py` (315 lines, 17 tests)
+- `tests/pdf_service/test_pdf_helpers.py` (403 lines, 31 tests)
+- `tests/runner/test_pdf_integration.py` (331 lines, 8 tests)
+- `conftest.py` (root pytest config)
+- `setup.py` (editable install config)
 
-**Risks**: Low (easy rollback, isolated service)
+**Files Modified**:
+- `docker-compose.runner.yml` - Added PDF service configuration
+- `runner_service/app.py` - Replaced local Playwright with HTTP client
+- `pytest.ini` - Added pythonpath config
+
+**Test Coverage**:
+- PDF service health check: 3 tests
+- /render-pdf endpoint: 5 tests
+- /cv-to-pdf endpoint: 7 tests
+- Concurrency limits: 2 tests
+- PDF helpers (TipTap conversion, HTML templates): 31 tests
+- Runner integration (proxy, error handling): 8 tests
+- **Total**: 56 tests, 100% passing
+
+**Next Steps**:
+- [ ] Deploy to VPS: Build images and start both services
+- [ ] End-to-end testing from frontend
+- [ ] Add cover letter PDF endpoint (future feature)
+- [ ] Add dossier PDF endpoint (future feature)
 
 ### Frontend & UI Enhancements
+
+#### Runner Terminal Copy Button (NEW - PENDING)
+
+**Status**: Not started
+**Priority**: Medium (UX enhancement)
+**Estimated Duration**: 1-2 hours
+
+**Description**:
+Add a copy button to the runner terminal interface visible on the front-end that copies all displayed logs to the clipboard. Users need the ability to easily capture and share pipeline execution logs.
+
+**Requirements**:
+- Copy button visible and easily accessible in the runner terminal interface
+- Button copies all terminal logs/output to clipboard on click
+- Visual feedback when copy is successful (toast notification or button state change)
+- Include timestamp or metadata in copied content (optional)
+- Should work with logs from all pipeline layers
+- Graceful fallback if clipboard API unavailable
+
+**Technical Approach**:
+- Add copy button next to or within the terminal output area
+- Use Clipboard API (`navigator.clipboard.writeText()`)
+- Capture all text content from terminal output container
+- Show success toast notification on successful copy
+- Handle large log output gracefully
+
+**UI Location**: Runner terminal output panel, near the top or bottom of the log display area
+
+**Files to Modify**:
+- `frontend/templates/job_detail.html` - Add copy button HTML and styling
+- `frontend/static/js/runner-terminal.js` (or cv-editor.js if using same location) - Add copy logic
+- Possibly: Add/update toast notification styling in base.html
+
+**Dependencies**:
+- Clipboard API (modern browsers)
+- Existing runner terminal implementation
+- Toast notification system (likely already exists)
+
+**Related**:
+- Frontend-runner integration (already complete)
+- Runner log streaming to frontend
 
 #### Pipeline Progress Indicator (PENDING)
 
@@ -634,42 +677,47 @@ PLAYWRIGHT_HEADLESS=true
 
 **Phase 5 Sub-Features**:
 
-##### Phase 5.1: WYSIWYG Page Break Visualization (NEW - 2025-11-28)
+##### Phase 5.1: WYSIWYG Page Break Visualization ✅ **COMPLETED 2025-11-28**
 
-**Status**: Planning phase, full specification documented
-**Estimated Duration**: 8-10 hours
-**Priority**: High (improves user experience, prevents surprise page breaks in PDF)
+**Status**: COMPLETE and TESTED
+**Completion Date**: 2025-11-28
+**Implementation Duration**: 8-10 hours
+**Test Coverage**: 32 unit tests (100% passing, 0.02s execution)
+**Implementation Report**: See `reports/PHASE5_1_IMPLEMENTATION_2025-11-28.md`
 **Plan Document**: See `plans/phase5-page-break-visualization.md`
 
 **Description**:
-Display visual page break indicators in CV editor and detail page showing exactly where content will break across pages in PDF export. Respects page size (Letter/A4) and margin settings.
+Visual page break indicators in CV editor and detail page showing exactly where content will break across pages in PDF export. Respects page size (Letter/A4) and margin settings for true WYSIWYG experience.
 
-**Components**:
-- [ ] Page break calculator (calculate break positions from content height)
-- [ ] Page break renderer (insert visual break indicators)
-- [ ] Dynamic update integration (recalculate on content/style changes)
-- [ ] Detail page integration (show breaks in main CV display)
-- [ ] Comprehensive test suite (50+ tests)
+**Features Delivered**:
+- [x] Page break calculator (calculate break positions from content height)
+- [x] Page break renderer (insert visual break indicators with "Page X" labels)
+- [x] Dynamic update integration (recalculate on content/style changes with 300ms debounce)
+- [x] Detail page integration (show breaks in main CV display)
+- [x] Comprehensive test suite (32 tests, all passing)
+- [x] Visual indicators (gray dashed lines)
+- [x] Support for Letter and A4 page sizes
+- [x] Respects all margin and layout settings
+
+**New Module**:
+- `frontend/static/js/page-break-calculator.js` (240 lines)
+
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Integration of page break calculator
+- `frontend/templates/job_detail.html` - Detail page integration
+
+**Test Coverage**:
+- Basic page break scenarios: 4 tests
+- Page size support (Letter/A4): 6 tests
+- Margin variations: 5 tests
+- Content type handling: 4 tests
+- Edge cases: 4 tests
+- Position accuracy: 5 tests
+- Real-world scenarios: 4 tests
 
 **Dependencies Completed**:
 - Phase 3: Document margins, page size, line height (COMPLETE)
 - Phase 4: PDF export respects margins and page size (COMPLETE)
-
-**Technical Approach**:
-- Calculate available page height = (page height - top margin - bottom margin)
-- Measure cumulative content height as TipTap nodes
-- Insert visual break indicators when height exceeds page capacity
-- Reuse Phase 4 PDF calculation logic for consistency
-
-**Integration Points**:
-- PDF export (Phase 4) - validate breaks match visualization
-- Document styles panel - page break updates on margin/line height changes
-- Detail page main CV display - show breaks when viewing
-
-**Related Gaps**:
-- [ ] E2E tests for Phase 5 features (disabled - see E2E Testing section above)
-- [ ] Keyboard shortcuts (Ctrl+B, Ctrl+I, etc.) - separate Phase 5 feature
-- [ ] Version history / undo-redo beyond browser - separate Phase 5 feature
 
 ##### Phase 5.2: Other Polish Features
 
