@@ -64,6 +64,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
           RUNNER_API_SECRET: test-secret
           ENVIRONMENT: development
+          MONGODB_URI: mongodb://localhost:27017/test
 
   build:
     needs: test
