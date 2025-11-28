@@ -60,6 +60,7 @@ jobs:
             tests/pdf_service/ \
             -v --tb=short
         env:
+          PYTHONPATH: ${{ github.workspace }}
           RUNNER_API_SECRET: test-secret
           ENVIRONMENT: development
 
