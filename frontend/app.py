@@ -924,12 +924,14 @@ def generate_cv_pdf_from_editor(job_id: str):
     runner_url = os.getenv("RUNNER_SERVICE_URL", "http://72.61.92.76:8000")
     endpoint = f"{runner_url}/api/jobs/{job_id}/cv-editor/pdf"
 
-    # Get authentication token from session (if using token auth)
-    # For now, assume runner accepts the same session or use API key
-    runner_token = os.getenv("RUNNER_API_TOKEN")
+    # Get authentication token for runner service
+    # IMPORTANT: Must match runner service's RUNNER_API_SECRET env var
+    runner_token = os.getenv("RUNNER_API_SECRET")
     headers = {}
     if runner_token:
         headers["Authorization"] = f"Bearer {runner_token}"
+    else:
+        logger.warning("RUNNER_API_SECRET not set - runner service will reject request")
 
     try:
         # Proxy request to runner service
