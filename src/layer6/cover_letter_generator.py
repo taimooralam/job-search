@@ -8,6 +8,7 @@ Generates hyper-personalized cover letters with validation gates for:
 - Structural requirements (3-4 paragraphs, 220-380 words)
 """
 
+import logging
 import re
 from typing import List
 from langchain_openai import ChatOpenAI
@@ -590,6 +591,9 @@ class CoverLetterGenerator:
 
     def __init__(self):
         """Initialize LLM for cover letter generation."""
+        # Logger for internal operations
+        self.logger = logging.getLogger(__name__)
+
         self.llm = ChatOpenAI(
             model=Config.DEFAULT_MODEL,
             temperature=Config.CREATIVE_TEMPERATURE,  # 0.7 for creative writing
@@ -716,8 +720,8 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             return cover_letter
         except ValueError as e:
             if attempt <= self.max_validation_retries:
-                print(f"   ⚠️  Cover letter validation failed (attempt {attempt}/{self.max_validation_retries + 1}): {e}")
-                print(f"   ↻ Retrying with stricter prompt...")
+                self.logger.warning(f"Cover letter validation failed (attempt {attempt}/{self.max_validation_retries + 1}): {e}")
+                self.logger.info(f"Retrying with stricter prompt...")
                 return self._generate_with_retry(state, attempt + 1)
             else:
                 raise ValueError(f"Cover letter validation failed after {self.max_validation_retries + 1} attempts: {e}")
