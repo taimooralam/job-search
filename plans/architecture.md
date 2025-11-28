@@ -524,7 +524,7 @@ Response: Binary PDF file (Playwright generated)
 **Frontend (app.py)**:
 ```bash
 RUNNER_SERVICE_URL=http://72.61.92.76:8000    # Runner service base URL
-RUNNER_API_TOKEN=<optional-jwt-token>         # Optional: For runner authentication
+RUNNER_API_SECRET=<shared-secret>             # REQUIRED: Must match runner service RUNNER_API_SECRET
 ```
 
 **Runner Service (app.py)**:
