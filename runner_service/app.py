@@ -548,23 +548,32 @@ async def generate_cv_pdf(job_id: str):
     # Get PDF service URL from environment
     pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
 
+    # Validate job_id format before attempting any database connections
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid job ID format")
+
     # Get MongoDB connection
     # IMPORTANT: Use MONGODB_URI to match persistence.py and frontend
-    mongo_uri = os.getenv("MONGODB_URI")
-    if not mongo_uri:
-        raise HTTPException(status_code=500, detail="MongoDB not configured")
+    # Provide sensible default for local/test environments
+    mongo_uri = (
+        os.getenv("MONGODB_URI")
+        or os.getenv("MONGO_URI")
+        or "mongodb://localhost:27017"
+    )
+    if not os.getenv("MONGODB_URI"):
+        logger.debug(
+            "MONGODB_URI not set; defaulting to mongodb://localhost:27017 for CV PDF generation"
+        )
+
+    client = None
 
     try:
         client = MongoClient(mongo_uri)
         # Use "jobs" database to match persistence.py (not "job_search")
         db = client[os.getenv("MONGO_DB_NAME", "jobs")]
         collection = db["level-2"]
-
-        # Validate and fetch job
-        try:
-            object_id = ObjectId(job_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid job ID format")
 
         job = collection.find_one({"_id": object_id})
         if not job:
@@ -672,3 +681,9 @@ async def generate_cv_pdf(job_id: str):
     except Exception as e:
         logger.error(f"PDF generation failed for job {job_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+    finally:
+        if client:
+            try:
+                client.close()
+            except Exception:
+                pass
