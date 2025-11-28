@@ -1353,7 +1353,7 @@
 
 {% block extra_js %}
 <script>
-    // Job Detail Scripts - Updated 2025-11-28-20:15 - Fix processJobDetail deployment
+    // Job Detail Scripts - Updated 2025-11-28-21:30 - Fix syntax error in eventSource listeners
     const jobId = "{{ job._id }}";
 
     // Toast notification function
@@ -1930,6 +1930,20 @@
                 eventSource = null;
             }
         });
+
+        // Listen for errors
+        eventSource.addEventListener('error', (event) => {
+            console.error('Log stream error:', event);
+            const errorLine = document.createElement('div');
+            errorLine.className = 'text-red-400';
+            errorLine.textContent = 'Log streaming ended or encountered an error';
+            logsContent.appendChild(errorLine);
+
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        });
     }
 
     /**
@@ -1991,20 +2005,6 @@
                 calculateOverallProgress();
             }
         }
-    }
-
-        eventSource.addEventListener('error', (event) => {
-            console.error('Log stream error:', event);
-            const errorLine = document.createElement('div');
-            errorLine.className = 'text-red-400';
-            errorLine.textContent = 'Log streaming ended or encountered an error';
-            logsContent.appendChild(errorLine);
-
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-        });
     }
 
     // Display artifacts
