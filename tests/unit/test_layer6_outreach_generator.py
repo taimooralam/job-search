@@ -591,8 +591,11 @@ Bachelor of Science, Computer Science — State University — 2017
             "secondary_contacts": []
         }
 
-    def test_validates_company_grounding_with_master_cv(self, state_with_master_cv, capsys):
+    def test_validates_company_grounding_with_master_cv(self, state_with_master_cv, caplog):
         """Test that company grounding validation works with master-cv.md fallback."""
+        import logging
+        caplog.set_level(logging.INFO)
+
         generator = OutreachGenerator()
 
         packages = generator.generate_outreach_packages(state_with_master_cv)
@@ -600,12 +603,14 @@ Bachelor of Science, Computer Science — State University — 2017
         # Should generate packages successfully
         assert len(packages) == 2  # 1 contact × 2 channels
 
-        # Should use master-cv.md fallback
-        captured = capsys.readouterr()
-        assert "master-cv.md fallback" in captured.out
+        # Should use master-cv.md fallback - check logger output
+        assert "master-cv.md fallback" in caplog.text
 
-    def test_validates_company_grounding_with_selected_stars(self, state_with_selected_stars, capsys):
+    def test_validates_company_grounding_with_selected_stars(self, state_with_selected_stars, caplog):
         """Test that company grounding validation works with selected_stars."""
+        import logging
+        caplog.set_level(logging.INFO)
+
         generator = OutreachGenerator()
 
         packages = generator.generate_outreach_packages(state_with_selected_stars)
@@ -613,11 +618,10 @@ Bachelor of Science, Computer Science — State University — 2017
         # Should generate packages successfully
         assert len(packages) == 2
 
-        # Should use STARs for grounding
-        captured = capsys.readouterr()
-        assert "selected STAR" in captured.out
+        # Should use STARs for grounding - check logger output
+        assert "selected STAR" in caplog.text
 
-    def test_warns_when_no_company_mentioned(self, state_without_company_mention, capsys):
+    def test_warns_when_no_company_mentioned(self, state_without_company_mention, caplog):
         """Test that validation warns when outreach doesn't mention candidate's companies."""
         generator = OutreachGenerator()
 
@@ -626,9 +630,8 @@ Bachelor of Science, Computer Science — State University — 2017
         # Should still generate packages (soft validation)
         assert len(packages) == 2
 
-        # Should print warning about missing company mention
-        captured = capsys.readouterr()
-        assert "does not mention a company" in captured.out
+        # Should log warning about missing company mention
+        assert "does not mention a company" in caplog.text
 
     def test_extracts_companies_from_em_dash_format(self):
         """Test company extraction from em-dash formatted profile."""

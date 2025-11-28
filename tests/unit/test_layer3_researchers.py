@@ -1019,6 +1019,7 @@ class TestCompanyResearcherFallback:
 
         researcher = CompanyResearcher.__new__(CompanyResearcher)
         researcher.llm = Mock()
+        researcher.logger = Mock()  # Added for logging migration
 
         # Mock LLM response with valid JSON
         mock_response = Mock()
@@ -1045,6 +1046,7 @@ class TestCompanyResearcherFallback:
 
         researcher = CompanyResearcher.__new__(CompanyResearcher)
         researcher.llm = Mock()
+        researcher.logger = Mock()  # Added for logging migration
 
         # Mock LLM response with invalid JSON
         mock_response = Mock()
