@@ -1,0 +1,100 @@
+{
+  "job_id": "6929c97b45fa3c355f84ba2d",
+  "title": "Software Engineering Team Lead (Backend)",
+  "company": "KAIZEN GAMING",
+  "job_description": "We are Kaizen Gaming. Kaizen Gaming is the leading GameTech company in Greece and one of the fastest-growing in Europe, with the Stoiximan brand in Greece and Cyprus and Betano in Germany, Romania, Bulgaria, Czech Republic, Portugal, Brazil, Chile, Peru, Ecuador and Canada. Our aim is to leverage cutting-edge Technology in order to provide the optimum experience to those who trust us for their entertainment.\n\nAs a Software Engineering Team Lead, you will play a crucial role in leading and guiding a team of software engineers in the development and delivery of high-quality software products. You will be responsible for overseeing project execution, mentoring team members, and ensuring that engineering best practices are followed.\n\nTech Stack: .NET Core, C#, Microservices, REST API, RabbitMQ, MS SQL Server, OpenShift\n\nResponsibilities:\n- Team Leadership: Lead, mentor, and inspire a team of software engineers\n- Project Management: Manage project timelines, priorities, and resources\n- Technical Guidance: Provide technical guidance, expertise, and code reviews\n- Architecture and Design: Contribute to architectural decisions considering scalability, performance, and maintainability\n- Process Improvement: Continuously evaluate and improve development processes\n- Code Quality: Ensure code quality, maintainability, and documentation\n\nRequirements:\n- Proven experience as a software engineer with a strong track record\n- Strong technical expertise in .NET or equivalent, Microservices and Sync and Async communication\n- Leadership and project management experience\n- Excellent problem-solving and communication skills\n- Familiarity with Agile methodologies\n- Knowledge of software design patterns, architecture, and system scalability",
+  "job_url": "https://pt.linkedin.com/jobs/view/software-engineering-team-lead-backend-at-kaizen-gaming-4331468962",
+  "source": "linkedin",
+  "score": 70,
+  "pain_points": [
+    "Need strong technical leadership for backend engineering team",
+    "Ensuring engineering best practices are followed across the team",
+    "Managing project timelines and resource allocation effectively",
+    "Maintaining code quality and documentation standards",
+    "Scalability challenges with growing microservices architecture"
+  ],
+  "strategic_needs": [
+    "Scale engineering team while maintaining quality",
+    "Improve development processes and team velocity",
+    "Establish architecture governance for microservices"
+  ],
+  "risks_if_unfilled": [
+    "Technical debt accumulation without leadership oversight",
+    "Team velocity decrease without proper mentorship",
+    "Architecture decisions made without proper guidance"
+  ],
+  "success_metrics": [
+    "Reduced release cycle time by 25%",
+    "Improved team velocity by 20%",
+    "Zero critical production incidents from code quality issues"
+  ],
+  "company_research": {
+    "summary": "Kaizen Gaming is the leading GameTech company in Greece and one of the fastest-growing in Europe, operating Stoiximan and Betano brands across 11+ countries.",
+    "signals": [
+      {
+        "type": "growth",
+        "description": "Expanding into new markets including Canada, Ecuador, and Peru",
+        "date": "2024",
+        "source": "company website"
+      },
+      {
+        "type": "product_launch",
+        "description": "Continuous platform expansion across European and South American markets",
+        "date": "2024",
+        "source": "linkedin"
+      }
+    ],
+    "url": "https://kaizengaming.com"
+  },
+  "role_research": {
+    "summary": "Technical leadership role focused on backend engineering team management and software delivery excellence",
+    "business_impact": [
+      "Enable rapid feature delivery for competitive gaming market",
+      "Ensure platform reliability for millions of active users",
+      "Drive technical excellence across engineering organization"
+    ],
+    "why_now": "Rapid expansion into new markets requires scaling engineering capabilities"
+  },
+  "selected_stars": [
+    {
+      "id": "star_001",
+      "company": "Seven.One Entertainment Group",
+      "role": "Technical Lead (Addressable TV)",
+      "period": "2020-Present",
+      "domain_areas": "Team Leadership, Architecture, Microservices",
+      "situation": "Large-scale monolithic AdTech platform processing millions of impressions daily needed modernization",
+      "task": "Lead transformation to event-driven microservices while maintaining feature delivery",
+      "actions": "Led multi-year transformation, implemented DDD, established engineering standards, mentored 10+ engineers",
+      "results": "Achieved 75% incident reduction, zero downtime for 3 years, reduced onboarding from 6 to 3 months",
+      "metrics": "75% incident reduction, 25% faster delivery, 3 engineers promoted to lead positions",
+      "keywords": "microservices, AWS, DDD, team leadership, architecture, event-driven"
+    },
+    {
+      "id": "star_002",
+      "company": "Samdock (Daypaio)",
+      "role": "Lead Software Engineer",
+      "period": "2019-2020",
+      "domain_areas": "Architecture, Event Sourcing, Team Management",
+      "situation": "Startup needed CRM platform built from scratch with enterprise scalability",
+      "task": "Architect and launch event-sourced CRM platform",
+      "actions": "Led event storming, implemented CQRS with NestJS/TypeScript, established 85% code coverage",
+      "results": "Launched platform for 25 production tenants, 30% improved sprint velocity",
+      "metrics": "85% code coverage, 40% bug reduction, 30% velocity improvement",
+      "keywords": "event-sourcing, CQRS, NestJS, TypeScript, agile, team leadership"
+    }
+  ],
+  "star_to_pain_mapping": {
+    "Need strong technical leadership for backend engineering team": ["star_001", "star_002"],
+    "Ensuring engineering best practices are followed across the team": ["star_001"],
+    "Managing project timelines and resource allocation effectively": ["star_001", "star_002"],
+    "Scalability challenges with growing microservices architecture": ["star_001"]
+  },
+  "candidate_profile": "Taimoor Alam - Engineering Leader / Software Architect with 11+ years building high-scale distributed systems and 5+ years managing cross-functional teams in AdTech and SaaS environments. Expert in modernizing legacy architectures through Domain-Driven Design and event-driven microservices, delivering 75% incident reduction and 25% faster delivery.",
+  "fit_score": null,
+  "fit_rationale": null,
+  "fit_category": null,
+  "cover_letter": null,
+  "cv_json": null,
+  "errors": [],
+  "status": "pending"
+}
