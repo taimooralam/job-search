@@ -4,11 +4,14 @@ Persistence Module
 Handles MongoDB and Redis persistence for run state and job status.
 """
 
+import logging
 import os
 from datetime import datetime
 from typing import Dict, Optional
 
 from pymongo import MongoClient
+
+logger = logging.getLogger(__name__)
 
 
 def persist_run_to_mongo(
@@ -112,13 +115,11 @@ def persist_run_to_mongo(
 
         if result.matched_count == 0:
             # Job not found with ObjectId, log warning
-            print(f"Warning: Job {job_id} not found in level-2 collection")
+            logger.warning(f"Job {job_id} not found in level-2 collection")
 
     except Exception as e:
         # Log error but don't fail the run
-        print(f"Warning: Failed to persist to MongoDB: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception(f"Failed to persist to MongoDB for job {job_id}: {e}")
 
 
 def get_redis_connection():
@@ -135,10 +136,10 @@ def get_redis_connection():
         import redis
         return redis.from_url(redis_url, decode_responses=True)
     except ImportError:
-        print("Warning: redis package not installed, state persistence disabled")
+        logger.warning("redis package not installed, state persistence disabled")
         return None
     except Exception as e:
-        print(f"Warning: Failed to connect to Redis: {e}")
+        logger.warning(f"Failed to connect to Redis: {e}")
         return None
 
 
@@ -163,7 +164,7 @@ def save_run_state_to_redis(run_id: str, state_data: dict) -> None:
             json.dumps(state_data, default=str)
         )
     except Exception as e:
-        print(f"Warning: Failed to save state to Redis: {e}")
+        logger.warning(f"Failed to save state to Redis for run {run_id}: {e}")
 
 
 def load_run_state_from_redis(run_id: str) -> Optional[dict]:
@@ -186,6 +187,6 @@ def load_run_state_from_redis(run_id: str) -> Optional[dict]:
         if data:
             return json.loads(data)
     except Exception as e:
-        print(f"Warning: Failed to load state from Redis: {e}")
+        logger.warning(f"Failed to load state from Redis for run {run_id}: {e}")
 
     return None
