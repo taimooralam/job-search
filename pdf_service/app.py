@@ -38,6 +38,55 @@ PLAYWRIGHT_HEADLESS = os.getenv("PLAYWRIGHT_HEADLESS", "true").lower() == "true"
 # Semaphore for rate limiting
 _pdf_semaphore = asyncio.Semaphore(MAX_CONCURRENT_PDFS)
 
+# Playwright readiness state
+_playwright_ready = False
+_playwright_error: Optional[str] = None
+
+
+# ============================================================================
+# Startup Event - Validate Playwright
+# ============================================================================
+
+@app.on_event("startup")
+async def validate_playwright_on_startup():
+    """
+    Validate Playwright/Chromium is properly installed on startup.
+
+    This ensures the service won't report as healthy if Playwright can't
+    actually generate PDFs.
+    """
+    global _playwright_ready, _playwright_error
+
+    logger.info("PDF Service starting - validating Playwright installation...")
+
+    try:
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as p:
+            logger.info("Launching Chromium for validation...")
+            browser = await p.chromium.launch(headless=PLAYWRIGHT_HEADLESS)
+            page = await browser.new_page()
+
+            # Render a simple test page
+            await page.set_content("<html><body><h1>Test</h1></body></html>")
+
+            # Generate a small test PDF
+            test_pdf = await page.pdf(format='Letter', timeout=10000)
+
+            await browser.close()
+
+            if len(test_pdf) > 0:
+                _playwright_ready = True
+                logger.info(f"✅ Playwright validation successful - generated {len(test_pdf)} byte test PDF")
+            else:
+                _playwright_error = "Test PDF generation returned empty result"
+                logger.error(f"❌ Playwright validation failed: {_playwright_error}")
+
+    except Exception as e:
+        _playwright_error = str(e)
+        logger.error(f"❌ Playwright validation failed: {_playwright_error}")
+        logger.error("PDF generation will not work until this is resolved.")
+
 
 # ============================================================================
 # Request/Response Models
@@ -49,6 +98,8 @@ class HealthResponse(BaseModel):
     timestamp: datetime
     active_renders: int
     max_concurrent: int
+    playwright_ready: bool = True
+    playwright_error: Optional[str] = None
 
 
 class RenderPDFRequest(BaseModel):
@@ -87,13 +138,31 @@ async def health_check() -> HealthResponse:
     """
     Health check endpoint for container orchestration.
 
-    Returns service status and capacity information.
+    Returns service status, capacity information, and Playwright readiness.
+    Returns HTTP 503 if Playwright validation failed on startup.
     """
+    # If Playwright is not ready, return 503 Service Unavailable
+    if not _playwright_ready:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "unhealthy",
+                "timestamp": datetime.utcnow().isoformat(),
+                "active_renders": MAX_CONCURRENT_PDFS - _pdf_semaphore._value,
+                "max_concurrent": MAX_CONCURRENT_PDFS,
+                "playwright_ready": False,
+                "playwright_error": _playwright_error,
+                "message": "PDF service is unhealthy - Playwright/Chromium not available"
+            }
+        )
+
     return HealthResponse(
         status="healthy",
         timestamp=datetime.utcnow(),
         active_renders=MAX_CONCURRENT_PDFS - _pdf_semaphore._value,
-        max_concurrent=MAX_CONCURRENT_PDFS
+        max_concurrent=MAX_CONCURRENT_PDFS,
+        playwright_ready=True,
+        playwright_error=None
     )
 
 

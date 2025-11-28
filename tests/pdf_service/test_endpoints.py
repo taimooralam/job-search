@@ -11,7 +11,21 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 @pytest.fixture
 def client():
-    """Create test client for PDF service."""
+    """Create test client for PDF service with Playwright marked as ready."""
+    import pdf_service.app as app_module
+    # Mark Playwright as ready for tests
+    app_module._playwright_ready = True
+    app_module._playwright_error = None
+    from pdf_service.app import app
+    return TestClient(app)
+
+
+@pytest.fixture
+def client_playwright_unavailable():
+    """Create test client with Playwright marked as unavailable."""
+    import pdf_service.app as app_module
+    app_module._playwright_ready = False
+    app_module._playwright_error = "Test: Playwright not available"
     from pdf_service.app import app
     return TestClient(app)
 
@@ -20,7 +34,7 @@ class TestHealthEndpoint:
     """Tests for /health endpoint."""
 
     def test_health_check_returns_200(self, client):
-        """Test that health check returns 200 OK."""
+        """Test that health check returns 200 OK when Playwright is ready."""
         response = client.get("/health")
         assert response.status_code == 200
 
@@ -33,6 +47,7 @@ class TestHealthEndpoint:
         assert "timestamp" in data
         assert "active_renders" in data
         assert "max_concurrent" in data
+        assert data["playwright_ready"] is True
         assert isinstance(data["active_renders"], int)
         assert isinstance(data["max_concurrent"], int)
 
@@ -42,6 +57,15 @@ class TestHealthEndpoint:
         data = response.json()
 
         assert 0 <= data["active_renders"] <= data["max_concurrent"]
+
+    def test_health_check_returns_503_when_playwright_unavailable(self, client_playwright_unavailable):
+        """Test that health check returns 503 when Playwright is not ready."""
+        response = client_playwright_unavailable.get("/health")
+        assert response.status_code == 503
+        data = response.json()["detail"]
+        assert data["status"] == "unhealthy"
+        assert data["playwright_ready"] is False
+        assert "Playwright not available" in data["playwright_error"]
 
 
 class TestRenderPDFEndpoint:
