@@ -87,6 +87,7 @@ Action: Delegate to doc-sync first, then test-generator
 
 ## Development Notes
 
+- Whenever a package is available that is reliable, use the package and don't implement yourself. e.g. use the json parser package instead of implementing json parsing.
 - Style: PEP 8, typed functions, snake_case modules/functions; keep prompts/config declarative.
 - Tests: Prefer pytest with `test_*.py`; mock FireCrawl/LLMs/Mongo for determinism.
 - Config: Use env vars (`*.env`), never commit secrets; add `.env.example` placeholders.
