@@ -28,7 +28,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/runner
+  RUNNER_IMAGE_NAME: ${{ github.repository }}/runner
+  PDF_IMAGE_NAME: ${{ github.repository }}/pdf-service
 
 jobs:
   test:
@@ -84,23 +85,41 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract runner image metadata
+        id: runner-meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.RUNNER_IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=sha,prefix={{branch}}-
 
-      - name: Build and push
+      - name: Build and push runner image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.runner
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.runner-meta.outputs.tags }}
+          labels: ${{ steps.runner-meta.outputs.labels }}
+
+      - name: Extract PDF service image metadata
+        id: pdf-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.PDF_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push PDF service image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.pdf-service
+          push: true
+          tags: ${{ steps.pdf-meta.outputs.tags }}
+          labels: ${{ steps.pdf-meta.outputs.labels }}
 
   deploy:
     needs: build
@@ -111,13 +130,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy master-cv.md to VPS
+      - name: Copy deployment files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "master-cv.md"
+          source: "master-cv.md,docker-compose.runner.yml"
           target: "/root/job-runner/"
 
       - name: Deploy to VPS
@@ -129,15 +148,26 @@ jobs:
           script: |
             cd /root/job-runner
 
-            # Pull latest image
+            # Pull latest images (runner + pdf-service)
             docker compose -f docker-compose.runner.yml pull
 
-            # Restart service
+            # Restart services
             docker compose -f docker-compose.runner.yml up -d --remove-orphans
 
             # Clean up old images
             docker system prune -f
 
-            # Check health
-            sleep 10
+            # Wait for services to start (PDF service may take longer due to Playwright)
+            echo "Waiting for services to start..."
+            sleep 20
+
+            # Check runner health
+            echo "Checking runner health..."
             curl -f http://localhost:8000/health || exit 1
+
+            # Check PDF service health via runner's network
+            echo "Checking PDF service health..."
+            docker exec job-runner-runner-1 curl -f http://pdf-service:8001/health || echo "Warning: PDF service health check failed"
+
+            # Show container status
+            docker compose -f docker-compose.runner.yml ps
