@@ -47,9 +47,12 @@ except Exception as e:
     traceback.print_exc()
 
 # Session configuration
-app.secret_key = os.getenv("FLASK_SECRET_KEY", os.urandom(24))
+# IMPORTANT: Use a fixed secret key from env var to persist sessions across deployments
+# If FLASK_SECRET_KEY is not set, use a default (NOT SECURE - set env var in production!)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_ENV", "development") == "production"
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # Allow same-site requests including fetch
 app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 31  # 31 days
 
 # Authentication configuration
@@ -184,11 +187,16 @@ def login_required(f):
     """
     Decorator to require authentication for routes.
 
-    Redirects to login page if user is not authenticated.
+    For API routes (/api/*): Returns JSON 401 if not authenticated
+    For page routes: Redirects to login page if not authenticated
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("authenticated"):
+            # For API endpoints, return JSON error instead of redirect
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Not authenticated"}), 401
+            # For page routes, redirect to login
             return redirect(url_for("login_page"))
         return f(*args, **kwargs)
     return decorated_function
