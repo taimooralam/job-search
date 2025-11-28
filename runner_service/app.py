@@ -393,13 +393,15 @@ async def generate_cv_pdf(job_id: str):
     )
 
     # Get MongoDB connection
-    mongo_uri = os.getenv("MONGO_URI")
+    # IMPORTANT: Use MONGODB_URI to match persistence.py and frontend
+    mongo_uri = os.getenv("MONGODB_URI")
     if not mongo_uri:
         raise HTTPException(status_code=500, detail="MongoDB not configured")
 
     try:
         client = MongoClient(mongo_uri)
-        db = client[os.getenv("MONGO_DB_NAME", "job_search")]
+        # Use "jobs" database to match persistence.py (not "job_search")
+        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
         collection = db["level-2"]
 
         # Validate and fetch job
