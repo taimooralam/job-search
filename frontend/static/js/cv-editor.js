@@ -10,9 +10,6 @@
  * - Phase 5: Keyboard shortcuts, mobile responsiveness, WCAG 2.1 AA accessibility
  */
 
-// Preserve reference to global showToast from base.html before we define our own
-const _globalShowToast = window.showToast;
-
 class CVEditor {
     constructor(jobId, container) {
         this.jobId = jobId;
@@ -1066,7 +1063,7 @@ async function exportCVToPDF() {
 
     try {
         // Show loading state
-        showToast('Generating PDF...', 'info');
+        notifyUser('Generating PDF...', 'info');
 
         // Trigger auto-save first to ensure latest content is saved
         await cvEditorInstance.save();
@@ -1106,24 +1103,24 @@ async function exportCVToPDF() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        showToast('PDF downloaded successfully!', 'success');
+        notifyUser('PDF downloaded successfully!', 'success');
 
     } catch (error) {
         console.error('PDF export failed:', error);
-        showToast(`PDF export failed: ${error.message}`, 'error');
+        notifyUser(`PDF export failed: ${error.message}`, 'error');
     }
 }
 
 /**
- * Show toast notification
+ * Show toast notification using global function from base.html
  *
- * Uses the global showToast from base.html (preserved as _globalShowToast),
- * otherwise falls back to console/alert.
+ * This helper safely calls the global showToast without creating recursion.
+ * Uses a different function name to avoid conflicts.
  */
-function showToast(message, type = 'info') {
-    // Use the preserved global showToast from base.html
-    if (typeof _globalShowToast === 'function') {
-        _globalShowToast(message, type);
+function notifyUser(message, type = 'info') {
+    // Use global showToast from base.html if available
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
     } else {
         // Fallback for when base.html toast isn't available
         console.log(`[${type.toUpperCase()}] ${message}`);
