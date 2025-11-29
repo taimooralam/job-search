@@ -71,7 +71,8 @@ async def validate_playwright_on_startup():
             await page.set_content("<html><body><h1>Test</h1></body></html>")
 
             # Generate a small test PDF
-            test_pdf = await page.pdf(format='Letter', timeout=10000)
+            # Note: timeout param not supported in all Playwright versions
+            test_pdf = await page.pdf(format='Letter')
 
             await browser.close()
 
@@ -229,10 +230,11 @@ async def render_pdf(request: RenderPDFRequest):
                 await page.wait_for_load_state('networkidle')
 
                 pdf_format = 'A4' if request.pageSize.lower() == 'a4' else 'Letter'
+                # Set page timeout before PDF generation
+                page.set_default_timeout(PLAYWRIGHT_TIMEOUT)
                 pdf_bytes = await page.pdf(
                     format=pdf_format,
-                    print_background=request.printBackground,
-                    timeout=PLAYWRIGHT_TIMEOUT
+                    print_background=request.printBackground
                 )
 
                 await browser.close()
@@ -349,6 +351,8 @@ async def cv_to_pdf(request: CVToPDFRequest):
                 await page.wait_for_load_state('networkidle')
 
                 pdf_format = 'A4' if page_size.lower() == 'a4' else 'Letter'
+                # Set page timeout before PDF generation
+                page.set_default_timeout(PLAYWRIGHT_TIMEOUT)
                 pdf_bytes = await page.pdf(
                     format=pdf_format,
                     print_background=True,
@@ -357,8 +361,7 @@ async def cv_to_pdf(request: CVToPDFRequest):
                         'right': f"{margins.get('right') or 1.0}in",
                         'bottom': f"{margins.get('bottom') or 1.0}in",
                         'left': f"{margins.get('left') or 1.0}in"
-                    },
-                    timeout=PLAYWRIGHT_TIMEOUT
+                    }
                 )
 
                 await browser.close()
