@@ -14,8 +14,8 @@ services:
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
     ports:
-      # Bind to localhost only for security - use Traefik for external access
-      - "127.0.0.1:8000:8000"
+      # Expose to internet - protected by RUNNER_API_SECRET authentication
+      - "0.0.0.0:8000:8000"
     volumes:
       # Pipeline artifacts
       - ./applications:/app/applications
