@@ -130,6 +130,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Wait for GHCR manifest propagation
+        run: |
+          echo "Waiting 30 seconds for GHCR to propagate image manifests..."
+          sleep 30
+
       - name: Copy deployment files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -148,8 +153,27 @@ jobs:
           script: |
             cd /root/job-runner
 
-            # Pull latest images (runner + pdf-service)
-            docker compose -f docker-compose.runner.yml pull
+            # Pull latest images (runner + pdf-service) with retry logic
+            echo "Pulling latest Docker images from GHCR..."
+            MAX_RETRIES=3
+            RETRY_DELAY=10
+
+            for i in $(seq 1 $MAX_RETRIES); do
+              echo "Pull attempt $i of $MAX_RETRIES..."
+              if docker compose -f docker-compose.runner.yml pull; then
+                echo "✅ Successfully pulled images"
+                break
+              else
+                if [ $i -lt $MAX_RETRIES ]; then
+                  echo "⚠️  Pull failed, waiting ${RETRY_DELAY}s before retry..."
+                  sleep $RETRY_DELAY
+                  RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
+                else
+                  echo "❌ Failed to pull images after $MAX_RETRIES attempts"
+                  exit 1
+                fi
+              fi
+            done
 
             # Restart services
             docker compose -f docker-compose.runner.yml up -d --remove-orphans
