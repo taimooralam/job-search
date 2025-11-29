@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   runner:
-    image: ${RUNNER_IMAGE:-ghcr.io/ala0001t/job-search/runner:latest}
+    image: ${RUNNER_IMAGE:-ghcr.io/taimooralam/job-search/runner:latest}
     build:
       context: .
       dockerfile: Dockerfile.runner
@@ -38,7 +38,7 @@ services:
       - n8n-prod_default
 
   pdf-service:
-    image: ${PDF_SERVICE_IMAGE:-ghcr.io/ala0001t/job-search/pdf-service:latest}
+    image: ${PDF_SERVICE_IMAGE:-ghcr.io/taimooralam/job-search/pdf-service:latest}
     build:
       context: .
       dockerfile: Dockerfile.pdf-service
