@@ -12,6 +12,63 @@ from typing import TypedDict, List, Optional, Dict
 from src.common.types import STARRecord
 
 
+class CompetencyWeights(TypedDict):
+    """
+    Competency mix for role-category-aware CV tailoring.
+
+    Weights must sum to 100. Used to determine emphasis in CV generation:
+    - High delivery: Feature shipping, product execution
+    - High process: CI/CD, testing, quality standards
+    - High architecture: System design, technical strategy
+    - High leadership: People management, mentorship
+    """
+    delivery: int       # 0-100: Shipping features, building products
+    process: int        # 0-100: CI/CD, testing, quality standards
+    architecture: int   # 0-100: System design, technical strategy
+    leadership: int     # 0-100: People management, team building
+
+
+class ExtractedJD(TypedDict):
+    """
+    Structured job description extraction (Layer 1.4).
+
+    Provides structured intelligence from JDs to enable precise CV tailoring.
+    Inserted before Layer 2 (Pain Point Miner) to provide context.
+    """
+    # Basic Info
+    title: str
+    company: str
+    location: str
+    remote_policy: str  # "fully_remote" | "hybrid" | "onsite" | "not_specified"
+
+    # Role Classification (from cv-guide.plan.md)
+    role_category: str  # "engineering_manager" | "staff_principal_engineer" |
+                        # "director_of_engineering" | "head_of_engineering" | "cto"
+    seniority_level: str  # "senior" | "staff" | "principal" | "director" | "vp" | "c_level"
+
+    # Competency Mix (for emphasis decisions)
+    competency_weights: CompetencyWeights
+
+    # Content Extraction
+    responsibilities: List[str]    # 5-10 key responsibilities
+    qualifications: List[str]      # Required qualifications
+    nice_to_haves: List[str]       # Optional qualifications
+    technical_skills: List[str]    # Specific technologies mentioned
+    soft_skills: List[str]         # Leadership, communication, etc.
+
+    # Pain Points (inferred)
+    implied_pain_points: List[str]  # What problems is this hire solving?
+    success_metrics: List[str]      # How success will be measured
+
+    # ATS Keywords
+    top_keywords: List[str]  # 15 most important keywords for ATS matching
+
+    # Background Requirements
+    industry_background: Optional[str]  # e.g., "AdTech", "FinTech"
+    years_experience_required: Optional[int]
+    education_requirements: Optional[str]
+
+
 class Contact(TypedDict):
     """
     Contact person at target company (Phase 7).
@@ -105,6 +162,10 @@ class JobState(TypedDict):
 
     # Candidate data (loaded from knowledge-base.md)
     candidate_profile: str           # Full text of candidate's profile/resume
+
+    # ===== LAYER 1.4: JD Extractor (CV Gen V2) =====
+    # Extracts structured intelligence from job descriptions
+    extracted_jd: Optional[ExtractedJD]  # Structured JD extraction for CV tailoring
 
     # ===== LAYER 2: Pain-Point Miner (JSON Mode - Phase 1.3) =====
     # Returns 4 arrays analyzing the underlying business drivers
