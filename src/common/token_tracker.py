@@ -453,3 +453,108 @@ def reset_global_tracker() -> None:
     global _global_tracker
     if _global_tracker:
         _global_tracker.reset()
+
+
+# =============================================================================
+# Token Tracker Registry (for metrics aggregation)
+# =============================================================================
+
+class TokenTrackerRegistry:
+    """
+    Registry for managing multiple token trackers.
+
+    Allows metrics collection across all trackers.
+    """
+
+    def __init__(self):
+        """Initialize the registry."""
+        self._trackers: Dict[str, TokenTracker] = {}
+        self._lock = threading.Lock()
+
+    def get_or_create(
+        self,
+        name: str,
+        budget_usd: Optional[float] = None,
+        **kwargs,
+    ) -> TokenTracker:
+        """
+        Get existing tracker or create a new one.
+
+        Args:
+            name: Identifier for the tracker (e.g., provider name)
+            budget_usd: Optional budget for this tracker
+            **kwargs: Additional TokenTracker arguments
+
+        Returns:
+            TokenTracker instance
+        """
+        with self._lock:
+            if name not in self._trackers:
+                self._trackers[name] = TokenTracker(
+                    budget_usd=budget_usd,
+                    **kwargs,
+                )
+            return self._trackers[name]
+
+    def get(self, name: str) -> Optional[TokenTracker]:
+        """Get tracker by name if it exists."""
+        with self._lock:
+            return self._trackers.get(name)
+
+    def register(self, name: str, tracker: TokenTracker) -> None:
+        """Register an existing tracker."""
+        with self._lock:
+            self._trackers[name] = tracker
+
+    def get_all_stats(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Get stats for all registered trackers.
+
+        Returns:
+            Dict mapping tracker names to their stats
+        """
+        with self._lock:
+            result = {}
+            for name, tracker in self._trackers.items():
+                summary = tracker.get_summary()
+                result[name] = {
+                    "total_input_tokens": summary["totals"]["input_tokens"],
+                    "total_output_tokens": summary["totals"]["output_tokens"],
+                    "total_cost_usd": summary["totals"]["cost_usd"],
+                    "call_count": summary["totals"]["call_count"],
+                    "budget_usd": summary["budget"]["budget_usd"],
+                    "budget_remaining_usd": summary["budget"]["remaining_usd"],
+                    "budget_used_percent": summary["budget"]["used_percent"],
+                    "by_provider": summary["by_provider"],
+                    "by_layer": summary["by_layer"],
+                }
+            return result
+
+    def reset_all(self) -> None:
+        """Reset all trackers."""
+        with self._lock:
+            for tracker in self._trackers.values():
+                tracker.reset()
+
+
+# Global registry instance
+_global_registry: Optional[TokenTrackerRegistry] = None
+
+
+def get_token_tracker_registry() -> TokenTrackerRegistry:
+    """Get or create the global token tracker registry."""
+    global _global_registry
+    if _global_registry is None:
+        _global_registry = TokenTrackerRegistry()
+        # Register the global tracker if it exists
+        if _global_tracker is not None:
+            _global_registry.register("default", _global_tracker)
+    return _global_registry
+
+
+def reset_token_tracker_registry() -> None:
+    """Reset the global registry (for testing)."""
+    global _global_registry
+    if _global_registry:
+        _global_registry.reset_all()
+    _global_registry = None
