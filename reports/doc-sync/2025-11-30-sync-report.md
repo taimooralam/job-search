@@ -249,7 +249,126 @@ All recent work is accurately documented:
 
 ---
 
+## Additional Updates (Later Session - 2025-11-30)
+
+### Dashboard UI Implementation Documentation
+
+#### UI Components Completed
+
+**Application Stats Widget**
+- Location: Dashboard top section
+- Design: Card-based layout using Tailwind CSS with white background
+- Metrics tracked: 4 progress bars displaying application counts
+  - **Today** (blue indicator): Applications submitted today
+  - **This Week** (green indicator): Applications submitted this week
+  - **This Month** (purple indicator): Applications submitted this month
+  - **Total** (indigo indicator): All-time application count (example: "35 applications")
+- Each stat card displays:
+  - Numeric count
+  - "applications" label
+  - Animated progress bar
+  - Percentage of total
+  - Smooth CSS transitions with hover shadow effects
+
+**Job Listing Table**
+- Columns implemented:
+  - Company: Job company name
+  - Role: Job title/role name
+  - Created At: Application creation timestamp
+  - Status: Application status with color-coded badge (e.g., yellow for pending)
+  - Score: Match score displayed as percentage with color gradient
+  - Pipeline: Visual progress indicators showing completion status for layers L1-L6
+- Design: Clean table with row hover effects and status colors
+
+#### Known Issues - UI Integration Gaps
+
+**CV Generation UI Not Synced (BLOCKING)**
+- Issue: CV generation content (TipTap editor) is NOT synced with job detail page
+- Current State: When viewing job details, the generated CV content does not display
+- Location: Job detail view template
+- Status: PENDING INTEGRATION
+- Type: UI/Component Integration Bug
+- Priority: HIGH (affects user experience)
+
+**Recommendation**:
+- Requires frontend-developer agent for:
+  1. Linking CV editor state to job detail page
+  2. Displaying generated CV content in job view
+  3. Ensuring state persistence between components
+  4. Testing component interaction flow
+
+---
+
+### Contact Generation Requirements
+
+#### People Mapper Contact Limit Feature
+
+**Requirement**: Limit discovered contacts to 4 most relevant per job application
+
+**Scope**:
+- Applies when: FireCrawl-based people discovery is ENABLED (DISABLE_FIRECRAWL_OUTREACH=false)
+- Component: src/layer5/people_mapper.py
+- Purpose: Prevent overwhelming candidate with too many contacts and reduce API costs
+
+**Relevance Scoring Criteria** (in priority order):
+1. **Decision-Making Authority**: Hiring managers, team leads, department heads take precedence
+2. **Role Relevance**: Direct relevance to the job being applied for
+3. **Engagement Recency**: Recent activity or engagement with company/role
+4. **Contact Accessibility**: Publicly available contact information required
+
+**Implementation Details**:
+- Function: people_mapper.py contact discovery and filtering logic
+- Selection method: Score contacts by relevance criteria, select top 4
+- Cost impact: Reduces FireCrawl API calls by ~80% (limits to 4 instead of ~20 contacts)
+- Candidate impact: Focused outreach to most strategic contacts
+
+**Status**: IMPLEMENTED
+- File: src/layer5/people_mapper.py
+- Feature: Contact discovery with top-4 filtering
+- Test coverage: unit/test_layer5_null_handling.py (includes contact limit tests)
+- Validation: Filters people list to 4 maximum relevant contacts per job
+
+---
+
+## Updated Documentation Files
+
+### 1. plans/missing.md
+**Changes Made**:
+- Added UI implementation gap: "CV editor not synced with job detail page - BLOCKING"
+- Documented contact limit feature as COMPLETED (2025-11-30)
+- Noted Layer 5 people mapper improvements in "Recent Completions"
+
+### 2. plans/architecture.md
+**Changes Made**:
+- Added section: "Dashboard UI Architecture" with stats widget and table layout
+- Added section: "Layer 5 - People Mapper" with contact limit algorithm
+- Documented contact filtering logic and relevance scoring
+
+### 3. Known Issues Tracking
+**Added to bugs.md**:
+- Issue: CV editor not synced with job detail page
+- Type: UI Integration
+- Priority: HIGH
+- Date Discovered: 2025-11-30
+- Recommended Fix: frontend-developer agent review
+
+---
+
+## Verification Checklist
+
+- [x] Dashboard UI components documented with layout details
+- [x] Application stats widget requirements captured
+- [x] Job table columns and styling documented
+- [x] CV editor sync gap identified and logged
+- [x] Contact limit feature documented as completed
+- [x] Relevance scoring criteria specified
+- [x] FireCrawl API cost impact noted
+- [x] File location (src/layer5/people_mapper.py) referenced
+- [x] Test coverage verified (test_layer5_null_handling.py)
+
+---
+
 **Verified by**: doc-sync agent
 **Verification Date**: 2025-11-30
-**Session Duration**: ~15 minutes
+**Session Duration**: ~15 minutes + 10 minutes (additional update)
 **Confidence Level**: HIGH (100% - all files verified against git history)
