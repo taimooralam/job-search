@@ -7,6 +7,11 @@ RESOLVED (2025-11-28):
     - **Root cause**: CSS selectors like `.ProseMirror p { line-height: 1.6; }` had higher specificity than the inline `line-height` set on the parent `.ProseMirror` element by JavaScript
     - **Fix**: Changed all child element CSS rules (h1, h2, h3, p, li) to use `line-height: inherit` so they respect the document-level setting
     - **Files modified**: `frontend/templates/base.html` (ProseMirror and CV display styles)
+5. [RESOLVED 2025-11-30] Line spacing breaks in PDF generation with multiple companies.
+    - **Root cause**: List items (`li`) had hardcoded `line-height: 1.5` instead of inheriting from document-level line-height
+    - **Fix**: Changed `li` CSS to use `line-height: inherit` to respect the line-height variable passed to build_pdf_html_template
+    - **Files modified**: `pdf_service/pdf_helpers.py`
+    - **Commit**: eb5f32ce
 
 OPEN/PENDING:
 
