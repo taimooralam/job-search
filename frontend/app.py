@@ -1008,6 +1008,63 @@ def get_alerts():
         }), 500
 
 
+@app.route("/partials/cost-trends", methods=["GET"])
+@login_required
+def cost_trends_partial():
+    """HTMX partial: Return cost trends sparkline widget (Gap #15)."""
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        period = request.args.get("period", "hourly")
+        count = request.args.get("count", 24, type=int)
+
+        history = collector.get_cost_history(period=period, count=count)
+        return render_template(
+            "partials/cost_trends.html",
+            period=period,
+            costs=history["costs"],
+            sparkline_svg=history["sparkline_svg"],
+            summary=history["summary"],
+        )
+    except ImportError:
+        return render_template(
+            "partials/cost_trends.html",
+            error="Metrics module not available"
+        )
+    except Exception as e:
+        return render_template(
+            "partials/cost_trends.html",
+            error=str(e)
+        )
+
+
+@app.route("/api/cost-history", methods=["GET"])
+@login_required
+def get_cost_history():
+    """API endpoint: Return cost history as JSON (Gap #15)."""
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        period = request.args.get("period", "hourly")
+        count = request.args.get("count", 24, type=int)
+
+        history = collector.get_cost_history(period=period, count=count)
+        history["timestamp"] = datetime.utcnow().isoformat()
+        return jsonify(history)
+    except ImportError:
+        return jsonify({
+            "error": "Metrics module not available",
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+
+
 # ============================================================================
 # Authentication Routes
 # ============================================================================

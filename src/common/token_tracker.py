@@ -18,7 +18,7 @@ Usage:
 import os
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 from enum import Enum
 
@@ -369,6 +369,82 @@ class TokenTracker:
                 for u in self._usages
             ],
         }
+
+    def get_hourly_costs(self, hours: int = 24) -> List[Dict[str, Any]]:
+        """
+        Get costs aggregated by hour for the last N hours.
+
+        Args:
+            hours: Number of hours to look back (default 24)
+
+        Returns:
+            List of dicts with 'hour', 'cost_usd', 'calls' keys
+        """
+        from collections import defaultdict
+
+        now = datetime.utcnow()
+        cutoff = now - timedelta(hours=hours)
+
+        with self._lock:
+            hourly = defaultdict(lambda: {"cost_usd": 0.0, "calls": 0})
+
+            for usage in self._usages:
+                if usage.timestamp >= cutoff:
+                    hour_key = usage.timestamp.strftime("%Y-%m-%d %H:00")
+                    hourly[hour_key]["cost_usd"] += usage.estimated_cost_usd
+                    hourly[hour_key]["calls"] += 1
+
+        # Generate all hours in range (including zeros)
+        result = []
+        for i in range(hours):
+            hour = now - timedelta(hours=hours - 1 - i)
+            hour_key = hour.strftime("%Y-%m-%d %H:00")
+            data = hourly.get(hour_key, {"cost_usd": 0.0, "calls": 0})
+            result.append({
+                "hour": hour_key,
+                "cost_usd": round(data["cost_usd"], 6),
+                "calls": data["calls"],
+            })
+
+        return result
+
+    def get_daily_costs(self, days: int = 7) -> List[Dict[str, Any]]:
+        """
+        Get costs aggregated by day for the last N days.
+
+        Args:
+            days: Number of days to look back (default 7)
+
+        Returns:
+            List of dicts with 'date', 'cost_usd', 'calls' keys
+        """
+        from collections import defaultdict
+
+        now = datetime.utcnow()
+        cutoff = now - timedelta(days=days)
+
+        with self._lock:
+            daily = defaultdict(lambda: {"cost_usd": 0.0, "calls": 0})
+
+            for usage in self._usages:
+                if usage.timestamp >= cutoff:
+                    day_key = usage.timestamp.strftime("%Y-%m-%d")
+                    daily[day_key]["cost_usd"] += usage.estimated_cost_usd
+                    daily[day_key]["calls"] += 1
+
+        # Generate all days in range (including zeros)
+        result = []
+        for i in range(days):
+            day = now - timedelta(days=days - 1 - i)
+            day_key = day.strftime("%Y-%m-%d")
+            data = daily.get(day_key, {"cost_usd": 0.0, "calls": 0})
+            result.append({
+                "date": day_key,
+                "cost_usd": round(data["cost_usd"], 6),
+                "calls": data["calls"],
+            })
+
+        return result
 
 
 class TokenTrackingCallback(BaseCallbackHandler):

@@ -59,6 +59,30 @@
         </div>
     </div>
 
+    <!-- Cost Trends Sparkline (Gap #15) -->
+    <div id="cost-trends-container"
+         hx-get="/partials/cost-trends?period=hourly&count=24"
+         hx-trigger="load, every 60s"
+         hx-swap="innerHTML">
+        <!-- Cost trends loaded via HTMX with auto-refresh every 60 seconds -->
+        <div class="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-5 bg-gray-200 rounded w-28"></div>
+                <div class="flex gap-2">
+                    <div class="h-6 bg-gray-200 rounded w-16"></div>
+                    <div class="h-4 bg-gray-200 rounded w-8"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex-grow h-12 bg-gray-100 rounded"></div>
+                <div class="space-y-2 min-w-[100px]">
+                    <div class="h-4 bg-gray-200 rounded w-20"></div>
+                    <div class="h-3 bg-gray-200 rounded w-16"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- API Budget Monitor & Alert History Grid (Gap #14 & OB-2) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- API Budget Monitor (Gap #14) -->
