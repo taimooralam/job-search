@@ -944,6 +944,70 @@ def get_budget():
         }), 500
 
 
+@app.route("/partials/alert-history", methods=["GET"])
+@login_required
+def alert_history_partial():
+    """HTMX partial: Return alert history widget (Gap OB-2)."""
+    try:
+        from src.common.alerting import get_alert_manager
+
+        manager = get_alert_manager()
+        alerts = manager.get_history(limit=20)
+        stats = manager.get_stats()
+        return render_template(
+            "partials/alert_history.html",
+            alerts=[a.to_dict() for a in alerts],
+            stats=stats
+        )
+    except ImportError:
+        return render_template(
+            "partials/alert_history.html",
+            alerts=None,
+            error="Alerting module not available"
+        )
+    except Exception as e:
+        return render_template(
+            "partials/alert_history.html",
+            alerts=None,
+            error=str(e)
+        )
+
+
+@app.route("/api/alerts", methods=["GET"])
+@login_required
+def get_alerts():
+    """API endpoint: Return alert history as JSON (Gap OB-2)."""
+    try:
+        from src.common.alerting import get_alert_manager
+
+        manager = get_alert_manager()
+        limit = request.args.get("limit", 50, type=int)
+        level = request.args.get("level")
+        source = request.args.get("source")
+
+        alerts = manager.get_history(limit=limit)
+        if level:
+            alerts = [a for a in alerts if a.level.value == level]
+        if source:
+            alerts = [a for a in alerts if a.source == source]
+
+        return jsonify({
+            "alerts": [a.to_dict() for a in alerts],
+            "stats": manager.get_stats(),
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    except ImportError:
+        return jsonify({
+            "error": "Alerting module not available",
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+
+
 # ============================================================================
 # Authentication Routes
 # ============================================================================
