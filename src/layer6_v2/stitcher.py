@@ -1,8 +1,7 @@
 """
 CV Stitcher (Phase 4).
 
-Combines per-role bullet sections with cross-role deduplication
-and word budget enforcement.
+Combines per-role bullet sections with cross-role deduplication.
 
 Deduplication Strategy:
 - Compare all bullet pairs across different roles
@@ -10,13 +9,12 @@ Deduplication Strategy:
 - Keep the version from the more recent role (career progression)
 - Track what was removed for transparency
 
-Word Budget Strategy:
-- Target: 550-650 words for experience section (2-page CV)
-- If over budget, trim from early-career roles first
-- Preserve all bullets from current role
+Note: Word budget enforcement has been REMOVED. All roles are included
+with full STAR bullets. PDF handles pagination naturally, and users
+can edit in the CV editor if needed.
 
 Usage:
-    stitcher = CVStitcher(word_budget=600)
+    stitcher = CVStitcher()
     stitched_cv = stitcher.stitch(role_bullets_list)
 """
 
@@ -41,8 +39,9 @@ class CVStitcher:
 
     Features:
     - Semantic similarity detection for cross-role deduplication
-    - Word budget enforcement with career-stage-aware trimming
     - Keyword coverage tracking
+
+    Note: Word budget enforcement removed - all roles included with full content.
     """
 
     # Common achievement keywords that indicate similar bullets
@@ -56,7 +55,7 @@ class CVStitcher:
 
     def __init__(
         self,
-        word_budget: int = 600,
+        word_budget: Optional[int] = None,  # None = no limit (include all content)
         similarity_threshold: float = 0.75,
         min_bullets_per_role: int = 2,
     ):
@@ -64,11 +63,11 @@ class CVStitcher:
         Initialize the stitcher.
 
         Args:
-            word_budget: Target word count for experience section (550-650 typical)
+            word_budget: Target word count (None = no limit, include all roles fully)
             similarity_threshold: Threshold for considering bullets as duplicates (0-1)
             min_bullets_per_role: Minimum bullets to keep per role (prevents empty roles)
         """
-        self.word_budget = word_budget
+        self.word_budget = word_budget  # None = unlimited
         self.similarity_threshold = similarity_threshold
         self.min_bullets_per_role = min_bullets_per_role
         self._logger = get_logger(__name__)
@@ -198,7 +197,9 @@ class CVStitcher:
         """
         Enforce word budget by trimming from early-career roles first.
 
-        Strategy:
+        NOTE: If word_budget is None, no trimming is performed (all content kept).
+
+        Strategy (when budget is set):
         - Never touch role 0 (current role)
         - Trim from the end (earliest roles) first
         - Keep at least min_bullets_per_role per role
@@ -206,6 +207,11 @@ class CVStitcher:
         Returns:
             Tuple of (trimmed_bullet_lists, compression_applied)
         """
+        # If no word budget set, skip enforcement entirely
+        if self.word_budget is None:
+            self._logger.info("Word budget disabled - keeping all content")
+            return bullet_lists, False
+
         # Calculate current word count
         total_words = sum(
             sum(len(b.split()) for b in bullets)
@@ -349,7 +355,7 @@ class CVStitcher:
 
 def stitch_all_roles(
     role_bullets_list: List[RoleBullets],
-    word_budget: int = 600,
+    word_budget: Optional[int] = None,  # None = no limit
     target_keywords: Optional[List[str]] = None,
 ) -> StitchedCV:
     """
@@ -357,7 +363,7 @@ def stitch_all_roles(
 
     Args:
         role_bullets_list: List of RoleBullets from per-role generation
-        word_budget: Target word count
+        word_budget: Target word count (None = no limit, include all)
         target_keywords: JD keywords to track
 
     Returns:
