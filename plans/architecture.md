@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-11-28 (Phase 6 COMPLETE - PDF Service Separation)
+**Last Updated**: 2025-11-30 (Layer-level Structured Logging Complete; ATS Compliance Research)
 
 ---
 
@@ -1137,12 +1137,76 @@ User sees page breaks updated in real-time
 
 ---
 
+## Observability & Logging (2025-11-30)
+
+### Structured Logging Architecture
+
+All 10 pipeline nodes now emit structured JSON events for monitoring and debugging:
+
+**Event Format**:
+```json
+{
+  "timestamp": "2025-11-30T14:30:45.123Z",
+  "event": "layer_start|layer_complete",
+  "layer_id": 2,
+  "layer_name": "pain_point_miner",
+  "node_name": "pain_point_miner_node",
+  "status": "running|success|error",
+  "duration_ms": 4500,
+  "metadata": {
+    "job_id": "67a8f3c9...",
+    "company": "Acme Corp",
+    "error": null
+  }
+}
+```
+
+**Instrumented Layers**:
+1. Layer 1.4: JD Extractor - `src/layer1_4/jd_extractor.py`
+2. Layer 2: Pain Point Miner - `src/layer2/pain_point_miner.py`
+3. Layer 3: Company Researcher - `src/layer3/company_researcher.py`
+4. Layer 3.5: Role Researcher - `src/layer3/role_researcher.py`
+5. Layer 4: Opportunity Mapper - `src/layer4/opportunity_mapper.py`
+6. Layer 5: People Mapper - `src/layer5/people_mapper.py`
+7. Layer 6: CV Generator - `src/layer6/generator.py`
+8. Layer 6: Outreach Generator - `src/layer6/outreach_generator.py`
+9. Layer 6 V2: CV Generator V2 - `src/layer6_v2/orchestrator.py`
+10. Layer 7: Output Publisher - `src/layer7/publisher.py`
+
+**Integration Pattern**:
+```python
+from src.common.logging_context import LayerContext
+
+context = LayerContext(
+    layer_id=2,
+    layer_name="pain_point_miner",
+    node_name="pain_point_miner_node",
+    job_id=state["job_id"],
+    metadata={"company": state["company"]}
+)
+
+with context.log_layer():
+    # Layer implementation
+    result = process_job(state)
+    # Events logged automatically on enter/exit
+```
+
+**Monitoring Benefits**:
+- Real-time pipeline execution tracking
+- Per-layer performance metrics (duration_ms)
+- Error tracking and debugging
+- Production log aggregation ready
+- LangSmith trace correlation (future)
+
+---
+
 ## Reliability
 
-- **Retries**: tenacity with exponential backoff on all LLM calls
+- **Retries**: tenacity with exponential backoff on all LLM calls (includes cover letter + CV generation)
 - **Validation**: Pydantic schemas for all structured outputs
 - **Caching**: Company research cached 7 days in MongoDB
 - **Error handling**: Errors accumulated in state, non-fatal where possible
+- **Logging**: Structured LayerContext logging in all 10 pipeline nodes
 
 ---
 
