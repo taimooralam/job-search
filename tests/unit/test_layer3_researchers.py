@@ -14,6 +14,47 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 
+
+def create_firecrawl_mock(scrape_markdown: str, search_url: str = "https://techcorp.com"):
+    """
+    Create a properly configured FireCrawl mock with both search() and scrape().
+
+    Phase 5.1 uses firecrawl.search() first, then firecrawl.scrape().
+    Tests need to mock both methods for the Phase 5.1 path to work.
+
+    Phase 5.2 quality gate requires >= 100 characters to pass.
+
+    Args:
+        scrape_markdown: The markdown content that scrape() should return
+        search_url: The URL that search results should contain
+
+    Returns:
+        Configured MagicMock for FirecrawlApp
+    """
+    mock_firecrawl = MagicMock()
+
+    # Phase 5.2 quality gate requires >= 100 chars - pad short content
+    # Add business-related padding to pass quality gate and not trigger boilerplate detection
+    padded_content = scrape_markdown
+    if len(scrape_markdown) < 100:
+        padded_content = f"{scrape_markdown} TechCorp is a leading technology company specializing in cloud infrastructure and enterprise solutions. The company has been expanding rapidly with new products and strategic partnerships."
+
+    # Mock scrape() - returns object with .markdown attribute
+    mock_scrape_result = MagicMock()
+    mock_scrape_result.markdown = padded_content
+    mock_firecrawl.scrape.return_value = mock_scrape_result
+
+    # Mock search() - returns object with .web attribute containing result objects
+    mock_search_result_item = MagicMock()
+    mock_search_result_item.url = search_url
+    mock_search_result_item.markdown = padded_content
+
+    mock_search_response = MagicMock()
+    mock_search_response.web = [mock_search_result_item]
+    mock_firecrawl.search.return_value = mock_search_response
+
+    return mock_firecrawl
+
 from src.layer3.company_researcher import (
     CompanyResearcher,
     CompanyResearchOutput,
@@ -159,11 +200,10 @@ class TestCompanyResearcherWithMockedDependencies:
         valid_company_research_json
     ):
         """Phase 5.1: Multi-source scraping extracts signals successfully."""
-        # Mock FireCrawl to return company website content
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "TechCorp is a leading cloud infrastructure provider. Recently raised $50M Series B."
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock FireCrawl - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock(
+            "TechCorp is a leading cloud infrastructure provider. Recently raised $50M Series B."
+        )
         mock_firecrawl_class.return_value = mock_firecrawl
 
         # Mock LLM to return valid company research JSON
@@ -252,8 +292,10 @@ class TestCompanyResearcherWithMockedDependencies:
         from src.layer3.company_researcher import SYSTEM_PROMPT_COMPANY_SIGNALS
 
         # Verify hallucination controls present in prompt
-        assert "Only use facts explicitly stated in the provided scraped content" in SYSTEM_PROMPT_COMPANY_SIGNALS
-        assert "DO NOT invent" in SYSTEM_PROMPT_COMPANY_SIGNALS
+        # Phase 5.2 prompt uses: "Use ONLY explicit facts from scraped content"
+        assert "Use ONLY explicit facts from scraped content" in SYSTEM_PROMPT_COMPANY_SIGNALS
+        # Phase 5.2 prompt uses: "NEVER invent details not in sources"
+        assert "NEVER invent" in SYSTEM_PROMPT_COMPANY_SIGNALS
         assert "unknown" in SYSTEM_PROMPT_COMPANY_SIGNALS.lower()
 
     @patch('src.layer3.company_researcher.ChatOpenAI')
@@ -278,11 +320,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "TechCorp raised $100M Series C"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("TechCorp raised $100M Series C")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -327,11 +366,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "TechCorp acquired DataCo"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("TechCorp acquired DataCo")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -376,11 +412,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "Jane Smith joins as CTO"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("Jane Smith joins as CTO")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -425,11 +458,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "New AI analytics platform launched"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("New AI analytics platform launched")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -474,11 +504,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "Partnership with AWS"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("Partnership with AWS")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -523,11 +550,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "Team grew to 200 engineers"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("Team grew to 200 engineers")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -592,11 +616,8 @@ class TestCompanyResearcherWithMockedDependencies:
             "url": "https://techcorp.com"
         }
 
-        # Mock dependencies
-        mock_firecrawl = MagicMock()
-        mock_scrape_result = MagicMock()
-        mock_scrape_result.markdown = "TechCorp raised $100M, acquired DataCo, Jane Smith CTO, new AI platform"
-        mock_firecrawl.scrape.return_value = mock_scrape_result
+        # Mock dependencies - use helper for search + scrape
+        mock_firecrawl = create_firecrawl_mock("TechCorp raised $100M, acquired DataCo, Jane Smith CTO, new AI platform")
         mock_firecrawl_class.return_value = mock_firecrawl
 
         mock_llm = MagicMock()
@@ -747,11 +768,8 @@ def test_company_researcher_node_integration(
     valid_company_research_json
 ):
     """Integration test for company_researcher_node."""
-    # Mock dependencies (same as unit tests)
-    mock_firecrawl = MagicMock()
-    mock_scrape_result = MagicMock()
-    mock_scrape_result.markdown = "TechCorp is a cloud provider."
-    mock_firecrawl.scrape.return_value = mock_scrape_result
+    # Mock dependencies - use helper for search + scrape
+    mock_firecrawl = create_firecrawl_mock("TechCorp is a cloud provider.")
     mock_firecrawl_class.return_value = mock_firecrawl
 
     mock_llm = MagicMock()
