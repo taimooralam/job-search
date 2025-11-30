@@ -245,41 +245,31 @@ except:  # Should catch specific exceptions
 
 ---
 
-### GAP-049: Job Status Not Updating After Pipeline Completion
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
-**Impact**: Job status stays "not processed" after successful pipeline completion
+### GAP-049: Job Status Not Updating After Pipeline Completion ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 2-3 hours
+**Impact**: Job status now updates to "ready for applying" after pipeline completion
 
-**Description**: After pipeline completes all 7 layers, the job document status field doesn't update to "ready for applying".
+**Description**: Fixed - job status now updates correctly after pipeline completion.
 
-**Root Cause**: Runner service not updating job status in MongoDB after completion.
+**Root Cause**: Same as GAP-050 - the `_persist_to_mongodb()` function couldn't find the job record because it was searching by `jobId` instead of `_id` (ObjectId).
 
-**Fix Required**:
-1. Add status update in runner service `_finalize_run()` method
-2. Set status to "ready for applying" on success
-3. Set appropriate status on failure
-
-**Plan**: `plans/pipeline-completion-issues.md`
+**Fix Applied** (2024-11-30): See GAP-050 fix. The status update (`status: 'ready for applying'`) was already implemented in `output_publisher.py` but wasn't executing because the job lookup was failing.
 
 ---
 
-### GAP-050: Pipeline State Not Persisting to MongoDB
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
-**Impact**: After pipeline completes, pain_points/fit_score/contacts missing from job document
+### GAP-050: Pipeline State Not Persisting to MongoDB ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 2-3 hours
+**Impact**: Pipeline outputs now persist correctly to MongoDB
 
-**Description**: Pipeline executes successfully but generated fields don't persist to MongoDB.
+**Description**: Fixed pipeline state persistence to MongoDB. Fields like pain_points, fit_score, and contacts now save correctly.
 
-**Root Cause Hypotheses**:
-1. Not saving state back to MongoDB after completion
-2. Saving to wrong collection (level-3 instead of level-2)
-3. Using wrong MongoDB URI
-4. Silent failure during persistence
+**Root Cause Found**: The `_persist_to_mongodb()` function in `output_publisher.py` was searching for jobs by `jobId` (integer) field, but jobs are stored with `_id` (ObjectId) as the primary identifier. When the job_id was an ObjectId string, the search would fail silently.
 
-**Fix Required**:
-1. Add state persistence after each layer completes
-2. Verify MongoDB connection and collection
-3. Add logging for persistence operations
-
-**Plan**: `plans/pipeline-completion-issues.md`
+**Fix Applied** (2024-11-30):
+1. Added ObjectId search as primary strategy in `_persist_to_mongodb()`
+2. Fall back to integer jobId for legacy schema compatibility
+3. Fall back to string jobId as last resort
+4. Added detailed logging to track which strategy succeeded
 
 ---
 
