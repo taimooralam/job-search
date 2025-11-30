@@ -1,42 +1,49 @@
-RESOLVED (2025-11-28):
+# Open Issues & Bugs
 
-1. [RESOLVED] the process button is not working - Fixed by adding missing showToast function and improved error handling
-2. [RESOLVED] the CV is showing sleek in the main editor but not on the detail page. The WSIWGYG is not synced. - Fixed by replacing markdown rendering with TipTap JSON rendering
-3. [RESOLVED 2025-11-28] The PDF service is not available - Root cause: Old docker-compose.runner.yml on VPS didn't include PDF service. CI/CD workflow was only copying master-cv.md but NOT docker-compose.runner.yml. Fix: Updated workflow to copy both files, added Playwright startup validation, increased wait time from 10s to 20s. All 58 tests passing (49 PDF service + 9 runner integration). See `plans/pdf-service-debug-plan.md` for implementation details.
-4. [RESOLVED 2025-11-30] Line spacing CSS not cascading to all elements in editor.
-    - **Root cause**: CSS selectors like `.ProseMirror p { line-height: 1.6; }` had higher specificity than the inline `line-height` set on the parent `.ProseMirror` element by JavaScript
-    - **Fix**: Changed all child element CSS rules (h1, h2, h3, p, li) to use `line-height: inherit` so they respect the document-level setting
-    - **Files modified**: `frontend/templates/base.html` (ProseMirror and CV display styles)
-5. [RESOLVED 2025-11-30] Line spacing breaks in PDF generation with multiple companies.
-    - **Root cause**: List items (`li`) had hardcoded `line-height: 1.5` instead of inheriting from document-level line-height
-    - **Fix**: Changed `li` CSS to use `line-height: inherit` to respect the line-height variable passed to build_pdf_html_template
-    - **Files modified**: `pdf_service/pdf_helpers.py`
-    - **Commit**: eb5f32ce
+**Last Updated**: 2025-11-30 | **Format**: Status, Priority, Effort, Root Cause, Fix
 
-OPEN/PENDING:
+---
 
-5.9 Pick up the entire CV will all job descriptions, not only the last two companies
+## OPEN / CRITICAL
 
-7. [RESOLVED 2025-11-30] Create an iframe to open the job directly in the iframe in a collapsible or a better UX. Have a button to export to pdf for the entire iframe as a bonus.
-    - **Phase 1** (Complete): Collapsible iframe viewer with error handling and fallback
-    - **Phase 2** (Complete): Export PDF button using Playwright to capture job posting URL
-    - **Implementation**: `/url-to-pdf` endpoint in pdf_service, proxied through runner and frontend
-    - **Commits**: db1907a7, 030913ae, f3c4e45a, f6406865
+### Bug #12: Time-Based Quick Filters Not Working
+**Status**: OPEN | **Priority**: HIGH | **Effort**: 2-3h
+- Issue: 1h/3h/6h/12h filters return entire day instead of time range
+- Components: `frontend/templates/index.html`, `frontend/app.py`, MongoDB `createdAt` field
+- Root cause: MongoDB query timezone/format mismatch or frontend parameter not reaching backend
+- Test: Check browser network tab, verify `createdAt` field format (ISO string vs timestamp), add debug logging
+- Related: Time filter enhancement in `plans/missing.md`
 
-8. Create AI agents that bypass firecrawl not allowed filters and reason into truly researching company info if firecrawl failes. That are cheap as well.
+### Bug #14: CV V2 Generation Adding Markdown Asterisks
+**Status**: OPEN | **Priority**: HIGH | **Effort**: 2h
+- Issue: Generated CV contains `**company**`, `**role**`, `**skill**` instead of plain text
+- Components: `src/layer6_v2/types.py`, `src/layer6_v2/prompts/`, `src/layer6_v2/role_generator.py`
+- Root cause: LLM prompts don't forbid markdown; `to_markdown()` methods add `**` syntax
+- Fix: (1) Add "no markdown" instruction to all generation prompts, (2) Create `src/common/markdown_sanitizer.py`
+- Test: Generate CV with 5+ roles; assert no `**`, `__`, `*`, `_` in output
 
-9. [RESEARCHED 2025-11-30] Research ATS based algorithms and best practises to create ATS compliant CVs.
-    - **Answer**: Yes, keyword stuffing CAN backfire. Modern ATS uses semantic analysis and penalizes repetition.
-    - **Key findings**:
-      - 98% of Fortune 500 use ATS; 99.7% of recruiters use keyword filters
-      - ATS now detects spam/stuffing via NLP - resumes with excessive repetition rank LOWER
-      - Best practice: Natural keyword integration with context + quantified results
-      - Priority: Skills (76%), Education (60%), Job Title (55%), Certifications (51%)
-    - **Recommendations**: Add keyword density validation, ensure keywords appear near achievements
-    - **Full report**: `reports/ats-compliance-research.md`
+### Bug #11: CV Editor Not Synced with Job Detail Page
+**Status**: OPEN | **Priority**: HIGH | **Effort**: 2-3h
+- Issue: Generated CV content (TipTap editor) doesn't display on job detail view
+- Component: `frontend/templates/job_detail.html`
+- Type: Component state/data flow integration issue
+- Requires: Verify CV generation saves to correct state, link editor state to detail page renderer
+- Discovered: 2025-11-30
 
-10. Are the pdf files saved on the docker container? Is the dossier also saved on the docker container.
-    - **Answer**: PDFs are NOT stored - generated on-the-fly and streamed to user
-    - **Dossier**: Saved to `./applications/<company>/<role>/dossier.txt` via volume mount on runner
-    - **CV Markdown**: Saved to `./applications/<company>/<role>/CV.md` via volume mount on runner
-    - **See**: `plans/pdf-service-debug-plan.md` Architecture section for details
+---
+
+## RESOLVED (Nov 2025)
+
+- ✅ Process button not working (Fixed: added showToast, improved error handling)
+- ✅ CV WYSIWYG sync issue (Fixed: replaced markdown with TipTap JSON rendering)
+- ✅ PDF service unavailable (Fixed: updated CI/CD to copy docker-compose.runner.yml, added startup validation)
+- ✅ Line spacing CSS not cascading (Fixed: changed child selectors to use `line-height: inherit`)
+- ✅ Line spacing breaks in PDF with multiple companies (Fixed: `li` CSS updated to inherit line-height)
+
+---
+
+## Related Plan Documents
+
+- `plans/missing.md` - Comprehensive gaps tracker
+- `plans/linkedin-message-character-limit.md` - Character limit enforcement plan
+- `plans/cv-generation-markdown-fix.md` - Detailed markdown sanitization plan
