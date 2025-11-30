@@ -311,40 +311,38 @@ def list_jobs():
     effective_from = datetime_from if datetime_from else date_from
     effective_to = datetime_to if datetime_to else date_to
 
-    # GAP-007 Fix: n8n stores createdAt as ISO 8601 strings (e.g., "2025-11-30T14:30:00.000Z")
-    # ISO 8601 strings are lexicographically sortable, so string comparison works correctly.
-    # We normalize to ensure consistent format for comparison.
-    def normalize_datetime_for_query(dt_str: str, is_end_of_day: bool = False) -> str:
-        """
-        Normalize date/datetime string to ISO 8601 format for MongoDB string comparison.
+    # GAP-007 Fix: Handle mixed types (strings from n8n, Date objects from other sources)
+    # We parse the filter values to datetime objects and will use aggregation with $toDate
+    # to normalize the MongoDB field before comparison.
+    date_filter_from: Optional[datetime] = None
+    date_filter_to: Optional[datetime] = None
 
-        MongoDB string comparison with $gte/$lte works correctly for ISO 8601 because
-        the format is lexicographically sortable: "2025-11-30T14:00:00" < "2025-11-30T15:00:00"
+    def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> datetime:
+        """
+        Parse date/datetime string to Python datetime for MongoDB comparison.
 
         Args:
             dt_str: ISO datetime string (with 'T') or date string (YYYY-MM-DD)
-            is_end_of_day: If True and dt_str is date-only, append T23:59:59.999Z
+            is_end_of_day: If True and dt_str is date-only, use 23:59:59.999999
 
         Returns:
-            ISO 8601 string for MongoDB query
+            datetime object for MongoDB query
         """
         if 'T' in dt_str:
-            # Already has time component - use as-is (it's already ISO format)
-            return dt_str
+            # Full ISO datetime: 2025-11-30T14:30:00.000Z
+            clean_str = dt_str.replace('Z', '').replace('+00:00', '')
+            return datetime.fromisoformat(clean_str)
         else:
-            # Date only - add time component
+            # Date only: 2025-11-30
             if is_end_of_day:
-                return f"{dt_str}T23:59:59.999Z"
+                return datetime.fromisoformat(f"{dt_str}T23:59:59.999999")
             else:
-                return f"{dt_str}T00:00:00.000Z"
+                return datetime.fromisoformat(f"{dt_str}T00:00:00")
 
-    if effective_from or effective_to:
-        date_filter: Dict[str, str] = {}
-        if effective_from:
-            date_filter["$gte"] = normalize_datetime_for_query(effective_from, is_end_of_day=False)
-        if effective_to:
-            date_filter["$lte"] = normalize_datetime_for_query(effective_to, is_end_of_day=True)
-        and_conditions.append({"createdAt": date_filter})
+    if effective_from:
+        date_filter_from = parse_datetime_filter(effective_from, is_end_of_day=False)
+    if effective_to:
+        date_filter_to = parse_datetime_filter(effective_to, is_end_of_day=True)
 
     # Location filter (multi-select)
     if locations:
@@ -391,15 +389,9 @@ def list_jobs():
 
     # Sort direction
     mongo_direction = DESCENDING if sort_direction == "desc" else ASCENDING
+    sort_order = -1 if sort_direction == "desc" else 1
 
-    # Count total matching documents
-    total_count = collection.count_documents(mongo_query)
-
-    # Calculate pagination
-    total_pages = max(1, (total_count + page_size - 1) // page_size)
-    skip = (page - 1) * page_size
-
-    # Fetch jobs with projection
+    # Projection for returned fields
     projection = {
         "_id": 1,
         "createdAt": 1,
@@ -414,11 +406,78 @@ def list_jobs():
         "score": 1,
     }
 
-    cursor = collection.find(mongo_query, projection)
-    cursor = cursor.sort(mongo_sort_field, mongo_direction)
-    cursor = cursor.skip(skip).limit(page_size)
+    # GAP-007: Use aggregation pipeline for date filtering to handle mixed types
+    # MongoDB $toDate normalizes both ISO strings AND Date objects to Date objects
+    # This allows hour-level granularity regardless of how createdAt was stored
+    use_aggregation = date_filter_from is not None or date_filter_to is not None
 
-    jobs = [serialize_job(job) for job in cursor]
+    if use_aggregation:
+        # Build aggregation pipeline
+        pipeline: List[Dict[str, Any]] = []
+
+        # Stage 1: Initial match (non-date filters) - use index if available
+        if mongo_query:
+            pipeline.append({"$match": mongo_query})
+
+        # Stage 2: Add normalized date field using $toDate
+        # $toDate handles: ISO strings, Date objects, timestamps, ObjectIds
+        pipeline.append({
+            "$addFields": {
+                "_normalizedDate": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
+                        "then": {"$toDate": "$createdAt"},
+                        "else": "$createdAt"  # Already a Date object
+                    }
+                }
+            }
+        })
+
+        # Stage 3: Filter by normalized date
+        date_match: Dict[str, Any] = {}
+        if date_filter_from:
+            date_match["$gte"] = date_filter_from
+        if date_filter_to:
+            date_match["$lte"] = date_filter_to
+        pipeline.append({"$match": {"_normalizedDate": date_match}})
+
+        # Stage 4: Count total (for pagination) - use $facet for efficiency
+        pipeline.append({
+            "$facet": {
+                "metadata": [{"$count": "total"}],
+                "data": [
+                    {"$sort": {mongo_sort_field: sort_order}},
+                    {"$skip": (page - 1) * page_size},
+                    {"$limit": page_size},
+                    {"$project": {**projection, "_normalizedDate": 0}}  # Remove temp field
+                ]
+            }
+        })
+
+        # Execute aggregation
+        result = list(collection.aggregate(pipeline))
+        if result:
+            metadata = result[0].get("metadata", [])
+            total_count = metadata[0]["total"] if metadata else 0
+            jobs_raw = result[0].get("data", [])
+        else:
+            total_count = 0
+            jobs_raw = []
+
+        jobs = [serialize_job(job) for job in jobs_raw]
+    else:
+        # No date filtering - use simpler find() query (more efficient)
+        total_count = collection.count_documents(mongo_query)
+
+        skip = (page - 1) * page_size
+        cursor = collection.find(mongo_query, projection)
+        cursor = cursor.sort(mongo_sort_field, mongo_direction)
+        cursor = cursor.skip(skip).limit(page_size)
+
+        jobs = [serialize_job(job) for job in cursor]
+
+    # Calculate pagination
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
 
     return jsonify({
         "jobs": jobs,

@@ -493,31 +493,38 @@ class TestListJobsFilters:
     """Tests for the filter functionality in GET /api/jobs."""
 
     def test_list_jobs_with_date_filter(self, client, mock_db):
-        """Test filtering jobs by date range."""
+        """Test filtering jobs by date range.
+
+        GAP-007: Date filtering now uses aggregation pipeline with $toDate to handle
+        mixed types (strings from n8n, Date objects from other sources).
+        """
         mock_database, mock_collection = mock_db
 
-        mock_collection.count_documents.return_value = 5
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = iter([])
-        mock_collection.find.return_value = mock_cursor
+        # GAP-007: Date filtering uses aggregate() instead of find()
+        mock_collection.aggregate.return_value = iter([{
+            "metadata": [{"total": 5}],
+            "data": []
+        }])
 
         response = client.get('/api/jobs?date_from=2025-01-01&date_to=2025-01-31')
 
         assert response.status_code == 200
-        # Verify the query included date filter (now nested in $and)
-        call_args = mock_collection.find.call_args
-        query = call_args[0][0]
-        assert "$and" in query
-        # Find the createdAt condition within $and array
-        and_conditions = query["$and"]
-        date_condition = next((c for c in and_conditions if "createdAt" in c), None)
-        assert date_condition is not None
-        assert "$gte" in date_condition["createdAt"]
-        assert "$lte" in date_condition["createdAt"]
-        assert date_condition["createdAt"]["$gte"] == "2025-01-01T00:00:00.000Z"
-        assert date_condition["createdAt"]["$lte"] == "2025-01-31T23:59:59.999Z"
+        # Verify aggregation was called
+        assert mock_collection.aggregate.called
+        call_args = mock_collection.aggregate.call_args
+        pipeline = call_args[0][0]
+
+        # Pipeline should have: $addFields (for $toDate), $match (date filter), $facet
+        # Find the $match stage for normalized date
+        date_match_stage = next((s for s in pipeline if "$match" in s and "_normalizedDate" in s.get("$match", {})), None)
+        assert date_match_stage is not None
+        date_filter = date_match_stage["$match"]["_normalizedDate"]
+        assert "$gte" in date_filter
+        assert "$lte" in date_filter
+        # Values are now datetime objects, not strings
+        from datetime import datetime
+        assert isinstance(date_filter["$gte"], datetime)
+        assert isinstance(date_filter["$lte"], datetime)
 
     def test_list_jobs_with_location_filter(self, client, mock_db):
         """Test filtering jobs by location."""
@@ -546,32 +553,44 @@ class TestListJobsFilters:
         assert "New York" in location_condition["location"]["$in"]
 
     def test_list_jobs_with_combined_filters(self, client, mock_db):
-        """Test filtering jobs with multiple filters."""
+        """Test filtering jobs with multiple filters.
+
+        GAP-007: When date filtering is present, aggregation pipeline is used.
+        The initial $match stage contains non-date filters (search, location).
+        """
         mock_database, mock_collection = mock_db
 
-        mock_collection.count_documents.return_value = 3
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = iter([])
-        mock_collection.find.return_value = mock_cursor
+        # GAP-007: Date filtering uses aggregate() instead of find()
+        mock_collection.aggregate.return_value = iter([{
+            "metadata": [{"total": 3}],
+            "data": []
+        }])
 
         response = client.get(
             '/api/jobs?query=engineer&date_from=2025-01-01&locations=Remote'
         )
 
         assert response.status_code == 200
-        call_args = mock_collection.find.call_args
-        query = call_args[0][0]
-        # All filters should be nested in $and
+        # Verify aggregation was called
+        assert mock_collection.aggregate.called
+        call_args = mock_collection.aggregate.call_args
+        pipeline = call_args[0][0]
+
+        # First $match stage should contain non-date filters
+        first_match_stage = next((s for s in pipeline if "$match" in s), None)
+        assert first_match_stage is not None
+        query = first_match_stage["$match"]
+
+        # All non-date filters should be nested in $and
         assert "$and" in query
         and_conditions = query["$and"]
         # Check for text search $or (contains $regex for title)
         search_condition = next((c for c in and_conditions if "$or" in c and any("$regex" in cond.get("title", {}) for cond in c["$or"] if "title" in cond)), None)
         assert search_condition is not None
-        # Check for date filter
-        date_condition = next((c for c in and_conditions if "createdAt" in c), None)
-        assert date_condition is not None
         # Check for location filter
         location_condition = next((c for c in and_conditions if "location" in c), None)
         assert location_condition is not None
+
+        # Date filter is in a separate $match stage after $addFields
+        date_match_stage = next((s for s in pipeline if "$match" in s and "_normalizedDate" in s.get("$match", {})), None)
+        assert date_match_stage is not None
