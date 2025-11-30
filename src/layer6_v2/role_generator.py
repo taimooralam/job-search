@@ -35,13 +35,17 @@ from src.layer6_v2.prompts.role_generation import (
 # ===== SCHEMA VALIDATION =====
 
 class GeneratedBulletModel(BaseModel):
-    """Pydantic model for validating generated bullet."""
+    """Pydantic model for validating generated bullet with STAR format (GAP-005)."""
 
-    text: str = Field(..., min_length=20, max_length=200, description="Generated bullet text")
+    text: str = Field(..., min_length=20, max_length=250, description="STAR-formatted bullet text (20-35 words)")
     source_text: str = Field(..., min_length=10, description="Original achievement from source")
     source_metric: Optional[str] = Field(default=None, description="Exact metric from source")
     jd_keyword_used: Optional[str] = Field(default=None, description="JD keyword integrated")
     pain_point_addressed: Optional[str] = Field(default=None, description="Pain point addressed")
+    # STAR components (GAP-005)
+    situation: Optional[str] = Field(default=None, description="Challenge/context that prompted the action")
+    action: Optional[str] = Field(default=None, description="What was done including skills/technologies")
+    result: Optional[str] = Field(default=None, description="Quantified outcome achieved")
 
     @field_validator('text')
     @classmethod
@@ -77,7 +81,7 @@ class RoleBulletsResponseModel(BaseModel):
     )
 
     def to_role_bullets(self, role: RoleData) -> RoleBullets:
-        """Convert to RoleBullets dataclass."""
+        """Convert to RoleBullets dataclass with STAR components (GAP-005)."""
         generated_bullets = [
             GeneratedBullet(
                 text=b.text,
@@ -85,6 +89,9 @@ class RoleBulletsResponseModel(BaseModel):
                 source_metric=b.source_metric,
                 jd_keyword_used=b.jd_keyword_used,
                 pain_point_addressed=b.pain_point_addressed,
+                situation=b.situation,
+                action=b.action,
+                result=b.result,
             )
             for b in self.bullets
         ]

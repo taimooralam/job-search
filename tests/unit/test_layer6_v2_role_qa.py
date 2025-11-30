@@ -16,6 +16,7 @@ from src.layer6_v2.types import (
     RoleBullets,
     QAResult,
     ATSResult,
+    STARResult,
 )
 from src.layer6_v2.cv_loader import RoleData
 
@@ -637,3 +638,191 @@ class TestEdgeCases:
         result = qa_checker.check_hallucination(bullets, sample_role_data)
         # Should complete without timeout
         assert isinstance(result, QAResult)
+
+
+# ===== STAR FORMAT VALIDATION TESTS (GAP-005) =====
+
+class TestSTARFormatValidation:
+    """Test STAR format validation (GAP-005)."""
+
+    @pytest.fixture
+    def star_bullets(self):
+        """Bullets with proper STAR format."""
+        return RoleBullets(
+            role_id="test",
+            company="Test Corp",
+            title="Engineering Manager",
+            period="2020-2023",
+            bullets=[
+                GeneratedBullet(
+                    text="Facing 30% annual outage increase, led migration to event-driven microservices using AWS Lambda, achieving 75% incident reduction",
+                    source_text="Led migration, reduced incidents by 75%",
+                    situation="30% annual outage increase",
+                    action="led migration to event-driven microservices using AWS Lambda",
+                    result="75% incident reduction",
+                ),
+                GeneratedBullet(
+                    text="To address team scaling challenges, established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers",
+                    source_text="Grew team from 5 to 15 engineers",
+                    situation="team scaling challenges",
+                    action="established engineering hiring pipeline",
+                    result="growing team from 5 to 15 engineers",
+                ),
+            ],
+        )
+
+    @pytest.fixture
+    def non_star_bullets(self):
+        """Bullets without STAR format."""
+        return RoleBullets(
+            role_id="test",
+            company="Test Corp",
+            title="Engineering Manager",
+            period="2020-2023",
+            bullets=[
+                GeneratedBullet(
+                    text="Led migration to microservices architecture",  # Missing situation, result
+                    source_text="Led migration to microservices",
+                ),
+                GeneratedBullet(
+                    text="Managed team of engineers",  # Generic, no STAR elements
+                    source_text="Managed team of engineers",
+                ),
+            ],
+        )
+
+    @pytest.fixture
+    def mixed_star_bullets(self):
+        """Mix of STAR and non-STAR bullets."""
+        return RoleBullets(
+            role_id="test",
+            company="Test Corp",
+            title="Engineering Manager",
+            period="2020-2023",
+            bullets=[
+                GeneratedBullet(
+                    text="Facing scaling challenges, architected new platform using Kubernetes, improving throughput by 300%",
+                    source_text="Improved throughput by 300%",
+                ),
+                GeneratedBullet(
+                    text="Built backend services",  # No STAR
+                    source_text="Built backend services",
+                ),
+                GeneratedBullet(
+                    text="To address performance issues, implemented Redis caching layer, reducing latency by 50%",
+                    source_text="Reduced latency by 50%",
+                ),
+            ],
+        )
+
+    def test_detects_star_format_bullets(self, qa_checker, star_bullets):
+        """Should pass bullets with proper STAR format."""
+        result = qa_checker.check_star_format(star_bullets)
+        assert result.passed
+        assert result.star_coverage == 1.0
+        assert result.bullets_with_star == 2
+        assert result.bullets_without_star == 0
+
+    def test_detects_non_star_bullets(self, qa_checker, non_star_bullets):
+        """Should fail bullets without STAR format."""
+        result = qa_checker.check_star_format(non_star_bullets)
+        assert not result.passed
+        assert result.star_coverage < 0.8
+        assert result.bullets_without_star == 2
+        assert len(result.missing_elements) == 2
+
+    def test_handles_mixed_star_bullets(self, qa_checker, mixed_star_bullets):
+        """Should calculate correct coverage for mixed bullets."""
+        result = qa_checker.check_star_format(mixed_star_bullets)
+        # 2/3 = 66.7% coverage, below 80% threshold
+        assert result.star_coverage < 0.8
+        assert result.bullets_with_star == 2
+        assert result.bullets_without_star == 1
+
+    def test_uses_explicit_star_components(self, qa_checker, star_bullets):
+        """Should use explicit STAR components if provided."""
+        result = qa_checker.check_star_format(star_bullets)
+        # Bullets have situation/action/result fields
+        assert result.passed
+        assert result.bullets_with_star == 2
+
+    def test_situation_pattern_detection(self, qa_checker):
+        """Should detect various situation opener patterns."""
+        situations = [
+            "Facing performance issues, implemented caching with Redis, achieving 50% latency reduction",
+            "To address team scaling challenges, established hiring pipeline, growing team 3x",
+            "Responding to customer churn concerns, built analytics platform, enabling 20% retention improvement",
+            "Given strict compliance requirements, implemented audit logging using AWS CloudTrail",
+            "When production incidents increased, led SRE initiative using Datadog, reducing MTTR by 60%",
+        ]
+        for text in situations:
+            assert qa_checker._has_situation(text), f"Failed to detect situation in: {text}"
+
+    def test_result_pattern_detection(self, qa_checker):
+        """Should detect various result patterns."""
+        results = [
+            "implementing caching, achieving 50% latency reduction",
+            "building platform, resulting in 3x throughput improvement",
+            "establishing process, improving delivery by 40%",
+            "redesigning architecture, reducing costs by $1M annually",
+            "scaling infrastructure, enabling 10M requests per day",
+        ]
+        for text in results:
+            assert qa_checker._has_result(text), f"Failed to detect result in: {text}"
+
+    def test_action_with_skill_detection(self, qa_checker):
+        """Should detect actions with specific skills/technologies."""
+        actions = [
+            "implemented caching using Redis",
+            "built microservices with Kubernetes",
+            "established CI/CD pipeline with GitHub Actions",
+            "led team using Agile methodologies",
+            "architected system with AWS Lambda and DynamoDB",
+        ]
+        for text in actions:
+            assert qa_checker._has_action_with_skill(text), f"Failed to detect action with skill in: {text}"
+
+    def test_star_result_serialization(self, qa_checker, star_bullets):
+        """Should serialize STARResult correctly."""
+        result = qa_checker.check_star_format(star_bullets)
+        d = result.to_dict()
+        assert "passed" in d
+        assert "bullets_with_star" in d
+        assert "star_coverage" in d
+        assert d["passed"] is True
+
+    def test_empty_bullets_star_check(self, qa_checker):
+        """Should handle empty bullets gracefully."""
+        empty_bullets = RoleBullets(
+            role_id="test",
+            company="Test",
+            title="Engineer",
+            period="2020-2023",
+            bullets=[],
+        )
+        result = qa_checker.check_star_format(empty_bullets)
+        assert result.passed  # No bullets = passes by default
+        assert result.star_coverage == 1.0
+
+    def test_run_qa_includes_star_check(self, sample_role_data, grounded_bullets):
+        """Should include STAR check in run_qa_on_all_roles."""
+        qa_results, _ = run_qa_on_all_roles(
+            [grounded_bullets],
+            [sample_role_data],
+            ["AWS"],
+            check_star=True,
+        )
+        # Should have STAR result attached
+        assert qa_results[0].star_result is not None
+        assert isinstance(qa_results[0].star_result, STARResult)
+
+    def test_run_qa_can_skip_star_check(self, sample_role_data, grounded_bullets):
+        """Should be able to skip STAR check."""
+        qa_results, _ = run_qa_on_all_roles(
+            [grounded_bullets],
+            [sample_role_data],
+            ["AWS"],
+            check_star=False,
+        )
+        # Should NOT have STAR result
+        assert qa_results[0].star_result is None
