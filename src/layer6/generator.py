@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Tuple
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.state import JobState
@@ -111,6 +112,29 @@ class MarkdownCVGenerator:
             )
 
         self.prompt_path = Path("prompts/cv-creator.prompt.md")
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        reraise=True,
+    )
+    def _call_llm(self, messages: list) -> str:
+        """
+        Call LLM with retry logic for transient failures.
+
+        Uses exponential backoff: 2s, 4s, 8s...up to 30s max wait.
+
+        Args:
+            messages: List of SystemMessage/HumanMessage
+
+        Returns:
+            Raw response content from LLM
+
+        Raises:
+            Exception: After 3 failed attempts
+        """
+        response = self.llm.invoke(messages)
+        return response.content.strip()
 
     def _load_prompt_template(self) -> str:
         if self.prompt_path.exists():
@@ -230,8 +254,8 @@ MASTER CV:
             SystemMessage(content=CV_EVIDENCE_SYSTEM_PROMPT),
             HumanMessage(content=user_prompt)
         ]
-        response = self.llm.invoke(messages)
-        evidence = self._parse_json(response.content.strip())
+        response = self._call_llm(messages)
+        evidence = self._parse_json(response)
         issues = self._qa_evidence(evidence)
 
         if issues:
@@ -240,8 +264,8 @@ MASTER CV:
                 SystemMessage(content=CV_EVIDENCE_SYSTEM_PROMPT),
                 HumanMessage(content=retry_prompt)
             ]
-            retry_response = self.llm.invoke(retry_messages)
-            evidence = self._parse_json(retry_response.content.strip())
+            retry_response = self._call_llm(retry_messages)
+            evidence = self._parse_json(retry_response)
         return evidence
 
     def _collect_allowed_verbs(self, job_description: str) -> List[str]:
@@ -436,8 +460,7 @@ ROLE BULLET EVIDENCE JSON (DO NOT IGNORE):
             HumanMessage(content=final_prompt)
         ]
 
-        response = self.llm.invoke(messages)
-        cv_content = response.content.strip()
+        cv_content = self._call_llm(messages)
 
         bullet_issues = self._qa_final_bullets(cv_content, pain_points_list, success_metrics_list, allowed_verbs)
         if bullet_issues:
@@ -446,8 +469,7 @@ ROLE BULLET EVIDENCE JSON (DO NOT IGNORE):
                 SystemMessage(content=CV_SYSTEM_PROMPT),
                 HumanMessage(content=retry_prompt)
             ]
-            retry_response = self.llm.invoke(retry_messages)
-            cv_content = retry_response.content.strip()
+            cv_content = self._call_llm(retry_messages)
 
         integrity = self._extract_integrity_check(cv_content)
 
