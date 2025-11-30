@@ -25,6 +25,35 @@
 
 ---
 
+### Phase 2: PDF Export of Job Posting ✅ COMPLETE
+
+**Completion Date**: 2025-11-30
+**Commits**: db1907a7 (PDF service), 030913ae (runner proxy), f3c4e45a (frontend proxy), f6406865 (UI button), 5df4907d (bug fix)
+
+**Architecture**:
+- **PDF Service** (`pdf_service/app.py`): New endpoint `/url-to-pdf` for converting URLs to PDF
+- **Runner Service** (`runner_service/app.py`): New proxy endpoint `/api/url-to-pdf`
+- **Frontend** (`frontend/app.py`): New proxy endpoint `/api/jobs/<id>/export-page-pdf`
+- **UI** (`frontend/templates/job_detail.html`): Export PDF button in iframe viewer header
+
+**Features Delivered**:
+- Export original job posting as PDF from iframe viewer
+- Uses Playwright/Chromium to render URL to PDF (same as CV export)
+- Integrated with existing pdf-service architecture
+- Full error handling and user feedback via toast notifications
+- Filename: `job-posting-<company>.pdf`
+- Works end-to-end from frontend through runner to pdf-service
+- Graceful fallback if PDF generation fails
+
+**Implementation Details**:
+- Job posting URL captured from `job.url` field
+- Rendered using same Playwright configuration as CV export
+- Internal Docker network communication between runner and pdf-service
+- No external API calls (Playwright local Chromium rendering)
+- Respects X-Frame-Options blocking (can still export even if iframe blocked)
+
+---
+
 ## Problem Statement
 
 Users currently need to open job postings in a separate browser tab to view the original content. This breaks the workflow when comparing the job description with the generated CV/cover letter.
