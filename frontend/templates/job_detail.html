@@ -1029,6 +1029,14 @@
                                 </a></span>
                             </div>
                             <div class="flex gap-2 flex-shrink-0">
+                                <button id="export-page-pdf-btn"
+                                        onclick="exportPagePDF('{{ job._id }}', '{{ job_url }}')"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition">
+                                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span id="export-page-pdf-text">Export PDF</span>
+                                </button>
                                 <button onclick="window.open('{{ job_url }}', '_blank')"
                                         class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition">
                                     <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1778,6 +1786,71 @@
             container.classList.add('hidden');
             icon.classList.remove('rotate-90');
             button.setAttribute('aria-expanded', 'false');
+        }
+    }
+
+    /**
+     * Export job posting URL to PDF (Bug #7 Phase 2)
+     * Uses Playwright on the server to capture the page
+     */
+    async function exportPagePDF(jobId, url) {
+        const btn = document.getElementById('export-page-pdf-btn');
+        const textEl = document.getElementById('export-page-pdf-text');
+        const originalText = textEl.textContent;
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        textEl.textContent = 'Generating...';
+
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/export-page-pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error || `PDF generation failed (${response.status})`;
+                throw new Error(errorMsg);
+            }
+
+            // Download the PDF
+            const blob = await response.blob();
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+
+            // Extract filename from Content-Disposition header
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'job_posting.pdf';
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (match) filename = match[1];
+            }
+            a.download = filename;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+
+            // Show success briefly
+            textEl.textContent = 'Downloaded!';
+            setTimeout(() => {
+                textEl.textContent = originalText;
+            }, 2000);
+
+        } catch (error) {
+            console.error('Export PDF failed:', error);
+            showToast(error.message || 'Failed to export PDF. Try opening in new tab instead.', 'error');
+            textEl.textContent = originalText;
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
     }
 
