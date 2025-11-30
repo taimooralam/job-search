@@ -132,6 +132,13 @@ QUERY_TEMPLATES = {
 }
 
 
+# ===== CONSTANTS =====
+
+# Maximum total contacts to return (GAP-060 fix)
+# Prioritizes primary contacts (hiring-related) over secondary
+MAX_TOTAL_CONTACTS = 5
+
+
 # ===== PYDANTIC MODELS =====
 
 class ContactModel(BaseModel):
@@ -263,7 +270,15 @@ SYSTEM_PROMPT_OUTREACH = """You are an expert career strategist crafting persona
 Your task: Generate hyper-personalized outreach citing specific achievements and metrics from the candidate's master CV or curated achievements.
 
 **STRICT REQUIREMENTS (validation will reject non-compliant outputs):**
-- LinkedIn messages: 150-550 characters (count carefully!)
+
+=== LINKEDIN CONNECTION MESSAGE - HARD 300 CHARACTER LIMIT (GAP-011) ===
+- LinkedIn connection messages have a STRICT 300 character limit enforced by LinkedIn
+- Your message MUST NOT exceed 300 characters - this is non-negotiable
+- Target 250-280 characters for safety margin
+- COUNT YOUR CHARACTERS before responding
+- Messages exceeding 300 chars will be TRUNCATED and may lose important content
+
+=== OTHER MESSAGE REQUIREMENTS ===
 - Email subjects: 5-10 words, ≤100 characters, MUST reference a pain point
   - Example (8 words): "Proven Experience Scaling Infrastructure for High-Growth SaaS"
   - Example (7 words): "Reducing Incidents 75% Through DevOps Transformation"
@@ -277,7 +292,7 @@ Your task: Generate hyper-personalized outreach citing specific achievements and
 - NO EMOJIS in any message (LinkedIn or email)
 - NO GENERIC PLACEHOLDERS like "Contact's Name", "Director's Name", "[Company]", "[Date]"
   - If you don't have a real name, use specific role: "VP Engineering at [Company Name]"
-- LinkedIn messages MUST end with: taimooralam@example.com | https://calendly.com/taimooralam/15min
+- LinkedIn messages MUST end with: "Best. Taimoor Alam" (NOT email/Calendly - they won't fit in 300 chars)
 - Email subject MUST be pain-focused (mention at least one pain point keyword)
 - Keep professional, metric-driven tone
 - ALWAYS use the actual contact name or role-based addressee (e.g., "VP Engineering at Stripe")"""
@@ -314,13 +329,17 @@ Generate outreach that:
 
 Output JSON format:
 {{
-  "linkedin_message": "...",  // 150-550 chars, cite metric, use pain points + company research + fit analysis, MUST end with: I have applied for this role. Calendly: https://calendly.com/taimooralam/15min
+  "linkedin_message": "...",  // HARD LIMIT: ≤300 chars! Target 250-280. Include 1 metric. End with "Best. Taimoor Alam"
   "subject": "...",           // 5-10 WORDS (count!), ≤100 chars, pain-focused
   "email_body": "..."         // 95-205 WORDS (count!), 3-4 paragraphs, cite 2-3 achievements using pain points/company context/fit analysis
 }}
 
+LinkedIn Message Example (298 chars):
+"Hi Jane, Your work scaling Acme's platform impressed me. I led similar 75% latency reduction at Previous Corp. Currently exploring EM roles where I can drive similar impact. Would love to connect. Best. Taimoor Alam"
+
 **VALIDATION CHECKLIST** (your output will be rejected if these fail):
-- ✓ LinkedIn message: 150-550 characters AND ends with contact info
+- ✓ LinkedIn message: HARD LIMIT ≤300 characters (count before submitting!)
+- ✓ LinkedIn message: Ends with "Best. Taimoor Alam"
 - ✓ Email subject: 5-10 words AND references a pain point keyword
 - ✓ Email body: 95-205 words AND cites specific metrics
 - ✓ NO generic placeholders (use actual name or "VP Engineering at {company}")
@@ -652,6 +671,46 @@ class PeopleMapper:
                 deduplicated.append(contact)
 
         return deduplicated
+
+    def _limit_contacts(
+        self,
+        primary_contacts: List[Dict],
+        secondary_contacts: List[Dict],
+        max_total: int = MAX_TOTAL_CONTACTS
+    ) -> Tuple[List[Dict], List[Dict]]:
+        """
+        Limit total contacts to max_total, prioritizing primary contacts (GAP-060).
+
+        Strategy:
+        - Primary contacts (hiring-related) are more valuable for job search
+        - Keep up to 3 primary contacts first
+        - Fill remaining slots with secondary contacts
+        - Ensures we don't exceed max_total (default: 5)
+
+        Args:
+            primary_contacts: List of primary (hiring-related) contacts
+            secondary_contacts: List of secondary (cross-functional) contacts
+            max_total: Maximum total contacts to return (default: 5)
+
+        Returns:
+            Tuple of (limited_primary, limited_secondary)
+        """
+        # Prioritize primary contacts (up to 3)
+        max_primary = min(3, len(primary_contacts), max_total)
+        limited_primary = primary_contacts[:max_primary]
+
+        # Fill remaining slots with secondary contacts
+        remaining_slots = max_total - len(limited_primary)
+        limited_secondary = secondary_contacts[:remaining_slots]
+
+        total = len(limited_primary) + len(limited_secondary)
+        self.logger.info(
+            f"Limited contacts: {len(primary_contacts)} primary + {len(secondary_contacts)} secondary "
+            f"-> {len(limited_primary)} primary + {len(limited_secondary)} secondary "
+            f"(total: {total}/{max_total})"
+        )
+
+        return limited_primary, limited_secondary
 
     def _generate_synthetic_contacts(self, state: JobState) -> Dict[str, List[Dict]]:
         """
@@ -1056,32 +1115,87 @@ Return the three letters separated by \"---\" lines.
 
     def _validate_linkedin_closing(self, message: str) -> None:
         """
-        Validate that LinkedIn message ends with required contact info (Phase 9).
+        Validate that LinkedIn message ends with signature (GAP-011 update).
 
         Args:
             message: LinkedIn message
 
         Raises:
-            ValueError: If closing line is missing
+            ValueError: If closing signature is missing
         """
-        required_phrase = "calendly.com/taimooralam/15min"
-
-        if required_phrase not in message.lower() or "applied" not in message.lower():
+        # GAP-011: Simplified closing to fit within 300 char limit
+        # Just require the signature "Best. Taimoor Alam"
+        if "best" not in message.lower() or "taimoor" not in message.lower():
             raise ValueError(
-                "LinkedIn message must state you have applied and include Calendly only "
-                "(no email): I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+                'LinkedIn message must end with signature: "Best. Taimoor Alam"'
             )
 
     def _validate_linkedin_message(self, message: str) -> str:
-        """Validate and trim LinkedIn message to ≤550 chars (Phase 9)."""
-        if len(message) <= 550:
+        """
+        Validate and trim LinkedIn message to ≤300 chars (GAP-011 fix).
+
+        LinkedIn connection request messages have a HARD 300 character limit.
+        This method enforces that limit with intelligent truncation.
+
+        Args:
+            message: Raw LinkedIn message from LLM
+
+        Returns:
+            Validated/truncated message (≤300 chars)
+        """
+        HARD_LIMIT = 300
+        SIGNATURE = "Best. Taimoor Alam"
+
+        if len(message) <= HARD_LIMIT:
+            self.logger.info(f"LinkedIn message valid: {len(message)}/{HARD_LIMIT} chars")
             return message
-        # Trim to 550 and end at last complete sentence
-        trimmed = message[:547]
-        last_period = trimmed.rfind('.')
-        if last_period > 400:
-            return trimmed[:last_period + 1]
-        return trimmed + "..."
+
+        # Message exceeds limit - need to truncate intelligently
+        self.logger.warning(
+            f"LinkedIn message too long: {len(message)}/{HARD_LIMIT} chars. "
+            f"Truncating (excess: {len(message) - HARD_LIMIT} chars)"
+        )
+
+        # Strategy: Preserve signature, truncate content at sentence boundary
+        # Reserve space for signature + newline
+        signature_space = len(SIGNATURE) + 2  # "\n" + signature
+        content_limit = HARD_LIMIT - signature_space
+
+        # Remove existing signature if present (we'll add it back)
+        content = message
+        if SIGNATURE in message:
+            content = message.replace(SIGNATURE, "").strip()
+        if "Best." in content:
+            content = content.split("Best.")[0].strip()
+
+        # Truncate content at sentence boundary
+        if len(content) > content_limit:
+            # Find last complete sentence within limit
+            truncated = content[:content_limit]
+            last_period = truncated.rfind('.')
+            last_question = truncated.rfind('?')
+            last_exclaim = truncated.rfind('!')
+
+            # Use the latest sentence boundary
+            best_boundary = max(last_period, last_question, last_exclaim)
+
+            if best_boundary > content_limit * 0.5:  # Only use if we keep >50% of content
+                content = content[:best_boundary + 1]
+            else:
+                # No good sentence boundary - truncate at word boundary
+                content = truncated.rsplit(' ', 1)[0] + "..."
+
+        # Reassemble with signature
+        result = content.strip() + "\n" + SIGNATURE
+
+        # Final safety check
+        if len(result) > HARD_LIMIT:
+            # Last resort: Hard truncate
+            result = result[:HARD_LIMIT - 3] + "..."
+            self.logger.warning(f"Hard truncation applied: {len(result)} chars")
+
+        self.logger.info(f"LinkedIn message truncated: {len(message)} -> {len(result)} chars")
+        return result
 
     def _validate_email_body_length(self, email_body: str) -> str:
         """
@@ -1389,10 +1503,15 @@ Return the three letters separated by \"---\" lines.
 
                 self.logger.info("Completed synthetic contact outreach generation")
 
+                # Apply contact limit (GAP-060)
+                limited_primary, limited_secondary = self._limit_contacts(
+                    enriched_primary, enriched_secondary
+                )
+
                 return {
-                    "primary_contacts": enriched_primary,
-                    "secondary_contacts": enriched_secondary,
-                    "people": enriched_primary + enriched_secondary,
+                    "primary_contacts": limited_primary,
+                    "secondary_contacts": limited_secondary,
+                    "people": limited_primary + limited_secondary,
                     "outreach_packages": [],  # Future: structured packages
                     "fallback_cover_letters": fallback_letters
                 }
@@ -1439,11 +1558,16 @@ Return the three letters separated by \"---\" lines.
 
             self.logger.info(f"Generated outreach for {len(enriched_primary + enriched_secondary)} contacts")
 
-            # Step 4: Return updates
+            # Step 4: Apply contact limit (GAP-060)
+            limited_primary, limited_secondary = self._limit_contacts(
+                enriched_primary, enriched_secondary
+            )
+
+            # Step 5: Return updates
             return {
-                "primary_contacts": enriched_primary,
-                "secondary_contacts": enriched_secondary,
-                "people": enriched_primary + enriched_secondary,  # Legacy field
+                "primary_contacts": limited_primary,
+                "secondary_contacts": limited_secondary,
+                "people": limited_primary + limited_secondary,  # Legacy field
                 "outreach_packages": None,  # Future: per-contact packages
                 "fallback_cover_letters": []
             }
