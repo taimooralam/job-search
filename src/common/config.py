@@ -93,6 +93,21 @@ class Config:
     ANALYTICAL_TEMPERATURE: float = 0.3  # For pain point extraction, scoring
     CV_TEMPERATURE: float = float(os.getenv("CV_TEMPERATURE", "0.33"))  # Slightly warmer CV tone
 
+    # ===== Token Budget Configuration (Gap BG-1) =====
+    # Budget limits in USD (0.0 = unlimited)
+    TOKEN_BUDGET_USD: float = float(os.getenv("TOKEN_BUDGET_USD", "100.0"))
+    OPENAI_BUDGET_USD: float = float(os.getenv("OPENAI_BUDGET_USD", "50.0"))
+    ANTHROPIC_BUDGET_USD: float = float(os.getenv("ANTHROPIC_BUDGET_USD", "50.0"))
+    OPENROUTER_BUDGET_USD: float = float(os.getenv("OPENROUTER_BUDGET_USD", "25.0"))
+
+    # Enforcement behavior
+    ENFORCE_TOKEN_BUDGET: bool = os.getenv("ENFORCE_TOKEN_BUDGET", "false").lower() == "true"
+    TOKEN_BUDGET_ACTION: str = os.getenv("TOKEN_BUDGET_ACTION", "warn")  # "fail", "warn", "skip"
+
+    # Tracking
+    ENABLE_TOKEN_TRACKING: bool = os.getenv("ENABLE_TOKEN_TRACKING", "true").lower() == "true"
+    TRACK_TOKENS_TO_MONGODB: bool = os.getenv("TRACK_TOKENS_TO_MONGODB", "true").lower() == "true"
+
     @classmethod
     def validate(cls) -> None:
         """
@@ -204,6 +219,8 @@ Configuration Summary:
   Google Sheets: {'✓ Configured' if cls.GOOGLE_SHEET_ID else '✗ Missing'}
   Candidate Profile: {cls.CANDIDATE_PROFILE_PATH}
   Default Model: {cls.DEFAULT_MODEL}
+  Token Budget: ${cls.TOKEN_BUDGET_USD:.2f} ({'enforced' if cls.ENFORCE_TOKEN_BUDGET else 'tracking only'})
+  Token Tracking: {'✓ Enabled' if cls.ENABLE_TOKEN_TRACKING else '✗ Disabled'}
         """.strip()
 
 

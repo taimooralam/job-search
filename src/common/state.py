@@ -224,3 +224,9 @@ class JobState(TypedDict):
 
     # Processing flags
     status: Optional[str]            # "processing", "completed", "failed"
+
+    # ===== TOKEN TRACKING (Gap BG-1) =====
+    # Tracks token usage per provider and layer for budget enforcement
+    token_usage: Optional[Dict[str, Dict]]  # {"openai": {"input": X, "output": Y, "cost": Z}, ...}
+    total_tokens: Optional[int]      # Total tokens used across all providers
+    total_cost_usd: Optional[float]  # Estimated cost in USD
