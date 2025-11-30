@@ -130,6 +130,14 @@ class CVToPDFRequest(BaseModel):
     role: Optional[str] = Field(None, description="Role title for filename")
 
 
+class URLToPDFRequest(BaseModel):
+    """URL to PDF request for capturing web pages."""
+    url: str = Field(..., description="URL to render as PDF")
+    pageSize: str = Field("letter", description="Page size: 'letter' or 'a4'")
+    printBackground: bool = Field(True, description="Print background colors/images")
+    waitForSelector: Optional[str] = Field(None, description="Optional CSS selector to wait for")
+
+
 # ============================================================================
 # Health Check Endpoint
 # ============================================================================
@@ -394,6 +402,109 @@ async def cv_to_pdf(request: CVToPDFRequest):
             )
         except Exception as e:
             logger.error(f"CV PDF generation failed: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"PDF generation failed: {str(e)}"
+            )
+
+
+@app.post("/url-to-pdf")
+async def url_to_pdf(request: URLToPDFRequest):
+    """
+    Render a URL to PDF (for job posting export).
+
+    Navigates to the specified URL and captures the page as PDF.
+    Useful for saving job postings that may disappear.
+
+    Args:
+        request: URL and page settings
+
+    Returns:
+        StreamingResponse with PDF binary data
+
+    Raises:
+        HTTPException: 400 for invalid URL, 500 for rendering failures, 503 for overload
+    """
+    # Validate URL
+    if not request.url or not request.url.strip():
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    if not request.url.startswith(('http://', 'https://')):
+        raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
+
+    # Check capacity
+    if _pdf_semaphore._value <= 0:
+        logger.warning("PDF service overloaded, rejecting URL request")
+        raise HTTPException(
+            status_code=503,
+            detail="Service overloaded. Too many concurrent PDF operations."
+        )
+
+    async with _pdf_semaphore:
+        try:
+            logger.info(f"Starting URL to PDF render: {request.url[:100]}...")
+
+            from playwright.async_api import async_playwright
+
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=PLAYWRIGHT_HEADLESS)
+                page = await browser.new_page()
+
+                # Set timeout
+                page.set_default_timeout(PLAYWRIGHT_TIMEOUT)
+
+                # Navigate to URL
+                try:
+                    await page.goto(request.url, wait_until='networkidle')
+                except Exception as nav_error:
+                    # Some sites block navigation - try with domcontentloaded
+                    logger.warning(f"networkidle navigation failed, trying domcontentloaded: {nav_error}")
+                    await page.goto(request.url, wait_until='domcontentloaded')
+
+                # Wait for optional selector
+                if request.waitForSelector:
+                    try:
+                        await page.wait_for_selector(request.waitForSelector, timeout=10000)
+                    except Exception:
+                        logger.warning(f"Selector {request.waitForSelector} not found, continuing anyway")
+
+                # Small delay to ensure page is fully rendered
+                await asyncio.sleep(1)
+
+                # Generate PDF
+                pdf_format = 'A4' if request.pageSize.lower() == 'a4' else 'Letter'
+                pdf_bytes = await page.pdf(
+                    format=pdf_format,
+                    print_background=request.printBackground
+                )
+
+                await browser.close()
+
+            logger.info(f"URL to PDF completed: {len(pdf_bytes)} bytes")
+
+            # Extract domain for filename
+            from urllib.parse import urlparse
+            domain = urlparse(request.url).netloc.replace('.', '_')
+            filename = f"job_posting_{domain}.pdf"
+
+            return StreamingResponse(
+                BytesIO(pdf_bytes),
+                media_type='application/pdf',
+                headers={
+                    'Content-Disposition': f'attachment; filename="{filename}"'
+                }
+            )
+
+        except HTTPException:
+            raise
+        except asyncio.TimeoutError:
+            logger.error(f"URL to PDF timed out: {request.url}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Page load timed out after {PLAYWRIGHT_TIMEOUT}ms. The site may be slow or blocking automation."
+            )
+        except Exception as e:
+            logger.error(f"URL to PDF failed: {str(e)}")
             raise HTTPException(
                 status_code=500,
                 detail=f"PDF generation failed: {str(e)}"
