@@ -1,0 +1,132 @@
+<!-- Alert History Widget (Gap OB-2) -->
+{% if error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+    <div class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <span>Alert data unavailable: {{ error }}</span>
+    </div>
+</div>
+{% elif not alerts %}
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Recent Alerts
+        </h3>
+        <span class="text-xs text-gray-400">OB-2</span>
+    </div>
+    <div class="text-center text-sm text-gray-500 py-6">
+        <svg class="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        No alerts recorded
+    </div>
+</div>
+{% else %}
+<div class="bg-white rounded-lg border border-gray-200 p-4">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Recent Alerts
+            {% if stats and stats.history_count > 0 %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">
+                {{ stats.history_count }}
+            </span>
+            {% endif %}
+        </h3>
+        <span class="text-xs text-gray-400">OB-2</span>
+    </div>
+
+    <!-- Alert Stats Summary -->
+    {% if stats and stats.by_level %}
+    <div class="flex gap-2 mb-3">
+        {% if stats.by_level.get('critical', 0) > 0 %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs">
+            <span class="inline-flex w-2 h-2 rounded-full bg-red-500"></span>
+            {{ stats.by_level.critical }} critical
+        </span>
+        {% endif %}
+        {% if stats.by_level.get('error', 0) > 0 %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">
+            <span class="inline-flex w-2 h-2 rounded-full bg-orange-500"></span>
+            {{ stats.by_level.error }} error
+        </span>
+        {% endif %}
+        {% if stats.by_level.get('warning', 0) > 0 %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs">
+            <span class="inline-flex w-2 h-2 rounded-full bg-yellow-500"></span>
+            {{ stats.by_level.warning }} warning
+        </span>
+        {% endif %}
+        {% if stats.by_level.get('info', 0) > 0 %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+            <span class="inline-flex w-2 h-2 rounded-full bg-blue-500"></span>
+            {{ stats.by_level.info }} info
+        </span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Alert List -->
+    <div class="space-y-2 max-h-64 overflow-y-auto">
+        {% for alert in alerts %}
+        <div class="p-2 rounded border
+            {% if alert.level == 'critical' %}bg-red-50 border-red-200
+            {% elif alert.level == 'error' %}bg-orange-50 border-orange-200
+            {% elif alert.level == 'warning' %}bg-yellow-50 border-yellow-200
+            {% else %}bg-blue-50 border-blue-200{% endif %}">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex items-start gap-2 min-w-0">
+                    <!-- Level Icon -->
+                    {% if alert.level == 'critical' %}
+                    <svg class="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    {% elif alert.level == 'error' %}
+                    <svg class="w-4 h-4 flex-shrink-0 text-orange-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% elif alert.level == 'warning' %}
+                    <svg class="w-4 h-4 flex-shrink-0 text-yellow-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-4 h-4 flex-shrink-0 text-blue-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% endif %}
+                    <div class="min-w-0">
+                        <div class="text-xs font-medium
+                            {% if alert.level == 'critical' %}text-red-700
+                            {% elif alert.level == 'error' %}text-orange-700
+                            {% elif alert.level == 'warning' %}text-yellow-700
+                            {% else %}text-blue-700{% endif %}">
+                            [{{ alert.source }}]
+                        </div>
+                        <div class="text-sm text-gray-700 break-words">{{ alert.message }}</div>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
+                    {{ alert.timestamp[:16]|replace('T', ' ') }}
+                </div>
+            </div>
+            {% if alert.metadata %}
+            <div class="mt-1 ml-6 text-xs text-gray-500">
+                {% for key, value in alert.metadata.items() %}
+                <span class="inline-flex items-center px-1 py-0.5 bg-gray-100 rounded mr-1">
+                    {{ key }}: {{ value }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
