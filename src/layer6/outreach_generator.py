@@ -20,6 +20,7 @@ from typing import Dict, Any, List, Optional
 
 from src.common.state import JobState, Contact, OutreachPackage
 from src.common.config import Config
+from src.common.structured_logger import get_structured_logger, LayerContext
 from src.layer6.cover_letter_generator import _extract_companies_from_profile
 
 
@@ -346,9 +347,13 @@ def outreach_generator_node(state: JobState) -> Dict[str, Any]:
     Returns:
         State updates with outreach_packages populated
     """
-    generator = OutreachGenerator()
-    packages = generator.generate_outreach_packages(state)
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
-    return {
-        "outreach_packages": packages
-    }
+    with LayerContext(struct_logger, 6, "outreach_generator") as ctx:
+        generator = OutreachGenerator()
+        packages = generator.generate_outreach_packages(state)
+        ctx.add_metadata("packages_count", len(packages))
+
+        return {
+            "outreach_packages": packages
+        }

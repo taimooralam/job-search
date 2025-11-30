@@ -22,6 +22,7 @@ from src.common.config import Config
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 from src.layer6.cover_letter_generator import CoverLetterGenerator
 
 
@@ -575,38 +576,46 @@ def generator_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer6")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
     logger.info("LAYER 6: Outreach & CV Generator")
     logger.info("="*60)
 
-    generator = Generator()
-    updates = generator.generate_outputs(state)
+    with LayerContext(struct_logger, 6, "cv_generator") as ctx:
+        generator = Generator()
+        updates = generator.generate_outputs(state)
 
-    # Read CV content from disk for MongoDB persistence
-    cv_path = updates.get("cv_path")
-    if cv_path and os.path.exists(cv_path):
-        try:
-            cv_text = Path(cv_path).read_text(encoding="utf-8")
-            updates["cv_text"] = cv_text
-            logger.info(f"CV text loaded ({len(cv_text)} chars)")
-        except Exception as e:
-            logger.warning(f"Failed to read CV text: {e}")
+        # Read CV content from disk for MongoDB persistence
+        cv_path = updates.get("cv_path")
+        if cv_path and os.path.exists(cv_path):
+            try:
+                cv_text = Path(cv_path).read_text(encoding="utf-8")
+                updates["cv_text"] = cv_text
+                logger.info(f"CV text loaded ({len(cv_text)} chars)")
+                ctx.add_metadata("cv_chars", len(cv_text))
+            except Exception as e:
+                logger.warning(f"Failed to read CV text: {e}")
+                updates["cv_text"] = None
+        else:
             updates["cv_text"] = None
-    else:
-        updates["cv_text"] = None
 
-    # Log results
-    if updates.get("cover_letter"):
-        logger.info("Cover Letter Preview (first 150 chars):")
-        logger.info(f"  {updates['cover_letter'][:150]}...")
-    else:
-        logger.warning("No cover letter generated")
+        # Log results and add metadata
+        has_cover_letter = bool(updates.get("cover_letter"))
+        has_cv = bool(updates.get("cv_path"))
+        ctx.add_metadata("has_cover_letter", has_cover_letter)
+        ctx.add_metadata("has_cv", has_cv)
 
-    if updates.get("cv_path"):
-        logger.info(f"CV Generated: {updates['cv_path']}")
-    else:
-        logger.warning("No CV generated")
+        if has_cover_letter:
+            logger.info("Cover Letter Preview (first 150 chars):")
+            logger.info(f"  {updates['cover_letter'][:150]}...")
+        else:
+            logger.warning("No cover letter generated")
+
+        if has_cv:
+            logger.info(f"CV Generated: {updates['cv_path']}")
+        else:
+            logger.warning("No CV generated")
 
     logger.info("="*60)
 

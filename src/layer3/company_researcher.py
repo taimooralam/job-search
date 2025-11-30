@@ -26,6 +26,7 @@ from pymongo import MongoClient
 from src.common.config import Config
 from src.common.state import JobState, CompanySignal, CompanyResearch
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -1135,39 +1136,43 @@ def company_researcher_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
     logger.info("LAYER 3: Company Researcher (Phase 5.1)")
     logger.info("="*60)
     logger.info(f"Researching: {state['company']}")
 
-    researcher = CompanyResearcher()
-    updates = researcher.research_company(state)
+    with LayerContext(struct_logger, 3, "company_researcher") as ctx:
+        researcher = CompanyResearcher()
+        updates = researcher.research_company(state)
 
-    # Log results (Phase 5.1 format)
-    if updates.get("company_research"):
-        company_research = updates["company_research"]
-        logger.info("Company Summary:")
-        logger.info(f"  {company_research['summary']}")
+        # Log results and add metadata (Phase 5.1 format)
+        if updates.get("company_research"):
+            company_research = updates["company_research"]
+            signals_count = len(company_research.get("signals", []))
+            ctx.add_metadata("signals_count", signals_count)
+            logger.info("Company Summary:")
+            logger.info(f"  {company_research['summary']}")
 
-        if company_research.get("signals"):
-            logger.info(f"Company Signals ({len(company_research['signals'])} found):")
-            for idx, signal in enumerate(company_research['signals'], 1):
-                logger.info(f"  {idx}. [{signal['type']}] {signal['description']}")
-                if signal.get('date') and signal['date'] != 'unknown':
-                    logger.info(f"     Date: {signal['date']}")
+            if company_research.get("signals"):
+                logger.info(f"Company Signals ({signals_count} found):")
+                for idx, signal in enumerate(company_research['signals'], 1):
+                    logger.info(f"  {idx}. [{signal['type']}] {signal['description']}")
+                    if signal.get('date') and signal['date'] != 'unknown':
+                        logger.info(f"     Date: {signal['date']}")
 
-        if company_research.get("url"):
-            logger.info(f"Primary URL: {company_research['url']}")
+            if company_research.get("url"):
+                logger.info(f"Primary URL: {company_research['url']}")
 
-    elif updates.get("company_summary"):
-        # Legacy format fallback
-        logger.info("Company Summary (legacy format):")
-        logger.info(f"  {updates['company_summary']}")
-        if updates.get("company_url"):
-            logger.info(f"Source: {updates['company_url']}")
-    else:
-        logger.warning("No company summary generated")
+        elif updates.get("company_summary"):
+            # Legacy format fallback
+            logger.info("Company Summary (legacy format):")
+            logger.info(f"  {updates['company_summary']}")
+            if updates.get("company_url"):
+                logger.info(f"Source: {updates['company_url']}")
+        else:
+            logger.warning("No company summary generated")
 
     logger.info("="*60)
 

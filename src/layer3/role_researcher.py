@@ -23,6 +23,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.config import Config
 from src.common.state import JobState, RoleResearch
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -542,29 +543,42 @@ def role_researcher_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3.5")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
     logger.info("LAYER 3.5: Role Researcher (Phase 5.2)")
     logger.info("="*60)
     logger.info(f"Analyzing role: {state['title']} at {state['company']}")
 
-    researcher = RoleResearcher()
-    updates = researcher.research_role(state)
+    # Use layer number 3.5 rounded to 4 for structured events (layer_start uses int)
+    struct_logger.layer_start(4, "role_researcher")  # 3.5 -> use 4 slot for sub-layer
 
-    # Log results
-    if updates.get("role_research"):
-        role_research = updates["role_research"]
-        logger.info("Role Summary:")
-        logger.info(f"  {role_research['summary']}")
+    try:
+        researcher = RoleResearcher()
+        updates = researcher.research_role(state)
 
-        logger.info(f"Business Impact ({len(role_research['business_impact'])} points):")
-        for idx, impact in enumerate(role_research['business_impact'], 1):
-            logger.info(f"  {idx}. {impact}")
+        # Log results
+        if updates.get("role_research"):
+            role_research = updates["role_research"]
+            logger.info("Role Summary:")
+            logger.info(f"  {role_research['summary']}")
 
-        logger.info("Why Now:")
-        logger.info(f"  {role_research['why_now']}")
-    else:
-        logger.warning("No role research generated")
+            impact_count = len(role_research['business_impact'])
+            logger.info(f"Business Impact ({impact_count} points):")
+            for idx, impact in enumerate(role_research['business_impact'], 1):
+                logger.info(f"  {idx}. {impact}")
+
+            logger.info("Why Now:")
+            logger.info(f"  {role_research['why_now']}")
+
+            struct_logger.layer_complete(4, "role_researcher", metadata={"impact_count": impact_count})
+        else:
+            logger.warning("No role research generated")
+            struct_logger.layer_complete(4, "role_researcher")
+
+    except Exception as e:
+        struct_logger.layer_error(4, str(e), "role_researcher")
+        raise
 
     logger.info("="*60)
 

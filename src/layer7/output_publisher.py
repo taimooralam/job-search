@@ -24,6 +24,7 @@ from src.common.config import Config
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 from src.layer7.dossier_generator import DossierGenerator
 
 
@@ -699,52 +700,61 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer7")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
     logger.info("LAYER 7: Output Publisher")
     logger.info("="*60)
 
-    publisher = OutputPublisher()
-    updates = publisher.publish(state)
+    with LayerContext(struct_logger, 7, "output_publisher") as ctx:
+        publisher = OutputPublisher()
+        updates = publisher.publish(state)
 
-    # Log results summary
-    logger.info("="*60)
-    logger.info("LAYER 7 OUTPUT SUMMARY")
-    logger.info("="*60)
+        # Log results summary
+        logger.info("="*60)
+        logger.info("LAYER 7 OUTPUT SUMMARY")
+        logger.info("="*60)
 
-    # Dossier
-    if updates.get("dossier_generated"):
-        logger.info("✅ Dossier: Generated")
-    else:
-        logger.error("❌ Dossier: Failed")
+        # Dossier
+        if updates.get("dossier_generated"):
+            logger.info("✅ Dossier: Generated")
+        else:
+            logger.error("❌ Dossier: Failed")
 
-    # Local files
-    if updates.get("local_save_success"):
-        local_paths = updates.get("local_paths", {})
-        logger.info(f"✅ Local Files: {len(local_paths)} files saved")
-        if local_paths.get('dossier'):
-            logger.info(f"   📄 Dossier: {local_paths['dossier']}")
-    else:
-        logger.error("❌ Local Files: Save failed")
+        # Local files
+        if updates.get("local_save_success"):
+            local_paths = updates.get("local_paths", {})
+            logger.info(f"✅ Local Files: {len(local_paths)} files saved")
+            if local_paths.get('dossier'):
+                logger.info(f"   📄 Dossier: {local_paths['dossier']}")
+        else:
+            logger.error("❌ Local Files: Save failed")
 
-    # MongoDB
-    if updates.get("mongodb_persisted"):
-        logger.info("✅ MongoDB: Job record updated")
-    else:
-        logger.warning("MongoDB: Update failed or skipped")
+        # MongoDB
+        if updates.get("mongodb_persisted"):
+            logger.info("✅ MongoDB: Job record updated")
+        else:
+            logger.warning("MongoDB: Update failed or skipped")
 
-    # Drive
-    if updates.get("drive_folder_url"):
-        logger.info(f"✅ Drive Folder: {updates['drive_folder_url']}")
-    else:
-        logger.warning("Drive: No folder created")
+        # Drive
+        if updates.get("drive_folder_url"):
+            logger.info(f"✅ Drive Folder: {updates['drive_folder_url']}")
+        else:
+            logger.warning("Drive: No folder created")
 
-    # Sheets
-    if updates.get("sheet_row_id"):
-        logger.info(f"✅ Sheets: Logged to row {updates['sheet_row_id']}")
-    else:
-        logger.warning("Sheets: Not logged")
+        # Sheets
+        if updates.get("sheet_row_id"):
+            logger.info(f"✅ Sheets: Logged to row {updates['sheet_row_id']}")
+        else:
+            logger.warning("Sheets: Not logged")
 
-    logger.info("="*60)
+        logger.info("="*60)
 
-    return updates
+        # Add metadata for structured logging
+        ctx.add_metadata("dossier_generated", updates.get("dossier_generated", False))
+        ctx.add_metadata("local_save_success", updates.get("local_save_success", False))
+        ctx.add_metadata("mongodb_persisted", updates.get("mongodb_persisted", False))
+        ctx.add_metadata("drive_uploaded", updates.get("drive_folder_url") is not None)
+        ctx.add_metadata("sheets_logged", updates.get("sheet_row_id") is not None)
+
+        return updates
