@@ -12,7 +12,15 @@ OPEN/PENDING:
 
 8. Create AI agents that bypass firecrawl not allowed filters and reason into truly researching company info if firecrawl failes. That are cheap as well.
 
-9. Research ATS based algorithms and best practises to create ATS compliant CVs. Add ATS compliant keywords in text for matching? Can it back fire?
+9. [RESEARCHED 2025-11-30] Research ATS based algorithms and best practises to create ATS compliant CVs.
+    - **Answer**: Yes, keyword stuffing CAN backfire. Modern ATS uses semantic analysis and penalizes repetition.
+    - **Key findings**:
+      - 98% of Fortune 500 use ATS; 99.7% of recruiters use keyword filters
+      - ATS now detects spam/stuffing via NLP - resumes with excessive repetition rank LOWER
+      - Best practice: Natural keyword integration with context + quantified results
+      - Priority: Skills (76%), Education (60%), Job Title (55%), Certifications (51%)
+    - **Recommendations**: Add keyword density validation, ensure keywords appear near achievements
+    - **Full report**: `reports/ats-compliance-research.md`
 
 10. Are the pdf files saved on the docker container? Is the dossier also saved on the docker container.
     - **Answer**: PDFs are NOT stored - generated on-the-fly and streamed to user
