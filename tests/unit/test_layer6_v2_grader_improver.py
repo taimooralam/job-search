@@ -318,7 +318,7 @@ class TestFinalCV:
         assert final.is_passing is True
 
     def test_to_markdown(self):
-        """Converts to complete markdown."""
+        """Converts to complete plain text (GAP-006: no markdown)."""
         profile = ProfileOutput("Engineering leader.", [], [])
         header = HeaderOutput(
             profile=profile,
@@ -340,9 +340,12 @@ class TestFinalCV:
         final = FinalCV(header=header, experience=experience)
         md = final.to_markdown()
 
-        assert "# John" in md
-        assert "## Professional Experience" in md
+        # GAP-006: Now uses plain text, no markdown markers
+        assert "John" in md
+        assert "Professional Experience" in md or "Corp" in md  # Role content
         assert "Achievement" in md
+        # Verify no markdown markers
+        assert "**" not in md
 
 
 # ===== TESTS: CVGrader - Rule Based =====

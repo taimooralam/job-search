@@ -338,41 +338,41 @@ class CVGeneratorV2:
         lines.append(" | ".join(contact_parts))
         lines.append("")
 
-        # Profile
-        lines.append("## Profile")
+        # Profile (GAP-006: no markdown)
+        lines.append("PROFILE")
         lines.append(header.profile.text)
         lines.append("")
 
-        # Core competencies / Skills
-        lines.append("## Core Competencies")
+        # Core competencies / Skills (GAP-006: no markdown)
+        lines.append("CORE COMPETENCIES")
         for section in header.skills_sections:
             skill_names = ", ".join(section.skill_names)
-            lines.append(f"**{section.category}**: {skill_names}")
+            lines.append(f"{section.category}: {skill_names}")
         lines.append("")
 
-        # Professional Experience
-        lines.append("## Professional Experience")
+        # Professional Experience (GAP-006: no markdown)
+        lines.append("PROFESSIONAL EXPERIENCE")
         lines.append("")
 
         for role in stitched.roles:
-            lines.append(f"### {role.title}")
+            lines.append(role.title)
             # Only include location if it's not empty
             location_part = f" | {role.location}" if role.location else ""
-            lines.append(f"**{role.company}**{location_part} | {role.period}")
+            lines.append(f"{role.company}{location_part} | {role.period}")
             lines.append("")
             for bullet in role.bullets:
-                lines.append(f"- {bullet}")
+                lines.append(f"• {bullet}")
             lines.append("")
 
-        # Education & Certifications
-        lines.append("## Education & Certifications")
-        lines.append(f"- {candidate.education_masters}")
+        # Education & Certifications (GAP-006: no markdown)
+        lines.append("EDUCATION & CERTIFICATIONS")
+        lines.append(f"• {candidate.education_masters}")
         if candidate.education_bachelors:
-            lines.append(f"- {candidate.education_bachelors}")
+            lines.append(f"• {candidate.education_bachelors}")
         # Add certifications
         if candidate.certifications:
             for cert in candidate.certifications:
-                lines.append(f"- {cert}")
+                lines.append(f"• {cert}")
         lines.append("")
 
         return "\n".join(lines)
@@ -419,34 +419,34 @@ class CVGeneratorV2:
         """Build reasoning summary for the generated CV."""
         lines = []
 
-        lines.append("## CV Generation V2 Reasoning")
+        lines.append("CV GENERATION V2 REASONING")
         lines.append("")
 
-        # Grading summary
-        lines.append(f"**Quality Score**: {grade_result.composite_score:.1f}/10")
-        lines.append(f"**Passed**: {'Yes' if grade_result.passed else 'No'}")
+        # Grading summary (GAP-006: no markdown)
+        lines.append(f"Quality Score: {grade_result.composite_score:.1f}/10")
+        lines.append(f"Passed: {'Yes' if grade_result.passed else 'No'}")
         lines.append("")
 
-        lines.append("**Dimension Scores**:")
+        lines.append("Dimension Scores:")
         for dim in grade_result.dimension_scores:
             status = "✓" if dim.score >= 8.5 else "⚠"
-            lines.append(f"- {dim.dimension}: {dim.score:.1f}/10 {status}")
+            lines.append(f"• {dim.dimension}: {dim.score:.1f}/10 {status}")
         lines.append("")
 
         # Improvement summary
         if improvement_result and improvement_result.improved:
-            lines.append(f"**Improvement Applied**: {improvement_result.target_dimension}")
-            lines.append(f"**Changes Made**: {len(improvement_result.changes_made)}")
+            lines.append(f"Improvement Applied: {improvement_result.target_dimension}")
+            lines.append(f"Changes Made: {len(improvement_result.changes_made)}")
             for change in improvement_result.changes_made[:3]:
-                lines.append(f"  - {change}")
+                lines.append(f"  • {change}")
             lines.append("")
 
         # Structure summary
-        lines.append(f"**CV Structure**:")
-        lines.append(f"- Total words: {stitched.total_word_count}")
-        lines.append(f"- Total bullets: {stitched.total_bullet_count}")
-        lines.append(f"- Roles included: {len(stitched.roles)}")
-        lines.append(f"- Skills sections: {len(header.skills_sections)}")
+        lines.append("CV Structure:")
+        lines.append(f"• Total words: {stitched.total_word_count}")
+        lines.append(f"• Total bullets: {stitched.total_bullet_count}")
+        lines.append(f"• Roles included: {len(stitched.roles)}")
+        lines.append(f"• Skills sections: {len(header.skills_sections)}")
 
         return "\n".join(lines)
 

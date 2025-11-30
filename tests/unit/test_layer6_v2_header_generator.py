@@ -155,16 +155,19 @@ class TestSkillsSection:
         assert section.skill_names == ["Team Leadership", "Mentorship"]
 
     def test_to_markdown(self):
-        """Converts to markdown format."""
+        """Converts to plain text format (GAP-006: no markdown)."""
         skills = [
             SkillEvidence("AWS", ["cloud"], ["Corp"]),
             SkillEvidence("Kubernetes", ["k8s"], ["Corp"]),
         ]
         section = SkillsSection(category="Platform", skills=skills)
         md = section.to_markdown()
-        assert "**Platform**:" in md
+        # GAP-006: Now outputs plain text, not markdown
+        assert "Platform:" in md
         assert "AWS" in md
         assert "Kubernetes" in md
+        # Verify no markdown markers
+        assert "**" not in md
 
 
 # ===== TESTS: ProfileOutput =====
@@ -257,7 +260,7 @@ class TestHeaderOutput:
         assert "Python" in header.all_skill_names
 
     def test_to_markdown(self):
-        """Converts to markdown format."""
+        """Converts to plain text format (GAP-006: no markdown)."""
         profile = ProfileOutput("Profile text.", [], [])
         skills = [
             SkillsSection("Technical", [
@@ -277,10 +280,14 @@ class TestHeaderOutput:
             },
         )
         md = header.to_markdown()
-        assert "# John Developer" in md
-        assert "## Profile" in md
-        assert "## Core Competencies" in md
-        assert "## Education" in md
+        # GAP-006: Now outputs plain text, not markdown
+        assert "John Developer" in md
+        assert "PROFILE" in md
+        assert "CORE COMPETENCIES" in md
+        assert "EDUCATION" in md
+        # Verify no markdown markers
+        assert "##" not in md
+        assert "**" not in md
 
 
 # ===== TESTS: HeaderGenerator - Metrics Extraction =====
