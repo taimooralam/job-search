@@ -351,6 +351,271 @@
                 </div>
             </div>
 
+            <!-- ===== JOB INTELLIGENCE SECTION (Moved to top for prominence) ===== -->
+
+            <!-- Extracted JD Fields -->
+            {% if job.extracted_jd is defined and job.extracted_jd %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                    </svg>
+                    Extracted Job Requirements
+                </h2>
+                <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
+                    <!-- Role Category & Seniority -->
+                    <div class="flex flex-wrap gap-3">
+                        {% if job.extracted_jd.role_category %}
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            {{ job.extracted_jd.role_category|replace('_', ' ')|title }}
+                        </div>
+                        {% endif %}
+                        {% if job.extracted_jd.seniority_level %}
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                            {{ job.extracted_jd.seniority_level|title }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Key Responsibilities -->
+                    {% if job.extracted_jd.responsibilities %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                            Key Responsibilities
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-700">
+                            {% for responsibility in job.extracted_jd.responsibilities %}
+                            <li class="flex items-start">
+                                <svg class="h-4 w-4 text-indigo-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                {{ responsibility }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Qualifications -->
+                    {% if job.extracted_jd.qualifications %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                            </svg>
+                            Required Qualifications
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-700">
+                            {% for qualification in job.extracted_jd.qualifications %}
+                            <li class="flex items-start">
+                                <svg class="h-4 w-4 text-amber-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                {{ qualification }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Top Keywords -->
+                    {% if job.extracted_jd.top_keywords %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">Top Keywords</h3>
+                        <div class="flex flex-wrap gap-2">
+                            {% for keyword in job.extracted_jd.top_keywords %}
+                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">{{ keyword }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Technical Skills -->
+                    {% if job.extracted_jd.technical_skills %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                            </svg>
+                            Technical Skills
+                        </h3>
+                        <div class="flex flex-wrap gap-2">
+                            {% for skill in job.extracted_jd.technical_skills %}
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Soft Skills -->
+                    {% if job.extracted_jd.soft_skills %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Soft Skills
+                        </h3>
+                        <div class="flex flex-wrap gap-2">
+                            {% for skill in job.extracted_jd.soft_skills %}
+                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Implied Pain Points -->
+                    {% if job.extracted_jd.implied_pain_points %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            Implied Pain Points (from JD)
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-700">
+                            {% for pain_point in job.extracted_jd.implied_pain_points %}
+                            <li class="flex items-start">
+                                <svg class="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                {{ pain_point }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Success Metrics -->
+                    {% if job.extracted_jd.success_metrics %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            Success Metrics
+                        </h3>
+                        <ul class="space-y-1 text-sm text-gray-700">
+                            {% for metric in job.extracted_jd.success_metrics %}
+                            <li class="flex items-start">
+                                <svg class="h-4 w-4 text-teal-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                                {{ metric }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Competency Weights -->
+                    {% if job.extracted_jd.competency_weights %}
+                    <div>
+                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
+                            <svg class="inline-block h-3 w-3 mr-1 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                            </svg>
+                            Competency Weights
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            {% if job.extracted_jd.competency_weights.delivery is defined %}
+                            <div class="bg-white p-2 rounded border border-purple-200">
+                                <div class="text-xs text-gray-600">Delivery</div>
+                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.delivery }}%</div>
+                            </div>
+                            {% endif %}
+                            {% if job.extracted_jd.competency_weights.process is defined %}
+                            <div class="bg-white p-2 rounded border border-purple-200">
+                                <div class="text-xs text-gray-600">Process</div>
+                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.process }}%</div>
+                            </div>
+                            {% endif %}
+                            {% if job.extracted_jd.competency_weights.architecture is defined %}
+                            <div class="bg-white p-2 rounded border border-purple-200">
+                                <div class="text-xs text-gray-600">Architecture</div>
+                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.architecture }}%</div>
+                            </div>
+                            {% endif %}
+                            {% if job.extracted_jd.competency_weights.leadership is defined %}
+                            <div class="bg-white p-2 rounded border border-purple-200">
+                                <div class="text-xs text-gray-600">Leadership</div>
+                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.leadership }}%</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Pain Points -->
+            {% if job.pain_points is defined and job.pain_points %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Key Pain Points
+                </h2>
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <ul class="space-y-2">
+                        {% for pain_point in job.pain_points %}
+                        <li class="flex items-start text-sm text-gray-700">
+                            <svg class="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>{{ pain_point }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Opportunity/Fit Analysis -->
+            {% if (job.fit_score is defined and job.fit_score is not none) or (job.fit_rationale is defined and job.fit_rationale) %}
+            <div class="mb-6">
+                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                    <svg class="inline-block h-4 w-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Opportunity & Fit Analysis
+                </h2>
+                <div class="p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+                    {% if job.fit_score is defined and job.fit_score is not none %}
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-gray-700">Fit Score:</span>
+                        <span class="px-3 py-1 rounded-full text-sm font-bold
+                            {% if job.fit_score >= 80 %}bg-green-100 text-green-800
+                            {% elif job.fit_score >= 60 %}bg-blue-100 text-blue-800
+                            {% elif job.fit_score >= 40 %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ job.fit_score }}/100
+                            {% if job.fit_category is defined and job.fit_category %}({{ job.fit_category|capitalize }}){% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% if job.fit_rationale is defined and job.fit_rationale %}
+                    <div class="text-sm text-gray-700 leading-relaxed">
+                        {{ job.fit_rationale }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ===== END JOB INTELLIGENCE SECTION ===== -->
+
             <!-- CV Section -->
             {% if job.has_cv %}
             <div class="mb-6">
@@ -673,62 +938,6 @@
                 </div>
             </div>
 
-            <!-- Pain Points -->
-            {% if job.pain_points is defined and job.pain_points %}
-            <div class="mb-6">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                    <svg class="inline-block h-4 w-4 mr-1 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
-                    Key Pain Points
-                </h2>
-                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <ul class="space-y-2">
-                        {% for pain_point in job.pain_points %}
-                        <li class="flex items-start text-sm text-gray-700">
-                            <svg class="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>{{ pain_point }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Opportunity/Fit Analysis -->
-            {% if (job.fit_score is defined and job.fit_score is not none) or (job.fit_rationale is defined and job.fit_rationale) %}
-            <div class="mb-6">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                    <svg class="inline-block h-4 w-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Opportunity & Fit Analysis
-                </h2>
-                <div class="p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-                    {% if job.fit_score is defined and job.fit_score is not none %}
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-sm font-medium text-gray-700">Fit Score:</span>
-                        <span class="px-3 py-1 rounded-full text-sm font-bold
-                            {% if job.fit_score >= 80 %}bg-green-100 text-green-800
-                            {% elif job.fit_score >= 60 %}bg-blue-100 text-blue-800
-                            {% elif job.fit_score >= 40 %}bg-yellow-100 text-yellow-800
-                            {% else %}bg-gray-100 text-gray-600{% endif %}">
-                            {{ job.fit_score }}/100
-                            {% if job.fit_category is defined and job.fit_category %}({{ job.fit_category|capitalize }}){% endif %}
-                        </span>
-                    </div>
-                    {% endif %}
-                    {% if job.fit_rationale is defined and job.fit_rationale %}
-                    <div class="text-sm text-gray-700 leading-relaxed">
-                        {{ job.fit_rationale }}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
             <!-- People Mapper / Contacts -->
             {% if (job.primary_contacts is defined and job.primary_contacts) or (job.secondary_contacts is defined and job.secondary_contacts) %}
             <div class="mb-6">
@@ -819,221 +1028,6 @@
                     </div>
                 </div>
                 {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Extracted JD Fields -->
-            {% if job.extracted_jd is defined and job.extracted_jd %}
-            <div class="mb-6">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                    <svg class="inline-block h-4 w-4 mr-1 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                    </svg>
-                    Extracted Job Requirements
-                </h2>
-                <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
-                    <!-- Role Category & Seniority -->
-                    <div class="flex flex-wrap gap-3">
-                        {% if job.extracted_jd.role_category %}
-                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                            {{ job.extracted_jd.role_category|replace('_', ' ')|title }}
-                        </div>
-                        {% endif %}
-                        {% if job.extracted_jd.seniority_level %}
-                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
-                            {{ job.extracted_jd.seniority_level|title }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Key Responsibilities -->
-                    {% if job.extracted_jd.responsibilities %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                            </svg>
-                            Key Responsibilities
-                        </h3>
-                        <ul class="space-y-1 text-sm text-gray-700">
-                            {% for responsibility in job.extracted_jd.responsibilities %}
-                            <li class="flex items-start">
-                                <svg class="h-4 w-4 text-indigo-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                                {{ responsibility }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Qualifications -->
-                    {% if job.extracted_jd.qualifications %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                            </svg>
-                            Required Qualifications
-                        </h3>
-                        <ul class="space-y-1 text-sm text-gray-700">
-                            {% for qualification in job.extracted_jd.qualifications %}
-                            <li class="flex items-start">
-                                <svg class="h-4 w-4 text-amber-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                {{ qualification }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Top Keywords -->
-                    {% if job.extracted_jd.top_keywords %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">Top Keywords</h3>
-                        <div class="flex flex-wrap gap-2">
-                            {% for keyword in job.extracted_jd.top_keywords %}
-                            <span class="px-2 py-1 text-xs bg-white border border-purple-200 rounded text-gray-700">{{ keyword }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Technical Skills -->
-                    {% if job.extracted_jd.technical_skills %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                            </svg>
-                            Technical Skills
-                        </h3>
-                        <ul class="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                            {% for skill in job.extracted_jd.technical_skills %}
-                            <li class="flex items-center">
-                                <svg class="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                {{ skill }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Soft Skills -->
-                    {% if job.extracted_jd.soft_skills %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                            </svg>
-                            Soft Skills
-                        </h3>
-                        <ul class="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                            {% for skill in job.extracted_jd.soft_skills %}
-                            <li class="flex items-center">
-                                <svg class="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                                {{ skill }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Implied Pain Points -->
-                    {% if job.extracted_jd.implied_pain_points %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                            Implied Pain Points
-                        </h3>
-                        <ul class="space-y-1 text-sm text-gray-700">
-                            {% for pain_point in job.extracted_jd.implied_pain_points %}
-                            <li class="flex items-start">
-                                <svg class="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                {{ pain_point }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Success Metrics -->
-                    {% if job.extracted_jd.success_metrics %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                            Success Metrics
-                        </h3>
-                        <ul class="space-y-1 text-sm text-gray-700">
-                            {% for metric in job.extracted_jd.success_metrics %}
-                            <li class="flex items-start">
-                                <svg class="h-4 w-4 text-teal-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                </svg>
-                                {{ metric }}
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    <!-- Competency Weights -->
-                    {% if job.extracted_jd.competency_weights %}
-                    <div>
-                        <h3 class="text-xs font-semibold text-gray-700 mb-2">
-                            <svg class="inline-block h-3 w-3 mr-1 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
-                            </svg>
-                            Competency Weights
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            {% if job.extracted_jd.competency_weights.delivery is defined %}
-                            <div class="bg-white p-2 rounded border border-purple-200">
-                                <div class="text-xs text-gray-600">Delivery</div>
-                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.delivery }}%</div>
-                            </div>
-                            {% endif %}
-                            {% if job.extracted_jd.competency_weights.process is defined %}
-                            <div class="bg-white p-2 rounded border border-purple-200">
-                                <div class="text-xs text-gray-600">Process</div>
-                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.process }}%</div>
-                            </div>
-                            {% endif %}
-                            {% if job.extracted_jd.competency_weights.architecture is defined %}
-                            <div class="bg-white p-2 rounded border border-purple-200">
-                                <div class="text-xs text-gray-600">Architecture</div>
-                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.architecture }}%</div>
-                            </div>
-                            {% endif %}
-                            {% if job.extracted_jd.competency_weights.leadership is defined %}
-                            <div class="bg-white p-2 rounded border border-purple-200">
-                                <div class="text-xs text-gray-600">Leadership</div>
-                                <div class="text-lg font-semibold text-violet-700">{{ job.extracted_jd.competency_weights.leadership }}%</div>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
             </div>
             {% endif %}
 
@@ -1954,14 +1948,21 @@
     }
 
     // ============================================================================
-    // Inline Editing
+    // Inline Editing (GAP-055: Enhanced Auto-Save)
     // ============================================================================
+
+    // Store original values for change detection
+    const originalFieldValues = new Map();
 
     // Enable edit mode for a field
     function enableEdit(fieldElement) {
         const valueEl = fieldElement.querySelector('.field-value');
         const inputEl = fieldElement.querySelector('.field-input');
         const editBtn = fieldElement.querySelector('.edit-btn');
+        const field = fieldElement.dataset.field;
+
+        // Store original value for change detection (GAP-055)
+        originalFieldValues.set(field, inputEl.value);
 
         // Hide value, show input
         valueEl.classList.add('hidden');
@@ -1987,7 +1988,43 @@
         });
     }
 
-    // Save the field edit
+    // GAP-055: Show saving indicator on field
+    function showFieldSaveIndicator(fieldElement, status) {
+        let indicator = fieldElement.querySelector('.save-indicator');
+        if (!indicator) {
+            indicator = document.createElement('span');
+            indicator.className = 'save-indicator text-xs ml-2 transition-opacity duration-300';
+            const label = fieldElement.querySelector('.text-xs.text-gray-500');
+            if (label) {
+                label.appendChild(indicator);
+            }
+        }
+
+        if (status === 'saving') {
+            indicator.className = 'save-indicator text-xs ml-2 text-amber-600 animate-pulse';
+            indicator.textContent = 'Saving...';
+            indicator.style.opacity = '1';
+        } else if (status === 'saved') {
+            indicator.className = 'save-indicator text-xs ml-2 text-green-600';
+            indicator.textContent = '✓ Saved';
+            indicator.style.opacity = '1';
+            // Fade out after 2 seconds
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }, 2000);
+        } else if (status === 'error') {
+            indicator.className = 'save-indicator text-xs ml-2 text-red-600';
+            indicator.textContent = '✗ Error';
+            indicator.style.opacity = '1';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }, 3000);
+        }
+    }
+
+    // Save the field edit (GAP-055: Enhanced with change detection & visual feedback)
     async function saveFieldEdit(fieldElement) {
         const field = fieldElement.dataset.field;
         const valueEl = fieldElement.querySelector('.field-value');
@@ -1995,12 +2032,25 @@
         const editBtn = fieldElement.querySelector('.edit-btn');
 
         let newValue = inputEl.value.trim();
+        const originalValue = originalFieldValues.get(field) || '';
+
+        // GAP-055: Skip save if value unchanged
+        if (newValue === originalValue) {
+            // No change - just restore UI without API call
+            valueEl.classList.remove('hidden');
+            inputEl.classList.add('hidden');
+            editBtn.classList.remove('hidden');
+            return;
+        }
 
         // Convert score to number if applicable
         if (field === 'score' && newValue !== '') {
             newValue = parseInt(newValue, 10);
             if (isNaN(newValue)) newValue = null;
         }
+
+        // GAP-055: Show saving indicator
+        showFieldSaveIndicator(fieldElement, 'saving');
 
         try {
             const response = await fetch(`/api/jobs/${jobId}`, {
@@ -2018,11 +2068,16 @@
                 } else {
                     valueEl.textContent = newValue || '-';
                 }
-                showToast(`${field} updated`);
+                // Update stored original value
+                originalFieldValues.set(field, typeof newValue === 'string' ? newValue : String(newValue || ''));
+                // GAP-055: Show saved indicator
+                showFieldSaveIndicator(fieldElement, 'saved');
             } else {
+                showFieldSaveIndicator(fieldElement, 'error');
                 showToast(result.error || 'Update failed', 'error');
             }
         } catch (err) {
+            showFieldSaveIndicator(fieldElement, 'error');
             showToast('Update failed: ' + err.message, 'error');
         }
 
