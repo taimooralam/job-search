@@ -7,8 +7,8 @@
 
 ## Achievements
 
-• Led multi-year transformation of large-scale monolithic AdTech platform processing millions of impressions daily into choreographed event-driven microservices in AWS, achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery
-• devised a technical vision and roadmap, aligning with company strategy of increasing reach and consented users, preserved and increased ad impressions despite global industry wide decline in linear TV viewership
+• Led multi-year transformation of large-scale legacy Javascript monolithic AdTech platform processing millions of impressions daily into choreographed event-driven microservices in typescript in AWS using lambda, serverless functions and Eventbridge, achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery
+• devised a technical vision and roadmap, aligning with company strategy of increasing reach and consented users, preserved and increased ad impressions despite global industry wide decline in linear TV viewership, using techniques such as adaptive algorithmic blacklisting
 • designed and implemented an Architectural Runway to simultaneously address extensive technical debt and accelerate feature development. Successfully executed a strategic, incremental multi-year roadmap, achieving ~70% refactoring of complex large scale distributed system components while continuously delivering business-critical features, balancing quality with speed of shipping
 • enhanced system architecture & reduced technical debt by mentoring engineers about the DDD framework to standardize best practices for coding & design. Inspired decoupled modules using event-based systems, strategically moving to thin front-end client and towards business-logic-heavy, autonomous & choregraphed backend microservices deployed on AWS. This led to architectural flexibility, maintainability, scalability, resilience and cost optimization. Used TDD and BDD to keep the quality of the code base top-notch.
 • Led the initiative to plan, architect and realize the much-needed data and observability pipeline to channel millions of data points to opensearch. The real-time dashboards, helped uncover issues and debug scenarios that would otherwise not have been possible, thereby increasing shipping speed, resolving issues faster and ultimately increasing a significant amount of revenue
@@ -44,6 +44,6 @@
 
 ## Skills
 
-**Hard Skills**: domain-driven-design, architecture, architectural runway, nodejs, lambda, s3, aws, redis, ecs, eventbridge, cloudfront, microservices, DDD, python, git, terraform
+**Hard Skills**: domain-driven-design, architecture, architectural runway, nodejs, lambda, s3, aws, redis, ecs, eventbridge, cloudfront, microservices, DDD, python, git, terraform, scaling, serverless, opensearch
 
-**Soft Skills**: technical leadership, mentoring, handling technical debt, overhauling legacy systems, leading architectural initiatives, requirement analysis, SCRUM, hiring & interviewing, risk analysis and mitigation, cmp, tcf, gdpr
+**Soft Skills**: technical leadership, mentoring, handling technical debt, overhauling legacy systems, leading architectural initiatives, requirement analysis, SCRUM, hiring & interviewing, risk analysis and mitigation, cmp, tcf, gdpr, mentoring
