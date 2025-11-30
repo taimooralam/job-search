@@ -65,6 +65,8 @@ class TokenUsage:
     output_tokens: int
     estimated_cost_usd: float
     layer: Optional[str] = None
+    run_id: Optional[str] = None
+    job_id: Optional[str] = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
     @property
@@ -155,6 +157,8 @@ class TokenTracker:
         input_tokens: int,
         output_tokens: int,
         layer: Optional[str] = None,
+        run_id: Optional[str] = None,
+        job_id: Optional[str] = None,
     ) -> TokenUsage:
         """
         Track token usage from an LLM call.
@@ -165,6 +169,8 @@ class TokenTracker:
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
             layer: Pipeline layer name (e.g., "layer2", "layer6_v2")
+            run_id: Pipeline run identifier for per-run cost tracking
+            job_id: Job identifier for per-job cost tracking
 
         Returns:
             TokenUsage record
@@ -174,6 +180,9 @@ class TokenTracker:
         """
         cost = self.estimate_cost(model, input_tokens, output_tokens)
 
+        # Use instance-level job_id if not provided
+        effective_job_id = job_id or self.job_id
+
         usage = TokenUsage(
             provider=provider,
             model=model,
@@ -181,6 +190,8 @@ class TokenTracker:
             output_tokens=output_tokens,
             estimated_cost_usd=cost,
             layer=layer,
+            run_id=run_id,
+            job_id=effective_job_id,
         )
 
         with self._lock:
@@ -197,6 +208,8 @@ class TokenTracker:
         provider: str,
         response: Any,
         layer: Optional[str] = None,
+        run_id: Optional[str] = None,
+        job_id: Optional[str] = None,
     ) -> Optional[TokenUsage]:
         """
         Track usage from a LangChain response object.
@@ -205,6 +218,8 @@ class TokenTracker:
             provider: LLM provider
             response: LangChain AIMessage or response object
             layer: Pipeline layer name
+            run_id: Pipeline run identifier for per-run cost tracking
+            job_id: Job identifier for per-job cost tracking
 
         Returns:
             TokenUsage if usage info available, None otherwise
@@ -254,6 +269,8 @@ class TokenTracker:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             layer=layer,
+            run_id=run_id,
+            job_id=job_id,
         )
 
     def get_summary(self) -> UsageSummary:
@@ -364,6 +381,8 @@ class TokenTracker:
                     "output_tokens": u.output_tokens,
                     "cost_usd": u.estimated_cost_usd,
                     "layer": u.layer,
+                    "run_id": u.run_id,
+                    "job_id": u.job_id,
                     "timestamp": u.timestamp.isoformat(),
                 }
                 for u in self._usages
@@ -446,6 +465,158 @@ class TokenTracker:
 
         return result
 
+    # =========================================================================
+    # Per-Run Cost Tracking (BG-3)
+    # =========================================================================
+
+    def get_runs(self) -> List[str]:
+        """
+        Get all unique run_ids that have been tracked.
+
+        Returns:
+            List of run_id strings (excludes None)
+        """
+        with self._lock:
+            return list(set(u.run_id for u in self._usages if u.run_id))
+
+    def get_run_usages(self, run_id: str) -> List[TokenUsage]:
+        """
+        Get all usages for a specific run.
+
+        Args:
+            run_id: Pipeline run identifier
+
+        Returns:
+            List of TokenUsage records for the run
+        """
+        with self._lock:
+            return [u for u in self._usages if u.run_id == run_id]
+
+    def get_run_summary(self, run_id: str) -> UsageSummary:
+        """
+        Get aggregated usage summary for a specific run.
+
+        Args:
+            run_id: Pipeline run identifier
+
+        Returns:
+            UsageSummary with totals and breakdowns for the run
+        """
+        with self._lock:
+            summary = UsageSummary()
+
+            for usage in self._usages:
+                if usage.run_id != run_id:
+                    continue
+
+                summary.total_input_tokens += usage.input_tokens
+                summary.total_output_tokens += usage.output_tokens
+                summary.total_tokens += usage.total_tokens
+                summary.total_cost_usd += usage.estimated_cost_usd
+                summary.calls_count += 1
+
+                # By provider
+                if usage.provider not in summary.by_provider:
+                    summary.by_provider[usage.provider] = {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cost_usd": 0.0,
+                        "calls": 0,
+                    }
+                summary.by_provider[usage.provider]["input_tokens"] += usage.input_tokens
+                summary.by_provider[usage.provider]["output_tokens"] += usage.output_tokens
+                summary.by_provider[usage.provider]["cost_usd"] += usage.estimated_cost_usd
+                summary.by_provider[usage.provider]["calls"] += 1
+
+                # By layer
+                layer_key = usage.layer or "unknown"
+                if layer_key not in summary.by_layer:
+                    summary.by_layer[layer_key] = {
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cost_usd": 0.0,
+                        "calls": 0,
+                    }
+                summary.by_layer[layer_key]["input_tokens"] += usage.input_tokens
+                summary.by_layer[layer_key]["output_tokens"] += usage.output_tokens
+                summary.by_layer[layer_key]["cost_usd"] += usage.estimated_cost_usd
+                summary.by_layer[layer_key]["calls"] += 1
+
+            return summary
+
+    def get_run_cost(self, run_id: str) -> float:
+        """
+        Get total cost for a specific run.
+
+        Args:
+            run_id: Pipeline run identifier
+
+        Returns:
+            Total cost in USD for the run
+        """
+        summary = self.get_run_summary(run_id)
+        return summary.total_cost_usd
+
+    def export_run_to_file(self, run_id: str, path: str) -> None:
+        """
+        Export cost data for a specific run to JSON file.
+
+        Args:
+            run_id: Pipeline run identifier
+            path: Output file path
+        """
+        import json
+        from pathlib import Path
+
+        usages = self.get_run_usages(run_id)
+        summary = self.get_run_summary(run_id)
+
+        data = {
+            "run_id": run_id,
+            "summary": {
+                "total_input_tokens": summary.total_input_tokens,
+                "total_output_tokens": summary.total_output_tokens,
+                "total_tokens": summary.total_tokens,
+                "total_cost_usd": round(summary.total_cost_usd, 6),
+                "calls_count": summary.calls_count,
+                "by_provider": summary.by_provider,
+                "by_layer": summary.by_layer,
+            },
+            "calls": [
+                {
+                    "provider": u.provider,
+                    "model": u.model,
+                    "input_tokens": u.input_tokens,
+                    "output_tokens": u.output_tokens,
+                    "cost_usd": round(u.estimated_cost_usd, 6),
+                    "layer": u.layer,
+                    "job_id": u.job_id,
+                    "timestamp": u.timestamp.isoformat(),
+                }
+                for u in usages
+            ],
+        }
+
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+
+    def get_job_cost(self, job_id: str) -> float:
+        """
+        Get total cost for a specific job across all runs.
+
+        Args:
+            job_id: Job identifier
+
+        Returns:
+            Total cost in USD for the job
+        """
+        with self._lock:
+            return sum(
+                u.estimated_cost_usd for u in self._usages
+                if u.job_id == job_id
+            )
+
 
 class TokenTrackingCallback(BaseCallbackHandler):
     """
@@ -457,6 +628,9 @@ class TokenTrackingCallback(BaseCallbackHandler):
         tracker = TokenTracker(budget_usd=50.0)
         callback = TokenTrackingCallback(tracker, provider="openai", layer="layer6")
         llm = ChatOpenAI(..., callbacks=[callback])
+
+    For per-run tracking:
+        callback = TokenTrackingCallback(tracker, provider="openai", layer="layer2", run_id="run_123")
     """
 
     def __init__(
@@ -464,6 +638,8 @@ class TokenTrackingCallback(BaseCallbackHandler):
         tracker: TokenTracker,
         provider: str,
         layer: Optional[str] = None,
+        run_id: Optional[str] = None,
+        job_id: Optional[str] = None,
     ):
         """
         Initialize callback handler.
@@ -472,11 +648,15 @@ class TokenTrackingCallback(BaseCallbackHandler):
             tracker: TokenTracker instance
             provider: LLM provider name
             layer: Pipeline layer name
+            run_id: Pipeline run identifier for per-run cost tracking
+            job_id: Job identifier for per-job cost tracking
         """
         super().__init__()
         self.tracker = tracker
         self.provider = provider
         self.layer = layer
+        self.run_id = run_id
+        self.job_id = job_id
 
     def on_llm_end(self, response: LLMResult, **kwargs) -> None:
         """
@@ -499,6 +679,8 @@ class TokenTrackingCallback(BaseCallbackHandler):
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     layer=self.layer,
+                    run_id=self.run_id,
+                    job_id=self.job_id,
                 )
 
 
@@ -642,3 +824,189 @@ def reset_token_tracker_registry() -> None:
     if _global_registry:
         _global_registry.reset_all()
     _global_registry = None
+
+
+# =============================================================================
+# Run Cost Tracker Context Manager (BG-3)
+# =============================================================================
+
+@dataclass
+class RunCostSummary:
+    """Summary of costs for a pipeline run."""
+    run_id: str
+    job_id: Optional[str]
+    total_cost_usd: float
+    total_input_tokens: int
+    total_output_tokens: int
+    total_tokens: int
+    calls_count: int
+    duration_seconds: float
+    by_layer: Dict[str, Dict[str, Any]]
+    by_provider: Dict[str, Dict[str, Any]]
+
+
+class RunCostTracker:
+    """
+    Context manager for tracking costs of a full pipeline run.
+
+    Provides a clean way to track all LLM costs within a pipeline execution
+    and get a summary when the run completes.
+
+    Usage:
+        with RunCostTracker(tracker, run_id="run_123", job_id="job_456") as run:
+            # All track_usage calls within this block will be associated
+            # with run_id="run_123" and job_id="job_456"
+            response = llm.invoke(messages)
+            run.track_response(provider="openai", response=response, layer="layer2")
+
+        # After the context exits, get the summary
+        print(f"Run cost: ${run.summary.total_cost_usd:.4f}")
+
+    Alternative usage with automatic callback:
+        with RunCostTracker(tracker, run_id="run_123", job_id="job_456") as run:
+            callback = run.get_callback(provider="openai", layer="layer2")
+            llm = ChatOpenAI(..., callbacks=[callback])
+            # LLM calls will be automatically tracked
+    """
+
+    def __init__(
+        self,
+        tracker: TokenTracker,
+        run_id: str,
+        job_id: Optional[str] = None,
+        export_path: Optional[str] = None,
+    ):
+        """
+        Initialize run cost tracker.
+
+        Args:
+            tracker: TokenTracker instance to use
+            run_id: Unique identifier for this pipeline run
+            job_id: Optional job identifier
+            export_path: Optional path to export costs when run completes
+        """
+        self.tracker = tracker
+        self.run_id = run_id
+        self.job_id = job_id
+        self.export_path = export_path
+        self._start_time: Optional[datetime] = None
+        self._end_time: Optional[datetime] = None
+        self._summary: Optional[RunCostSummary] = None
+
+    def __enter__(self) -> "RunCostTracker":
+        """Start tracking the run."""
+        self._start_time = datetime.utcnow()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Complete run tracking and generate summary."""
+        self._end_time = datetime.utcnow()
+
+        # Generate summary
+        usage_summary = self.tracker.get_run_summary(self.run_id)
+        duration = (self._end_time - self._start_time).total_seconds()
+
+        self._summary = RunCostSummary(
+            run_id=self.run_id,
+            job_id=self.job_id,
+            total_cost_usd=usage_summary.total_cost_usd,
+            total_input_tokens=usage_summary.total_input_tokens,
+            total_output_tokens=usage_summary.total_output_tokens,
+            total_tokens=usage_summary.total_tokens,
+            calls_count=usage_summary.calls_count,
+            duration_seconds=duration,
+            by_layer=usage_summary.by_layer,
+            by_provider=usage_summary.by_provider,
+        )
+
+        # Export if path specified
+        if self.export_path:
+            self.tracker.export_run_to_file(self.run_id, self.export_path)
+
+    @property
+    def summary(self) -> Optional[RunCostSummary]:
+        """Get run summary (available after context exits)."""
+        return self._summary
+
+    def track(
+        self,
+        provider: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        layer: Optional[str] = None,
+    ) -> TokenUsage:
+        """
+        Track token usage for this run.
+
+        Args:
+            provider: LLM provider
+            model: Model name
+            input_tokens: Number of input tokens
+            output_tokens: Number of output tokens
+            layer: Pipeline layer name
+
+        Returns:
+            TokenUsage record
+        """
+        return self.tracker.track_usage(
+            provider=provider,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            layer=layer,
+            run_id=self.run_id,
+            job_id=self.job_id,
+        )
+
+    def track_response(
+        self,
+        provider: str,
+        response: Any,
+        layer: Optional[str] = None,
+    ) -> Optional[TokenUsage]:
+        """
+        Track usage from a LangChain response for this run.
+
+        Args:
+            provider: LLM provider
+            response: LangChain AIMessage or response object
+            layer: Pipeline layer name
+
+        Returns:
+            TokenUsage if usage info available, None otherwise
+        """
+        return self.tracker.track_langchain_response(
+            provider=provider,
+            response=response,
+            layer=layer,
+            run_id=self.run_id,
+            job_id=self.job_id,
+        )
+
+    def get_callback(
+        self,
+        provider: str,
+        layer: Optional[str] = None,
+    ) -> TokenTrackingCallback:
+        """
+        Get a LangChain callback handler for this run.
+
+        Args:
+            provider: LLM provider name
+            layer: Pipeline layer name
+
+        Returns:
+            TokenTrackingCallback configured for this run
+        """
+        return TokenTrackingCallback(
+            tracker=self.tracker,
+            provider=provider,
+            layer=layer,
+            run_id=self.run_id,
+            job_id=self.job_id,
+        )
+
+    def get_current_cost(self) -> float:
+        """Get current cost for this run (can be called during execution)."""
+        return self.tracker.get_run_cost(self.run_id)

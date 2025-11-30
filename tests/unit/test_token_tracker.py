@@ -20,6 +20,8 @@ from src.common.token_tracker import (
     TOKEN_COSTS_PER_MILLION,
     get_global_tracker,
     reset_global_tracker,
+    RunCostTracker,
+    RunCostSummary,
 )
 
 
@@ -759,3 +761,419 @@ class TestTokenCostsPricing:
             assert "output" in pricing, f"{model} missing output cost"
             assert isinstance(pricing["input"], (int, float))
             assert isinstance(pricing["output"], (int, float))
+
+
+# =============================================================================
+# Tests for Per-Run Cost Tracking (BG-3)
+# =============================================================================
+
+class TestTokenUsageRunTracking:
+    """Tests for TokenUsage run_id and job_id fields."""
+
+    def test_run_id_field_when_provided(self):
+        """Should store run_id when provided."""
+        usage = TokenUsage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.001,
+            run_id="run_123",
+        )
+        assert usage.run_id == "run_123"
+
+    def test_run_id_defaults_to_none(self):
+        """Should default run_id to None."""
+        usage = TokenUsage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.001,
+        )
+        assert usage.run_id is None
+
+    def test_job_id_field_when_provided(self):
+        """Should store job_id when provided."""
+        usage = TokenUsage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.001,
+            job_id="job_456",
+        )
+        assert usage.job_id == "job_456"
+
+    def test_job_id_defaults_to_none(self):
+        """Should default job_id to None."""
+        usage = TokenUsage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.001,
+        )
+        assert usage.job_id is None
+
+    def test_both_run_id_and_job_id(self):
+        """Should store both run_id and job_id."""
+        usage = TokenUsage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=100,
+            output_tokens=50,
+            estimated_cost_usd=0.001,
+            run_id="run_123",
+            job_id="job_456",
+            layer="layer2",
+        )
+        assert usage.run_id == "run_123"
+        assert usage.job_id == "job_456"
+        assert usage.layer == "layer2"
+
+
+class TestPerRunTracking:
+    """Tests for per-run cost tracking methods."""
+
+    @pytest.fixture
+    def tracker_with_runs(self):
+        """Create tracker with multiple runs."""
+        tracker = TokenTracker()
+
+        # Run 1: 2 calls
+        tracker.track_usage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=1000,
+            output_tokens=500,
+            layer="layer2",
+            run_id="run_1",
+            job_id="job_A",
+        )
+        tracker.track_usage(
+            provider="openai",
+            model="gpt-4o",
+            input_tokens=2000,
+            output_tokens=1000,
+            layer="layer3",
+            run_id="run_1",
+            job_id="job_A",
+        )
+
+        # Run 2: 1 call
+        tracker.track_usage(
+            provider="anthropic",
+            model="claude-3-5-haiku-20241022",
+            input_tokens=500,
+            output_tokens=200,
+            layer="layer2",
+            run_id="run_2",
+            job_id="job_B",
+        )
+
+        # No run_id (global)
+        tracker.track_usage(
+            provider="openai",
+            model="gpt-4o-mini",
+            input_tokens=100,
+            output_tokens=50,
+        )
+
+        return tracker
+
+    def test_get_runs_returns_unique_run_ids(self, tracker_with_runs):
+        """Should return list of unique run_ids."""
+        runs = tracker_with_runs.get_runs()
+        assert set(runs) == {"run_1", "run_2"}
+        assert None not in runs
+
+    def test_get_runs_empty_tracker(self):
+        """Should return empty list for tracker with no runs."""
+        tracker = TokenTracker()
+        assert tracker.get_runs() == []
+
+    def test_get_run_usages_returns_correct_records(self, tracker_with_runs):
+        """Should return all usages for a specific run."""
+        run1_usages = tracker_with_runs.get_run_usages("run_1")
+        assert len(run1_usages) == 2
+        assert all(u.run_id == "run_1" for u in run1_usages)
+        assert all(u.job_id == "job_A" for u in run1_usages)
+
+    def test_get_run_usages_nonexistent_run(self, tracker_with_runs):
+        """Should return empty list for nonexistent run."""
+        usages = tracker_with_runs.get_run_usages("nonexistent")
+        assert usages == []
+
+    def test_get_run_summary_aggregates_correctly(self, tracker_with_runs):
+        """Should aggregate stats for specific run."""
+        summary = tracker_with_runs.get_run_summary("run_1")
+
+        assert summary.total_input_tokens == 3000  # 1000 + 2000
+        assert summary.total_output_tokens == 1500  # 500 + 1000
+        assert summary.calls_count == 2
+
+        # Check by_layer breakdown
+        assert "layer2" in summary.by_layer
+        assert "layer3" in summary.by_layer
+        assert summary.by_layer["layer2"]["input_tokens"] == 1000
+        assert summary.by_layer["layer3"]["input_tokens"] == 2000
+
+    def test_get_run_summary_nonexistent_run(self, tracker_with_runs):
+        """Should return empty summary for nonexistent run."""
+        summary = tracker_with_runs.get_run_summary("nonexistent")
+        assert summary.total_tokens == 0
+        assert summary.calls_count == 0
+
+    def test_get_run_cost_returns_total_cost(self, tracker_with_runs):
+        """Should return total cost for a run."""
+        cost = tracker_with_runs.get_run_cost("run_1")
+        assert cost > 0
+
+        # Verify it matches summary
+        summary = tracker_with_runs.get_run_summary("run_1")
+        assert cost == summary.total_cost_usd
+
+    def test_get_run_cost_nonexistent_run(self, tracker_with_runs):
+        """Should return 0 for nonexistent run."""
+        cost = tracker_with_runs.get_run_cost("nonexistent")
+        assert cost == 0.0
+
+    def test_get_job_cost_aggregates_across_runs(self, tracker_with_runs):
+        """Should aggregate costs for all runs of a job."""
+        cost = tracker_with_runs.get_job_cost("job_A")
+        summary = tracker_with_runs.get_run_summary("run_1")
+        assert cost == summary.total_cost_usd
+
+    def test_get_job_cost_nonexistent_job(self, tracker_with_runs):
+        """Should return 0 for nonexistent job."""
+        cost = tracker_with_runs.get_job_cost("nonexistent")
+        assert cost == 0.0
+
+    def test_export_run_to_file(self, tracker_with_runs, tmp_path):
+        """Should export run data to JSON file."""
+        output_path = tmp_path / "run_cost.json"
+        tracker_with_runs.export_run_to_file("run_1", str(output_path))
+
+        assert output_path.exists()
+
+        import json
+        with open(output_path) as f:
+            data = json.load(f)
+
+        assert data["run_id"] == "run_1"
+        assert data["summary"]["total_input_tokens"] == 3000
+        assert data["summary"]["calls_count"] == 2
+        assert len(data["calls"]) == 2
+
+    def test_export_run_creates_parent_directories(self, tracker_with_runs, tmp_path):
+        """Should create parent directories if they don't exist."""
+        output_path = tmp_path / "deep" / "nested" / "path" / "cost.json"
+        tracker_with_runs.export_run_to_file("run_1", str(output_path))
+        assert output_path.exists()
+
+    def test_to_dict_includes_run_and_job_ids(self, tracker_with_runs):
+        """Should include run_id and job_id in exported usages."""
+        data = tracker_with_runs.to_dict()
+        usages = data["usages"]
+
+        run1_usage = next(u for u in usages if u.get("run_id") == "run_1")
+        assert run1_usage["run_id"] == "run_1"
+        assert run1_usage["job_id"] == "job_A"
+
+
+class TestRunCostTracker:
+    """Tests for RunCostTracker context manager."""
+
+    def test_context_manager_tracks_duration(self):
+        """Should track run duration."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="test_run") as run:
+            time.sleep(0.01)  # Small delay
+
+        assert run.summary is not None
+        assert run.summary.duration_seconds >= 0.01
+
+    def test_context_manager_generates_summary(self):
+        """Should generate summary on exit."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="test_run", job_id="test_job") as run:
+            run.track(
+                provider="openai",
+                model="gpt-4o",
+                input_tokens=1000,
+                output_tokens=500,
+                layer="layer2",
+            )
+
+        assert run.summary is not None
+        assert run.summary.run_id == "test_run"
+        assert run.summary.job_id == "test_job"
+        assert run.summary.total_input_tokens == 1000
+        assert run.summary.calls_count == 1
+
+    def test_track_method_associates_run_id(self):
+        """Should associate run_id with tracked usage."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="my_run") as run:
+            usage = run.track(
+                provider="openai",
+                model="gpt-4o",
+                input_tokens=100,
+                output_tokens=50,
+            )
+
+        assert usage.run_id == "my_run"
+        assert tracker.get_runs() == ["my_run"]
+
+    def test_get_callback_returns_configured_callback(self):
+        """Should return callback with correct configuration."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="cb_run", job_id="cb_job") as run:
+            callback = run.get_callback(provider="anthropic", layer="layer3")
+
+            assert callback.run_id == "cb_run"
+            assert callback.job_id == "cb_job"
+            assert callback.provider == "anthropic"
+            assert callback.layer == "layer3"
+
+    def test_get_current_cost_during_execution(self):
+        """Should return current cost during run."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="cost_run") as run:
+            run.track(
+                provider="openai",
+                model="gpt-4o",
+                input_tokens=1000,
+                output_tokens=500,
+            )
+
+            cost = run.get_current_cost()
+            assert cost > 0
+
+    def test_export_path_exports_on_exit(self, tmp_path):
+        """Should export to path on context exit."""
+        tracker = TokenTracker()
+        output_path = tmp_path / "export.json"
+
+        with RunCostTracker(
+            tracker,
+            run_id="export_run",
+            export_path=str(output_path),
+        ) as run:
+            run.track(
+                provider="openai",
+                model="gpt-4o",
+                input_tokens=500,
+                output_tokens=200,
+            )
+
+        assert output_path.exists()
+
+    def test_summary_available_after_exit(self):
+        """Summary should be available after context exit."""
+        tracker = TokenTracker()
+
+        with RunCostTracker(tracker, run_id="test") as run:
+            pass
+
+        # Summary available outside context
+        assert run.summary is not None
+        assert run.summary.run_id == "test"
+
+    def test_summary_none_before_exit(self):
+        """Summary should be None during context."""
+        tracker = TokenTracker()
+        run = RunCostTracker(tracker, run_id="test")
+
+        # Before entering context
+        assert run.summary is None
+
+
+class TestTokenTrackingCallbackRunTracking:
+    """Tests for TokenTrackingCallback with run_id and job_id."""
+
+    def test_callback_includes_run_id(self):
+        """Should include run_id in tracked usage."""
+        tracker = TokenTracker()
+        callback = TokenTrackingCallback(
+            tracker=tracker,
+            provider="openai",
+            layer="layer2",
+            run_id="callback_run",
+        )
+
+        # Simulate LLM completion
+        response = LLMResult(
+            generations=[[Generation(text="Hello")]],
+            llm_output={
+                "token_usage": {"prompt_tokens": 100, "completion_tokens": 50},
+                "model_name": "gpt-4o",
+            },
+        )
+
+        callback.on_llm_end(response)
+
+        usages = tracker.get_usages()
+        assert len(usages) == 1
+        assert usages[0].run_id == "callback_run"
+
+    def test_callback_includes_job_id(self):
+        """Should include job_id in tracked usage."""
+        tracker = TokenTracker()
+        callback = TokenTrackingCallback(
+            tracker=tracker,
+            provider="openai",
+            run_id="run_1",
+            job_id="job_123",
+        )
+
+        response = LLMResult(
+            generations=[[Generation(text="Hello")]],
+            llm_output={
+                "token_usage": {"prompt_tokens": 100, "completion_tokens": 50},
+                "model_name": "gpt-4o",
+            },
+        )
+
+        callback.on_llm_end(response)
+
+        usages = tracker.get_usages()
+        assert len(usages) == 1
+        assert usages[0].job_id == "job_123"
+        assert usages[0].run_id == "run_1"
+
+
+class TestRunCostSummary:
+    """Tests for RunCostSummary dataclass."""
+
+    def test_all_fields_stored(self):
+        """Should store all fields correctly."""
+        summary = RunCostSummary(
+            run_id="test_run",
+            job_id="test_job",
+            total_cost_usd=0.0123,
+            total_input_tokens=1000,
+            total_output_tokens=500,
+            total_tokens=1500,
+            calls_count=3,
+            duration_seconds=5.5,
+            by_layer={"layer2": {"calls": 2}},
+            by_provider={"openai": {"calls": 3}},
+        )
+
+        assert summary.run_id == "test_run"
+        assert summary.job_id == "test_job"
+        assert summary.total_cost_usd == 0.0123
+        assert summary.total_input_tokens == 1000
+        assert summary.total_output_tokens == 500
+        assert summary.total_tokens == 1500
+        assert summary.calls_count == 3
+        assert summary.duration_seconds == 5.5
+        assert "layer2" in summary.by_layer
+        assert "openai" in summary.by_provider
