@@ -311,20 +311,39 @@ def list_jobs():
     effective_from = datetime_from if datetime_from else date_from
     effective_to = datetime_to if datetime_to else date_to
 
+    # GAP-007 Fix: n8n stores createdAt as ISO 8601 strings (e.g., "2025-11-30T14:30:00.000Z")
+    # ISO 8601 strings are lexicographically sortable, so string comparison works correctly.
+    # We normalize to ensure consistent format for comparison.
+    def normalize_datetime_for_query(dt_str: str, is_end_of_day: bool = False) -> str:
+        """
+        Normalize date/datetime string to ISO 8601 format for MongoDB string comparison.
+
+        MongoDB string comparison with $gte/$lte works correctly for ISO 8601 because
+        the format is lexicographically sortable: "2025-11-30T14:00:00" < "2025-11-30T15:00:00"
+
+        Args:
+            dt_str: ISO datetime string (with 'T') or date string (YYYY-MM-DD)
+            is_end_of_day: If True and dt_str is date-only, append T23:59:59.999Z
+
+        Returns:
+            ISO 8601 string for MongoDB query
+        """
+        if 'T' in dt_str:
+            # Already has time component - use as-is (it's already ISO format)
+            return dt_str
+        else:
+            # Date only - add time component
+            if is_end_of_day:
+                return f"{dt_str}T23:59:59.999Z"
+            else:
+                return f"{dt_str}T00:00:00.000Z"
+
     if effective_from or effective_to:
         date_filter: Dict[str, str] = {}
         if effective_from:
-            # If already has time component, use as-is; otherwise append start of day
-            if 'T' in effective_from:
-                date_filter["$gte"] = effective_from
-            else:
-                date_filter["$gte"] = f"{effective_from}T00:00:00.000Z"
+            date_filter["$gte"] = normalize_datetime_for_query(effective_from, is_end_of_day=False)
         if effective_to:
-            # If already has time component, use as-is; otherwise append end of day
-            if 'T' in effective_to:
-                date_filter["$lte"] = effective_to
-            else:
-                date_filter["$lte"] = f"{effective_to}T23:59:59.999Z"
+            date_filter["$lte"] = normalize_datetime_for_query(effective_to, is_end_of_day=True)
         and_conditions.append({"createdAt": date_filter})
 
     # Location filter (multi-select)
