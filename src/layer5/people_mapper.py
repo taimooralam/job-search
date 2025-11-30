@@ -25,6 +25,7 @@ from firecrawl import FirecrawlApp
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -1474,6 +1475,16 @@ def people_mapper_node(state: JobState) -> Dict[str, Any]:
     # Note: Detailed logging happens inside PeopleMapper.map_people()
     # Node-level logger mainly for entry/exit tracking
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer5")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
-    mapper = PeopleMapper()
-    return mapper.map_people(state)
+    with LayerContext(struct_logger, 5, "people_mapper") as ctx:
+        mapper = PeopleMapper()
+        result = mapper.map_people(state)
+
+        # Add metadata
+        primary = result.get("primary_contacts", [])
+        secondary = result.get("secondary_contacts", [])
+        ctx.add_metadata("primary_contacts", len(primary) if primary else 0)
+        ctx.add_metadata("secondary_contacts", len(secondary) if secondary else 0)
+
+        return result

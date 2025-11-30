@@ -23,6 +23,7 @@ from enum import Enum
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 
 
 # ===== DOMAIN DETECTION =====
@@ -763,33 +764,41 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer2")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
+
     logger.info("=" * 60)
     logger.info("LAYER 2: Pain-Point Miner (Enhanced Edition)")
     logger.info("=" * 60)
     logger.info(f"Job: {state['title']} at {state['company']}")
     logger.info(f"Description length: {len(state['job_description'])} chars")
 
-    # Use legacy format for backward compatibility with downstream layers
-    miner = PainPointMiner(use_enhanced_format=False)
-    updates = miner.extract_pain_points(state)
+    with LayerContext(struct_logger, 2, "pain_point_miner") as ctx:
+        # Use legacy format for backward compatibility with downstream layers
+        miner = PainPointMiner(use_enhanced_format=False)
+        updates = miner.extract_pain_points(state)
 
-    # Log results
-    if updates.get("pain_points"):
-        logger.info("Extracted Pain Points:")
-        for i, point in enumerate(updates["pain_points"], 1):
-            if isinstance(point, dict):
-                logger.info(f"  {i}. [{point.get('confidence', '?')}] {point.get('text', point)}")
-            else:
-                logger.info(f"  {i}. {point}")
+        # Add metadata for structured logging
+        pain_points = updates.get("pain_points", [])
+        ctx.add_metadata("pain_points_count", len(pain_points))
+        ctx.add_metadata("strategic_needs_count", len(updates.get("strategic_needs", [])))
 
-        logger.info("Extracted Strategic Needs:")
-        for i, need in enumerate(updates.get("strategic_needs", []), 1):
-            if isinstance(need, dict):
-                logger.info(f"  {i}. {need.get('text', need)}")
-            else:
-                logger.info(f"  {i}. {need}")
-    else:
-        logger.warning("No pain-point analysis extracted")
+        # Log results
+        if pain_points:
+            logger.info("Extracted Pain Points:")
+            for i, point in enumerate(pain_points, 1):
+                if isinstance(point, dict):
+                    logger.info(f"  {i}. [{point.get('confidence', '?')}] {point.get('text', point)}")
+                else:
+                    logger.info(f"  {i}. {point}")
+
+            logger.info("Extracted Strategic Needs:")
+            for i, need in enumerate(updates.get("strategic_needs", []), 1):
+                if isinstance(need, dict):
+                    logger.info(f"  {i}. {need.get('text', need)}")
+                else:
+                    logger.info(f"  {i}. {need}")
+        else:
+            logger.warning("No pain-point analysis extracted")
 
     logger.info("=" * 60)
 

@@ -23,6 +23,7 @@ from typing import Dict, Any, Optional, List
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import sanitize_path_component
 
 from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
@@ -458,12 +459,20 @@ def cv_generator_v2_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer6_v2")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("=" * 60)
     logger.info("LAYER 6 V2: CV Generation Pipeline")
     logger.info("=" * 60)
 
-    generator = CVGeneratorV2()
-    updates = generator.generate(state)
+    with LayerContext(struct_logger, 6, "cv_generator_v2") as ctx:
+        generator = CVGeneratorV2()
+        updates = generator.generate(state)
 
-    return updates
+        # Add metadata from CV Gen V2 output
+        cv_output = updates.get("cv_gen_v2_output", {})
+        if cv_output:
+            ctx.add_metadata("roles_count", len(cv_output.get("roles", [])))
+            ctx.add_metadata("grade", cv_output.get("grade"))
+
+        return updates

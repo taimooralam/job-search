@@ -22,6 +22,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.config import Config
 from src.common.state import JobState, ExtractedJD
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 from src.layer1_4.prompts import (
     JD_EXTRACTION_SYSTEM_PROMPT,
     JD_EXTRACTION_USER_TEMPLATE,
@@ -336,25 +337,30 @@ def jd_extractor_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer1_4")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
+
     logger.info("=" * 60)
     logger.info("LAYER 1.4: JD Extractor")
     logger.info("=" * 60)
     logger.info(f"Job: {state['title']} at {state['company']}")
     logger.info(f"Description length: {len(state['job_description'])} chars")
 
-    # Extract structured JD intelligence
-    extractor = JDExtractor()
-    updates = extractor.extract(state)
+    with LayerContext(struct_logger, 1, "jd_extractor") as ctx:
+        # Extract structured JD intelligence
+        extractor = JDExtractor()
+        updates = extractor.extract(state)
 
-    # Log summary
-    if updates.get("extracted_jd"):
-        jd = updates["extracted_jd"]
-        logger.info("Extraction successful:")
-        logger.info(f"  Role: {jd['role_category']}")
-        logger.info(f"  Keywords: {len(jd['top_keywords'])}")
-        logger.info(f"  Implied pain points: {len(jd.get('implied_pain_points', []))}")
-    else:
-        logger.warning("JD extraction failed - downstream layers will use defaults")
+        # Log summary and add metadata
+        if updates.get("extracted_jd"):
+            jd = updates["extracted_jd"]
+            ctx.add_metadata("role_category", jd["role_category"])
+            ctx.add_metadata("keywords_count", len(jd["top_keywords"]))
+            logger.info("Extraction successful:")
+            logger.info(f"  Role: {jd['role_category']}")
+            logger.info(f"  Keywords: {len(jd['top_keywords'])}")
+            logger.info(f"  Implied pain points: {len(jd.get('implied_pain_points', []))}")
+        else:
+            logger.warning("JD extraction failed - downstream layers will use defaults")
 
     logger.info("=" * 60)
 

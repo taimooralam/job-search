@@ -20,6 +20,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import get_logger
+from src.common.structured_logger import get_structured_logger, LayerContext
 
 
 # ===== PROMPT DESIGN =====
@@ -545,22 +546,29 @@ def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
         Dictionary with updates to merge into state
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer4")
+    struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
     logger.info("LAYER 4: Opportunity Mapper (Phase 6)")
     logger.info("="*60)
 
-    mapper = OpportunityMapper()
-    updates = mapper.map_opportunity(state)
+    with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
+        mapper = OpportunityMapper()
+        updates = mapper.map_opportunity(state)
 
-    # Log results
-    if updates.get("fit_score") is not None:
-        logger.info(f"Fit Score: {updates['fit_score']}/100")
-        logger.info(f"Fit Category: {updates.get('fit_category', 'N/A').upper()}")
-        logger.info("Fit Rationale:")
-        logger.info(f"  {updates['fit_rationale']}")
-    else:
-        logger.warning("No fit analysis generated")
+        # Add metadata for structured logging
+        if updates.get("fit_score") is not None:
+            ctx.add_metadata("fit_score", updates["fit_score"])
+            ctx.add_metadata("fit_category", updates.get("fit_category"))
+
+        # Log results (text logging)
+        if updates.get("fit_score") is not None:
+            logger.info(f"Fit Score: {updates['fit_score']}/100")
+            logger.info(f"Fit Category: {updates.get('fit_category', 'N/A').upper()}")
+            logger.info("Fit Rationale:")
+            logger.info(f"  {updates['fit_rationale']}")
+        else:
+            logger.warning("No fit analysis generated")
 
     logger.info("="*60)
 
