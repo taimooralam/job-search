@@ -22,6 +22,9 @@ from io import BytesIO
 
 from .models import (
     HealthResponse,
+    LayerProgress,
+    PipelineProgressResponse,
+    PIPELINE_LAYERS,
     RunBulkRequest,
     RunJobRequest,
     RunResponse,
@@ -30,6 +33,7 @@ from .models import (
 from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
+from .config import settings, validate_config_on_startup
 
 # Configure logging
 logging.basicConfig(
@@ -39,18 +43,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Validate configuration at startup
+validate_config_on_startup()
 
-MAX_CONCURRENCY = int(os.getenv("MAX_CONCURRENCY", "3"))
-LOG_BUFFER_LIMIT = int(os.getenv("LOG_BUFFER_LIMIT", "500"))
+# Use validated settings (replaces raw os.getenv calls)
+MAX_CONCURRENCY = settings.max_concurrency
+LOG_BUFFER_LIMIT = settings.log_buffer_limit
 
 app = FastAPI(title="Pipeline Runner", version="0.1.0")
 
-# Configure CORS
-ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",")
-if ALLOWED_ORIGINS and ALLOWED_ORIGINS[0]:  # Only add if configured
+# Configure CORS using validated settings
+if settings.cors_origins_list:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()],
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -67,6 +73,9 @@ class RunState:
     updated_at: datetime
     artifacts: Dict[str, str] = field(default_factory=dict)
     logs: List[str] = field(default_factory=list)
+    # Layer-level progress tracking (Gap #25)
+    layers: Dict[str, Dict] = field(default_factory=dict)
+    current_layer: Optional[str] = None
 
 
 _runs: Dict[str, RunState] = {}
@@ -260,6 +269,75 @@ async def get_status(run_id: str) -> StatusResponse:
         started_at=state.started_at,
         updated_at=state.updated_at,
         artifacts=state.artifacts,
+    )
+
+
+@app.get("/jobs/{run_id}/progress", response_model=PipelineProgressResponse)
+async def get_progress(run_id: str) -> PipelineProgressResponse:
+    """
+    Return layer-by-layer progress for a pipeline run (Gap #25).
+
+    This endpoint provides detailed progress information that the frontend
+    uses to render the step-by-step pipeline visualization.
+    """
+    state = _runs.get(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Build layer progress list from state or parse from logs
+    layers = []
+    completed_layers = 0
+
+    for layer_def in PIPELINE_LAYERS:
+        layer_id = layer_def["id"]
+        layer_state = state.layers.get(layer_id, {})
+
+        # Determine layer status
+        if layer_state.get("completed_at"):
+            status = "success" if not layer_state.get("error") else "failed"
+            completed_layers += 1
+        elif layer_state.get("started_at"):
+            status = "executing"
+        elif state.current_layer == layer_id:
+            status = "executing"
+        else:
+            status = "pending"
+
+        # Calculate duration if available
+        duration_ms = None
+        if layer_state.get("started_at") and layer_state.get("completed_at"):
+            delta = layer_state["completed_at"] - layer_state["started_at"]
+            duration_ms = int(delta.total_seconds() * 1000)
+
+        layers.append(LayerProgress(
+            layer=layer_id,
+            status=status,
+            started_at=layer_state.get("started_at"),
+            completed_at=layer_state.get("completed_at"),
+            duration_ms=duration_ms,
+            error=layer_state.get("error"),
+        ))
+
+    # Calculate overall progress percentage
+    total_layers = len(PIPELINE_LAYERS)
+    progress_percent = int((completed_layers / total_layers) * 100) if total_layers > 0 else 0
+
+    # If pipeline completed or failed, set progress appropriately
+    if state.status == "completed":
+        progress_percent = 100
+    elif state.status == "failed":
+        # Keep progress at last completed layer
+        pass
+
+    return PipelineProgressResponse(
+        run_id=run_id,
+        job_id=state.job_id,
+        overall_status=state.status,
+        progress_percent=progress_percent,
+        layers=layers,
+        current_layer=state.current_layer,
+        started_at=state.started_at,
+        updated_at=state.updated_at,
     )
 
 
