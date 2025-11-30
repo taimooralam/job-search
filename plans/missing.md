@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-11-30 (Complete system analysis with numbered priorities)
+**Last Updated**: 2025-11-30 (Added 13 gaps from plans folder analysis: GAP-046 to GAP-058)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -10,11 +10,11 @@
 
 | Priority | Count | Description |
 |----------|-------|-------------|
-| **P0 (CRITICAL)** | 2 (2 fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 9 | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 13 | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 8 | Backlog - nice-to-have improvements |
-| **Total** | **34** (2 fixed, 32 open) | All identified gaps |
+| **P0 (CRITICAL)** | 3 (2 fixed, 1 open) | Must fix immediately - system broken or data integrity at risk |
+| **P1 (HIGH)** | 14 | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 23 | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
+| **Total** | **58** (2 fixed, 56 open) | All identified gaps |
 
 **Test Coverage**: 708 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -79,6 +79,28 @@
 **Fix Required**:
 - AWS Secrets Manager or Git-crypt encrypted vault
 - Document all credentials with recovery procedures
+
+---
+
+### GAP-046: Export PDF Button Not Working on Detail Page
+**Priority**: P0 CRITICAL | **Status**: PENDING | **Effort**: 1-3 hours
+**Impact**: Users can't export CV from job detail page (core feature broken)
+
+**Description**: The "Export PDF" button on job detail page doesn't function. Workaround exists: use Export PDF in CV editor side panel.
+
+**Root Cause Hypotheses**:
+1. Button doesn't exist or is hidden by CSS
+2. Click handler not attached
+3. Wrong endpoint or missing cv_editor_state data
+4. CORS/auth issue
+5. Feature never implemented (only editor button works)
+
+**Fix Required**:
+1. Investigate using browser DevTools (Network, Console)
+2. Compare with working editor button code
+3. Add missing handler or fix existing one
+
+**Plan**: `plans/bugs/export-pdf-detail-page.md`
 
 ---
 
@@ -200,6 +222,87 @@ except:  # Should catch specific exceptions
 
 ---
 
+### GAP-047: Line Spacing Bug in CV Editor
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
+**Impact**: Line height/spacing inconsistent in TipTap editor vs PDF output
+
+**Description**: Line spacing in the CV editor doesn't match PDF output, breaking WYSIWYG experience.
+
+**Root Cause**: CSS line-height values in `.ProseMirror` may not match PDF rendering styles.
+
+**Fix Required**:
+1. Audit `.ProseMirror` CSS line-height values
+2. Match with PDF service CSS
+3. Test across all paragraph types
+
+**Related**: GAP-049 (WYSIWYG Consistency)
+
+---
+
+### GAP-048: Line Spacing Bug in CV Generation
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
+**Impact**: Generated CVs have inconsistent line spacing compared to original master-cv
+
+**Description**: CV generation (Layer 6 V2) produces text with different line spacing than expected.
+
+**Fix Required**:
+1. Review `src/layer6_v2/` generation logic
+2. Ensure consistent spacing in output
+3. Match output to editor and PDF standards
+
+---
+
+### GAP-049: Job Status Not Updating After Pipeline Completion
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Job status stays "not processed" after successful pipeline completion
+
+**Description**: After pipeline completes all 7 layers, the job document status field doesn't update to "ready for applying".
+
+**Root Cause**: Runner service not updating job status in MongoDB after completion.
+
+**Fix Required**:
+1. Add status update in runner service `_finalize_run()` method
+2. Set status to "ready for applying" on success
+3. Set appropriate status on failure
+
+**Plan**: `plans/pipeline-completion-issues.md`
+
+---
+
+### GAP-050: Pipeline State Not Persisting to MongoDB
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: After pipeline completes, pain_points/fit_score/contacts missing from job document
+
+**Description**: Pipeline executes successfully but generated fields don't persist to MongoDB.
+
+**Root Cause Hypotheses**:
+1. Not saving state back to MongoDB after completion
+2. Saving to wrong collection (level-3 instead of level-2)
+3. Using wrong MongoDB URI
+4. Silent failure during persistence
+
+**Fix Required**:
+1. Add state persistence after each layer completes
+2. Verify MongoDB connection and collection
+3. Add logging for persistence operations
+
+**Plan**: `plans/pipeline-completion-issues.md`
+
+---
+
+### GAP-051: Missing Companies Bug in Contact Discovery
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
+**Impact**: Contact discovery returns incomplete results for some companies
+
+**Description**: FireCrawl contact discovery not finding companies/contacts that should exist.
+
+**Fix Required**:
+- Investigate FireCrawl search parameters
+- Check for rate limiting or API issues
+- Improve search query patterns
+
+---
+
 ## P2: MEDIUM (Fix This Sprint)
 
 ### GAP-014: CV V2 - Dynamic Tagline for Location
@@ -308,6 +411,86 @@ except:  # Should catch specific exceptions
 
 ---
 
+### GAP-052: Phase 5 - WYSIWYG Page Break Visualization
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 8-10 hours
+**Impact**: No visual page break indicators; users surprised by PDF page breaks
+
+**Description**: Add visual page break indicators to CV editor showing where content breaks across pages when exported to PDF. Provides true WYSIWYG experience.
+
+**Key Components**:
+1. Page Break Calculator - compute break positions from content height
+2. Page Break Renderer - insert visual break indicators in DOM
+3. Dynamic Update Integration - recalculate on content/style changes
+4. Detail Page Integration - show breaks in main CV display
+
+**Dependencies**: Phase 1-4 complete ✅
+
+**Plan**: `plans/phase5-page-break-visualization.md`
+
+---
+
+### GAP-053: Phase 6 - PDF Service Separation
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
+**Impact**: PDF generation tightly coupled to runner service; scalability limited
+
+**Description**: Separate PDF generation from runner service into dedicated Docker container for better separation of concerns and independent scaling.
+
+**Benefits**:
+- Clear separation of concerns (pipeline ≠ PDF rendering)
+- Independent scaling and resource management
+- Easy to add new document types (cover letters, dossiers)
+- PDF service isolated, can restart without affecting pipeline
+
+**Plan**: `plans/phase6-pdf-service-separation.md`
+
+---
+
+### GAP-054: CV Editor WYSIWYG Consistency
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
+**Impact**: Editor and detail page display render differently; breaks WYSIWYG
+
+**Description**: The CV editor (`.ProseMirror`) and detail page display (`#cv-markdown-display`) have different CSS styles, causing visual inconsistency.
+
+**Fix Required**:
+1. Create unified `.cv-content` CSS class
+2. Apply to both editor and display containers
+3. Ensure both match PDF output
+4. Remove duplicate/conflicting CSS rules
+
+**Plan**: `plans/cv-editor-wysiwyg-consistency.md`
+
+---
+
+### GAP-055: Auto-Save on Blur for Form Fields
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Users must manually save form fields; risk of data loss
+
+**Description**: Implement auto-save functionality for job detail page form fields. On blur, automatically save to MongoDB with visual feedback.
+
+**Features**:
+- Auto-save on field blur
+- Visual feedback: "Saving..." → "Saved" → normal
+- Debounce rapid changes (500ms)
+- Skip if value unchanged
+- Error handling with retry
+
+**Plan**: `plans/frontend-ui-system-design.md` (Component 2)
+
+---
+
+### GAP-056: Contact Management (Delete/Copy/Import)
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-5 hours
+**Impact**: No way to manage contacts discovered by FireCrawl
+
+**Description**: Add contact management features to job detail page:
+1. Delete contact button with confirmation
+2. Copy FireCrawl prompt for Claude Code contact discovery
+3. Bulk import contacts via JSON modal
+
+**Plan**: `plans/frontend-ui-system-design.md` (Component 3)
+
+---
+
 ## P3: LOW (Backlog)
 
 ### GAP-026: CV V2 - Spacing 20% Narrower
@@ -385,6 +568,119 @@ except:  # Should catch specific exceptions
 4. Optimize for parallel layer execution where possible
 
 **Files**: `runner_service/app.py`, `scripts/run_pipeline.py`, `frontend/`
+
+---
+
+### GAP-035: CV Generator Test Mocking
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2 hours
+**Impact**: CV generator tests make real API calls, fail when credits low
+
+**Fix**: Add pytest fixture with mocked ChatAnthropic responses
+**Files**: `tests/unit/test_layer6_markdown_cv_generator.py`
+
+---
+
+### GAP-036: Cost Tracking Per Pipeline Run
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 3 hours
+**Impact**: No visibility into LLM costs per job
+
+**Fix**: Create `src/common/cost_tracker.py` with token counting + pricing
+
+---
+
+### GAP-037: External Health Monitoring
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 1 hour
+**Impact**: No external alerting when VPS goes down
+
+**Fix**: Set up UptimeRobot for `http://72.61.92.76:8000/health`
+
+---
+
+### GAP-038: Complete JobState Model
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2 hours
+**Impact**: Missing fields: tier, dossier_path, cv_text, application_form_fields
+
+**Files**: `src/common/state.py`, Layer 7 publisher
+
+---
+
+### GAP-039: Security Audit
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4 hours
+**Impact**: No formal security review
+
+**Fix**: Git history scan, path traversal check, input validation, `safety check`
+
+---
+
+### GAP-040: API Documentation (OpenAPI)
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2 hours
+**Impact**: No interactive API docs for runner service
+
+**Fix**: Add custom_openapi() to FastAPI at `/docs`
+
+---
+
+### GAP-041: Operational Runbook
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4 hours
+**Impact**: No documented procedures for common issues
+
+**Fix**: Create `RUNBOOK.md` with troubleshooting guides
+
+---
+
+### GAP-042: Performance Benchmarks
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 3 hours
+**Impact**: No baseline metrics; can't detect regressions
+
+**Fix**: Create benchmark tests, document target latencies
+
+---
+
+### GAP-043: Pipeline Runs History Collection
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 3 hours
+**Impact**: No historical record of pipeline runs
+
+**Fix**: Create `pipeline_runs` MongoDB collection with run metadata
+
+---
+
+### GAP-044: Knowledge Graph Edges for STAR
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 6-8 hours
+**Impact**: STAR records lack relationship graph
+
+**Fix**: Add graph edges linking STARs by skills, domains, outcomes
+
+---
+
+### GAP-045: Tiered Job Execution
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4-6 hours
+**Impact**: All jobs treated equally; no priority-based processing
+
+**Fix**: Add job tiers (high/medium/low) with different processing depths
+
+---
+
+### GAP-057: CV Editor Margin Presets
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Users must manually set margins; no quick presets
+
+**Description**: Add preset margin options (Normal, Narrow, Wide, Custom) for CV editor document styles.
+
+**Presets**:
+- Normal: 1" all sides
+- Narrow: 0.5" all sides
+- Wide: 1.5" all sides
+- Custom: user-defined
+
+---
+
+### GAP-058: Smaller UI Buttons
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 1 hour
+**Impact**: Some buttons appear oversized; inconsistent with design system
+
+**Description**: Reduce size of certain UI buttons for better visual hierarchy and space efficiency.
+
+**Fix Required**: Review and resize buttons according to design system specifications in `plans/frontend-ui-system-design.md`.
 
 ---
 
