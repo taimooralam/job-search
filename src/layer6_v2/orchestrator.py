@@ -81,7 +81,9 @@ class CVGeneratorV2:
         self.role_generator = RoleGenerator(model=self.model)
         self.role_qa = RoleQA()
         self.stitcher = CVStitcher(word_budget=word_budget)
-        self.header_generator = HeaderGenerator(model=self.model)
+        # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations
+        # The whitelist is loaded lazily when cv_loader.load() is called
+        self.header_generator = HeaderGenerator(model=self.model)  # Whitelist passed in generate()
         self.grader = CVGrader(
             model=self.model,
             passing_threshold=passing_threshold,
@@ -149,6 +151,9 @@ class CVGeneratorV2:
 
             # Phase 5: Generate header and skills
             self._logger.info("Phase 5: Generating header and skills...")
+            # GAP-001 FIX: Pass skill whitelist to prevent hallucinated skills
+            skill_whitelist = self.cv_loader.get_skill_whitelist()
+            self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
             header_output = generate_header(
                 stitched_cv,
                 extracted_jd,
@@ -165,6 +170,7 @@ class CVGeneratorV2:
                     "certifications": candidate_data.certifications,
                     "languages": candidate_data.languages,
                 },
+                skill_whitelist=skill_whitelist,
             )
             self._logger.info(f"  Profile: {header_output.profile.word_count} words")
             self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")

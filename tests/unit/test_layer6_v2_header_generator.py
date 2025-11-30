@@ -323,6 +323,11 @@ class TestSkillsExtraction:
         """Extracts Python when mentioned in bullets."""
         generator = HeaderGenerator.__new__(HeaderGenerator)
         generator._logger = Mock()
+        # GAP-001 fix: Add whitelist that includes Python
+        generator._skill_whitelist = {
+            "hard_skills": ["Python", "Kubernetes", "AWS"],
+            "soft_skills": ["Team Leadership", "Mentorship"],
+        }
 
         bullets = [b for role in sample_stitched_cv.roles for b in role.bullets]
         companies = [role.company for role in sample_stitched_cv.roles for _ in role.bullets]
@@ -337,6 +342,11 @@ class TestSkillsExtraction:
         """Extracts Kubernetes when mentioned in bullets."""
         generator = HeaderGenerator.__new__(HeaderGenerator)
         generator._logger = Mock()
+        # GAP-001 fix: Add whitelist that includes Kubernetes
+        generator._skill_whitelist = {
+            "hard_skills": ["Python", "Kubernetes", "AWS"],
+            "soft_skills": ["Team Leadership", "Mentorship"],
+        }
 
         bullets = [b for role in sample_stitched_cv.roles for b in role.bullets]
         companies = [role.company for role in sample_stitched_cv.roles for _ in role.bullets]
@@ -351,6 +361,11 @@ class TestSkillsExtraction:
         """Extracts leadership skills from team-related bullets."""
         generator = HeaderGenerator.__new__(HeaderGenerator)
         generator._logger = Mock()
+        # GAP-001 fix: Add whitelist that includes leadership skills
+        generator._skill_whitelist = {
+            "hard_skills": [],
+            "soft_skills": ["Team Leadership", "Mentorship", "Strategic Planning"],
+        }
 
         # Use bullets that contain skill names as substrings
         bullets = [
@@ -576,13 +591,32 @@ class TestSkillsGeneration:
         sample_extracted_jd,
     ):
         """Generates skills sections from experience."""
-        generator = HeaderGenerator()
+        # GAP-002: Use static categories for this test to validate legacy behavior
+        generator = HeaderGenerator(use_dynamic_categories=False)
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         assert len(sections) > 0
-        # Should have at least Technical and Platform
+        # Should have at least Technical and Platform (static categories)
         categories = [s.category for s in sections]
         assert "Technical" in categories or "Platform" in categories
+
+    def test_generates_dynamic_categories(
+        self,
+        sample_stitched_cv,
+        sample_extracted_jd,
+    ):
+        """Generates JD-specific skill categories (GAP-002)."""
+        generator = HeaderGenerator(use_dynamic_categories=True)
+        sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
+
+        assert len(sections) > 0
+        # Dynamic categories should be generated (any 3-4 categories)
+        assert len(sections) >= 1  # At least one category with skills
+        categories = [s.category for s in sections]
+        # Categories should NOT be the static 4 (most of the time)
+        # But they should exist
+        for cat in categories:
+            assert len(cat) > 0  # Non-empty category names
 
     def test_limits_skills_per_category(
         self,
@@ -590,7 +624,7 @@ class TestSkillsGeneration:
         sample_extracted_jd,
     ):
         """Limits skills to 8 per category."""
-        generator = HeaderGenerator()
+        generator = HeaderGenerator(use_dynamic_categories=False)
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         for section in sections:

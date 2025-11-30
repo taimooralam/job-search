@@ -29,6 +29,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
+from src.layer6_v2.category_generator import CategoryGenerator
 from src.layer6_v2.types import (
     StitchedCV,
     SkillEvidence,
@@ -64,6 +65,7 @@ class HeaderGenerator:
     - Skills extraction with evidence tracking
     - JD keyword prioritization
     - Grounding validation
+    - Master-CV skill whitelist to prevent hallucinations (GAP-001 fix)
     """
 
     # Skill category keywords for evidence matching
@@ -89,10 +91,33 @@ class HeaderGenerator:
         ],
     }
 
+    # Category classification patterns for mapping skills to categories
+    CATEGORY_CLASSIFIERS = {
+        "Leadership": [
+            "leadership", "lead", "manage", "mentor", "coach", "team",
+            "hiring", "interviewing", "stakeholder", "communication",
+            "performance", "talent", "executive",
+        ],
+        "Platform": [
+            "aws", "azure", "gcp", "kubernetes", "docker", "terraform",
+            "ci/cd", "devops", "cloud", "infrastructure", "lambda",
+            "ecs", "eks", "s3", "eventbridge", "cloudfront", "serverless",
+            "monitoring", "observability", "datadog", "grafana",
+        ],
+        "Delivery": [
+            "agile", "scrum", "kanban", "sprint", "project", "delivery",
+            "quality", "tdd", "bdd", "testing", "jest", "release",
+            "process", "workflow",
+        ],
+        # Technical is the default category for technical skills
+    }
+
     def __init__(
         self,
         model: Optional[str] = None,
         temperature: float = 0.3,
+        skill_whitelist: Optional[Dict[str, List[str]]] = None,
+        use_dynamic_categories: bool = True,
     ):
         """
         Initialize the header generator.
@@ -100,9 +125,27 @@ class HeaderGenerator:
         Args:
             model: LLM model to use (default: Config.DEFAULT_MODEL)
             temperature: Generation temperature (default: 0.3 for consistency)
+            skill_whitelist: Master-CV skill whitelist to prevent hallucinations.
+                             Dict with 'hard_skills' and 'soft_skills' lists.
+                             If not provided, loads from CVLoader automatically.
+            use_dynamic_categories: If True (default), generate JD-specific categories.
+                                   If False, use static categories [Leadership, Technical, Platform, Delivery].
+                                   GAP-002 fix.
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
+        self.use_dynamic_categories = use_dynamic_categories
+
+        # Store skill whitelist (GAP-001 fix: prevent hallucinated skills)
+        self._skill_whitelist = skill_whitelist
+        if skill_whitelist:
+            self._logger.info(
+                f"Using skill whitelist: {len(skill_whitelist.get('hard_skills', []))} hard, "
+                f"{len(skill_whitelist.get('soft_skills', []))} soft skills"
+            )
+
+        # Initialize category generator (GAP-002 fix: dynamic categories)
+        self._category_generator = CategoryGenerator(model=model, temperature=temperature) if use_dynamic_categories else None
 
         # Initialize LLM
         model_name = model or Config.DEFAULT_MODEL
@@ -113,6 +156,73 @@ class HeaderGenerator:
             base_url=Config.get_llm_base_url(),
         )
         self._logger.info(f"HeaderGenerator initialized with model: {model_name}")
+
+    def _classify_skill_category(self, skill: str) -> str:
+        """
+        Classify a skill into one of the four categories.
+
+        Uses pattern matching against CATEGORY_CLASSIFIERS.
+        Default category is "Technical" for unmatched skills.
+
+        Args:
+            skill: The skill name to classify
+
+        Returns:
+            Category name: "Leadership", "Technical", "Platform", or "Delivery"
+        """
+        skill_lower = skill.lower()
+
+        for category, keywords in self.CATEGORY_CLASSIFIERS.items():
+            if any(kw in skill_lower for kw in keywords):
+                return category
+
+        # Default to Technical for programming languages, frameworks, etc.
+        return "Technical"
+
+    def _build_skill_lists_from_whitelist(self) -> Dict[str, List[str]]:
+        """
+        Build categorized skill lists from the master-CV whitelist.
+
+        This is the GAP-001 fix: Instead of using hardcoded skill lists
+        that include skills the candidate doesn't have (PHP, Java, etc.),
+        we use ONLY skills from the master-CV.
+
+        Returns:
+            Dict mapping category names to lists of skills from master-CV
+        """
+        skill_lists: Dict[str, List[str]] = {
+            "Leadership": [],
+            "Technical": [],
+            "Platform": [],
+            "Delivery": [],
+        }
+
+        if not self._skill_whitelist:
+            self._logger.warning("No skill whitelist provided - skills may be hallucinated!")
+            return skill_lists
+
+        # Classify hard skills into categories
+        for skill in self._skill_whitelist.get("hard_skills", []):
+            category = self._classify_skill_category(skill)
+            skill_lists[category].append(skill)
+
+        # Classify soft skills (typically Leadership or Delivery)
+        for skill in self._skill_whitelist.get("soft_skills", []):
+            category = self._classify_skill_category(skill)
+            # Soft skills usually belong in Leadership category
+            if category == "Technical":
+                category = "Leadership"  # Override for soft skills
+            skill_lists[category].append(skill)
+
+        self._logger.debug(
+            f"Built skill lists from whitelist: "
+            f"Leadership={len(skill_lists['Leadership'])}, "
+            f"Technical={len(skill_lists['Technical'])}, "
+            f"Platform={len(skill_lists['Platform'])}, "
+            f"Delivery={len(skill_lists['Delivery'])}"
+        )
+
+        return skill_lists
 
     def _extract_metrics_from_bullets(self, bullets: List[str]) -> List[str]:
         """Extract quantified metrics from bullet points."""
@@ -177,8 +287,13 @@ class HeaderGenerator:
         """
         Extract skills from bullets with evidence tracking.
 
-        Uses pattern matching to find skills and their evidence.
-        Also includes JD keywords when they have evidence in bullets.
+        GAP-001 FIX: Uses master-CV whitelist instead of hardcoded skills.
+        Only includes skills that:
+        1. Exist in the master-CV skill whitelist, OR
+        2. Are JD keywords AND have evidence in the experience bullets
+
+        This prevents hallucinations like "Java", "PHP" appearing when the
+        candidate has never used those technologies.
         """
         skills_by_category: Dict[str, List[SkillEvidence]] = {
             "Leadership": [],
@@ -189,67 +304,39 @@ class HeaderGenerator:
 
         combined_text = " ".join(bullets).lower()
 
-        # Expanded pre-defined skill lists for extraction
-        skill_lists = {
-            "Leadership": [
-                "Team Leadership", "Mentorship", "Hiring", "Cross-functional Collaboration",
-                "Stakeholder Management", "Strategic Planning", "People Management",
-                "Engineering Management", "Technical Leadership", "Coaching", "Performance Management",
-                "Talent Development", "Team Building", "Executive Communication",
-            ],
-            "Technical": [
-                # Languages
-                "Python", "Java", "TypeScript", "JavaScript", "Go", "Rust", "Scala", "Kotlin",
-                "C#", ".NET", ".NET Core", "Node.js", "Ruby", "PHP",
-                # Databases
-                "SQL", "NoSQL", "PostgreSQL", "MySQL", "MongoDB", "MS SQL Server", "Redis", "DynamoDB",
-                # APIs & Architecture
-                "REST API", "REST APIs", "GraphQL", "gRPC", "Microservices", "System Design",
-                "Event-Driven Architecture", "CQRS", "Domain-Driven Design",
-                # Messaging
-                "RabbitMQ", "Kafka", "SQS", "Event Sourcing",
-                # Other
-                "Machine Learning", "Data Engineering", "Backend Development",
-            ],
-            "Platform": [
-                "AWS", "Azure", "GCP", "Kubernetes", "Docker", "Terraform", "OpenShift",
-                "CI/CD", "GitHub Actions", "Jenkins", "GitLab CI", "DevOps", "Cloud Infrastructure",
-                "Observability", "Monitoring", "DataDog", "Grafana", "Prometheus",
-                "ECS", "EKS", "Lambda", "CloudFormation",
-            ],
-            "Delivery": [
-                "Agile", "Scrum", "Kanban", "Sprint Planning", "Release Management",
-                "Process Improvement", "Automation", "Project Management",
-                "Continuous Delivery", "Technical Program Management",
-                "Code Quality", "Code Review", "TDD", "Test-Driven Development",
-            ],
-        }
+        # GAP-001 FIX: Build skill lists from master-CV whitelist instead of hardcoded lists
+        # This ensures we ONLY include skills the candidate actually has
+        skill_lists = self._build_skill_lists_from_whitelist()
 
-        # Add JD keywords to skill lists (categorized by pattern matching)
+        # Create a set of all whitelist skills for quick lookup
+        whitelist_skills_lower = set()
+        if self._skill_whitelist:
+            for skill in self._skill_whitelist.get("hard_skills", []):
+                whitelist_skills_lower.add(skill.lower())
+            for skill in self._skill_whitelist.get("soft_skills", []):
+                whitelist_skills_lower.add(skill.lower())
+
+        # Add JD keywords to skill lists ONLY if they have evidence in bullets
+        # This is more restrictive than before - JD keywords are only included
+        # if the candidate has demonstrated them in their experience
         if jd_keywords:
-            jd_keywords_to_check = set()
             for kw in jd_keywords:
                 kw_lower = kw.lower()
-                # Categorize JD keywords
-                if any(term in kw_lower for term in ["lead", "manage", "mentor", "coach", "team"]):
-                    if kw not in skill_lists["Leadership"]:
-                        skill_lists["Leadership"].append(kw)
-                elif any(term in kw_lower for term in ["aws", "azure", "gcp", "kubernetes", "docker", "ci/cd", "devops", "openshift"]):
-                    if kw not in skill_lists["Platform"]:
-                        skill_lists["Platform"].append(kw)
-                elif any(term in kw_lower for term in ["agile", "scrum", "kanban", "project", "delivery", "quality"]):
-                    if kw not in skill_lists["Delivery"]:
-                        skill_lists["Delivery"].append(kw)
-                else:
-                    # Default technical skills
-                    if kw not in skill_lists["Technical"]:
-                        jd_keywords_to_check.add(kw)
 
-            # Add remaining JD keywords to Technical
-            for kw in jd_keywords_to_check:
-                if kw not in skill_lists["Technical"]:
-                    skill_lists["Technical"].append(kw)
+                # Skip if already in whitelist (already categorized)
+                if kw_lower in whitelist_skills_lower:
+                    continue
 
+                # Check if this JD keyword has evidence in bullets
+                # Only then should we consider adding it
+                if kw_lower in combined_text:
+                    # Categorize the JD keyword
+                    category = self._classify_skill_category(kw)
+                    if kw not in skill_lists[category]:
+                        skill_lists[category].append(kw)
+                        self._logger.debug(f"Added JD keyword '{kw}' to {category} (has evidence)")
+
+        # Extract skills with evidence
         for category, skills in skill_lists.items():
             for skill in skills:
                 evidence = self._find_skill_evidence(skill, bullets, role_companies)
@@ -461,6 +548,8 @@ Generate the profile JSON:"""
         """
         Generate skills sections grounded in experience.
 
+        GAP-002 FIX: Uses dynamic JD-specific categories instead of static 4 categories.
+
         Args:
             stitched_cv: Stitched experience section
             extracted_jd: Extracted JD intelligence
@@ -484,23 +573,141 @@ Generate the profile JSON:"""
         jd_technical = extracted_jd.get("technical_skills", [])
         all_jd_keywords = list(set(jd_keywords + jd_technical))
 
-        # Extract skills with evidence, including JD keywords
+        # Extract skills with evidence, including JD keywords (using static categories for extraction)
         skills_by_category = self._extract_skills_from_bullets(
             all_bullets, role_companies, jd_keywords=all_jd_keywords
         )
         skills_by_category = self._prioritize_jd_keywords(skills_by_category, jd_keywords)
 
-        # Build SkillsSection objects
-        sections = []
-        for category in ["Leadership", "Technical", "Platform", "Delivery"]:
-            skills = skills_by_category.get(category, [])
-            if skills:  # Only include categories with skills
-                sections.append(SkillsSection(
-                    category=category,
-                    skills=skills[:8],  # Limit to 8 skills per category
-                ))
+        # GAP-002 FIX: Generate dynamic categories or use static ones
+        if self.use_dynamic_categories and self._category_generator:
+            self._logger.info("Generating dynamic JD-specific categories...")
+            categories = self._generate_dynamic_categories(extracted_jd, skills_by_category)
+
+            # Re-categorize skills into dynamic categories
+            all_evidenced_skills = []
+            for cat_skills in skills_by_category.values():
+                all_evidenced_skills.extend(cat_skills)
+
+            # Use category generator to assign skills to new categories
+            all_skill_names = [s.skill for s in all_evidenced_skills]
+            categorized = self._category_generator.categorize_skills(
+                categories, all_skill_names, jd_keywords
+            )
+
+            # Build sections with dynamic categories
+            sections = self._build_dynamic_skill_sections(
+                categories, categorized, all_evidenced_skills
+            )
+        else:
+            # Static categories (original behavior)
+            self._logger.info("Using static categories [Leadership, Technical, Platform, Delivery]")
+            sections = []
+            for category in ["Leadership", "Technical", "Platform", "Delivery"]:
+                skills = skills_by_category.get(category, [])
+                if skills:  # Only include categories with skills
+                    sections.append(SkillsSection(
+                        category=category,
+                        skills=skills[:8],  # Limit to 8 skills per category
+                    ))
 
         self._logger.info(f"Extracted {sum(s.skill_count for s in sections)} skills across {len(sections)} categories")
+        return sections
+
+    def _generate_dynamic_categories(
+        self,
+        extracted_jd: Dict,
+        skills_by_category: Dict[str, List[SkillEvidence]],
+    ) -> List[str]:
+        """
+        Generate JD-specific category names using the CategoryGenerator.
+
+        Args:
+            extracted_jd: Extracted JD intelligence
+            skills_by_category: Skills already extracted (for candidate skill list)
+
+        Returns:
+            List of 3-4 dynamic category names
+        """
+        # Get JD keywords
+        jd_keywords = extracted_jd.get("top_keywords", [])
+        jd_technical = extracted_jd.get("technical_skills", [])
+        all_jd_keywords = list(set(jd_keywords + jd_technical))
+
+        # Get candidate skills (from whitelist or extracted)
+        if self._skill_whitelist:
+            candidate_skills = (
+                self._skill_whitelist.get("hard_skills", []) +
+                self._skill_whitelist.get("soft_skills", [])
+            )
+        else:
+            # Fallback: use skills that were extracted with evidence
+            candidate_skills = []
+            for skills in skills_by_category.values():
+                for s in skills:
+                    candidate_skills.append(s.skill)
+
+        # Get role category from JD
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+
+        # Generate dynamic categories
+        categories = self._category_generator.generate(
+            jd_keywords=all_jd_keywords,
+            candidate_skills=candidate_skills,
+            role_category=role_category,
+        )
+
+        self._logger.info(f"Generated dynamic categories: {categories}")
+        return categories
+
+    def _build_dynamic_skill_sections(
+        self,
+        categories: List[str],
+        categorized: Dict[str, List[str]],
+        all_evidenced_skills: List[SkillEvidence],
+    ) -> List[SkillsSection]:
+        """
+        Build SkillsSection objects using dynamic categories.
+
+        Args:
+            categories: Dynamic category names
+            categorized: Mapping of category to skill names
+            all_evidenced_skills: All skills with their evidence
+
+        Returns:
+            List of SkillsSection objects
+        """
+        # Create a lookup for skill evidence
+        evidence_lookup = {s.skill.lower(): s for s in all_evidenced_skills}
+
+        sections = []
+        for category in categories:
+            skill_names = categorized.get(category, [])
+            if not skill_names:
+                continue
+
+            # Get evidence for each skill
+            skills_with_evidence = []
+            for name in skill_names[:8]:  # Limit to 8 per category
+                # Look up evidence (case-insensitive)
+                evidence = evidence_lookup.get(name.lower())
+                if evidence:
+                    skills_with_evidence.append(evidence)
+                else:
+                    # Create placeholder evidence if not found
+                    skills_with_evidence.append(SkillEvidence(
+                        skill=name,
+                        evidence_bullets=[],
+                        source_roles=[],
+                        is_jd_keyword=False,
+                    ))
+
+            if skills_with_evidence:
+                sections.append(SkillsSection(
+                    category=category,
+                    skills=skills_with_evidence,
+                ))
+
         return sections
 
     def generate(
@@ -608,6 +815,8 @@ def generate_header(
     stitched_cv: StitchedCV,
     extracted_jd: Dict,
     candidate_data: Dict,
+    skill_whitelist: Optional[Dict[str, List[str]]] = None,
+    use_dynamic_categories: bool = True,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -616,9 +825,16 @@ def generate_header(
         stitched_cv: Stitched experience section
         extracted_jd: Extracted JD intelligence
         candidate_data: Candidate info (name, contact, education)
+        skill_whitelist: Master-CV skill whitelist to prevent hallucinations (GAP-001).
+                        If not provided, skills may be hallucinated.
+        use_dynamic_categories: If True, generate JD-specific categories (GAP-002).
+                               If False, use static [Leadership, Technical, Platform, Delivery].
 
     Returns:
         HeaderOutput with all header sections
     """
-    generator = HeaderGenerator()
+    generator = HeaderGenerator(
+        skill_whitelist=skill_whitelist,
+        use_dynamic_categories=use_dynamic_categories,
+    )
     return generator.generate(stitched_cv, extracted_jd, candidate_data)
