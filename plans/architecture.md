@@ -225,6 +225,11 @@ class JobState(TypedDict):
     # Layer 7
     output_dir: str
 
+    # Token Tracking (NEW - 2025-11-30)
+    token_usage: Dict  # Per-provider token tracking {openai: {...}, anthropic: {...}, ...}
+    total_tokens: int  # Total tokens across all providers
+    total_cost_usd: float  # Total cost in USD
+
     # Meta
     errors: List[str]
 ```
@@ -251,6 +256,89 @@ class JobState(TypedDict):
 | `ENABLE_REMOTE_PUBLISHING` | `false` | Save locally only, skip Drive/Sheets |
 | `USE_ANTHROPIC` | `true` | Use Anthropic Claude for CV generation |
 | `USE_OPENROUTER` | `false` | Use OpenRouter for CV generation |
+| `ENABLE_TOKEN_TRACKING` | `true` | Enable token usage tracking per job |
+| `ENFORCE_TOKEN_BUDGET` | `true` | Enforce token budget limits |
+| `TOKEN_BUDGET_USD` | `100` | Total budget in USD across all providers |
+| `TOKEN_BUDGET_ACTION` | `fail` | Action on budget exceeded: `fail`, `warn`, or `skip` |
+| `TRACK_TOKENS_TO_MONGODB` | `true` | Persist token usage data to MongoDB |
+
+### Token Budget Configuration
+
+**Environment Variables**:
+```bash
+# Token budgets per provider (in USD)
+TOKEN_BUDGET_USD=100.00              # Total across all providers
+OPENAI_BUDGET_USD=25.00              # OpenAI (GPT-4/3.5-turbo)
+ANTHROPIC_BUDGET_USD=50.00           # Anthropic Claude
+OPENROUTER_BUDGET_USD=25.00          # OpenRouter (fallback)
+
+# Enforcement settings
+ENFORCE_TOKEN_BUDGET=true            # Enable budget enforcement
+TOKEN_BUDGET_ACTION=fail              # fail | warn | skip
+ENABLE_TOKEN_TRACKING=true            # Track usage per job
+TRACK_TOKENS_TO_MONGODB=true          # Persist to MongoDB
+
+# Cost estimation
+OPENAI_CHAT_INPUT_PRICE=0.0005       # $ per 1K tokens (GPT-4)
+OPENAI_CHAT_OUTPUT_PRICE=0.0015      # $ per 1K tokens
+ANTHROPIC_INPUT_PRICE=0.003          # $ per 1K tokens
+ANTHROPIC_OUTPUT_PRICE=0.015         # $ per 1K tokens
+```
+
+**Cost Estimation Models** (Hard-coded in TokenTracker):
+- **OpenAI GPT-4**: $0.03/1K input, $0.06/1K output (default)
+- **OpenAI GPT-3.5-turbo**: $0.0005/1K input, $0.0015/1K output
+- **Anthropic Claude**: $0.008/1K input, $0.024/1K output
+- **OpenRouter**: Model-dependent (fallback providers)
+
+### Token Tracking Architecture
+
+**Module**: `src/common/token_tracker.py`
+
+**Components**:
+
+1. **TokenTracker Class** (Core tracking logic):
+   - Per-job token usage aggregation
+   - Per-provider cost estimation
+   - Budget validation and enforcement
+   - Thread-safe operation (Lock-based synchronization)
+   - Dict export for MongoDB persistence
+
+2. **BudgetExceededError Exception**:
+   - Raised when per-job or provider budget exceeded
+   - Carries budget metadata (spent, limit, provider)
+   - Caught by layer error handlers for graceful degradation
+
+3. **TokenTrackingCallback** (LangChain integration):
+   - Hooks into LLM call completion
+   - Extracts token counts from provider responses
+   - Updates TokenTracker with usage data
+   - Works with ChatOpenAI, ChatAnthropic, ChatOpenRouter
+
+4. **Integration Pattern**:
+   ```python
+   # Initialize per job
+   tracker = TokenTracker(
+       job_id=job_id,
+       total_budget_usd=100.0,
+       provider_budgets={
+           "openai": 25.0,
+           "anthropic": 50.0,
+           "openrouter": 25.0
+       }
+   )
+
+   # Check before LLM call
+   estimated_tokens = 1500
+   if not tracker.check_budget("anthropic", estimated_tokens):
+       raise BudgetExceededError(...)
+
+   # Track after LLM call
+   tracker.add_tokens("anthropic", input_tokens=800, output_tokens=500)
+
+   # Persist to MongoDB
+   usage_data = tracker.to_dict()
+   ```
 
 ### LLM Provider Priority (CV Generation)
 
