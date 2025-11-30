@@ -14,10 +14,12 @@ import os
 from pathlib import Path
 from typing import Dict, Optional
 
+from .config import settings
+
 logger = logging.getLogger(__name__)
 
-# Configurable timeout (default 10 minutes)
-PIPELINE_TIMEOUT = int(os.getenv("PIPELINE_TIMEOUT_SECONDS", "600"))
+# Use validated timeout from config
+PIPELINE_TIMEOUT = settings.pipeline_timeout_seconds
 
 
 async def execute_pipeline(

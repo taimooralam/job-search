@@ -131,6 +131,33 @@ def get_run_status(run_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/jobs/<run_id>/progress", methods=["GET"])
+def get_run_progress(run_id: str):
+    """
+    Get detailed layer-by-layer progress of a pipeline run.
+
+    Returns:
+        JSON with run progress, layer status, and completion percentage
+    """
+    try:
+        # Proxy request to runner service
+        response = requests.get(
+            f"{RUNNER_URL}/jobs/{run_id}/progress",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        # Return runner's response
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/jobs/<run_id>/logs", methods=["GET"])
 def stream_logs(run_id: str):
     """
