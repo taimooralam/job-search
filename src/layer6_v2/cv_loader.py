@@ -15,7 +15,7 @@ This approach:
 
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from dataclasses import dataclass, field
 from src.common.logger import get_logger
 
@@ -328,3 +328,72 @@ class CVLoader:
             self.load()
 
         return sum(len(role.achievements) for role in self._candidate.roles)
+
+    def get_all_hard_skills(self) -> List[str]:
+        """
+        Get deduplicated list of all hard skills across roles.
+
+        These are the ONLY technical skills that should appear in generated CVs.
+        Any skill not in this list is a hallucination.
+
+        Returns:
+            Sorted list of unique hard skills from master-cv
+        """
+        if self._candidate is None:
+            self.load()
+
+        skills = set()
+        for role in self._candidate.roles:
+            # Normalize skills to lowercase for deduplication
+            for skill in role.hard_skills:
+                skills.add(skill.strip())
+
+        return sorted(skills, key=str.lower)
+
+    def get_all_soft_skills(self) -> List[str]:
+        """
+        Get deduplicated list of all soft skills across roles.
+
+        Returns:
+            Sorted list of unique soft skills from master-cv
+        """
+        if self._candidate is None:
+            self.load()
+
+        skills = set()
+        for role in self._candidate.roles:
+            for skill in role.soft_skills:
+                skills.add(skill.strip())
+
+        return sorted(skills, key=str.lower)
+
+    def get_skill_whitelist(self) -> Dict[str, List[str]]:
+        """
+        Get all skills as a whitelist for CV generation.
+
+        This prevents hallucinations by ensuring only skills that
+        actually appear in the master-cv are included.
+
+        Returns:
+            Dict with 'hard_skills' and 'soft_skills' lists
+        """
+        return {
+            "hard_skills": self.get_all_hard_skills(),
+            "soft_skills": self.get_all_soft_skills(),
+        }
+
+    def skill_exists(self, skill: str) -> bool:
+        """
+        Check if a skill exists in the master-cv.
+
+        Used for validation to prevent hallucinated skills.
+
+        Args:
+            skill: Skill name to check (case-insensitive)
+
+        Returns:
+            True if skill exists in hard_skills or soft_skills
+        """
+        skill_lower = skill.lower()
+        all_skills = self.get_all_hard_skills() + self.get_all_soft_skills()
+        return any(s.lower() == skill_lower for s in all_skills)
