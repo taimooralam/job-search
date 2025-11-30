@@ -1430,3 +1430,76 @@ POST /api/jobs/{id}/cv-editor/pdf
 - ✅ `frontend/app.py` (API unchanged - backward compatible)
 - ✅ `frontend/templates/job_detail.html` (UI unchanged)
 - ✅ `frontend/static/js/cv-editor.js` (client logic unchanged)
+
+---
+
+## Planned Enhancements (2025-11-29)
+
+> See `plans/missing.md` section "New Requirements (2025-11-29)" for full tracking.
+
+### Observability: Structured Logging
+
+**Status**: Planned
+**Plan**: `plans/structured-logging-implementation.md`
+
+Replace `print()` with structured JSON logging across all pipeline layers to enable:
+- Real-time frontend status button updates
+- Production debugging with log aggregation
+- LangSmith trace correlation (future)
+
+**Event Format**:
+```json
+{
+  "timestamp": "2025-11-29T10:30:45.123Z",
+  "event": "layer_complete",
+  "layer": 4,
+  "layer_name": "opportunity_mapper",
+  "status": "success",
+  "duration_ms": 4500
+}
+```
+
+### AI Agent Fallback Infrastructure
+
+**Status**: Planned
+**Plan**: `plans/ai-agent-fallback-implementation.md`
+**Reference**: `plans/firecrawl-contact-discovery-solution.md` (Option B)
+
+When FireCrawl contact discovery fails, fall back to LLM-powered synthetic contact generation:
+
+```
+FireCrawl Search → [Failed?] → AI Fallback Agent → Synthetic Contacts
+                       ↓
+              Config: ENABLE_FIRECRAWL_FALLBACK=true
+```
+
+### CV Editor Improvements
+
+**WYSIWYG Consistency** (`plans/cv-editor-wysiwyg-consistency.md`):
+- Unify CSS between editor (`.ProseMirror`) and display (`#cv-markdown-display`)
+- Create shared `.cv-content` class for consistent rendering
+
+**Margin Presets** (like MS Word):
+- Add "Narrow" (0.5"), "Normal" (1.0"), "Wide" (1.5") presets
+- Keep existing 0.25" increments as "Custom" option
+
+### Prompt Optimization
+
+**Status**: Comprehensive plan exists
+**Plan**: `plans/prompt-optimization-plan.md`
+**Metrics**: `reports/prompt-ab/integration-final.md`
+
+Improve prompts for layers not meeting quality thresholds:
+- Layer 4: Specificity (6.8→7.0), Grounding (7.2→8.0)
+- Layer 6a: Hallucinations (8.5→9.0)
+- Layer 6b: All metrics below threshold
+
+### Job Iframe Viewer
+
+**Status**: Planned
+**Plan**: `plans/job-iframe-viewer-implementation.md`
+
+Collapsible iframe showing original job posting URL within job detail page:
+- Side-by-side comparison with generated CV
+- PDF export of job posting (bonus)
+- Fallback for sites that block iframes

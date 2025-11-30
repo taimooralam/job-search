@@ -6,13 +6,7 @@ RESOLVED (2025-11-28):
 
 OPEN/PENDING:
 
-4. Update the prompts for opportunity mapper according to Layer 3 – Opportunity Mapper
-
-5. Update cover letter generation based on the prompting guide.
-
 5.9 Pick up the entire CV will all job descriptions, not only the last two companies
-
-6. The CV generation needs a major overhaul because of how to interpret the master-cv.md, how to chose text, how to create nuance for the different roles, and how to role play and use prompts.
 
 7. Create an iframe to open the job directly in the iframe in a collapsible or a better UX. Have a button to export to pdf for the entire iframe as a bonus.
 
