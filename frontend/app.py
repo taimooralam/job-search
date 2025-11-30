@@ -664,6 +664,65 @@ def get_stats():
     })
 
 
+@app.route("/api/dashboard/application-stats", methods=["GET"])
+@login_required
+def get_application_stats():
+    """
+    Get job application statistics for dashboard progress bars.
+
+    Returns counts of jobs with status='applied' broken down by time periods:
+    - Today (since midnight UTC)
+    - This week (last 7 days)
+    - This month (last 30 days)
+    - Total all time
+
+    Returns:
+        JSON with application counts
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    from datetime import datetime, timedelta
+
+    now = datetime.utcnow()
+
+    # Calculate time boundaries
+    today_start = datetime(now.year, now.month, now.day)  # Midnight today UTC
+    week_start = now - timedelta(days=7)
+    month_start = now - timedelta(days=30)
+
+    # Base query: status = 'applied' and pipeline_run_at exists
+    base_query = {
+        "status": "applied",
+        "pipeline_run_at": {"$exists": True, "$ne": None}
+    }
+
+    # Count jobs applied today
+    today_query = {**base_query, "pipeline_run_at": {"$gte": today_start}}
+    today_count = collection.count_documents(today_query)
+
+    # Count jobs applied this week (last 7 days)
+    week_query = {**base_query, "pipeline_run_at": {"$gte": week_start}}
+    week_count = collection.count_documents(week_query)
+
+    # Count jobs applied this month (last 30 days)
+    month_query = {**base_query, "pipeline_run_at": {"$gte": month_start}}
+    month_count = collection.count_documents(month_query)
+
+    # Count total jobs applied (all time)
+    total_count = collection.count_documents({"status": "applied"})
+
+    return jsonify({
+        "success": True,
+        "stats": {
+            "today": today_count,
+            "week": week_count,
+            "month": month_count,
+            "total": total_count
+        }
+    })
+
+
 @app.route("/api/health", methods=["GET"])
 @login_required
 def get_health():
@@ -798,6 +857,19 @@ def pagination_partial():
         current_direction=request.args.get("direction", "desc"),
         current_query=request.args.get("query", ""),
         current_page_size=int(request.args.get("page_size", 10)),
+    )
+
+
+@app.route("/partials/application-stats", methods=["GET"])
+@login_required
+def application_stats_partial():
+    """HTMX partial: Return application statistics progress bars."""
+    response = get_application_stats()
+    data = response.get_json()
+
+    return render_template(
+        "partials/application_stats.html",
+        stats=data.get("stats", {"today": 0, "week": 0, "month": 0, "total": 0})
     )
 
 
