@@ -6,6 +6,7 @@ Today's vertical slice: Layers 2, 3, 4, 6, 7 (skipping Layer 5 - People Mapper).
 """
 
 import os
+import time
 import uuid
 try:
     from langsmith import uuid7
@@ -17,6 +18,7 @@ from langgraph.graph import StateGraph, END
 from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import setup_logging, get_logger
+from src.common.structured_logger import get_structured_logger, StructuredLogger
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -128,9 +130,14 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     # Generate metadata
     run_id = str(uuid7()) if uuid7 else str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat() + 'Z'
+    pipeline_start_time = time.time()
 
     # Create run-specific logger
     run_logger = get_logger(__name__, run_id=run_id)
+
+    # Create structured logger for JSON events
+    job_id = job_data.get("job_id", "")
+    struct_logger = get_structured_logger(job_id)
 
     run_logger.info("="*70)
     run_logger.info("STARTING JOB INTELLIGENCE PIPELINE")
@@ -140,6 +147,13 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     run_logger.info(f"Run ID: {run_id}")
     run_logger.info(f"Started: {created_at}")
     run_logger.info("="*70)
+
+    # Emit structured pipeline_start event
+    struct_logger.pipeline_start(metadata={
+        "job_title": job_data.get("title"),
+        "company": job_data.get("company"),
+        "run_id": run_id,
+    })
 
     # Initialize state
     initial_state: JobState = {
@@ -208,8 +222,26 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
             final_state["status"] = "completed"
             run_logger.info("Pipeline completed successfully")
 
+        # Emit structured completion event
+        pipeline_duration = int((time.time() - pipeline_start_time) * 1000)
+        struct_logger.pipeline_complete(
+            status=final_state["status"],
+            duration_ms=pipeline_duration,
+            metadata={
+                "fit_score": final_state.get("fit_score"),
+                "errors_count": len(final_state.get("errors", [])),
+            },
+        )
+
     except Exception as e:
         run_logger.exception(f"Pipeline failed with exception: {e}")
+        # Emit structured error event
+        pipeline_duration = int((time.time() - pipeline_start_time) * 1000)
+        struct_logger.pipeline_complete(
+            status="error",
+            duration_ms=pipeline_duration,
+            metadata={"error": str(e)},
+        )
         # Create minimal final state with error
         final_state = initial_state.copy()
         final_state["errors"] = [f"Pipeline exception: {str(e)}"]
