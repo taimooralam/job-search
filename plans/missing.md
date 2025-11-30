@@ -32,7 +32,7 @@
 - [x] PDF Margins WYSIWYG via CSS @page ✅ **COMPLETED 2025-11-28** (Changed from parameter-based to CSS-based margin rendering)
 - [x] Playwright Async API Conversion ✅ **COMPLETED 2025-11-28** (Converted to async API for FastAPI compatibility)
 - [x] MongoDB URI Standardization ✅ **COMPLETED 2025-11-28** (Changed MONGO_URI to MONGODB_URI for consistency)
-- [ ] Export PDF Button Fix (Detail Page) ⚠️ **NOT FIXED** (Previously marked complete 2025-11-28 but user reports still broken - needs re-investigation)
+- [x] Export PDF Button Fix (Detail Page) ✅ **FIXED & VERIFIED 2025-11-30** (Enhanced error handling, logging, and user feedback via toast notifications)
 - [x] CV Rich Text Editor Phase 5.1 - Page Break Visualization ✅ **COMPLETED 2025-11-28** (32 unit tests passing; visual indicators for page breaks in editor and detail page; commit c81c1ff4)
 - [x] Phase 6: PDF Service Separation ✅ **COMPLETED 2025-11-28** (56 unit tests passing; separated PDF generation into dedicated microservice with Playwright/Chromium; runner proxies to PDF service; ready for deployment)
 - [x] PDF Generation Bug Fixes (2025-11-28)
