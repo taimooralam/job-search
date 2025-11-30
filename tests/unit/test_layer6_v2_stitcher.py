@@ -162,12 +162,16 @@ class TestStitchedRole:
         )
         md = role.to_markdown()
 
-        assert "### Test Company" in md
-        assert "**Technical Lead**" in md
+        # GAP-006: Now outputs plain text, not markdown
+        assert "Test Company" in md
+        assert "Technical Lead" in md
         assert "Munich, DE" in md
         assert "2020–Present" in md
         assert "• Led team of engineers" in md
         assert "• Built platform" in md
+        # Verify no markdown markers
+        assert "###" not in md
+        assert "**" not in md
 
 
 # ===== TESTS: StitchedCV =====
@@ -192,7 +196,7 @@ class TestStitchedCV:
         assert cv.total_word_count == 8
 
     def test_to_markdown(self):
-        """Converts full CV to markdown."""
+        """Converts full CV to plain text (GAP-006: no markdown)."""
         role1 = StitchedRole(
             role_id="1", company="Company A", title="Lead", location="Munich",
             period="2020", bullets=["Achievement 1"],
@@ -205,10 +209,14 @@ class TestStitchedCV:
         cv = StitchedCV(roles=[role1, role2])
         md = cv.to_markdown()
 
-        assert "### Company A" in md
-        assert "### Company B" in md
+        # GAP-006: Now outputs plain text, not markdown
+        assert "Company A" in md
+        assert "Company B" in md
         assert "Achievement 1" in md
         assert "Achievement 2" in md
+        # Verify no markdown markers
+        assert "###" not in md
+        assert "**" not in md
 
 
 # ===== TESTS: DeduplicationResult =====
@@ -457,12 +465,12 @@ class TestFullStitching:
 # ===== TESTS: Markdown Output =====
 
 class TestMarkdownOutput:
-    """Test markdown output generation."""
+    """Test markdown output generation (GAP-006: now plain text)."""
 
     def test_generates_valid_markdown(
         self, sample_role_bullets_1, sample_role_bullets_2
     ):
-        """Generates valid markdown from stitched CV."""
+        """Generates valid plain text from stitched CV (GAP-006: no markdown)."""
         result = stitch_all_roles([
             sample_role_bullets_1,
             sample_role_bullets_2,
@@ -470,11 +478,13 @@ class TestMarkdownOutput:
 
         md = result.to_markdown()
 
-        # Check structure
-        assert md.count("###") == 2  # Two role headers
+        # GAP-006: Check structure without markdown markers
         assert "Current Company" in md
         assert "Previous Company" in md
         assert "•" in md  # Bullet points
+        # Verify no markdown markers
+        assert "###" not in md
+        assert "**" not in md
 
     def test_roles_in_correct_order(
         self, sample_role_bullets_1, sample_role_bullets_2, sample_role_bullets_3

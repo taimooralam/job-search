@@ -318,25 +318,28 @@ class TestCVAssembly:
             sample_candidate_data,
         )
 
-        # Check header
-        assert "# Test Candidate" in cv_text
+        # Check header (GAP-006: now plain text, no markdown)
+        assert "Test Candidate" in cv_text
         assert "test@example.com" in cv_text
 
-        # Check profile
-        assert "## Profile" in cv_text
+        # Check profile (GAP-006: uppercase section headers)
+        assert "PROFILE" in cv_text
         assert "Engineering leader" in cv_text
 
         # Check skills
-        assert "## Core Competencies" in cv_text
+        assert "CORE COMPETENCIES" in cv_text
         assert "Leadership" in cv_text
 
         # Check experience
-        assert "## Professional Experience" in cv_text
+        assert "PROFESSIONAL EXPERIENCE" in cv_text
         assert "Current Corp" in cv_text
         assert "Previous Inc" in cv_text
 
         # Check education
-        assert "## Education" in cv_text
+        assert "EDUCATION" in cv_text
+
+        # Verify no markdown markers (GAP-006)
+        assert "**" not in cv_text
 
 
 # ===== TESTS: Reasoning Summary =====
@@ -347,7 +350,7 @@ class TestReasoningSummary:
     def test_builds_reasoning_for_passing_cv(
         self, sample_grade_result, sample_stitched_cv, sample_header_output
     ):
-        """Builds reasoning for passing CV."""
+        """Builds reasoning for passing CV (GAP-006: plain text format)."""
         generator = CVGeneratorV2()
 
         reasoning = generator._build_reasoning(
@@ -357,10 +360,13 @@ class TestReasoningSummary:
             sample_header_output,
         )
 
-        assert "CV Generation V2 Reasoning" in reasoning
+        # GAP-006: Now uses uppercase headers, no markdown
+        assert "CV GENERATION V2 REASONING" in reasoning
         assert "Quality Score" in reasoning
         assert "Passed" in reasoning
         assert "Dimension Scores" in reasoning
+        # Verify no markdown markers
+        assert "**" not in reasoning
 
     def test_builds_reasoning_with_improvement(
         self, sample_stitched_cv, sample_header_output
