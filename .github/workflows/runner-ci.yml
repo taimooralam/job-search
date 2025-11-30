@@ -144,7 +144,7 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "master-cv.md,docker-compose.runner.yml"
+          source: "master-cv.md,docker-compose.runner.yml,data/master-cv"
           target: "/root/job-runner/"
 
       - name: Deploy to VPS
