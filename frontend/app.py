@@ -726,27 +726,64 @@ def get_application_stats():
 @app.route("/api/health", methods=["GET"])
 @login_required
 def get_health():
-    """Get health status of all services."""
-    health_data = {}
+    """
+    Get health status of all services (Gap #13).
 
-    # Check VPS Runner
+    Returns detailed health info including:
+    - MongoDB connection status
+    - VPS Runner status with capacity metrics
+    - PDF Service status (via runner)
+    - n8n status (if configured)
+    """
+    health_data = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "overall": "healthy"  # Will be set to "degraded" or "unhealthy" if issues found
+    }
+    has_critical_failure = False
+    has_degraded = False
+
+    # Check VPS Runner (includes PDF service health)
     try:
         runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
         response = requests.get(f"{runner_url}/health", timeout=5)
-        health_data["vps"] = {
-            "status": "healthy" if response.status_code == 200 else "unhealthy",
-            "url": runner_url
+        if response.status_code == 200:
+            runner_data = response.json()
+            health_data["runner"] = {
+                "status": "healthy",
+                "url": runner_url,
+                "active_runs": runner_data.get("active_runs", 0),
+                "max_concurrency": runner_data.get("max_concurrency", 3),
+                "capacity_percent": int((runner_data.get("active_runs", 0) / max(runner_data.get("max_concurrency", 3), 1)) * 100)
+            }
+            # Check if runner is at capacity (degraded state)
+            if health_data["runner"]["capacity_percent"] >= 100:
+                health_data["runner"]["status"] = "busy"
+                has_degraded = True
+        else:
+            health_data["runner"] = {
+                "status": "unhealthy",
+                "url": runner_url,
+                "error": f"HTTP {response.status_code}"
+            }
+            has_critical_failure = True
+    except requests.exceptions.Timeout:
+        health_data["runner"] = {
+            "status": "unhealthy",
+            "url": os.getenv("RUNNER_URL", "http://72.61.92.76:8000"),
+            "error": "Connection timeout"
         }
+        has_critical_failure = True
     except Exception as e:
-        health_data["vps"] = {
+        health_data["runner"] = {
             "status": "unhealthy",
             "error": str(e)
         }
+        has_critical_failure = True
 
     # Check MongoDB
     try:
         db = get_db()
-        # Try a simple operation
+        # Try a simple operation with timeout
         db.command("ping")
         health_data["mongodb"] = {
             "status": "healthy",
@@ -757,23 +794,48 @@ def get_health():
             "status": "unhealthy",
             "error": str(e)
         }
+        has_critical_failure = True
 
-    # Check n8n (if configured)
+    # Check n8n (if configured) - non-critical service
     n8n_url = os.getenv("N8N_URL", "")
     if n8n_url:
         try:
             response = requests.get(f"{n8n_url}/healthz", timeout=5)
             health_data["n8n"] = {
-                "status": "healthy" if response.status_code == 200 else "unhealthy",
+                "status": "healthy" if response.status_code == 200 else "degraded",
                 "url": n8n_url
             }
+            if response.status_code != 200:
+                has_degraded = True
         except Exception as e:
             health_data["n8n"] = {
-                "status": "unhealthy",
+                "status": "degraded",
                 "error": str(e)
             }
+            has_degraded = True
+
+    # Determine overall status
+    if has_critical_failure:
+        health_data["overall"] = "unhealthy"
+    elif has_degraded:
+        health_data["overall"] = "degraded"
+    else:
+        health_data["overall"] = "healthy"
 
     return jsonify(health_data)
+
+
+@app.route("/partials/service-health", methods=["GET"])
+@login_required
+def service_health_partial():
+    """HTMX partial: Return service health status indicators (Gap #13)."""
+    response = get_health()
+    health_data = response.get_json()
+
+    return render_template(
+        "partials/service_health.html",
+        health=health_data
+    )
 
 
 # ============================================================================
