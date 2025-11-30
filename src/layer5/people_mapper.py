@@ -1378,14 +1378,17 @@ Return the three letters separated by \"---\" lines.
             }
 
         except Exception as e:
-            # Fallback: generate minimal outreach
+            # Fallback: generate minimal outreach (GAP-011: include signature)
             self.logger.warning(f"Outreach generation failed for {contact['name']}: {e}")
+            title = state.get('title', 'role')
+            company = state.get('company', '')
             return {
                 "contact_name": contact["name"],
                 "contact_role": contact["role"],
                 "linkedin_url": contact["linkedin_url"],
-                "linkedin_message": f"Interested in {state.get('title', 'role')} at {state.get('company', '')}",
-                "email_subject": f"Interest in {state.get('title', 'Role')}",
+                # GAP-011: Fallback must include signature and fit within 300 chars
+                "linkedin_message": f"Interested in the {title} role at {company}. Would love to connect and discuss.\nBest. Taimoor Alam",
+                "email_subject": f"Interest in {title}",
                 "email_body": "Generic fallback message",
                 "why_relevant": contact["why_relevant"],
                 "recent_signals": contact.get("recent_signals", []),

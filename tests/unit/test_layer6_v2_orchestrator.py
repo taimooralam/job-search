@@ -268,7 +268,7 @@ class TestCVGeneratorV2Init:
         """Initializes with default configuration."""
         generator = CVGeneratorV2()
         assert generator.passing_threshold == 8.5
-        assert generator.word_budget == 600
+        assert generator.word_budget is None  # None = no limit, include all roles fully
         assert generator.use_llm_grading is True
 
     def test_initializes_with_custom_config(self):
