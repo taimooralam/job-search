@@ -11,6 +11,7 @@
 
 ## Completed (Nov 2025)
 
+- [x] Gap BG-1: Token Budget Enforcement ✅ **COMPLETED 2025-11-30** (TokenTracker, config flags, JobState extensions, thread-safe tracking)
 - [x] All 7 pipeline layers implemented and working
 - [x] Runner service with real pipeline execution
 - [x] JWT authentication and CORS
@@ -47,6 +48,13 @@
 - [x] Frontend Job Detail Enhancements ✅ **COMPLETED 2025-11-30** (Extracted JD display section, collapsible job description, iframe viewer Phase 1, improved PDF error handling)
 - [x] Layer-level Structured Logging ✅ **COMPLETED 2025-11-30** (Commit ed5aadf1; Added LayerContext to all 10 pipeline nodes; layer_start/layer_complete events with timing and metadata)
 - [x] ATS Compliance Research ✅ **COMPLETED 2025-11-30** (Commit ca8e8f81; Research report in reports/ats-compliance-research.md; keyword stuffing analysis and best practice recommendations)
+- [x] Pipeline Progress UI - Backend Implementation ✅ **COMPLETED 2025-11-30** (Gap #25 - Backend Only)
+  - Added `LayerProgress` and `PipelineProgressResponse` models to `runner_service/models.py`
+  - Extended `RunState` with `layers` (list of layer progress) and `current_layer` fields
+  - Added `/jobs/{run_id}/progress` endpoint to `runner_service/app.py` for real-time progress polling
+  - Added frontend proxy route `/jobs/<run_id>/progress` to `frontend/runner.py`
+  - Fixed missing `os` import in `executor.py`
+  - **Note**: Backend API complete; frontend UI components (progress bar, layer indicators) not yet implemented
 
 ---
 
@@ -87,6 +95,11 @@ All agent-specific documentation has been organized into:
   - Added `mock_llm_providers` fixture mocking ChatAnthropic and ChatOpenAI
   - All 220 unit tests pass without real API calls (188 Phase 1-4 + 32 Phase 5.1)
   - Added 30+ new tests for CV editing API and HTML CV generator
+- [x] Config Validation ✅ **COMPLETED 2025-11-30** (Gap #1)
+  - Created `runner_service/config.py` with Pydantic Settings for centralized configuration validation
+  - Updated `app.py`, `executor.py`, `auth.py` to use centralized config instead of scattered os.getenv() calls
+  - Added pydantic-settings to requirements.txt
+  - Provides: Automatic env var validation, type checking, default values, documentation
 - [ ] Integration tests not in GitHub Actions CI
 - [ ] No coverage tracking
 - [ ] E2E Tests Disabled (2025-11-28)
@@ -219,9 +232,249 @@ All agent-specific documentation has been organized into:
 - [ ] Add cover letter PDF endpoint (future feature)
 - [ ] Add dossier PDF endpoint (future feature)
 
+### Dashboard Statistics & Monitoring (NEW - 2025-11-30)
+
+#### Dashboard Monitoring Feature Suite (NEW - PENDING)
+
+**Status**: Not started
+**Priority**: Medium (User insight and operational monitoring)
+**Total Estimated Duration**: 12-16 hours
+**Plan Document**: `plans/dashboard-monitoring-implementation.md` (to be created)
+
+**Overview**: Comprehensive dashboard enhancements providing real-time visibility into job application progress, service health, and API budget consumption. These features enhance user awareness and operational control.
+
+##### #12 Job Application Progress Bars (Core Dashboard Enhancement)
+
+**Status**: Not started
+**Priority**: High (Primary user-facing feature)
+**Estimated Duration**: 3-4 hours
+**Complexity**: Medium
+
+**Description**:
+Add small progress indicators at the top of the dashboard displaying application activity metrics. Shows user their application velocity and progress over time windows.
+
+**Requirements**:
+- [ ] Progress bar for "Jobs applied today" (count)
+- [ ] Progress bar for "Jobs applied this week" (count)
+- [ ] Progress bar for "Jobs applied this month" (count)
+- [ ] Progress bar for "Total jobs applied" (cumulative count)
+- [ ] Each bar shows: current count + max capacity or percentage
+- [ ] Color-coded based on progress (0-25% gray, 25-75% blue, 75%+ green)
+- [ ] Update in real-time as pipeline completes new applications
+- [ ] Responsive design (full width on mobile, compact on desktop)
+
+**Technical Approach**:
+- Query MongoDB `level-2` collection for jobs with `application_status: "completed"`
+- Aggregate by created date (today, last 7 days, last 30 days)
+- Display as card/box layout with bars and counts
+- Backend endpoint: `GET /api/dashboard/application-stats` (aggregation)
+- Frontend component: React/vanilla JS progress bar widget
+- Auto-refresh every 60 seconds or on pipeline completion event
+
+**Files to Create/Modify**:
+- `backend/dashboard_stats.py` (NEW) - Aggregation logic
+- `runner_service/app.py` - Add `/api/dashboard/application-stats` endpoint
+- `frontend/templates/dashboard.html` - Add progress bars section
+- `frontend/static/js/dashboard.js` (NEW) - Progress bar rendering
+- `frontend/app.py` - Proxy `/api/dashboard/application-stats`
+- `tests/unit/test_dashboard_stats.py` (NEW) - Unit tests
+
+**Dependencies**:
+- MongoDB aggregation pipeline (built-in)
+- No external APIs required
+
+##### #13 Service Health Status Indicator (Operational Monitoring)
+
+**Status**: Not started
+**Priority**: High (Operational visibility)
+**Estimated Duration**: 2-3 hours
+**Complexity**: Low
+
+**Description**:
+Real-time health indicator showing connectivity status of pdf-service endpoint. Provides operational visibility and quick diagnosis of service issues.
+
+**Requirements**:
+- [ ] Display health status badge/indicator on dashboard
+- [ ] Show connectivity status: healthy (green), unhealthy (red), degraded (yellow)
+- [ ] Include last check timestamp
+- [ ] Add hover tooltip with detailed status information
+- [ ] Check pdf-service health endpoint (`GET /health` on pdf-service:8001)
+- [ ] Poll health status every 30 seconds
+- [ ] Graceful fallback if pdf-service unreachable
+- [ ] Optional: Show response time (latency)
+
+**Technical Approach**:
+- Runner service extends `/health` endpoint to include pdf-service status
+- Frontend polls `/api/system/health` endpoint every 30 seconds
+- Cache health status for 30 seconds (prevent excessive polling)
+- Color indicator: Green (healthy), Red (unhealthy), Yellow (degraded, slow response)
+- Show service name and last check time in tooltip
+
+**Files to Create/Modify**:
+- `runner_service/app.py` - Add `/api/system/health` endpoint with pdf-service check
+- `runner_service/health_checker.py` (NEW) - Health check logic
+- `frontend/templates/dashboard.html` - Add health status indicator widget
+- `frontend/static/js/health-monitor.js` (NEW) - Polling logic
+- `frontend/app.py` - Proxy `/api/system/health`
+- `tests/unit/test_health_checker.py` (NEW) - Unit tests
+
+**Dependencies**:
+- No external APIs
+
+**Related**:
+- Phase 6: PDF Service Separation (provides health endpoint)
+
+##### #14 API Budget Monitoring (Cost Control)
+
+**Status**: Not started
+**Priority**: Medium (Cost awareness)
+**Estimated Duration**: 3-4 hours
+**Complexity**: Medium
+
+**Description**:
+Display available budgets for third-party APIs (OpenRouter, Anthropic, OpenAI). Provides cost visibility and prevents budget overruns. Shows current balance and usage estimates.
+
+**Requirements**:
+- [ ] Display budget cards for: OpenRouter, Anthropic, OpenAI
+- [ ] Show available budget remaining (in dollars or tokens)
+- [ ] Show budget status: healthy (green, >50%), warning (yellow, 25-50%), critical (red, <25%)
+- [ ] Include usage metadata: last API call, estimate cost per request
+- [ ] Optional: Show remaining calls estimate at current burn rate
+- [ ] Manual refresh button to check latest balance
+- [ ] Configurable budget limits per API (env var)
+- [ ] Update every 6 hours or on-demand
+
+**Technical Approach**:
+- Store budget configuration in env vars: `OPENROUTER_BUDGET`, `ANTHROPIC_BUDGET`, `OPENAI_BUDGET`
+- Track API usage in MongoDB `api_usage` collection (new):
+  - `{api, timestamp, tokens_used, estimated_cost, endpoint}`
+- Runner service endpoint: `GET /api/dashboard/budget-status`
+- Aggregate last 24h usage, calculate burn rate
+- Frontend polling or manual refresh
+- No real API calls needed (read from config + aggregated usage)
+
+**Files to Create/Modify**:
+- `runner_service/budget_tracker.py` (NEW) - Budget aggregation
+- `runner_service/app.py` - Add `/api/dashboard/budget-status` endpoint
+- `frontend/templates/dashboard.html` - Add budget cards section
+- `frontend/static/js/budget-monitor.js` (NEW) - Budget rendering
+- `frontend/app.py` - Proxy `/api/dashboard/budget-status`
+- `src/common/config.py` - Add budget env vars
+- `.env.example` - Document budget config options
+- `tests/unit/test_budget_tracker.py` (NEW) - Unit tests
+
+**MongoDB Schema Addition**:
+```javascript
+// NEW: api_usage collection
+{
+  _id: ObjectId,
+  api: "openrouter" | "anthropic" | "openai",
+  timestamp: ISODate("2025-11-30T..."),
+  tokens_used: 1500,
+  estimated_cost: 0.015,  // in USD
+  endpoint: "/api/layers/cv-generation",
+  job_id: "..."
+}
+```
+
+**Configuration**:
+```bash
+OPENROUTER_BUDGET=50.00           # USD
+ANTHROPIC_BUDGET=100.00
+OPENAI_BUDGET=25.00
+BUDGET_WARNING_THRESHOLD=0.25     # Alert at 25%
+BUDGET_CRITICAL_THRESHOLD=0.10    # Red alert at 10%
+```
+
+**Dependencies**:
+- MongoDB aggregation pipeline
+- No external APIs (works offline)
+
+##### #15 Budget Usage Graphs (Trend Analysis)
+
+**Status**: Not started
+**Priority**: Medium (Advanced monitoring)
+**Estimated Duration**: 4-5 hours
+**Complexity**: High
+
+**Description**:
+Mini sparkline/chart visualizations showing API budget usage trends over time. Provides trend analysis and helps identify cost spikes or gradual overruns.
+
+**Requirements**:
+- [ ] Token usage over time (7-day rolling window)
+- [ ] Cost trends per provider (stacked area chart)
+- [ ] Usage rate patterns (daily/weekly heatmap)
+- [ ] Peak usage indicators (highlight high-cost days)
+- [ ] Hover tooltip showing exact values
+- [ ] Export option (CSV) for cost analysis
+- [ ] Responsive on mobile (simplified view)
+- [ ] Real-time updates (cache 1 hour)
+
+**Technical Approach**:
+- Backend aggregation: Group `api_usage` by (api, hour/day)
+- Spark line library: Chart.js, Recharts, or Plotly (lightweight)
+- Frontend endpoint: `GET /api/dashboard/budget-trends?days=7&provider=openrouter`
+- Aggregate data at different time scales: hourly (1 day), daily (7 days), weekly (30 days)
+- Data format:
+  ```json
+  {
+    "provider": "openrouter",
+    "period": "daily",
+    "data": [
+      {"date": "2025-11-30", "tokens": 15000, "cost": 0.15},
+      {"date": "2025-11-29", "tokens": 12000, "cost": 0.12}
+    ]
+  }
+  ```
+
+**Files to Create/Modify**:
+- `runner_service/trend_analyzer.py` (NEW) - Trend calculation
+- `runner_service/app.py` - Add `/api/dashboard/budget-trends` endpoint
+- `frontend/templates/dashboard.html` - Add chart containers
+- `frontend/static/js/budget-charts.js` (NEW) - Chart rendering (Chart.js or similar)
+- `frontend/static/css/dashboard.css` (NEW) - Chart styling
+- `frontend/app.py` - Proxy `/api/dashboard/budget-trends`
+- `tests/unit/test_trend_analyzer.py` (NEW) - Unit tests
+- `requirements.txt` - Add chart library
+
+**Chart Library Options**:
+- **Chart.js** (lightweight, simple, good for sparklines)
+- **Recharts** (React-based, responsive, feature-rich)
+- **Plotly** (interactive, detailed, heavier)
+- **Recommendation**: Chart.js for simplicity and low overhead
+
+**Data Aggregation Strategy**:
+```python
+# Example: 7-day usage summary
+SELECT
+  DATE(timestamp) as date,
+  api,
+  SUM(tokens_used) as daily_tokens,
+  SUM(estimated_cost) as daily_cost
+FROM api_usage
+WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+GROUP BY DATE(timestamp), api
+ORDER BY date DESC
+```
+
+**Dependencies**:
+- Chart.js library (lightweight, ~30KB)
+- MongoDB aggregation pipeline
+- No external APIs
+
+**Success Criteria for Budget Features (#13-15)**:
+- [ ] Health indicator shows correct status (passes api calls)
+- [ ] Budget cards display correctly with correct color coding
+- [ ] Graph trends show accurate cost/token data
+- [ ] All data updates within 1 hour
+- [ ] Mobile responsive (single column on <768px)
+- [ ] Unit tests for aggregation logic (90%+ coverage)
+- [ ] Performance: Dashboard loads in <2 seconds
+- [ ] No data leaks (budgets visible to owner only)
+
 ### Frontend & UI Enhancements
 
-#### Runner Terminal Copy Button (NEW - PENDING)
+#### Runner Terminal Copy Button (PENDING)
 
 **Status**: Not started
 **Priority**: Medium (UX enhancement)
