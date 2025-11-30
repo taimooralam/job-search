@@ -19,6 +19,7 @@ from src.common.config import Config
 from src.common.state import JobState
 from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
+from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -197,16 +198,41 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "run_id": run_id,
         "created_at": created_at,
         "errors": [],
-        "status": "processing"
+        "status": "processing",
+        "trace_url": None,  # OB-3: LangSmith trace URL
     }
 
     # Create and run workflow
     app = create_workflow()
 
-    # Execute workflow
+    # Log tracing configuration (OB-3)
+    if is_tracing_enabled():
+        run_logger.info("LangSmith tracing enabled")
+        log_trace_info(run_id, job_id)
+    else:
+        run_logger.info("LangSmith tracing disabled (set LANGCHAIN_TRACING_V2=true to enable)")
+
+    # Execute workflow with distributed tracing (OB-3)
+    trace_url = None
     try:
         run_logger.info("Executing LangGraph workflow")
-        final_state = app.invoke(initial_state)
+
+        # Wrap execution with TracingContext for LangSmith integration
+        with TracingContext(
+            run_id=run_id,
+            job_id=job_id,
+            tags=[f"company:{job_data.get('company', 'unknown')}", f"source:{job_data.get('source', 'manual')}"],
+            metadata={
+                "job_title": job_data.get("title"),
+                "company": job_data.get("company"),
+                "job_url": job_data.get("url"),
+            }
+        ) as trace:
+            final_state = app.invoke(initial_state)
+            trace_url = trace.trace_url
+
+        # Store trace URL in final state
+        final_state["trace_url"] = trace_url
 
         # Update status based on errors
         if final_state.get("errors"):
@@ -230,6 +256,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
             metadata={
                 "fit_score": final_state.get("fit_score"),
                 "errors_count": len(final_state.get("errors", [])),
+                "trace_url": trace_url,  # OB-3: Include trace URL in structured log
             },
         )
 
@@ -240,12 +267,13 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         struct_logger.pipeline_complete(
             status="error",
             duration_ms=pipeline_duration,
-            metadata={"error": str(e)},
+            metadata={"error": str(e), "trace_url": trace_url},
         )
         # Create minimal final state with error
         final_state = initial_state.copy()
         final_state["errors"] = [f"Pipeline exception: {str(e)}"]
         final_state["status"] = "failed"
+        final_state["trace_url"] = trace_url
         raise
 
     # Write final state to JSON file for runner service to read
@@ -275,6 +303,8 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     run_logger.info(f"Fit Score: {final_state.get('fit_score')}/100")
     run_logger.info(f"Drive Folder: {final_state.get('drive_folder_url')}")
     run_logger.info(f"Sheets Row: {final_state.get('sheet_row_id')}")
+    if final_state.get("trace_url"):
+        run_logger.info(f"LangSmith Trace: {final_state.get('trace_url')}")
 
     if final_state.get("errors"):
         run_logger.warning("Warnings/Errors:")
