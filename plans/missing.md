@@ -850,25 +850,44 @@ Visual page break indicators in CV editor and detail page showing exactly where 
 - **Files**: `src/layer5/people_mapper.py`
 
 #### #11 Job Iframe Viewer
-**Status**: Phase 1 Complete ✅ **COMPLETED 2025-11-30**
+**Status**: Phase 1-2 Complete ✅ **COMPLETED 2025-11-30**
 **Priority**: Low
-- [x] Collapsible iframe showing original job posting URL (Option B: expandable section)
-- [x] Loading state with spinner animation
-- [x] Error handling for X-Frame-Options blocking with user-friendly fallback message
-- [x] "Open in New Tab" button as escape hatch for blocked sites
-- [ ] PDF export button for iframe content (Phase 3 - future enhancement)
+- [x] Phase 1: Collapsible iframe showing original job posting URL (Option B: expandable section) ✅ COMPLETED
+- [x] Phase 1: Loading state with spinner animation ✅ COMPLETED
+- [x] Phase 1: Error handling for X-Frame-Options blocking with user-friendly fallback message ✅ COMPLETED
+- [x] Phase 1: "Open in New Tab" button as escape hatch for blocked sites ✅ COMPLETED
+- [x] Phase 2: PDF export button for iframe content ✅ **COMPLETED 2025-11-30** (Commits db1907a7-5df4907d)
+- [ ] Phase 3: Future enhancements (full page capture, annotations, etc.)
 - **Plan document**: `plans/job-iframe-viewer-implementation.md`
-- **Files**: `frontend/templates/job_detail.html`
+- **Files**:
+  - `frontend/templates/job_detail.html` (iframe viewer + export button)
+  - `pdf_service/app.py` (new `/url-to-pdf` endpoint)
+  - `runner_service/app.py` (proxy endpoint `/api/url-to-pdf`)
+  - `frontend/app.py` (proxy endpoint `/api/jobs/<id>/export-page-pdf`)
 - **Implementation Details**:
   - Collapsible section with arrow icon (▶/▼)
   - Timeout detection (3 seconds) for X-Frame-Options blocking
   - Fallback message shown when iframe blocked by security headers
   - Responsive layout (500px height, full width)
   - Security: sandbox attributes for script execution control
+  - Phase 2: Full PDF export of job posting URL via Playwright
+  - Phase 2: Export button generates `job-posting-<company>.pdf`
+  - Phase 2: Integrated with pdf-service architecture for consistency
 
 ### UI/UX
 
-#### #7 Smaller Pipeline Status Buttons
+#### #7 Iframe PDF Export ✅ **COMPLETED 2025-11-30**
+**Status**: RESOLVED (Commit 5df4907d)
+**Priority**: Low (Bonus feature)
+- [x] URL-to-PDF endpoint in pdf_service (/url-to-pdf)
+- [x] Runner proxy endpoint (/api/url-to-pdf)
+- [x] Frontend proxy endpoint (/api/jobs/<id>/export-page-pdf)
+- [x] Export PDF button in iframe viewer
+- [x] Full end-to-end testing (all 5 commits)
+- **Files**: `pdf_service/app.py`, `runner_service/app.py`, `frontend/app.py`, `frontend/templates/job_detail.html`
+- **Commits**: db1907a7, 030913ae, f3c4e45a, f6406865, 5df4907d
+
+#### #7b Smaller Pipeline Status Buttons
 **Status**: Not started
 **Priority**: Low
 - [ ] Reduce size of pipeline status buttons on job detail page

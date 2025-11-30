@@ -1382,6 +1382,12 @@ POST /cv-to-pdf
   Input: {tiptap_json, documentStyles, header, footer, company, role}
   Output: Binary PDF (CV_<Company>_<Title>.pdf)
 
+POST /url-to-pdf (NEW - 2025-11-30)
+  Input: {url}
+  Output: Binary PDF (job-posting-<company>.pdf)
+  Purpose: Render any URL to PDF (used for job posting export)
+  Architecture: Playwright navigates to URL, captures page, renders to PDF
+
 POST /cover-letter-to-pdf (PLANNED)
   Input: {tiptap_json, company}
   Output: Binary PDF (CoverLetter_<Company>.pdf)
@@ -1398,14 +1404,26 @@ POST /api/jobs/{id}/cv-editor/pdf
   Input: {version, content, documentStyles}
   Behavior: Calls pdf-service:/cv-to-pdf, returns PDF
   Output: Binary PDF
+
+POST /api/url-to-pdf (NEW - 2025-11-30)
+  Input: {url}
+  Behavior: Calls pdf-service:/url-to-pdf, returns PDF
+  Output: Binary PDF
+  Purpose: Proxy for converting any URL to PDF
 ```
 
-**Frontend** (unchanged):
+**Frontend** (proxy endpoints):
 
 ```
 POST /api/jobs/{id}/cv-editor/pdf
-  (Calls runner, which calls PDF service)
+  (Calls runner:/api/jobs/{id}/cv-editor/pdf, which calls pdf-service:/cv-to-pdf)
   Output: Binary PDF
+
+POST /api/jobs/{id}/export-page-pdf (NEW - 2025-11-30)
+  Input: {url}
+  Behavior: Calls runner:/api/url-to-pdf, which calls pdf-service:/url-to-pdf
+  Output: Binary PDF
+  Purpose: Export job posting URL as PDF
 ```
 
 ### Implementation Delivered
