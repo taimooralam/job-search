@@ -58,7 +58,7 @@ class CVGeneratorV2:
         self,
         model: Optional[str] = None,
         passing_threshold: float = 8.5,
-        word_budget: int = 600,
+        word_budget: Optional[int] = None,  # None = no limit, include all roles fully
         use_llm_grading: bool = True,
     ):
         """
@@ -67,20 +67,20 @@ class CVGeneratorV2:
         Args:
             model: LLM model to use (default: Config.DEFAULT_MODEL)
             passing_threshold: Grade threshold to pass (default: 8.5)
-            word_budget: Target word count for CV (default: 600)
+            word_budget: Target word count (None = no limit, all roles included)
             use_llm_grading: Use LLM for grading vs rule-based (default: True)
         """
         self._logger = get_logger(__name__)
         self.model = model or Config.DEFAULT_MODEL
         self.passing_threshold = passing_threshold
-        self.word_budget = word_budget
+        self.word_budget = word_budget  # None = unlimited
         self.use_llm_grading = use_llm_grading
 
         # Initialize components
         self.cv_loader = CVLoader()
         self.role_generator = RoleGenerator(model=self.model)
         self.role_qa = RoleQA()
-        self.stitcher = CVStitcher(word_budget=word_budget)
+        self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
         # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations
         # The whitelist is loaded lazily when cv_loader.load() is called
         self.header_generator = HeaderGenerator(model=self.model)  # Whitelist passed in generate()
