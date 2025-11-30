@@ -1637,13 +1637,13 @@
 
                 const indicators = [];
 
-                // VPS Health
-                const vpsClass = data.vps?.status === 'healthy' ? 'health-healthy' :
-                                 data.vps?.status === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
+                // Runner Health (was checking data.vps, but backend returns data.runner)
+                const runnerClass = data.runner?.status === 'healthy' ? 'health-healthy' :
+                                    data.runner?.status === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
                 indicators.push(`
-                    <div class="health-indicator" title="VPS Runner: ${data.vps?.status || 'unknown'}">
-                        <div class="health-dot ${vpsClass}"></div>
-                        <span class="text-gray-700">VPS</span>
+                    <div class="health-indicator" title="Runner: ${data.runner?.status || 'unknown'}">
+                        <div class="health-dot ${runnerClass}"></div>
+                        <span class="text-gray-700">Runner</span>
                     </div>
                 `);
 
