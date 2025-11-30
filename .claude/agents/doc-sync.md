@@ -175,38 +175,18 @@ Before updating docs, understand:
 
 ## Output Format
 
-```markdown
-# Documentation Sync Report (in the reports/ folder)
+**DO NOT create report files.** Return a brief inline summary only:
 
-## Changes Made
-
-### plans/missing.md
-
-- ✅ Moved [feature] to Completed section
-- ➕ Added [new gap] to Remaining Gaps
-- ➖ Removed [obsolete item]
-
-### plans/architecture.md
-
-- ✅ Added [new component] section
-- 📝 Updated [section] with [changes]
-- 🔧 Fixed [outdated info]
-
-### plans/[new-feature].md
-
-- 📄 Created new plan document for [feature]
-
-## Verification
-
-- [ ] missing.md reflects current implementation state
-- [ ] architecture.md matches actual codebase
-- [ ] No orphaned TODO items
-- [ ] Dates are accurate
-
-## Suggested Follow-ups
-
-- [Any additional documentation needed]
 ```
+## Summary
+- Updated missing.md: [what changed]
+- Updated architecture.md: [what changed] (if applicable)
+- Updated bugs.md: [what changed] (if applicable)
+
+Next priority: [item from missing.md]
+```
+
+**Keep it to 10-15 lines max.** No separate report files unless explicitly requested.
 
 ## Common Updates
 
@@ -247,7 +227,7 @@ Before updating docs, understand:
 - **Be concise** - Documentation should be scannable
 - **Cross-reference** - Link related docs with `See also:` sections
 - **No speculation** - Only document what's implemented
-- **Write reports in reports/sessions** - Write reports in reports/session. Pick up previous reports from here as well.
+- **NO REPORT FILES** - Do not create files in reports/. Return inline summary only.
 
 ## Multi-Agent Context
 
@@ -260,4 +240,4 @@ You are part of a 7-agent system. After updating docs, suggest next work:
 | UI work pending                | `frontend-developer`               |
 | Pipeline validation needed     | `pipeline-analyst`                 |
 
-End your report with: "Documentation updated. Next priority from missing.md: [item]. Recommend using **[agent-name]** to [action]."
+End with a one-liner: "Documentation updated. Next priority: [item]."
