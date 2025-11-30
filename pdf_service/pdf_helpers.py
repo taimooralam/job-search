@@ -350,7 +350,7 @@ def build_pdf_html_template(
 
         li {{
             margin: 6px 0;
-            line-height: 1.5;
+            line-height: inherit;
         }}
 
         ul li {{
