@@ -13,14 +13,14 @@
 
 ## Current Blockers (Priority Order)
 
-1. **CRITICAL - Export PDF Button Not Working on Job Detail Page** (NEW 2025-11-28)
+1. **CRITICAL - Export PDF Button Not Working on Job Detail Page** (Persists 2025-11-29)
    - Impact: Users can't export PDF from detail page (core feature broken)
-   - Status: Needs investigation and fix
+   - Status: **NOT FIXED** - Previously marked complete but user confirms still broken
    - Workaround: Use Export PDF button in CV editor side panel (works correctly)
    - Effort: 1-3 hours (depends on root cause)
-   - Plan: `plans/bugs/export-pdf-detail-page.md`
+   - Plan: See `plans/missing.md` section "New Requirements #1"
    - Action: Investigate using browser DevTools (Network, Console), compare with working editor button
-   - Timeline: Fix before Phase 5 release
+   - Timeline: Fix immediately
 
 2. **CRITICAL - Anthropic API credits low**
    - Impact: CV generator may fail in production
@@ -435,3 +435,39 @@ docker compose -f docker-compose.runner.yml up -d --build
 
 # Vercel: Use dashboard to redeploy previous version
 ```
+
+---
+
+## New Requirements (2025-11-29)
+
+> See `plans/missing.md` section "New Requirements (2025-11-29)" for full details.
+
+### Priority Order
+
+| Priority | Requirement | Type | Effort | Status |
+|----------|-------------|------|--------|--------|
+| **P0 - CRITICAL** | #8 Prompt Optimization | Planning | 7 weeks | Plan exists |
+| **P1 - High** | #1 Export CV Button | Bug | 1-3h | Not fixed |
+| **P1 - High** | #4 Line Spacing Editor | Bug | 2-4h | Not started |
+| **P1 - High** | #5 Line Spacing CV Gen | Bug | 2-4h | Not started |
+| **P1 - High** | #9 Missing Companies | Bug | 2-4h | Investigation |
+| **P2 - Medium** | #2 WYSIWYG Consistency | Feature | 4-6h | Not started |
+| **P2 - Medium** | #3 Margin Presets | Feature | 2-3h | Not started |
+| **P2 - Medium** | #6 Structured Logging | Feature | 6-8h | Not started |
+| **P2 - Medium** | #10 AI Agent Fallback | Feature | 8-12h | Not started |
+| **P3 - Low** | #7 Smaller Buttons | UI/UX | 1h | Not started |
+| **P3 - Low** | #11 Job Iframe Viewer | Feature | 4-6h | Not started |
+
+### Immediate Next Steps
+
+1. **Investigate #1** - Export CV button on detail page (user blocking)
+2. **Start #8** - Begin Phase 1 of prompt optimization (test infrastructure)
+3. **Fix #4** - Line spacing in editor CSS
+4. **Fix #5** - Line spacing in CV generation
+
+### Plan Documents to Create
+
+- [ ] `plans/cv-editor-wysiwyg-consistency.md` (#2)
+- [ ] `plans/structured-logging-implementation.md` (#6)
+- [ ] `plans/ai-agent-fallback-implementation.md` (#10)
+- [ ] `plans/job-iframe-viewer-implementation.md` (#11)

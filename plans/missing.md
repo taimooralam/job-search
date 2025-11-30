@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-11-28 (Phase 6 Complete - PDF Service Separation)
+**Last Updated**: 2025-11-30 (CV Gen V2 - Phase 6 Grader + Improver Complete; V2 Enhancements: Languages, Certifications, Locations, Skills)
 
 > **See also**:
 >
@@ -32,7 +32,7 @@
 - [x] PDF Margins WYSIWYG via CSS @page ✅ **COMPLETED 2025-11-28** (Changed from parameter-based to CSS-based margin rendering)
 - [x] Playwright Async API Conversion ✅ **COMPLETED 2025-11-28** (Converted to async API for FastAPI compatibility)
 - [x] MongoDB URI Standardization ✅ **COMPLETED 2025-11-28** (Changed MONGO_URI to MONGODB_URI for consistency)
-- [x] Export PDF Button Fix (Detail Page) ✅ **COMPLETED 2025-11-28** (Fixed non-functional export button on job detail page; commit 401b3fda)
+- [ ] Export PDF Button Fix (Detail Page) ⚠️ **NOT FIXED** (Previously marked complete 2025-11-28 but user reports still broken - needs re-investigation)
 - [x] CV Rich Text Editor Phase 5.1 - Page Break Visualization ✅ **COMPLETED 2025-11-28** (32 unit tests passing; visual indicators for page breaks in editor and detail page; commit c81c1ff4)
 - [x] Phase 6: PDF Service Separation ✅ **COMPLETED 2025-11-28** (56 unit tests passing; separated PDF generation into dedicated microservice with Playwright/Chromium; runner proxies to PDF service; ready for deployment)
 - [x] PDF Generation Bug Fixes (2025-11-28)
@@ -42,6 +42,9 @@
 - [x] Process Button Bug Fix ✅ **COMPLETED 2025-11-28** (Added missing showToast function, improved error handling in processJobDetail(); 22 unit tests passing)
 - [x] CV WYSIWYG Sync Bug Fix ✅ **COMPLETED 2025-11-28** (Replaced markdown rendering with TipTap JSON rendering; added renderCVPreview() and tiptapJsonToHtml() functions; 34 unit tests passing)
 - [x] PDF Service Availability Issue Fix ✅ **COMPLETED 2025-11-28** (Root cause: Old docker-compose.runner.yml on VPS + CI/CD not copying compose file. Fixed by: 1) Updated CI/CD to copy docker-compose.runner.yml to VPS, 2) Added Playwright startup validation in pdf_service/app.py, 3) Increased Playwright wait time from 10s to 20s. Result: 58 tests passing [49 PDF service + 9 runner integration]. See plans/pdf-service-debug-plan.md)
+- [x] CV Generation V2 - Layer 1.4: JD Extractor ✅ **COMPLETED 2025-11-30** (33 unit tests passing; structured JD extraction for role-category-aware CV tailoring. See plans/cv-generation-v2-architecture.md)
+- [x] CV Gen V2 Enhancements ✅ **COMPLETED 2025-11-30** (Languages, Certifications, Locations, Skills expanded to 4 categories; all 161 tests passing; JD keyword integration 79% coverage)
+- [x] Frontend Job Detail Enhancements ✅ **COMPLETED 2025-11-30** (Extracted JD display section, collapsible job description, iframe viewer Phase 1, improved PDF error handling)
 
 ---
 
@@ -745,9 +748,10 @@ Visual page break indicators in CV editor and detail page showing exactly where 
 
 ## Layer-Specific Notes
 
-| Layer           | Status   | Gap                                        |
-| --------------- | -------- | ------------------------------------------ |
-| 2 (Pain Points) | Complete | None                                       |
+| Layer                | Status   | Gap                                        |
+| -------------------- | -------- | ------------------------------------------ |
+| 1.4 (JD Extractor)   | Complete | None - CV Gen V2 Phase 1 complete          |
+| 2 (Pain Points)      | Complete | None                                       |
 | 2.5 (STAR)      | Complete | No embeddings/caching, disabled by default |
 | 3 (Company)     | Complete | None                                       |
 | 3.5 (Role)      | Complete | None                                       |
@@ -755,3 +759,390 @@ Visual page break indicators in CV editor and detail page showing exactly where 
 | 5 (People)      | Complete | FireCrawl off by default, no rate limiting |
 | 6 (Generator)   | Complete | Anthropic credits needed, no .docx         |
 | 7 (Publisher)   | Complete | No Drive/Sheets by default                 |
+
+---
+
+## New Requirements (2025-11-29)
+
+> Added via doc-sync agent. See approved plan: `.claude/plans/cheerful-stirring-capybara.md`
+
+### Bugs
+
+#### #1 Export CV Button on Detail Page
+**Status**: FIXED ✅ **COMPLETED 2025-11-30**
+**Priority**: High
+- [x] Enhanced error handling with console logging and user feedback
+- [x] Improved error messages displayed via toast notifications
+- **Files**: `frontend/templates/job_detail.html`, `frontend/static/js/cv-editor.js`
+
+#### #4 Line Spacing in Editor
+**Status**: Not started
+**Priority**: High
+- [ ] Line spacing CSS (`line-height`) not cascading to all elements in editor
+- [ ] Affects: headings, lists, paragraphs within `.ProseMirror`
+- Root cause: Likely missing CSS selectors for nested elements
+- **Files**: `frontend/templates/base.html` (CSS rules ~lines 284-461)
+
+#### #5 Line Spacing with Multiple Companies in CV
+**Status**: Not started
+**Priority**: High
+- [ ] Separate issue from #4 - affects CV GENERATION not editor
+- [ ] When CV has 2+ companies, line spacing breaks in generated output
+- Root cause: TipTap JSON conversion or HTML template logic
+- **Files**: `pdf_service/pdf_helpers.py`, `src/layer6/generator.py`
+
+#### #9 Master CV Missing Companies
+**Status**: Needs investigation
+**Priority**: High
+- [ ] Not all companies from experience being included in generated CV
+- [ ] Investigation: Check `src/layer6/generator.py` parsing logic
+- [ ] Check if master-cv.md has all companies listed correctly
+- [ ] Verify STAR records have company associations
+- **Files**: `src/layer6/generator.py`, `master-cv.md`
+
+### Features
+
+#### #2 WYSIWYG Style Consistency
+**Status**: Not started
+**Priority**: Medium
+- [ ] Editor (.ProseMirror) and detail page (#cv-markdown-display) have different styles
+- [ ] Create unified CSS system for consistent rendering
+- **Plan document**: `plans/cv-editor-wysiwyg-consistency.md`
+- **Files**: `frontend/templates/base.html` (CSS), `frontend/static/js/cv-editor.js`
+
+#### #3 Margin Presets (MS Word Style)
+**Status**: Not started
+**Priority**: Medium
+- [ ] Add "Narrow" (0.5"), "Normal" (1.0"), "Wide" (1.5") margin presets
+- [ ] Keep existing 0.25" increment controls as "Custom" option
+- Implementation: Dropdown in Document Settings toolbar
+- **Files**: `frontend/templates/job_detail.html`, `frontend/static/js/cv-editor.js`
+
+#### #6 Structured Logging for Pipeline Status
+**Status**: Not started
+**Priority**: Medium
+- [ ] Replace print() with structured JSON logging in all layers
+- [ ] Emit events for frontend status button updates
+- [ ] Format: `{"event": "layer_complete", "layer": N, "status": "success/error"}`
+- **Plan document**: `plans/structured-logging-implementation.md`
+- **Files**: All `src/layer*.py` files, `runner_service/app.py`
+
+#### #10 Fallback AI Agent Infrastructure (Option B)
+**Status**: Not started
+**Priority**: Medium
+- [ ] Implement LangGraph sub-agent fallback for contact discovery
+- [ ] Config flag: `ENABLE_FIRECRAWL_FALLBACK=true/false`
+- [ ] When FireCrawl fails, use LLM agent to generate contacts
+- **Reference**: `plans/firecrawl-contact-discovery-solution.md`
+- **Plan document**: `plans/ai-agent-fallback-implementation.md`
+- **Files**: `src/layer5/people_mapper.py`
+
+#### #11 Job Iframe Viewer
+**Status**: Phase 1 Complete ✅ **COMPLETED 2025-11-30**
+**Priority**: Low
+- [x] Collapsible iframe showing original job posting URL (Option B: expandable section)
+- [x] Loading state with spinner animation
+- [x] Error handling for X-Frame-Options blocking with user-friendly fallback message
+- [x] "Open in New Tab" button as escape hatch for blocked sites
+- [ ] PDF export button for iframe content (Phase 3 - future enhancement)
+- **Plan document**: `plans/job-iframe-viewer-implementation.md`
+- **Files**: `frontend/templates/job_detail.html`
+- **Implementation Details**:
+  - Collapsible section with arrow icon (▶/▼)
+  - Timeout detection (3 seconds) for X-Frame-Options blocking
+  - Fallback message shown when iframe blocked by security headers
+  - Responsive layout (500px height, full width)
+  - Security: sandbox attributes for script execution control
+
+### UI/UX
+
+#### #7 Smaller Pipeline Status Buttons
+**Status**: Not started
+**Priority**: Low
+- [ ] Reduce size of pipeline status buttons on job detail page
+- [ ] Improve visual hierarchy
+- **Files**: `frontend/templates/job_detail.html`, CSS in base.html
+
+### Documentation/Planning
+
+#### #8 Prompt Optimization Plan
+**Status**: Plan exists - ready for implementation
+**Priority**: CRITICAL
+- [x] Comprehensive plan created: `plans/prompt-optimization-plan.md`
+- [ ] Implement fixes for layers not meeting thresholds (per `reports/prompt-ab/integration-final.md`):
+  - layer4: Improve specificity (6.8→7.0), grounding (7.2→8.0)
+  - layer6a: Reduce hallucinations (8.5→9.0)
+  - layer6b: Improve all metrics (specificity 6.5, grounding 5.8, combined 7.3)
+- **Files**: `src/layer4/opportunity_mapper.py`, `src/layer6/*.py`
+
+---
+
+## CV Generation V2: Multi-Stage Architecture (2025-11-30)
+
+> **Plan document**: `plans/cv-generation-v2-architecture.md`
+> **Status**: Phase 1 Complete (Layer 1.4: JD Extractor)
+
+**Objective**: Replace monolithic CV generation with divide-and-conquer multi-stage pipeline.
+
+**Key Benefits**:
+- 100% career coverage (all 6 companies, not just last 2)
+- Sequential processing (predictable, debuggable, cost-controlled)
+- Per-role hallucination QA (smaller scope = better validation)
+- Role-category-aware emphasis (IC vs leadership tailoring)
+- ATS optimization with 15-keyword tracking
+
+### Phase Progress
+
+| Phase | Component | Status | Tests | Notes |
+|-------|-----------|--------|-------|-------|
+| 1 | Layer 1.4: JD Extractor | ✅ Complete | 33 | Structured JD intelligence |
+| 2 | CV Loader | ✅ Complete | 19 | Load pre-split role files |
+| 3 | Per-Role Generator | ✅ Complete | 39 | Tailored bullets per role with QA |
+| 4 | Stitcher | ✅ Complete | 26 | Cross-role deduplication + word budget |
+| 5 | Header/Skills Generator | ✅ Complete | 34 | Profile + skills grounded in achievements |
+| 6 | Grader + Improver | ✅ Complete | 32 | Multi-dimensional grading + single-pass improvement |
+
+### Layer 1.4 Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `ExtractedJD` TypedDict added to `src/common/state.py`
+- [x] `CompetencyWeights` TypedDict for role-category emphasis
+- [x] `src/layer1_4/` package with prompts and extractor
+- [x] Pydantic validation for 5 role categories and competency weights
+- [x] Workflow integration (entry point when enabled)
+- [x] Config flag: `ENABLE_JD_EXTRACTOR=true` (default)
+- [x] 33 unit tests (100% passing)
+
+**ExtractedJD Schema**:
+- Role classification: engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, cto
+- Competency weights: delivery, process, architecture, leadership (sum=100)
+- ATS keywords: Top 15 for optimization
+- Structured content: responsibilities, qualifications, nice_to_haves, skills
+- Inferred intelligence: implied_pain_points, success_metrics, industry_background
+
+**Files Created**:
+- `src/layer1_4/__init__.py`
+- `src/layer1_4/prompts.py` (JD extraction prompts)
+- `src/layer1_4/jd_extractor.py` (extraction logic + node function)
+- `tests/unit/test_layer1_4_jd_extractor.py` (33 tests)
+
+**Files Modified**:
+- `src/common/state.py` - Added ExtractedJD and CompetencyWeights TypedDicts
+- `src/common/config.py` - Added ENABLE_JD_EXTRACTOR flag
+- `src/workflow.py` - Added jd_extractor_node, updated flow
+
+### Phase 2: CV Loader Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] Renamed from CV Splitter to CV Loader (loads pre-split files, not dynamic parsing)
+- [x] `CVLoader` class with data loading and filtering methods
+- [x] `RoleData` dataclass with computed `bullet_count` property
+- [x] `CandidateData` dataclass (static fields only - profile/skills generated dynamically)
+- [x] 6 pre-split role markdown files in `data/master-cv/roles/`
+- [x] `role_metadata.json` with role metadata and candidate info
+- [x] Filtering by competency, industry, current role
+- [x] 19 unit tests (100% passing)
+
+**Files Created**:
+- `src/layer6_v2/cv_loader.py` (331 lines)
+- `src/layer6_v2/__init__.py`
+- `data/master-cv/role_metadata.json`
+- `data/master-cv/roles/01_seven_one_entertainment.md`
+- `data/master-cv/roles/02_samdock_daypaio.md`
+- `data/master-cv/roles/03_ki_labs.md`
+- `data/master-cv/roles/04_fortis.md`
+- `data/master-cv/roles/05_osram.md`
+- `data/master-cv/roles/06_clary_icon.md`
+- `tests/unit/test_layer6_v2_cv_loader.py` (19 tests)
+
+**Design Decision**: Profile and core_skills are NOT stored in metadata - they are generated dynamically by Header Generator (Phase 5) after stitching, tailored to each application.
+
+### Phase 3: Per-Role Generator Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `GeneratedBullet` dataclass with source traceability
+- [x] `RoleBullets` dataclass for role-level output
+- [x] `CareerContext` dataclass with stage-aware emphasis guidance
+- [x] `RoleGenerator` class with LLM-based bullet generation
+- [x] `RoleQA` class with hallucination detection and ATS keyword checking
+- [x] Pydantic validation for LLM response parsing
+- [x] Sequential role processing with `generate_all_roles_sequential()`
+- [x] 39 unit tests (100% passing)
+
+**Files Created**:
+- `src/layer6_v2/types.py` (165 lines) - Data types for generation pipeline
+- `src/layer6_v2/role_generator.py` (275 lines) - Per-role bullet generation
+- `src/layer6_v2/role_qa.py` (315 lines) - Hallucination and ATS QA
+- `src/layer6_v2/prompts/__init__.py`
+- `src/layer6_v2/prompts/role_generation.py` (155 lines) - Generation prompts
+- `tests/unit/test_layer6_v2_role_generator.py` (39 tests)
+
+**Key Features**:
+- **Anti-Hallucination QA**: Rule-based metric verification with configurable tolerance
+- **Career Stage Awareness**: Different emphasis for recent/mid-career/early roles
+- **ATS Keyword Tracking**: Coverage analysis with suggestions for missing keywords
+- **Lenient Thresholds**: 15% metric tolerance, 40% flagged bullets allowed
+
+**Configuration Options**:
+- `similarity_threshold`: Fuzzy match threshold (default 0.5)
+- `metric_tolerance`: Numeric variance allowed (default 15%)
+- `max_flagged_ratio`: Bullets allowed to fail QA (default 40%)
+
+### Phase 4: Stitcher Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `StitchedRole` dataclass with markdown output
+- [x] `StitchedCV` dataclass combining all roles
+- [x] `DuplicatePair` and `DeduplicationResult` for transparency
+- [x] `CVStitcher` class with similarity-based deduplication
+- [x] Word budget enforcement with career-stage-aware trimming
+- [x] Keyword coverage tracking
+- [x] 26 unit tests (100% passing)
+
+**Files Created/Modified**:
+- `src/layer6_v2/types.py` (+155 lines) - Stitcher types added
+- `src/layer6_v2/stitcher.py` (285 lines) - CVStitcher implementation
+- `tests/unit/test_layer6_v2_stitcher.py` (26 tests)
+
+**Key Features**:
+- **Semantic Deduplication**: Keyword overlap + string similarity + metric matching
+- **Career-Stage Trimming**: Trims early-career roles first, never current role
+- **Word Budget**: Target 550-650 words with configurable budget
+- **Transparency**: Full report of what was deduplicated and why
+
+**Configuration Options**:
+- `word_budget`: Target word count (default 600)
+- `similarity_threshold`: Deduplication threshold (default 0.75)
+- `min_bullets_per_role`: Minimum bullets to keep (default 2)
+
+### Phase 5: Header/Skills Generator Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `SkillEvidence` dataclass mapping skills to bullet evidence
+- [x] `SkillsSection` dataclass for skill category with grounding
+- [x] `ProfileOutput` dataclass with highlights and keywords
+- [x] `ValidationResult` dataclass for skills grounding validation
+- [x] `HeaderOutput` dataclass combining all header sections
+- [x] `HeaderGenerator` class with LLM-based profile generation
+- [x] Skills extraction with evidence tracking (4 categories)
+- [x] JD keyword prioritization for extracted skills
+- [x] Skills grounding validation (removes ungrounded skills)
+- [x] Fallback profile generation when LLM fails
+- [x] 34 unit tests (100% passing)
+
+**Files Created**:
+- `src/layer6_v2/header_generator.py` (380 lines) - Header generation logic
+- `src/layer6_v2/prompts/header_generation.py` (180 lines) - Header prompts
+- `tests/unit/test_layer6_v2_header_generator.py` (34 tests)
+
+**Files Modified**:
+- `src/layer6_v2/types.py` (+200 lines) - Phase 5 types added
+- `src/layer6_v2/__init__.py` - Added Phase 5 exports
+
+**Key Features**:
+- **Profile Generation**: 2-3 sentence summary with quantified highlights from experience
+- **Skills Extraction**: 4 categories (Leadership, Technical, Platform, Delivery)
+- **Evidence Tracking**: Every skill maps to bullets that demonstrate it
+- **JD Keyword Priority**: Skills matching JD keywords appear first
+- **Grounding Validation**: Ungrounded skills are automatically removed
+- **Role-Category Awareness**: Profile tone matches target role (IC vs leadership)
+
+**Skill Categories**:
+- Leadership: Team Leadership, Mentorship, Hiring, Strategic Planning
+- Technical: Python, Java, TypeScript, Microservices, System Design
+- Platform: AWS, Kubernetes, Docker, CI/CD, DevOps
+- Delivery: Agile, Scrum, Release Management, Process Improvement
+
+**Configuration Options**:
+- `model`: LLM model to use (default: Config.DEFAULT_MODEL)
+- `temperature`: Generation temperature (default: 0.3 for consistency)
+
+### Phase 6: Grader + Improver Implementation (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `DimensionScore` dataclass for individual dimension grading
+- [x] `GradeResult` dataclass with composite scoring and pass/fail logic
+- [x] `ImprovementResult` dataclass for improvement tracking
+- [x] `FinalCV` dataclass combining all CV components
+- [x] `CVGrader` class with 5-dimension multi-dimensional grading
+- [x] `CVImprover` class with single-pass targeted improvement
+- [x] Rule-based + LLM-based grading with automatic fallback
+- [x] Weighted composite scoring (8.5 passing threshold)
+- [x] Dimension-specific improvement strategies
+- [x] 32 unit tests (100% passing)
+
+**Files Created**:
+- `src/layer6_v2/grader.py` (580 lines) - Multi-dimensional grading
+- `src/layer6_v2/improver.py` (358 lines) - Single-pass improvement
+- `src/layer6_v2/prompts/grading_rubric.py` (338 lines) - Grading prompts
+- `tests/unit/test_layer6_v2_grader_improver.py` (32 tests)
+
+**Files Modified**:
+- `src/layer6_v2/types.py` (+120 lines) - Phase 6 types added
+- `src/layer6_v2/__init__.py` - Added Phase 6 exports
+
+**Grading Dimensions** (weighted):
+- ATS Optimization (20%): Keyword coverage, format compliance, parsability
+- Impact & Clarity (25%): Metrics, action verbs, specificity
+- JD Alignment (25%): Pain point coverage, role match, terminology
+- Executive Presence (15%): Strategic framing, leadership evidence, business outcomes
+- Anti-Hallucination (15%): Factual accuracy, metric preservation, no fabrication
+
+**Key Features**:
+- **Multi-Dimensional Grading**: 5 weighted dimensions with specific rubrics
+- **Composite Scoring**: Weighted average with 8.5/10 passing threshold
+- **Rule-Based Fallback**: Works without LLM if needed (regex/heuristic scoring)
+- **Single-Pass Improvement**: Targets lowest-scoring dimension for cost control
+- **Dimension-Specific Strategies**: Different tactics per dimension
+
+**Design Decisions**:
+- **Single-pass improvement** (user choice): Grade once, improve once, accept result
+- **Cost control**: No iterative re-grading loops that multiply LLM calls
+- **Targeted improvement**: Only fix the weakest dimension
+- **Graceful degradation**: Rule-based fallback when LLM fails
+
+**Configuration Options**:
+- `passing_threshold`: Score needed to pass (default: 8.5)
+- `use_llm_grading`: Enable LLM-based grading (default: True)
+- `temperature`: LLM generation temperature (default: 0.3)
+
+### CV Gen V2 Orchestrator Integration (COMPLETE)
+
+**Delivered** (2025-11-30):
+- [x] `CVGeneratorV2` orchestrator class tying all 6 phases together
+- [x] `cv_generator_v2_node` LangGraph node function (drop-in replacement)
+- [x] Wired into `workflow.py` with config flag
+- [x] `ENABLE_CV_GEN_V2` config flag (default: true)
+- [x] 11 orchestrator integration tests (100% passing)
+
+**Files Created**:
+- `src/layer6_v2/orchestrator.py` (410 lines) - Full pipeline orchestration
+- `tests/unit/test_layer6_v2_orchestrator.py` (11 tests)
+
+**Files Modified**:
+- `src/workflow.py` - Conditionally uses CV Gen V2 or legacy generator
+- `src/common/config.py` - Added `ENABLE_CV_GEN_V2` flag
+
+**Orchestrator Features**:
+- Sequential 6-phase pipeline execution
+- Per-role bullet generation with QA
+- Cross-role deduplication and word budget enforcement
+- Header/skills generation grounded in achievements
+- Multi-dimensional grading with fallback
+- Single-pass targeted improvement
+
+### CV Gen V2 Complete! 🎉
+
+All 6 phases + orchestrator are now implemented with **194 total unit tests**:
+- Phase 1: JD Extractor (33 tests)
+- Phase 2: CV Loader (19 tests)
+- Phase 3: Per-Role Generator (39 tests)
+- Phase 4: Stitcher (26 tests)
+- Phase 5: Header Generator (34 tests)
+- Phase 6: Grader + Improver (32 tests)
+- Orchestrator: Integration (11 tests)
+
+### Next Steps (CV Gen V2)
+
+1. **End-to-End Testing**: Test complete CV generation with real JDs
+2. **Production Deployment**: Deploy to VPS with runner service
