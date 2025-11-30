@@ -225,6 +225,9 @@ class JobState(TypedDict):
     # Processing flags
     status: Optional[str]            # "processing", "completed", "failed"
 
+    # ===== DISTRIBUTED TRACING (Gap OB-3) =====
+    trace_url: Optional[str]         # LangSmith trace URL for debugging/analysis
+
     # ===== TOKEN TRACKING (Gap BG-1) =====
     # Tracks token usage per provider and layer for budget enforcement
     token_usage: Optional[Dict[str, Dict]]  # {"openai": {"input": X, "output": Y, "cost": Z}, ...}
