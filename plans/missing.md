@@ -785,13 +785,14 @@ Visual page break indicators in CV editor and detail page showing exactly where 
 - [x] Improved error messages displayed via toast notifications
 - **Files**: `frontend/templates/job_detail.html`, `frontend/static/js/cv-editor.js`
 
-#### #4 Line Spacing in Editor
-**Status**: Not started
+#### #4 Line Spacing in Editor ✅ **RESOLVED 2025-11-30**
+**Status**: FIXED (Commit 17c9cade)
 **Priority**: High
-- [ ] Line spacing CSS (`line-height`) not cascading to all elements in editor
-- [ ] Affects: headings, lists, paragraphs within `.ProseMirror`
-- Root cause: Likely missing CSS selectors for nested elements
-- **Files**: `frontend/templates/base.html` (CSS rules ~lines 284-461)
+- [x] Line spacing CSS (`line-height`) not cascading to all elements in editor
+- [x] Affects: headings, lists, paragraphs within `.ProseMirror`
+- **Root cause**: CSS selectors like `.ProseMirror p { line-height: 1.6; }` had higher specificity than the inline `line-height` set on parent by JavaScript
+- **Fix**: Changed all child element CSS rules (h1, h2, h3, p, li) to use `line-height: inherit`
+- **Files modified**: `frontend/templates/base.html` (ProseMirror and CV display styles)
 
 #### #5 Line Spacing with Multiple Companies in CV
 **Status**: Not started
