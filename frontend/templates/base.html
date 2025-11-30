@@ -75,6 +75,21 @@
     }
     </script>
 
+    <!-- Early Theme Initialization (prevents FOUC - Flash of Unstyled Content) -->
+    <script>
+    (function() {
+      // Check localStorage first, then system preference
+      const saved = localStorage.getItem('app-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'dark' : 'light');
+
+      // Apply immediately before page renders
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+    </script>
+
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
@@ -1451,8 +1466,8 @@
     </div>
 
     <div class="min-h-full">
-        <!-- Navigation -->
-        <nav class="bg-white border-b border-gray-200" style="box-shadow: var(--shadow-sm);">
+        <!-- Navigation - Theme-aware -->
+        <nav class="border-b" style="background-color: var(--bg-card); border-color: var(--border-default); box-shadow: var(--shadow-sm);">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 justify-between items-center">
                     <a href="/" class="flex items-center group">
@@ -1463,8 +1478,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <span class="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">JobSearch</span>
-                                <p class="hidden sm:block text-xs text-gray-500">Level-2 Manager</p>
+                                <span class="text-xl font-bold transition-colors" style="color: var(--text-primary);">JobSearch</span>
+                                <p class="hidden sm:block text-xs" style="color: var(--text-tertiary);">Level-2 Manager</p>
                             </div>
                         </div>
                     </a>
@@ -1473,16 +1488,37 @@
                         <div id="health-status" class="health-status hidden sm:flex">
                             <!-- Health indicators loaded via JavaScript -->
                         </div>
-                        <div id="stats-container" class="text-xs sm:text-sm text-gray-500">
+                        <div id="stats-container" class="text-xs sm:text-sm" style="color: var(--text-secondary);">
                             <!-- Stats loaded via HTMX -->
                         </div>
+
+                        <!-- Theme Toggle Button -->
+                        <button
+                            id="theme-toggle"
+                            type="button"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                            style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                            title="Toggle dark/light mode"
+                            aria-label="Toggle theme"
+                        >
+                            <!-- Sun icon (shown in dark mode) -->
+                            <svg id="theme-icon-sun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                            <!-- Moon icon (shown in light mode) -->
+                            <svg id="theme-icon-moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                        </button>
+
                         <form method="POST" action="/logout" class="m-0">
                             <button
                                 type="submit"
-                                class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md
-                                       text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50
+                                class="inline-flex items-center px-3 py-1.5 rounded-md
+                                       text-xs sm:text-sm font-medium
                                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
                                        transition duration-150 ease-in-out"
+                                style="background-color: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border-default);"
                                 title="Logout"
                             >
                                 <svg class="h-4 w-4 sm:mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1849,6 +1885,99 @@
             // Refresh health status every 30 seconds
             setInterval(updateHealthStatus, 30000);
         });
+    </script>
+
+    <!-- Theme Manager (Phase 2: Dark/Light Mode Toggle) -->
+    <script>
+    /**
+     * ThemeManager - Handles dark/light mode switching with persistence
+     *
+     * Features:
+     * - localStorage persistence across sessions
+     * - System preference detection (prefers-color-scheme)
+     * - Smooth transitions when switching themes
+     * - Updates UI icons to reflect current theme
+     */
+    class ThemeManager {
+        constructor() {
+            this.THEME_KEY = 'app-theme';
+            this.DARK_THEME = 'dark';
+            this.LIGHT_THEME = 'light';
+            this.initialize();
+        }
+
+        initialize() {
+            // Theme is already applied by early script in <head>
+            // Just update icons and set up listeners
+
+            // Update icons based on current state
+            this.updateIcons();
+
+            // Set up toggle button
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => this.toggleTheme());
+            }
+
+            // Listen for system preference changes (when no saved preference)
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem(this.THEME_KEY)) {
+                    this.setTheme(e.matches ? this.DARK_THEME : this.LIGHT_THEME);
+                }
+            });
+        }
+
+        getTheme() {
+            return localStorage.getItem(this.THEME_KEY) ||
+                   (window.matchMedia('(prefers-color-scheme: dark)').matches ? this.DARK_THEME : this.LIGHT_THEME);
+        }
+
+        setTheme(theme) {
+            const root = document.documentElement;
+
+            if (theme === this.DARK_THEME) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+
+            // Save preference
+            localStorage.setItem(this.THEME_KEY, theme);
+
+            // Update icons
+            this.updateIcons();
+        }
+
+        toggleTheme() {
+            const current = this.getTheme();
+            const newTheme = current === this.DARK_THEME ? this.LIGHT_THEME : this.DARK_THEME;
+            this.setTheme(newTheme);
+        }
+
+        updateIcons() {
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+
+            if (sunIcon && moonIcon) {
+                const isDark = document.documentElement.classList.contains('dark');
+
+                // Show sun in dark mode (click to go light)
+                // Show moon in light mode (click to go dark)
+                if (isDark) {
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                } else {
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                }
+            }
+        }
+    }
+
+    // Initialize ThemeManager when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+        window.themeManager = new ThemeManager();
+    });
     </script>
 
     {% block extra_js %}{% endblock %}
