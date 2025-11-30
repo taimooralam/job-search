@@ -1021,6 +1021,118 @@ def generate_cv_pdf_from_editor(job_id: str):
         }), 500
 
 
+@app.route("/api/jobs/<job_id>/export-page-pdf", methods=["POST"])
+@login_required
+def export_job_page_to_pdf(job_id: str):
+    """
+    Export job posting URL to PDF (Bug #7 Phase 2).
+
+    Proxies request to runner service which uses Playwright to capture the page.
+    This allows users to save job postings that may disappear.
+
+    Expected JSON body: {"url": "https://..."}
+
+    Returns:
+        PDF file streamed from runner service
+    """
+    import requests
+    from flask import send_file
+    from io import BytesIO
+
+    # Get URL from request body
+    data = request.get_json() or {}
+    url = data.get('url')
+
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+
+    if not url.startswith(('http://', 'https://')):
+        return jsonify({'error': 'URL must start with http:// or https://'}), 400
+
+    # Get runner service URL from environment
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    endpoint = f"{runner_url}/api/url-to-pdf"
+
+    # Get authentication token for runner service
+    runner_token = os.getenv("RUNNER_API_SECRET")
+    headers = {'Content-Type': 'application/json'}
+    if runner_token:
+        headers["Authorization"] = f"Bearer {runner_token}"
+        logger.info(f"URL-to-PDF request for job {job_id} - authentication configured")
+    else:
+        logger.warning(f"RUNNER_API_SECRET not set - runner service may reject request for job {job_id}")
+
+    try:
+        logger.info(f"Requesting URL-to-PDF from {endpoint} for URL: {url[:80]}...")
+
+        # Proxy request to runner service
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            json={'url': url},
+            timeout=60,  # 60 second timeout for page load + PDF generation
+            stream=True
+        )
+
+        logger.info(f"Runner service responded with status {response.status_code}")
+
+        if response.status_code == 401:
+            logger.error(f"Authentication failed for job {job_id} - check RUNNER_API_SECRET configuration")
+            return jsonify({
+                "error": "Authentication failed. Please contact support.",
+                "detail": "RUNNER_API_SECRET not configured correctly"
+            }), 401
+
+        if response.status_code != 200:
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", "PDF generation failed")
+                logger.error(f"URL-to-PDF failed for job {job_id}: {error_msg}")
+            except:
+                error_msg = f"PDF generation failed with status {response.status_code}"
+                logger.error(f"URL-to-PDF failed for job {job_id}: status {response.status_code}")
+
+            return jsonify({"error": error_msg}), response.status_code
+
+        # Extract filename from Content-Disposition header
+        content_disposition = response.headers.get('Content-Disposition', '')
+        filename = "job_posting.pdf"
+        if 'filename=' in content_disposition:
+            import re
+            match = re.search(r'filename="?([^"]+)"?', content_disposition)
+            if match:
+                filename = match.group(1)
+
+        logger.info(f"URL-to-PDF generated successfully for job {job_id}, filename: {filename}")
+
+        # Stream PDF back to user
+        return send_file(
+            BytesIO(response.content),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except requests.Timeout:
+        logger.error(f"URL-to-PDF timed out for job {job_id} after 60 seconds")
+        return jsonify({
+            "error": "PDF generation timed out (>60s). The site may be slow.",
+            "detail": "The runner service took too long to respond"
+        }), 504
+    except requests.ConnectionError as e:
+        logger.error(f"Failed to connect to runner service at {runner_url}: {str(e)}")
+        return jsonify({
+            "error": "PDF service unavailable. Please try again later.",
+            "detail": f"Cannot connect to runner service at {runner_url}"
+        }), 503
+    except Exception as e:
+        logger.exception(f"Unexpected error during URL-to-PDF for job {job_id}")
+        return jsonify({
+            "error": f"PDF generation failed: {str(e)}",
+            "detail": "An unexpected error occurred"
+        }), 500
+
+
 def build_pdf_html_template(
     content_html: str,
     font_family: str,
