@@ -517,16 +517,24 @@ class TokenTrackerRegistry:
             result = {}
             for name, tracker in self._trackers.items():
                 summary = tracker.get_summary()
+                # Calculate budget metrics
+                budget_usd = tracker.budget_usd
+                remaining = tracker.get_remaining_budget()
+                used_percent = 0.0
+                if budget_usd and budget_usd > 0:
+                    used_percent = (summary.total_cost_usd / budget_usd) * 100
+
                 result[name] = {
-                    "total_input_tokens": summary["totals"]["input_tokens"],
-                    "total_output_tokens": summary["totals"]["output_tokens"],
-                    "total_cost_usd": summary["totals"]["cost_usd"],
-                    "call_count": summary["totals"]["call_count"],
-                    "budget_usd": summary["budget"]["budget_usd"],
-                    "budget_remaining_usd": summary["budget"]["remaining_usd"],
-                    "budget_used_percent": summary["budget"]["used_percent"],
-                    "by_provider": summary["by_provider"],
-                    "by_layer": summary["by_layer"],
+                    "total_input_tokens": summary.total_input_tokens,
+                    "total_output_tokens": summary.total_output_tokens,
+                    "total_cost_usd": summary.total_cost_usd,
+                    "call_count": summary.calls_count,
+                    "budget_usd": budget_usd,
+                    "budget_remaining_usd": remaining,
+                    "budget_used_percent": round(used_percent, 1),
+                    "budget_exceeded": tracker.is_budget_exceeded(),
+                    "by_provider": summary.by_provider,
+                    "by_layer": summary.by_layer,
                 }
             return result
 
