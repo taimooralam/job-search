@@ -616,6 +616,7 @@ class CoverLetterGenerator:
     - JD-specificity checks
     - Generic boilerplate detection
     - Automatic retry on validation failure
+    - LLM API retry with exponential backoff
     """
 
     def __init__(self):
@@ -630,6 +631,29 @@ class CoverLetterGenerator:
             base_url=Config.get_llm_base_url(),
         )
         self.max_validation_retries = 2
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        reraise=True,
+    )
+    def _call_llm(self, messages: list) -> str:
+        """
+        Call LLM with retry logic for transient failures.
+
+        Uses exponential backoff: 2s, 4s, 8s...up to 30s max wait.
+
+        Args:
+            messages: List of SystemMessage/HumanMessage
+
+        Returns:
+            Raw response content from LLM
+
+        Raises:
+            Exception: After 3 failed attempts
+        """
+        response = self.llm.invoke(messages)
+        return response.content.strip()
 
     def _format_pain_points(self, pain_points: List[dict]) -> str:
         """Format pain points as numbered list."""
@@ -739,9 +763,8 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             )
         ]
 
-        # Call LLM
-        response = self.llm.invoke(messages)
-        cover_letter = response.content.strip()
+        # Call LLM with retry
+        cover_letter = self._call_llm(messages)
 
         # Validate
         try:
