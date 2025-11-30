@@ -24,14 +24,15 @@ from src.layer6.outreach_generator import (
 
 @pytest.fixture
 def sample_contact() -> Contact:
-    """Sample enriched contact from Layer 5."""
+    """Sample enriched contact from Layer 5 (GAP-011: ≤300 chars)."""
     return {
         "name": "Jane Smith",
         "role": "VP Engineering",
         "linkedin_url": "https://linkedin.com/in/janesmith",
         "why_relevant": "Leads the engineering team and makes hiring decisions for senior roles",
         "recent_signals": ["Posted about scaling challenges", "Attended AWS re:Invent"],
-        "linkedin_message": "Hi Jane, saw your post on scaling challenges. I reduced incident response time by 75% at AdTech Corp using similar approaches. Would love to discuss how I can help your team. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+        # GAP-011: LinkedIn message must be ≤300 chars with "Best. Taimoor Alam" signature
+        "linkedin_message": "Hi Jane, Your scaling challenges post caught my eye. I reduced incidents 75% at AdTech Corp. Would love to discuss how I can help your team.\nBest. Taimoor Alam",
         "email_subject": "Solving scaling challenges - 75% incident reduction experience",
         "email_body": "Dear Jane,\n\nI noticed your recent posts about scaling challenges at TestCo. I've been in similar situations and achieved meaningful results.\n\nAt AdTech Corp, I reduced incident response time by 75% while scaling to 10M users. I'd love to explore how my experience could help your team.\n\nBest regards,\n[Your Name]",
         "reasoning": "Personalized for VP Engineering role with relevant metrics"
@@ -40,7 +41,7 @@ def sample_contact() -> Contact:
 
 @pytest.fixture
 def sample_contacts_list() -> List[Contact]:
-    """Multiple enriched contacts for testing."""
+    """Multiple enriched contacts for testing (GAP-011: ≤300 chars)."""
     return [
         {
             "name": "Alice Johnson",
@@ -48,7 +49,8 @@ def sample_contacts_list() -> List[Contact]:
             "linkedin_url": "https://linkedin.com/in/alicejohnson",
             "why_relevant": "Manages the infrastructure team",
             "recent_signals": [],
-            "linkedin_message": "Hi Alice, I led infrastructure migrations at DataCorp. Happy to share insights. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+            # GAP-011: LinkedIn message must be ≤300 chars
+            "linkedin_message": "Hi Alice, I led infrastructure migrations at DataCorp with 75% latency reduction. Happy to share insights on your current challenges.\nBest. Taimoor Alam",
             "email_subject": "Infrastructure expertise - DataCorp migration lead",
             "email_body": "Dear Alice,\n\nI led infrastructure migrations at DataCorp with great results.\n\nBest,\n[Your Name]",
             "reasoning": "Engineering Manager fit"
@@ -59,7 +61,8 @@ def sample_contacts_list() -> List[Contact]:
             "linkedin_url": "https://linkedin.com/in/bobchen",
             "why_relevant": "Technical recruiter for engineering roles",
             "recent_signals": ["Hiring for 5 senior positions"],
-            "linkedin_message": "Hi Bob, interested in senior engineering role. My background in distributed systems aligns well. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+            # GAP-011: LinkedIn message must be ≤300 chars
+            "linkedin_message": "Hi Bob, Interested in the senior engineering role. My distributed systems background aligns well with what you're looking for.\nBest. Taimoor Alam",
             "email_subject": "Senior Engineering Role - Distributed Systems Expert",
             "email_body": "Dear Bob,\n\nI'm interested in the senior engineering position.\n\nBest,\n[Your Name]",
             "reasoning": "Recruiter contact"
@@ -193,10 +196,10 @@ def test_linkedin_message_length_preserved():
     """Test that LinkedIn messages ≤550 chars are preserved as-is."""
     generator = OutreachGenerator()
 
-    # Create a valid 450-char message with proper closing
-    message_body = "A" * 350
-    closing = " I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
-    linkedin_message = message_body + closing  # ~450 chars total, within 550 limit
+    # GAP-011: Create a valid 280-char message with proper closing
+    closing = "\nBest. Taimoor Alam"
+    message_body = "A" * 260
+    linkedin_message = message_body + closing  # ~280 chars total, within 300 limit
 
     contact = {
         "name": "Test User",
@@ -213,18 +216,18 @@ def test_linkedin_message_length_preserved():
     packages = generator._create_packages_for_contact(contact)
     linkedin_pkg = [p for p in packages if p["channel"] == "linkedin"][0]
 
-    # Message may now have the closing line appended if missing; ensure it is still within limits.
-    assert len(linkedin_pkg["message"]) <= 550
+    # GAP-011: Message must be within 300 char limit
+    assert len(linkedin_pkg["message"]) <= 300
 
 
 def test_linkedin_message_at_boundary():
-    """Test LinkedIn message exactly at 550 char boundary."""
+    """Test LinkedIn message exactly at 300 char boundary (GAP-011)."""
     generator = OutreachGenerator()
 
-    # Create a message exactly 550 chars with proper closing
-    closing = " I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
-    message_body = "A" * (550 - len(closing))
-    linkedin_message = message_body + closing  # Exactly 550 chars
+    # GAP-011: Create a message exactly 300 chars with proper closing
+    closing = "\nBest. Taimoor Alam"  # 19 chars
+    message_body = "A" * (300 - len(closing))
+    linkedin_message = message_body + closing  # Exactly 300 chars
 
     contact = {
         "name": "Test User",
@@ -241,7 +244,8 @@ def test_linkedin_message_at_boundary():
     packages = generator._create_packages_for_contact(contact)
     linkedin_pkg = [p for p in packages if p["channel"] == "linkedin"][0]
 
-    assert len(linkedin_pkg["message"]) == 550
+    # GAP-011: Message should be exactly 300 chars (hard limit)
+    assert len(linkedin_pkg["message"]) == 300
 
 
 def test_email_subject_length_preserved():
@@ -249,7 +253,7 @@ def test_email_subject_length_preserved():
     generator = OutreachGenerator()
 
     # Use valid LinkedIn message with closing
-    linkedin_message = "Hi there! Let's connect. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+    linkedin_message = "Hi there! Let's connect. Best. Taimoor Alam"
 
     contact = {
         "name": "Test User",
@@ -274,7 +278,7 @@ def test_email_subject_at_boundary():
     generator = OutreachGenerator()
 
     # Use valid LinkedIn message with closing
-    linkedin_message = "Hi! Interested in the role. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+    linkedin_message = "Hi! Interested in the role. Best. Taimoor Alam"
 
     contact = {
         "name": "Test User",
@@ -337,30 +341,32 @@ def test_rejects_disallowed_placeholders():
 
 
 def test_linkedin_message_requires_closing_line():
-    """Test that LinkedIn messages must end with email + Calendly."""
+    """Test that LinkedIn messages must end with signature (GAP-011)."""
     generator = OutreachGenerator()
 
     message_without_closing = "Hi Jane, I have relevant experience. Let's chat!"
 
-    with pytest.raises(ValueError, match="LinkedIn message must state you have applied for the role"):
+    with pytest.raises(ValueError, match='LinkedIn message must end with signature'):
         generator._validate_linkedin_closing(message_without_closing)
 
 
 def test_linkedin_message_accepts_valid_closing():
-    """Test that valid LinkedIn closing line is accepted."""
+    """Test that valid LinkedIn signature is accepted (GAP-011)."""
     generator = OutreachGenerator()
 
-    message_with_closing = "Hi Jane, I have relevant experience. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+    # GAP-011: New format with signature only (≤300 chars)
+    message_with_closing = "Hi Jane, I have relevant experience. Would love to connect.\nBest. Taimoor Alam"
 
     # Should not raise
     generator._validate_linkedin_closing(message_with_closing)
 
 
 def test_linkedin_message_accepts_alternate_closing_format():
-    """Test alternate valid closing formats."""
+    """Test alternate valid closing formats (GAP-011)."""
     generator = OutreachGenerator()
 
-    message = "Great to connect! I've applied for this role. Book time: https://calendly.com/taimooralam/15min"
+    # GAP-011: Just needs "best" and "taimoor" in message
+    message = "Great to connect! Let's discuss.\nBest. Taimoor Alam"
 
     # Should not raise
     generator._validate_linkedin_closing(message)
@@ -523,7 +529,7 @@ Bachelor of Science, Computer Science — State University — 2017
                     "linkedin_url": "https://linkedin.com/in/janesmith",
                     "why_relevant": "Engineering leader",
                     "recent_signals": [],
-                    "linkedin_message": "Hi Jane, I'm reaching out about the Senior Engineer role. At AdTech Inc, I led infrastructure modernization that achieved 75% incident reduction. I'd love to discuss how I can contribute to TechCorp.\n\nI have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+                    "linkedin_message": "Hi Jane, I'm reaching out about the Senior Engineer role. At AdTech Inc, I led infrastructure modernization that achieved 75% incident reduction. I'd love to discuss how I can contribute to TechCorp.\n\nBest. Taimoor Alam",
                     "email_subject": "Senior Engineer with Proven Platform Scaling Experience",
                     "email_body": "Dear Jane, I'm excited about the Senior Engineer opportunity at TechCorp. " + "At AdTech Inc, I led a platform modernization initiative that reduced incidents by 75% and enabled the team to handle 100x traffic bursts. " * 4 + "I would welcome the chance to discuss how my experience aligns with your needs.",
                     "reasoning": "VP Engineering can evaluate technical fit"
@@ -551,7 +557,7 @@ Bachelor of Science, Computer Science — State University — 2017
                     "linkedin_url": "https://linkedin.com/in/johndoe",
                     "why_relevant": "Direct hiring manager",
                     "recent_signals": [],
-                    "linkedin_message": "Hi John, I'm interested in the Senior Engineer role. At AdTech Inc, I reduced incidents by 75%. " + "At CloudCorp, I built autoscaling systems. I'd love to discuss this opportunity.\n\nI have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+                    "linkedin_message": "Hi John, I'm interested in the Senior Engineer role. At AdTech Inc, I reduced incidents by 75%. " + "At CloudCorp, I built autoscaling systems. I'd love to discuss this opportunity.\n\nBest. Taimoor Alam",
                     "email_subject": "Platform Engineer with AdTech and CloudCorp Experience",
                     "email_body": "Dear John, I'm writing about the Senior Engineer role. " + "At AdTech Inc, I led infrastructure work reducing incidents by 75%. At CloudCorp, I built autoscaling systems. " * 3 + "I would appreciate the chance to discuss how my background fits.",
                     "reasoning": "Manager hiring for platform team"
@@ -582,7 +588,7 @@ Bachelor of Science, Computer Science — State University — 2017
                     "why_relevant": "Technical leader",
                     "recent_signals": [],
                     # This message doesn't mention AdTech Inc
-                    "linkedin_message": "Hi Bob, I'm a senior engineer with experience in infrastructure. I've achieved significant incident reduction and built scalable systems. I'd love to discuss this role.\n\nI have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+                    "linkedin_message": "Hi Bob, I'm a senior engineer with experience in infrastructure. I've achieved significant incident reduction and built scalable systems. I'd love to discuss this role.\n\nBest. Taimoor Alam",
                     "email_subject": "Senior Engineer Interested in Platform Role",
                     "email_body": "Dear Bob, I'm writing about the Senior Engineer position. " + "I have extensive experience in platform engineering and infrastructure. " * 5 + "I would welcome the opportunity to discuss this further.",
                     "reasoning": "CTO can influence hiring"
@@ -692,7 +698,7 @@ Bachelor of Science — Stanford University — 2018
                     "linkedin_url": "https://linkedin.com/in/test",
                     "why_relevant": "Hiring manager",
                     "recent_signals": [],
-                    "linkedin_message": "At FinTech, I built payment systems. " * 3 + "\n\nI have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+                    "linkedin_message": "At FinTech, I built payment systems. " * 3 + "\n\nBest. Taimoor Alam",
                     "email_subject": "Engineer with FinTech Payment Experience Interest",
                     "email_body": "I have extensive experience at FinTech building payment systems. " * 6,
                     "reasoning": "Direct manager"
@@ -728,7 +734,7 @@ Bachelor of Science — Stanford University — 2018
                     "why_relevant": "Hiring manager",
                     "recent_signals": [],
                     # Uses lowercase "acme"
-                    "linkedin_message": "At acme, I built scalable systems. " * 3 + "\n\nI have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+                    "linkedin_message": "At acme, I built scalable systems. " * 3 + "\n\nBest. Taimoor Alam",
                     "email_subject": "Engineer from Acme with Platform Experience",
                     "email_body": "My experience at Acme includes building distributed systems. " * 5,
                     "reasoning": "Direct manager"

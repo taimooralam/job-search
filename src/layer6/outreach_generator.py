@@ -106,21 +106,20 @@ class OutreachGenerator:
 
     def _validate_linkedin_closing(self, message: str) -> None:
         """
-        Validate that LinkedIn message ends with applied note + Calendly link (no email).
+        Validate that LinkedIn message ends with signature (GAP-011 update).
 
         Args:
             message: LinkedIn message to validate
 
         Raises:
-            ValueError: If closing line is missing or incorrect
+            ValueError: If closing signature is missing
         """
+        # GAP-011: Simplified closing to fit within 300 char limit
+        # Just require the signature "Best. Taimoor Alam"
         text = message.lower()
-        has_calendly = "calendly.com" in text
-        has_applied = "applied" in text
-
-        if not (has_calendly and has_applied):
+        if "best" not in text or "taimoor" not in text:
             raise ValueError(
-                "LinkedIn message must state you have applied for the role and include the Calendly link (no email)."
+                'LinkedIn message must end with signature: "Best. Taimoor Alam"'
             )
 
     def _validate_company_grounding(
@@ -223,12 +222,24 @@ class OutreachGenerator:
         email_body = contact["email_body"]
         reasoning = contact["reasoning"]
 
-        # Ensure LinkedIn closing line is present; if not, append it.
+        # GAP-011: Ensure LinkedIn signature is present; if not, append it.
         # This makes the system robust even when upstream generators omit the closing.
-        if "calendly.com" not in linkedin_message.lower() or "applied" not in linkedin_message.lower():
-            closing = f"I have applied for this role. Calendly: {self.candidate_calendly}\nBest. Taimoor Alam"
-            if closing not in linkedin_message:
-                linkedin_message = linkedin_message.rstrip() + "\n\n" + closing
+        # Note: Must fit within 300 char limit, so we use short signature only.
+        SIGNATURE = "Best. Taimoor Alam"
+        if "taimoor" not in linkedin_message.lower():
+            linkedin_message = linkedin_message.rstrip() + "\n" + SIGNATURE
+
+        # GAP-011: Enforce 300 character limit
+        if len(linkedin_message) > 300:
+            self.logger.warning(
+                f"LinkedIn message exceeds 300 chars ({len(linkedin_message)}), truncating..."
+            )
+            # Truncate to fit 300 chars while preserving signature
+            content = linkedin_message.replace(SIGNATURE, "").strip()
+            content_limit = 300 - len(SIGNATURE) - 1  # -1 for newline
+            if len(content) > content_limit:
+                content = content[:content_limit - 3].rsplit(' ', 1)[0] + "..."
+            linkedin_message = content + "\n" + SIGNATURE
 
         # Validate content constraints
         self._validate_content_constraints(linkedin_message, "linkedin")

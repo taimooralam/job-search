@@ -177,16 +177,22 @@
 
 ---
 
-### GAP-011: LinkedIn 300 Char Message Limit
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2 hours
-**Impact**: Hard 300 character limit for LinkedIn connection messages not enforced
+### GAP-011: LinkedIn 300 Char Message Limit ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 2 hours
+**Impact**: LinkedIn connection messages now enforced to ≤300 characters
 
-**Fix Required**:
-- Prompt guardrail in LLM instructions
-- Output validation with retry logic
-- UI character counter
+**Fix Applied** (2024-11-30):
+1. Updated prompts with STRICT 300 char limit and example (280-char target)
+2. Changed signature from "Calendly link" to "Best. Taimoor Alam" (fits in limit)
+3. Added intelligent truncation in `_validate_linkedin_message()` that:
+   - Truncates at sentence boundaries
+   - Preserves signature
+   - Falls back to word boundary truncation
+4. Updated `outreach_generator.py` with 300-char enforcement
+5. Updated fallback messages to include signature
+6. UI character counter deferred to future (Phase 3 of plan)
 
-**Files**: `src/layer5/people_mapper.py`, `src/layer6/outreach_generator.py`, frontend templates
+**Files Modified**: `src/layer5/people_mapper.py`, `src/layer6/outreach_generator.py`
 **Plan**: `plans/linkedin-message-character-limit.md`
 
 ---

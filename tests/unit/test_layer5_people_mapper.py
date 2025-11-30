@@ -645,7 +645,7 @@ class TestOutreachPackageGeneration:
         )
 
         mock_response.content = json.dumps({
-            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's platform challenges. I have applied for this role. Calendly: https://calendly.com/taimooralam/15min",
+            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's challenges.\nBest. Taimoor Alam",
             "subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
             "email_body": email_body_150_words
         })
@@ -779,10 +779,24 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
 
     # Mock LLM for outreach (will be called once per contact)
     outreach_response = MagicMock()
+    # GAP-011: LinkedIn message must include signature and be ≤300 chars
+    # Email subject must reference pain point (legacy monolith, manual deployment)
+    # Email body must be 95-205 words
+    email_body = (
+        "Hi,\n\nI noticed your team is dealing with legacy monolith challenges. "
+        "At AdTech, I led a modernization initiative that reduced incident response time by 75%. "
+        "We tackled similar issues including manual deployment processes that were taking hours per release. "
+        "My approach focused on incremental improvement while maintaining system stability. "
+        "I would love to discuss how my experience could help address your infrastructure challenges. "
+        "I have successfully led similar transformations at multiple organizations. "
+        "My methodology focuses on delivering continuous value while minimizing risk. "
+        "I am available for a brief call to discuss your specific needs. "
+        "Looking forward to connecting.\n\nBest regards, [Your Name]"
+    )
     outreach_response.content = json.dumps({
-        "linkedin_message": "Reduced incidents 75% at AdTech. Interested in TechCorp platform challenges.",
-        "subject": "Platform Engineer - Infrastructure Modernization",
-        "email_body": "Hi,\n\nI reduced incidents 75% at AdTech...\n\nBest"
+        "linkedin_message": "Reduced incidents 75% at AdTech. Interested in TechCorp platform challenges.\nBest. Taimoor Alam",
+        "subject": "Solving Legacy Monolith Incidents with Proven Results",  # 7 words, mentions "legacy monolith incidents"
+        "email_body": email_body
     })
 
     mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8  # 1 classification + 8 outreach calls
@@ -792,10 +806,11 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
     updates = people_mapper_node(sample_job_state)
 
     # Assertions
+    # GAP-060: Limits total contacts to 5 (max 3 primary + 2 secondary)
     assert "primary_contacts" in updates
     assert "secondary_contacts" in updates
-    assert len(updates["primary_contacts"]) == 4
-    assert len(updates["secondary_contacts"]) == 4
+    assert len(updates["primary_contacts"]) == 3  # GAP-060 limit
+    assert len(updates["secondary_contacts"]) == 2  # GAP-060 limit
 
     # Each contact should have outreach
     for contact in updates["primary_contacts"]:
@@ -831,15 +846,33 @@ class TestPeopleMapperQualityGates:
             ]
         })
         outreach_response = MagicMock()
-        outreach_response.content = json.dumps({"linkedin_message": "msg", "subject": "subj", "email_body": "body"})
+        # GAP-011: LinkedIn message must include signature
+        # Email subject must have 5-10 words and reference pain points
+        # Email body must have 95-205 words
+        email_body = (
+            "Hi,\n\nI noticed your team is dealing with legacy monolith challenges. "
+            "At my previous company, I led a modernization initiative that reduced incident response time by 75%. "
+            "We tackled similar issues including manual deployment processes that were taking hours per release. "
+            "My approach focused on incremental improvement while maintaining system stability. "
+            "I would love to discuss how my experience could help address your infrastructure challenges. "
+            "I have successfully led similar transformations at multiple organizations. "
+            "My methodology focuses on delivering continuous value while minimizing risk. "
+            "I am available for a brief call to discuss your specific needs. "
+            "Looking forward to connecting.\n\nBest regards, [Your Name]"
+        )
+        outreach_response.content = json.dumps({
+            "linkedin_message": "Interested in the role.\nBest. Taimoor Alam",
+            "subject": "Solving Legacy Monolith Issues with Engineering Excellence",  # 7 words, pain-focused
+            "email_body": email_body
+        })
         mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
         mock_llm_class.return_value = mock_llm
 
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state)
 
-        # Quality gate: ≥4 primary contacts
-        assert len(result["primary_contacts"]) >= 4
+        # Quality gate: ≥4 primary contacts - GAP-060 limits to max 5 total (3 primary + 2 secondary)
+        assert len(result["primary_contacts"]) >= 3  # Updated to match GAP-060 limit
 
     @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.ChatOpenAI')
@@ -868,7 +901,8 @@ class TestPeopleMapperQualityGates:
             ]
         })
         outreach_response = MagicMock()
-        outreach_response.content = json.dumps({"linkedin_message": "msg", "subject": "subj", "email_body": "body"})
+        # GAP-011: LinkedIn message must include signature
+        outreach_response.content = json.dumps({"linkedin_message": "Interested in the role.\nBest. Taimoor Alam", "subject": "subj", "email_body": "body"})
         mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
         mock_llm_class.return_value = mock_llm
 
