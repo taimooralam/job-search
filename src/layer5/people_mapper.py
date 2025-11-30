@@ -27,6 +27,47 @@ from src.common.state import JobState
 from src.common.logger import get_logger
 
 
+# ===== SAFE NESTED ACCESS HELPER =====
+
+def _safe_get_nested(obj: Any, *keys: str, default: Any = None) -> Any:
+    """
+    Safely access nested dictionary or object attributes.
+
+    Handles None, dicts, and objects (Pydantic models, TypedDicts) uniformly.
+    Returns default if any key in the chain is missing or None.
+
+    Args:
+        obj: Object to access (dict, Pydantic model, None, etc.)
+        *keys: Keys to access in order (e.g., "company_research", "url")
+        default: Default value to return if access fails
+
+    Returns:
+        The value at the nested path or default
+
+    Example:
+        >>> _safe_get_nested(state, "company_research", "url", default="")
+        "https://techcorp.com"
+        >>> _safe_get_nested(state, "company_research", "url", default="")
+        ""  # if company_research is None
+    """
+    current = obj
+    for key in keys:
+        if current is None:
+            return default
+
+        # Try dict-style access first
+        if isinstance(current, dict):
+            current = current.get(key)
+        # Then try object attribute access (Pydantic models, TypedDict instances)
+        elif hasattr(current, key):
+            current = getattr(current, key, None)
+        else:
+            return default
+
+    # If we got None at the end, return default
+    return current if current is not None else default
+
+
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
 
 def _extract_search_results(search_response: Any) -> List[Any]:
@@ -626,7 +667,10 @@ class PeopleMapper:
         """
         company = state.get("company") or "the company"
         title = state.get("title") or "this role"
-        company_url = (state.get("company_research") or {}).get("url") or f"https://linkedin.com/company/{company.lower().replace(' ', '-')}"
+        company_url = _safe_get_nested(
+            state, "company_research", "url",
+            default=f"https://linkedin.com/company/{company.lower().replace(' ', '-')}"
+        )
 
         # 2 essential primary contacts (minimal fallback)
         primary_templates = [
@@ -687,7 +731,7 @@ class PeopleMapper:
 
         company = state.get("company", "")
         title = state.get("title", "")
-        company_url = state.get("company_research", {}).get("url", "")
+        company_url = _safe_get_nested(state, "company_research", "url", default="")
 
         all_contacts = []
         raw_content_parts = []
@@ -746,29 +790,37 @@ class PeopleMapper:
         if not company_research:
             return "No company research available."
 
-        parts = [company_research.get("summary", "")]
+        # Use _safe_get_nested for safe access
+        summary = _safe_get_nested(company_research, "summary", default="")
+        parts = [summary] if summary else []
 
         # Add key signals
-        signals = company_research.get("signals", [])
-        if signals:
-            signal_texts = [f"- {s['description']} ({s['date']})" for s in signals[:3]]
+        signals = _safe_get_nested(company_research, "signals", default=[])
+        if signals and isinstance(signals, list):
+            signal_texts = [
+                f"- {_safe_get_nested(s, 'description', default='Unknown event')} "
+                f"({_safe_get_nested(s, 'date', default='date unknown')})"
+                for s in signals[:3]
+            ]
             parts.append("Recent signals:\n" + "\n".join(signal_texts))
 
-        return "\n".join(parts)
+        return "\n".join(parts) if parts else "No company research available."
 
     def _format_role_research_summary(self, role_research: Optional[Dict]) -> str:
         """Format role research for prompt."""
         if not role_research:
             return "No role research available."
 
-        parts = [role_research.get("summary", "")]
+        # Use _safe_get_nested for safe access
+        summary = _safe_get_nested(role_research, "summary", default="")
+        parts = [summary] if summary else []
 
         # Add why_now
-        why_now = role_research.get("why_now", "")
+        why_now = _safe_get_nested(role_research, "why_now", default="")
         if why_now:
             parts.append(f"Why Now: {why_now}")
 
-        return "\n".join(parts)
+        return "\n".join(parts) if parts else "No role research available."
 
     def _format_pain_points(self, pain_points: List[str]) -> str:
         """Format pain points as bullets."""
@@ -1244,6 +1296,47 @@ Return the three letters separated by \"---\" lines.
         self.logger.info("="*80)
         if self.firecrawl_disabled:
             self.logger.info("FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only)")
+
+        # ===== VALIDATE UPSTREAM DEPENDENCIES =====
+        # Check critical fields (Layer 5 cannot proceed without these)
+        missing_fields = []
+        if not state.get("company"):
+            missing_fields.append("company")
+        if not state.get("title"):
+            missing_fields.append("title")
+        if not state.get("job_id"):
+            missing_fields.append("job_id")
+
+        if missing_fields:
+            error_msg = f"Layer 5 requires upstream data: {', '.join(missing_fields)}"
+            self.logger.error(error_msg)
+            return {
+                "primary_contacts": [],
+                "secondary_contacts": [],
+                "people": [],
+                "outreach_packages": [],
+                "fallback_cover_letters": [],
+                "errors": state.get("errors", []) + [error_msg]
+            }
+
+        # Log warnings for missing optional upstream data (non-fatal, but degrades quality)
+        if not state.get("pain_points"):
+            self.logger.warning("Layer 2 (pain_points) missing - outreach quality may be reduced")
+
+        company_research = state.get("company_research")
+        if not company_research:
+            self.logger.warning("Layer 3 (company_research) missing - using fallback company URL")
+        elif not _safe_get_nested(state, "company_research", "url"):
+            self.logger.warning("Layer 3 (company_research.url) missing - using fallback company URL")
+
+        if not state.get("role_research"):
+            self.logger.warning("Layer 3 (role_research) missing - outreach will lack role context")
+
+        if not state.get("selected_stars"):
+            self.logger.warning("Layer 2.5 (selected_stars) missing - outreach will lack specific achievements")
+
+        if not state.get("candidate_profile"):
+            self.logger.warning("candidate_profile missing - outreach will use generic content")
 
         try:
             # Step 1: Multi-source discovery
