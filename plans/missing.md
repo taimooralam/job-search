@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-11-30 (Added 13 gaps from plans folder analysis: GAP-046 to GAP-058)
+**Last Updated**: 2025-11-30 (Added GAP-059 to GAP-062 from production testing)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -11,10 +11,10 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (2 fixed, 1 open) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 14 | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 23 | Fix this sprint - enhancements and incomplete features |
+| **P1 (HIGH)** | 17 | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 24 | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
-| **Total** | **58** (2 fixed, 56 open) | All identified gaps |
+| **Total** | **62** (2 fixed, 60 open) | All identified gaps |
 
 **Test Coverage**: 708 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -303,6 +303,86 @@ except:  # Should catch specific exceptions
 
 ---
 
+### GAP-059: VPS Health Indicator Shows Grey (Unknown State)
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 1-2 hours
+**Impact**: VPS health status not visible to users; unclear if runner service is online
+
+**Description**: The VPS health indicator on the dashboard shows grey instead of green/red. Grey indicates "unknown" state - the `/api/health` endpoint returned unexpected data, timed out, or failed.
+
+**Possible Causes**:
+1. VPS runner service not running (`docker compose ps`)
+2. Port 8000 not exposed/accessible from Vercel frontend
+3. Network timeout (default 5s) exceeded
+4. CORS issues on `/health` endpoint
+5. Runner URL misconfigured (`RUNNER_URL` env var)
+
+**Debug Steps**:
+1. `curl http://72.61.92.76:8000/health` - Test runner directly
+2. Browser DevTools → Network tab → Check `/api/health` response
+3. Check Vercel logs for health check errors
+4. Verify `RUNNER_URL` env var in Vercel settings
+
+**Files**:
+- `frontend/app.py:726-838` - Health endpoint aggregation
+- `frontend/templates/base.html:1629-1697` - JavaScript polling
+- `runner_service/app.py:372-384` - Runner health endpoint
+
+---
+
+### GAP-061: Budget/Alert Dashboard Widgets Not Visible
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
+**Impact**: Budget monitoring and alerts not visible despite being fully implemented
+
+**Analysis**:
+The budget and alert modules are **FULLY IMPLEMENTED** with 708 unit tests passing. The issue is visibility, not missing code.
+
+**Implemented Components** (all working):
+- `src/common/token_tracker.py` (1013 lines) - Token tracking with 12-model pricing
+- `src/common/alerting.py` (581 lines) - Alert system with Slack
+- `src/common/metrics.py` (709 lines) - Metrics collector
+- `frontend/templates/partials/budget_monitor.html` (155 lines)
+- `frontend/templates/partials/alert_history.html` (133 lines)
+- `frontend/templates/partials/cost_trends.html` (110 lines)
+- 8 Flask API endpoints (`/api/budget`, `/api/alerts`, `/partials/*`)
+
+**Why Not Visible - Investigate**:
+1. HTMX not loading widgets properly (check `hx-get` attributes)
+2. Environment variables not set on Vercel:
+   - `ENABLE_ALERTING=true`
+   - `TOKEN_BUDGET_USD=100.0`
+   - `ENABLE_TOKEN_TRACKING=true`
+3. Partials not included in index.html template
+4. JavaScript errors preventing render
+5. CSS hiding elements
+
+**Debug Steps**:
+1. Check if `/api/budget` returns data (curl or browser)
+2. Check if `/partials/budget-monitor` returns HTML
+3. Verify widgets included in `index.html`
+4. Check browser console for errors
+5. Verify env vars on Vercel dashboard
+
+---
+
+### GAP-062: Job Extraction Not Showing on Detail Page
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Extracted JD data missing from detail page when not pre-populated
+
+**Description**: Job extraction results (requirements, qualifications, responsibilities parsed from JD) don't display on job detail page if the extracted fields weren't already present in the MongoDB document.
+
+**Possible Causes**:
+1. Template conditional hides empty fields completely (no "N/A" fallback)
+2. Extraction data saved to wrong field name or collection
+3. Frontend not fetching extracted data from correct MongoDB field
+4. Race condition - display renders before extraction completes
+
+**Files to Check**:
+- `frontend/templates/job_detail.html` - Template conditionals
+- `src/layer1_4/jd_extractor.py` - Extraction field names
+- `frontend/app.py` - Job detail endpoint, field mapping
+
+---
+
 ## P2: MEDIUM (Fix This Sprint)
 
 ### GAP-014: CV V2 - Dynamic Tagline for Location
@@ -488,6 +568,23 @@ except:  # Should catch specific exceptions
 3. Bulk import contacts via JSON modal
 
 **Plan**: `plans/frontend-ui-system-design.md` (Component 3)
+
+---
+
+### GAP-060: Limit FireCrawl Contacts to 5 (Currently 10)
+**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 30 minutes
+**Impact**: 10 contacts is too heavy; causes processing overhead and increased costs
+
+**Description**: FireCrawl contact discovery currently fetches up to 10 contacts per company. This is excessive and should be reduced to 5 for efficiency.
+
+**Fix Required**:
+1. Find FireCrawl contact discovery limit parameter in `src/layer5/people_mapper.py`
+2. Change limit from 10 to 5
+3. Update any related tests
+
+**Files**:
+- `src/layer5/people_mapper.py` - Contact discovery logic
+- FireCrawl MCP tool parameters
 
 ---
 
