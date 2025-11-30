@@ -554,6 +554,136 @@ class MetricsCollector:
         """Reset all metrics (for testing)."""
         self._start_time = time.time()
 
+    def get_cost_history(
+        self,
+        period: str = "hourly",
+        count: int = 24,
+    ) -> Dict[str, Any]:
+        """
+        Get historical cost data for sparkline visualization.
+
+        Args:
+            period: "hourly" or "daily"
+            count: Number of periods to return
+
+        Returns:
+            Dict with costs list, sparkline SVG path, and summary stats
+        """
+        from collections import defaultdict
+
+        try:
+            # Aggregate costs from all trackers
+            aggregated = defaultdict(lambda: {"cost_usd": 0.0, "calls": 0})
+
+            for name, tracker in self.token_registry._trackers.items():
+                if period == "hourly":
+                    data = tracker.get_hourly_costs(count)
+                    key_field = "hour"
+                else:
+                    data = tracker.get_daily_costs(count)
+                    key_field = "date"
+
+                for item in data:
+                    key = item[key_field]
+                    aggregated[key]["cost_usd"] += item["cost_usd"]
+                    aggregated[key]["calls"] += item["calls"]
+
+            # Convert to sorted list
+            costs = []
+            values = []
+            for key in sorted(aggregated.keys()):
+                data = aggregated[key]
+                costs.append({
+                    "period": key,
+                    "cost_usd": round(data["cost_usd"], 6),
+                    "calls": data["calls"],
+                })
+                values.append(data["cost_usd"])
+
+            # Generate sparkline SVG path
+            sparkline_svg = generate_sparkline_svg(values)
+
+            # Calculate summary stats
+            total = sum(values)
+            avg = total / len(values) if values else 0
+            max_val = max(values) if values else 0
+
+            return {
+                "period": period,
+                "count": count,
+                "costs": costs,
+                "sparkline_svg": sparkline_svg,
+                "summary": {
+                    "total_cost_usd": round(total, 4),
+                    "avg_cost_usd": round(avg, 6),
+                    "max_cost_usd": round(max_val, 6),
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get cost history: {e}")
+            return {
+                "period": period,
+                "count": count,
+                "costs": [],
+                "sparkline_svg": "",
+                "summary": {"total_cost_usd": 0, "avg_cost_usd": 0, "max_cost_usd": 0}
+            }
+
+
+def generate_sparkline_svg(
+    values: List[float],
+    width: int = 100,
+    height: int = 24,
+    stroke_color: str = "#10b981",
+    fill_color: str = "#10b98120",
+) -> str:
+    """
+    Generate an inline SVG sparkline path from a list of values.
+
+    Args:
+        values: List of numeric values to plot
+        width: SVG width in pixels
+        height: SVG height in pixels
+        stroke_color: Line color (hex)
+        fill_color: Fill color with opacity (hex)
+
+    Returns:
+        Complete SVG element as a string
+    """
+    if not values or all(v == 0 for v in values):
+        # Return empty sparkline placeholder
+        return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="{height//2}" x2="{width}" y2="{height//2}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>
+        </svg>'''
+
+    # Normalize values to fit in height (with padding)
+    padding = 2
+    max_val = max(values)
+    min_val = min(values)
+    val_range = max_val - min_val if max_val != min_val else 1
+
+    # Calculate points
+    points = []
+    step = width / (len(values) - 1) if len(values) > 1 else width
+    for i, val in enumerate(values):
+        x = i * step
+        y = padding + (height - 2 * padding) * (1 - (val - min_val) / val_range)
+        points.append((x, y))
+
+    # Build path
+    path_d = f"M {points[0][0]:.1f},{points[0][1]:.1f}"
+    for x, y in points[1:]:
+        path_d += f" L {x:.1f},{y:.1f}"
+
+    # Build fill path (closed to bottom)
+    fill_d = path_d + f" L {width},{height} L 0,{height} Z"
+
+    return f'''<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">
+        <path d="{fill_d}" fill="{fill_color}" stroke="none"/>
+        <path d="{path_d}" fill="none" stroke="{stroke_color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>'''
+
 
 # =============================================================================
 # Global Collector Instance
