@@ -45,6 +45,8 @@
 - [x] CV Generation V2 - Layer 1.4: JD Extractor ✅ **COMPLETED 2025-11-30** (33 unit tests passing; structured JD extraction for role-category-aware CV tailoring. See plans/cv-generation-v2-architecture.md)
 - [x] CV Gen V2 Enhancements ✅ **COMPLETED 2025-11-30** (Languages, Certifications, Locations, Skills expanded to 4 categories; all 161 tests passing; JD keyword integration 79% coverage)
 - [x] Frontend Job Detail Enhancements ✅ **COMPLETED 2025-11-30** (Extracted JD display section, collapsible job description, iframe viewer Phase 1, improved PDF error handling)
+- [x] Layer-level Structured Logging ✅ **COMPLETED 2025-11-30** (Commit ed5aadf1; Added LayerContext to all 10 pipeline nodes; layer_start/layer_complete events with timing and metadata)
+- [x] ATS Compliance Research ✅ **COMPLETED 2025-11-30** (Commit ca8e8f81; Research report in reports/ats-compliance-research.md; keyword stuffing analysis and best practice recommendations)
 
 ---
 
@@ -105,7 +107,12 @@ All agent-specific documentation has been organized into:
 
 ### Observability
 
-- [ ] All layers use `print()` instead of structured logging
+- [x] All layers use structured `LayerContext` logging ✅ **COMPLETED 2025-11-30** (Commit ed5aadf1)
+  - Replaced `print()` with LayerContext in all 10 pipeline nodes
+  - Each node emits `layer_start` and `layer_complete` events with timing and metadata
+  - Fields: `layer_id`, `layer_name`, `node_name`, `status`, `duration_ms`, `timestamp`
+  - Structured JSON format ready for log aggregation and monitoring
+  - Files: All `src/layer*.py` files updated with LayerContext integration
 - [ ] No metrics, alerts, or cost tracking
 - [ ] Config validation only in CLI, not runner
 
@@ -127,12 +134,15 @@ All agent-specific documentation has been organized into:
 - [ ] .docx CV export not implemented
 - [ ] STAR selector: No embeddings, caching, or graph edges
 
-### Newly Identified Gaps (2025-11-28)
+### Newly Identified Gaps (2025-11-28) - UPDATED 2025-11-30
 
+- [x] Observability still minimal: ✅ **RESOLVED 2025-11-30** (Commit ed5aadf1)
+  - Replaced `print()` with structured LayerContext logging across all 10 pipeline nodes
+  - All layers now emit `layer_start` and `layer_complete` events with timing and metadata
 - Planning docs stale: `plans/next-steps.md` still lists Phase 2 WYSIWYG issues as blockers; `reports/PROGRESS.md` frozen at Nov 16 with only Layers 2–3 done, conflicting with current repo state.
-- LLM retry policy inconsistent: `src/layer6/cover_letter_generator.py` and `src/layer6/generator.py` call `llm.invoke` without tenacity backoff (see cover letter lines 688-723 and generator lines 226-243, 433-448), violating the guideline that all LLM calls use exponential backoff.
-- Observability still minimal: pipeline layers and runner endpoints rely on `print` instead of structured logging/metrics, hindering prod debugging and cost tracking (previously noted but still unresolved).
-- Action: add tenacity backoff wrappers to all LLM calls in cover letter + CV generation flows to align with repo standards and harden against transient API failures.
+- [x] LLM retry policy inconsistent: ✅ **RESOLVED 2025-11-29** (Commit bde545b3)
+  - Added tenacity backoff wrappers to all LLM calls in cover_letter_generator and generator
+  - All LLM calls now use exponential backoff with proper retry logic
 
 ### Critical Issues (2025-11-28)
 
@@ -791,14 +801,16 @@ Visual page break indicators in CV editor and detail page showing exactly where 
 - Root cause: TipTap JSON conversion or HTML template logic
 - **Files**: `pdf_service/pdf_helpers.py`, `src/layer6/generator.py`
 
-#### #9 Master CV Missing Companies
-**Status**: Needs investigation
+#### #9 ATS Compliance Research ✅ **COMPLETED 2025-11-30**
+**Status**: RESEARCHED (Commit ca8e8f81)
 **Priority**: High
-- [ ] Not all companies from experience being included in generated CV
-- [ ] Investigation: Check `src/layer6/generator.py` parsing logic
-- [ ] Check if master-cv.md has all companies listed correctly
-- [ ] Verify STAR records have company associations
-- **Files**: `src/layer6/generator.py`, `master-cv.md`
+- [x] Comprehensive ATS compliance analysis completed
+- [x] Report: `reports/ats-compliance-research.md`
+- [x] Key Findings:
+  - Keyword stuffing backfires (modern ATS penalizes repetition)
+  - Context-aware keyword integration is best practice
+  - Recommendations for CV generator improvements documented
+- **Files**: `reports/ats-compliance-research.md`, bugs.md
 
 ### Features
 
