@@ -8,7 +8,11 @@ OPEN/PENDING:
 
 5.9 Pick up the entire CV will all job descriptions, not only the last two companies
 
-7. Create an iframe to open the job directly in the iframe in a collapsible or a better UX. Have a button to export to pdf for the entire iframe as a bonus.
+7. [RESOLVED 2025-11-30] Create an iframe to open the job directly in the iframe in a collapsible or a better UX. Have a button to export to pdf for the entire iframe as a bonus.
+    - **Phase 1** (Complete): Collapsible iframe viewer with error handling and fallback
+    - **Phase 2** (Complete): Export PDF button using Playwright to capture job posting URL
+    - **Implementation**: `/url-to-pdf` endpoint in pdf_service, proxied through runner and frontend
+    - **Commits**: db1907a7, 030913ae, f3c4e45a, f6406865
 
 8. Create AI agents that bypass firecrawl not allowed filters and reason into truly researching company info if firecrawl failes. That are cheap as well.
 
