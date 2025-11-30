@@ -328,9 +328,20 @@
                         <div class="mt-6">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Live Logs</h3>
-                                <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                                    <span id="logs-toggle-text">Show</span>
-                                </button>
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="copyLogsToClipboard()"
+                                            class="inline-flex items-center text-xs text-gray-600 hover:text-gray-800 font-medium transition"
+                                            title="Copy all logs to clipboard">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                        Copy
+                                    </button>
+                                    <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                                        <span id="logs-toggle-text">Show</span>
+                                    </button>
+                                </div>
                             </div>
                             <div id="logs-container" class="hidden bg-gray-900 rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto">
                                 <div id="logs-content">Waiting for logs...</div>
@@ -2462,6 +2473,68 @@
             logsContainer.classList.add('hidden');
             toggleText.textContent = 'Show';
         }
+    }
+
+    // Copy all logs to clipboard
+    async function copyLogsToClipboard() {
+        const logsContent = document.getElementById('logs-content');
+
+        if (!logsContent) {
+            showToast('Logs not found', 'error');
+            return;
+        }
+
+        // Get all text content from the logs
+        const logsText = logsContent.innerText || logsContent.textContent;
+
+        if (!logsText || logsText.trim() === '' || logsText.includes('Waiting for logs')) {
+            showToast('No logs to copy', 'info');
+            return;
+        }
+
+        // Try modern Clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            try {
+                await navigator.clipboard.writeText(logsText);
+                showToast('Logs copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Clipboard API failed:', err);
+                fallbackCopyTextToClipboard(logsText);
+            }
+        } else {
+            // Fallback for older browsers
+            fallbackCopyTextToClipboard(logsText);
+        }
+    }
+
+    // Fallback copy method for browsers without Clipboard API
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+
+        // Make it invisible and out of viewport
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+        textArea.style.opacity = '0';
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showToast('Logs copied to clipboard!', 'success');
+            } else {
+                showToast('Failed to copy logs', 'error');
+            }
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            showToast('Copy not supported in this browser', 'error');
+        }
+
+        document.body.removeChild(textArea);
     }
 
     // Check if run_id in URL params and start monitoring
