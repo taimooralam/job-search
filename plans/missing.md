@@ -137,7 +137,7 @@ All agent-specific documentation has been organized into:
 
 ### Features (Backlog)
 
-- [ ] Rate limiting for FireCrawl/LLM calls
+- [x] Rate limiting for FireCrawl/LLM calls ✅ **COMPLETED 2025-11-30** (RateLimiter class, sliding window algorithm, per-minute and daily limits, config flags)
 - [x] LinkedIn outreach character limit requirements documented ✅ **COMPLETED 2025-11-27**
   - Connection request: 300 char limit specified
   - InMail: 1900 char body limit specified

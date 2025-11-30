@@ -340,6 +340,138 @@ ANTHROPIC_OUTPUT_PRICE=0.015         # $ per 1K tokens
    usage_data = tracker.to_dict()
    ```
 
+### Rate Limiting Architecture (NEW - 2025-11-30)
+
+**Module**: `src/common/rate_limiter.py`
+
+**Overview**: Sliding-window rate limiting for API calls to external services (FireCrawl, LLMs). Prevents rate limit violations and graceful degradation under load.
+
+**Key Components**:
+
+1. **RateLimiter Class** (Core rate limiting logic):
+   - Sliding window algorithm based on timestamps
+   - Supports per-minute and daily limits
+   - Thread-safe with Lock-based synchronization
+   - Two operational modes:
+     - **Blocking Mode** (`acquire()`) - Wait until quota available, then consume
+     - **Non-blocking Mode** (`check()`) - Return boolean, let caller decide action
+   - Async support via `acquire_async()` for FastAPI integration
+   - Statistics tracking: `get_stats()` returns usage info
+   - Dict export for persistence: `to_dict()`
+
+2. **RateLimiterRegistry** (Centralized management):
+   - Global registry for all active rate limiters
+   - Prevent duplicate limiters for same service
+   - Shared state across threads/processes
+   - Methods: `create()`, `get()`, `get_all()`, `reset()`
+
+3. **Integration Pattern**:
+   ```python
+   from src.common.rate_limiter import RateLimiterRegistry
+
+   # Create limiter per service
+   registry = RateLimiterRegistry()
+   limiter = registry.create(
+       service="firecrawl",
+       per_minute_limit=10,
+       daily_limit=600
+   )
+
+   # Non-blocking check
+   if limiter.check(tokens=1):
+       result = firecrawl.search(...)  # Make API call
+   else:
+       logger.warning("Rate limit reached for FireCrawl")
+
+   # Blocking mode (with timeout)
+   try:
+       limiter.acquire(tokens=1, max_wait_seconds=60)
+       result = firecrawl.search(...)
+   except RateLimitError:
+       logger.error("Rate limit timeout exceeded")
+   ```
+
+**Configuration** (Environment Variables):
+
+```bash
+# Per-service rate limits (API calls per minute)
+OPENAI_RATE_LIMIT_PER_MIN=500              # Default: 500 calls/min
+ANTHROPIC_RATE_LIMIT_PER_MIN=100           # Default: 100 calls/min
+OPENROUTER_RATE_LIMIT_PER_MIN=60           # Default: 60 calls/min
+FIRECRAWL_RATE_LIMIT_PER_MIN=10            # Default: 10 calls/min
+FIRECRAWL_DAILY_LIMIT=600                  # Default: 600 calls/day
+
+# Rate limiting control
+ENABLE_RATE_LIMITING=true                  # Enable/disable rate limiting (default: true)
+RATE_LIMIT_MAX_WAIT_SECONDS=60             # Max wait time for blocking acquire (default: 60s)
+```
+
+**Implementation Details**:
+
+1. **Sliding Window Algorithm**:
+   - Maintains list of (timestamp, tokens) tuples
+   - On `acquire()` or `check()`:
+     - Remove all entries older than window (1 minute or 1 day)
+     - Sum tokens in window
+     - Compare against limit
+   - Complexity: O(n) where n = entries in window, typically 10-100
+
+2. **Thread Safety**:
+   - `threading.Lock()` on all mutable operations
+   - Per-operation locking (fine-grained)
+   - No global lock (allows concurrent operations on different limiters)
+
+3. **Async Support**:
+   - `acquire_async()` uses `asyncio.sleep()` for non-blocking waits
+   - Compatible with FastAPI async endpoints
+   - Fallback to sync version if loop not available
+
+4. **Error Handling**:
+   - `RateLimitError` raised when limits exceeded in non-blocking mode
+   - Timeout handling in blocking mode (RateLimitTimeout exception)
+   - Graceful degradation: Services fail fast or queue for later
+
+**Features**:
+
+- Per-minute burst limiting (prevent API rate limit violations)
+- Daily quota tracking (prevent surprise overage charges)
+- Configurable per service (different limits for different APIs)
+- Thread-safe and async-safe operation
+- Statistics export for monitoring
+- Persistent state (can be saved/restored from MongoDB)
+
+**Integration Status** (As of 2025-11-30):
+
+- [x] Core infrastructure complete (RateLimiter, RateLimiterRegistry)
+- [x] Configuration flags added to `src/common/config.py`
+- [x] Unit tests written and passing
+- [ ] **PENDING**: Integration into pipeline layers (Layer 2, Layer 3, Layer 5)
+  - Layer 2: Rate limit LLM calls for pain point mining
+  - Layer 3: Rate limit FireCrawl calls for company research
+  - Layer 5: Rate limit FireCrawl calls for contact discovery
+- [ ] **PENDING**: Runner service integration
+- [ ] **PENDING**: Monitoring dashboard (usage stats endpoint)
+
+**Future Enhancements**:
+
+1. **Quota Management Dashboard**: Display current usage vs limits
+2. **Cost Control**: Integrate with TokenTracker for combined budget + rate limit enforcement
+3. **Adaptive Rate Limiting**: Auto-adjust limits based on API response headers
+4. **Distributed Rate Limiting**: Redis-backed registry for multi-process deployments
+
+**Files Created**:
+
+- `src/common/rate_limiter.py` (480+ lines)
+  - RateLimiter class (sliding window algorithm)
+  - RateLimiterRegistry (centralized management)
+  - RateLimitError and RateLimitTimeout exceptions
+  - Thread-safe and async-safe implementation
+
+**Files Modified**:
+
+- `src/common/config.py` - Added rate limiting configuration flags
+- `.env.example` - Added rate limiting env var placeholders
+
 ### LLM Provider Priority (CV Generation)
 
 1. Anthropic Claude (`USE_ANTHROPIC=true`, default)
