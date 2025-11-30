@@ -339,6 +339,10 @@ class OutputPublisher:
             if state.get('company_summary'):
                 update_data['company_summary'] = state['company_summary']
 
+            # Add extracted JD from Layer 1.4 (CV Gen V2)
+            if state.get('extracted_jd'):
+                update_data['extracted_jd'] = state['extracted_jd']
+
             # Add Drive/Sheets references
             if state.get('drive_folder_url'):
                 update_data['drive_folder_url'] = state['drive_folder_url']
