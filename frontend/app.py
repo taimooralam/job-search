@@ -838,6 +838,63 @@ def service_health_partial():
     )
 
 
+@app.route("/api/metrics", methods=["GET"])
+@login_required
+def get_metrics():
+    """
+    Get unified metrics from all infrastructure components (Gap OB-1).
+
+    Returns aggregated metrics from:
+    - Token trackers (BG-1)
+    - Rate limiters (BG-2)
+    - Circuit breakers (CB-1)
+    """
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        snapshot = collector.get_snapshot()
+        return jsonify(snapshot.to_dict())
+    except ImportError:
+        # Metrics module not available, return empty
+        return jsonify({
+            "error": "Metrics module not available",
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+
+
+@app.route("/partials/metrics-dashboard", methods=["GET"])
+@login_required
+def metrics_dashboard_partial():
+    """HTMX partial: Return metrics dashboard widget (Gap OB-1)."""
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        snapshot = collector.get_snapshot()
+        return render_template(
+            "partials/metrics_dashboard.html",
+            metrics=snapshot.to_dict()
+        )
+    except ImportError:
+        return render_template(
+            "partials/metrics_dashboard.html",
+            metrics=None,
+            error="Metrics module not available"
+        )
+    except Exception as e:
+        return render_template(
+            "partials/metrics_dashboard.html",
+            metrics=None,
+            error=str(e)
+        )
+
+
 # ============================================================================
 # Authentication Routes
 # ============================================================================
