@@ -17,6 +17,8 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from io import BytesIO
 
 from .models import (
     HealthResponse,
@@ -687,3 +689,88 @@ async def generate_cv_pdf(job_id: str):
                 client.close()
             except Exception:
                 pass
+
+
+# ============================================================================
+# URL to PDF Endpoint (Phase 2 - Job Posting Export)
+# ============================================================================
+
+class URLToPDFRequest(BaseModel):
+    """Request model for URL to PDF conversion."""
+    url: str
+
+
+@app.post("/api/url-to-pdf", dependencies=[Depends(verify_token)])
+async def export_url_to_pdf(request: URLToPDFRequest):
+    """
+    Export a URL (job posting) to PDF.
+
+    Proxies request to PDF service which uses Playwright to capture the page.
+
+    Args:
+        request: Contains URL to render
+
+    Returns:
+        StreamingResponse with PDF binary data
+    """
+    import httpx
+
+    # Validate URL
+    if not request.url or not request.url.strip():
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    if not request.url.startswith(('http://', 'https://')):
+        raise HTTPException(status_code=400, detail="URL must start with http:// or https://")
+
+    # Get PDF service URL from environment
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
+
+    try:
+        logger.info(f"Proxying URL-to-PDF request: {request.url[:100]}...")
+
+        async with httpx.AsyncClient(timeout=60.0) as http_client:
+            response = await http_client.post(
+                f"{pdf_service_url}/url-to-pdf",
+                json={"url": request.url}
+            )
+            response.raise_for_status()
+
+            # Extract filename from response headers
+            content_disposition = response.headers.get("Content-Disposition", "")
+            filename = "job_posting.pdf"
+            if "filename=" in content_disposition:
+                filename_part = content_disposition.split("filename=")[1]
+                filename = filename_part.strip('"')
+
+            logger.info(f"URL-to-PDF completed: {filename}")
+
+            return StreamingResponse(
+                BytesIO(response.content),
+                media_type='application/pdf',
+                headers={
+                    'Content-Disposition': f'attachment; filename="{filename}"'
+                }
+            )
+
+    except httpx.TimeoutException:
+        logger.error(f"URL-to-PDF timed out: {request.url}")
+        raise HTTPException(
+            status_code=504,
+            detail="PDF generation timed out. The site may be slow or blocking automation."
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error(f"PDF service error: {e.response.status_code}")
+        try:
+            error_detail = e.response.json().get("detail", str(e))
+        except Exception:
+            error_detail = str(e)
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"PDF generation failed: {error_detail}"
+        )
+    except httpx.RequestError as e:
+        logger.error(f"PDF service connection failed: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="PDF service unavailable. Please try again later."
+        )
