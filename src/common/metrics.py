@@ -73,6 +73,56 @@ class TokenMetrics:
 
 
 @dataclass
+class BudgetStatus:
+    """Budget status for a single tracker."""
+    name: str
+    budget_usd: Optional[float] = None
+    used_usd: float = 0.0
+    remaining_usd: Optional[float] = None
+    used_percent: float = 0.0
+    is_exceeded: bool = False
+    status: str = "ok"  # ok, warning, critical, exceeded
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "name": self.name,
+            "budget_usd": self.budget_usd,
+            "used_usd": round(self.used_usd, 4),
+            "remaining_usd": round(self.remaining_usd, 4) if self.remaining_usd is not None else None,
+            "used_percent": round(self.used_percent, 1),
+            "is_exceeded": self.is_exceeded,
+            "status": self.status,
+        }
+
+
+@dataclass
+class BudgetMetrics:
+    """Aggregated budget metrics across all trackers."""
+    total_budget_usd: Optional[float] = None  # None if any tracker has no budget
+    total_used_usd: float = 0.0
+    total_remaining_usd: Optional[float] = None
+    overall_used_percent: float = 0.0
+    trackers_exceeded: int = 0
+    trackers_warning: int = 0  # 80-99% usage
+    trackers_critical: int = 0  # 90-99% usage
+    by_tracker: Dict[str, BudgetStatus] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "total_budget_usd": round(self.total_budget_usd, 2) if self.total_budget_usd is not None else None,
+            "total_used_usd": round(self.total_used_usd, 4),
+            "total_remaining_usd": round(self.total_remaining_usd, 4) if self.total_remaining_usd is not None else None,
+            "overall_used_percent": round(self.overall_used_percent, 1),
+            "trackers_exceeded": self.trackers_exceeded,
+            "trackers_warning": self.trackers_warning,
+            "trackers_critical": self.trackers_critical,
+            "by_tracker": {k: v.to_dict() for k, v in self.by_tracker.items()},
+        }
+
+
+@dataclass
 class RateLimitMetrics:
     """Metrics for rate limiting across providers."""
     total_requests: int = 0
@@ -140,11 +190,12 @@ class MetricsSnapshot:
     rate_limits: RateLimitMetrics
     circuit_breakers: CircuitBreakerMetrics
     system_health: SystemHealth
+    budget: Optional[BudgetMetrics] = None
     uptime_seconds: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API response."""
-        return {
+        result = {
             "timestamp": self.timestamp.isoformat(),
             "uptime_seconds": round(self.uptime_seconds, 1),
             "system_health": self.system_health.to_dict(),
@@ -152,6 +203,9 @@ class MetricsSnapshot:
             "rate_limits": self.rate_limits.to_dict(),
             "circuit_breakers": self.circuit_breakers.to_dict(),
         }
+        if self.budget:
+            result["budget"] = self.budget.to_dict()
+        return result
 
 
 class MetricsCollector:
@@ -409,6 +463,75 @@ class MetricsCollector:
 
         return health
 
+    def get_budget_metrics(self) -> BudgetMetrics:
+        """
+        Collect budget metrics from all token trackers.
+
+        Returns:
+            BudgetMetrics with budget status for each tracker
+        """
+        metrics = BudgetMetrics()
+
+        try:
+            all_stats = self.token_registry.get_all_stats()
+
+            has_unlimited_tracker = False
+            total_budget = 0.0
+            total_remaining = 0.0
+
+            for tracker_name, stats in all_stats.items():
+                budget_usd = stats.get("budget_usd")
+                used_usd = stats.get("total_cost_usd", 0.0)
+                remaining_usd = stats.get("budget_remaining_usd")
+                used_percent = stats.get("budget_used_percent", 0.0)
+                is_exceeded = stats.get("budget_exceeded", False)
+
+                # Determine status based on usage percentage
+                if budget_usd is None:
+                    status = "ok"  # Unlimited budget
+                    has_unlimited_tracker = True
+                elif is_exceeded:
+                    status = "exceeded"
+                    metrics.trackers_exceeded += 1
+                elif used_percent >= 90:
+                    status = "critical"
+                    metrics.trackers_critical += 1
+                elif used_percent >= 80:
+                    status = "warning"
+                    metrics.trackers_warning += 1
+                else:
+                    status = "ok"
+
+                # Create budget status for this tracker
+                budget_status = BudgetStatus(
+                    name=tracker_name,
+                    budget_usd=budget_usd,
+                    used_usd=used_usd,
+                    remaining_usd=remaining_usd,
+                    used_percent=used_percent,
+                    is_exceeded=is_exceeded,
+                    status=status,
+                )
+                metrics.by_tracker[tracker_name] = budget_status
+
+                # Aggregate totals
+                metrics.total_used_usd += used_usd
+                if budget_usd is not None:
+                    total_budget += budget_usd
+                if remaining_usd is not None:
+                    total_remaining += remaining_usd
+
+            # Set total budget (None if any tracker is unlimited)
+            if not has_unlimited_tracker and total_budget > 0:
+                metrics.total_budget_usd = total_budget
+                metrics.total_remaining_usd = total_remaining
+                metrics.overall_used_percent = (metrics.total_used_usd / total_budget) * 100
+
+        except Exception as e:
+            logger.error(f"Failed to collect budget metrics: {e}")
+
+        return metrics
+
     def get_snapshot(self) -> MetricsSnapshot:
         """
         Get complete metrics snapshot.
@@ -423,6 +546,7 @@ class MetricsCollector:
                 rate_limits=self.get_rate_limit_metrics(),
                 circuit_breakers=self.get_circuit_breaker_metrics(),
                 system_health=self.get_system_health(),
+                budget=self.get_budget_metrics(),
                 uptime_seconds=time.time() - self._start_time,
             )
 

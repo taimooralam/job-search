@@ -59,6 +59,30 @@
         </div>
     </div>
 
+    <!-- API Budget Monitor (Gap #14) -->
+    <div id="budget-monitor-container"
+         hx-get="/partials/budget-monitor"
+         hx-trigger="load, every 30s"
+         hx-swap="innerHTML">
+        <!-- Budget monitor loaded via HTMX with auto-refresh every 30 seconds -->
+        <div class="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+            <div class="flex items-center justify-between mb-4">
+                <div class="h-5 bg-gray-200 rounded w-32"></div>
+                <div class="h-4 bg-gray-200 rounded w-8"></div>
+            </div>
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div class="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+                <div class="h-2 bg-gray-200 rounded mb-1"></div>
+                <div class="h-3 bg-gray-200 rounded w-24"></div>
+            </div>
+            <div class="space-y-2">
+                <div class="h-3 bg-gray-200 rounded w-20"></div>
+                <div class="h-12 bg-gray-100 rounded"></div>
+                <div class="h-12 bg-gray-100 rounded"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toolbar Card -->
     <div class="card">
         <div class="card-body">

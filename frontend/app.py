@@ -895,6 +895,55 @@ def metrics_dashboard_partial():
         )
 
 
+@app.route("/partials/budget-monitor", methods=["GET"])
+@login_required
+def budget_monitor_partial():
+    """HTMX partial: Return budget monitoring widget (Gap #14)."""
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        budget_metrics = collector.get_budget_metrics()
+        return render_template(
+            "partials/budget_monitor.html",
+            budget=budget_metrics.to_dict()
+        )
+    except ImportError:
+        return render_template(
+            "partials/budget_monitor.html",
+            budget=None,
+            error="Metrics module not available"
+        )
+    except Exception as e:
+        return render_template(
+            "partials/budget_monitor.html",
+            budget=None,
+            error=str(e)
+        )
+
+
+@app.route("/api/budget", methods=["GET"])
+@login_required
+def get_budget():
+    """API endpoint: Return budget metrics as JSON (Gap #14)."""
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        budget_metrics = collector.get_budget_metrics()
+        return jsonify(budget_metrics.to_dict())
+    except ImportError:
+        return jsonify({
+            "error": "Metrics module not available",
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat(),
+        }), 500
+
+
 # ============================================================================
 # Authentication Routes
 # ============================================================================
