@@ -1,0 +1,469 @@
+"""
+CV Generation V2 Orchestrator.
+
+Ties all 6 phases together into a single pipeline:
+1. CV Loader - Load pre-split role files
+2. Per-Role Generator - Generate tailored bullets for each role
+3. Stitcher - Combine roles with deduplication
+4. Header Generator - Create profile/skills grounded in achievements
+5. Grader - Multi-dimensional quality assessment
+6. Improver - Single-pass targeted improvement
+
+Usage:
+    from src.layer6_v2.orchestrator import cv_generator_v2_node
+
+    # In workflow:
+    workflow.add_node("generator", cv_generator_v2_node)
+"""
+
+import os
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+
+from src.common.config import Config
+from src.common.state import JobState
+from src.common.logger import get_logger
+from src.common.utils import sanitize_path_component
+
+from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
+from src.layer6_v2.role_generator import RoleGenerator, generate_all_roles_sequential
+from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
+from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
+from src.layer6_v2.header_generator import HeaderGenerator, generate_header
+from src.layer6_v2.grader import CVGrader, grade_cv
+from src.layer6_v2.improver import CVImprover, improve_cv
+from src.layer6_v2.types import (
+    RoleBullets,
+    StitchedCV,
+    HeaderOutput,
+    GradeResult,
+    ImprovementResult,
+    FinalCV,
+)
+
+
+class CVGeneratorV2:
+    """
+    Orchestrates all 6 phases of CV Generation V2.
+
+    Design principles:
+    - Sequential processing (predictable, debuggable)
+    - Per-role hallucination QA
+    - Role-category-aware emphasis
+    - Single-pass improvement for cost control
+    """
+
+    def __init__(
+        self,
+        model: Optional[str] = None,
+        passing_threshold: float = 8.5,
+        word_budget: int = 600,
+        use_llm_grading: bool = True,
+    ):
+        """
+        Initialize the CV Generator V2 orchestrator.
+
+        Args:
+            model: LLM model to use (default: Config.DEFAULT_MODEL)
+            passing_threshold: Grade threshold to pass (default: 8.5)
+            word_budget: Target word count for CV (default: 600)
+            use_llm_grading: Use LLM for grading vs rule-based (default: True)
+        """
+        self._logger = get_logger(__name__)
+        self.model = model or Config.DEFAULT_MODEL
+        self.passing_threshold = passing_threshold
+        self.word_budget = word_budget
+        self.use_llm_grading = use_llm_grading
+
+        # Initialize components
+        self.cv_loader = CVLoader()
+        self.role_generator = RoleGenerator(model=self.model)
+        self.role_qa = RoleQA()
+        self.stitcher = CVStitcher(word_budget=word_budget)
+        self.header_generator = HeaderGenerator(model=self.model)
+        self.grader = CVGrader(
+            model=self.model,
+            passing_threshold=passing_threshold,
+            use_llm_grading=use_llm_grading,
+        )
+        self.improver = CVImprover(model=self.model)
+
+        self._logger.info(f"CVGeneratorV2 initialized with model: {self.model}")
+
+    def generate(
+        self,
+        state: JobState,
+    ) -> Dict[str, Any]:
+        """
+        Generate a tailored CV using the 6-phase pipeline.
+
+        Args:
+            state: Current job processing state with extracted_jd
+
+        Returns:
+            Dictionary with cv_text, cv_path, cv_reasoning, and grading results
+        """
+        self._logger.info("=" * 60)
+        self._logger.info("CV GENERATION V2: Starting 6-phase pipeline")
+        self._logger.info("=" * 60)
+
+        # Extract required data from state
+        extracted_jd = state.get("extracted_jd", {})
+        if not extracted_jd:
+            self._logger.warning("No extracted_jd in state - using defaults")
+            extracted_jd = self._build_default_extracted_jd(state)
+
+        company = state.get("company", "Unknown")
+        title = state.get("title", "Unknown")
+
+        try:
+            # Phase 1: Load candidate data
+            self._logger.info("Phase 1: Loading candidate data...")
+            candidate_data = self.cv_loader.load()
+            roles = candidate_data.roles
+            self._logger.info(f"  Loaded {len(roles)} roles from master CV")
+
+            # Phase 2: Generate tailored bullets for each role
+            self._logger.info("Phase 2: Generating tailored bullets per role...")
+            role_bullets_list = self._generate_all_role_bullets(roles, extracted_jd)
+            self._logger.info(f"  Generated bullets for {len(role_bullets_list)} roles")
+
+            # Phase 3: Run QA on all roles
+            self._logger.info("Phase 3: Running hallucination QA...")
+            qa_results, ats_results = run_qa_on_all_roles(
+                role_bullets_list,
+                roles,  # Pass full RoleData objects
+                extracted_jd.get("top_keywords", []),
+            )
+            self._log_qa_summary(qa_results, role_bullets_list)
+
+            # Phase 4: Stitch roles together
+            self._logger.info("Phase 4: Stitching roles with deduplication...")
+            stitched_cv = stitch_all_roles(
+                role_bullets_list,
+                word_budget=self.word_budget,
+                target_keywords=extracted_jd.get("top_keywords", []),
+            )
+            self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
+
+            # Phase 5: Generate header and skills
+            self._logger.info("Phase 5: Generating header and skills...")
+            header_output = generate_header(
+                stitched_cv,
+                extracted_jd,
+                {
+                    "name": candidate_data.name,
+                    "email": candidate_data.email,
+                    "phone": candidate_data.phone,
+                    "linkedin": candidate_data.linkedin,
+                    "location": candidate_data.location,
+                    "education": [
+                        candidate_data.education_masters,
+                        candidate_data.education_bachelors,
+                    ] if candidate_data.education_bachelors else [candidate_data.education_masters],
+                    "certifications": candidate_data.certifications,
+                    "languages": candidate_data.languages,
+                },
+            )
+            self._logger.info(f"  Profile: {header_output.profile.word_count} words")
+            self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")
+
+            # Assemble full CV text
+            cv_text = self._assemble_cv_text(header_output, stitched_cv, candidate_data)
+
+            # Phase 6: Grade and improve
+            self._logger.info("Phase 6: Grading CV...")
+            master_cv_text = self._get_master_cv_text()
+            grade_result = grade_cv(cv_text, extracted_jd, master_cv_text)
+            self._log_grade_result(grade_result)
+
+            improvement_result = None
+            if not grade_result.passed:
+                self._logger.info("  CV below threshold - applying single-pass improvement...")
+                improvement_result = improve_cv(cv_text, grade_result, extracted_jd)
+                if improvement_result.improved:
+                    cv_text = improvement_result.cv_text
+                    self._logger.info(f"  Improved {improvement_result.target_dimension}")
+                    self._logger.info(f"  Changes: {len(improvement_result.changes_made)}")
+
+            # Save CV to disk
+            cv_path = self._save_cv_to_disk(cv_text, company, title)
+
+            # Build reasoning summary
+            cv_reasoning = self._build_reasoning(
+                grade_result, improvement_result, stitched_cv, header_output
+            )
+
+            self._logger.info("=" * 60)
+            self._logger.info("CV GENERATION V2: Complete")
+            self._logger.info(f"  Final score: {grade_result.composite_score:.1f}/10")
+            self._logger.info(f"  Passed: {grade_result.passed}")
+            self._logger.info("=" * 60)
+
+            return {
+                "cv_text": cv_text,
+                "cv_path": cv_path,
+                "cv_reasoning": cv_reasoning,
+                # Extended fields for debugging/analysis
+                "cv_grade_result": grade_result.to_dict() if hasattr(grade_result, 'to_dict') else None,
+                "cv_improvement_result": improvement_result.to_dict() if improvement_result and hasattr(improvement_result, 'to_dict') else None,
+            }
+
+        except Exception as e:
+            self._logger.error(f"CV Generation V2 failed: {e}")
+            return {
+                "cv_text": None,
+                "cv_path": None,
+                "cv_reasoning": f"Generation failed: {str(e)}",
+                "errors": [f"CV Gen V2 error: {str(e)}"],
+            }
+
+    def _build_default_extracted_jd(self, state: JobState) -> Dict[str, Any]:
+        """Build default extracted_jd from state when not available."""
+        return {
+            "title": state.get("title", ""),
+            "company": state.get("company", ""),
+            "role_category": "engineering_manager",
+            "seniority_level": "senior",
+            "top_keywords": [],
+            "implied_pain_points": state.get("pain_points", []),
+            "success_metrics": state.get("success_metrics", []),
+            "technical_skills": [],
+            "soft_skills": [],
+            "responsibilities": [],
+            "qualifications": [],
+            "nice_to_haves": [],
+            "competency_weights": {
+                "delivery": 25,
+                "process": 25,
+                "architecture": 25,
+                "leadership": 25,
+            },
+        }
+
+    def _generate_all_role_bullets(
+        self,
+        roles: List[RoleData],
+        extracted_jd: Dict[str, Any],
+    ) -> List[RoleBullets]:
+        """Generate bullets for all roles sequentially."""
+        from src.layer6_v2.types import CareerContext
+
+        role_bullets_list = []
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+
+        for i, role in enumerate(roles):
+            self._logger.info(f"  Generating bullets for: {role.title} @ {role.company}")
+
+            # Build career context for this role
+            career_context = CareerContext.build(
+                role_index=i,
+                total_roles=len(roles),
+                is_current=role.is_current,
+                target_role_category=role_category,
+            )
+
+            try:
+                role_bullets = self.role_generator.generate(
+                    role=role,
+                    extracted_jd=extracted_jd,
+                    career_context=career_context,
+                )
+                role_bullets_list.append(role_bullets)
+            except Exception as e:
+                self._logger.warning(f"  Failed to generate bullets for {role.company}: {e}")
+                # Create fallback with original achievements as bullets
+                from src.layer6_v2.types import GeneratedBullet
+                fallback_bullets = [
+                    GeneratedBullet(
+                        text=achievement,
+                        source_text=achievement,
+                    )
+                    for achievement in role.achievements[:5]  # Top 5 achievements
+                ]
+                role_bullets = RoleBullets(
+                    role_id=f"{role.company}_{role.title}".replace(" ", "_").lower(),
+                    company=role.company,
+                    title=role.title,
+                    period=role.period,
+                    location=role.location,
+                    bullets=fallback_bullets,
+                    qa_result=None,
+                )
+                role_bullets_list.append(role_bullets)
+
+        return role_bullets_list
+
+    def _log_qa_summary(self, qa_results: List, role_bullets_list: List[RoleBullets]) -> None:
+        """Log QA summary for all roles."""
+        passed = sum(1 for qa in qa_results if qa.passed)
+        self._logger.info(f"  QA passed: {passed}/{len(qa_results)} roles")
+        for i, qa in enumerate(qa_results):
+            if not qa.passed:
+                role_id = role_bullets_list[i].role_id if i < len(role_bullets_list) else f"role_{i}"
+                self._logger.warning(f"    {role_id}: {len(qa.flagged_bullets)} flagged bullets")
+
+    def _log_grade_result(self, grade_result: GradeResult) -> None:
+        """Log grading results."""
+        self._logger.info(f"  Composite score: {grade_result.composite_score:.1f}/10")
+        self._logger.info(f"  Passed: {grade_result.passed} (threshold: {grade_result.passing_threshold})")
+        self._logger.info(f"  Lowest dimension: {grade_result.lowest_dimension}")
+        for dim in grade_result.dimension_scores:
+            self._logger.info(f"    {dim.dimension}: {dim.score:.1f}/10")
+
+    def _assemble_cv_text(
+        self,
+        header: HeaderOutput,
+        stitched: StitchedCV,
+        candidate: CandidateData,
+    ) -> str:
+        """Assemble the full CV markdown text."""
+        lines = []
+
+        # Header with name and contact
+        lines.append(f"# {candidate.name}")
+
+        # Build contact line with optional languages
+        contact_parts = [candidate.email, candidate.phone, candidate.linkedin]
+        if candidate.languages:
+            language_str = f"Languages: {', '.join(candidate.languages)}"
+            contact_parts.append(language_str)
+        lines.append(" | ".join(contact_parts))
+        lines.append("")
+
+        # Profile
+        lines.append("## Profile")
+        lines.append(header.profile.text)
+        lines.append("")
+
+        # Core competencies / Skills
+        lines.append("## Core Competencies")
+        for section in header.skills_sections:
+            skill_names = ", ".join(section.skill_names)
+            lines.append(f"**{section.category}**: {skill_names}")
+        lines.append("")
+
+        # Professional Experience
+        lines.append("## Professional Experience")
+        lines.append("")
+
+        for role in stitched.roles:
+            lines.append(f"### {role.title}")
+            # Only include location if it's not empty
+            location_part = f" | {role.location}" if role.location else ""
+            lines.append(f"**{role.company}**{location_part} | {role.period}")
+            lines.append("")
+            for bullet in role.bullets:
+                lines.append(f"- {bullet}")
+            lines.append("")
+
+        # Education & Certifications
+        lines.append("## Education & Certifications")
+        lines.append(f"- {candidate.education_masters}")
+        if candidate.education_bachelors:
+            lines.append(f"- {candidate.education_bachelors}")
+        # Add certifications
+        if candidate.certifications:
+            for cert in candidate.certifications:
+                lines.append(f"- {cert}")
+        lines.append("")
+
+        return "\n".join(lines)
+
+    def _get_master_cv_text(self) -> str:
+        """Load master CV text for anti-hallucination checking."""
+        master_cv_path = Path("data/master-cv/master-cv.md")
+        if master_cv_path.exists():
+            return master_cv_path.read_text(encoding="utf-8")
+
+        # Fallback: concatenate role files
+        roles_dir = Path("data/master-cv/roles")
+        if roles_dir.exists():
+            role_texts = []
+            for role_file in sorted(roles_dir.glob("*.md")):
+                role_texts.append(role_file.read_text(encoding="utf-8"))
+            return "\n\n".join(role_texts)
+
+        return ""
+
+    def _save_cv_to_disk(self, cv_text: str, company: str, title: str) -> str:
+        """Save CV to disk and return the path."""
+        # Create output directory
+        output_dir = Path("outputs") / sanitize_path_component(company)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename
+        safe_title = sanitize_path_component(title)
+        cv_path = output_dir / f"cv_{safe_title}.md"
+
+        # Write CV
+        cv_path.write_text(cv_text, encoding="utf-8")
+        self._logger.info(f"  CV saved to: {cv_path}")
+
+        return str(cv_path)
+
+    def _build_reasoning(
+        self,
+        grade_result: GradeResult,
+        improvement_result: Optional[ImprovementResult],
+        stitched: StitchedCV,
+        header: HeaderOutput,
+    ) -> str:
+        """Build reasoning summary for the generated CV."""
+        lines = []
+
+        lines.append("## CV Generation V2 Reasoning")
+        lines.append("")
+
+        # Grading summary
+        lines.append(f"**Quality Score**: {grade_result.composite_score:.1f}/10")
+        lines.append(f"**Passed**: {'Yes' if grade_result.passed else 'No'}")
+        lines.append("")
+
+        lines.append("**Dimension Scores**:")
+        for dim in grade_result.dimension_scores:
+            status = "✓" if dim.score >= 8.5 else "⚠"
+            lines.append(f"- {dim.dimension}: {dim.score:.1f}/10 {status}")
+        lines.append("")
+
+        # Improvement summary
+        if improvement_result and improvement_result.improved:
+            lines.append(f"**Improvement Applied**: {improvement_result.target_dimension}")
+            lines.append(f"**Changes Made**: {len(improvement_result.changes_made)}")
+            for change in improvement_result.changes_made[:3]:
+                lines.append(f"  - {change}")
+            lines.append("")
+
+        # Structure summary
+        lines.append(f"**CV Structure**:")
+        lines.append(f"- Total words: {stitched.total_word_count}")
+        lines.append(f"- Total bullets: {stitched.total_bullet_count}")
+        lines.append(f"- Roles included: {len(stitched.roles)}")
+        lines.append(f"- Skills sections: {len(header.skills_sections)}")
+
+        return "\n".join(lines)
+
+
+def cv_generator_v2_node(state: JobState) -> Dict[str, Any]:
+    """
+    LangGraph node function for CV Generation V2.
+
+    Drop-in replacement for the legacy generator_node.
+    Uses the 6-phase pipeline for higher quality CVs.
+
+    Args:
+        state: Current job processing state
+
+    Returns:
+        Dictionary with updates to merge into state
+    """
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer6_v2")
+
+    logger.info("=" * 60)
+    logger.info("LAYER 6 V2: CV Generation Pipeline")
+    logger.info("=" * 60)
+
+    generator = CVGeneratorV2()
+    updates = generator.generate(state)
+
+    return updates
