@@ -26,6 +26,7 @@ setup_logging(level=log_level, format=log_format)
 logger = get_logger(__name__)
 
 # Import all layer node functions
+from src.layer1_4 import jd_extractor_node  # CV Gen V2: JD Extractor
 from src.layer2.pain_point_miner import pain_point_miner_node
 from src.layer2_5 import select_stars  # Phase 1.3: STAR Selector
 from src.layer3.company_researcher import company_researcher_node
@@ -33,7 +34,8 @@ from src.layer3.role_researcher import role_researcher_node  # Phase 5.2: Role R
 from src.layer4.opportunity_mapper import opportunity_mapper_node
 from src.layer5 import people_mapper_node  # Phase 1.3: People Mapper
 from src.layer6 import outreach_generator_node  # Phase 9: Outreach Generator
-from src.layer6.generator import generator_node
+from src.layer6.generator import generator_node  # Legacy CV generator
+from src.layer6_v2 import cv_generator_v2_node  # CV Gen V2: 6-phase pipeline
 from src.layer7.output_publisher import output_publisher_node
 
 
@@ -42,15 +44,22 @@ def create_workflow() -> StateGraph:
     Create the LangGraph workflow connecting all layers.
 
     Flow:
-    1. Layer 2: Pain-Point Miner (extract pain points from job description)
-    2. Layer 2.5: STAR Selector (select 2-3 best-fit achievements - Phase 1.3)
-    3. Layer 3.0: Company Researcher (scrape company signals - Phase 5.1)
-    4. Layer 3.5: Role Researcher (analyze role business impact - Phase 5.2)
-    5. Layer 4: Opportunity Mapper (generate fit score + rationale)
-    6. Layer 5: People Mapper (identify contacts, generate personalized outreach - Phase 7)
-    7. Layer 6b: Outreach Generator (package outreach into OutreachPackage objects - Phase 9)
-    8. Layer 6a: Generator (create cover letter + CV - Phase 8)
-    9. Layer 7: Output Publisher (upload to Drive, log to Sheets)
+    1. Layer 1.4: JD Extractor (extract structured JD intelligence - CV Gen V2)
+    2. Layer 2: Pain-Point Miner (extract pain points from job description)
+    3. Layer 2.5: STAR Selector (select 2-3 best-fit achievements - Phase 1.3)
+    4. Layer 3.0: Company Researcher (scrape company signals - Phase 5.1)
+    5. Layer 3.5: Role Researcher (analyze role business impact - Phase 5.2)
+    6. Layer 4: Opportunity Mapper (generate fit score + rationale)
+    7. Layer 5: People Mapper (identify contacts, generate personalized outreach - Phase 7)
+    8. Layer 6b: Outreach Generator (package outreach into OutreachPackage objects - Phase 9)
+    9. Layer 6a: Generator (create cover letter + CV)
+       - CV Gen V2 (default): 6-phase pipeline with per-role generation, QA, and grading
+       - Legacy: Single-pass two-stage CV builder
+    10. Layer 7: Output Publisher (upload to Drive, log to Sheets)
+
+    Config flags:
+    - ENABLE_CV_GEN_V2: Use 6-phase CV generation pipeline (default: true)
+    - ENABLE_JD_EXTRACTOR: Extract structured JD intelligence (default: true)
 
     Returns:
         Compiled StateGraph ready to execute
@@ -59,6 +68,8 @@ def create_workflow() -> StateGraph:
     workflow = StateGraph(JobState)
 
     # Add nodes for each layer
+    if Config.ENABLE_JD_EXTRACTOR:
+        workflow.add_node("jd_extractor", jd_extractor_node)  # CV Gen V2: Layer 1.4
     workflow.add_node("pain_point_miner", pain_point_miner_node)
     if Config.ENABLE_STAR_SELECTOR:
         workflow.add_node("star_selector", select_stars)  # Phase 1.3
@@ -67,11 +78,23 @@ def create_workflow() -> StateGraph:
     workflow.add_node("opportunity_mapper", opportunity_mapper_node)
     workflow.add_node("people_mapper", people_mapper_node)  # Phase 7
     workflow.add_node("outreach_generator", outreach_generator_node)  # Phase 9
-    workflow.add_node("generator", generator_node)
+    # CV Generator: V2 (6-phase pipeline) or legacy
+    if Config.ENABLE_CV_GEN_V2:
+        workflow.add_node("generator", cv_generator_v2_node)  # CV Gen V2
+        logger.info("Using CV Generation V2 (6-phase pipeline)")
+    else:
+        workflow.add_node("generator", generator_node)  # Legacy
+        logger.info("Using legacy CV generator")
     workflow.add_node("output_publisher", output_publisher_node)
 
     # Define sequential edges
-    workflow.set_entry_point("pain_point_miner")
+    # Layer 1.4 (if enabled) is the entry point, otherwise Layer 2
+    if Config.ENABLE_JD_EXTRACTOR:
+        workflow.set_entry_point("jd_extractor")
+        workflow.add_edge("jd_extractor", "pain_point_miner")  # Layer 1.4 -> Layer 2
+    else:
+        workflow.set_entry_point("pain_point_miner")
+
     if Config.ENABLE_STAR_SELECTOR:
         workflow.add_edge("pain_point_miner", "star_selector")  # Layer 2 -> Layer 2.5
         workflow.add_edge("star_selector", "company_researcher")  # Layer 2.5 -> Layer 3.0
@@ -130,6 +153,7 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "candidate_profile": candidate_profile,
 
         # Output fields (will be populated by layers)
+        "extracted_jd": None,  # CV Gen V2: Layer 1.4 structured JD
         "pain_points": None,
         "strategic_needs": None,  # Phase 1.3: Layer 2 JSON
         "risks_if_unfilled": None,  # Phase 1.3: Layer 2 JSON

@@ -58,6 +58,10 @@ class Config:
     )
 
     # ===== Feature Flags =====
+    # Enable CV Gen V2 (6-phase pipeline) instead of legacy generator
+    ENABLE_CV_GEN_V2: bool = os.getenv("ENABLE_CV_GEN_V2", "true").lower() == "true"
+    # Enable Layer 1.4 JD Extractor for CV Gen V2 (structured JD intelligence)
+    ENABLE_JD_EXTRACTOR: bool = os.getenv("ENABLE_JD_EXTRACTOR", "true").lower() == "true"
     # Disable STAR selector while keeping code available for future re-enable
     ENABLE_STAR_SELECTOR: bool = os.getenv("ENABLE_STAR_SELECTOR", "false").lower() == "true"
     # Disable remote publishing (Drive/Sheets) and rely on local ./applications output by default
