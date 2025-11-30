@@ -356,8 +356,13 @@ class OutputPublisher:
                 update_data['company_summary'] = state['company_summary']
 
             # Add extracted JD from Layer 1.4 (CV Gen V2)
-            if state.get('extracted_jd'):
-                update_data['extracted_jd'] = state['extracted_jd']
+            extracted_jd = state.get('extracted_jd')
+            self.logger.info(f"[DEBUG] extracted_jd in state: {extracted_jd is not None}, type: {type(extracted_jd)}")
+            if extracted_jd:
+                self.logger.info(f"[DEBUG] Saving extracted_jd with keys: {list(extracted_jd.keys()) if isinstance(extracted_jd, dict) else 'N/A'}")
+                update_data['extracted_jd'] = extracted_jd
+            else:
+                self.logger.warning("[DEBUG] extracted_jd is None or empty - not saving to MongoDB")
 
             # Add Drive/Sheets references
             if state.get('drive_folder_url'):
