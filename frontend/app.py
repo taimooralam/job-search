@@ -898,169 +898,288 @@ def metrics_dashboard_partial():
 @app.route("/partials/budget-monitor", methods=["GET"])
 @login_required
 def budget_monitor_partial():
-    """HTMX partial: Return budget monitoring widget (Gap #14)."""
-    try:
-        from src.common.metrics import get_metrics_collector
+    """HTMX partial: Return budget monitoring widget (Gap #14).
 
-        collector = get_metrics_collector()
-        budget_metrics = collector.get_budget_metrics()
-        return render_template(
-            "partials/budget_monitor.html",
-            budget=budget_metrics.to_dict()
-        )
-    except ImportError:
-        return render_template(
-            "partials/budget_monitor.html",
-            budget=None,
-            error="Metrics module not available"
-        )
-    except Exception as e:
-        return render_template(
-            "partials/budget_monitor.html",
-            budget=None,
-            error=str(e)
-        )
+    Proxies to VPS runner service which has access to the metrics module.
+    Falls back to local import for local development.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    budget = None
+    error = None
+
+    # Try VPS runner first (production path)
+    try:
+        response = requests.get(f"{runner_url}/api/metrics/budget", timeout=5)
+        if response.status_code == 200:
+            budget = response.json()
+            if "error" in budget:
+                error = budget.get("error")
+                budget = None
+            logger.debug(f"Budget metrics from VPS: {budget}")
+        else:
+            logger.warning(f"VPS budget endpoint returned {response.status_code}")
+            error = f"VPS returned {response.status_code}"
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS budget endpoint unavailable: {e}")
+        # Fall back to local import (for local development)
+        try:
+            from src.common.metrics import get_metrics_collector
+            collector = get_metrics_collector()
+            budget = collector.get_budget_metrics().to_dict()
+        except ImportError:
+            error = "Metrics module not available (VPS unreachable, local import failed)"
+        except Exception as ex:
+            error = str(ex)
+
+    return render_template(
+        "partials/budget_monitor.html",
+        budget=budget,
+        error=error
+    )
 
 
 @app.route("/api/budget", methods=["GET"])
 @login_required
 def get_budget():
-    """API endpoint: Return budget metrics as JSON (Gap #14)."""
-    try:
-        from src.common.metrics import get_metrics_collector
+    """API endpoint: Return budget metrics as JSON (Gap #14).
 
-        collector = get_metrics_collector()
-        budget_metrics = collector.get_budget_metrics()
-        return jsonify(budget_metrics.to_dict())
-    except ImportError:
-        return jsonify({
-            "error": "Metrics module not available",
-            "timestamp": datetime.utcnow().isoformat(),
-        }), 500
-    except Exception as e:
-        return jsonify({
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat(),
-        }), 500
+    Proxies to VPS runner service.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+
+    try:
+        response = requests.get(f"{runner_url}/api/metrics/budget", timeout=5)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"VPS returned {response.status_code}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), response.status_code
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS budget endpoint unavailable: {e}")
+        # Fall back to local
+        try:
+            from src.common.metrics import get_metrics_collector
+            collector = get_metrics_collector()
+            return jsonify(collector.get_budget_metrics().to_dict())
+        except ImportError:
+            return jsonify({
+                "error": "Metrics module not available",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
+        except Exception as ex:
+            return jsonify({
+                "error": str(ex),
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
 
 
 @app.route("/partials/alert-history", methods=["GET"])
 @login_required
 def alert_history_partial():
-    """HTMX partial: Return alert history widget (Gap OB-2)."""
-    try:
-        from src.common.alerting import get_alert_manager
+    """HTMX partial: Return alert history widget (Gap OB-2).
 
-        manager = get_alert_manager()
-        alerts = manager.get_history(limit=20)
-        stats = manager.get_stats()
-        return render_template(
-            "partials/alert_history.html",
-            alerts=[a.to_dict() for a in alerts],
-            stats=stats
-        )
-    except ImportError:
-        return render_template(
-            "partials/alert_history.html",
-            alerts=None,
-            error="Alerting module not available"
-        )
-    except Exception as e:
-        return render_template(
-            "partials/alert_history.html",
-            alerts=None,
-            error=str(e)
-        )
+    Proxies to VPS runner service which has access to the alerting module.
+    Falls back to local import for local development.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    alerts = None
+    stats = None
+    error = None
+
+    # Try VPS runner first (production path)
+    try:
+        response = requests.get(f"{runner_url}/api/metrics/alerts?limit=20", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if "error" in data:
+                error = data.get("error")
+            else:
+                alerts = data.get("alerts", [])
+                stats = data.get("stats", {})
+            logger.debug(f"Alert history from VPS: {len(alerts or [])} alerts")
+        else:
+            logger.warning(f"VPS alerts endpoint returned {response.status_code}")
+            error = f"VPS returned {response.status_code}"
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS alerts endpoint unavailable: {e}")
+        # Fall back to local import (for local development)
+        try:
+            from src.common.alerting import get_alert_manager
+            manager = get_alert_manager()
+            alerts = [a.to_dict() for a in manager.get_history(limit=20)]
+            stats = manager.get_stats()
+        except ImportError:
+            error = "Alerting module not available (VPS unreachable, local import failed)"
+        except Exception as ex:
+            error = str(ex)
+
+    return render_template(
+        "partials/alert_history.html",
+        alerts=alerts,
+        stats=stats,
+        error=error
+    )
 
 
 @app.route("/api/alerts", methods=["GET"])
 @login_required
 def get_alerts():
-    """API endpoint: Return alert history as JSON (Gap OB-2)."""
+    """API endpoint: Return alert history as JSON (Gap OB-2).
+
+    Proxies to VPS runner service.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    limit = request.args.get("limit", 50, type=int)
+    level = request.args.get("level")
+    source = request.args.get("source")
+
+    # Build query string
+    params = [f"limit={limit}"]
+    if level:
+        params.append(f"level={level}")
+    if source:
+        params.append(f"source={source}")
+    query_string = "&".join(params)
+
     try:
-        from src.common.alerting import get_alert_manager
-
-        manager = get_alert_manager()
-        limit = request.args.get("limit", 50, type=int)
-        level = request.args.get("level")
-        source = request.args.get("source")
-
-        alerts = manager.get_history(limit=limit)
-        if level:
-            alerts = [a for a in alerts if a.level.value == level]
-        if source:
-            alerts = [a for a in alerts if a.source == source]
-
-        return jsonify({
-            "alerts": [a.to_dict() for a in alerts],
-            "stats": manager.get_stats(),
-            "timestamp": datetime.utcnow().isoformat(),
-        })
-    except ImportError:
-        return jsonify({
-            "error": "Alerting module not available",
-            "timestamp": datetime.utcnow().isoformat(),
-        }), 500
-    except Exception as e:
-        return jsonify({
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat(),
-        }), 500
+        response = requests.get(f"{runner_url}/api/metrics/alerts?{query_string}", timeout=5)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"VPS returned {response.status_code}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), response.status_code
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS alerts endpoint unavailable: {e}")
+        # Fall back to local
+        try:
+            from src.common.alerting import get_alert_manager
+            manager = get_alert_manager()
+            alerts = manager.get_history(limit=limit)
+            if level:
+                alerts = [a for a in alerts if a.level.value == level]
+            if source:
+                alerts = [a for a in alerts if a.source == source]
+            return jsonify({
+                "alerts": [a.to_dict() for a in alerts],
+                "stats": manager.get_stats(),
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+        except ImportError:
+            return jsonify({
+                "error": "Alerting module not available",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
+        except Exception as ex:
+            return jsonify({
+                "error": str(ex),
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
 
 
 @app.route("/partials/cost-trends", methods=["GET"])
 @login_required
 def cost_trends_partial():
-    """HTMX partial: Return cost trends sparkline widget (Gap #15)."""
+    """HTMX partial: Return cost trends sparkline widget (Gap #15).
+
+    Proxies to VPS runner service which has access to the metrics module.
+    Falls back to local import for local development.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    period = request.args.get("period", "hourly")
+    count = request.args.get("count", 24, type=int)
+
+    costs = None
+    sparkline_svg = None
+    summary = None
+    error = None
+
+    # Try VPS runner first (production path)
     try:
-        from src.common.metrics import get_metrics_collector
+        response = requests.get(
+            f"{runner_url}/api/metrics/cost-history?period={period}&count={count}",
+            timeout=5
+        )
+        if response.status_code == 200:
+            data = response.json()
+            if "error" in data:
+                error = data.get("error")
+            else:
+                costs = data.get("costs", [])
+                sparkline_svg = data.get("sparkline_svg", "")
+                summary = data.get("summary", {})
+            logger.debug(f"Cost history from VPS: {len(costs or [])} data points")
+        else:
+            logger.warning(f"VPS cost-history endpoint returned {response.status_code}")
+            error = f"VPS returned {response.status_code}"
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS cost-history endpoint unavailable: {e}")
+        # Fall back to local import (for local development)
+        try:
+            from src.common.metrics import get_metrics_collector
+            collector = get_metrics_collector()
+            history = collector.get_cost_history(period=period, count=count)
+            costs = history["costs"]
+            sparkline_svg = history["sparkline_svg"]
+            summary = history["summary"]
+        except ImportError:
+            error = "Metrics module not available (VPS unreachable, local import failed)"
+        except Exception as ex:
+            error = str(ex)
 
-        collector = get_metrics_collector()
-        period = request.args.get("period", "hourly")
-        count = request.args.get("count", 24, type=int)
-
-        history = collector.get_cost_history(period=period, count=count)
-        return render_template(
-            "partials/cost_trends.html",
-            period=period,
-            costs=history["costs"],
-            sparkline_svg=history["sparkline_svg"],
-            summary=history["summary"],
-        )
-    except ImportError:
-        return render_template(
-            "partials/cost_trends.html",
-            error="Metrics module not available"
-        )
-    except Exception as e:
-        return render_template(
-            "partials/cost_trends.html",
-            error=str(e)
-        )
+    return render_template(
+        "partials/cost_trends.html",
+        period=period,
+        costs=costs,
+        sparkline_svg=sparkline_svg,
+        summary=summary,
+        error=error
+    )
 
 
 @app.route("/api/cost-history", methods=["GET"])
 @login_required
 def get_cost_history():
-    """API endpoint: Return cost history as JSON (Gap #15)."""
+    """API endpoint: Return cost history as JSON (Gap #15).
+
+    Proxies to VPS runner service.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    period = request.args.get("period", "hourly")
+    count = request.args.get("count", 24, type=int)
+
     try:
-        from src.common.metrics import get_metrics_collector
-
-        collector = get_metrics_collector()
-        period = request.args.get("period", "hourly")
-        count = request.args.get("count", 24, type=int)
-
-        history = collector.get_cost_history(period=period, count=count)
-        history["timestamp"] = datetime.utcnow().isoformat()
-        return jsonify(history)
-    except ImportError:
-        return jsonify({
-            "error": "Metrics module not available",
-            "timestamp": datetime.utcnow().isoformat(),
-        }), 500
-    except Exception as e:
-        return jsonify({
-            "error": str(e),
+        response = requests.get(
+            f"{runner_url}/api/metrics/cost-history?period={period}&count={count}",
+            timeout=5
+        )
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"VPS returned {response.status_code}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), response.status_code
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS cost-history endpoint unavailable: {e}")
+        # Fall back to local
+        try:
+            from src.common.metrics import get_metrics_collector
+            collector = get_metrics_collector()
+            history = collector.get_cost_history(period=period, count=count)
+            history["timestamp"] = datetime.utcnow().isoformat()
+            return jsonify(history)
+        except ImportError:
+            return jsonify({
+                "error": "Metrics module not available",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
+        except Exception as ex:
+            return jsonify({
+                "error": str(ex),
             "timestamp": datetime.utcnow().isoformat(),
         }), 500
 
@@ -1278,38 +1397,86 @@ def update_job_cv(job_id: str):
 @login_required
 def generate_cv_pdf_from_editor(job_id: str):
     """
-    Proxy PDF generation request to runner service (Phase 4).
+    Generate PDF from CV editor state (GAP-046 Fix).
 
-    The runner service (VPS with Playwright installed) handles PDF generation.
-    This endpoint proxies the request and streams the response back to the user.
+    Fetches CV editor state from MongoDB and sends it to the PDF service
+    for rendering.
+
+    Flow:
+    1. Fetch cv_editor_state from MongoDB for this job
+    2. Send to PDF service's /cv-to-pdf endpoint
+    3. Stream PDF back to user
 
     Returns:
-        PDF file streamed from runner service
+        PDF file streamed from PDF service
     """
     import requests
     from flask import send_file
     from io import BytesIO
+    from bson import ObjectId
 
-    # Get runner service URL from environment
-    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
-    endpoint = f"{runner_url}/api/jobs/{job_id}/cv-editor/pdf"
+    # Step 1: Fetch CV editor state from MongoDB
+    try:
+        job = db.jobs.find_one({"_id": ObjectId(job_id)})
+        if not job:
+            logger.error(f"Job {job_id} not found")
+            return jsonify({"error": "Job not found"}), 404
 
-    # Get authentication token for runner service
-    # IMPORTANT: Must match runner service's RUNNER_API_SECRET env var
+        cv_editor_state = job.get("cv_editor_state")
+        if not cv_editor_state:
+            logger.error(f"No CV editor state for job {job_id}")
+            return jsonify({
+                "error": "No CV content found. Please generate or edit the CV first.",
+                "detail": "cv_editor_state is missing from this job"
+            }), 400
+
+        # Get TipTap JSON from editor state
+        tiptap_json = cv_editor_state.get("tiptap_json")
+        if not tiptap_json:
+            logger.error(f"No TipTap JSON in CV editor state for job {job_id}")
+            return jsonify({
+                "error": "CV content is invalid. Please regenerate the CV.",
+                "detail": "tiptap_json is missing from cv_editor_state"
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Failed to fetch CV editor state for job {job_id}: {str(e)}")
+        return jsonify({"error": f"Failed to fetch CV: {str(e)}"}), 500
+
+    # Step 2: Get PDF service URL and prepare request
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", os.getenv("RUNNER_URL", "http://72.61.92.76:8000"))
+    endpoint = f"{pdf_service_url}/cv-to-pdf"
+
+    # Get authentication token for PDF service
     runner_token = os.getenv("RUNNER_API_SECRET")
-    headers = {}
+    headers = {"Content-Type": "application/json"}
     if runner_token:
         headers["Authorization"] = f"Bearer {runner_token}"
         logger.info(f"PDF generation request for job {job_id} - authentication configured")
     else:
-        logger.warning(f"RUNNER_API_SECRET not set - runner service may reject request for job {job_id}")
+        logger.warning(f"RUNNER_API_SECRET not set - PDF service may reject request for job {job_id}")
+
+    # Prepare request body
+    pdf_request = {
+        "tiptap_json": tiptap_json,
+        "documentStyles": cv_editor_state.get("documentStyles", {
+            "fontFamily": "Inter",
+            "fontSize": 11,
+            "lineHeight": 1.15,
+            "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
+            "pageSize": "letter"
+        }),
+        "company": job.get("company", ""),
+        "role": job.get("title", "")
+    }
 
     try:
         logger.info(f"Requesting PDF generation from {endpoint}")
 
-        # Proxy request to runner service
+        # Send request to PDF service with CV editor content
         response = requests.post(
             endpoint,
+            json=pdf_request,
             headers=headers,
             timeout=30,  # 30 second timeout for PDF generation
             stream=True
@@ -1360,18 +1527,18 @@ def generate_cv_pdf_from_editor(job_id: str):
         logger.error(f"PDF generation timed out for job {job_id} after 30 seconds")
         return jsonify({
             "error": "PDF generation timed out (>30s). Please try again.",
-            "detail": "The runner service took too long to respond"
+            "detail": "The PDF service took too long to respond"
         }), 504
     except requests.ConnectionError as e:
-        logger.error(f"Failed to connect to runner service at {runner_url}: {str(e)}")
+        logger.error(f"Failed to connect to PDF service at {pdf_service_url}: {str(e)}")
         return jsonify({
             "error": "PDF service unavailable. Please try again later.",
-            "detail": f"Cannot connect to runner service at {runner_url}"
+            "detail": f"Cannot connect to PDF service at {pdf_service_url}"
         }), 503
     except requests.RequestException as e:
-        logger.error(f"Request to runner service failed for job {job_id}: {str(e)}")
+        logger.error(f"Request to PDF service failed for job {job_id}: {str(e)}")
         return jsonify({
-            "error": "Failed to connect to runner service",
+            "error": "Failed to connect to PDF service",
             "detail": str(e)
         }), 503
     except Exception as e:

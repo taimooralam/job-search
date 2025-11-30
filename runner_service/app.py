@@ -852,3 +852,108 @@ async def export_url_to_pdf(request: URLToPDFRequest):
             status_code=503,
             detail="PDF service unavailable. Please try again later."
         )
+
+
+# =============================================================================
+# Metrics/Budget/Alert Endpoints (GAP-061 fix)
+# =============================================================================
+
+
+@app.get("/api/metrics/budget")
+async def get_budget_metrics():
+    """
+    Return budget metrics from all token trackers.
+
+    Used by frontend to display budget monitoring widget.
+    """
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        budget_metrics = collector.get_budget_metrics()
+        return budget_metrics.to_dict()
+    except ImportError as e:
+        logger.warning(f"Metrics module not available: {e}")
+        return {
+            "error": "Metrics module not available",
+            "total_used_usd": 0,
+            "total_budget_usd": None,
+            "by_tracker": {},
+        }
+    except Exception as e:
+        logger.error(f"Error getting budget metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/metrics/alerts")
+async def get_alert_history(limit: int = 50, level: str = None, source: str = None):
+    """
+    Return alert history with optional filtering.
+
+    Args:
+        limit: Max number of alerts to return (default 50)
+        level: Filter by alert level (critical, error, warning, info)
+        source: Filter by alert source
+
+    Used by frontend to display alert history widget.
+    """
+    try:
+        from src.common.alerting import get_alert_manager
+
+        manager = get_alert_manager()
+        alerts = manager.get_history(limit=limit)
+
+        # Apply filters
+        if level:
+            alerts = [a for a in alerts if a.level.value == level]
+        if source:
+            alerts = [a for a in alerts if a.source == source]
+
+        return {
+            "alerts": [a.to_dict() for a in alerts],
+            "stats": manager.get_stats(),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    except ImportError as e:
+        logger.warning(f"Alerting module not available: {e}")
+        return {
+            "error": "Alerting module not available",
+            "alerts": [],
+            "stats": {"history_count": 0, "by_level": {}, "by_source": {}},
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error getting alert history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/metrics/cost-history")
+async def get_cost_history(period: str = "hourly", count: int = 24):
+    """
+    Return cost history for sparkline visualization.
+
+    Args:
+        period: Time period (hourly, daily)
+        count: Number of data points
+
+    Used by frontend to display cost trends sparkline.
+    """
+    try:
+        from src.common.metrics import get_metrics_collector
+
+        collector = get_metrics_collector()
+        history = collector.get_cost_history(period=period, count=count)
+        history["timestamp"] = datetime.utcnow().isoformat()
+        return history
+    except ImportError as e:
+        logger.warning(f"Metrics module not available: {e}")
+        return {
+            "error": "Metrics module not available",
+            "costs": [],
+            "sparkline_svg": "",
+            "summary": {"total": 0, "avg": 0, "max": 0, "min": 0},
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error getting cost history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
