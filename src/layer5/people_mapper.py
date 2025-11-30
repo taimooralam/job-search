@@ -1529,12 +1529,19 @@ Return the three letters separated by \"---\" lines.
             self.logger.info(f"{len(primary_contacts)} primary contacts (hiring-related)")
             self.logger.info(f"{len(secondary_contacts)} secondary contacts (cross-functional)")
 
-            # Step 3: Generate outreach for all contacts
+            # Step 3: Apply contact limit BEFORE outreach generation (GAP-060)
+            # This saves LLM calls by only generating outreach for contacts we'll keep
+            limited_primary, limited_secondary = self._limit_contacts(
+                primary_contacts, secondary_contacts
+            )
+
+            # Step 4: Generate outreach for limited contacts only
             self.logger.info("Generating personalized outreach")
 
-            all_contacts = primary_contacts + secondary_contacts
+            all_contacts = limited_primary + limited_secondary
             enriched_primary = []
             enriched_secondary = []
+            num_limited_primary = len(limited_primary)
 
             for i, contact in enumerate(all_contacts, 1):
                 self.logger.info(f"Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
@@ -1546,7 +1553,7 @@ Return the three letters separated by \"---\" lines.
                     enriched_contact = {**contact, **outreach}
 
                     # Add to appropriate bucket
-                    if i <= len(primary_contacts):
+                    if i <= num_limited_primary:
                         enriched_primary.append(enriched_contact)
                     else:
                         enriched_secondary.append(enriched_contact)
@@ -1554,23 +1561,18 @@ Return the three letters separated by \"---\" lines.
                 except Exception as e:
                     self.logger.warning(f"Failed to generate outreach: {e}")
                     # Add contact without outreach
-                    if i <= len(primary_contacts):
+                    if i <= num_limited_primary:
                         enriched_primary.append(contact)
                     else:
                         enriched_secondary.append(contact)
 
             self.logger.info(f"Generated outreach for {len(enriched_primary + enriched_secondary)} contacts")
 
-            # Step 4: Apply contact limit (GAP-060)
-            limited_primary, limited_secondary = self._limit_contacts(
-                enriched_primary, enriched_secondary
-            )
-
-            # Step 5: Return updates
+            # Step 5: Return updates (limit already applied in Step 3)
             return {
-                "primary_contacts": limited_primary,
-                "secondary_contacts": limited_secondary,
-                "people": limited_primary + limited_secondary,  # Legacy field
+                "primary_contacts": enriched_primary,
+                "secondary_contacts": enriched_secondary,
+                "people": enriched_primary + enriched_secondary,  # Legacy field
                 "outreach_packages": None,  # Future: per-contact packages
                 "fallback_cover_letters": []
             }
