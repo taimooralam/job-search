@@ -108,6 +108,20 @@ class Config:
     ENABLE_TOKEN_TRACKING: bool = os.getenv("ENABLE_TOKEN_TRACKING", "true").lower() == "true"
     TRACK_TOKENS_TO_MONGODB: bool = os.getenv("TRACK_TOKENS_TO_MONGODB", "true").lower() == "true"
 
+    # ===== Rate Limiting Configuration (Gap BG-2) =====
+    # Per-minute request limits (0 = use defaults)
+    OPENAI_RATE_LIMIT_PER_MIN: int = int(os.getenv("OPENAI_RATE_LIMIT_PER_MIN", "500"))
+    ANTHROPIC_RATE_LIMIT_PER_MIN: int = int(os.getenv("ANTHROPIC_RATE_LIMIT_PER_MIN", "100"))
+    OPENROUTER_RATE_LIMIT_PER_MIN: int = int(os.getenv("OPENROUTER_RATE_LIMIT_PER_MIN", "60"))
+    FIRECRAWL_RATE_LIMIT_PER_MIN: int = int(os.getenv("FIRECRAWL_RATE_LIMIT_PER_MIN", "10"))
+
+    # Daily limits (0 = unlimited)
+    FIRECRAWL_DAILY_LIMIT: int = int(os.getenv("FIRECRAWL_DAILY_LIMIT", "600"))
+
+    # Rate limiting behavior
+    ENABLE_RATE_LIMITING: bool = os.getenv("ENABLE_RATE_LIMITING", "true").lower() == "true"
+    RATE_LIMIT_MAX_WAIT_SECONDS: int = int(os.getenv("RATE_LIMIT_MAX_WAIT_SECONDS", "60"))
+
     @classmethod
     def validate(cls) -> None:
         """
@@ -221,6 +235,8 @@ Configuration Summary:
   Default Model: {cls.DEFAULT_MODEL}
   Token Budget: ${cls.TOKEN_BUDGET_USD:.2f} ({'enforced' if cls.ENFORCE_TOKEN_BUDGET else 'tracking only'})
   Token Tracking: {'✓ Enabled' if cls.ENABLE_TOKEN_TRACKING else '✗ Disabled'}
+  Rate Limiting: {'✓ Enabled' if cls.ENABLE_RATE_LIMITING else '✗ Disabled'}
+  FireCrawl Limit: {cls.FIRECRAWL_DAILY_LIMIT}/day, {cls.FIRECRAWL_RATE_LIMIT_PER_MIN}/min
         """.strip()
 
 
