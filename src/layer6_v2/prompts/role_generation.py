@@ -23,12 +23,42 @@ Your mission: Transform raw achievements into ATS-optimized, JD-aligned CV bulle
 4. NEVER add companies, dates, technologies, or achievements not in source
 5. Every generated bullet MUST have a clear source in the role content
 
-=== BULLET FORMAT ===
+=== CRITICAL: NO MARKDOWN FORMATTING (GAP-006) ===
 
-Each bullet must follow this structure:
-- {Strong action verb} {what you did}, {achieving/resulting in} {quantified outcome}
-- Word count: 15-25 words per bullet
-- Start with varied action verbs (no repeating verbs in same role)
+DO NOT use any markdown formatting in your output:
+- NO **bold** or __bold__ markers
+- NO *italic* or _italic_ markers
+- NO # headers
+- NO `code` backticks
+- NO [links](url)
+- Just plain text only
+
+WRONG: "Led **12-person** team using *Kubernetes*"
+RIGHT: "Led 12-person team using Kubernetes"
+
+=== BULLET FORMAT: STAR METHOD (MANDATORY) ===
+
+Each bullet MUST follow the STAR structure in a single sentence:
+
+STAR TEMPLATE:
+"[SITUATION/CHALLENGE] [ACTION with SKILLS used], [achieving/resulting in] [QUANTIFIED RESULT]"
+
+EXAMPLES OF GOOD STAR BULLETS:
+✓ "Facing 30% annual outage increase, led 12-month migration to event-driven microservices using AWS Lambda, achieving 75% incident reduction"
+✓ "To address team scaling challenges, established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers"
+✓ "Responding to customer churn concerns, architected real-time analytics platform processing 1B events/day, enabling 20% retention improvement"
+
+EXAMPLES OF BAD (NON-STAR) BULLETS:
+✗ "Led migration to microservices architecture" (missing situation, skills, and result)
+✗ "Improved system reliability" (too vague, no STAR elements)
+✗ "Managed team of engineers" (generic, no challenge or outcome)
+
+STAR REQUIREMENTS:
+1. SITUATION (required): Start with context/challenge (e.g., "Facing...", "To address...", "Responding to...", "Given...")
+2. ACTION (required): What you did with SPECIFIC SKILLS mentioned (technologies, methodologies)
+3. RESULT (required): Quantified outcome with metrics from source
+4. Word count: 20-35 words per bullet (longer than basic bullets to fit STAR elements)
+5. Start with varied situation phrases (no repeating openings in same role)
 
 === ACTION VERB SELECTION ===
 
@@ -59,11 +89,14 @@ Return ONLY valid JSON with this structure:
 {
   "bullets": [
     {
-      "text": "bullet text here",
+      "text": "STAR-formatted bullet text here",
       "source_text": "exact text from role file this came from",
       "source_metric": "exact metric used (e.g., '75%', '10M requests') or null",
       "jd_keyword_used": "keyword from JD that was integrated or null",
-      "pain_point_addressed": "pain point addressed or null"
+      "pain_point_addressed": "pain point addressed or null",
+      "situation": "the challenge/context that prompted the action",
+      "action": "what was done including skills/technologies used",
+      "result": "the quantified outcome achieved"
     }
   ],
   "total_word_count": 150,
@@ -167,15 +200,21 @@ EMPHASIS GUIDANCE:
 {', '.join(role.soft_skills) if role.soft_skills else 'None listed'}
 
 === YOUR TASK ===
-Generate {target_bullet_count} tailored CV bullets for this role.
+Generate {target_bullet_count} tailored CV bullets for this role using STAR FORMAT.
 
-Requirements:
-1. Each bullet MUST trace back to a specific source achievement above
-2. Preserve EXACT metrics from source (no rounding, no inventing)
-3. Integrate JD keywords where they fit naturally
-4. Address JD pain points where you have matching evidence
-5. Use action verbs appropriate for {extracted_jd.get('role_category', 'unknown')} roles
-6. Prioritize achievements showing: {_get_priority_competencies(weights)}
+STAR FORMAT REQUIREMENTS (MANDATORY):
+1. Each bullet MUST start with SITUATION/CHALLENGE context (e.g., "Facing...", "To address...", "Given...")
+2. Each bullet MUST include the ACTION with specific SKILLS/TECHNOLOGIES used
+3. Each bullet MUST end with QUANTIFIED RESULT from source achievements
+4. Word count: 20-35 words per bullet (to fit all STAR elements)
+
+ADDITIONAL REQUIREMENTS:
+5. Each bullet MUST trace back to a specific source achievement above
+6. Preserve EXACT metrics from source (no rounding, no inventing)
+7. Integrate JD keywords where they fit naturally
+8. Address JD pain points where you have matching evidence
+9. Use action verbs appropriate for {extracted_jd.get('role_category', 'unknown')} roles
+10. Prioritize achievements showing: {_get_priority_competencies(weights)}
 
 Return the JSON response now."""
 

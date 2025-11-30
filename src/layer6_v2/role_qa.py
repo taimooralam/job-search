@@ -26,6 +26,7 @@ from src.layer6_v2.types import (
     RoleBullets,
     QAResult,
     ATSResult,
+    STARResult,
 )
 
 
@@ -56,6 +57,22 @@ class RoleQA:
         "led", "managed", "directed", "headed", "founded",
         "built", "established", "created", "launched", "pioneered",
         "spearheaded", "championed", "orchestrated", "transformed",
+    ]
+
+    # STAR format detection patterns (GAP-005)
+    SITUATION_PATTERNS = [
+        r'^facing\b', r'^to address\b', r'^responding to\b', r'^given\b',
+        r'^when\b', r'^after\b', r'^during\b', r'^amid\b', r'^following\b',
+        r'^in response to\b', r'^confronted with\b', r'^challenged by\b',
+        r'^recognizing\b', r'^identifying\b', r'^upon\b', r'^with\b',
+    ]
+
+    # Result indicator patterns
+    RESULT_PATTERNS = [
+        r'achieving\b', r'resulting in\b', r'delivering\b', r'enabling\b',
+        r'improving\b', r'reducing\b', r'increasing\b', r'generating\b',
+        r'saving\b', r'accelerating\b', r'growing\b', r'cutting\b',
+        r'\d+%', r'\$\d+', r'\d+x\b', r'\d+\s*(users|engineers|team|customers)',
     ]
 
     def __init__(
@@ -178,6 +195,119 @@ class RoleQA:
                         return False, f"Leadership claim '{claim}' not supported in source"
 
         return True, None
+
+    def _has_situation(self, bullet_text: str) -> bool:
+        """
+        Check if bullet starts with a situation/challenge phrase (GAP-005).
+
+        STAR bullets should start with context like "Facing...", "To address...", etc.
+        """
+        text_lower = bullet_text.lower().strip()
+        for pattern in self.SITUATION_PATTERNS:
+            if re.match(pattern, text_lower, re.IGNORECASE):
+                return True
+        return False
+
+    def _has_result(self, bullet_text: str) -> bool:
+        """
+        Check if bullet contains a result/outcome (GAP-005).
+
+        STAR bullets should end with quantified results.
+        """
+        text_lower = bullet_text.lower()
+        for pattern in self.RESULT_PATTERNS:
+            if re.search(pattern, text_lower, re.IGNORECASE):
+                return True
+        return False
+
+    def _has_action_with_skill(self, bullet_text: str) -> bool:
+        """
+        Check if bullet contains an action with specific skill/technology (GAP-005).
+
+        Look for technology keywords, framework names, or methodologies.
+        """
+        # Common technology and methodology keywords
+        skill_indicators = [
+            'python', 'javascript', 'aws', 'gcp', 'azure', 'kubernetes', 'docker',
+            'microservices', 'api', 'ci/cd', 'terraform', 'lambda', 'react', 'node',
+            'sql', 'mongodb', 'redis', 'kafka', 'elasticsearch', 'graphql', 'rest',
+            'agile', 'scrum', 'devops', 'sre', 'tdd', 'ddd', 'cqrs', 'event-driven',
+            'machine learning', 'ml', 'ai', 'data pipeline', 'etl', 'analytics',
+            'hiring', 'mentoring', 'coaching', 'team building', 'performance review',
+        ]
+        text_lower = bullet_text.lower()
+        return any(skill in text_lower for skill in skill_indicators)
+
+    def check_star_format(self, role_bullets: RoleBullets) -> STARResult:
+        """
+        Verify all bullets follow STAR format (GAP-005).
+
+        Checks:
+        - Situation: Bullet starts with context/challenge phrase
+        - Action: Contains specific skills/technologies
+        - Result: Contains quantified outcome
+
+        Args:
+            role_bullets: Generated bullets to verify
+
+        Returns:
+            STARResult with pass/fail status and details
+        """
+        self._logger.info(f"Running STAR format check for {role_bullets.company}")
+
+        bullets_with_star = 0
+        bullets_without_star = 0
+        missing_elements = []
+
+        for i, bullet in enumerate(role_bullets.bullets):
+            bullet_issues = []
+
+            # Check for explicit STAR components first
+            if bullet.has_star_components:
+                bullets_with_star += 1
+                continue
+
+            # Fall back to text-based detection
+            has_situation = self._has_situation(bullet.text)
+            has_action = self._has_action_with_skill(bullet.text)
+            has_result = self._has_result(bullet.text)
+
+            if not has_situation:
+                bullet_issues.append("missing situation/challenge opener")
+            if not has_action:
+                bullet_issues.append("missing action with skill/technology")
+            if not has_result:
+                bullet_issues.append("missing quantified result")
+
+            if bullet_issues:
+                bullets_without_star += 1
+                missing_elements.append(
+                    f"Bullet {i + 1}: {', '.join(bullet_issues)}"
+                )
+            else:
+                bullets_with_star += 1
+
+        # Calculate coverage
+        total_bullets = len(role_bullets.bullets)
+        star_coverage = bullets_with_star / total_bullets if total_bullets > 0 else 1.0
+
+        # Pass if at least 80% of bullets have STAR format
+        passed = star_coverage >= 0.8
+
+        result = STARResult(
+            passed=passed,
+            bullets_with_star=bullets_with_star,
+            bullets_without_star=bullets_without_star,
+            missing_elements=missing_elements,
+            star_coverage=star_coverage,
+        )
+
+        self._logger.info(f"STAR Check: {'PASS' if passed else 'FAIL'}")
+        self._logger.info(f"  Coverage: {star_coverage:.1%} ({bullets_with_star}/{total_bullets})")
+        if missing_elements:
+            self._logger.debug(f"  Missing: {missing_elements[:3]}")
+
+        return result
 
     def check_hallucination(
         self,
@@ -330,6 +460,7 @@ def run_qa_on_all_roles(
     role_bullets_list: List[RoleBullets],
     source_roles: List[RoleData],
     target_keywords: List[str],
+    check_star: bool = True,
 ) -> Tuple[List[QAResult], List[ATSResult]]:
     """
     Run QA checks on all generated role bullets.
@@ -338,6 +469,7 @@ def run_qa_on_all_roles(
         role_bullets_list: List of generated RoleBullets
         source_roles: List of source RoleData (same order)
         target_keywords: JD keywords to check
+        check_star: Whether to run STAR format validation (GAP-005)
 
     Returns:
         Tuple of (qa_results, ats_results) lists
@@ -349,6 +481,12 @@ def run_qa_on_all_roles(
     for role_bullets, source_role in zip(role_bullets_list, source_roles):
         # Run hallucination check
         qa_result = qa.check_hallucination(role_bullets, source_role)
+
+        # Run STAR format check (GAP-005)
+        if check_star:
+            star_result = qa.check_star_format(role_bullets)
+            qa_result.star_result = star_result
+
         qa_results.append(qa_result)
 
         # Update RoleBullets with QA result
@@ -366,6 +504,15 @@ def run_qa_on_all_roles(
     passed = sum(1 for r in qa_results if r.passed)
     total = len(qa_results)
     logger.info(f"\nQA Summary: {passed}/{total} roles passed hallucination check")
+
+    # STAR summary (GAP-005)
+    if check_star:
+        star_passed = sum(1 for r in qa_results if r.star_result and r.star_result.passed)
+        avg_coverage = sum(
+            r.star_result.star_coverage for r in qa_results if r.star_result
+        ) / len(qa_results) if qa_results else 0
+        logger.info(f"STAR Summary: {star_passed}/{total} roles passed STAR format check")
+        logger.info(f"STAR Coverage: {avg_coverage:.1%} average")
 
     avg_coverage = sum(r.coverage_ratio for r in ats_results) / len(ats_results) if ats_results else 0
     logger.info(f"ATS Summary: {avg_coverage:.1%} average keyword coverage")

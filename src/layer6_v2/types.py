@@ -21,23 +21,33 @@ class GeneratedBullet:
     A single generated CV bullet with full traceability.
 
     Each bullet tracks:
-    - The generated text optimized for the JD
+    - The generated text optimized for the JD (in STAR format)
     - The source text it was derived from (for hallucination QA)
     - Metrics and keywords used (for verification)
     - Pain points addressed (for JD alignment)
+    - STAR components for structure validation (GAP-005)
     """
 
-    text: str                          # Generated bullet text (15-25 words)
+    text: str                          # Generated bullet text (20-35 words, STAR format)
     source_text: str                   # Original achievement from role file
     source_metric: Optional[str] = None       # Exact metric from source (for verification)
     jd_keyword_used: Optional[str] = None     # JD keyword integrated (or None)
     pain_point_addressed: Optional[str] = None  # Pain point addressed (or None)
+    # STAR components (GAP-005)
+    situation: Optional[str] = None    # Challenge/context that prompted the action
+    action: Optional[str] = None       # What was done including skills/technologies
+    result: Optional[str] = None       # Quantified outcome achieved
     word_count: int = 0                # Word count of generated text
 
     def __post_init__(self):
         """Calculate word count if not provided."""
         if self.word_count == 0:
             self.word_count = len(self.text.split())
+
+    @property
+    def has_star_components(self) -> bool:
+        """Check if bullet has all STAR components populated."""
+        return bool(self.situation and self.action and self.result)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -47,7 +57,39 @@ class GeneratedBullet:
             "source_metric": self.source_metric,
             "jd_keyword_used": self.jd_keyword_used,
             "pain_point_addressed": self.pain_point_addressed,
+            "situation": self.situation,
+            "action": self.action,
+            "result": self.result,
             "word_count": self.word_count,
+        }
+
+
+@dataclass
+class STARResult:
+    """
+    Result of STAR format validation for a role's bullets (GAP-005).
+
+    Verifies that all generated bullets follow the STAR structure:
+    - Situation: Context/challenge that prompted the action
+    - Task: (implicit in action) What needed to be done
+    - Action: What was done with skills/technologies
+    - Result: Quantified outcome achieved
+    """
+
+    passed: bool                       # Overall pass/fail
+    bullets_with_star: int             # Number of bullets with complete STAR
+    bullets_without_star: int          # Number of bullets missing STAR elements
+    missing_elements: List[str]        # Specific missing elements (e.g., "Bullet 1: missing situation")
+    star_coverage: float               # Ratio of bullets with complete STAR (0-1)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "passed": self.passed,
+            "bullets_with_star": self.bullets_with_star,
+            "bullets_without_star": self.bullets_without_star,
+            "missing_elements": self.missing_elements,
+            "star_coverage": self.star_coverage,
         }
 
 
@@ -64,6 +106,7 @@ class QAResult:
     issues: List[str]                  # Specific issues found (e.g., "Metric 75% not in source")
     verified_metrics: List[str]        # Metrics that were verified in source
     confidence: float                  # Confidence score 0-1
+    star_result: Optional["STARResult"] = None  # STAR format validation result (GAP-005)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -73,6 +116,7 @@ class QAResult:
             "issues": self.issues,
             "verified_metrics": self.verified_metrics,
             "confidence": self.confidence,
+            "star_result": self.star_result.to_dict() if self.star_result else None,
         }
 
 
@@ -351,10 +395,10 @@ class StitchedRole:
         }
 
     def to_markdown(self) -> str:
-        """Convert to markdown format for CV output."""
+        """Convert to plain text format for CV output (GAP-006: no markdown)."""
         lines = [
-            f"### {self.company}",
-            f"**{self.title}** | {self.location} | {self.period}",
+            self.company,
+            f"{self.title} | {self.location} | {self.period}",
             "",
         ]
         for bullet in self.bullets:
@@ -464,9 +508,9 @@ class SkillsSection:
         }
 
     def to_markdown(self) -> str:
-        """Convert to markdown format for CV output."""
+        """Convert to plain text format for CV output (GAP-006: no markdown)."""
         skill_names = ", ".join(self.skill_names)
-        return f"**{self.category}**: {skill_names}"
+        return f"{self.category}: {skill_names}"
 
 
 @dataclass
@@ -571,7 +615,7 @@ class HeaderOutput:
         }
 
     def to_markdown(self) -> str:
-        """Convert to markdown format for CV header."""
+        """Convert to plain text format for CV header (GAP-006: no markdown)."""
         lines = []
 
         # Contact info header
@@ -580,25 +624,25 @@ class HeaderOutput:
         phone = self.contact_info.get("phone", "")
         linkedin = self.contact_info.get("linkedin", "")
 
-        lines.append(f"# {name}")
+        lines.append(name)
         lines.append(f"{email} | {phone} | {linkedin}")
         lines.append("")
 
         # Profile
-        lines.append("## Profile")
+        lines.append("PROFILE")
         lines.append(self.profile.text)
         lines.append("")
 
         # Skills
-        lines.append("## Core Competencies")
+        lines.append("CORE COMPETENCIES")
         for section in self.skills_sections:
             lines.append(section.to_markdown())
         lines.append("")
 
         # Education
-        lines.append("## Education")
+        lines.append("EDUCATION")
         for edu in self.education:
-            lines.append(f"- {edu}")
+            lines.append(f"• {edu}")
 
         return "\n".join(lines)
 

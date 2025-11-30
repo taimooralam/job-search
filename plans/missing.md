@@ -82,25 +82,18 @@
 
 ---
 
-### GAP-046: Export PDF Button Not Working on Detail Page
-**Priority**: P0 CRITICAL | **Status**: PENDING | **Effort**: 1-3 hours
-**Impact**: Users can't export CV from job detail page (core feature broken)
+### GAP-046: Export PDF Button Not Working on Detail Page ✅ COMPLETE
+**Priority**: P0 CRITICAL | **Status**: COMPLETE | **Effort**: 1-3 hours
+**Impact**: Users can now export CV from job detail page
 
-**Description**: The "Export PDF" button on job detail page doesn't function. Workaround exists: use Export PDF in CV editor side panel.
+**Description**: Fixed the "Export PDF" button on job detail page. The issue was that the request body (tiptap_json) wasn't being sent to the PDF service.
 
-**Root Cause Hypotheses**:
-1. Button doesn't exist or is hidden by CSS
-2. Click handler not attached
-3. Wrong endpoint or missing cv_editor_state data
-4. CORS/auth issue
-5. Feature never implemented (only editor button works)
+**Root Cause**: The proxy endpoint was prepared to call `/cv-to-pdf` but forgot to include `json=pdf_request` in the requests.post() call.
 
-**Fix Required**:
-1. Investigate using browser DevTools (Network, Console)
-2. Compare with working editor button code
-3. Add missing handler or fix existing one
-
-**Plan**: `plans/bugs/export-pdf-detail-page.md`
+**Fix Applied** (2024-11-30):
+1. Updated `frontend/app.py` `generate_cv_pdf_from_editor()` to pass `json=pdf_request`
+2. Fixed error message references from `runner_url` to `pdf_service_url`
+3. Improved error messages for clarity
 
 ---
 
