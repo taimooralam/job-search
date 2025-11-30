@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,70 @@
 
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Configuration - Design System Integration -->
+    <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            // Map design system tokens to Tailwind
+            primary: {
+              50: 'var(--color-primary-50)',
+              100: 'var(--color-primary-100)',
+              200: 'var(--color-primary-200)',
+              300: 'var(--color-primary-300)',
+              400: 'var(--color-primary-400)',
+              500: 'var(--color-primary-500)',
+              600: 'var(--color-primary-600)',
+              700: 'var(--color-primary-700)',
+              800: 'var(--color-primary-800)',
+              900: 'var(--color-primary-900)',
+              950: 'var(--color-primary-950)',
+            },
+            // Dark theme colors (Deep Blue - Technical Credibility)
+            dark: {
+              900: '#0f172a',  // Page background
+              800: '#1e293b',  // Cards, modals, sidebar
+              700: '#334155',  // Borders, dividers
+              600: '#475569',  // Light borders
+            },
+            // Accent (Electric Blue - Call-to-Action)
+            accent: {
+              500: '#3b82f6',  // Primary buttons, links
+              400: '#60a5fa',  // Hover states
+              300: '#93c5fd',  // Subtle highlights
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            mono: ['Fira Code', 'Monaco', 'Courier New', 'monospace'],
+          },
+          borderRadius: {
+            'sm': 'var(--radius-sm)',
+            'md': 'var(--radius-md)',
+            'lg': 'var(--radius-lg)',
+            'xl': 'var(--radius-xl)',
+            '2xl': 'var(--radius-2xl)',
+          },
+          boxShadow: {
+            'subtle': 'var(--shadow-subtle)',
+            'sm': 'var(--shadow-sm)',
+            'md': 'var(--shadow-md)',
+            'lg': 'var(--shadow-lg)',
+            'xl': 'var(--shadow-xl)',
+            '2xl': 'var(--shadow-2xl)',
+          },
+          transitionDuration: {
+            'fast': '150ms',
+            'base': '200ms',
+            'slow': '300ms',
+          }
+        }
+      }
+    }
+    </script>
 
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
@@ -231,6 +295,61 @@
             --z-modal: 1050;
             --z-popover: 1060;
             --z-tooltip: 1070;
+
+            /* ================================================================
+             * Semantic Theme Variables (Light Mode - Default)
+             * These variables change based on light/dark mode
+             * ================================================================ */
+
+            /* Background colors */
+            --bg-page: #f9fafb;           /* Page background */
+            --bg-secondary: #ffffff;       /* Secondary background */
+            --bg-card: #ffffff;           /* Card/panel background */
+            --bg-elevated: #ffffff;       /* Elevated surfaces, popovers */
+            --bg-input: #ffffff;          /* Form input background */
+            --bg-hover: #f3f4f6;          /* Hover states */
+
+            /* Text colors */
+            --text-primary: #111827;      /* Primary text color */
+            --text-secondary: #4b5563;    /* Secondary text, labels */
+            --text-tertiary: #6b7280;     /* Tertiary text, placeholders */
+            --text-muted: #9ca3af;        /* Muted/disabled text */
+
+            /* Border colors */
+            --border-default: #e5e7eb;    /* Default borders */
+            --border-light: #f3f4f6;      /* Light borders, dividers */
+            --border-focus: var(--color-primary-500); /* Focus state borders */
+        }
+
+        /* ================================================================
+         * Dark Mode Overrides
+         * Applied when html has 'dark' class
+         * ================================================================ */
+        .dark {
+            /* Background colors - Deep Blue palette */
+            --bg-page: #0f172a;           /* Page background */
+            --bg-secondary: #1e293b;       /* Secondary background */
+            --bg-card: #1e293b;           /* Card/panel background */
+            --bg-elevated: #334155;       /* Elevated surfaces */
+            --bg-input: #1e293b;          /* Form input background */
+            --bg-hover: #334155;          /* Hover states */
+
+            /* Text colors - Light on dark */
+            --text-primary: #f1f5f9;      /* Primary text color */
+            --text-secondary: #94a3b8;    /* Secondary text */
+            --text-tertiary: #64748b;     /* Tertiary text */
+            --text-muted: #475569;        /* Muted/disabled text */
+
+            /* Border colors */
+            --border-default: #334155;    /* Default borders */
+            --border-light: #475569;      /* Light borders */
+            --border-focus: #60a5fa;      /* Focus state borders (lighter blue) */
+
+            /* Adjusted shadows for dark mode */
+            --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
         }
 
         /* Global Improvements */
@@ -239,10 +358,37 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
+        html {
+            transition: background-color var(--transition-slow), color var(--transition-slow);
+        }
+
         body {
             font-family: var(--font-sans);
-            color: var(--color-gray-900);
+            color: var(--text-primary);
+            background-color: var(--bg-page);
             line-height: var(--line-height-normal);
+            transition: background-color var(--transition-slow), color var(--transition-slow);
+        }
+
+        /* Form inputs - theme-aware */
+        input, textarea, select {
+            background-color: var(--bg-input);
+            color: var(--text-primary);
+            border-color: var(--border-default);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--border-focus);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .dark input:focus, .dark textarea:focus, .dark select:focus {
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted);
         }
 
         /* Sticky header for table */
@@ -367,24 +513,31 @@
             transform: translateY(-1px);
         }
 
-        /* Card Components */
+        /* Card Components - Theme-aware */
         .card {
-            background-color: white;
+            background-color: var(--bg-card);
             border-radius: var(--radius-xl);
             box-shadow: var(--shadow-sm);
-            border: 1px solid var(--color-gray-200);
+            border: 1px solid var(--border-default);
             transition: all var(--transition-base);
         }
 
         .card-hover:hover {
             box-shadow: var(--shadow-md);
             transform: translateY(-2px);
-            border-color: var(--color-primary-200);
+            border-color: var(--border-focus);
+        }
+
+        /* Glass-morphism card variant (dark mode only) */
+        .dark .card-glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(52, 65, 85, 0.5);
         }
 
         .card-header {
             padding: var(--space-6);
-            border-bottom: 1px solid var(--color-gray-200);
+            border-bottom: 1px solid var(--border-default);
         }
 
         .card-body {
