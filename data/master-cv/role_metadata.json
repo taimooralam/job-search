@@ -1,0 +1,117 @@
+{
+  "candidate": {
+    "name": "Taimoor Alam",
+    "title_base": "Engineering Leader / Software Architect",
+    "contact": {
+      "email": "alamtaimoor.de@gmail.com",
+      "phone": "+49 176 2979 3925",
+      "linkedin": "linkedin.com/in/taimooralam",
+      "location": "German National | International relocation (Hybrid, 2 months)"
+    },
+    "languages": ["English (C1)", "German (B2)", "Urdu (Native)"],
+    "education": {
+      "masters": "M.Sc. Computer Science — Technical University of Munich",
+      "bachelors": "B.Sc. Computer Software Engineering — GIK Institute"
+    },
+    "certifications": ["AWS Essentials", "ECS & Multi-Region LB", "Data Scientist's Toolbox", "R Programming"],
+    "years_experience": 11
+  },
+  "roles": [
+    {
+      "id": "01_seven_one_entertainment",
+      "company": "Seven.One Entertainment Group",
+      "title": "Technical Lead (Addressable TV)",
+      "location": "Munich, DE",
+      "period": "2020–Present",
+      "start_year": 2020,
+      "end_year": null,
+      "is_current": true,
+      "duration_years": 5,
+      "file": "roles/01_seven_one_entertainment.md",
+      "industry": "AdTech",
+      "team_size": "10+",
+      "primary_competencies": ["leadership", "architecture", "delivery"],
+      "keywords": ["AWS", "DDD", "microservices", "event-driven", "GDPR", "observability", "Lambda", "ECS"]
+    },
+    {
+      "id": "02_samdock_daypaio",
+      "company": "Samdock (Daypaio)",
+      "title": "Lead Software Engineer",
+      "location": "Munich, DE",
+      "period": "2019–2020",
+      "start_year": 2019,
+      "end_year": 2020,
+      "is_current": false,
+      "duration_years": 1,
+      "file": "roles/02_samdock_daypaio.md",
+      "industry": "SaaS/CRM",
+      "team_size": "4",
+      "primary_competencies": ["architecture", "delivery", "process"],
+      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup"]
+    },
+    {
+      "id": "03_ki_labs",
+      "company": "KI Labs",
+      "title": "Intermediate Backend Engineer",
+      "location": "Munich, DE",
+      "period": "2018–2019",
+      "start_year": 2018,
+      "end_year": 2019,
+      "is_current": false,
+      "duration_years": 1,
+      "file": "roles/03_ki_labs.md",
+      "industry": "Tech Consulting",
+      "team_size": "5-10",
+      "primary_competencies": ["delivery", "process"],
+      "keywords": ["Python", "Flask", "MongoDB", "REST API", "testing"]
+    },
+    {
+      "id": "04_fortis",
+      "company": "Fortis (Research Project)",
+      "title": "Backend Engineer",
+      "location": "Munich, DE",
+      "period": "2018",
+      "start_year": 2018,
+      "end_year": 2018,
+      "is_current": false,
+      "duration_years": 1,
+      "file": "roles/04_fortis.md",
+      "industry": "Research",
+      "team_size": "3-5",
+      "primary_competencies": ["delivery"],
+      "keywords": ["Node.js", "RabbitMQ", "microservices", "Swagger"]
+    },
+    {
+      "id": "05_osram",
+      "company": "OSRAM",
+      "title": "Software Engineer (IoT)",
+      "location": "Munich, DE",
+      "period": "2016–2018",
+      "start_year": 2016,
+      "end_year": 2018,
+      "is_current": false,
+      "duration_years": 2,
+      "file": "roles/05_osram.md",
+      "industry": "IoT/Enterprise",
+      "team_size": "10+",
+      "primary_competencies": ["delivery", "architecture"],
+      "keywords": ["IoT", "C++", "Qt", "CoAP", "Python", "embedded"]
+    },
+    {
+      "id": "06_clary_icon",
+      "company": "Clary Icon",
+      "title": "Software Engineer",
+      "location": "Islamabad, PK",
+      "period": "2014–2016",
+      "start_year": 2014,
+      "end_year": 2016,
+      "is_current": false,
+      "duration_years": 2,
+      "file": "roles/06_clary_icon.md",
+      "industry": "Software Services",
+      "team_size": "5-10",
+      "primary_competencies": ["delivery"],
+      "keywords": ["C++", "Node.js", "WebRTC", "FFmpeg", "SIP", "Qt"]
+    }
+  ]
+}

@@ -23,6 +23,7 @@ credentials/
 !package.json
 !tsconfig.json
 !vercel.json
+!data/master-cv/role_metadata.json
 
 # IDE / Editor
 .idea/
@@ -55,7 +56,9 @@ logs/
 
 # Application outputs (can be regenerated)
 applications/
+outputs/
 star_records.json
+SESSION_CONTINUITY_INDEX.md
 
 # Binary assets
 assets/*.docx
