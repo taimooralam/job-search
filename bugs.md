@@ -3,6 +3,10 @@ RESOLVED (2025-11-28):
 1. [RESOLVED] the process button is not working - Fixed by adding missing showToast function and improved error handling
 2. [RESOLVED] the CV is showing sleek in the main editor but not on the detail page. The WSIWGYG is not synced. - Fixed by replacing markdown rendering with TipTap JSON rendering
 3. [RESOLVED 2025-11-28] The PDF service is not available - Root cause: Old docker-compose.runner.yml on VPS didn't include PDF service. CI/CD workflow was only copying master-cv.md but NOT docker-compose.runner.yml. Fix: Updated workflow to copy both files, added Playwright startup validation, increased wait time from 10s to 20s. All 58 tests passing (49 PDF service + 9 runner integration). See `plans/pdf-service-debug-plan.md` for implementation details.
+4. [RESOLVED 2025-11-30] Line spacing CSS not cascading to all elements in editor.
+    - **Root cause**: CSS selectors like `.ProseMirror p { line-height: 1.6; }` had higher specificity than the inline `line-height` set on the parent `.ProseMirror` element by JavaScript
+    - **Fix**: Changed all child element CSS rules (h1, h2, h3, p, li) to use `line-height: inherit` so they respect the document-level setting
+    - **Files modified**: `frontend/templates/base.html` (ProseMirror and CV display styles)
 
 OPEN/PENDING:
 
