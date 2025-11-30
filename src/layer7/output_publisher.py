@@ -256,27 +256,43 @@ class OutputPublisher:
         Returns:
             True if successful, False otherwise
         """
+        from bson import ObjectId
+
         try:
             job_id = state['job_id']
+            self.logger.info(f"Persisting to MongoDB for job_id: {job_id}")
 
-            # Try to convert to int (your schema uses int jobId)
-            try:
-                job_id_int = int(job_id)
-            except ValueError:
-                job_id_int = None
-
-            # Find the job record
+            # Find the job record - try multiple strategies
             collection = self.db['level-2']
             job_record = None
 
-            for jid in [job_id_int, job_id]:
-                if jid:
-                    job_record = collection.find_one({"jobId": jid})
+            # Strategy 1: Try as ObjectId (_id field) - most common case
+            try:
+                object_id = ObjectId(job_id)
+                job_record = collection.find_one({"_id": object_id})
+                if job_record:
+                    self.logger.info(f"Found job by _id (ObjectId): {job_id}")
+            except Exception:
+                pass  # Not a valid ObjectId, try other strategies
+
+            # Strategy 2: Try as integer jobId field (legacy schema)
+            if not job_record:
+                try:
+                    job_id_int = int(job_id)
+                    job_record = collection.find_one({"jobId": job_id_int})
                     if job_record:
-                        break
+                        self.logger.info(f"Found job by jobId (int): {job_id_int}")
+                except ValueError:
+                    pass
+
+            # Strategy 3: Try as string jobId field
+            if not job_record:
+                job_record = collection.find_one({"jobId": job_id})
+                if job_record:
+                    self.logger.info(f"Found job by jobId (string): {job_id}")
 
             if not job_record:
-                self.logger.warning(f"Job {job_id} not found in MongoDB level-2 collection")
+                self.logger.warning(f"Job {job_id} not found in MongoDB level-2 collection (tried _id, jobId int/string)")
                 return False
 
             # Prepare update data
