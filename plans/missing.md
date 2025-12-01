@@ -11,12 +11,12 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (8 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (36 fixed/documented, 28 open) | All identified gaps |
+| **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 25 (13 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 18 (9 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (39 fixed/documented, 25 open) | All identified gaps |
 
-**Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 892 tests passing (887 unit + 5 benchmark), 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -27,15 +27,19 @@
 - **GAP-009**: CV display now checks both `cv_text` and `cv_editor_state`
 - **GAP-012**: Bold/italic markdown parsing now works in CV text conversion
 - **GAP-014**: Middle East relocation tagline added automatically to CVs
+- **GAP-025**: V2 Prompts verified as already implemented (validation running as warnings)
 - **GAP-026**: CV spacing reduced by 20% for more compact layout
 - **GAP-028**: Runner terminal copy button verified as already implemented
+- **GAP-033**: Dossier PDF Export - complete job dossier exportable with 9 sections
 - **GAP-040**: Swagger API documentation added at `/api-docs` and `/api/docs` (both routes work)
+- **GAP-042**: Performance benchmarks - target latencies documented, benchmark test suite created
 - **GAP-051**: Contact discovery improved with company name variations
 - **GAP-052**: Page break visualization verified as already implemented
 - **GAP-054**: CV display now matches editor exactly (headings, colors, borders)
 - **GAP-056**: Contact management (delete/copy/import) verified as already implemented
 - **GAP-058**: Button sizing hierarchy refined with btn-xs class
 - **GAP-064**: appliedOn timestamp now set when marking jobs as applied
+- **GAP-066**: Token tracking callbacks - LLM factory with automatic token tracking across 17 layers
 - **GAP-022**: Pipeline progress UI verified as already implemented (7-layer stepper)
 - **Postman Collection**: Added runner API collection at `postman/Job-Search-Runner-API.postman_collection.json`
 - **MongoDB $project Bug**: Fixed aggregation pipeline error - removed exclusion from inclusion projection
@@ -621,13 +625,27 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 
 ---
 
-### GAP-025: V2 Prompts Not Implemented
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: Multiple tests skipped for V2 prompts (opportunity mapper, cover letter, CV QA)
+### GAP-025: V2 Prompts ✅ ALREADY IMPLEMENTED
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (already implemented) | **Effort**: N/A
+**Impact**: V2 validation already running in production
 
-**Evidence**:
-- `tests/unit/test_layer4_opportunity_mapper_v2.py` - 6 skipped
-- `tests/unit/test_layer6_cover_letter_generator_v2.py` - 8 skipped
+**Verification** (2025-12-01):
+The V2 prompts and validation were ALREADY IMPLEMENTED. Tests show:
+- 18 passed, 6 skipped in `test_layer4_opportunity_mapper_v2.py`
+- 15 passed, 8 skipped in `test_layer6_cover_letter_generator_v2.py`
+
+Skipped tests are A/B comparison tests for LLM output quality, not implementation tests.
+
+**Existing Implementation**:
+1. **Opportunity Mapper** (`src/layer4/opportunity_mapper.py:167-277`):
+   - 4-step reasoning framework in prompts
+   - `_validate_rationale()` checks: STAR citations, pain point refs, min length (30 words), generic phrase detection, metric presence
+   - Validation runs on every response (warnings logged, not hard failures)
+
+2. **Cover Letter Generator** (`src/layer6/cover_letter_generator.py`):
+   - Company signal references validation
+   - Metric co-occurrence checks
+   - Pain point coverage requirements
 
 ---
 
@@ -811,52 +829,61 @@ Example: `testcorp|senior software engineer|san francisco, ca|linkedin_import`
 
 ---
 
-### GAP-066: Token Tracking Callback Not Wired to LLM Instances
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
-**Impact**: Dashboard token/cost metrics always show zero; budget enforcement doesn't work
+### GAP-066: Token Tracking Callback Integration ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE (2025-12-01) | **Effort**: 2-3 hours
+**Impact**: Dashboard token/cost metrics now track accurately; budget enforcement works
 
-**Root Cause**: The `TokenTrackerCallback` class exists in `src/common/token_tracker.py:623-684`, but no layer passes it to LLM instances. For example, `src/layer2/pain_point_miner.py:463` creates a `ChatOpenAI` without callbacks.
+**Implementation** (2025-12-01):
 
-**Affected Layers** (all need callback integration):
-- `src/layer1_4/jd_extractor.py` - JD Extraction
-- `src/layer2/pain_point_miner.py` - Pain Point Mining
-- `src/layer3/company_researcher.py` - Company Research
-- `src/layer3/role_researcher.py` - Role Research
-- `src/layer4/opportunity_mapper.py` - Fit Scoring
-- `src/layer5/people_mapper.py` - Contact Discovery
-- `src/layer6/generator.py` - CV Generation (Legacy)
-- `src/layer6_v2/` - CV Generation V2 (multiple files)
-- `src/layer6/outreach_generator.py` - Outreach Generation
+1. **LLM Factory Module** (`src/common/llm_factory.py`):
+   - `create_tracked_llm()` - Standard OpenRouter LLM with token tracking
+   - `create_tracked_cv_llm()` - Claude Anthropic for CV stitching
+   - `create_tracked_cheap_llm()` - GPT-4o-mini for cost-effective operations
+   - `create_tracked_llm_with_tier()` - Tier-aware model selection
+   - `set_run_context()` / `clear_run_context()` - Global run/job ID context
+   - `get_run_context()` - Retrieve current context for callbacks
 
-**Fix Required**:
-1. Create helper function `create_tracked_llm()` in `src/common/llm_factory.py`
-2. Update all layers to use the factory instead of direct `ChatOpenAI` instantiation
-3. Pass layer name for per-layer cost attribution
+2. **17 Layer Files Updated**:
+   - `src/layer1_4/jd_extractor.py` - JD Extraction
+   - `src/layer2/pain_point_miner.py` - Pain Point Mining
+   - `src/layer2_5/star_selector.py` - STAR Selection
+   - `src/layer3/company_researcher.py` - Company Research
+   - `src/layer3/role_researcher.py` - Role Research
+   - `src/layer4/opportunity_mapper.py` - Fit Scoring
+   - `src/layer5/people_mapper.py` - Contact Discovery
+   - `src/layer6/generator.py` - CV Generation (Legacy)
+   - `src/layer6/cv_generator.py` - CV Generation
+   - `src/layer6/cover_letter_generator.py` - Cover Letter
+   - `src/layer6_v2/role_generator.py` - Role Generation V2
+   - `src/layer6_v2/header_generator.py` - Header Generation V2
+   - `src/layer6_v2/category_generator.py` - Category Generation V2
+   - `src/layer6_v2/improver.py` - CV Improvement V2
+   - `src/layer6_v2/grader.py` - CV Grading V2
+   - `src/services/quick_scorer.py` - Quick Scoring
 
-**Example Fix**:
+3. **Workflow Integration** (`src/workflow.py`):
+   - Calls `set_run_context(run_id=run_id, job_id=job_id)` at pipeline start
+   - Calls `clear_run_context()` at pipeline end and in error handlers
+   - All LLM calls automatically tagged with run context
+
+4. **Test Updates**:
+   - Updated all test fixtures to mock `create_tracked_llm` instead of `ChatOpenAI`
+   - 892 tests passing (887 unit + 5 benchmark)
+
+**Factory Usage Example**:
 ```python
-# src/common/llm_factory.py
-from langchain_openai import ChatOpenAI
-from src.common.token_tracker import get_global_tracker, TokenTrackerCallback
-from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 
-def create_tracked_llm(
-    model: str = None,
-    temperature: float = None,
-    layer: str = "unknown"
-) -> ChatOpenAI:
-    return ChatOpenAI(
-        model=model or Config.DEFAULT_MODEL,
-        temperature=temperature or Config.ANALYTICAL_TEMPERATURE,
-        api_key=Config.get_llm_api_key(),
-        base_url=Config.get_llm_base_url(),
-        callbacks=[TokenTrackerCallback(
-            tracker=get_global_tracker(),
-            provider="openai",
-            layer=layer
-        )]
-    )
+# In layer constructor
+self.llm = create_tracked_llm(layer="layer2_pain_points")
+
+# Automatically includes TokenTrackerCallback with:
+# - Per-layer cost attribution
+# - Run ID and Job ID context
+# - Provider-specific token counting
 ```
+
+**Files**: `src/common/llm_factory.py` (new), 17 layer files updated, `src/workflow.py`
 
 ---
 
@@ -972,9 +999,35 @@ Design system enhancements:
 
 ---
 
-### GAP-033: Dossier PDF Export
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: Export complete dossier as PDF
+### GAP-033: Dossier PDF Export ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-01) | **Effort**: 2 hours
+**Impact**: Complete job dossier now exportable as PDF
+
+**Implementation** (2025-12-01):
+
+1. **DossierPDFExporter** (`src/api/pdf_export.py`):
+   - Builds comprehensive HTML with 9 sections:
+     - Header (title, timestamp)
+     - Company Information (research, signals)
+     - Role Details (summary, business impact, why now)
+     - Job Description
+     - Pain Points (4 dimensions)
+     - Fit Analysis (score box, rationale)
+     - Contacts (primary/secondary)
+     - Outreach Materials (cover letter, messages)
+     - CV Information
+   - Professional styling with A4 page format
+   - Renders via pdf-service `/render-pdf` endpoint
+
+2. **Flask Endpoint** (`frontend/app.py:2072-2150`):
+   - `GET /api/jobs/{job_id}/export-dossier-pdf`
+   - Fetches job from MongoDB, generates PDF, streams to browser
+   - Auto-generates filename: `dossier-{company}-{title}.pdf`
+
+3. **Frontend Button** (`frontend/templates/job_detail.html`):
+   - "Export Dossier" button next to Process button
+   - Loading state, success/error toasts
+   - `exportDossierPDF()` JavaScript function
 
 **Plan**: `plans/dossier-pdf-export-implementation.md`
 
@@ -1152,11 +1205,40 @@ Created comprehensive `RUNBOOK.md` covering:
 
 ---
 
-### GAP-042: Performance Benchmarks
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 3 hours
-**Impact**: No baseline metrics; can't detect regressions
+### GAP-042: Performance Benchmarks ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (2025-12-01) | **Effort**: 3 hours
+**Impact**: Baseline metrics and benchmark tests established
 
-**Fix**: Create benchmark tests, document target latencies
+**Implementation** (2025-12-01):
+
+1. **Target Latencies Documented** (`tests/benchmarks/__init__.py`):
+   - Layer 1-4 (JD Extractor): < 3s
+   - Layer 2 (Pain Point Miner): < 5s
+   - Layer 3.0 (Company Researcher): < 8s (with FireCrawl)
+   - Layer 3.5 (Role Researcher): < 3s
+   - Layer 4 (Opportunity Mapper): < 3s
+   - Layer 5 (People Mapper): < 10s (with FireCrawl)
+   - Layer 6 (CV Generator V2): < 15s
+   - Layer 7 (Output Publisher): < 2s
+   - Full Pipeline: < 60s
+   - PDF Generation: < 5s
+   - MongoDB Query: < 100ms
+
+2. **Benchmark Test Suite** (`tests/benchmarks/test_pipeline_benchmarks.py`):
+   - `TestMockedLayerBenchmarks`: Layer processing with mocked LLMs
+   - `TestValidationBenchmarks`: Validation helper performance (10ms target)
+   - `TestHTMLGenerationBenchmarks`: Dossier HTML generation (100ms target)
+   - `TestDatabaseBenchmarks`: MongoDB query latency (100ms target)
+   - `BenchmarkResult` class with pass/fail margin calculation
+   - `run_benchmark()` utility for consistent measurement
+
+**Running Benchmarks**:
+```bash
+pytest tests/benchmarks -v --benchmark
+pytest tests/benchmarks/test_pipeline_benchmarks.py -v
+```
+
+**Files**: `tests/benchmarks/__init__.py`, `tests/benchmarks/test_pipeline_benchmarks.py`
 
 ---
 
