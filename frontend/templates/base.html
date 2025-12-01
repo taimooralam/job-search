@@ -737,6 +737,134 @@
             color: var(--color-gray-700);
         }
 
+        .badge-info {
+            background-color: var(--color-info-50);
+            color: var(--color-info-700);
+        }
+
+        /* Dark mode badge adjustments for better visibility */
+        .dark .badge-primary {
+            background-color: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+        }
+
+        .dark .badge-success {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .dark .badge-warning {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .dark .badge-error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .dark .badge-gray {
+            background-color: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+
+        .dark .badge-info {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        /* Status-specific colors (theme-aware) */
+        .status-success { color: var(--color-success-600); }
+        .status-error { color: var(--color-error-600); }
+        .status-warning { color: var(--color-warning-600); }
+        .status-info { color: var(--color-info-600); }
+
+        .dark .status-success { color: #34d399; }
+        .dark .status-error { color: #f87171; }
+        .dark .status-warning { color: #fbbf24; }
+        .dark .status-info { color: #60a5fa; }
+
+        /* Quick date filter buttons - theme-aware */
+        .quick-date-btn-hour {
+            border-color: var(--color-info-200);
+            color: var(--color-info-700);
+        }
+        .quick-date-btn-hour:hover {
+            background-color: var(--color-info-50);
+        }
+        .quick-date-btn-hour.active {
+            background-color: var(--color-info-100);
+            border-color: var(--color-info-400);
+        }
+
+        .quick-date-btn-week {
+            border-color: var(--color-success-200);
+            color: var(--color-success-700);
+        }
+        .quick-date-btn-week:hover {
+            background-color: var(--color-success-50);
+        }
+        .quick-date-btn-week.active {
+            background-color: var(--color-success-100);
+            border-color: var(--color-success-400);
+        }
+
+        .dark .quick-date-btn-hour {
+            border-color: rgba(59, 130, 246, 0.4);
+            color: #60a5fa;
+        }
+        .dark .quick-date-btn-hour:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .dark .quick-date-btn-hour.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.6);
+        }
+
+        .dark .quick-date-btn-week {
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        .dark .quick-date-btn-week:hover {
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        .dark .quick-date-btn-week.active {
+            background-color: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.6);
+        }
+
+        .quick-date-btn-month {
+            border-color: var(--color-primary-200);
+            color: var(--color-primary-700);
+        }
+        .quick-date-btn-month:hover {
+            background-color: var(--color-primary-50);
+        }
+        .quick-date-btn-month.active {
+            background-color: var(--color-primary-100);
+            border-color: var(--color-primary-400);
+        }
+
+        .dark .quick-date-btn-month {
+            border-color: rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+        }
+        .dark .quick-date-btn-month:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        .dark .quick-date-btn-month.active {
+            background-color: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.6);
+        }
+
+        /* LinkedIn brand color - theme aware */
+        .linkedin-color {
+            color: #0077b5;
+        }
+        .dark .linkedin-color {
+            color: #60a5fa;
+        }
+
         /* Modal Components */
         .modal-backdrop {
             position: fixed;
