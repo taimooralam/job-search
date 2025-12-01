@@ -244,3 +244,8 @@ class JobState(TypedDict):
     # Controls which models and features are used based on job fit/priority
     processing_tier: Optional[str]   # "A" (gold), "B" (silver), "C" (bronze), "D" (skip)
     tier_config: Optional[Dict[str, Any]]  # Full tier configuration (models, limits, etc.)
+
+    # ===== PIPELINE RUN HISTORY =====
+    # Tracks each pipeline run with cost and tier for historical analysis
+    # Each entry: {"run_id": str, "tier": str, "cost_usd": float, "timestamp": str, "status": str}
+    pipeline_runs: Optional[List[Dict[str, Any]]]
