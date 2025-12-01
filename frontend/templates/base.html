@@ -2201,7 +2201,19 @@
                     body: JSON.stringify({ job_id_or_url: jobIdOrUrl })
                 });
 
-                const result = await response.json();
+                // Handle non-JSON responses (timeout, server errors return HTML)
+                const contentType = response.headers.get('content-type');
+                let result;
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    // Server returned HTML or plain text (likely timeout/error)
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error(response.status === 504 ? 'Request timed out. Try again.' :
+                                   response.status >= 500 ? 'Server error. The scraper may have timed out.' :
+                                   'Server returned unexpected response');
+                }
 
                 if (response.ok && result.job_id) {
                     // Update status
