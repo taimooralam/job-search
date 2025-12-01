@@ -1250,12 +1250,14 @@
          * Headings keep min-height via line-height but respect document settings when higher
          */
         .ProseMirror h1 {
-            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
-            font-size: 34px;
-            font-weight: 800;
-            color: #475569;  /* slate-600 */
-            margin: 0 0 10px 0; /* GAP-026: 20% tighter spacing */
+            font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;  /* slate-800 - darker for executive presence */
+            margin: 0 0 8px 0; /* GAP-026: 20% tighter spacing */
             line-height: inherit; /* Bug #4: Inherit from document settings */
+            letter-spacing: 0.02em; /* Refined letter-spacing for elegance */
+            text-transform: uppercase; /* Executive styling - uppercase name */
         }
 
         .ProseMirror h2 {
