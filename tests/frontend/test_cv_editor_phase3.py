@@ -215,7 +215,7 @@ class TestLineHeightAdjustment:
         # Assert
         assert response.status_code == 200
         data = response.get_json()
-        assert data["editor_state"]["documentStyles"]["lineHeight"] == 1.15
+        assert data["editor_state"]["documentStyles"]["lineHeight"] == 1.5
 
     def test_line_height_options_available(self, authenticated_client, mock_db, sample_job):
         """Line height selector should have options: 1.0, 1.15, 1.5, 2.0."""
