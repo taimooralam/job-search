@@ -472,6 +472,9 @@ def list_jobs():
         pipeline.append({"$match": {"_normalizedDate": date_match}})
 
         # Stage 4: Count total (for pagination) - use $facet for efficiency
+        # Note: We use inclusion projection only. The _normalizedDate temp field
+        # is automatically excluded since it's not in the projection dict.
+        # MongoDB doesn't allow mixing inclusion and exclusion in $project.
         pipeline.append({
             "$facet": {
                 "metadata": [{"$count": "total"}],
@@ -479,7 +482,7 @@ def list_jobs():
                     {"$sort": {mongo_sort_field: sort_order}},
                     {"$skip": (page - 1) * page_size},
                     {"$limit": page_size},
-                    {"$project": {**projection, "_normalizedDate": 0}}  # Remove temp field
+                    {"$project": projection}
                 ]
             }
         })
@@ -1175,6 +1178,69 @@ def service_health_partial():
         "partials/service_health.html",
         health=health_data
     )
+
+
+@app.route("/api/pipeline-runs", methods=["GET"])
+@login_required
+def get_pipeline_runs():
+    """
+    Get pipeline run history (GAP-043).
+
+    Query params:
+    - job_id: Filter by job ID
+    - limit: Max runs to return (default 50)
+    - status: Filter by status (processing, completed, failed, partial)
+
+    Returns list of pipeline runs sorted by created_at desc.
+    """
+    try:
+        # Parse query params
+        job_id = request.args.get("job_id")
+        limit = min(int(request.args.get("limit", 50)), 200)  # Cap at 200
+        status = request.args.get("status")
+
+        # Build query
+        query = {}
+        if job_id:
+            query["job_id"] = job_id
+        if status:
+            query["status"] = status
+
+        # Fetch runs
+        runs = list(
+            db.pipeline_runs.find(query)
+            .sort("created_at", DESCENDING)
+            .limit(limit)
+        )
+
+        # Format for JSON
+        formatted_runs = []
+        for run in runs:
+            formatted_runs.append({
+                "run_id": run.get("run_id"),
+                "job_id": run.get("job_id"),
+                "job_title": run.get("job_title", ""),
+                "company": run.get("company", ""),
+                "status": run.get("status", "unknown"),
+                "fit_score": run.get("fit_score"),
+                "fit_category": run.get("fit_category"),
+                "duration_ms": run.get("duration_ms"),
+                "total_cost_usd": run.get("total_cost_usd"),
+                "errors": run.get("errors", []),
+                "trace_url": run.get("trace_url"),
+                "created_at": run.get("created_at").isoformat() if run.get("created_at") else None,
+                "updated_at": run.get("updated_at").isoformat() if run.get("updated_at") else None,
+            })
+
+        return jsonify({
+            "runs": formatted_runs,
+            "count": len(formatted_runs),
+            "query": query,
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to fetch pipeline runs: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/metrics", methods=["GET"])
