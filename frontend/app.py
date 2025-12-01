@@ -317,7 +317,7 @@ def list_jobs():
     date_filter_from: Optional[datetime] = None
     date_filter_to: Optional[datetime] = None
 
-    def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> datetime:
+    def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> Optional[datetime]:
         """
         Parse date/datetime string to Python datetime for MongoDB comparison.
 
@@ -326,18 +326,29 @@ def list_jobs():
             is_end_of_day: If True and dt_str is date-only, use 23:59:59.999999
 
         Returns:
-            datetime object for MongoDB query
+            datetime object for MongoDB query, or None if parsing fails
         """
-        if 'T' in dt_str:
-            # Full ISO datetime: 2025-11-30T14:30:00.000Z
-            clean_str = dt_str.replace('Z', '').replace('+00:00', '')
-            return datetime.fromisoformat(clean_str)
-        else:
-            # Date only: 2025-11-30
-            if is_end_of_day:
-                return datetime.fromisoformat(f"{dt_str}T23:59:59.999999")
+        try:
+            if 'T' in dt_str:
+                # Full ISO datetime: 2025-11-30T14:30:00.000Z or 2025-11-30T14:30:00.709Z
+                clean_str = dt_str.replace('Z', '').replace('+00:00', '')
+                # Handle milliseconds that may not be exactly 6 digits
+                # Python 3.9 fromisoformat is strict about microsecond format
+                if '.' in clean_str:
+                    base, frac = clean_str.rsplit('.', 1)
+                    # Pad or truncate to 6 digits for microseconds
+                    frac = frac[:6].ljust(6, '0')
+                    clean_str = f"{base}.{frac}"
+                return datetime.fromisoformat(clean_str)
             else:
-                return datetime.fromisoformat(f"{dt_str}T00:00:00")
+                # Date only: 2025-11-30
+                if is_end_of_day:
+                    return datetime.fromisoformat(f"{dt_str}T23:59:59.999999")
+                else:
+                    return datetime.fromisoformat(f"{dt_str}T00:00:00")
+        except (ValueError, AttributeError) as e:
+            app.logger.warning(f"Failed to parse datetime filter '{dt_str}': {e}")
+            return None
 
     if effective_from:
         date_filter_from = parse_datetime_filter(effective_from, is_end_of_day=False)
