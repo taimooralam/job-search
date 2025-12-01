@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: GAP-034 bulk processing, GAP-047/048 line spacing fixed)
+**Last Updated**: 2025-12-01 (Week 2 Sprint: GAP-015 color, GAP-034 bulk, GAP-047/048 line spacing + Mark Applied button)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,11 +12,14 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 17 (10 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (4 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 25 (5 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
-| **Total** | **63** (17 fixed/documented, 46 open) | All identified gaps |
+| **Total** | **63** (18 fixed/documented, 45 open) | All identified gaps |
 
 **Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
+
+### New Features Added (not in original gaps)
+- **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 
 ---
 
@@ -412,16 +415,17 @@ The budget and alert modules are **FULLY IMPLEMENTED** with 708 unit tests passi
 
 ---
 
-### GAP-015: CV V2 - Color Scheme Change
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 0.5 days
-**Impact**: Current teal/green doesn't suit; need dark greyish blue
+### GAP-015: CV V2 - Color Scheme Change ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE | **Effort**: 30 minutes
+**Impact**: CV now uses professional slate-600 color instead of teal/green
 
-**Current**: `#0f766e` (teal/green)
-**Required**: `#475569` (slate-600 dark greyish blue)
+**Fix Applied** (2025-12-01):
+Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
+1. `pdf_service/pdf_helpers.py` - PDF output `--color-accent` variable
+2. `frontend/templates/base.html` - CV editor heading colors (4 locations)
+3. `frontend/app.py` - Default `colorAccent` config (2 locations)
 
-**Additional**: Detail page design must match editor design (consistency)
-
-**Files**: `frontend/templates/base.html`, `job_detail.html`, `pdf_service/`
+**Commit**: `0676a5da` - style: Change CV color scheme from teal to slate-600
 
 ---
 
