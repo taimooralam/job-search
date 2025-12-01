@@ -2466,6 +2466,243 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
 
 
 # ============================================================================
+# Contact Management API
+# ============================================================================
+
+@app.route("/api/jobs/<job_id>/contacts/<contact_type>/<int:contact_index>", methods=["DELETE"])
+@login_required
+def delete_contact(job_id: str, contact_type: str, contact_index: int):
+    """
+    Delete a contact from a job by type and index.
+
+    Args:
+        job_id: MongoDB ObjectId string
+        contact_type: Either 'primary' or 'secondary'
+        contact_index: Zero-based index of contact in the array
+
+    Returns:
+        JSON with success status
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    # Validate contact_type
+    if contact_type not in ["primary", "secondary"]:
+        return jsonify({"error": "Invalid contact type. Must be 'primary' or 'secondary'"}), 400
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    # Get the job first to validate the contact exists
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Determine the field name
+    field_name = f"{contact_type}_contacts"
+    contacts = job.get(field_name, [])
+
+    if contact_index < 0 or contact_index >= len(contacts):
+        return jsonify({"error": f"Contact index {contact_index} out of range"}), 400
+
+    # Get the contact name for the response
+    contact_name = contacts[contact_index].get("name", "Unknown")
+
+    # Remove the contact using MongoDB $unset + $pull pattern
+    # First, set the element to null, then pull all nulls
+    result = collection.update_one(
+        {"_id": object_id},
+        {"$unset": {f"{field_name}.{contact_index}": 1}}
+    )
+
+    if result.modified_count > 0:
+        # Now pull the null value
+        collection.update_one(
+            {"_id": object_id},
+            {"$pull": {field_name: None}}
+        )
+
+        # Update timestamp
+        collection.update_one(
+            {"_id": object_id},
+            {"$set": {"updatedAt": datetime.utcnow()}}
+        )
+
+    return jsonify({
+        "success": True,
+        "message": f"Contact '{contact_name}' removed",
+        "deletedIndex": contact_index,
+        "contactType": contact_type
+    })
+
+
+@app.route("/api/jobs/<job_id>/contacts", methods=["POST"])
+@login_required
+def import_contacts(job_id: str):
+    """
+    Import contacts to a job (append to existing contacts).
+
+    Request Body:
+        contacts: Array of contact objects
+        contact_type: 'primary' or 'secondary' (default: 'secondary')
+
+    Each contact object should have:
+        - name (required): Contact name
+        - title/role (required): Job title/role
+        - linkedin_url (required): LinkedIn profile URL
+        - email (optional): Contact email
+        - phone (optional): Contact phone
+        - relevance/why_relevant (optional): Why this contact is relevant
+
+    Returns:
+        JSON with success status and import count
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+
+    contacts = data.get("contacts", [])
+    contact_type = data.get("contact_type", "secondary")
+
+    if not contacts:
+        return jsonify({"error": "No contacts provided"}), 400
+
+    if contact_type not in ["primary", "secondary"]:
+        return jsonify({"error": "Invalid contact type. Must be 'primary' or 'secondary'"}), 400
+
+    # Validate and normalize contacts
+    valid_contacts = []
+    for contact in contacts:
+        # Check required fields
+        if not contact.get("name"):
+            continue
+        if not contact.get("title") and not contact.get("role"):
+            continue
+        if not contact.get("linkedin_url"):
+            continue
+
+        # Normalize to our schema
+        normalized = {
+            "name": contact.get("name"),
+            "role": contact.get("title") or contact.get("role"),
+            "linkedin_url": contact.get("linkedin_url"),
+            "why_relevant": contact.get("why_relevant") or contact.get("relevance") or "Imported contact",
+            "source": "manual_import",
+            "imported_at": datetime.utcnow().isoformat()
+        }
+
+        # Optional fields
+        if contact.get("email"):
+            normalized["email"] = contact.get("email")
+        if contact.get("phone"):
+            normalized["phone"] = contact.get("phone")
+
+        valid_contacts.append(normalized)
+
+    if not valid_contacts:
+        return jsonify({"error": "No valid contacts found. Each contact requires name, title/role, and linkedin_url"}), 400
+
+    # Get job to verify it exists
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Append to existing contacts using $push with $each
+    field_name = f"{contact_type}_contacts"
+
+    result = collection.update_one(
+        {"_id": object_id},
+        {
+            "$push": {field_name: {"$each": valid_contacts}},
+            "$set": {"updatedAt": datetime.utcnow()}
+        }
+    )
+
+    return jsonify({
+        "success": True,
+        "message": f"Imported {len(valid_contacts)} contacts",
+        "importedCount": len(valid_contacts),
+        "contactType": contact_type
+    })
+
+
+@app.route("/api/jobs/<job_id>/contacts/prompt", methods=["GET"])
+@login_required
+def get_firecrawl_prompt(job_id: str):
+    """
+    Generate a FireCrawl contact discovery prompt for Claude Code.
+
+    Returns a prompt that users can copy and paste into Claude Code
+    to discover contacts using the FireCrawl MCP tool.
+
+    Returns:
+        JSON with the generated prompt
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    company = job.get("company", "the company")
+    title = job.get("title", "the role")
+
+    prompt = f"""Find contacts at {company} for the {title} role using FireCrawl MCP.
+
+Instructions:
+1. Use mcp__firecrawl__firecrawl_search with these parameters:
+   Query: "{company} {title} (hiring manager OR recruiter OR team lead) site:linkedin.com"
+   Limit: 5
+
+2. Extract contacts using this schema:
+{{
+  "name": "string",
+  "title": "string",
+  "linkedin_url": "string",
+  "email": "string (if found)",
+  "phone": "string (if found)",
+  "relevance": "hiring_manager | recruiter | team_lead | other"
+}}
+
+3. Return results as JSON array
+4. Paste the JSON below to import into job-search
+
+Expected format:
+[
+  {{
+    "name": "Jane Doe",
+    "title": "Hiring Manager",
+    "linkedin_url": "https://linkedin.com/in/janedoe",
+    "email": "jane@company.com",
+    "relevance": "hiring_manager"
+  }}
+]"""
+
+    return jsonify({
+        "success": True,
+        "prompt": prompt,
+        "company": company,
+        "title": title
+    })
+
+
+# ============================================================================
 # Application Entry Point
 # ============================================================================
 
