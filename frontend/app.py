@@ -1838,89 +1838,39 @@ def update_job_cv(job_id: str):
 @login_required
 def generate_cv_pdf_from_editor(job_id: str):
     """
-    Generate PDF from CV editor state (GAP-046 Fix).
+    Generate PDF from CV editor state via runner service proxy.
 
-    Fetches CV editor state from MongoDB and sends it to the PDF service
-    for rendering.
-
-    Flow:
-    1. Fetch cv_editor_state from MongoDB for this job
-    2. Send to PDF service's /cv-to-pdf endpoint
-    3. Stream PDF back to user
+    The runner service fetches CV from MongoDB and proxies to the internal PDF service.
+    Architecture: Frontend → Runner (port 8000) → PDF Service (internal port 8001)
 
     Returns:
-        PDF file streamed from PDF service
+        PDF file streamed from runner service
     """
     import requests
     from flask import send_file
     from io import BytesIO
-    from bson import ObjectId
 
-    # Step 1: Fetch CV editor state from MongoDB
-    db = get_db()
-    try:
-        job = db.jobs.find_one({"_id": ObjectId(job_id)})
-        if not job:
-            logger.error(f"Job {job_id} not found")
-            return jsonify({"error": "Job not found"}), 404
+    # Get runner service URL (runner handles MongoDB fetch + PDF service proxy)
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    endpoint = f"{runner_url}/api/jobs/{job_id}/cv-editor/pdf"
 
-        cv_editor_state = job.get("cv_editor_state")
-        if not cv_editor_state:
-            logger.error(f"No CV editor state for job {job_id}")
-            return jsonify({
-                "error": "No CV content found. Please generate or edit the CV first.",
-                "detail": "cv_editor_state is missing from this job"
-            }), 400
-
-        # Get TipTap JSON from editor state
-        tiptap_json = cv_editor_state.get("tiptap_json")
-        if not tiptap_json:
-            logger.error(f"No TipTap JSON in CV editor state for job {job_id}")
-            return jsonify({
-                "error": "CV content is invalid. Please regenerate the CV.",
-                "detail": "tiptap_json is missing from cv_editor_state"
-            }), 400
-
-    except Exception as e:
-        logger.error(f"Failed to fetch CV editor state for job {job_id}: {str(e)}")
-        return jsonify({"error": f"Failed to fetch CV: {str(e)}"}), 500
-
-    # Step 2: Get PDF service URL and prepare request
-    pdf_service_url = os.getenv("PDF_SERVICE_URL", os.getenv("RUNNER_URL", "http://72.61.92.76:8000"))
-    endpoint = f"{pdf_service_url}/cv-to-pdf"
-
-    # Get authentication token for PDF service
+    # Get authentication token for runner service
     runner_token = os.getenv("RUNNER_API_SECRET")
-    headers = {"Content-Type": "application/json"}
+    headers = {}
     if runner_token:
         headers["Authorization"] = f"Bearer {runner_token}"
         logger.info(f"PDF generation request for job {job_id} - authentication configured")
     else:
-        logger.warning(f"RUNNER_API_SECRET not set - PDF service may reject request for job {job_id}")
-
-    # Prepare request body
-    pdf_request = {
-        "tiptap_json": tiptap_json,
-        "documentStyles": cv_editor_state.get("documentStyles", {
-            "fontFamily": "Inter",
-            "fontSize": 11,
-            "lineHeight": 1.15,
-            "margins": {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0},
-            "pageSize": "letter"
-        }),
-        "company": job.get("company", ""),
-        "role": job.get("title", "")
-    }
+        logger.warning(f"RUNNER_API_SECRET not set - runner service may reject request for job {job_id}")
 
     try:
         logger.info(f"Requesting PDF generation from {endpoint}")
 
-        # Send request to PDF service with CV editor content
+        # Send request to runner service (runner fetches from MongoDB and proxies to PDF service)
         response = requests.post(
             endpoint,
-            json=pdf_request,
             headers=headers,
-            timeout=30,  # 30 second timeout for PDF generation
+            timeout=60,  # 60 second timeout for PDF generation
             stream=True
         )
 
