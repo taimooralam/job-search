@@ -12,7 +12,7 @@ JD_OUTPUT_SCHEMA = """{
   "company": "company name",
   "location": "city, country or Remote",
   "remote_policy": "fully_remote|hybrid|onsite|not_specified",
-  "role_category": "engineering_manager|staff_principal_engineer|director_of_engineering|head_of_engineering|cto",
+  "role_category": "engineering_manager|staff_principal_engineer|director_of_engineering|head_of_engineering|cto|tech_lead|senior_engineer",
   "seniority_level": "senior|staff|principal|director|vp|c_level",
   "competency_weights": {
     "delivery": 25,
@@ -40,7 +40,7 @@ Your mission: Extract structured intelligence from job descriptions to enable pr
 
 === ROLE CATEGORIZATION ===
 
-You MUST classify the role into exactly ONE of these 5 categories:
+You MUST classify the role into exactly ONE of these 7 categories:
 
 **Category 1 - engineering_manager**
 - Team multiplier focused on 1:1s, sprint planning, hiring, removing blockers
@@ -71,6 +71,18 @@ You MUST classify the role into exactly ONE of these 5 categories:
 - External facing (investors, customers, partners), technology strategy
 - Signals: "CTO", "chief technology", "technology vision", "board", "investors"
 - Competency mix: architecture 35-45%, leadership 30-40%, delivery 10-20%, process 5-15%
+
+**Category 6 - tech_lead**
+- Hands-on technical leader with some team coordination, often player-coach
+- Leads small teams (2-6 engineers), writes code while guiding others
+- Signals: "tech lead", "team lead", "lead engineer", "lead developer", "technical lead"
+- Competency mix: architecture 30-40%, delivery 30-40%, leadership 15-25%, process 10-15%
+
+**Category 7 - senior_engineer**
+- Individual contributor with deep technical expertise, no direct reports
+- Owns significant systems/features, mentors informally through code review
+- Signals: "senior engineer", "senior developer", "software engineer", no management language
+- Competency mix: delivery 40-50%, architecture 25-35%, process 15-20%, leadership 5-10%
 
 === COMPETENCY DIMENSIONS ===
 
@@ -136,7 +148,7 @@ JD_EXTRACTION_USER_TEMPLATE = """# JOB DESCRIPTION ANALYSIS REQUEST
 Analyze this job description and extract structured intelligence.
 
 **Remember:**
-1. Classify into exactly ONE role category (engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, cto)
+1. Classify into exactly ONE role category (engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, cto, tech_lead, senior_engineer)
 2. Competency weights MUST sum to 100
 3. Extract exactly 15 ATS keywords
 4. Include 5-10 responsibilities and 3-8 qualifications

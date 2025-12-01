@@ -38,6 +38,8 @@ class RoleCategory(str, Enum):
     DIRECTOR_OF_ENGINEERING = "director_of_engineering"
     HEAD_OF_ENGINEERING = "head_of_engineering"
     CTO = "cto"
+    TECH_LEAD = "tech_lead"  # Covers Team Lead, Tech Lead, Lead Engineer
+    SENIOR_ENGINEER = "senior_engineer"  # Fallback for senior IC roles
 
 
 class SeniorityLevel(str, Enum):
