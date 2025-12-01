@@ -12,9 +12,9 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (13 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (9 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (39 fixed/documented, 25 open) | All identified gaps |
+| **P2 (MEDIUM)** | 26 (14 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 19 (9 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **67** (40 fixed/documented, 27 open) | All identified gaps |
 
 **Test Coverage**: 892 tests passing (887 unit + 5 benchmark), 48 E2E tests disabled, integration tests pending
 
@@ -910,6 +910,89 @@ Implemented inline editable score fields across all views.
 
 ---
 
+### GAP-068: Automated Job Ingestion System
+**Priority**: P2 MEDIUM | **Status**: PLANNED (2025-12-01) | **Effort**: 5 days
+**Impact**: Manual job discovery bottleneck; 4x more jobs discovered automatically
+
+**Detailed Plan**: `plans/job-ingestion-plan.md`
+
+**Overview**:
+Automated cron-based system to discover jobs from Indeed (via JobSpy) and Himalayas.app, quick-score them with gpt-4o-mini, and ingest into MongoDB `level-2` collection.
+
+**Architecture**:
+```
+CRON (every 6 hours)
+    ├── Indeed (JobSpy) → 50 jobs × 4 search terms × 3 locations
+    ├── Himalayas.app API → Remote jobs filtered by keywords
+    │
+    └── Processing Pipeline
+        ├── Deduplicate (company|title|location|source)
+        ├── Quick Score (gpt-4o-mini, ~$0.001/job)
+        ├── Filter: score >= 70 (Tier B+)
+        └── Insert to MongoDB level-2 collection
+```
+
+**Files to Create**:
+| File | Description |
+|------|-------------|
+| `src/services/job_sources/__init__.py` | JobSource ABC + JobData dataclass |
+| `src/services/job_sources/indeed_source.py` | JobSpy Indeed integration |
+| `src/services/job_sources/himalayas_source.py` | Himalayas API integration |
+| `src/common/ingest_config.py` | IngestConfig from env |
+| `scripts/ingest_jobs_cron.py` | Main cron script |
+| `docker/job-ingest/Dockerfile` | Cron container |
+| `docker-compose.ingest.yml` | Docker Compose for ingestion |
+
+**Dependencies**: `python-jobspy>=1.1.62`
+
+**Cost Estimate**: ~$3/month (800 jobs × $0.003/scoring)
+
+**ROI**: HIGH - Automates job discovery, reduces manual work, multiplies pipeline throughput
+
+---
+
+### GAP-069: FireCrawl SEO Query Result Caching
+**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Repeated FireCrawl queries for same company waste API credits
+
+**Description**: Cache FireCrawl search results per company in MongoDB with 7-day TTL. Same company searches within TTL use cached contacts instead of new API calls.
+
+**Implementation**:
+1. Add `firecrawl_contact_cache` collection with TTL index
+2. Check cache before FireCrawl search in `people_mapper.py`
+3. Store search results with timestamp and company key
+4. Invalidate cache on company name variations
+
+**Expected Savings**: ~30% reduction in FireCrawl API calls
+
+---
+
+### GAP-070: FireCrawl Credit Dashboard ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 2 hours
+**Impact**: No visibility into FireCrawl API credit usage; risk of exhausting daily limit
+
+**Implementation** (2025-12-01):
+Added comprehensive FireCrawl credit tracking and dashboard widget.
+
+**Files Created/Modified**:
+- `src/layer5/people_mapper.py` - Added `_firecrawl_search()` method with rate limiting
+- `runner_service/app.py` - Added `/firecrawl/credits` endpoint
+- `runner_service/models.py` - Added `FireCrawlCreditsResponse` model
+- `frontend/app.py` - Added `/api/firecrawl/credits` and `/partials/firecrawl-credits` endpoints
+- `frontend/templates/partials/firecrawl_credits.html` - Dashboard widget
+- `frontend/templates/index.html` - Added widget to dashboard (3-column grid)
+- `tests/runner/test_runner_api.py` - Added 3 tests for FireCrawl credits endpoint
+
+**Features**:
+- Real-time credit usage tracking (used/remaining/daily_limit)
+- Status indicators: healthy (<80%), warning (80-90%), critical (90-100%), exhausted (100%)
+- Per-minute rate tracking
+- Auto-refresh every 30 seconds via HTMX
+- Progress bar with color coding
+- Fallback to local rate limiter when VPS unavailable
+
+---
+
 ## P3: LOW (Backlog)
 
 ### GAP-026: CV V2 - Spacing 20% Narrower ✅ COMPLETE
@@ -983,11 +1066,29 @@ Design system enhancements:
 
 ---
 
-### GAP-031: FireCrawl Contact Discovery Fallback
+### GAP-031: FireCrawl Contact Discovery AI Fallback Agent
 **Priority**: P3 LOW | **Status**: PENDING | **Effort**: 8-12 hours
-**Impact**: When FireCrawl fails, no fallback mechanism
+**Impact**: When FireCrawl fails (rate limits, blocked sites, network errors), pipeline returns empty contacts
 
-**Plan**: `plans/ai-agent-fallback-implementation.md`
+**Detailed Plan**: `plans/ai-agent-fallback-implementation.md`
+
+**Architecture**:
+```
+FireCrawl Search → [Success?] → Yes → Return Contacts
+                         ↓ No (after 2 retries)
+              AI Agent Fallback (gpt-4o-mini)
+                         ↓
+              Generate 8 Synthetic Contacts
+              (Recruiter, Hiring Manager, VP, etc.)
+```
+
+**Implementation Required**:
+1. Create `src/layer5/contact_fallback_agent.py` - ContactFallbackAgent class
+2. Integrate into `src/layer5/people_mapper.py` - Add fallback logic after FireCrawl failures
+3. Add config: `ENABLE_FIRECRAWL_FALLBACK=true`, `FIRECRAWL_MAX_RETRIES=2`
+4. Track fallback usage in metrics
+
+**Cost Impact**: +$0.02/job when fallback triggers
 
 ---
 

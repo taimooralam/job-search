@@ -26,6 +26,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -410,8 +411,58 @@ class PeopleMapper:
         # FireCrawl for contact discovery (disabled by default via config)
         self.firecrawl_disabled = Config.DISABLE_FIRECRAWL_OUTREACH or not Config.FIRECRAWL_API_KEY
         self.firecrawl = None
+        self.firecrawl_rate_limiter = None
         if not self.firecrawl_disabled:
             self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+            # Initialize rate limiter for FireCrawl credit tracking
+            self.firecrawl_rate_limiter = get_rate_limiter("firecrawl")
+
+    def _firecrawl_search(self, query: str, limit: int = 5) -> Any:
+        """
+        Perform a rate-limited FireCrawl search.
+
+        Tracks usage against daily limit and logs credit consumption.
+
+        Args:
+            query: Search query string
+            limit: Maximum results to return
+
+        Returns:
+            FireCrawl search response
+
+        Raises:
+            RateLimitExceededError: If daily FireCrawl limit exceeded
+        """
+        if self.firecrawl_rate_limiter:
+            # Check remaining credits before search
+            remaining = self.firecrawl_rate_limiter.get_remaining_daily()
+            if remaining is not None and remaining <= 0:
+                self.logger.warning(
+                    f"[FireCrawl] Daily limit exhausted (0/{self.firecrawl_rate_limiter.daily_limit})"
+                )
+                raise RateLimitExceededError(
+                    "firecrawl", "daily",
+                    self.firecrawl_rate_limiter.daily_limit,
+                    self.firecrawl_rate_limiter.daily_limit
+                )
+
+            # Acquire rate limit slot (tracks the request)
+            if not self.firecrawl_rate_limiter.acquire():
+                self.logger.warning("[FireCrawl] Rate limit exceeded, request blocked")
+                raise RateLimitExceededError(
+                    "firecrawl", "daily",
+                    self.firecrawl_rate_limiter._daily_count,
+                    self.firecrawl_rate_limiter.daily_limit
+                )
+
+            # Log credit consumption
+            stats = self.firecrawl_rate_limiter.get_stats()
+            self.logger.info(
+                f"[FireCrawl] Credit used: {stats.requests_today}/{self.firecrawl_rate_limiter.daily_limit} "
+                f"({self.firecrawl_rate_limiter.get_remaining_daily()} remaining)"
+            )
+
+        return self.firecrawl.search(query, limit=limit)
 
     # ===== CONTACT EXTRACTION FROM SEARCH METADATA =====
 
@@ -588,7 +639,7 @@ class PeopleMapper:
                 for query in queries:
                     try:
                         self.logger.info(f"[FireCrawl] LinkedIn query: {query[:80]}...")
-                        search_response = self.firecrawl.search(query, limit=5)
+                        search_response = self._firecrawl_search(query, limit=5)
 
                         # GAP-051: Log result count for debugging
                         results = _extract_search_results(search_response)
@@ -641,7 +692,7 @@ class PeopleMapper:
             query = QUERY_TEMPLATES["senior_leadership"].format(company=company)
             self.logger.info(f"[FireCrawl] Hiring manager query: {query[:80]}...")
 
-            search_response = self.firecrawl.search(query, limit=5)
+            search_response = self._firecrawl_search(query, limit=5)
             results = _extract_search_results(search_response)
 
             # Extract contacts from metadata
@@ -678,7 +729,7 @@ class PeopleMapper:
                 f"(VP Engineering, CTO, Head of Talent, Directors)"
             )
             self.logger.info(f"[FireCrawl] Crunchbase search query: {query[:80]}...")
-            search_response = self.firecrawl.search(query, limit=2)
+            search_response = self._firecrawl_search(query, limit=2)
 
             # Use normalizer to extract results (handles SDK version differences)
             results = _extract_search_results(search_response)
