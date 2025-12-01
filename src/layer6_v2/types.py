@@ -160,6 +160,8 @@ class RoleBullets:
     location: str = ""                 # Location (e.g., "Munich, DE")
     word_count: int = 0                # Total words across all bullets
     keywords_integrated: List[str] = field(default_factory=list)  # JD keywords used
+    hard_skills: List[str] = field(default_factory=list)  # Technical skills from role
+    soft_skills: List[str] = field(default_factory=list)  # Soft skills from role
     qa_result: Optional[QAResult] = None      # Hallucination check result
     ats_result: Optional[ATSResult] = None    # ATS keyword check result
 
@@ -195,6 +197,8 @@ class RoleBullets:
             "bullet_count": self.bullet_count,
             "word_count": self.word_count,
             "keywords_integrated": self.keywords_integrated,
+            "hard_skills": self.hard_skills,
+            "soft_skills": self.soft_skills,
             "qa_result": self.qa_result.to_dict() if self.qa_result else None,
             "ats_result": self.ats_result.to_dict() if self.ats_result else None,
         }
@@ -369,6 +373,7 @@ class StitchedRole:
     location: str
     period: str
     bullets: List[str]                 # Final bullet text strings
+    skills: List[str] = field(default_factory=list)  # Combined skills for this role
     word_count: int = 0
 
     def __post_init__(self):
@@ -390,19 +395,23 @@ class StitchedRole:
             "location": self.location,
             "period": self.period,
             "bullets": self.bullets,
+            "skills": self.skills,
             "bullet_count": self.bullet_count,
             "word_count": self.word_count,
         }
 
     def to_markdown(self) -> str:
-        """Convert to plain text format for CV output (GAP-006: no markdown)."""
+        """Convert to formatted text for CV output with bold company/title header."""
         lines = [
-            self.company,
-            f"{self.title} | {self.location} | {self.period}",
+            f"**{self.company} • {self.title}** | {self.location} | {self.period}",
             "",
         ]
         for bullet in self.bullets:
             lines.append(f"• {bullet}")
+        # Add skills line if available
+        if self.skills:
+            skills_str = ", ".join(self.skills[:8])  # Limit to 8 skills
+            lines.append(f"**Skills:** {skills_str}")
         return "\n".join(lines)
 
 
@@ -508,9 +517,9 @@ class SkillsSection:
         }
 
     def to_markdown(self) -> str:
-        """Convert to plain text format for CV output (GAP-006: no markdown)."""
+        """Convert to formatted text for CV output with bold category titles."""
         skill_names = ", ".join(self.skill_names)
-        return f"{self.category}: {skill_names}"
+        return f"**{self.category}:** {skill_names}"
 
 
 @dataclass
