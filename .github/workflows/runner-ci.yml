@@ -32,45 +32,44 @@ env:
   PDF_IMAGE_NAME: ${{ github.repository }}/pdf-service
 
 jobs:
-  # Tests temporarily disabled for faster CI/CD iteration
-  # To re-enable: uncomment the test job and add 'needs: test' to build job
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.11'
-  #         cache: 'pip'
-  #
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r requirements.txt
-  #         pip install pytest pytest-asyncio httpx
-  #         pip install -e .  # Install package in editable mode for module imports
-  #
-  #     - name: Run unit tests (runner + PDF service)
-  #       run: |
-  #         # Run unit tests for both runner and PDF service
-  #         # Integration tests (tests/runner/test_integration.py) are excluded
-  #         # PDF service tests: 48 tests (17 endpoints + 31 helpers)
-  #         # Runner integration tests: 8 tests (PDF proxy)
-  #         python -m pytest \
-  #           tests/runner/test_executor.py \
-  #           tests/runner/test_runner_api.py \
-  #           tests/runner/test_pdf_integration.py \
-  #           tests/pdf_service/ \
-  #           -v --tb=short
-  #       env:
-  #         PYTHONPATH: ${{ github.workspace }}
-  #         RUNNER_API_SECRET: test-secret
-  #         ENVIRONMENT: development
-  #         MONGODB_URI: mongodb://localhost:27017/test
+  # Unit tests with parallel execution (GAP-063)
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-xdist httpx
+          pip install -e .  # Install package in editable mode for module imports
+
+      - name: Run unit tests (parallel execution)
+        run: |
+          # Run unit tests for runner, PDF service, and all unit tests
+          # Using pytest-xdist for parallel execution (-n auto)
+          # This reduces CI time by 60-80%
+          python -m pytest \
+            tests/runner/test_executor.py \
+            tests/runner/test_runner_api.py \
+            tests/runner/test_pdf_integration.py \
+            tests/pdf_service/ \
+            tests/unit/ \
+            -v --tb=short -n auto
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          RUNNER_API_SECRET: test-secret
+          ENVIRONMENT: development
+          MONGODB_URI: mongodb://localhost:27017/test
 
   build:
-    # needs: test  # Commented out while tests are disabled
+    needs: test  # Re-enabled: tests must pass before build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
