@@ -12,11 +12,11 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (11 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 (4 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (31 fixed/documented, 33 open) | All identified gaps |
+| **Total** | **64** (32 fixed/documented, 32 open) | All identified gaps |
 
-**Test Coverage**: 879 unit tests passing, 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -1003,10 +1003,17 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 ---
 
 ### GAP-038: Complete JobState Model
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2 hours
+**Priority**: P2 MEDIUM | **Status**: ✅ FIXED (2025-12-01) | **Effort**: 30 min
 **Impact**: Missing fields: tier, dossier_path, cv_text, application_form_fields
 
-**Files**: `src/common/state.py`, Layer 7 publisher
+**Fix Applied**:
+Added missing fields to canonical `src/common/state.py`:
+- `tier` (Layer 4): Job priority tier derived from fit_score ("A"/"B"/"C"/"D")
+- `dossier_path` (Layer 7): Path to generated dossier file
+- `application_form_fields` (Layer 1.5): FormField list for job application pre-filling
+- Note: `cv_text` was already present in state.py
+
+**Files**: `src/common/state.py` (updated), `src/common/types.py` (FormField import)
 
 ---
 
