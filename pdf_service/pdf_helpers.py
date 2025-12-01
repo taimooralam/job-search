@@ -218,19 +218,26 @@ def build_pdf_html_template(
     # Default margins if not provided
     if margins is None:
         margins = {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
-    # Build Google Fonts URL (support multiple fonts)
-    # Professional typography system fonts
-    all_fonts = [
-        font_family,
-        'Source Sans 3',  # Professional humanist sans (default body)
-        'Playfair Display',  # Refined serif for headings
-        'Work Sans',  # Alternative humanist sans
-        'Cormorant Garamond',  # Alternative refined serif
-        'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat',  # Common sans-serif
-        'Merriweather', 'Lora', 'EB Garamond',  # Common serif
+    # Build Google Fonts URL (API v2 format)
+    # Each font needs its own "family=" parameter with weight variants
+    # Critical fonts for CV styling that must be loaded
+    essential_fonts = [
+        ('Playfair Display', '400;600;700'),  # Serif for h1/h2/h3 headings
+        ('Inter', '400;600;700'),  # Sans-serif body (default)
+        ('Source Sans 3', '400;600;700'),  # Professional humanist sans
     ]
-    fonts_param = '|'.join(set(all_fonts))  # Deduplicate
-    google_fonts_url = f"https://fonts.googleapis.com/css2?family={fonts_param.replace(' ', '+')}:wght@400;600;700;800&display=swap"
+
+    # Add the user-selected font if different
+    if font_family and font_family not in ['Playfair Display', 'Inter', 'Source Sans 3']:
+        essential_fonts.append((font_family, '400;600;700'))
+
+    # Build Google Fonts URL with correct API v2 format
+    # Format: family=Font+Name:wght@400;700&family=Other+Font:wght@400;700
+    font_params = '&'.join([
+        f"family={font.replace(' ', '+')}:wght@{weights}"
+        for font, weights in essential_fonts
+    ])
+    google_fonts_url = f"https://fonts.googleapis.com/css2?{font_params}&display=swap"
 
     html = f"""
 <!DOCTYPE html>

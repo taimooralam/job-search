@@ -198,7 +198,7 @@ def build_pdf_html_template(
 
     Includes:
     - Google Fonts link for font embedding
-    - CSS styles for formatting
+    - CSS styles for formatting (matches editor preview styling)
     - Header/footer if present
     - Content HTML from TipTap
 
@@ -218,16 +218,27 @@ def build_pdf_html_template(
     # Default margins if not provided
     if margins is None:
         margins = {"top": 1.0, "right": 1.0, "bottom": 1.0, "left": 1.0}
-    # Build Google Fonts URL (support multiple fonts)
-    # Common Phase 2 fonts that need embedding
-    all_fonts = [
-        font_family,
-        'Inter',  # Default body font
-        'Roboto', 'Open Sans', 'Lato', 'Montserrat',  # Sans-serif
-        'Merriweather', 'Playfair Display', 'Lora',  # Serif
+
+    # Build Google Fonts URL (API v2 format)
+    # Each font needs its own "family=" parameter with weight variants
+    # Critical fonts for CV styling that must be loaded
+    essential_fonts = [
+        ('Playfair Display', '400;600;700'),  # Serif for h1/h2/h3 headings
+        ('Inter', '400;600;700'),  # Sans-serif body (default)
+        ('Cormorant Garamond', '400;600;700'),  # Fallback serif for headings
     ]
-    fonts_param = '|'.join(set(all_fonts))  # Deduplicate
-    google_fonts_url = f"https://fonts.googleapis.com/css2?family={fonts_param.replace(' ', '+')}:wght@400;700&display=swap"
+
+    # Add the user-selected font if different
+    if font_family and font_family not in ['Playfair Display', 'Inter', 'Cormorant Garamond']:
+        essential_fonts.append((font_family, '400;600;700'))
+
+    # Build Google Fonts URL with correct API v2 format
+    # Format: family=Font+Name:wght@400;700&family=Other+Font:wght@400;700
+    font_params = '&'.join([
+        f"family={font.replace(' ', '+')}:wght@{weights}"
+        for font, weights in essential_fonts
+    ])
+    google_fonts_url = f"https://fonts.googleapis.com/css2?{font_params}&display=swap"
 
     html = f"""
 <!DOCTYPE html>
@@ -290,33 +301,84 @@ def build_pdf_html_template(
             padding: 0;
         }}
 
-        /* Typography */
+        /* Typography - Matches editor preview styling (base.html .ProseMirror)
+         * Uses Playfair Display for executive presence on headings
+         */
         h1, h2, h3, h4, h5, h6 {{
             font-weight: 700;
-            margin-top: 16px;
-            margin-bottom: 8px;
+            line-height: {line_height};
         }}
 
+        /* H1 - Executive name styling (matches .ProseMirror h1 in base.html) */
         h1 {{
-            font-size: {font_size * 1.8}pt;
-            letter-spacing: 0.02em; /* Refined letter-spacing for elegance */
-            text-transform: uppercase; /* Executive styling - uppercase name */
-            color: #1e293b; /* slate-800 - darker for executive presence */
+            font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;  /* slate-800 - darker for executive presence */
+            margin: 0 0 8px 0;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
         }}
-        h2 {{ font-size: {font_size * 1.5}pt; }}
-        h3 {{ font-size: {font_size * 1.3}pt; }}
 
+        /* H2 - Section headers with top border (matches .ProseMirror h2) */
+        h2 {{
+            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #475569;  /* slate-600 */
+            margin: 12px 0 8px;
+            padding-top: 6px;
+            border-top: 1px solid #e5e7eb;
+        }}
+
+        h2:first-child {{
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
+        }}
+
+        /* H3 - Subsection headers (matches .ProseMirror h3) */
+        h3 {{
+            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #475569;  /* slate-600 */
+            margin: 10px 0 6px;
+        }}
+
+        /* Paragraphs - GAP-026: 20% tighter spacing */
         p {{
-            margin-bottom: 8px;
+            margin: 0.4em 0;
         }}
 
+        p:first-child {{
+            margin-top: 0;
+        }}
+
+        p:last-child {{
+            margin-bottom: 0;
+        }}
+
+        /* Lists - GAP-026: 20% tighter spacing */
         ul, ol {{
-            margin-left: 20px;
-            margin-bottom: 8px;
+            padding-left: 1.5em;
+            margin: 0.4em 0;
+        }}
+
+        ul {{
+            list-style-type: disc;
+        }}
+
+        ol {{
+            list-style-type: decimal;
         }}
 
         li {{
-            margin-bottom: 4px;
+            margin: 0.2em 0;
+        }}
+
+        li > p {{
+            margin: 0;
         }}
 
         /* Preserve TipTap formatting */
