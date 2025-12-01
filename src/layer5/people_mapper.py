@@ -138,6 +138,50 @@ QUERY_TEMPLATES = {
 # Prioritizes primary contacts (hiring-related) over secondary
 MAX_TOTAL_CONTACTS = 5
 
+# GAP-051: Common company name suffixes to strip for variations
+COMPANY_SUFFIXES = [
+    ' Inc.', ' Inc', ' LLC', ' Ltd.', ' Ltd', ' Corp.', ' Corp',
+    ' Co.', ' Co', ' Limited', ' GmbH', ' AG', ' S.A.', ' PLC',
+    ' Pty Ltd', ' Pty', ' Holdings', ' Group', ' International'
+]
+
+# GAP-051: Expanded team page paths to check
+TEAM_PAGE_PATHS = [
+    '/team', '/about', '/about-us', '/leadership', '/company',
+    '/people', '/our-team', '/founders', '/executives', '/management',
+    '/about/team', '/about/leadership', '/who-we-are', '/meet-the-team'
+]
+
+
+def get_company_name_variations(company: str) -> List[str]:
+    """
+    GAP-051: Generate variations of company name for better search matching.
+
+    Args:
+        company: Original company name
+
+    Returns:
+        List of company name variations (original first, then without suffixes)
+    """
+    variations = [company]
+
+    # Try stripping common suffixes
+    company_lower = company.lower()
+    for suffix in COMPANY_SUFFIXES:
+        if company_lower.endswith(suffix.lower()):
+            stripped = company[:-len(suffix)].strip()
+            if stripped and stripped not in variations:
+                variations.append(stripped)
+            break  # Only strip one suffix
+
+    # Also try without trailing punctuation
+    if company.endswith('.') or company.endswith(','):
+        stripped = company[:-1].strip()
+        if stripped and stripped not in variations:
+            variations.append(stripped)
+
+    return variations
+
 
 # ===== PYDANTIC MODELS =====
 
@@ -477,14 +521,8 @@ class PeopleMapper:
         if self.firecrawl_disabled or not self.firecrawl:
             return None
         try:
-            # Try common team page paths
-            team_urls = [
-                f"{company_url}/team",
-                f"{company_url}/about",
-                f"{company_url}/about-us",
-                f"{company_url}/leadership",
-                f"{company_url}/company"
-            ]
+            # GAP-051: Use expanded team page paths for better coverage
+            team_urls = [f"{company_url.rstrip('/')}{path}" for path in TEAM_PAGE_PATHS]
 
             for url in team_urls:
                 try:
@@ -532,34 +570,45 @@ class PeopleMapper:
         contacts = []
 
         try:
-            # Run multiple targeted queries in parallel
-            queries = [
-                QUERY_TEMPLATES["recruiters"].format(company=company, department=department),
-                QUERY_TEMPLATES["recruiters_alt"].format(company=company),
-                QUERY_TEMPLATES["leadership"].format(company=company, department=department),
-            ]
+            # GAP-051: Try company name variations for better matching
+            company_variations = get_company_name_variations(company)
+            self.logger.info(f"[GAP-051] Company variations: {company_variations}")
 
-            if title:
-                queries.append(QUERY_TEMPLATES["hiring_manager"].format(company=company, title=title))
+            for company_variant in company_variations:
+                # Run multiple targeted queries
+                queries = [
+                    QUERY_TEMPLATES["recruiters"].format(company=company_variant, department=department),
+                    QUERY_TEMPLATES["recruiters_alt"].format(company=company_variant),
+                    QUERY_TEMPLATES["leadership"].format(company=company_variant, department=department),
+                ]
 
-            for query in queries:
-                try:
-                    self.logger.info(f"[FireCrawl] LinkedIn query: {query[:80]}...")
-                    search_response = self.firecrawl.search(query, limit=5)
+                if title:
+                    queries.append(QUERY_TEMPLATES["hiring_manager"].format(company=company_variant, title=title))
 
-                    # Use normalizer to extract results (handles SDK version differences)
-                    results = _extract_search_results(search_response)
+                for query in queries:
+                    try:
+                        self.logger.info(f"[FireCrawl] LinkedIn query: {query[:80]}...")
+                        search_response = self.firecrawl.search(query, limit=5)
 
-                    # Extract contacts from metadata
-                    for result in results:
-                        contact = self._extract_contact_from_search_result(result, company)
-                        if contact:
-                            contacts.append(contact)
-                            self.logger.info(f"Found: {contact['name']} - {contact['role']}")
+                        # GAP-051: Log result count for debugging
+                        results = _extract_search_results(search_response)
+                        self.logger.info(f"[FireCrawl] Got {len(results)} results")
 
-                except Exception as e:
-                    self.logger.warning(f"Query failed: {e}")
-                    continue
+                        # Extract contacts from metadata
+                        for result in results:
+                            contact = self._extract_contact_from_search_result(result, company)
+                            if contact:
+                                contacts.append(contact)
+                                self.logger.info(f"Found: {contact['name']} - {contact['role']}")
+
+                    except Exception as e:
+                        self.logger.warning(f"Query failed: {e}")
+                        continue
+
+                # GAP-051: If we found contacts with this variation, don't try others
+                if contacts:
+                    self.logger.info(f"[GAP-051] Found {len(contacts)} contacts using '{company_variant}'")
+                    break
 
             self.logger.info(f"Found {len(contacts)} contacts from LinkedIn search")
             return contacts
