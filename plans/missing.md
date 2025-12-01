@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (6 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (34 fixed/documented, 30 open) | All identified gaps |
+| **P3 (LOW)** | 18 (7 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (35 fixed/documented, 29 open) | All identified gaps |
 
 **Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -1042,10 +1042,18 @@ Added missing fields to canonical `src/common/state.py`:
 ---
 
 ### GAP-041: Operational Runbook
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4 hours
+**Priority**: P3 LOW | **Status**: ✅ FIXED (2025-12-01) | **Effort**: 1 hour
 **Impact**: No documented procedures for common issues
 
-**Fix**: Create `RUNBOOK.md` with troubleshooting guides
+**Fix Applied**:
+Created comprehensive `RUNBOOK.md` covering:
+1. **Quick Health Check** - Dashboard indicators, API endpoints
+2. **Service Status** - VPS, MongoDB, PDF service commands
+3. **Common Issues** - Pipeline stuck, PDF fails, FireCrawl rate limits, 500 errors
+4. **Pipeline Troubleshooting** - Run history, LangSmith traces, re-run commands
+5. **Database Operations** - Backup, clear stuck jobs, reset cache
+6. **Recovery Procedures** - Full restart, rollback, emergency disable
+7. **Monitoring** - Key metrics, UptimeRobot setup, daily checks
 
 ---
 
