@@ -150,7 +150,7 @@
                     {% endif %}
                     <div class="ml-auto">
                         <button onclick="processJobDetail('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
-                                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition">
+                                class="btn btn-success btn-md">
                             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
@@ -165,13 +165,13 @@
                 <div class="card">
                     <div class="card-header flex items-start justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
-                                <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <h2 class="text-base font-semibold theme-text-primary flex items-center gap-2">
+                                <svg class="h-5 w-5 status-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                                 </svg>
                                 Pipeline Execution Progress
                             </h2>
-                            <p class="text-sm text-gray-600 mt-1">7-layer intelligence pipeline processing job application</p>
+                            <p class="text-sm theme-text-secondary mt-1">7-layer intelligence pipeline processing job application</p>
                         </div>
                         <span id="pipeline-run-id" class="text-xs font-mono text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-200"></span>
                     </div>
