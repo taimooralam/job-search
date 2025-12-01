@@ -753,9 +753,16 @@ class TestOutreachPackageGeneration:
 @patch('src.layer5.people_mapper.ChatOpenAI')
 def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sample_job_state):
     """Integration test for people_mapper_node."""
-    # Mock FireCrawl
+    # Mock FireCrawl with valid search results to trigger LLM classification path
     mock_firecrawl = MagicMock()
-    mock_firecrawl.search.return_value = MagicMock(data=[])
+    # Create mock search results with .web attribute (new SDK) and .data attribute (old SDK)
+    mock_search_result = MagicMock()
+    mock_search_result.url = "https://techcorp.com/team"
+    mock_search_result.markdown = "Team page with contacts"
+    mock_search_response = MagicMock()
+    mock_search_response.web = [mock_search_result]
+    mock_search_response.data = [mock_search_result]
+    mock_firecrawl.search.return_value = mock_search_response
     mock_firecrawl.scrape_url.return_value = MagicMock(markdown="Team page content")
     mock_firecrawl_class.return_value = mock_firecrawl
 
@@ -807,10 +814,11 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
 
     # Assertions
     # GAP-060: Limits total contacts to 5 (max 3 primary + 2 secondary)
+    # LLM mock returns 4 primary + 4 secondary, GAP-060 limits to 3 + 2
     assert "primary_contacts" in updates
     assert "secondary_contacts" in updates
-    assert len(updates["primary_contacts"]) == 3  # GAP-060 limit
-    assert len(updates["secondary_contacts"]) == 2  # GAP-060 limit
+    assert len(updates["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
+    assert len(updates["secondary_contacts"]) == 2  # GAP-060 limit: max 2 secondary
 
     # Each contact should have outreach
     for contact in updates["primary_contacts"]:
@@ -826,10 +834,16 @@ class TestPeopleMapperQualityGates:
     @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.ChatOpenAI')
     def test_quality_gate_minimum_primary_contacts(self, mock_llm_class, mock_firecrawl_class, sample_job_state):
-        """Quality gate: ≥4 primary contacts."""
-        # Setup mocks (similar to integration test)
+        """Quality gate: verifies GAP-060 contact limits (3 primary + 2 secondary)."""
+        # Setup mocks with valid search results to trigger LLM classification path
         mock_firecrawl = MagicMock()
-        mock_firecrawl.search.return_value = MagicMock(data=[])
+        mock_search_result = MagicMock()
+        mock_search_result.url = "https://techcorp.com/team"
+        mock_search_result.markdown = "Team page with contacts"
+        mock_search_response = MagicMock()
+        mock_search_response.web = [mock_search_result]
+        mock_search_response.data = [mock_search_result]
+        mock_firecrawl.search.return_value = mock_search_response
         mock_firecrawl.scrape_url.return_value = MagicMock(markdown="Content")
         mock_firecrawl_class.return_value = mock_firecrawl
 
@@ -871,8 +885,9 @@ class TestPeopleMapperQualityGates:
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state)
 
-        # Quality gate: ≥4 primary contacts - GAP-060 limits to max 5 total (3 primary + 2 secondary)
-        assert len(result["primary_contacts"]) >= 3  # Updated to match GAP-060 limit
+        # GAP-060: LLM returns 4 primary + 4 secondary, limits to 3 primary + 2 secondary
+        # Quality gate verifies that we have at least 3 primary contacts after limiting
+        assert len(result["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
 
     @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.ChatOpenAI')
