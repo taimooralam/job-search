@@ -30,8 +30,8 @@
       "file": "roles/01_seven_one_entertainment.md",
       "industry": "AdTech",
       "team_size": "10+",
-      "primary_competencies": ["leadership", "architecture", "delivery"],
-      "keywords": ["AWS", "DDD", "microservices", "event-driven", "GDPR", "observability", "Lambda", "ECS"]
+      "primary_competencies": ["leadership", "architecture", "delivery", "hiring", "onboarding", "cloud", "serverless", "event-driven architecture", "mentoring"],
+      "keywords": ["AWS", "DDD", "microservices", "event-driven", "GDPR", "observability", "Lambda", "ECS", "nodejs", "technical debt", "high permorning teams", "high throughput, low latency system"]
     },
     {
       "id": "02_samdock_daypaio",
@@ -45,9 +45,9 @@
       "duration_years": 1,
       "file": "roles/02_samdock_daypaio.md",
       "industry": "SaaS/CRM",
-      "team_size": "4",
-      "primary_competencies": ["architecture", "delivery", "process"],
-      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup"]
+      "team_size": "6",
+      "primary_competencies": ["architecture", "delivery", "process", "domain driven design", "microservices", "angular", "event-driven architecture"],
+      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup", "0->1"]
     },
     {
       "id": "03_ki_labs",
@@ -62,8 +62,8 @@
       "file": "roles/03_ki_labs.md",
       "industry": "Tech Consulting",
       "team_size": "5-10",
-      "primary_competencies": ["delivery", "process"],
-      "keywords": ["Python", "Flask", "MongoDB", "REST API", "testing"]
+      "primary_competencies": ["delivery", "process", "backend", "data-pipeline", "robust api", "large scale data pipeline"],
+      "keywords": ["Python", "Flask", "MongoDB", "REST API", "testing", "backend", "data engineering"]
     },
     {
       "id": "04_fortis",
@@ -78,8 +78,8 @@
       "file": "roles/04_fortis.md",
       "industry": "Research",
       "team_size": "3-5",
-      "primary_competencies": ["delivery"],
-      "keywords": ["Node.js", "RabbitMQ", "microservices", "Swagger"]
+      "primary_competencies": ["delivery", "nodejs", "microservices", "message brokers", "api design"],
+      "keywords": ["Node.js", "RabbitMQ", "microservices", "Swagger", "cloud", "research"]
     },
     {
       "id": "05_osram",
