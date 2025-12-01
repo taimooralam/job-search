@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (5 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (33 fixed/documented, 31 open) | All identified gaps |
+| **P3 (LOW)** | 18 (6 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (34 fixed/documented, 30 open) | All identified gaps |
 
 **Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -1058,10 +1058,22 @@ Added missing fields to canonical `src/common/state.py`:
 ---
 
 ### GAP-043: Pipeline Runs History Collection
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 3 hours
+**Priority**: P3 LOW | **Status**: ✅ FIXED (2025-12-01) | **Effort**: 1.5 hours
 **Impact**: No historical record of pipeline runs
 
-**Fix**: Create `pipeline_runs` MongoDB collection with run metadata
+**Fix Applied**:
+Added pipeline run persistence to MongoDB:
+1. **Collection**: `pipeline_runs` with indexes (run_id, job_id, created_at, status)
+2. **Tracking**: Runs saved at start, updated at completion with:
+   - Status (processing → completed/partial/failed)
+   - Duration, fit_score, fit_category, errors
+   - LangSmith trace_url, total_cost_usd
+3. **API**: `GET /api/pipeline-runs?job_id=X&status=completed&limit=50`
+
+**Files**:
+- `src/workflow.py` - Added `save_pipeline_run_start()` and `update_pipeline_run_complete()`
+- `frontend/app.py` - Added `/api/pipeline-runs` endpoint
+- `src/common/database.py` - Collection accessor already existed
 
 ---
 
