@@ -378,10 +378,23 @@ class OutputPublisher:
             if state.get('token_usage'):
                 update_data['token_usage'] = state['token_usage']
 
-            # Perform update
+            # Build pipeline run entry for history tracking
+            from datetime import datetime
+            pipeline_run_entry = {
+                "run_id": state.get('run_id', f"run_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"),
+                "tier": state.get('processing_tier', 'unknown'),
+                "cost_usd": state.get('total_cost_usd', 0.0),
+                "timestamp": datetime.utcnow().isoformat(),
+                "status": state.get('status', 'completed'),
+            }
+
+            # Perform update with $set and $push for pipeline_runs array
             result = collection.update_one(
                 {"_id": job_record['_id']},
-                {"$set": update_data}
+                {
+                    "$set": update_data,
+                    "$push": {"pipeline_runs": pipeline_run_entry}
+                }
             )
 
             if result.modified_count > 0:
