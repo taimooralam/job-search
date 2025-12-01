@@ -1586,35 +1586,42 @@ def job_rows_partial():
 
     Used for HTMX-powered search, sort, and pagination updates.
     """
-    # Reuse the list_jobs logic
-    response = list_jobs()
+    try:
+        # Reuse the list_jobs logic
+        response = list_jobs()
 
-    # Handle tuple response (error case returns (response, status_code))
-    if isinstance(response, tuple):
-        json_response, status_code = response
-        if status_code >= 400:
-            # Return error as HTML for HTMX
-            error_data = json_response.get_json()
-            error_msg = error_data.get("message", error_data.get("error", "Unknown error"))
-            return f'<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error: {error_msg}</td></tr>', status_code
-        data = json_response.get_json()
-    else:
-        data = response.get_json()
+        # Handle tuple response (error case returns (response, status_code))
+        if isinstance(response, tuple):
+            json_response, status_code = response
+            if status_code >= 400:
+                # Return error as HTML for HTMX
+                error_data = json_response.get_json()
+                error_msg = error_data.get("message", error_data.get("error", "Unknown error"))
+                return f'<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error: {error_msg}</td></tr>', status_code
+            data = json_response.get_json()
+        else:
+            data = response.get_json()
 
-    return render_template(
-        "partials/job_rows.html",
-        jobs=data["jobs"],
-        pagination=data["pagination"],
-        statuses=JOB_STATUSES,
-        current_sort=request.args.get("sort", "createdAt"),
-        current_direction=request.args.get("direction", "desc"),
-        current_query=request.args.get("query", ""),
-        current_page_size=int(request.args.get("page_size", 10)),
-        current_date_from=request.args.get("date_from", ""),
-        current_date_to=request.args.get("date_to", ""),
-        current_locations=request.args.getlist("locations"),
-        current_statuses=request.args.getlist("statuses"),
-    )
+        return render_template(
+            "partials/job_rows.html",
+            jobs=data["jobs"],
+            pagination=data["pagination"],
+            statuses=JOB_STATUSES,
+            current_sort=request.args.get("sort", "createdAt"),
+            current_direction=request.args.get("direction", "desc"),
+            current_query=request.args.get("query", ""),
+            current_page_size=int(request.args.get("page_size", 10)),
+            current_date_from=request.args.get("date_from", ""),
+            current_date_to=request.args.get("date_to", ""),
+            current_locations=request.args.getlist("locations"),
+            current_statuses=request.args.getlist("statuses"),
+        )
+    except Exception as e:
+        # Catch any unexpected errors and return them as HTML
+        import traceback
+        error_details = f"{type(e).__name__}: {str(e)}"
+        app.logger.error(f"job_rows_partial error: {error_details}\n{traceback.format_exc()}")
+        return f'<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Unexpected error: {error_details}</td></tr>', 500
 
 
 @app.route("/partials/pagination", methods=["GET"])
