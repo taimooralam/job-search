@@ -74,6 +74,8 @@ def mock_db(mocker):
     # Setup the mock database instance
     mock_db_instance = MagicMock()
     mock_db_instance.__getitem__.return_value = mock_collection
+    # Also handle attribute access (db.jobs instead of db['jobs'])
+    mock_db_instance.jobs = mock_collection
 
     # Mock MongoClient to prevent real connections
     mock_client = mocker.patch("app.MongoClient")
@@ -127,6 +129,7 @@ def sample_job_with_editor_state():
         "cv_text": "# Jane Smith\n\n## Experience\n\n- 8 years engineering",
         "cv_editor_state": {
             "version": 1,
+            # Both content and tiptap_json for backwards compatibility
             "content": {
                 "type": "doc",
                 "content": [
@@ -141,10 +144,24 @@ def sample_job_with_editor_state():
                     }
                 ]
             },
+            "tiptap_json": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "heading",
+                        "attrs": {"level": 1},
+                        "content": [{"type": "text", "text": "Jane Smith"}]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Senior software engineer with 8 years experience"}]
+                    }
+                ]
+            },
             "documentStyles": {
-                "fontFamily": "Inter",
+                "fontFamily": "Source Sans 3",
                 "fontSize": 11,
-                "lineHeight": 1.15,
+                "lineHeight": 1.5,
                 "margins": {
                     "top": 1.0,
                     "right": 1.0,

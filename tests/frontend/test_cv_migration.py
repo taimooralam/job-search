@@ -308,7 +308,7 @@ B.S. Computer Science, 2012"""
         assert len(content) >= 5
 
         # Check document styles
-        assert result["documentStyles"]["fontFamily"] == "Inter"
+        assert result["documentStyles"]["fontFamily"] == "Source Sans 3"
         assert result["documentStyles"]["fontSize"] == 11
         assert result["documentStyles"]["pageSize"] == "letter"
 

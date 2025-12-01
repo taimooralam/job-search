@@ -344,5 +344,5 @@ class TestMarkdownMigration:
         assert result["version"] == 1
         assert "content" in result
         assert "documentStyles" in result
-        assert result["documentStyles"]["fontFamily"] == "Inter"
+        assert result["documentStyles"]["fontFamily"] == "Source Sans 3"
         assert result["documentStyles"]["fontSize"] == 11

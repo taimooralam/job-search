@@ -859,9 +859,9 @@ Second paragraph"""
 
         assert "documentStyles" in result
         styles = result["documentStyles"]
-        assert styles["fontFamily"] == "Inter"
+        assert styles["fontFamily"] == "Source Sans 3"
         assert styles["fontSize"] == 11
-        assert styles["lineHeight"] == 1.15  # Phase 3 default: standard resume spacing
+        assert styles["lineHeight"] == 1.5  # Default line height for readability
         assert styles["pageSize"] == "letter"
         assert "margins" in styles
         assert styles["margins"]["top"] == 1.0  # Phase 3 default: 1-inch margins

@@ -1494,6 +1494,7 @@ def generate_cv_pdf_from_editor(job_id: str):
     from bson import ObjectId
 
     # Step 1: Fetch CV editor state from MongoDB
+    db = get_db()
     try:
         job = db.jobs.find_one({"_id": ObjectId(job_id)})
         if not job:
