@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.workflow import run_pipeline
 from src.common.config import Config
+from src.common.tiering import resolve_tier, get_tier_config, ProcessingTier
 
 
 def load_candidate_profile(profile_path: str) -> str:
@@ -103,6 +104,12 @@ def main():
         action="store_true",
         help="Use hardcoded test data instead of MongoDB"
     )
+    parser.add_argument(
+        "--tier",
+        default="auto",
+        choices=["auto", "A", "B", "C", "D"],
+        help="Processing tier: auto (recommended), A (gold), B (silver), C (bronze), D (skip)"
+    )
 
     args = parser.parse_args()
 
@@ -170,8 +177,18 @@ EXPERIENCE:
             job_data = load_job_from_mongo(args.job_id)
             print(f"✓ Loaded job: {job_data['title']} at {job_data['company']}\n")
 
-        # Run pipeline
-        final_state = run_pipeline(job_data, candidate_profile)
+        # Resolve processing tier
+        existing_score = job_data.get("score")
+        tier = resolve_tier(args.tier, existing_score)
+        tier_config = get_tier_config(tier)
+        print(f"🎯 Processing Tier: {tier.value} ({tier_config.description})")
+        print(f"   CV Model: {tier_config.cv_model}")
+        print(f"   Research Model: {tier_config.research_model}")
+        print(f"   Max Contacts: {tier_config.max_contacts}")
+        print(f"   Estimated Cost: ${tier_config.estimated_cost_usd:.2f}\n")
+
+        # Run pipeline with tier configuration
+        final_state = run_pipeline(job_data, candidate_profile, tier_config=tier_config)
 
         # Print final results
         print("\n" + "="*70)

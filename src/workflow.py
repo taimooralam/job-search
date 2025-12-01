@@ -185,13 +185,18 @@ def create_workflow() -> StateGraph:
     return app
 
 
-def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
+def run_pipeline(
+    job_data: Dict[str, Any],
+    candidate_profile: str,
+    tier_config: Any = None
+) -> JobState:
     """
     Run the complete job intelligence pipeline.
 
     Args:
         job_data: Dict with job details (job_id, title, company, description, url, source)
         candidate_profile: String with candidate profile/CV text
+        tier_config: Optional TierConfig for tiered processing (GAP-045)
 
     Returns:
         Final JobState with all outputs populated
@@ -275,7 +280,29 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         # GAP-036: Cost tracking
         "total_cost_usd": None,
         "token_usage": None,
+
+        # GAP-045: Tiered processing
+        "processing_tier": tier_config.tier.value if tier_config else None,
+        "tier_config": {
+            "cv_model": tier_config.cv_model,
+            "role_model": tier_config.role_model,
+            "research_model": tier_config.research_model,
+            "pain_points_model": tier_config.pain_points_model,
+            "fit_scoring_model": tier_config.fit_scoring_model,
+            "max_contacts": tier_config.max_contacts,
+            "discover_contacts": tier_config.discover_contacts,
+            "generate_cv": tier_config.generate_cv,
+            "use_star_enforcement": tier_config.use_star_enforcement,
+            "generate_outreach": tier_config.generate_outreach,
+        } if tier_config else None,
     }
+
+    # Log tier configuration
+    if tier_config:
+        run_logger.info(f"Processing Tier: {tier_config.tier.value} - {tier_config.description}")
+        run_logger.info(f"  CV Model: {tier_config.cv_model}")
+        run_logger.info(f"  Research Model: {tier_config.research_model}")
+        run_logger.info(f"  Max Contacts: {tier_config.max_contacts}")
 
     # Create and run workflow
     app = create_workflow()

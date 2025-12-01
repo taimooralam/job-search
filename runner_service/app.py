@@ -136,7 +136,7 @@ def _update_status(
 
 
 async def _execute_pipeline_task(
-    run_id: str, job_id: str, profile_ref: Optional[str]
+    run_id: str, job_id: str, profile_ref: Optional[str], processing_tier: Optional[str] = "auto"
 ) -> None:
     """
     Execute real pipeline as subprocess with log streaming.
@@ -145,11 +145,12 @@ async def _execute_pipeline_task(
         run_id: Unique run identifier
         job_id: Job to process
         profile_ref: Optional profile path
+        processing_tier: Processing tier (auto, A, B, C, D) - GAP-045
     """
     try:
-        logger.info(f"[{run_id[:8]}] Starting pipeline task for job {job_id}")
+        logger.info(f"[{run_id[:8]}] Starting pipeline task for job {job_id} (tier={processing_tier})")
         _update_status(run_id, "running")
-        _append_log(run_id, f"Starting pipeline for job {job_id}...")
+        _append_log(run_id, f"Starting pipeline for job {job_id} (tier={processing_tier})...")
 
         # Create log callback that captures run_id in closure
         def log_callback(message: str) -> None:
@@ -160,6 +161,7 @@ async def _execute_pipeline_task(
             job_id=job_id,
             profile_ref=profile_ref,
             log_callback=log_callback,
+            processing_tier=processing_tier,
         )
 
         # Update status based on result
@@ -191,6 +193,7 @@ async def _enqueue_run(
     profile_ref: Optional[str],
     source: Optional[str],
     background_tasks: BackgroundTasks,
+    processing_tier: Optional[str] = "auto",
 ) -> str:
     """Create a run record and start a background task (stub) respecting concurrency limits."""
     if not job_id:
@@ -211,9 +214,9 @@ async def _enqueue_run(
         artifacts={},
     )
 
-    logger.info(f"[{run_id[:8]}] Enqueued run for job {job_id} (source={source})")
-    _append_log(run_id, f"Run created for job {job_id} (source={source}, profile={profile_ref})")
-    background_tasks.add_task(_execute_pipeline_task, run_id, job_id, profile_ref)
+    logger.info(f"[{run_id[:8]}] Enqueued run for job {job_id} (source={source}, tier={processing_tier})")
+    _append_log(run_id, f"Run created for job {job_id} (source={source}, tier={processing_tier}, profile={profile_ref})")
+    background_tasks.add_task(_execute_pipeline_task, run_id, job_id, profile_ref, processing_tier)
     return run_id
 
 
@@ -225,6 +228,7 @@ async def run_job(request: RunJobRequest, background_tasks: BackgroundTasks) -> 
         profile_ref=request.profile_ref,
         source=request.source,
         background_tasks=background_tasks,
+        processing_tier=request.processing_tier,
     )
     return RunResponse(
         run_id=run_id,
@@ -245,6 +249,7 @@ async def run_jobs_bulk(
             profile_ref=request.profile_ref,
             source=request.source,
             background_tasks=background_tasks,
+            processing_tier=request.processing_tier,
         )
         responses.append(
             RunResponse(

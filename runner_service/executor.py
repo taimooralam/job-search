@@ -26,6 +26,7 @@ async def execute_pipeline(
     job_id: str,
     profile_ref: Optional[str],
     log_callback,
+    processing_tier: Optional[str] = "auto",
 ) -> tuple[bool, Dict[str, str], Optional[Dict]]:
     """
     Execute the pipeline as a subprocess and stream logs.
@@ -34,6 +35,7 @@ async def execute_pipeline(
         job_id: Job identifier to process
         profile_ref: Optional profile path to pass to pipeline
         log_callback: Function to call with each log line (e.g., _append_log)
+        processing_tier: Processing tier (auto, A, B, C, D) - GAP-045
 
     Returns:
         Tuple of (success: bool, artifacts: Dict[str, str], pipeline_state: Optional[Dict])
@@ -49,6 +51,10 @@ async def execute_pipeline(
 
         if profile_ref:
             cmd.extend(["--profile", profile_ref])
+
+        # GAP-045: Add processing tier
+        if processing_tier:
+            cmd.extend(["--tier", processing_tier])
 
         log_callback(f"Executing: {' '.join(cmd)}")
 

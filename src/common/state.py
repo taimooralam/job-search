@@ -239,3 +239,8 @@ class JobState(TypedDict):
     token_usage: Optional[Dict[str, Dict]]  # {"openai": {"input": X, "output": Y, "cost": Z}, ...}
     total_tokens: Optional[int]      # Total tokens used across all providers
     total_cost_usd: Optional[float]  # Estimated cost in USD
+
+    # ===== TIERED PROCESSING (Gap 045) =====
+    # Controls which models and features are used based on job fit/priority
+    processing_tier: Optional[str]   # "A" (gold), "B" (silver), "C" (bronze), "D" (skip)
+    tier_config: Optional[Dict[str, Any]]  # Full tier configuration (models, limits, etc.)
