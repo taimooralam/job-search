@@ -561,22 +561,90 @@
 
         .card-footer {
             padding: var(--space-6);
-            border-top: 1px solid var(--color-gray-200);
-            background-color: var(--color-gray-50);
-            border-bottom-left-radius: var(--radius-xl);
-            border-bottom-right-radius: var(--radius-xl);
+            border-top: 1px solid var(--border-default);
         }
 
-        /* Form Components */
+        /* ================================================================
+         * Theme-Aware Utility Classes
+         * Use these instead of hardcoded Tailwind color classes
+         * ================================================================ */
+
+        /* Backgrounds */
+        .theme-bg-page { background-color: var(--bg-page); }
+        .theme-bg-card { background-color: var(--bg-card); }
+        .theme-bg-secondary { background-color: var(--bg-secondary); }
+        .theme-bg-elevated { background-color: var(--bg-elevated); }
+        .theme-bg-hover { background-color: var(--bg-hover); }
+
+        /* Text */
+        .theme-text-primary { color: var(--text-primary); }
+        .theme-text-secondary { color: var(--text-secondary); }
+        .theme-text-tertiary { color: var(--text-tertiary); }
+        .theme-text-muted { color: var(--text-muted); }
+
+        /* Borders */
+        .theme-border { border-color: var(--border-default); }
+        .theme-border-light { border-color: var(--border-light); }
+
+        /* Hover utilities (escaped colon for Tailwind-like syntax) */
+        .hover\:theme-bg-hover:hover { background-color: var(--bg-hover); }
+        .hover\:theme-text-primary:hover { color: var(--text-primary); }
+
+        /* Skeleton loaders - animate with theme colors */
+        .skeleton {
+            background: linear-gradient(90deg,
+                var(--border-default) 25%,
+                var(--bg-hover) 50%,
+                var(--border-default) 75%
+            );
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: var(--radius-md);
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Panel - theme-aware container */
+        .panel {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Table - theme-aware */
+        .theme-table {
+            background-color: var(--bg-card);
+        }
+
+        .theme-table th {
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-default);
+        }
+
+        .theme-table td {
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .theme-table tr:hover {
+            background-color: var(--bg-hover);
+        }
+
+        /* Form Components - theme-aware */
         .form-input {
             display: block;
             width: 100%;
             padding: 0.625rem 0.875rem;
             font-size: var(--text-sm);
             line-height: var(--line-height-normal);
-            color: var(--color-gray-900);
-            background-color: white;
-            border: 1px solid var(--color-gray-300);
+            color: var(--text-primary);
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
             transition: all var(--transition-fast);
         }
@@ -588,14 +656,14 @@
         }
 
         .form-input::placeholder {
-            color: var(--color-gray-400);
+            color: var(--text-muted);
         }
 
         .form-label {
             display: block;
             font-size: var(--text-sm);
             font-weight: var(--font-medium);
-            color: var(--color-gray-700);
+            color: var(--text-secondary);
             margin-bottom: var(--space-2);
         }
 
@@ -605,16 +673,21 @@
             padding: 0.625rem 2.5rem 0.625rem 0.875rem;
             font-size: var(--text-sm);
             line-height: var(--line-height-normal);
-            color: var(--color-gray-900);
-            background-color: white;
+            color: var(--text-primary);
+            background-color: var(--bg-input);
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-position: right 0.5rem center;
             background-repeat: no-repeat;
             background-size: 1.5em 1.5em;
-            border: 1px solid var(--color-gray-300);
+            border: 1px solid var(--border-default);
             border-radius: var(--radius-md);
             transition: all var(--transition-fast);
             appearance: none;
+        }
+
+        /* Dark mode: lighter chevron for visibility */
+        .dark .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
         }
 
         .form-select:focus {
@@ -680,12 +753,13 @@
         }
 
         .modal-content {
-            background-color: white;
+            background-color: var(--bg-card);
             border-radius: var(--radius-2xl);
             box-shadow: var(--shadow-2xl);
             max-width: 28rem;
             width: 100%;
             animation: slideUp var(--transition-slow);
+            border: 1px solid var(--border-default);
         }
 
         @keyframes fadeIn {
@@ -730,24 +804,14 @@
             to { transform: rotate(360deg); }
         }
 
-        .skeleton {
-            background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-100) 50%, var(--color-gray-200) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: var(--radius-md);
-        }
+        /* NOTE: Primary .skeleton class is defined earlier with theme-aware colors */
 
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* Toast Notifications */
+        /* Toast Notifications - theme-aware */
         .toast {
             position: fixed;
             bottom: var(--space-6);
             right: var(--space-6);
-            background-color: white;
+            background-color: var(--bg-card);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-lg);
             padding: var(--space-4);
@@ -757,7 +821,7 @@
             min-width: 20rem;
             z-index: var(--z-tooltip);
             animation: slideIn var(--transition-slow);
-            border: 1px solid var(--color-gray-200);
+            border: 1px solid var(--border-default);
         }
 
         .toast-success {
@@ -783,9 +847,9 @@
             }
         }
 
-        /* Row hover effect */
+        /* Row hover effect - theme-aware */
         .job-row:hover {
-            background-color: var(--color-gray-50);
+            background-color: var(--bg-hover);
         }
 
         /* Sort icons */

@@ -3,21 +3,21 @@
 {% block content %}
 <div class="space-y-4">
     <!-- Service Health Status Bar (Gap #13) -->
-    <div class="bg-white rounded-lg border border-gray-200 p-3"
+    <div class="panel p-3"
          id="service-health-container"
          hx-get="/partials/service-health"
          hx-trigger="load, every 30s"
          hx-swap="innerHTML">
         <!-- Skeleton loader while health check loads -->
-        <div class="flex items-center gap-3 text-sm animate-pulse">
+        <div class="flex items-center gap-3 text-sm">
             <div class="flex items-center gap-2">
-                <div class="h-3 w-3 bg-gray-200 rounded-full"></div>
-                <div class="h-4 w-32 bg-gray-200 rounded"></div>
+                <div class="h-3 w-3 skeleton rounded-full"></div>
+                <div class="h-4 w-32 skeleton rounded"></div>
             </div>
-            <div class="h-4 w-px bg-gray-200"></div>
-            <div class="h-4 w-16 bg-gray-200 rounded"></div>
-            <div class="h-4 w-16 bg-gray-200 rounded"></div>
-            <div class="ml-auto h-3 w-24 bg-gray-200 rounded"></div>
+            <div class="h-4 w-px skeleton"></div>
+            <div class="h-4 w-16 skeleton rounded"></div>
+            <div class="h-4 w-16 skeleton rounded"></div>
+            <div class="ml-auto h-3 w-24 skeleton rounded"></div>
         </div>
     </div>
 
@@ -28,32 +28,32 @@
          hx-swap="innerHTML">
         <!-- Progress bars loaded via HTMX with auto-refresh every 60 seconds -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
-                    <div class="h-2 bg-gray-200 rounded"></div>
+            <div class="panel p-4">
+                <div>
+                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
+                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
+                    <div class="h-2 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
-                    <div class="h-2 bg-gray-200 rounded"></div>
+            <div class="panel p-4">
+                <div>
+                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
+                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
+                    <div class="h-2 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
-                    <div class="h-2 bg-gray-200 rounded"></div>
+            <div class="panel p-4">
+                <div>
+                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
+                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
+                    <div class="h-2 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div class="h-8 bg-gray-200 rounded w-16 mb-3"></div>
-                    <div class="h-2 bg-gray-200 rounded"></div>
+            <div class="panel p-4">
+                <div>
+                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
+                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
+                    <div class="h-2 skeleton rounded"></div>
                 </div>
             </div>
         </div>
@@ -65,19 +65,19 @@
          hx-trigger="load, every 60s"
          hx-swap="innerHTML">
         <!-- Cost trends loaded via HTMX with auto-refresh every 60 seconds -->
-        <div class="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+        <div class="panel p-4">
             <div class="flex items-center justify-between mb-4">
-                <div class="h-5 bg-gray-200 rounded w-28"></div>
+                <div class="h-5 skeleton rounded w-28"></div>
                 <div class="flex gap-2">
-                    <div class="h-6 bg-gray-200 rounded w-16"></div>
-                    <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    <div class="h-6 skeleton rounded w-16"></div>
+                    <div class="h-4 skeleton rounded w-8"></div>
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <div class="flex-grow h-12 bg-gray-100 rounded"></div>
+                <div class="flex-grow h-12 skeleton rounded"></div>
                 <div class="space-y-2 min-w-[100px]">
-                    <div class="h-4 bg-gray-200 rounded w-20"></div>
-                    <div class="h-3 bg-gray-200 rounded w-16"></div>
+                    <div class="h-4 skeleton rounded w-20"></div>
+                    <div class="h-3 skeleton rounded w-16"></div>
                 </div>
             </div>
         </div>
@@ -91,20 +91,20 @@
              hx-trigger="load, every 30s"
              hx-swap="innerHTML">
             <!-- Budget monitor loaded via HTMX with auto-refresh every 30 seconds -->
-            <div class="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+            <div class="panel p-4">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="h-5 bg-gray-200 rounded w-32"></div>
-                    <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    <div class="h-5 skeleton rounded w-32"></div>
+                    <div class="h-4 skeleton rounded w-8"></div>
                 </div>
-                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div class="h-4 bg-gray-200 rounded w-48 mb-2"></div>
-                    <div class="h-2 bg-gray-200 rounded mb-1"></div>
-                    <div class="h-3 bg-gray-200 rounded w-24"></div>
+                <div class="mb-4 p-3 theme-bg-secondary rounded-lg">
+                    <div class="h-4 skeleton rounded w-48 mb-2"></div>
+                    <div class="h-2 skeleton rounded mb-1"></div>
+                    <div class="h-3 skeleton rounded w-24"></div>
                 </div>
                 <div class="space-y-2">
-                    <div class="h-3 bg-gray-200 rounded w-20"></div>
-                    <div class="h-12 bg-gray-100 rounded"></div>
-                    <div class="h-12 bg-gray-100 rounded"></div>
+                    <div class="h-3 skeleton rounded w-20"></div>
+                    <div class="h-12 skeleton rounded"></div>
+                    <div class="h-12 skeleton rounded"></div>
                 </div>
             </div>
         </div>
@@ -115,15 +115,15 @@
              hx-trigger="load, every 30s"
              hx-swap="innerHTML">
             <!-- Alert history loaded via HTMX with auto-refresh every 30 seconds -->
-            <div class="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+            <div class="panel p-4">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="h-5 bg-gray-200 rounded w-28"></div>
-                    <div class="h-4 bg-gray-200 rounded w-10"></div>
+                    <div class="h-5 skeleton rounded w-28"></div>
+                    <div class="h-4 skeleton rounded w-10"></div>
                 </div>
                 <div class="space-y-2">
-                    <div class="h-14 bg-gray-100 rounded"></div>
-                    <div class="h-14 bg-gray-100 rounded"></div>
-                    <div class="h-14 bg-gray-100 rounded"></div>
+                    <div class="h-14 skeleton rounded"></div>
+                    <div class="h-14 skeleton rounded"></div>
+                    <div class="h-14 skeleton rounded"></div>
                 </div>
             </div>
         </div>
@@ -133,9 +133,9 @@
     <div class="card">
         <div class="card-body">
             <!-- Top row: Quick Time Filters -->
-            <div class="mb-4 pb-4 border-b border-gray-200">
+            <div class="mb-4 pb-4 theme-border border-b">
                 <div class="flex flex-col gap-2">
-                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Quick Time Filters</label>
+                    <label class="text-xs font-semibold theme-text-secondary uppercase tracking-wide">Quick Time Filters</label>
                     <div class="flex flex-wrap gap-2">
                         <!-- Hour filters (blue) -->
                         <button type="button" onclick="setQuickDateFilter(this, 1, 'hour')" class="quick-date-btn btn btn-sm btn-ghost border border-blue-200 text-blue-700 hover:bg-blue-50">1h</button>
@@ -171,7 +171,7 @@
                                hx-include=".filter-input"
                                name="query">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-5 w-5 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
                         </div>
@@ -193,7 +193,7 @@
                 <div class="flex flex-wrap items-center justify-between sm:justify-start gap-4">
                     <!-- Page size selector -->
                     <div class="flex items-center gap-2">
-                        <label for="page-size-select" class="text-sm text-gray-600 font-medium">Show:</label>
+                        <label for="page-size-select" class="text-sm theme-text-secondary font-medium">Show:</label>
                         <select id="page-size-select"
                                 name="page_size"
                                 class="filter-input form-select py-1.5"
@@ -210,7 +210,7 @@
 
                     <!-- Selection info & delete button -->
                     <div class="flex items-center gap-3">
-                        <span class="text-sm text-gray-600">
+                        <span class="text-sm theme-text-secondary">
                             <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
                         </span>
                         <button id="delete-selected-btn"
@@ -247,7 +247,7 @@
                                hx-trigger="change"
                                hx-target="#job-table-container"
                                hx-include=".filter-input">
-                        <span class="text-gray-400">to</span>
+                        <span class="theme-text-tertiary">to</span>
                         <input type="date"
                                id="date-to"
                                name="date_to"
@@ -265,32 +265,32 @@
                 <!-- Status Multi-Select Filter -->
                 <div class="space-y-2 sm:col-span-2 lg:col-span-1">
                     <label class="form-label">Status</label>
-                    <div class="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-2">
+                    <div class="space-y-1.5 max-h-48 overflow-y-auto theme-border border rounded-md p-2">
                         {% for status in statuses %}
-                        <label class="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer transition-colors">
+                        <label class="flex items-center gap-2 p-1.5 hover:theme-bg-hover rounded cursor-pointer transition-colors">
                             <input type="checkbox"
                                    name="statuses"
                                    value="{{ status }}"
-                                   class="filter-input status-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                   class="filter-input status-checkbox rounded theme-border text-accent-500 focus:ring-accent-500"
                                    {% if status not in ['discarded', 'applied', 'interview scheduled'] %}checked{% endif %}
                                    onchange="updateStatusFilter()"
                                    hx-get="/partials/job-rows"
                                    hx-trigger="change"
                                    hx-target="#job-table-container"
                                    hx-include=".filter-input">
-                            <span class="text-sm text-gray-700">{{ status }}</span>
+                            <span class="text-sm theme-text-primary">{{ status }}</span>
                         </label>
                         {% endfor %}
                     </div>
                     <div class="flex gap-2 mt-2">
                         <button type="button"
                                 onclick="selectAllStatuses()"
-                                class="text-xs text-indigo-600 hover:text-indigo-800 underline font-medium">
+                                class="text-xs text-accent-500 hover:text-accent-400 underline font-medium">
                             Select All
                         </button>
                         <button type="button"
                                 onclick="deselectAllStatuses()"
-                                class="text-xs text-gray-600 hover:text-gray-800 underline font-medium">
+                                class="text-xs theme-text-secondary hover:theme-text-primary underline font-medium">
                             Deselect All
                         </button>
                     </div>
@@ -304,14 +304,14 @@
                                 id="location-dropdown-btn"
                                 onclick="toggleLocationDropdown()"
                                 class="form-select w-full flex items-center justify-between">
-                            <span id="location-btn-text" class="truncate text-gray-500">Select locations...</span>
-                            <svg class="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span id="location-btn-text" class="truncate theme-text-tertiary">Select locations...</span>
+                            <svg class="h-4 w-4 theme-text-tertiary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
                         </button>
                         <div id="location-dropdown"
-                             class="hidden absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                            <div class="p-2 border-b border-gray-200">
+                             class="hidden absolute z-20 mt-1 w-full theme-bg-card theme-border border rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div class="p-2 theme-border border-b">
                                 <input type="text"
                                        id="location-search"
                                        placeholder="Search locations..."
@@ -320,7 +320,7 @@
                             </div>
                             <div id="location-options" class="py-1">
                                 <!-- Options loaded dynamically -->
-                                <div class="px-3 py-2 text-sm text-gray-500">Loading locations...</div>
+                                <div class="px-3 py-2 text-sm theme-text-tertiary">Loading locations...</div>
                             </div>
                         </div>
                     </div>
@@ -348,9 +348,9 @@
                  hx-trigger="load, refresh from:body"
                  hx-indicator=".htmx-indicator">
                 <!-- Table content loaded via HTMX -->
-                <div class="p-8 text-center text-gray-500">
+                <div class="p-8 text-center theme-text-tertiary">
                     <div class="spinner mx-auto mb-4"></div>
-                    <p class="mt-2 text-sm font-medium text-gray-600">Loading jobs...</p>
+                    <p class="mt-2 text-sm font-medium theme-text-secondary">Loading jobs...</p>
                 </div>
             </div>
         </div>
@@ -395,20 +395,20 @@
     function renderLocationOptions(locations) {
         const container = document.getElementById('location-options');
         if (locations.length === 0) {
-            container.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">No locations found</div>';
+            container.innerHTML = '<div class="px-3 py-2 text-sm theme-text-tertiary">No locations found</div>';
             return;
         }
 
         container.innerHTML = locations.map(loc => `
-            <label class="location-option flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer transition-colors"
+            <label class="location-option flex items-center px-3 py-2 hover:theme-bg-hover cursor-pointer transition-colors"
                    data-location="${escapeHtml(loc.location)}">
                 <input type="checkbox"
-                       class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                       class="h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500"
                        value="${escapeHtml(loc.location)}"
                        ${selectedLocations.has(loc.location) ? 'checked' : ''}
                        onchange="toggleLocation('${escapeJs(loc.location)}', this.checked)">
-                <span class="ml-2 text-sm text-gray-700 truncate flex-1">${escapeHtml(loc.location)}</span>
-                <span class="ml-2 text-xs text-gray-400">(${loc.count})</span>
+                <span class="ml-2 text-sm theme-text-primary truncate flex-1">${escapeHtml(loc.location)}</span>
+                <span class="ml-2 text-xs theme-text-tertiary">(${loc.count})</span>
             </label>
         `).join('');
     }
@@ -464,13 +464,13 @@
 
         if (count === 0) {
             btn.textContent = 'Select locations...';
-            btn.className = 'truncate text-gray-500';
+            btn.className = 'truncate theme-text-tertiary';
         } else if (count === 1) {
             btn.textContent = Array.from(selectedLocations)[0];
-            btn.className = 'truncate text-gray-900';
+            btn.className = 'truncate theme-text-primary';
         } else {
             btn.textContent = `${count} locations selected`;
-            btn.className = 'truncate text-gray-900';
+            btn.className = 'truncate theme-text-primary';
         }
     }
 
