@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: GAP-007/009/012 fixed, GAP-061 analyzed)
+**Last Updated**: 2025-12-01 (Week 2 Sprint: 26 gaps fixed/documented)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -11,10 +11,10 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 18 (13 fixed/analyzed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (5 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
-| **Total** | **64** (21 fixed/documented, 43 open) | All identified gaps |
+| **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 25 (8 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 18 (2 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (27 fixed/documented, 37 open) | All identified gaps |
 
 **Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -25,6 +25,12 @@
 - **GAP-007**: Time filters now include hidden datetime inputs for hour-level precision
 - **GAP-009**: CV display now checks both `cv_text` and `cv_editor_state`
 - **GAP-012**: Bold/italic markdown parsing now works in CV text conversion
+- **GAP-014**: Middle East relocation tagline added automatically to CVs
+- **GAP-028**: Runner terminal copy button verified as already implemented
+- **GAP-051**: Contact discovery improved with company name variations
+- **GAP-058**: Button sizing hierarchy refined with btn-xs class
+- **GAP-064**: appliedOn timestamp now set when marking jobs as applied
+- **GAP-056**: Contact management (delete/copy/import) verified as already implemented
 
 ---
 
@@ -346,95 +352,52 @@ Updated `pdf_service/pdf_helpers.py` CSS to match editor styling exactly:
 
 ---
 
-### GAP-051: Missing Companies Bug in Contact Discovery
-**Priority**: P1 HIGH | **Status**: ✅ ANALYZED (2025-12-01) | **Effort**: 2-4 hours
-**Impact**: Contact discovery returns incomplete results for some companies
+### GAP-051: Missing Companies Bug in Contact Discovery ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE (2025-12-01) | **Effort**: 1 hour
+**Impact**: Contact discovery now finds more contacts via company name variations and expanded paths
 
-**Root Cause Analysis** (2025-12-01):
+**Fix Applied** (2025-12-01):
 
-Investigation of `src/layer5/people_mapper.py` revealed several potential causes:
+1. **Added company name variations** (`get_company_name_variations()`):
+   - Strips common suffixes: Inc., LLC, Ltd., Corp., GmbH, AG, etc.
+   - Tries original name + stripped variant in searches
+   - Example: "TechCorp Inc." → ["TechCorp Inc.", "TechCorp"]
 
-**1. Strict Query Patterns** (lines 126-132):
-- `site:linkedin.com/in "{company}"` requires exact company name match
-- Company names with variations (e.g., "TechCorp" vs "TechCorp Inc" vs "Tech Corp") may not match
-- No fuzzy matching or company name normalization
+2. **Expanded team page paths** (`TEAM_PAGE_PATHS` constant):
+   - Added 9 new paths: `/people`, `/our-team`, `/founders`, `/executives`, `/management`, `/about/team`, `/about/leadership`, `/who-we-are`, `/meet-the-team`
+   - Now checks 14 paths total (was 5)
 
-**2. Limited URL Path Coverage** (lines 481-487):
-- Team page scraping only checks 5 paths: `/team`, `/about`, `/about-us`, `/leadership`, `/company`
-- Missing common paths: `/people`, `/our-team`, `/founders`, `/executives`, `/management`
+3. **Improved search queries**:
+   - Uses company variations in LinkedIn searches
+   - Falls back to broader queries on empty results
 
-**3. LinkedIn-Only Contact Extraction** (line 400):
-- `_extract_contact_from_search_result()` only processes `linkedin.com/in` URLs
-- Ignores potentially useful results from company pages or news articles
-
-**4. No Query Retry Strategy**:
-- When initial query returns empty, no alternative queries are attempted
-- Could try company name variations or broader search terms
-
-**5. FireCrawl Limitations**:
-- LinkedIn may rate-limit or block search requests
-- No logging of FireCrawl API response codes for diagnosis
-
-**Recommended Fixes** (prioritized):
-
-1. **Add company name variations** (30 min):
-   ```python
-   def _get_company_variations(company: str) -> List[str]:
-       variations = [company]
-       # Add without common suffixes
-       for suffix in [' Inc', ' LLC', ' Ltd', ' Corp', ' Co']:
-           if company.endswith(suffix):
-               variations.append(company[:-len(suffix)])
-       return variations
-   ```
-
-2. **Expand team page paths** (15 min):
-   ```python
-   team_urls = [
-       f"{company_url}/team", f"{company_url}/about", f"{company_url}/about-us",
-       f"{company_url}/leadership", f"{company_url}/company",
-       f"{company_url}/people", f"{company_url}/our-team",  # New
-       f"{company_url}/founders", f"{company_url}/executives"  # New
-   ]
-   ```
-
-3. **Add FireCrawl diagnostic logging** (15 min):
-   - Log response codes and result counts
-   - Track which queries succeed/fail for debugging
-
-4. **Implement fallback query strategy** (1 hour):
-   - On empty results, try broader queries
-   - E.g., `"{company}" engineering team LinkedIn` instead of `site:` operators
-
-**Current Workaround**: System generates 3 synthetic role-based contacts as fallback (`_generate_synthetic_contacts()`)
+**Files Modified**: `src/layer5/people_mapper.py`
+**Commit**: `a1577289` - feat(pipeline): Improve contact discovery with company variations (GAP-051)
 
 ---
 
-### GAP-064: Missing `appliedOn` Timestamp When Marking Jobs Applied
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 1-2 hours
-**Impact**: Dashboard "applied by day/week/month" stats are INACCURATE
+### GAP-064: Missing `appliedOn` Timestamp When Marking Jobs Applied ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: Dashboard "applied by day/week/month" stats now use accurate timestamps
 
-**Description**: When a job status is changed to "applied", no timestamp is saved. The dashboard currently uses `pipeline_run_at` as a proxy, which is **semantically incorrect**:
-- `pipeline_run_at` = when pipeline processed the job (could be weeks earlier)
-- `appliedOn` = when user actually marked job as "applied" (the correct metric)
+**Fix Applied** (2025-12-01):
 
-**Current Code** (`frontend/app.py:574-577`):
+1. **Updated `update_job_status()`** - Sets `appliedOn: datetime.utcnow()` when status = "applied"
+2. **Updated `update_jobs_status_bulk()`** - Same logic for bulk updates
+3. **Updated `/api/dashboard/application-stats`** - Queries by `appliedOn` instead of `pipeline_run_at`
+4. **Edge case handled** - Clears `appliedOn` if status changes FROM "applied" to something else
+
+**Implementation**:
 ```python
-result = collection.update_one(
-    {"_id": object_id},
-    {"$set": {"status": new_status}}  # NO appliedOn timestamp!
-)
+update_data = {"status": new_status}
+if new_status == "applied":
+    update_data["appliedOn"] = datetime.utcnow()
+elif new_status != "applied":
+    update_data["appliedOn"] = None  # Clear if no longer applied
 ```
 
-**Fix Required**:
-1. Update `update_job_status()` to set `appliedOn: datetime.utcnow()` when status = "applied"
-2. Update `update_jobs_status_bulk()` with same logic
-3. Update `/api/dashboard/application-stats` to query by `appliedOn` instead of `pipeline_run_at`
-4. Handle edge case: clear `appliedOn` if status changed FROM "applied" to something else?
-
-**Files**:
-- `frontend/app.py:537-586` - Status update endpoints
-- `frontend/app.py:798-855` - Application stats dashboard
+**Files Modified**: `frontend/app.py`
+**Commit**: `87f39e92` - feat(frontend): Add appliedOn timestamp for accurate stats (GAP-064)
 
 ---
 
@@ -521,18 +484,19 @@ The code is **FULLY CORRECT**. Investigation revealed:
 
 ## P2: MEDIUM (Fix This Sprint)
 
-### GAP-014: CV V2 - Dynamic Tagline for Location
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 0.5 days
-**Impact**: Middle East jobs need "International Relocation in 2 months" tagline
+### GAP-014: CV V2 - Dynamic Tagline for Location ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: Middle East jobs now get "Open to International Relocation" tagline automatically
 
-**Trigger Countries**: Saudi Arabia, UAE, Kuwait, Qatar, Oman, Pakistan
+**Fix Applied** (2025-12-01):
+1. Added `MIDDLE_EAST_COUNTRIES` list in `src/layer6_v2/orchestrator.py`
+2. Created `is_middle_east_location()` function for location matching
+3. Modified `_assemble_cv_text()` to inject tagline after contact line
+4. Tagline: "Open to International Relocation | Available to start within 2 months"
 
-**Implementation**:
-1. Parse job location from `extracted_jd.location`
-2. Check against MIDDLE_EAST_COUNTRIES list
-3. Inject tagline in header
+**Trigger Countries**: Saudi Arabia, UAE, Kuwait, Qatar, Oman, Pakistan, Dubai, Abu Dhabi, Riyadh, etc.
 
-**Files**: `src/layer6_v2/orchestrator.py:315-333`, `src/common/constants.py`
+**Commit**: `03a996c8` - feat(pipeline): Add relocation tagline for Middle East jobs (GAP-014)
 
 ---
 
@@ -708,16 +672,26 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 
 ---
 
-### GAP-056: Contact Management (Delete/Copy/Import)
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-5 hours
-**Impact**: No way to manage contacts discovered by FireCrawl
+### GAP-056: Contact Management (Delete/Copy/Import) ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (already implemented) | **Effort**: N/A
+**Impact**: Full contact management available on job detail page
 
-**Description**: Add contact management features to job detail page:
-1. Delete contact button with confirmation
-2. Copy FireCrawl prompt for Claude Code contact discovery
-3. Bulk import contacts via JSON modal
+**Verification** (2025-12-01): Feature was already fully implemented in `frontend/templates/job_detail.html` and `frontend/app.py`
 
-**Plan**: `plans/frontend-ui-system-design.md` (Component 3)
+**Existing Implementation**:
+1. **Delete Contact**: `deleteContact()` function with confirmation, smooth animation removal
+2. **Copy FireCrawl Prompt**: `copyFirecrawlPrompt()` copies discovery prompt to clipboard
+3. **Import Contacts Modal**: `openAddContactsModal()` with JSON validation, preview, and bulk import
+
+**API Endpoints** (`frontend/app.py`):
+- `DELETE /api/jobs/<id>/contacts/<type>/<index>` - Delete single contact
+- `POST /api/jobs/<id>/contacts` - Bulk import contacts
+- `GET /api/jobs/<id>/contacts/prompt` - Get FireCrawl discovery prompt
+
+**UI Elements** (job detail page):
+- "Copy Prompt" button in contacts header
+- "Add Contacts" button for import modal
+- Delete (trash) button on each contact card
 
 ---
 
@@ -763,6 +737,40 @@ python -m pytest tests/unit -n auto --tb=short
 
 ---
 
+### GAP-065: LinkedIn Job Scraper - Import Jobs via Job ID
+**Priority**: P2 MEDIUM | **Status**: IN PROGRESS | **Effort**: 4-6 hours
+**Impact**: Quick job import from LinkedIn without manual data entry
+
+**Description**: Add ability to import LinkedIn jobs by entering just the job ID. Scrapes LinkedIn's public guest API to extract job details and creates a job record matching the level-2 MongoDB schema.
+
+**User Flow**:
+1. User enters LinkedIn job ID (e.g., `4081234567`) in dashboard input field
+2. System scrapes `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}`
+3. Parses HTML to extract: title, company, location, description, job criteria
+4. Creates job document in MongoDB level-2 collection with status "not processed"
+5. Runs cheap LLM (Haiku) to score job fit (since pipeline hasn't processed it)
+6. Redirects user to job detail page
+
+**API Reference** (LinkedIn Public Guest API):
+- Job details: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}`
+- CSS selectors:
+  - Description: `[class*=description] > section > div`
+  - Job criteria: `[class*=_job-criteria-list]`
+
+**Implementation Components**:
+1. `src/services/linkedin_scraper.py` - Scraper service with HTML parsing
+2. `frontend/app.py` - POST `/api/jobs/import-linkedin` endpoint
+3. `frontend/templates/index.html` - Input field + button UI
+4. `src/services/quick_scorer.py` - Lightweight LLM scoring
+
+**Files**:
+- `src/services/linkedin_scraper.py` (new)
+- `src/services/quick_scorer.py` (new)
+- `frontend/app.py` - Add endpoint
+- `frontend/templates/index.html` - Add UI
+
+---
+
 ## P3: LOW (Backlog)
 
 ### GAP-026: CV V2 - Spacing 20% Narrower
@@ -779,9 +787,17 @@ python -m pytest tests/unit -n auto --tb=short
 
 ---
 
-### GAP-028: Runner Terminal Copy Button
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 1 hour
-**Impact**: No easy way to copy pipeline logs
+### GAP-028: Runner Terminal Copy Button ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (already implemented) | **Effort**: N/A
+**Impact**: Copy button for pipeline logs already exists and works
+
+**Verification** (2025-12-01): Feature was already fully implemented at `frontend/templates/job_detail.html:2737`
+
+**Existing Implementation**:
+- `copyLogsToClipboard()` function in job detail template
+- Uses Clipboard API with execCommand fallback for older browsers
+- Visual feedback: "Copied!" notification on success
+- Button located in runner terminal header
 
 ---
 
@@ -1012,13 +1028,23 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 
 ---
 
-### GAP-058: Smaller UI Buttons
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 1 hour
-**Impact**: Some buttons appear oversized; inconsistent with design system
+### GAP-058: Smaller UI Buttons ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: Button sizing now follows consistent design hierarchy
 
-**Description**: Reduce size of certain UI buttons for better visual hierarchy and space efficiency.
+**Fix Applied** (2025-12-01):
+Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
-**Fix Required**: Review and resize buttons according to design system specifications in `plans/frontend-ui-system-design.md`.
+```css
+.btn-xs { padding: 0.25rem 0.5rem; font-size: var(--text-xs); }  /* New */
+.btn-sm { padding: 0.375rem 0.75rem; font-size: var(--text-xs); }
+.btn-md { padding: 0.5rem 1rem; }
+.btn-lg { padding: 0.625rem 1.25rem; font-size: var(--text-base); }
+```
+
+**Sizes**: xs (tiny) → sm (small) → md (default) → lg (large)
+
+**Commit**: `13d940d6` - style(frontend): Refine button sizing hierarchy (GAP-058)
 
 ---
 
