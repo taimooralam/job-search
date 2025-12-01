@@ -47,7 +47,7 @@
       "industry": "SaaS/CRM",
       "team_size": "6",
       "primary_competencies": ["architecture", "delivery", "process", "domain driven design", "microservices", "angular", "event-driven architecture"],
-      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup", "0->1"]
+      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup", "0->1", "saas", "web-based", "UI", "UX"]
     },
     {
       "id": "03_ki_labs",

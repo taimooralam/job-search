@@ -7,7 +7,7 @@
 
 ## Achievements
 
-• Built REST APIs in Flask over a data pipeline (onion architecture); added JWT auth; automated tests (unit/E2E/snapshots).
+• Built REST APIs in Flask over a large-scale data pipeline (onion architecture); added JWT auth; automated tests (unit/E2E/snapshots).
 • Developed comprehensive test suites including unit, E2E, and snapshot tests, reducing production incidents by 35%
 • Created Swagger-based API documentation system improving developer onboarding and reducing support requests by 40%
 • Collaborated in agile team with bi-weekly sprints, consistently delivering features on time with high quality standards

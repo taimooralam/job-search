@@ -7,7 +7,7 @@
 
 ## Achievements
 
-• Led event storming meetings with all the stakeholders to create the domain and requirements of a CRM that we developed from scratch and got running for 25 new production tenants.
+• Led event storming meetings with all the stakeholders to create the domain and requirements of a web based SaaS CRM that we developed from scratch and got running for 25 new production tenants.
 • Architected and launched event-sourced CRM platform from inception to market using CQRS pattern with NestJS/TypeScript and EventStore, enabling real-time data consistency across microservices. Drove test coverage with Jest; improved stability and release confidence.
 • Established engineering standards including reusable Angular component library and comprehensive Jest testing framework, achieving 85% code coverage and reducing bugs by 40%.
 • Led cross-functional SCRUM team of 4 engineers, implementing agile practices that improved sprint velocity by 30% and feature delivery predictability.
