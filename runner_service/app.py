@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from io import BytesIO
 
 from .models import (
+    FireCrawlCreditsResponse,
     HealthResponse,
     LayerProgress,
     LinkedInImportRequest,
@@ -526,6 +527,48 @@ async def health_check() -> HealthResponse:
         active_runs=MAX_CONCURRENCY - _semaphore._value,
         max_concurrency=MAX_CONCURRENCY,
         timestamp=datetime.utcnow(),
+    )
+
+
+@app.get("/firecrawl/credits", response_model=FireCrawlCreditsResponse)
+async def get_firecrawl_credits() -> FireCrawlCreditsResponse:
+    """
+    Get FireCrawl API credit usage (GAP-070).
+
+    Returns current usage against daily limit with status indicators.
+    Used by dashboard to display credit consumption.
+    """
+    from src.common.rate_limiter import get_rate_limiter
+
+    limiter = get_rate_limiter("firecrawl")
+    stats = limiter.get_stats()
+    remaining = limiter.get_remaining_daily() or 0
+    daily_limit = limiter.daily_limit or 600
+
+    used_today = stats.requests_today
+    used_percent = (used_today / daily_limit * 100) if daily_limit > 0 else 0
+
+    # Determine status based on usage
+    if used_percent >= 100:
+        status = "exhausted"
+    elif used_percent >= 90:
+        status = "critical"
+    elif used_percent >= 80:
+        status = "warning"
+    else:
+        status = "healthy"
+
+    return FireCrawlCreditsResponse(
+        provider="firecrawl",
+        daily_limit=daily_limit,
+        used_today=used_today,
+        remaining=remaining,
+        used_percent=round(used_percent, 1),
+        requests_this_minute=stats.requests_this_minute,
+        requests_per_minute_limit=limiter.requests_per_minute,
+        last_request_at=stats.last_request_at,
+        daily_reset_at=stats.daily_reset_at,
+        status=status,
     )
 
 
@@ -1037,6 +1080,92 @@ async def export_url_to_pdf(request: URLToPDFRequest):
         raise HTTPException(
             status_code=504,
             detail="PDF generation timed out. The site may be slow or blocking automation."
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error(f"PDF service error: {e.response.status_code}")
+        try:
+            error_detail = e.response.json().get("detail", str(e))
+        except Exception:
+            error_detail = str(e)
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"PDF generation failed: {error_detail}"
+        )
+    except httpx.RequestError as e:
+        logger.error(f"PDF service connection failed: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail="PDF service unavailable. Please try again later."
+        )
+
+
+# ============================================================================
+# PDF Service Proxy Endpoint (for dossier PDF export)
+# ============================================================================
+
+class RenderPDFRequest(BaseModel):
+    """Request model for HTML to PDF conversion."""
+    html: str
+    css: Optional[str] = None
+    pageSize: str = "letter"
+    printBackground: bool = True
+
+
+@app.post("/proxy/pdf/render-pdf", dependencies=[Depends(verify_token)])
+async def proxy_render_pdf(request: RenderPDFRequest):
+    """
+    Proxy endpoint to forward HTML rendering requests to PDF service.
+
+    Used by dossier PDF export from frontend. The frontend calls this
+    endpoint which then forwards to the internal PDF service.
+
+    Args:
+        request: HTML content and rendering options
+
+    Returns:
+        StreamingResponse with PDF binary data
+    """
+    import httpx
+
+    # Validate HTML
+    if not request.html or not request.html.strip():
+        raise HTTPException(status_code=400, detail="HTML content is required")
+
+    # Get PDF service URL from environment
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
+
+    try:
+        logger.info("Proxying render-pdf request to PDF service")
+
+        async with httpx.AsyncClient(timeout=60.0) as http_client:
+            response = await http_client.post(
+                f"{pdf_service_url}/render-pdf",
+                json={
+                    "html": request.html,
+                    "css": request.css,
+                    "pageSize": request.pageSize,
+                    "printBackground": request.printBackground
+                }
+            )
+            response.raise_for_status()
+
+            # Return PDF as streaming response
+            return StreamingResponse(
+                BytesIO(response.content),
+                media_type='application/pdf',
+                headers={
+                    'Content-Disposition': response.headers.get(
+                        "Content-Disposition",
+                        'attachment; filename="document.pdf"'
+                    )
+                }
+            )
+
+    except httpx.TimeoutException:
+        logger.error("Render-PDF proxy timed out")
+        raise HTTPException(
+            status_code=504,
+            detail="PDF generation timed out. Please try again."
         )
     except httpx.HTTPStatusError as e:
         logger.error(f"PDF service error: {e.response.status_code}")
