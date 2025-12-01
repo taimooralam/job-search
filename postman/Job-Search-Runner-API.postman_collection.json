@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "Job Search Runner API",
+    "description": "API endpoints for the Job Intelligence Pipeline runner service.\n\nBase URLs:\n- Frontend Proxy (Vercel): https://job-search-inky-sigma.vercel.app/api/runner\n- Direct Runner (VPS): http://72.61.92.76:8000\n\nAuthentication:\n- Frontend proxy handles auth automatically via session\n- Direct runner requires Bearer token in Authorization header",
+    "_postman_id": "job-search-runner-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://job-search-inky-sigma.vercel.app/api/runner",
+      "description": "Frontend proxy URL (recommended)"
+    },
+    {
+      "key": "runner_url",
+      "value": "http://72.61.92.76:8000",
+      "description": "Direct VPS runner URL"
+    },
+    {
+      "key": "job_id",
+      "value": "691356b0d156e3f08a0bdb3c",
+      "description": "Sample MongoDB job ID"
+    },
+    {
+      "key": "run_id",
+      "value": "run_abc123",
+      "description": "Pipeline run ID (returned from /jobs/run)"
+    },
+    {
+      "key": "runner_api_secret",
+      "value": "YOUR_RUNNER_API_SECRET",
+      "description": "Bearer token for direct runner access"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the runner service is healthy and responding.\n\nReturns:\n- status: 'healthy' or 'unhealthy'\n- version: Runner service version\n- uptime: Service uptime"
+      }
+    },
+    {
+      "name": "Run Single Job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"job_id\": \"{{job_id}}\",\n  \"level\": 2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/jobs/run",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "run"]
+        },
+        "description": "Trigger the 7-layer pipeline for a single job.\n\nRequest Body:\n- job_id: MongoDB ObjectId string\n- level: Processing level (1 or 2, default: 2)\n\nReturns:\n- run_id: Unique identifier for this pipeline run\n- status: 'queued' | 'running' | 'completed' | 'failed'\n- job_id: Echo of input job_id"
+      }
+    },
+    {
+      "name": "Run Bulk Jobs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"job_ids\": [\n    \"691356b0d156e3f08a0bdb3c\",\n    \"691356b0d156e3f08a0bdb3d\"\n  ],\n  \"level\": 2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/jobs/run-bulk",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "run-bulk"]
+        },
+        "description": "Trigger the pipeline for multiple jobs concurrently.\n\nRequest Body:\n- job_ids: Array of MongoDB ObjectId strings\n- level: Processing level (1 or 2, default: 2)\n\nReturns:\n- run_ids: Array of unique identifiers for each pipeline run\n- queued_count: Number of jobs queued\n- errors: Array of any immediate validation errors"
+      }
+    },
+    {
+      "name": "Get Run Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{run_id}}/status",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{run_id}}", "status"]
+        },
+        "description": "Get the current status of a pipeline run.\n\nPath Parameters:\n- run_id: Pipeline run identifier (from /jobs/run response)\n\nReturns:\n- run_id: Echo of input\n- status: 'queued' | 'running' | 'completed' | 'failed'\n- progress: Overall completion percentage (0-100)\n- current_layer: Name of currently executing layer\n- artifacts: Array of generated artifact names\n- started_at: ISO timestamp\n- completed_at: ISO timestamp (if finished)"
+      }
+    },
+    {
+      "name": "Get Run Progress (Detailed)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{run_id}}/progress",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{run_id}}", "progress"]
+        },
+        "description": "Get detailed layer-by-layer progress of a pipeline run.\n\nPath Parameters:\n- run_id: Pipeline run identifier\n\nReturns:\n- layers: Object with status for each layer:\n  - intake: { status, duration_ms, started_at, completed_at }\n  - pain_points: { status, duration_ms, started_at, completed_at }\n  - company_research: { ... }\n  - role_research: { ... }\n  - fit_scoring: { ... }\n  - people_mapping: { ... }\n  - cv_outreach_generation: { ... }\n- overall_progress: Percentage (0-100)\n- estimated_remaining_ms: Estimated time remaining"
+      }
+    },
+    {
+      "name": "Stream Run Logs (SSE)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/event-stream"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{run_id}}/logs",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{run_id}}", "logs"]
+        },
+        "description": "Stream real-time logs from a pipeline run via Server-Sent Events.\n\nPath Parameters:\n- run_id: Pipeline run identifier\n\nReturns: SSE stream with events:\n- event: log\n  data: { timestamp, level, message, layer }\n- event: progress\n  data: { layer, status, progress }\n- event: complete\n  data: { status, artifacts }\n- event: error\n  data: { message, layer, traceback }\n\nNote: This endpoint streams continuously. Close connection when done."
+      }
+    },
+    {
+      "name": "Download Artifact (PDF)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{run_id}}/artifacts/cv.pdf",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{run_id}}", "artifacts", "cv.pdf"]
+        },
+        "description": "Download a generated artifact from a completed pipeline run.\n\nPath Parameters:\n- run_id: Pipeline run identifier\n- artifact_name: Name of artifact to download\n\nCommon artifacts:\n- cv.pdf: Generated tailored CV\n- cv.html: HTML version of CV\n- cover_letter.pdf: Cover letter\n- dossier.json: Full research dossier\n\nReturns:\n- File download with appropriate Content-Type\n- 404 if artifact not found"
+      }
+    },
+    {
+      "name": "Download Artifact (Dossier JSON)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{run_id}}/artifacts/dossier.json",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{run_id}}", "artifacts", "dossier.json"]
+        },
+        "description": "Download the full research dossier as JSON.\n\nContains:\n- extracted_jd: Parsed job description\n- pain_points: Identified challenges\n- company_research: Company intel\n- role_research: Role requirements\n- fit_scoring: Match scores\n- contacts: Discovered people\n- cv_text: Generated CV content"
+      }
+    },
+    {
+      "name": "[Direct] Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{runner_api_secret}}"
+          }
+        ],
+        "url": {
+          "raw": "{{runner_url}}/health",
+          "host": ["{{runner_url}}"],
+          "path": ["health"]
+        },
+        "description": "Direct health check to VPS runner (bypasses frontend proxy).\n\nRequires Bearer token authentication."
+      }
+    },
+    {
+      "name": "[Direct] Run Single Job",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{runner_api_secret}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"job_id\": \"{{job_id}}\",\n  \"level\": 2\n}"
+        },
+        "url": {
+          "raw": "{{runner_url}}/jobs/run",
+          "host": ["{{runner_url}}"],
+          "path": ["jobs", "run"]
+        },
+        "description": "Direct pipeline trigger to VPS runner (bypasses frontend proxy).\n\nRequires Bearer token authentication."
+      }
+    }
+  ]
+}
