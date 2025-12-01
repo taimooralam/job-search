@@ -123,6 +123,8 @@ class CategoryGenerator:
         jd_keywords: List[str],
         candidate_skills: List[str],
         role_category: str,
+        responsibilities: Optional[List[str]] = None,
+        qualifications: Optional[List[str]] = None,
     ) -> CategoryOutput:
         """
         Use LLM to generate JD-specific categories.
@@ -131,6 +133,8 @@ class CategoryGenerator:
             jd_keywords: Keywords extracted from job description
             candidate_skills: Skills the candidate actually has
             role_category: Type of role (engineering_manager, etc.)
+            responsibilities: JD responsibilities section (Issue 8 enhancement)
+            qualifications: JD qualifications section (Issue 8 enhancement)
 
         Returns:
             CategoryOutput with 3-4 category names
@@ -146,6 +150,14 @@ class CategoryGenerator:
         candidate_set = {s.lower() for s in candidate_skills}
         overlap = jd_set & candidate_set
 
+        # Issue 8: Build responsibilities and qualifications context
+        resp_text = ""
+        if responsibilities:
+            resp_text = "\n".join(f"• {r}" for r in responsibilities[:5])
+        qual_text = ""
+        if qualifications:
+            qual_text = "\n".join(f"• {q}" for q in qualifications[:5])
+
         system_prompt = """You are a CV optimization expert who creates skill categories for CVs.
 
 Your task: Create 3-4 skill category NAMES that:
@@ -153,13 +165,15 @@ Your task: Create 3-4 skill category NAMES that:
 2. Highlight the candidate's relevant strengths
 3. Are specific enough to be meaningful (not generic)
 4. Are professional and ATS-friendly
+5. Directly address the JD's KEY RESPONSIBILITIES and QUALIFICATIONS
 
 RULES:
 - Create exactly 3-4 categories
 - Each category name should be 2-4 words
-- Categories should reflect the JD's priorities
+- Categories should reflect the JD's priorities from responsibilities/qualifications
 - Do NOT use generic names like just "Skills" or "Competencies"
 - DO use compound names like "Cloud Platform Engineering" or "Agile Delivery"
+- At least 2 categories should directly map to key JD responsibilities
 
 Return valid JSON with:
 {
@@ -173,6 +187,12 @@ Return valid JSON with:
 ROLE TYPE: {role_category.replace('_', ' ').title()}
 ROLE EMPHASIS: {role_hints['emphasis']}
 
+=== KEY JD RESPONSIBILITIES (must address these) ===
+{resp_text if resp_text else 'Not specified'}
+
+=== KEY JD QUALIFICATIONS (must match these) ===
+{qual_text if qual_text else 'Not specified'}
+
 JD KEYWORDS (what employer wants):
 {', '.join(jd_keywords[:20])}
 
@@ -185,7 +205,7 @@ OVERLAP (strong match areas):
 SUGGESTED CATEGORY THEMES:
 {', '.join(role_hints['hints'])}
 
-Generate 3-4 category names that highlight the candidate's fit for this specific role:"""
+Generate 3-4 category names that DIRECTLY address the JD responsibilities and highlight the candidate's fit:"""
 
         structured_llm = self.llm.with_structured_output(CategoryOutput)
         response = structured_llm.invoke([
@@ -200,6 +220,8 @@ Generate 3-4 category names that highlight the candidate's fit for this specific
         jd_keywords: List[str],
         candidate_skills: List[str],
         role_category: str = "engineering_manager",
+        responsibilities: Optional[List[str]] = None,
+        qualifications: Optional[List[str]] = None,
     ) -> List[str]:
         """
         Generate JD-specific skill categories.
@@ -208,17 +230,25 @@ Generate 3-4 category names that highlight the candidate's fit for this specific
             jd_keywords: Keywords from job description
             candidate_skills: Skills from master-CV
             role_category: Type of role
+            responsibilities: JD responsibilities section (Issue 8 enhancement)
+            qualifications: JD qualifications section (Issue 8 enhancement)
 
         Returns:
             List of 3-4 category names
         """
         self._logger.info(f"Generating dynamic categories for {role_category}...")
+        if responsibilities:
+            self._logger.info(f"  Using {len(responsibilities)} JD responsibilities")
+        if qualifications:
+            self._logger.info(f"  Using {len(qualifications)} JD qualifications")
 
         try:
             result = self._generate_categories_llm(
                 jd_keywords,
                 candidate_skills,
                 role_category,
+                responsibilities=responsibilities,
+                qualifications=qualifications,
             )
             categories = result.categories
             self._logger.info(f"Generated categories: {categories}")

@@ -99,6 +99,21 @@ def sample_candidate_data():
     }
 
 
+@pytest.fixture
+def sample_skill_whitelist():
+    """Sample skill whitelist from master CV for testing (GAP-001 fix)."""
+    return {
+        "hard_skills": [
+            "Python", "Kubernetes", "CI/CD", "GitHub Actions",
+            "Microservices", "Grafana", "Prometheus", "System Design",
+        ],
+        "soft_skills": [
+            "Team Leadership", "Mentorship", "Agile", "Sprint Planning",
+            "Performance Management", "Cross-functional Collaboration",
+        ],
+    }
+
+
 # ===== TESTS: SkillEvidence =====
 
 class TestSkillEvidence:
@@ -162,12 +177,10 @@ class TestSkillsSection:
         ]
         section = SkillsSection(category="Platform", skills=skills)
         md = section.to_markdown()
-        # GAP-006: Now outputs plain text, not markdown
-        assert "Platform:" in md
+        # CV uses markdown formatting for TipTap editor rendering
+        assert "**Platform:**" in md  # Bold category name
         assert "AWS" in md
         assert "Kubernetes" in md
-        # Verify no markdown markers
-        assert "**" not in md
 
 
 # ===== TESTS: ProfileOutput =====
@@ -280,14 +293,15 @@ class TestHeaderOutput:
             },
         )
         md = header.to_markdown()
-        # GAP-006: Now outputs plain text, not markdown
+        # CV uses markdown formatting for TipTap editor rendering
         assert "John Developer" in md
         assert "PROFILE" in md
         assert "CORE COMPETENCIES" in md
         assert "EDUCATION" in md
-        # Verify no markdown markers
+        # Verify no heading markers (we use bold ** instead)
         assert "##" not in md
-        assert "**" not in md
+        # Bold markdown IS expected for TipTap rendering (category titles)
+        assert "**Technical:**" in md  # Bold category name
 
 
 # ===== TESTS: HeaderGenerator - Metrics Extraction =====
@@ -487,6 +501,7 @@ class TestFullHeaderGeneration:
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
+        sample_skill_whitelist,
     ):
         """Generates complete header with all sections."""
         # Mock LLM response
@@ -496,7 +511,8 @@ class TestFullHeaderGeneration:
         mock_response.keywords_integrated = ["Team Leadership"]
         mock_llm.return_value = mock_response
 
-        generator = HeaderGenerator()
+        # GAP-001: Must provide skill whitelist to get skills
+        generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
         header = generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
@@ -515,6 +531,7 @@ class TestFullHeaderGeneration:
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
+        sample_skill_whitelist,
     ):
         """Validates skills are grounded."""
         mock_response = Mock()
@@ -523,7 +540,8 @@ class TestFullHeaderGeneration:
         mock_response.keywords_integrated = []
         mock_llm.return_value = mock_response
 
-        generator = HeaderGenerator()
+        # GAP-001: Must provide skill whitelist to get skills
+        generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
         header = generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
@@ -596,10 +614,14 @@ class TestSkillsGeneration:
         self,
         sample_stitched_cv,
         sample_extracted_jd,
+        sample_skill_whitelist,
     ):
         """Generates skills sections from experience."""
-        # GAP-002: Use static categories for this test to validate legacy behavior
-        generator = HeaderGenerator(use_dynamic_categories=False)
+        # GAP-001/002: Use skill whitelist and static categories for this test
+        generator = HeaderGenerator(
+            use_dynamic_categories=False,
+            skill_whitelist=sample_skill_whitelist,
+        )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         assert len(sections) > 0
@@ -611,9 +633,14 @@ class TestSkillsGeneration:
         self,
         sample_stitched_cv,
         sample_extracted_jd,
+        sample_skill_whitelist,
     ):
         """Generates JD-specific skill categories (GAP-002)."""
-        generator = HeaderGenerator(use_dynamic_categories=True)
+        # GAP-001: Must provide skill whitelist to get skills
+        generator = HeaderGenerator(
+            use_dynamic_categories=True,
+            skill_whitelist=sample_skill_whitelist,
+        )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         assert len(sections) > 0
@@ -629,13 +656,30 @@ class TestSkillsGeneration:
         self,
         sample_stitched_cv,
         sample_extracted_jd,
+        sample_skill_whitelist,
     ):
         """Limits skills to 8 per category."""
-        generator = HeaderGenerator(use_dynamic_categories=False)
+        # GAP-001: Must provide skill whitelist to get skills
+        generator = HeaderGenerator(
+            use_dynamic_categories=False,
+            skill_whitelist=sample_skill_whitelist,
+        )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         for section in sections:
             assert section.skill_count <= 8
+
+    def test_no_skills_without_whitelist(
+        self,
+        sample_stitched_cv,
+        sample_extracted_jd,
+    ):
+        """GAP-001: Without whitelist, no skills are generated (prevents hallucination)."""
+        generator = HeaderGenerator(use_dynamic_categories=False)
+        sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
+
+        # Without whitelist, should return empty to prevent hallucination
+        assert len(sections) == 0
 
 
 # ===== TESTS: Convenience Function =====
