@@ -208,11 +208,22 @@
                         </select>
                     </div>
 
-                    <!-- Selection info & delete button -->
+                    <!-- Selection info & action buttons -->
                     <div class="flex items-center gap-3">
                         <span class="text-sm theme-text-secondary">
                             <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
                         </span>
+                        <!-- Process Selected Button -->
+                        <button id="process-selected-btn"
+                                onclick="processSelectedJobs()"
+                                disabled
+                                class="btn btn-success btn-md">
+                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            <span class="hidden sm:inline">Process Selected</span>
+                            <span class="sm:hidden">Process</span>
+                        </button>
                         <button id="delete-selected-btn"
                                 onclick="openDeleteModal()"
                                 disabled

@@ -1648,6 +1648,7 @@
         function updateSelectionCount() {
             const countEl = document.getElementById('selection-count');
             const deleteBtn = document.getElementById('delete-selected-btn');
+            const processBtn = document.getElementById('process-selected-btn');
             const count = selectedJobIds.size;
 
             if (countEl) {
@@ -1657,6 +1658,11 @@
                 deleteBtn.disabled = count === 0;
                 deleteBtn.classList.toggle('opacity-50', count === 0);
                 deleteBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
+            if (processBtn) {
+                processBtn.disabled = count === 0;
+                processBtn.classList.toggle('opacity-50', count === 0);
+                processBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
         }
 
@@ -1876,6 +1882,51 @@
                 }
             } catch (err) {
                 showToast('Pipeline failed: ' + err.message, 'error');
+            }
+        }
+
+        // Process multiple selected jobs through pipeline (batch)
+        async function processSelectedJobs() {
+            if (selectedJobIds.size === 0) return;
+
+            const count = selectedJobIds.size;
+            const confirmed = confirm(
+                `Process ${count} job${count > 1 ? 's' : ''} through pipeline?\n\n` +
+                `This will trigger the pipeline for all selected jobs on the VPS runner.\n` +
+                `Jobs will be processed concurrently (up to MAX_CONCURRENCY limit).`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast(`Starting batch pipeline for ${count} jobs...`, 'info');
+
+                // Call bulk endpoint
+                const response = await fetch('/api/runner/jobs/run-bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: Array.from(selectedJobIds),
+                        level: 2  // Process at level 2
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.runs) {
+                    showToast(`Batch pipeline started! ${result.runs.length} jobs queued.`);
+                    // Clear selection after successful queue
+                    selectedJobIds.clear();
+                    updateSelectionCount();
+                    // Uncheck all checkboxes
+                    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+                    const selectAll = document.getElementById('select-all');
+                    if (selectAll) selectAll.checked = false;
+                } else {
+                    showToast(result.error || 'Failed to start batch pipeline', 'error');
+                }
+            } catch (err) {
+                showToast('Batch pipeline failed: ' + err.message, 'error');
             }
         }
 
