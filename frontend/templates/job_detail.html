@@ -1634,13 +1634,26 @@
 
                     <div class="w-px h-12 bg-gray-300"></div>
 
-                    <!-- Margins -->
+                    <!-- Margin Presets -->
                     <div class="flex flex-col gap-1">
-                        <label class="text-xs text-gray-600">Margins (inches)</label>
+                        <label for="cv-margin-preset" class="text-xs text-gray-600">Margins</label>
+                        <select id="cv-margin-preset" onchange="applyMarginPreset()"
+                                class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-28">
+                            <option value="normal" selected>Normal (1")</option>
+                            <option value="narrow">Narrow (0.5")</option>
+                            <option value="moderate">Moderate (0.75")</option>
+                            <option value="wide">Wide (1.5")</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Margins (hidden by default) -->
+                    <div id="custom-margins-container" class="flex flex-col gap-1 hidden">
+                        <label class="text-xs text-gray-600">Custom (inches)</label>
                         <div class="flex gap-2">
                             <div class="flex flex-col items-center">
                                 <span class="text-xs text-gray-500">Top</span>
-                                <select id="cv-margin-top" onchange="applyDocumentStyle('margins')"
+                                <select id="cv-margin-top" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
                                         class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
                                     <option value="0.5">0.5"</option>
                                     <option value="0.75">0.75"</option>
@@ -1653,7 +1666,7 @@
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-xs text-gray-500">Right</span>
-                                <select id="cv-margin-right" onchange="applyDocumentStyle('margins')"
+                                <select id="cv-margin-right" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
                                         class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
                                     <option value="0.5">0.5"</option>
                                     <option value="0.75">0.75"</option>
@@ -1666,7 +1679,7 @@
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-xs text-gray-500">Bottom</span>
-                                <select id="cv-margin-bottom" onchange="applyDocumentStyle('margins')"
+                                <select id="cv-margin-bottom" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
                                         class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
                                     <option value="0.5">0.5"</option>
                                     <option value="0.75">0.75"</option>
@@ -1679,7 +1692,7 @@
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-xs text-gray-500">Left</span>
-                                <select id="cv-margin-left" onchange="applyDocumentStyle('margins')"
+                                <select id="cv-margin-left" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
                                         class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
                                     <option value="0.5">0.5"</option>
                                     <option value="0.75">0.75"</option>

@@ -148,6 +148,11 @@ class CVEditor {
             if (marginRight) marginRight.value = styles.margins.right || 1.0;
             if (marginBottom) marginBottom.value = styles.margins.bottom || 1.0;
             if (marginLeft) marginLeft.value = styles.margins.left || 1.0;
+
+            // GAP-057: Update margin preset dropdown to match restored margins
+            if (typeof updateMarginPreset === 'function') {
+                updateMarginPreset();
+            }
         }
 
         // Restore page size
@@ -1162,6 +1167,89 @@ function applyDocumentStyle(styleType) {
         // Phase 5.1: Update page breaks when document styles change
         debouncePageBreakUpdate();
     }
+}
+
+/**
+ * Margin preset definitions (GAP-057)
+ */
+const MARGIN_PRESETS = {
+    normal: { top: '1.0', right: '1.0', bottom: '1.0', left: '1.0' },
+    narrow: { top: '0.5', right: '0.5', bottom: '0.5', left: '0.5' },
+    moderate: { top: '0.75', right: '0.75', bottom: '0.75', left: '0.75' },
+    wide: { top: '1.5', right: '1.5', bottom: '1.5', left: '1.5' }
+};
+
+/**
+ * Apply margin preset and update individual margin selects (GAP-057)
+ */
+function applyMarginPreset() {
+    const presetSelect = document.getElementById('cv-margin-preset');
+    const customContainer = document.getElementById('custom-margins-container');
+    const preset = presetSelect?.value;
+
+    if (!preset) return;
+
+    if (preset === 'custom') {
+        // Show custom margin controls
+        customContainer?.classList.remove('hidden');
+    } else {
+        // Hide custom controls and apply preset values
+        customContainer?.classList.add('hidden');
+
+        const margins = MARGIN_PRESETS[preset];
+        if (margins) {
+            // Update individual margin selects
+            const topSelect = document.getElementById('cv-margin-top');
+            const rightSelect = document.getElementById('cv-margin-right');
+            const bottomSelect = document.getElementById('cv-margin-bottom');
+            const leftSelect = document.getElementById('cv-margin-left');
+
+            if (topSelect) topSelect.value = margins.top;
+            if (rightSelect) rightSelect.value = margins.right;
+            if (bottomSelect) bottomSelect.value = margins.bottom;
+            if (leftSelect) leftSelect.value = margins.left;
+
+            // Apply the styles
+            applyDocumentStyle('margins');
+        }
+    }
+}
+
+/**
+ * Update margin preset dropdown based on current individual margin values (GAP-057)
+ * Called when individual margins change to detect if they match a preset
+ */
+function updateMarginPreset() {
+    const topSelect = document.getElementById('cv-margin-top');
+    const rightSelect = document.getElementById('cv-margin-right');
+    const bottomSelect = document.getElementById('cv-margin-bottom');
+    const leftSelect = document.getElementById('cv-margin-left');
+    const presetSelect = document.getElementById('cv-margin-preset');
+
+    if (!presetSelect) return;
+
+    const currentMargins = {
+        top: topSelect?.value,
+        right: rightSelect?.value,
+        bottom: bottomSelect?.value,
+        left: leftSelect?.value
+    };
+
+    // Check if current margins match any preset
+    for (const [presetName, presetMargins] of Object.entries(MARGIN_PRESETS)) {
+        if (currentMargins.top === presetMargins.top &&
+            currentMargins.right === presetMargins.right &&
+            currentMargins.bottom === presetMargins.bottom &&
+            currentMargins.left === presetMargins.left) {
+            presetSelect.value = presetName;
+            document.getElementById('custom-margins-container')?.classList.add('hidden');
+            return;
+        }
+    }
+
+    // No preset matches - set to custom
+    presetSelect.value = 'custom';
+    document.getElementById('custom-margins-container')?.classList.remove('hidden');
 }
 
 /**
