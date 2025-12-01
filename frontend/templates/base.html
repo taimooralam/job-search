@@ -1649,6 +1649,7 @@
             const countEl = document.getElementById('selection-count');
             const deleteBtn = document.getElementById('delete-selected-btn');
             const processBtn = document.getElementById('process-selected-btn');
+            const applyBtn = document.getElementById('apply-selected-btn');
             const count = selectedJobIds.size;
 
             if (countEl) {
@@ -1663,6 +1664,11 @@
                 processBtn.disabled = count === 0;
                 processBtn.classList.toggle('opacity-50', count === 0);
                 processBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
+            if (applyBtn) {
+                applyBtn.disabled = count === 0;
+                applyBtn.classList.toggle('opacity-50', count === 0);
+                applyBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
         }
 
@@ -1927,6 +1933,52 @@
                 }
             } catch (err) {
                 showToast('Batch pipeline failed: ' + err.message, 'error');
+            }
+        }
+
+        // Mark multiple selected jobs as "applied"
+        async function markSelectedAsApplied() {
+            if (selectedJobIds.size === 0) return;
+
+            const count = selectedJobIds.size;
+            const confirmed = confirm(
+                `Mark ${count} job${count > 1 ? 's' : ''} as "applied"?\n\n` +
+                `This will update the status of all selected jobs.`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast(`Updating ${count} jobs...`, 'info');
+
+                // Call bulk status update endpoint
+                const response = await fetch('/api/jobs/status/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: Array.from(selectedJobIds),
+                        status: 'applied'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast(`${result.updated_count} jobs marked as applied!`);
+                    // Clear selection
+                    selectedJobIds.clear();
+                    updateSelectionCount();
+                    // Uncheck all checkboxes
+                    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+                    const selectAll = document.getElementById('select-all');
+                    if (selectAll) selectAll.checked = false;
+                    // Refresh the table to show updated status
+                    htmx.trigger('#job-table-container', 'refresh');
+                } else {
+                    showToast(result.error || 'Failed to update jobs', 'error');
+                }
+            } catch (err) {
+                showToast('Update failed: ' + err.message, 'error');
             }
         }
 

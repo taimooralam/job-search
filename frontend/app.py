@@ -586,6 +586,56 @@ def update_job_status():
     })
 
 
+@app.route("/api/jobs/status/bulk", methods=["POST"])
+@login_required
+def update_jobs_status_bulk():
+    """
+    Update status for multiple jobs at once.
+
+    Request Body:
+        job_ids: List of job _id strings
+        status: New status value (from whitelist)
+
+    Returns:
+        JSON with count of updated jobs or error
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    data = request.get_json()
+    job_ids = data.get("job_ids", [])
+    new_status = data.get("status")
+
+    if not job_ids or not isinstance(job_ids, list):
+        return jsonify({"error": "job_ids array is required"}), 400
+
+    if not new_status:
+        return jsonify({"error": "status is required"}), 400
+
+    if new_status not in JOB_STATUSES:
+        return jsonify({
+            "error": f"Invalid status. Must be one of: {', '.join(JOB_STATUSES)}"
+        }), 400
+
+    # Convert to ObjectIds
+    try:
+        object_ids = [ObjectId(jid) for jid in job_ids]
+    except Exception:
+        return jsonify({"error": "Invalid job_id format in array"}), 400
+
+    # Bulk update
+    result = collection.update_many(
+        {"_id": {"$in": object_ids}},
+        {"$set": {"status": new_status}}
+    )
+
+    return jsonify({
+        "success": True,
+        "updated_count": result.modified_count,
+        "status": new_status,
+    })
+
+
 @app.route("/api/jobs/statuses", methods=["GET"])
 @login_required
 def get_statuses():
