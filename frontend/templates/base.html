@@ -1959,6 +1959,91 @@
             }
         }
 
+        // ===== GAP-067: Editable Score Field =====
+        function enableScoreEdit(displayEl, jobId, currentScore) {
+            const container = displayEl.closest('.editable-score-container');
+            const input = container.querySelector('.score-input');
+
+            // Hide display, show input
+            displayEl.classList.add('hidden');
+            input.classList.remove('hidden');
+            input.value = currentScore !== null ? currentScore : '';
+            input.focus();
+            input.select();
+        }
+
+        function handleScoreKeydown(event, input, jobId) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                input.blur(); // Triggers saveScore via onblur
+            } else if (event.key === 'Escape') {
+                cancelScoreEdit(input);
+            }
+        }
+
+        function cancelScoreEdit(input) {
+            const container = input.closest('.editable-score-container');
+            const display = container.querySelector('.score-display');
+            input.classList.add('hidden');
+            display.classList.remove('hidden');
+        }
+
+        async function saveScore(input, jobId) {
+            const container = input.closest('.editable-score-container');
+            const display = container.querySelector('.score-display');
+            const newScore = input.value.trim();
+
+            // Validate score
+            let scoreValue = null;
+            if (newScore !== '') {
+                scoreValue = parseInt(newScore, 10);
+                if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+                    showToast('Score must be between 0 and 100', 'error');
+                    cancelScoreEdit(input);
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/jobs/score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, score: scoreValue })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update the display badge
+                    updateScoreBadge(display, scoreValue);
+                    showToast('Score updated', 'success');
+                } else {
+                    showToast(result.error || 'Failed to update score', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating score:', error);
+                showToast('Failed to update score', 'error');
+            }
+
+            // Hide input, show display
+            input.classList.add('hidden');
+            display.classList.remove('hidden');
+        }
+
+        function updateScoreBadge(display, score) {
+            let badgeClass = 'badge-gray';
+            let displayText = '—';
+
+            if (score !== null) {
+                displayText = score;
+                if (score >= 80) badgeClass = 'badge-success';
+                else if (score >= 60) badgeClass = 'badge-warning';
+            }
+
+            display.innerHTML = `<span class="px-2 py-1 rounded-full text-xs font-medium ${badgeClass}">${displayText}</span>`;
+        }
+        // ===== End GAP-067 =====
+
         // Toast notification using new design system
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
