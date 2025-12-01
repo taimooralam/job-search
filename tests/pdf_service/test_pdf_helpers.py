@@ -450,7 +450,8 @@ class TestBuildPDFHTMLTemplate:
         )
 
         # Professional typography uses fixed heading sizes (Codex design system)
-        assert "h1 {" in html and "font-size: 34px" in html
+        # H1 uses 32px for executive styling with uppercase + letter-spacing
+        assert "h1 {" in html and "font-size: 32px" in html
         assert "h2 {" in html and "font-size: 20px" in html
         assert "h3 {" in html and "font-size: 16px" in html
         # Verify heading font family uses serif
