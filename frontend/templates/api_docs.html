@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Search Pipeline API Documentation</title>
+
+    <!-- Swagger UI CSS -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow-y: scroll;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+
+        /* Custom styling to match app theme */
+        .swagger-ui .topbar {
+            background-color: #1e293b;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper .select-label {
+            color: #f1f5f9;
+        }
+
+        .swagger-ui .info .title {
+            color: #1e293b;
+        }
+
+        .swagger-ui .scheme-container {
+            background: #f8fafc;
+            box-shadow: none;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .swagger-ui .opblock.opblock-get {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-get .opblock-summary-method {
+            background: #3b82f6;
+        }
+
+        .swagger-ui .opblock.opblock-post {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-post .opblock-summary-method {
+            background: #22c55e;
+        }
+
+        .swagger-ui .opblock.opblock-put {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-put .opblock-summary-method {
+            background: #f59e0b;
+        }
+
+        .swagger-ui .opblock.opblock-delete {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+            background: #ef4444;
+        }
+
+        .swagger-ui .opblock.opblock-patch {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+            background: #8b5cf6;
+        }
+
+        .swagger-ui .btn.execute {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .swagger-ui .btn.execute:hover {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+
+        /* Header bar customization */
+        .custom-header {
+            background: #1e293b;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .custom-header h1 {
+            color: #f1f5f9;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .custom-header a {
+            color: #93c5fd;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .custom-header a:hover {
+            color: #bfdbfe;
+        }
+
+        .version-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom header -->
+    <div class="custom-header">
+        <h1>
+            Job Intelligence Pipeline API
+            <span class="version-badge">v1.0.0</span>
+        </h1>
+        <a href="/">Back to Dashboard</a>
+    </div>
+
+    <!-- Swagger UI container -->
+    <div id="swagger-ui"></div>
+
+    <!-- Swagger UI JS -->
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: "/api/openapi.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: "list",
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                tryItOutEnabled: true
+            });
+
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: Job Search Pipeline API
+  description: |
+    API for the Job Intelligence Pipeline - a 7-layer LangGraph system that processes job postings,
+    generates tailored CVs, and discovers relevant contacts.
+
+    ## Authentication
+    - Most endpoints require authentication via session cookie
+    - Runner proxy endpoints use Bearer token auth internally
+
+    ## Base URLs
+    - **Production**: https://job-search-inky-sigma.vercel.app
+    - **Runner Service (VPS)**: http://72.61.92.76:8000
+
+    ## Key Features
+    - Job management (CRUD, filtering, status updates)
+    - Pipeline execution (7-layer processing)
+    - CV generation and editing
+    - Contact discovery and management
+    - Real-time progress tracking
+  version: 1.0.0
+  contact:
+    name: Taimoor Alam
+    email: alamtaimoor.de@gmail.com
+
+servers:
+  - url: https://job-search-inky-sigma.vercel.app
+    description: Production (Vercel)
+  - url: http://localhost:5000
+    description: Local Development
+
+tags:
+  - name: Jobs
+    description: Job listing and management
+  - name: Pipeline
+    description: Pipeline execution and monitoring
+  - name: CV
+    description: CV editing and generation
+  - name: Contacts
+    description: Contact management
+  - name: Dashboard
+    description: Analytics and stats
+
+paths:
+  /api/jobs:
+    get:
+      tags: [Jobs]
+      summary: List jobs with filtering and pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: createdAt
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: query
+          in: query
+          description: Search query for title/company
+          schema:
+            type: string
+        - name: statuses
+          in: query
+          description: Filter by status (can repeat for multiple)
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [not processed, marked for applying, researching, generating, generated, ready for review, applied, rejected]
+        - name: locations
+          in: query
+          description: Filter by location
+          schema:
+            type: array
+            items:
+              type: string
+        - name: datetime_from
+          in: query
+          description: Start datetime (ISO format)
+          schema:
+            type: string
+            format: date-time
+        - name: datetime_to
+          in: query
+          description: End datetime (ISO format)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Job list with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /api/jobs/{job_id}:
+    get:
+      tags: [Jobs]
+      summary: Get job details
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '404':
+          description: Job not found
+
+  /api/jobs/{job_id}/status:
+    patch:
+      tags: [Jobs]
+      summary: Update job status
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [not processed, marked for applying, researching, generating, generated, ready for review, applied, rejected]
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/jobs/import-linkedin:
+    post:
+      tags: [Jobs]
+      summary: Import job from LinkedIn
+      description: Scrape a LinkedIn job posting and create a new job record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id_or_url]
+              properties:
+                job_id_or_url:
+                  type: string
+                  description: LinkedIn job ID or full URL
+                  example: "4081234567"
+      responses:
+        '200':
+          description: Job imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  job_id:
+                    type: string
+                  message:
+                    type: string
+        '409':
+          description: Duplicate job exists
+
+  /api/runner/health:
+    get:
+      tags: [Pipeline]
+      summary: Check runner service health
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  version:
+                    type: string
+                  uptime:
+                    type: string
+
+  /api/runner/jobs/run:
+    post:
+      tags: [Pipeline]
+      summary: Run pipeline for single job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_id]
+              properties:
+                job_id:
+                  type: string
+                  description: MongoDB ObjectId
+                level:
+                  type: integer
+                  default: 2
+                  enum: [1, 2]
+      responses:
+        '200':
+          description: Pipeline started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  status:
+                    type: string
+                  job_id:
+                    type: string
+
+  /api/runner/jobs/run-bulk:
+    post:
+      tags: [Pipeline]
+      summary: Run pipeline for multiple jobs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [job_ids]
+              properties:
+                job_ids:
+                  type: array
+                  items:
+                    type: string
+                level:
+                  type: integer
+                  default: 2
+      responses:
+        '200':
+          description: Pipelines started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_ids:
+                    type: array
+                    items:
+                      type: string
+                  queued_count:
+                    type: integer
+
+  /api/runner/jobs/{run_id}/status:
+    get:
+      tags: [Pipeline]
+      summary: Get pipeline run status
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Run status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunStatus'
+
+  /api/runner/jobs/{run_id}/progress:
+    get:
+      tags: [Pipeline]
+      summary: Get detailed layer progress
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Layer-by-layer progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunProgress'
+
+  /api/runner/jobs/{run_id}/logs:
+    get:
+      tags: [Pipeline]
+      summary: Stream pipeline logs (SSE)
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/runner/jobs/{run_id}/artifacts/{artifact_name}:
+    get:
+      tags: [Pipeline]
+      summary: Download pipeline artifact
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: artifact_name
+          in: path
+          required: true
+          schema:
+            type: string
+            example: cv.pdf
+      responses:
+        '200':
+          description: File download
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+
+  /api/jobs/{job_id}/cv:
+    get:
+      tags: [CV]
+      summary: Get CV editor state
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CV content and settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CVEditorState'
+
+    put:
+      tags: [CV]
+      summary: Save CV editor state
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CVEditorState'
+      responses:
+        '200':
+          description: CV saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/jobs/{job_id}/contacts/{contact_type}/{contact_index}:
+    delete:
+      tags: [Contacts]
+      summary: Delete a contact
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: contact_type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [primary, secondary]
+        - name: contact_index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Contact deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/jobs/{job_id}/contacts:
+    post:
+      tags: [Contacts]
+      summary: Import contacts (bulk)
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contacts:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Contact'
+      responses:
+        '200':
+          description: Contacts imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  imported_count:
+                    type: integer
+
+  /api/dashboard/application-stats:
+    get:
+      tags: [Dashboard]
+      summary: Get application statistics
+      responses:
+        '200':
+          description: Application stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  today:
+                    type: integer
+                  this_week:
+                    type: integer
+                  this_month:
+                    type: integer
+                  total:
+                    type: integer
+
+components:
+  schemas:
+    JobSummary:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        score:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+
+    Job:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+        score:
+          type: number
+        extracted_jd:
+          type: object
+        pain_points:
+          type: array
+          items:
+            type: object
+        company_research:
+          type: object
+        role_research:
+          type: object
+        fit_scoring:
+          type: object
+        primary_contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        secondary_contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        cv_text:
+          type: string
+        cv_editor_state:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        linkedin_url:
+          type: string
+        why_relevant:
+          type: string
+        linkedin_message:
+          type: string
+        email_subject:
+          type: string
+        email_body:
+          type: string
+
+    CVEditorState:
+      type: object
+      properties:
+        content:
+          type: object
+          description: TipTap/ProseMirror JSON content
+        documentSettings:
+          type: object
+          properties:
+            pageSize:
+              type: string
+              enum: [letter, a4]
+            fontSize:
+              type: number
+            lineHeight:
+              type: number
+            margins:
+              type: object
+              properties:
+                top:
+                  type: number
+                right:
+                  type: number
+                bottom:
+                  type: number
+                left:
+                  type: number
+            colorAccent:
+              type: string
+
+    RunStatus:
+      type: object
+      properties:
+        run_id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        current_layer:
+          type: string
+        artifacts:
+          type: array
+          items:
+            type: string
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    RunProgress:
+      type: object
+      properties:
+        layers:
+          type: object
+          properties:
+            intake:
+              $ref: '#/components/schemas/LayerStatus'
+            pain_points:
+              $ref: '#/components/schemas/LayerStatus'
+            company_research:
+              $ref: '#/components/schemas/LayerStatus'
+            role_research:
+              $ref: '#/components/schemas/LayerStatus'
+            fit_scoring:
+              $ref: '#/components/schemas/LayerStatus'
+            people_mapping:
+              $ref: '#/components/schemas/LayerStatus'
+            cv_outreach_generation:
+              $ref: '#/components/schemas/LayerStatus'
+        overall_progress:
+          type: integer
+        estimated_remaining_ms:
+          type: integer
+
+    LayerStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, running, completed, failed, skipped]
+        duration_ms:
+          type: integer
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        error:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        total_pages:
+          type: integer
