@@ -20,6 +20,7 @@ from src.common.state import JobState
 from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
 from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
+from src.common.token_tracker import get_global_tracker
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -200,6 +201,10 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "errors": [],
         "status": "processing",
         "trace_url": None,  # OB-3: LangSmith trace URL
+
+        # GAP-036: Cost tracking
+        "total_cost_usd": None,
+        "token_usage": None,
     }
 
     # Create and run workflow
@@ -233,6 +238,23 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
 
         # Store trace URL in final state
         final_state["trace_url"] = trace_url
+
+        # GAP-036: Capture token usage and cost from global tracker
+        try:
+            tracker = get_global_tracker()
+            summary = tracker.get_summary()
+            final_state["total_cost_usd"] = summary.total_cost_usd
+            final_state["token_usage"] = {
+                provider: {
+                    "input_tokens": usage.input_tokens,
+                    "output_tokens": usage.output_tokens,
+                    "estimated_cost_usd": usage.estimated_cost_usd,
+                }
+                for provider, usage in summary.by_provider.items()
+            }
+            run_logger.info(f"Token usage: ${summary.total_cost_usd:.4f} USD total")
+        except Exception as e:
+            run_logger.warning(f"Failed to capture token usage: {e}")
 
         # Update status based on errors
         if final_state.get("errors"):
@@ -305,6 +327,13 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
     run_logger.info(f"Sheets Row: {final_state.get('sheet_row_id')}")
     if final_state.get("trace_url"):
         run_logger.info(f"LangSmith Trace: {final_state.get('trace_url')}")
+
+    # GAP-036: Log cost tracking info
+    if final_state.get("total_cost_usd") is not None:
+        run_logger.info(f"Total Cost: ${final_state.get('total_cost_usd'):.4f} USD")
+    if final_state.get("token_usage"):
+        for provider, usage in final_state["token_usage"].items():
+            run_logger.info(f"  {provider}: {usage.get('input_tokens', 0):,} in / {usage.get('output_tokens', 0):,} out (${usage.get('estimated_cost_usd', 0):.4f})")
 
     if final_state.get("errors"):
         run_logger.warning("Warnings/Errors:")
