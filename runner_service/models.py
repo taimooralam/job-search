@@ -97,6 +97,29 @@ class PipelineProgressResponse(BaseModel):
     updated_at: datetime
 
 
+# === LinkedIn Import Models (GAP-065) ===
+
+class LinkedInImportRequest(BaseModel):
+    """Request body for importing a LinkedIn job."""
+
+    job_id_or_url: str = Field(..., description="LinkedIn job ID or URL")
+
+
+class LinkedInImportResponse(BaseModel):
+    """Response after importing a LinkedIn job."""
+
+    success: bool = True
+    job_id: str = Field(..., description="MongoDB job ID")
+    title: str
+    company: str
+    location: Optional[str] = None
+    score: Optional[int] = None
+    tier: Optional[str] = None
+    score_rationale: Optional[str] = None
+    duplicate: bool = False
+    error: Optional[str] = None
+
+
 # Pipeline layer definitions for progress tracking
 PIPELINE_LAYERS = [
     {"id": "intake", "name": "Job Intake", "order": 1},

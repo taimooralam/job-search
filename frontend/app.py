@@ -764,6 +764,8 @@ def import_linkedin_job():
     """
     Import a job from LinkedIn by job ID or URL (GAP-065).
 
+    Proxies to VPS runner service to avoid Vercel's timeout limits.
+
     Request body:
         job_id_or_url: LinkedIn job ID or URL
 
@@ -776,121 +778,47 @@ def import_linkedin_job():
     if not job_id_or_url:
         return jsonify({"error": "job_id_or_url is required"}), 400
 
+    # Proxy to VPS runner service (no timeout limits, stable IP)
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    runner_token = os.getenv("RUNNER_TOKEN", "")
+
     try:
-        # Import the scraper and scorer
-        from src.services.linkedin_scraper import (
-            scrape_linkedin_job,
-            linkedin_job_to_mongodb_doc,
-            extract_job_id,
-            LinkedInScraperError,
-            JobNotFoundError,
-            RateLimitError,
+        logger.info(f"Proxying LinkedIn import to runner: {job_id_or_url}")
+        response = requests.post(
+            f"{runner_url}/jobs/import-linkedin",
+            json={"job_id_or_url": job_id_or_url},
+            headers={
+                "Authorization": f"Bearer {runner_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=60,  # Allow up to 60 seconds for scraping + scoring
         )
 
-        # Scrape the job
-        logger.info(f"Importing LinkedIn job: {job_id_or_url}")
-        linkedin_data = scrape_linkedin_job(job_id_or_url)
+        # Forward the response from runner service
+        if response.status_code == 200:
+            result = response.json()
+            return jsonify(result), 200
+        else:
+            # Try to get error message from runner
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", f"Runner error: {response.status_code}")
+            except Exception:
+                error_msg = f"Runner returned status {response.status_code}"
 
-        # Convert to MongoDB document
-        mongo_doc = linkedin_job_to_mongodb_doc(linkedin_data)
+            logger.warning(f"Runner import failed: {error_msg}")
+            return jsonify({"error": error_msg}), response.status_code
 
-        # Check for duplicates in both collections
-        db = get_db()
-        level1_collection = db["level-1"]
-        level2_collection = db["level-2"]
+    except requests.exceptions.Timeout:
+        logger.error("Runner service timeout during LinkedIn import")
+        return jsonify({"error": "Import timed out. The job may be taking too long to scrape."}), 504
 
-        # Check level-2 first (this is where we redirect to)
-        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
-        if existing_level2:
-            logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
-            return jsonify({
-                "job_id": str(existing_level2["_id"]),
-                "title": existing_level2.get("title"),
-                "company": existing_level2.get("company"),
-                "score": existing_level2.get("score"),
-                "error": "Job already exists in database",
-                "duplicate": True,
-            }), 200  # Return 200 with duplicate flag instead of error
-
-        # Check level-1 as well
-        existing_level1 = level1_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
-        if existing_level1:
-            logger.info(f"Job already exists in level-1: {existing_level1['_id']}")
-            return jsonify({
-                "job_id": str(existing_level1["_id"]),
-                "title": existing_level1.get("title"),
-                "company": existing_level1.get("company"),
-                "score": existing_level1.get("score"),
-                "error": "Job already exists in level-1 database",
-                "duplicate": True,
-            }), 200
-
-        # Quick score the job (optional - skip if scoring fails)
-        score = None
-        score_rationale = None
-        try:
-            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
-
-            score, score_rationale = quick_score_job(
-                title=linkedin_data.title,
-                company=linkedin_data.company,
-                location=linkedin_data.location,
-                description=linkedin_data.description,
-            )
-
-            if score is not None:
-                mongo_doc["score"] = score
-                mongo_doc["tier"] = derive_tier_from_score(score)
-                mongo_doc["score_rationale"] = score_rationale
-                logger.info(f"Quick scored job: {score} ({mongo_doc.get('tier')})")
-        except Exception as score_err:
-            logger.warning(f"Quick scoring failed (continuing without score): {score_err}")
-
-        # Insert into both level-1 and level-2 collections
-        # level-1 is for raw jobs, level-2 is for jobs ready for pipeline processing
-
-        # Insert into level-1 (raw jobs)
-        level1_doc = mongo_doc.copy()
-        level1_result = level1_collection.insert_one(level1_doc)
-        logger.info(f"Inserted into level-1: {level1_result.inserted_id}")
-
-        # Insert into level-2 (ready for processing)
-        level2_doc = mongo_doc.copy()
-        level2_result = level2_collection.insert_one(level2_doc)
-        job_id = str(level2_result.inserted_id)
-        logger.info(f"Inserted into level-2: {job_id}")
-
-        logger.info(f"Imported LinkedIn job {job_id}: {linkedin_data.title} at {linkedin_data.company}")
-
-        return jsonify({
-            "success": True,
-            "job_id": job_id,
-            "title": linkedin_data.title,
-            "company": linkedin_data.company,
-            "location": linkedin_data.location,
-            "score": score,
-            "tier": mongo_doc.get("tier"),
-            "score_rationale": score_rationale,
-        })
-
-    except JobNotFoundError as e:
-        logger.warning(f"LinkedIn job not found: {e}")
-        return jsonify({"error": f"Job not found on LinkedIn: {str(e)}"}), 404
-
-    except RateLimitError as e:
-        logger.warning(f"LinkedIn rate limit: {e}")
-        return jsonify({"error": f"LinkedIn rate limit hit. Please try again later."}), 429
-
-    except LinkedInScraperError as e:
-        logger.error(f"LinkedIn scraper error: {e}")
-        return jsonify({"error": f"Failed to scrape LinkedIn: {str(e)}"}), 500
-
-    except ValueError as e:
-        logger.warning(f"Invalid job ID: {e}")
-        return jsonify({"error": str(e)}), 400
+    except requests.exceptions.ConnectionError:
+        logger.error("Cannot connect to runner service")
+        return jsonify({"error": "Cannot connect to import service. Please try again later."}), 503
 
     except Exception as e:
-        logger.exception(f"Unexpected error importing LinkedIn job: {e}")
+        logger.exception(f"Unexpected error proxying LinkedIn import: {e}")
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
@@ -2137,6 +2065,87 @@ def export_job_page_to_pdf(job_id: str):
         logger.exception(f"Unexpected error during URL-to-PDF for job {job_id}")
         return jsonify({
             "error": f"PDF generation failed: {str(e)}",
+            "detail": "An unexpected error occurred"
+        }), 500
+
+
+@app.route("/api/jobs/<job_id>/export-dossier-pdf", methods=["GET"])
+@login_required
+def export_dossier_pdf(job_id: str):
+    """
+    Export complete job dossier as PDF (GAP-033).
+
+    Generates a comprehensive PDF document containing:
+    - Company research
+    - Role analysis
+    - Pain points (4 dimensions)
+    - Fit analysis (score + rationale)
+    - Contact list
+    - Outreach materials
+    - CV reasoning
+
+    Returns:
+        PDF file for download
+    """
+    from io import BytesIO
+    from flask import send_file
+
+    # Add src to path for pdf_export import
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    try:
+        # 1. Fetch job state from MongoDB
+        job_doc = collection.find_one({"_id": ObjectId(job_id)})
+        if not job_doc:
+            return jsonify({"error": "Job not found"}), 404
+
+        # Convert ObjectId to string for JSON compatibility
+        job_doc["_id"] = str(job_doc["_id"])
+
+        # 2. Generate PDF using DossierPDFExporter
+        from src.api.pdf_export import DossierPDFExporter
+
+        # Get PDF service URL from runner proxy
+        runner_url = os.getenv("RUNNER_URL", "http://localhost:8000")
+        pdf_service_url = f"{runner_url}/proxy/pdf"
+
+        exporter = DossierPDFExporter(pdf_service_url=pdf_service_url)
+
+        try:
+            pdf_bytes = exporter.export_to_pdf(job_doc)
+        except Exception as pdf_error:
+            logger.error(f"PDF export failed for job {job_id}: {pdf_error}")
+            return jsonify({
+                "error": "PDF generation failed",
+                "detail": str(pdf_error)
+            }), 500
+
+        # 3. Generate filename
+        company = job_doc.get("company", "Unknown")
+        title = job_doc.get("title", "Job")
+
+        def slugify(text: str) -> str:
+            import re
+            text = text.lower()
+            text = re.sub(r'[^a-z0-9]+', '-', text)
+            return text.strip('-')
+
+        filename = f"dossier-{slugify(company)}-{slugify(title)}.pdf"
+
+        # 4. Return PDF for download
+        logger.info(f"Dossier PDF exported successfully for job {job_id}")
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        logger.exception(f"Unexpected error exporting dossier PDF for job {job_id}")
+        return jsonify({
+            "error": f"Dossier export failed: {str(e)}",
             "detail": "An unexpected error occurred"
         }), 500
 
