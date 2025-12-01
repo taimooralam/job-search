@@ -1,0 +1,11 @@
+# Job Ingestion Cron Schedule
+# Runs every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
+# Logs output to /app/logs/cron.log
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+
+# Run job ingestion every 6 hours
+0 */6 * * * root cd /app && /usr/local/bin/python scripts/ingest_jobs_cron.py >> /app/logs/cron.log 2>&1
+
+# Keep cron running (required empty line at end)

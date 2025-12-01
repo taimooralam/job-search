@@ -1,0 +1,62 @@
+version: "3.9"
+
+# Job Ingestion Service
+# Runs automated job discovery from Indeed and Himalayas every 6 hours
+#
+# Usage:
+#   docker-compose -f docker-compose.ingest.yml up -d
+#
+# Or combined with runner:
+#   docker-compose -f docker-compose.runner.yml -f docker-compose.ingest.yml up -d
+
+services:
+  job-ingest:
+    image: ${INGEST_IMAGE:-ghcr.io/taimooralam/job-search/job-ingest:latest}
+    build:
+      context: .
+      dockerfile: docker/job-ingest/Dockerfile
+    env_file:
+      - .env
+    environment:
+      # Ingestion settings (can override .env)
+      - AUTO_INGEST_ENABLED=${AUTO_INGEST_ENABLED:-true}
+      - AUTO_INGEST_SCORE_THRESHOLD=${AUTO_INGEST_SCORE_THRESHOLD:-70}
+      - AUTO_INGEST_RESULTS_PER_SOURCE=${AUTO_INGEST_RESULTS_PER_SOURCE:-50}
+
+      # Indeed configuration
+      - INDEED_SEARCH_TERMS=${INDEED_SEARCH_TERMS:-engineering manager,staff engineer}
+      - INDEED_LOCATIONS=${INDEED_LOCATIONS:-Remote}
+      - INDEED_COUNTRY=${INDEED_COUNTRY:-USA}
+
+      # Himalayas configuration
+      - HIMALAYAS_KEYWORDS=${HIMALAYAS_KEYWORDS:-engineering,python}
+      - HIMALAYAS_MAX_RESULTS=${HIMALAYAS_MAX_RESULTS:-100}
+      - HIMALAYAS_WORLDWIDE_ONLY=${HIMALAYAS_WORLDWIDE_ONLY:-false}
+
+      # Run ingestion immediately on container start (useful for testing)
+      - RUN_ON_STARTUP=${RUN_ON_STARTUP:-false}
+
+      # Python settings
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Persist logs
+      - ingest-logs:/app/logs
+      # Master CV for scoring context
+      - ./master-cv.md:/app/master-cv.md:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, os; from datetime import datetime, timedelta; f='/app/logs/ingest_latest.json'; d=json.load(open(f)) if os.path.exists(f) else {}; t=datetime.fromisoformat(d.get('end_time','2000-01-01').replace('Z','+00:00')); exit(0 if datetime.utcnow()-t < timedelta(hours=12) else 1)"]
+      interval: 6h
+      timeout: 30s
+      retries: 2
+      start_period: 1m
+    restart: unless-stopped
+    networks:
+      - job-pipeline
+
+volumes:
+  ingest-logs:
+    driver: local
+
+networks:
+  job-pipeline:
+    external: true

@@ -94,6 +94,19 @@
                     <div class="text-sm font-medium theme-text-primary">
                         {{ job.company or '-' }}
                     </div>
+                    {% if job.auto_discovered %}
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200" title="Auto-discovered job">
+                        {% if job.source == 'indeed_auto' %}
+                        <svg class="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-3H9V6h2v4z"/></svg>
+                        Indeed
+                        {% elif job.source == 'himalayas_auto' %}
+                        <svg class="w-3 h-3 mr-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/></svg>
+                        Remote
+                        {% else %}
+                        Auto
+                        {% endif %}
+                    </span>
+                    {% endif %}
                 </td>
 
                 <!-- Role/Title -->
