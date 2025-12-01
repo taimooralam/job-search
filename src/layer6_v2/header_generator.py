@@ -316,25 +316,24 @@ class HeaderGenerator:
             for skill in self._skill_whitelist.get("soft_skills", []):
                 whitelist_skills_lower.add(skill.lower())
 
-        # Add JD keywords to skill lists ONLY if they have evidence in bullets
-        # This is more restrictive than before - JD keywords are only included
-        # if the candidate has demonstrated them in their experience
+        # GAP-001 STRICT FIX: Do NOT add JD keywords that aren't in the whitelist
+        # This prevents hallucination of skills like "React", "Java", "PHP" that the
+        # candidate has never used. JD keywords are used only for PRIORITIZATION,
+        # not for adding new skills.
+        #
+        # REMOVED: Logic that added JD keywords with "evidence in bullets" - this was
+        # too permissive because:
+        # 1. Substring matching catches false positives (e.g., "react" in "reacted")
+        # 2. Mentioning a skill in context doesn't mean proficiency
+        # 3. The master CV is the source of truth for candidate skills
+        #
+        # JD keywords will still get prioritized in _prioritize_jd_keywords() if they
+        # happen to match whitelist skills.
         if jd_keywords:
-            for kw in jd_keywords:
-                kw_lower = kw.lower()
-
-                # Skip if already in whitelist (already categorized)
-                if kw_lower in whitelist_skills_lower:
-                    continue
-
-                # Check if this JD keyword has evidence in bullets
-                # Only then should we consider adding it
-                if kw_lower in combined_text:
-                    # Categorize the JD keyword
-                    category = self._classify_skill_category(kw)
-                    if kw not in skill_lists[category]:
-                        skill_lists[category].append(kw)
-                        self._logger.debug(f"Added JD keyword '{kw}' to {category} (has evidence)")
+            self._logger.debug(
+                f"JD keywords for prioritization only (not adding to skills): "
+                f"{len(jd_keywords)} keywords"
+            )
 
         # Extract skills with evidence
         for category, skills in skill_lists.items():
@@ -622,6 +621,9 @@ Generate the profile JSON:"""
         """
         Generate JD-specific category names using the CategoryGenerator.
 
+        Issue 8 Enhancement: Now uses responsibilities and qualifications from JD
+        to generate categories that directly address what the employer is looking for.
+
         Args:
             extracted_jd: Extracted JD intelligence
             skills_by_category: Skills already extracted (for candidate skill list)
@@ -633,6 +635,10 @@ Generate the profile JSON:"""
         jd_keywords = extracted_jd.get("top_keywords", [])
         jd_technical = extracted_jd.get("technical_skills", [])
         all_jd_keywords = list(set(jd_keywords + jd_technical))
+
+        # Issue 8: Get responsibilities and qualifications from JD
+        responsibilities = extracted_jd.get("responsibilities", [])
+        qualifications = extracted_jd.get("qualifications", [])
 
         # Get candidate skills (from whitelist or extracted)
         if self._skill_whitelist:
@@ -650,11 +656,13 @@ Generate the profile JSON:"""
         # Get role category from JD
         role_category = extracted_jd.get("role_category", "engineering_manager")
 
-        # Generate dynamic categories
+        # Generate dynamic categories with responsibilities/qualifications (Issue 8)
         categories = self._category_generator.generate(
             jd_keywords=all_jd_keywords,
             candidate_skills=candidate_skills,
             role_category=role_category,
+            responsibilities=responsibilities,
+            qualifications=qualifications,
         )
 
         self._logger.info(f"Generated dynamic categories: {categories}")
