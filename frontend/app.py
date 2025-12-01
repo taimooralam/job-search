@@ -28,6 +28,15 @@ from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 # Load environment variables
 load_dotenv()
 
+# Import version (from parent directory)
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from version import __version__
+    APP_VERSION = __version__
+except ImportError:
+    APP_VERSION = "dev"
+
 app = Flask(__name__)
 
 # Configure logging
@@ -92,6 +101,14 @@ app.config["PERMANENT_SESSION_LIFETIME"] = 60 * 60 * 24 * 31  # 31 days
 # Debug logging for session configuration
 if os.getenv("VERCEL") == "1":
     print(f"🔍 Session Config: SECURE={app.config['SESSION_COOKIE_SECURE']}, SAMESITE={app.config['SESSION_COOKIE_SAMESITE']}")
+
+
+# Context processor to inject version into all templates
+@app.context_processor
+def inject_version():
+    """Inject version info into all templates."""
+    return {"version": APP_VERSION}
+
 
 # Authentication configuration
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "change-me-in-production")
@@ -1058,6 +1075,7 @@ def get_health():
     """
     health_data = {
         "timestamp": datetime.utcnow().isoformat(),
+        "version": APP_VERSION,
         "overall": "healthy"  # Will be set to "degraded" or "unhealthy" if issues found
     }
     has_critical_failure = False
