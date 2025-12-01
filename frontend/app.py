@@ -361,7 +361,9 @@ def list_jobs():
 
     # Status filter (multi-select with default exclusions)
     # Note: null/missing status means "not processed"
+    # Deduplicate statuses to avoid issues with repeated URL params
     if statuses:
+        statuses = list(set(statuses))  # Remove duplicates
         if "not processed" in statuses:
             # Include explicit "not processed" OR null/empty/missing status
             status_or = [
@@ -465,15 +467,24 @@ def list_jobs():
             }
         })
 
-        # Execute aggregation
-        result = list(collection.aggregate(pipeline))
-        if result:
-            metadata = result[0].get("metadata", [])
-            total_count = metadata[0]["total"] if metadata else 0
-            jobs_raw = result[0].get("data", [])
-        else:
-            total_count = 0
-            jobs_raw = []
+        # Execute aggregation with error handling
+        try:
+            result = list(collection.aggregate(pipeline))
+            if result:
+                metadata = result[0].get("metadata", [])
+                total_count = metadata[0]["total"] if metadata else 0
+                jobs_raw = result[0].get("data", [])
+            else:
+                total_count = 0
+                jobs_raw = []
+        except Exception as e:
+            app.logger.error(f"MongoDB aggregation failed: {e}")
+            return jsonify({
+                "error": "Database query failed",
+                "message": str(e),
+                "jobs": [],
+                "pagination": {"current_page": 1, "page_size": page_size, "total_count": 0, "total_pages": 1}
+            }), 500
 
         jobs = [serialize_job(job) for job in jobs_raw]
     else:
@@ -672,6 +683,142 @@ def update_jobs_status_bulk():
 def get_statuses():
     """Return the list of valid job statuses."""
     return jsonify({"statuses": JOB_STATUSES})
+
+
+@app.route("/api/jobs/import-linkedin", methods=["POST"])
+@login_required
+def import_linkedin_job():
+    """
+    Import a job from LinkedIn by job ID or URL (GAP-065).
+
+    Request body:
+        job_id_or_url: LinkedIn job ID or URL
+
+    Returns:
+        JSON with imported job data including MongoDB _id, title, company, and score
+    """
+    data = request.get_json()
+    job_id_or_url = data.get("job_id_or_url", "").strip()
+
+    if not job_id_or_url:
+        return jsonify({"error": "job_id_or_url is required"}), 400
+
+    try:
+        # Import the scraper and scorer
+        from src.services.linkedin_scraper import (
+            scrape_linkedin_job,
+            linkedin_job_to_mongodb_doc,
+            extract_job_id,
+            LinkedInScraperError,
+            JobNotFoundError,
+            RateLimitError,
+        )
+
+        # Scrape the job
+        logger.info(f"Importing LinkedIn job: {job_id_or_url}")
+        linkedin_data = scrape_linkedin_job(job_id_or_url)
+
+        # Convert to MongoDB document
+        mongo_doc = linkedin_job_to_mongodb_doc(linkedin_data)
+
+        # Check for duplicates in both collections
+        db = get_db()
+        level1_collection = db["level-1"]
+        level2_collection = db["level-2"]
+
+        # Check level-2 first (this is where we redirect to)
+        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level2:
+            logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
+            return jsonify({
+                "job_id": str(existing_level2["_id"]),
+                "title": existing_level2.get("title"),
+                "company": existing_level2.get("company"),
+                "score": existing_level2.get("score"),
+                "error": "Job already exists in database",
+                "duplicate": True,
+            }), 200  # Return 200 with duplicate flag instead of error
+
+        # Check level-1 as well
+        existing_level1 = level1_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level1:
+            logger.info(f"Job already exists in level-1: {existing_level1['_id']}")
+            return jsonify({
+                "job_id": str(existing_level1["_id"]),
+                "title": existing_level1.get("title"),
+                "company": existing_level1.get("company"),
+                "score": existing_level1.get("score"),
+                "error": "Job already exists in level-1 database",
+                "duplicate": True,
+            }), 200
+
+        # Quick score the job (optional - skip if scoring fails)
+        score = None
+        score_rationale = None
+        try:
+            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
+
+            score, score_rationale = quick_score_job(
+                title=linkedin_data.title,
+                company=linkedin_data.company,
+                location=linkedin_data.location,
+                description=linkedin_data.description,
+            )
+
+            if score is not None:
+                mongo_doc["score"] = score
+                mongo_doc["tier"] = derive_tier_from_score(score)
+                mongo_doc["score_rationale"] = score_rationale
+                logger.info(f"Quick scored job: {score} ({mongo_doc.get('tier')})")
+        except Exception as score_err:
+            logger.warning(f"Quick scoring failed (continuing without score): {score_err}")
+
+        # Insert into both level-1 and level-2 collections
+        # level-1 is for raw jobs, level-2 is for jobs ready for pipeline processing
+
+        # Insert into level-1 (raw jobs)
+        level1_doc = mongo_doc.copy()
+        level1_result = level1_collection.insert_one(level1_doc)
+        logger.info(f"Inserted into level-1: {level1_result.inserted_id}")
+
+        # Insert into level-2 (ready for processing)
+        level2_doc = mongo_doc.copy()
+        level2_result = level2_collection.insert_one(level2_doc)
+        job_id = str(level2_result.inserted_id)
+        logger.info(f"Inserted into level-2: {job_id}")
+
+        logger.info(f"Imported LinkedIn job {job_id}: {linkedin_data.title} at {linkedin_data.company}")
+
+        return jsonify({
+            "success": True,
+            "job_id": job_id,
+            "title": linkedin_data.title,
+            "company": linkedin_data.company,
+            "location": linkedin_data.location,
+            "score": score,
+            "tier": mongo_doc.get("tier"),
+            "score_rationale": score_rationale,
+        })
+
+    except JobNotFoundError as e:
+        logger.warning(f"LinkedIn job not found: {e}")
+        return jsonify({"error": f"Job not found on LinkedIn: {str(e)}"}), 404
+
+    except RateLimitError as e:
+        logger.warning(f"LinkedIn rate limit: {e}")
+        return jsonify({"error": f"LinkedIn rate limit hit. Please try again later."}), 429
+
+    except LinkedInScraperError as e:
+        logger.error(f"LinkedIn scraper error: {e}")
+        return jsonify({"error": f"Failed to scrape LinkedIn: {str(e)}"}), 500
+
+    except ValueError as e:
+        logger.warning(f"Invalid job ID: {e}")
+        return jsonify({"error": str(e)}), 400
+
+    except Exception as e:
+        logger.exception(f"Unexpected error importing LinkedIn job: {e}")
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
 @app.route("/api/jobs/<job_id>", methods=["GET"])
