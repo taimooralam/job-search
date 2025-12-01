@@ -131,3 +131,23 @@ PIPELINE_LAYERS = [
     {"id": "output_generation", "name": "Output Generation", "order": 6},
     {"id": "output_publishing", "name": "Output Publishing", "order": 7},
 ]
+
+
+# === FireCrawl Credits Models (GAP-070) ===
+
+class FireCrawlCreditsResponse(BaseModel):
+    """Response for FireCrawl credit usage tracking."""
+
+    provider: str = "firecrawl"
+    daily_limit: int = Field(..., description="Maximum daily FireCrawl requests")
+    used_today: int = Field(..., description="Requests made today")
+    remaining: int = Field(..., description="Remaining requests today")
+    used_percent: float = Field(..., description="Percentage of daily limit used")
+    requests_this_minute: int = Field(0, description="Requests in current minute")
+    requests_per_minute_limit: int = Field(10, description="Per-minute rate limit")
+    last_request_at: Optional[datetime] = Field(None, description="Timestamp of last request")
+    daily_reset_at: Optional[datetime] = Field(None, description="When daily counter resets")
+    status: str = Field(
+        "healthy",
+        description="Status: healthy, warning (>80%), critical (>90%), exhausted (100%)"
+    )

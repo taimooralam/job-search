@@ -1396,6 +1396,123 @@ def get_budget():
             }), 500
 
 
+@app.route("/api/firecrawl/credits", methods=["GET"])
+@login_required
+def get_firecrawl_credits():
+    """API endpoint: Return FireCrawl credit usage as JSON (GAP-070).
+
+    Proxies to VPS runner service which has access to the rate limiter.
+    Falls back to local import for local development.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+
+    try:
+        response = requests.get(f"{runner_url}/firecrawl/credits", timeout=5)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"VPS returned {response.status_code}",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), response.status_code
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS FireCrawl credits endpoint unavailable: {e}")
+        # Fall back to local rate limiter
+        try:
+            from src.common.rate_limiter import get_rate_limiter
+            limiter = get_rate_limiter("firecrawl")
+            stats = limiter.get_stats()
+            remaining = limiter.get_remaining_daily() or 0
+            daily_limit = limiter.daily_limit or 600
+            used_today = stats.requests_today
+            used_percent = (used_today / daily_limit * 100) if daily_limit > 0 else 0
+
+            if used_percent >= 100:
+                status = "exhausted"
+            elif used_percent >= 90:
+                status = "critical"
+            elif used_percent >= 80:
+                status = "warning"
+            else:
+                status = "healthy"
+
+            return jsonify({
+                "provider": "firecrawl",
+                "daily_limit": daily_limit,
+                "used_today": used_today,
+                "remaining": remaining,
+                "used_percent": round(used_percent, 1),
+                "requests_this_minute": stats.requests_this_minute,
+                "requests_per_minute_limit": limiter.requests_per_minute,
+                "last_request_at": stats.last_request_at.isoformat() if stats.last_request_at else None,
+                "daily_reset_at": stats.daily_reset_at.isoformat() if stats.daily_reset_at else None,
+                "status": status,
+            })
+        except ImportError:
+            return jsonify({
+                "error": "Rate limiter module not available",
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
+        except Exception as ex:
+            return jsonify({
+                "error": str(ex),
+                "timestamp": datetime.utcnow().isoformat(),
+            }), 500
+
+
+@app.route("/partials/firecrawl-credits", methods=["GET"])
+@login_required
+def firecrawl_credits_partial():
+    """HTMX partial: Return FireCrawl credits widget (GAP-070)."""
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    credits = None
+    error = None
+
+    try:
+        response = requests.get(f"{runner_url}/firecrawl/credits", timeout=5)
+        if response.status_code == 200:
+            credits = response.json()
+        else:
+            error = f"VPS returned {response.status_code}"
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS FireCrawl credits unavailable: {e}")
+        # Fall back to local
+        try:
+            from src.common.rate_limiter import get_rate_limiter
+            limiter = get_rate_limiter("firecrawl")
+            stats = limiter.get_stats()
+            remaining = limiter.get_remaining_daily() or 0
+            daily_limit = limiter.daily_limit or 600
+            used_today = stats.requests_today
+            used_percent = (used_today / daily_limit * 100) if daily_limit > 0 else 0
+
+            if used_percent >= 100:
+                status = "exhausted"
+            elif used_percent >= 90:
+                status = "critical"
+            elif used_percent >= 80:
+                status = "warning"
+            else:
+                status = "healthy"
+
+            credits = {
+                "provider": "firecrawl",
+                "daily_limit": daily_limit,
+                "used_today": used_today,
+                "remaining": remaining,
+                "used_percent": round(used_percent, 1),
+                "status": status,
+            }
+        except Exception as ex:
+            error = str(ex)
+
+    return render_template(
+        "partials/firecrawl_credits.html",
+        credits=credits,
+        error=error,
+    )
+
+
 @app.route("/partials/alert-history", methods=["GET"])
 @login_required
 def alert_history_partial():

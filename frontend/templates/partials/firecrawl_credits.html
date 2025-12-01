@@ -1,0 +1,106 @@
+<!-- FireCrawl Credits Widget (GAP-070) -->
+{% if error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-red-600 text-sm">
+    <div class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <span>FireCrawl data unavailable: {{ error }}</span>
+    </div>
+</div>
+{% elif not credits %}
+<div class="theme-bg-secondary theme-border border rounded-lg p-3 theme-text-tertiary text-sm">
+    No FireCrawl credit data available
+</div>
+{% else %}
+<div class="panel p-3">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold theme-text-secondary flex items-center gap-2">
+            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
+            </svg>
+            FireCrawl Credits
+        </h3>
+        <span class="text-xs theme-text-muted">GAP-070</span>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="mb-3">
+        {% if credits.status == 'exhausted' %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
+            <span class="inline-flex w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            EXHAUSTED
+        </span>
+        {% elif credits.status == 'critical' %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+            <span class="inline-flex w-2 h-2 rounded-full bg-orange-500"></span>
+            Critical (>90%)
+        </span>
+        {% elif credits.status == 'warning' %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
+            <span class="inline-flex w-2 h-2 rounded-full bg-yellow-500"></span>
+            Warning (>80%)
+        </span>
+        {% else %}
+        <span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+            <span class="inline-flex w-2 h-2 rounded-full bg-emerald-500"></span>
+            Healthy
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Usage Stats -->
+    <div class="p-3 theme-bg-secondary rounded-lg">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-xs theme-text-tertiary">Daily Usage</span>
+            <span class="text-sm font-medium theme-text-primary">
+                {{ credits.used_today }} / {{ credits.daily_limit }}
+            </span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="h-2 theme-bg-hover rounded-full overflow-hidden">
+            {% set percent = credits.used_percent|default(0) %}
+            {% if percent >= 100 %}
+            <div class="h-full bg-red-500 rounded-full" style="width: 100%"></div>
+            {% elif percent >= 90 %}
+            <div class="h-full bg-orange-500 rounded-full" style="width: {{ percent }}%"></div>
+            {% elif percent >= 80 %}
+            <div class="h-full bg-yellow-500 rounded-full" style="width: {{ percent }}%"></div>
+            {% else %}
+            <div class="h-full bg-emerald-500 rounded-full" style="width: {{ percent }}%"></div>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-between items-center mt-1">
+            <span class="text-xs {% if credits.status == 'exhausted' %}text-red-600{% elif credits.status == 'critical' %}text-orange-600{% elif credits.status == 'warning' %}text-yellow-600{% else %}theme-text-muted{% endif %}">
+                {{ "%.1f"|format(percent) }}% used
+            </span>
+            <span class="text-xs theme-text-muted">
+                {{ credits.remaining }} remaining
+            </span>
+        </div>
+    </div>
+
+    <!-- Additional Stats -->
+    <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div class="p-2 theme-bg-secondary rounded">
+            <div class="theme-text-tertiary">Per-minute limit</div>
+            <div class="font-medium theme-text-primary">{{ credits.requests_per_minute_limit|default(10) }}/min</div>
+        </div>
+        <div class="p-2 theme-bg-secondary rounded">
+            <div class="theme-text-tertiary">This minute</div>
+            <div class="font-medium theme-text-primary">{{ credits.requests_this_minute|default(0) }}</div>
+        </div>
+    </div>
+
+    <!-- Reset Info -->
+    {% if credits.daily_reset_at %}
+    <div class="mt-3 text-xs theme-text-muted text-center">
+        Resets daily at midnight UTC
+    </div>
+    {% endif %}
+</div>
+{% endif %}

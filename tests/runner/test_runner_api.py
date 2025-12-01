@@ -169,3 +169,45 @@ def test_empty_bulk_job_ids(client: TestClient, auth_headers: dict):
         headers=auth_headers
     )
     assert response.status_code == 422  # Validation error
+
+
+# === FireCrawl Credits Tests (GAP-070) ===
+
+
+def test_firecrawl_credits_endpoint(client: TestClient):
+    """Test FireCrawl credits endpoint returns expected data structure."""
+    response = client.get("/firecrawl/credits")
+    assert response.status_code == 200
+
+    data = response.json()
+    assert data["provider"] == "firecrawl"
+    assert "daily_limit" in data
+    assert "used_today" in data
+    assert "remaining" in data
+    assert "used_percent" in data
+    assert "status" in data
+    assert data["status"] in ["healthy", "warning", "critical", "exhausted"]
+
+
+def test_firecrawl_credits_default_values(client: TestClient):
+    """Test FireCrawl credits returns correct default values for fresh limiter."""
+    response = client.get("/firecrawl/credits")
+    assert response.status_code == 200
+
+    data = response.json()
+    # Fresh limiter should have 600 daily limit and 0 used
+    assert data["daily_limit"] == 600
+    assert data["used_today"] >= 0  # Might have been used in other tests
+    assert data["remaining"] <= 600
+    assert data["used_today"] + data["remaining"] == data["daily_limit"]
+
+
+def test_firecrawl_credits_status_healthy(client: TestClient):
+    """Test FireCrawl credits shows healthy status when under 80%."""
+    response = client.get("/firecrawl/credits")
+    assert response.status_code == 200
+
+    data = response.json()
+    # Fresh or lightly used limiter should be healthy
+    if data["used_percent"] < 80:
+        assert data["status"] == "healthy"

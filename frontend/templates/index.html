@@ -94,8 +94,8 @@
                 </div>
             </div>
 
-            <!-- API Budget Monitor & Alert History Grid (Gap #14 & OB-2) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <!-- API Budget Monitor, FireCrawl Credits & Alert History Grid (Gap #14, GAP-070 & OB-2) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 <!-- API Budget Monitor (Gap #14) -->
                 <div id="budget-monitor-container"
                      hx-get="/partials/budget-monitor"
@@ -114,6 +114,29 @@
                         </div>
                         <div class="space-y-1">
                             <div class="h-2 skeleton rounded w-16"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FireCrawl Credits (GAP-070) -->
+                <div id="firecrawl-credits-container"
+                     hx-get="/partials/firecrawl-credits"
+                     hx-trigger="load, every 30s"
+                     hx-swap="innerHTML">
+                    <!-- FireCrawl credits loaded via HTMX with auto-refresh every 30 seconds -->
+                    <div class="panel p-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="h-4 skeleton rounded w-32"></div>
+                            <div class="h-3 skeleton rounded w-12"></div>
+                        </div>
+                        <div class="mb-3 p-2 theme-bg-secondary rounded-lg">
+                            <div class="h-3 skeleton rounded w-24 mb-1"></div>
+                            <div class="h-2 skeleton rounded mb-1"></div>
+                            <div class="h-2 skeleton rounded w-20"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
                             <div class="h-10 skeleton rounded"></div>
                             <div class="h-10 skeleton rounded"></div>
                         </div>
