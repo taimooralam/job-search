@@ -371,6 +371,13 @@ class OutputPublisher:
             if state.get('sheet_row_id'):
                 update_data['sheet_row_id'] = state['sheet_row_id']
 
+            # GAP-036: Add token usage and cost tracking per pipeline run
+            if state.get('total_cost_usd') is not None:
+                update_data['total_cost_usd'] = state['total_cost_usd']
+
+            if state.get('token_usage'):
+                update_data['token_usage'] = state['token_usage']
+
             # Perform update
             result = collection.update_one(
                 {"_id": job_record['_id']},
