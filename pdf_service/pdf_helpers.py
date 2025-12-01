@@ -250,7 +250,7 @@ def build_pdf_html_template(
             --font-body: '{font_family}', 'Source Sans 3', 'Work Sans', system-ui, sans-serif;
             --color-text: #1f2a38;
             --color-muted: #4b5563;
-            --color-accent: #0f766e;
+            --color-accent: #475569;  /* slate-600 - professional dark blue-gray */
         }}
 
         @page {{

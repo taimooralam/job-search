@@ -2317,7 +2317,7 @@ def get_cv_editor_state(job_id: str):
                 "pageSize": "letter",
                 "colorText": "#1f2a38",  # Near-black for better readability
                 "colorMuted": "#4b5563",  # Muted gray for metadata
-                "colorAccent": "#0f766e"  # Deep teal for headings/links
+                "colorAccent": "#475569"  # slate-600 - professional dark blue-gray
             }
         }
 
@@ -2510,7 +2510,7 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
             "pageSize": "letter",
             "colorText": "#1f2a38",  # Near-black for better readability
             "colorMuted": "#4b5563",  # Muted gray for metadata
-            "colorAccent": "#0f766e"  # Deep teal for headings/links
+            "colorAccent": "#475569"  # slate-600 - professional dark blue-gray
         }
     }
 
