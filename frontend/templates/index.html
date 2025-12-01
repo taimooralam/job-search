@@ -21,113 +21,126 @@
         </div>
     </div>
 
-    <!-- Application Statistics Progress Bars -->
+    <!-- Application Statistics Progress Bars (Compact) -->
     <div id="application-stats-container"
          hx-get="/partials/application-stats"
          hx-trigger="load, every 60s"
          hx-swap="innerHTML">
         <!-- Progress bars loaded via HTMX with auto-refresh every 60 seconds -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="panel p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="panel p-2">
                 <div>
-                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
-                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
-                    <div class="h-2 skeleton rounded"></div>
+                    <div class="h-3 skeleton rounded w-16 mb-1"></div>
+                    <div class="h-6 skeleton rounded w-12 mb-2"></div>
+                    <div class="h-1.5 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="panel p-4">
+            <div class="panel p-2">
                 <div>
-                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
-                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
-                    <div class="h-2 skeleton rounded"></div>
+                    <div class="h-3 skeleton rounded w-16 mb-1"></div>
+                    <div class="h-6 skeleton rounded w-12 mb-2"></div>
+                    <div class="h-1.5 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="panel p-4">
+            <div class="panel p-2">
                 <div>
-                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
-                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
-                    <div class="h-2 skeleton rounded"></div>
+                    <div class="h-3 skeleton rounded w-16 mb-1"></div>
+                    <div class="h-6 skeleton rounded w-12 mb-2"></div>
+                    <div class="h-1.5 skeleton rounded"></div>
                 </div>
             </div>
-            <div class="panel p-4">
+            <div class="panel p-2">
                 <div>
-                    <div class="h-4 skeleton rounded w-20 mb-2"></div>
-                    <div class="h-8 skeleton rounded w-16 mb-3"></div>
-                    <div class="h-2 skeleton rounded"></div>
+                    <div class="h-3 skeleton rounded w-16 mb-1"></div>
+                    <div class="h-6 skeleton rounded w-12 mb-2"></div>
+                    <div class="h-1.5 skeleton rounded"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Cost Trends Sparkline (Gap #15) -->
-    <div id="cost-trends-container"
-         hx-get="/partials/cost-trends?period=hourly&count=24"
-         hx-trigger="load, every 60s"
-         hx-swap="innerHTML">
-        <!-- Cost trends loaded via HTMX with auto-refresh every 60 seconds -->
-        <div class="panel p-4">
-            <div class="flex items-center justify-between mb-4">
-                <div class="h-5 skeleton rounded w-28"></div>
-                <div class="flex gap-2">
-                    <div class="h-6 skeleton rounded w-16"></div>
-                    <div class="h-4 skeleton rounded w-8"></div>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="flex-grow h-12 skeleton rounded"></div>
-                <div class="space-y-2 min-w-[100px]">
-                    <div class="h-4 skeleton rounded w-20"></div>
-                    <div class="h-3 skeleton rounded w-16"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Collapsible Analytics Dashboard Section -->
+    <details id="analytics-dashboard-details" class="panel">
+        <summary class="p-2 cursor-pointer select-none flex items-center gap-2 text-sm font-medium theme-text-secondary hover:theme-text-primary transition-colors">
+            <svg class="h-4 w-4 transition-transform details-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span>📊 Cost & Budget Analytics</span>
+            <span class="text-xs theme-text-tertiary ml-auto">(click to expand)</span>
+        </summary>
 
-    <!-- API Budget Monitor & Alert History Grid (Gap #14 & OB-2) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- API Budget Monitor (Gap #14) -->
-        <div id="budget-monitor-container"
-             hx-get="/partials/budget-monitor"
-             hx-trigger="load, every 30s"
-             hx-swap="innerHTML">
-            <!-- Budget monitor loaded via HTMX with auto-refresh every 30 seconds -->
-            <div class="panel p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="h-5 skeleton rounded w-32"></div>
-                    <div class="h-4 skeleton rounded w-8"></div>
-                </div>
-                <div class="mb-4 p-3 theme-bg-secondary rounded-lg">
-                    <div class="h-4 skeleton rounded w-48 mb-2"></div>
-                    <div class="h-2 skeleton rounded mb-1"></div>
-                    <div class="h-3 skeleton rounded w-24"></div>
-                </div>
-                <div class="space-y-2">
-                    <div class="h-3 skeleton rounded w-20"></div>
-                    <div class="h-12 skeleton rounded"></div>
-                    <div class="h-12 skeleton rounded"></div>
+        <div class="p-3 pt-0 space-y-3">
+            <!-- Cost Trends Sparkline (Gap #15) -->
+            <div id="cost-trends-container"
+                 hx-get="/partials/cost-trends?period=hourly&count=24"
+                 hx-trigger="load, every 60s"
+                 hx-swap="innerHTML">
+                <!-- Cost trends loaded via HTMX with auto-refresh every 60 seconds -->
+                <div class="panel p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="h-4 skeleton rounded w-24"></div>
+                        <div class="flex gap-2">
+                            <div class="h-5 skeleton rounded w-14"></div>
+                            <div class="h-3 skeleton rounded w-6"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-grow h-10 skeleton rounded"></div>
+                        <div class="space-y-1 min-w-[80px]">
+                            <div class="h-3 skeleton rounded w-16"></div>
+                            <div class="h-2 skeleton rounded w-12"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Alert History (Gap OB-2) -->
-        <div id="alert-history-container"
-             hx-get="/partials/alert-history"
-             hx-trigger="load, every 30s"
-             hx-swap="innerHTML">
-            <!-- Alert history loaded via HTMX with auto-refresh every 30 seconds -->
-            <div class="panel p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="h-5 skeleton rounded w-28"></div>
-                    <div class="h-4 skeleton rounded w-10"></div>
+            <!-- API Budget Monitor & Alert History Grid (Gap #14 & OB-2) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <!-- API Budget Monitor (Gap #14) -->
+                <div id="budget-monitor-container"
+                     hx-get="/partials/budget-monitor"
+                     hx-trigger="load, every 30s"
+                     hx-swap="innerHTML">
+                    <!-- Budget monitor loaded via HTMX with auto-refresh every 30 seconds -->
+                    <div class="panel p-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="h-4 skeleton rounded w-28"></div>
+                            <div class="h-3 skeleton rounded w-6"></div>
+                        </div>
+                        <div class="mb-3 p-2 theme-bg-secondary rounded-lg">
+                            <div class="h-3 skeleton rounded w-40 mb-1"></div>
+                            <div class="h-1.5 skeleton rounded mb-1"></div>
+                            <div class="h-2 skeleton rounded w-20"></div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="h-2 skeleton rounded w-16"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="space-y-2">
-                    <div class="h-14 skeleton rounded"></div>
-                    <div class="h-14 skeleton rounded"></div>
-                    <div class="h-14 skeleton rounded"></div>
+
+                <!-- Alert History (Gap OB-2) -->
+                <div id="alert-history-container"
+                     hx-get="/partials/alert-history"
+                     hx-trigger="load, every 30s"
+                     hx-swap="innerHTML">
+                    <!-- Alert history loaded via HTMX with auto-refresh every 30 seconds -->
+                    <div class="panel p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="h-4 skeleton rounded w-24"></div>
+                            <div class="h-3 skeleton rounded w-8"></div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="h-10 skeleton rounded"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                            <div class="h-10 skeleton rounded"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- Toolbar Card -->
     <div class="card">
@@ -257,30 +270,29 @@
     <div id="filter-panel" class="hidden card">
         <div class="card-body">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Date Range Filter -->
+                <!-- Date Range Filter (GAP-016: Enhanced with datetime-local for hour/minute precision) -->
                 <div class="space-y-2 sm:col-span-2 lg:col-span-1">
                     <label class="form-label">Custom Date Range</label>
                     <div class="flex items-center gap-2">
-                        <input type="date"
+                        <input type="datetime-local"
                                id="date-from"
-                               name="date_from"
-                               class="filter-input form-input"
+                               name="datetime_from"
+                               class="filter-input form-input text-sm"
                                hx-get="/partials/job-rows"
                                hx-trigger="change"
                                hx-target="#job-table-container"
-                               hx-include=".filter-input">
+                               hx-include=".filter-input"
+                               title="Start date and time">
                         <span class="theme-text-tertiary">to</span>
-                        <input type="date"
+                        <input type="datetime-local"
                                id="date-to"
-                               name="date_to"
-                               class="filter-input form-input"
+                               name="datetime_to"
+                               class="filter-input form-input text-sm"
                                hx-get="/partials/job-rows"
                                hx-trigger="change"
                                hx-target="#job-table-container"
-                               hx-include=".filter-input">
-                        <!-- Hidden datetime inputs for precise time filtering -->
-                        <input type="hidden" id="datetime-from" name="datetime_from" class="filter-input">
-                        <input type="hidden" id="datetime-to" name="datetime_to" class="filter-input">
+                               hx-include=".filter-input"
+                               title="End date and time">
                     </div>
                 </div>
 
@@ -511,11 +523,9 @@
 
     // Clear all filters
     function clearAllFilters() {
-        // Clear date inputs
+        // Clear date inputs (GAP-016: now datetime-local inputs)
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
-        document.getElementById('datetime-from').value = '';
-        document.getElementById('datetime-to').value = '';
 
         // Remove active state from quick date buttons
         document.querySelectorAll('.quick-date-btn').forEach(btn => {
@@ -587,6 +597,7 @@
     // ============================================================================
 
     // Set quick date filter (hours, weeks, or months ago)
+    // GAP-016: Updated to use datetime-local format for hour/minute precision
     function setQuickDateFilter(button, amount, unit) {
         const now = new Date();
         let fromDate = new Date();
@@ -603,17 +614,19 @@
                 break;
         }
 
-        // Format as YYYY-MM-DD for the visible date input
-        const formatDate = (d) => d.toISOString().split('T')[0];
-        // Format as full ISO timestamp for precise filtering
-        const formatDateTime = (d) => d.toISOString();
+        // Format for datetime-local input: YYYY-MM-DDTHH:MM (local time, no Z suffix)
+        const formatDateTimeLocal = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
 
-        document.getElementById('date-from').value = formatDate(fromDate);
-        document.getElementById('date-to').value = formatDate(now);
-
-        // Set hidden datetime inputs for precise time filtering
-        document.getElementById('datetime-from').value = formatDateTime(fromDate);
-        document.getElementById('datetime-to').value = formatDateTime(now);
+        // Set datetime-local inputs directly (GAP-016: inputs now have datetime_from/datetime_to names)
+        document.getElementById('date-from').value = formatDateTimeLocal(fromDate);
+        document.getElementById('date-to').value = formatDateTimeLocal(now);
 
         // Update active state for buttons
         document.querySelectorAll('.quick-date-btn').forEach(btn => {
@@ -632,8 +645,6 @@
     function clearDateFilter() {
         document.getElementById('date-from').value = '';
         document.getElementById('date-to').value = '';
-        document.getElementById('datetime-from').value = '';
-        document.getElementById('datetime-to').value = '';
 
         // Remove active state from all quick date buttons
         document.querySelectorAll('.quick-date-btn').forEach(btn => {
