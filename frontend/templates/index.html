@@ -726,14 +726,13 @@
     // Make table refresh include filters via HTMX
     document.body.addEventListener('htmx:configRequest', function(event) {
         if (event.target.id === 'job-table-container') {
-            // Include all filter values
-            const dateFrom = document.getElementById('date-from')?.value || '';
-            const dateTo = document.getElementById('date-to')?.value || '';
+            // Date parameters are already included via hx-include=".filter-input"
+            // (inputs have name="datetime_from" and name="datetime_to" with class="filter-input")
 
-            if (dateFrom) event.detail.parameters['date_from'] = dateFrom;
-            if (dateTo) event.detail.parameters['date_to'] = dateTo;
+            // Status parameters are already included via hx-include=".filter-input"
+            // (checkboxes have class="filter-input status-checkbox" and name="statuses")
 
-            // Include selected locations
+            // Include selected locations (these are dynamically generated hidden inputs)
             selectedLocations.forEach(loc => {
                 if (!event.detail.parameters['locations']) {
                     event.detail.parameters['locations'] = [];
@@ -742,20 +741,6 @@
                     event.detail.parameters['locations'].push(loc);
                 } else {
                     event.detail.parameters['locations'] = [event.detail.parameters['locations'], loc];
-                }
-            });
-
-            // Include selected statuses
-            const selectedStatuses = Array.from(document.querySelectorAll('.status-checkbox:checked'))
-                .map(cb => cb.value);
-            selectedStatuses.forEach(status => {
-                if (!event.detail.parameters['statuses']) {
-                    event.detail.parameters['statuses'] = [];
-                }
-                if (Array.isArray(event.detail.parameters['statuses'])) {
-                    event.detail.parameters['statuses'].push(status);
-                } else {
-                    event.detail.parameters['statuses'] = [event.detail.parameters['statuses'], status];
                 }
             });
         }
