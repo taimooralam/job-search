@@ -26,13 +26,17 @@
 - **GAP-009**: CV display now checks both `cv_text` and `cv_editor_state`
 - **GAP-012**: Bold/italic markdown parsing now works in CV text conversion
 - **GAP-014**: Middle East relocation tagline added automatically to CVs
+- **GAP-026**: CV spacing reduced by 20% for more compact layout
 - **GAP-028**: Runner terminal copy button verified as already implemented
+- **GAP-040**: Swagger API documentation added at `/api-docs`
 - **GAP-051**: Contact discovery improved with company name variations
+- **GAP-052**: Page break visualization verified as already implemented
+- **GAP-054**: CV display now matches editor exactly (headings, colors, borders)
+- **GAP-056**: Contact management (delete/copy/import) verified as already implemented
 - **GAP-058**: Button sizing hierarchy refined with btn-xs class
 - **GAP-064**: appliedOn timestamp now set when marking jobs as applied
-- **GAP-056**: Contact management (delete/copy/import) verified as already implemented
 - **GAP-022**: Pipeline progress UI verified as already implemented (7-layer stepper)
-- **GAP-054**: CV display now matches editor exactly (headings, colors, borders)
+- **Postman Collection**: Added runner API collection at `postman/Job-Search-Runner-API.postman_collection.json`
 
 ---
 
