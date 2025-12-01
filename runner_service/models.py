@@ -18,6 +18,10 @@ class RunJobRequest(BaseModel):
         None, description="Optional profile reference/path to pass to the pipeline."
     )
     source: Optional[str] = Field(None, description="Origin of the request.")
+    processing_tier: Optional[str] = Field(
+        "auto",
+        description="Processing tier: 'auto' (recommended), 'A' (gold), 'B' (silver), 'C' (bronze), 'D' (skip)"
+    )
 
 
 class RunBulkRequest(BaseModel):
@@ -26,6 +30,10 @@ class RunBulkRequest(BaseModel):
     job_ids: List[str] = Field(..., min_items=1, description="Job identifiers to process.")
     profile_ref: Optional[str] = Field(None, description="Optional profile reference/path.")
     source: Optional[str] = Field(None, description="Origin of the request.")
+    processing_tier: Optional[str] = Field(
+        "auto",
+        description="Processing tier for all jobs: 'auto', 'A', 'B', 'C', 'D'"
+    )
 
 
 class RunResponse(BaseModel):
