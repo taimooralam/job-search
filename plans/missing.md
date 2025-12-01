@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: 27 gaps fixed/documented)
+**Last Updated**: 2025-12-01 (Week 2 Sprint: 28 gaps fixed/documented)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (11 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (3 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (30 fixed/documented, 34 open) | All identified gaps |
+| **P3 (LOW)** | 18 (4 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (31 fixed/documented, 33 open) | All identified gaps |
 
 **Test Coverage**: 879 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -806,11 +806,26 @@ Example: `testcorp|senior software engineer|san francisco, ca|linkedin_import`
 
 ## P3: LOW (Backlog)
 
-### GAP-026: CV V2 - Spacing 20% Narrower
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2 hours
-**Impact**: CV needs more compact layout
+### GAP-026: CV V2 - Spacing 20% Narrower ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: CV layout is now 20% more compact for better information density
 
-**Files**: Frontend templates, PDF service CSS
+**Fix Applied** (2025-12-01):
+Reduced margins/spacing across all CV elements by ~20%:
+
+| Element | Before | After |
+|---------|--------|-------|
+| h1 margin | 0 0 12px 0 | 0 0 10px 0 |
+| h2 margin | 16px 0 10px | 12px 0 8px |
+| h2 padding-top | 8px | 6px |
+| h3 margin | 12px 0 8px | 10px 0 6px |
+| Paragraph margin | 0.5em | 0.4em |
+| List margin | 0.5em | 0.4em |
+| List item margin | 0.25em | 0.2em |
+
+**Files Modified**:
+- `pdf_service/pdf_helpers.py` - PDF output CSS
+- `frontend/templates/base.html` - Editor + display container CSS
 
 ---
 
