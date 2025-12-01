@@ -1516,6 +1516,19 @@
         #cv-display-area a:hover {
             color: #2563eb;
         }
+
+        /* Collapsible details arrow rotation */
+        details[open] .details-arrow {
+            transform: rotate(90deg);
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::marker {
+            display: none;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
@@ -2144,6 +2157,21 @@
     // Initialize ThemeManager when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
         window.themeManager = new ThemeManager();
+
+        // Analytics dashboard collapsible state persistence
+        const analyticsDetails = document.getElementById('analytics-dashboard-details');
+        if (analyticsDetails) {
+            const savedState = localStorage.getItem('analytics-dashboard-open');
+            // Default to collapsed (closed)
+            if (savedState === 'true') {
+                analyticsDetails.open = true;
+            }
+
+            // Save state on toggle
+            analyticsDetails.addEventListener('toggle', () => {
+                localStorage.setItem('analytics-dashboard-open', analyticsDetails.open);
+            });
+        }
     });
     </script>
 
