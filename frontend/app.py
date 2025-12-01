@@ -581,10 +581,18 @@ def update_job_status():
     except Exception:
         return jsonify({"error": "Invalid job_id format"}), 400
 
+    # GAP-064: Build update data with appliedOn timestamp when status is "applied"
+    update_data = {"status": new_status}
+    if new_status == "applied":
+        update_data["appliedOn"] = datetime.utcnow()
+    elif new_status != "applied":
+        # Clear appliedOn if status changed FROM applied to something else
+        update_data["appliedOn"] = None
+
     # Update the job
     result = collection.update_one(
         {"_id": object_id},
-        {"$set": {"status": new_status}}
+        {"$set": update_data}
     )
 
     if result.matched_count == 0:
@@ -594,6 +602,7 @@ def update_job_status():
         "success": True,
         "job_id": job_id,
         "status": new_status,
+        "appliedOn": update_data.get("appliedOn").isoformat() if update_data.get("appliedOn") else None,
     })
 
 
@@ -634,16 +643,27 @@ def update_jobs_status_bulk():
     except Exception:
         return jsonify({"error": "Invalid job_id format in array"}), 400
 
+    # GAP-064: Build update data with appliedOn timestamp when status is "applied"
+    update_data = {"status": new_status}
+    applied_on = None
+    if new_status == "applied":
+        applied_on = datetime.utcnow()
+        update_data["appliedOn"] = applied_on
+    else:
+        # Clear appliedOn if status changed FROM applied to something else
+        update_data["appliedOn"] = None
+
     # Bulk update
     result = collection.update_many(
         {"_id": {"$in": object_ids}},
-        {"$set": {"status": new_status}}
+        {"$set": update_data}
     )
 
     return jsonify({
         "success": True,
         "updated_count": result.modified_count,
         "status": new_status,
+        "appliedOn": applied_on.isoformat() if applied_on else None,
     })
 
 
@@ -830,23 +850,37 @@ def get_application_stats():
     week_start = now - timedelta(days=7)
     month_start = now - timedelta(days=30)
 
-    # Base query: status = 'applied' and pipeline_run_at exists
+    # GAP-064: Use appliedOn timestamp for accurate application stats
+    # appliedOn = when user marked job as "applied" (correct semantic)
+    # pipeline_run_at = when pipeline processed (incorrect for this metric)
+
+    # Base query: status = 'applied' and appliedOn exists
     base_query = {
         "status": "applied",
-        "pipeline_run_at": {"$exists": True, "$ne": None}
+        "appliedOn": {"$exists": True, "$ne": None}
     }
 
     # Count jobs applied today
-    today_query = {**base_query, "pipeline_run_at": {"$gte": today_start}}
+    today_query = {**base_query, "appliedOn": {"$gte": today_start}}
     today_count = collection.count_documents(today_query)
 
     # Count jobs applied this week (last 7 days)
-    week_query = {**base_query, "pipeline_run_at": {"$gte": week_start}}
+    week_query = {**base_query, "appliedOn": {"$gte": week_start}}
     week_count = collection.count_documents(week_query)
 
     # Count jobs applied this month (last 30 days)
-    month_query = {**base_query, "pipeline_run_at": {"$gte": month_start}}
+    month_query = {**base_query, "appliedOn": {"$gte": month_start}}
     month_count = collection.count_documents(month_query)
+
+    # Fallback: Count jobs that were marked applied BEFORE this fix (no appliedOn)
+    # These are legacy records - show them in total but not in time-based counts
+    legacy_applied = collection.count_documents({
+        "status": "applied",
+        "$or": [
+            {"appliedOn": {"$exists": False}},
+            {"appliedOn": None}
+        ]
+    })
 
     # Count total jobs applied (all time)
     total_count = collection.count_documents({"status": "applied"})
@@ -857,7 +891,8 @@ def get_application_stats():
             "today": today_count,
             "week": week_count,
             "month": month_count,
-            "total": total_count
+            "total": total_count,
+            "legacy_without_timestamp": legacy_applied  # Jobs applied before GAP-064 fix
         }
     })
 
