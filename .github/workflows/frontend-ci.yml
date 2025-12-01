@@ -30,11 +30,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask pymongo python-dotenv pytest pytest-mock requests
+          pip install flask pymongo python-dotenv pytest pytest-mock pytest-xdist requests
 
-      - name: Run tests
+      - name: Run tests (parallel execution)
         run: |
-          python -m pytest frontend/tests/ -v --tb=short
+          # GAP-063: Using pytest-xdist for parallel test execution
+          python -m pytest frontend/tests/ -v --tb=short -n auto
         env:
           MONGODB_URI: mongodb://localhost:27017/jobs_test
 
