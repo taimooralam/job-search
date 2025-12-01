@@ -811,6 +811,78 @@ Example: `testcorp|senior software engineer|san francisco, ca|linkedin_import`
 
 ---
 
+### GAP-066: Token Tracking Callback Not Wired to LLM Instances
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-3 hours
+**Impact**: Dashboard token/cost metrics always show zero; budget enforcement doesn't work
+
+**Root Cause**: The `TokenTrackerCallback` class exists in `src/common/token_tracker.py:623-684`, but no layer passes it to LLM instances. For example, `src/layer2/pain_point_miner.py:463` creates a `ChatOpenAI` without callbacks.
+
+**Affected Layers** (all need callback integration):
+- `src/layer1_4/jd_extractor.py` - JD Extraction
+- `src/layer2/pain_point_miner.py` - Pain Point Mining
+- `src/layer3/company_researcher.py` - Company Research
+- `src/layer3/role_researcher.py` - Role Research
+- `src/layer4/opportunity_mapper.py` - Fit Scoring
+- `src/layer5/people_mapper.py` - Contact Discovery
+- `src/layer6/generator.py` - CV Generation (Legacy)
+- `src/layer6_v2/` - CV Generation V2 (multiple files)
+- `src/layer6/outreach_generator.py` - Outreach Generation
+
+**Fix Required**:
+1. Create helper function `create_tracked_llm()` in `src/common/llm_factory.py`
+2. Update all layers to use the factory instead of direct `ChatOpenAI` instantiation
+3. Pass layer name for per-layer cost attribution
+
+**Example Fix**:
+```python
+# src/common/llm_factory.py
+from langchain_openai import ChatOpenAI
+from src.common.token_tracker import get_global_tracker, TokenTrackerCallback
+from src.common.config import Config
+
+def create_tracked_llm(
+    model: str = None,
+    temperature: float = None,
+    layer: str = "unknown"
+) -> ChatOpenAI:
+    return ChatOpenAI(
+        model=model or Config.DEFAULT_MODEL,
+        temperature=temperature or Config.ANALYTICAL_TEMPERATURE,
+        api_key=Config.get_llm_api_key(),
+        base_url=Config.get_llm_base_url(),
+        callbacks=[TokenTrackerCallback(
+            tracker=get_global_tracker(),
+            provider="openai",
+            layer=layer
+        )]
+    )
+```
+
+---
+
+### GAP-067: Editable Score Field in Table and Detail Page ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 1 hour
+**Impact**: Users can manually adjust fit scores after reviewing jobs
+
+**Fix Applied** (2025-12-01):
+Implemented inline editable score fields across all views.
+
+**Files Modified**:
+- `frontend/templates/partials/job_rows.html` - Editable score in job table
+- `frontend/templates/job_detail.html` - Editable score badge in header
+- `frontend/templates/base.html` - JavaScript functions (enableScoreEdit, saveScore, etc.)
+- `frontend/app.py` - New `/api/jobs/score` POST endpoint
+
+**Features**:
+- Click score badge to edit (table & detail page)
+- Save on blur or Enter key
+- Cancel on Escape key
+- Validates 0-100 range
+- Visual feedback with toast notifications
+- Score badge color updates dynamically (green ≥80, yellow ≥60, gray otherwise)
+
+---
+
 ## P3: LOW (Backlog)
 
 ### GAP-026: CV V2 - Spacing 20% Narrower ✅ COMPLETE
@@ -975,11 +1047,20 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 
 ---
 
-### GAP-037: External Health Monitoring
-**Priority**: P2 MEDIUM | **Status**: ✅ READY TO IMPLEMENT (2025-12-01) | **Effort**: 15 minutes
+### GAP-037: External Health Monitoring ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 15 minutes
 **Impact**: External alerting when VPS goes down
 
-**Setup Instructions**:
+**Fix Applied** (2025-12-01):
+Added public `/health` endpoint to frontend (`frontend/app.py:1067-1099`) that doesn't require authentication.
+
+**Monitoring Endpoints**:
+| Service | URL | Auth Required |
+|---------|-----|---------------|
+| VPS Runner | `http://72.61.92.76:8000/health` | No |
+| Frontend | `https://job-search-inky-sigma.vercel.app/health` | No |
+
+**UptimeRobot Setup** (User Action Required):
 
 1. **Create UptimeRobot account** (free tier: 50 monitors)
    - Go to https://uptimerobot.com/
@@ -991,10 +1072,10 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
    - URL: `http://72.61.92.76:8000/health`
    - Monitoring Interval: 5 minutes
 
-3. **Add Vercel Frontend Monitor**:
+3. **Add Frontend Monitor**:
    - Monitor Type: HTTP(s)
    - Friendly Name: "Job Search - Frontend"
-   - URL: `https://your-app.vercel.app/api/health`
+   - URL: `https://job-search-inky-sigma.vercel.app/health`
    - Monitoring Interval: 5 minutes
 
 4. **Configure Alerts**:
@@ -1006,15 +1087,12 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 ```json
 {
   "status": "healthy",
-  "runner": {"status": "healthy", "model": "..."},
-  "services": {"mongodb": "connected"}
+  "version": "1.0.3",
+  "services": {
+    "mongodb": "connected",
+    "runner": "healthy"
+  }
 }
-```
-
-**Alternative**: Use cron job on separate server:
-```bash
-# Add to crontab -e
-*/5 * * * * curl -f http://72.61.92.76:8000/health || curl -X POST https://hooks.slack.com/... -d '{"text":"VPS DOWN!"}'
 ```
 
 ---
@@ -1110,11 +1188,38 @@ Added pipeline run persistence to MongoDB:
 
 ---
 
-### GAP-045: Tiered Job Execution
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: All jobs treated equally; no priority-based processing
+### GAP-045: Tiered Job Execution ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (2025-12-01) | **Effort**: 4 hours
+**Impact**: Smart resource allocation - premium models for high-value operations, economy models for analysis
 
-**Fix**: Add job tiers (high/medium/low) with different processing depths
+**Fix Applied** (2025-12-01):
+Implemented comprehensive tiered processing system with per-operation model selection.
+
+**Files Created/Modified**:
+- `src/common/tiering.py` - New module with tier definitions and model matrix
+- `src/common/state.py` - Added `processing_tier` and `tier_config` fields
+- `src/workflow.py` - Accept tier_config parameter, log tier info
+- `scripts/run_pipeline.py` - Added `--tier` CLI argument
+- `runner_service/models.py` - Added `processing_tier` to request models
+- `runner_service/executor.py` - Pass tier to subprocess
+- `runner_service/app.py` - Flow tier through endpoints
+- `frontend/templates/job_detail.html` - Dropdown UI for tier selection
+
+**Tier Model Matrix**:
+
+| Tier | Fit Score | CV Model | Role Model | Research | Pain Points | Contacts | CV | Outreach | Est. Cost |
+|------|-----------|----------|------------|----------|-------------|----------|-----|----------|-----------|
+| **A (Gold)** | 85-100% | Claude Sonnet 4 | GPT-4o | GPT-4o-mini | GPT-4o-mini | 5 | ✅ STAR | ✅ | $0.50 |
+| **B (Silver)** | 70-84% | Claude Haiku | GPT-4o-mini | GPT-4o-mini | GPT-4o-mini | 3 | ✅ STAR | ✅ | $0.25 |
+| **C (Bronze)** | 50-69% | Claude Haiku | GPT-4o-mini | GPT-4o-mini | GPT-4o-mini | 2 | ✅ | ❌ | $0.15 |
+| **D (Skip)** | <50% | - | - | GPT-4o-mini | GPT-4o-mini | 0 | ❌ | ❌ | $0.05 |
+
+**Design Philosophy**:
+- High-value ops (CV stitching, role tailoring): Premium models even in lower tiers
+- Analytical ops (research, pain points): Cost-effective GPT-4o-mini across all tiers
+- Lower tiers skip expensive operations (contacts, outreach) for cost savings
+
+**UI**: Process Job button now has dropdown with tier selection (Auto, Gold, Silver, Bronze, Skip)
 
 ---
 
