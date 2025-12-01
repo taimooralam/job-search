@@ -11,10 +11,10 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 17 (13 fixed/analyzed) | Fix this week - user-facing bugs or important features |
+| **P1 (HIGH)** | 18 (13 fixed/analyzed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (5 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
-| **Total** | **63** (21 fixed/documented, 42 open) | All identified gaps |
+| **Total** | **64** (21 fixed/documented, 43 open) | All identified gaps |
 
 **Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -347,15 +347,94 @@ Updated `pdf_service/pdf_helpers.py` CSS to match editor styling exactly:
 ---
 
 ### GAP-051: Missing Companies Bug in Contact Discovery
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
+**Priority**: P1 HIGH | **Status**: ✅ ANALYZED (2025-12-01) | **Effort**: 2-4 hours
 **Impact**: Contact discovery returns incomplete results for some companies
 
-**Description**: FireCrawl contact discovery not finding companies/contacts that should exist.
+**Root Cause Analysis** (2025-12-01):
+
+Investigation of `src/layer5/people_mapper.py` revealed several potential causes:
+
+**1. Strict Query Patterns** (lines 126-132):
+- `site:linkedin.com/in "{company}"` requires exact company name match
+- Company names with variations (e.g., "TechCorp" vs "TechCorp Inc" vs "Tech Corp") may not match
+- No fuzzy matching or company name normalization
+
+**2. Limited URL Path Coverage** (lines 481-487):
+- Team page scraping only checks 5 paths: `/team`, `/about`, `/about-us`, `/leadership`, `/company`
+- Missing common paths: `/people`, `/our-team`, `/founders`, `/executives`, `/management`
+
+**3. LinkedIn-Only Contact Extraction** (line 400):
+- `_extract_contact_from_search_result()` only processes `linkedin.com/in` URLs
+- Ignores potentially useful results from company pages or news articles
+
+**4. No Query Retry Strategy**:
+- When initial query returns empty, no alternative queries are attempted
+- Could try company name variations or broader search terms
+
+**5. FireCrawl Limitations**:
+- LinkedIn may rate-limit or block search requests
+- No logging of FireCrawl API response codes for diagnosis
+
+**Recommended Fixes** (prioritized):
+
+1. **Add company name variations** (30 min):
+   ```python
+   def _get_company_variations(company: str) -> List[str]:
+       variations = [company]
+       # Add without common suffixes
+       for suffix in [' Inc', ' LLC', ' Ltd', ' Corp', ' Co']:
+           if company.endswith(suffix):
+               variations.append(company[:-len(suffix)])
+       return variations
+   ```
+
+2. **Expand team page paths** (15 min):
+   ```python
+   team_urls = [
+       f"{company_url}/team", f"{company_url}/about", f"{company_url}/about-us",
+       f"{company_url}/leadership", f"{company_url}/company",
+       f"{company_url}/people", f"{company_url}/our-team",  # New
+       f"{company_url}/founders", f"{company_url}/executives"  # New
+   ]
+   ```
+
+3. **Add FireCrawl diagnostic logging** (15 min):
+   - Log response codes and result counts
+   - Track which queries succeed/fail for debugging
+
+4. **Implement fallback query strategy** (1 hour):
+   - On empty results, try broader queries
+   - E.g., `"{company}" engineering team LinkedIn` instead of `site:` operators
+
+**Current Workaround**: System generates 3 synthetic role-based contacts as fallback (`_generate_synthetic_contacts()`)
+
+---
+
+### GAP-064: Missing `appliedOn` Timestamp When Marking Jobs Applied
+**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 1-2 hours
+**Impact**: Dashboard "applied by day/week/month" stats are INACCURATE
+
+**Description**: When a job status is changed to "applied", no timestamp is saved. The dashboard currently uses `pipeline_run_at` as a proxy, which is **semantically incorrect**:
+- `pipeline_run_at` = when pipeline processed the job (could be weeks earlier)
+- `appliedOn` = when user actually marked job as "applied" (the correct metric)
+
+**Current Code** (`frontend/app.py:574-577`):
+```python
+result = collection.update_one(
+    {"_id": object_id},
+    {"$set": {"status": new_status}}  # NO appliedOn timestamp!
+)
+```
 
 **Fix Required**:
-- Investigate FireCrawl search parameters
-- Check for rate limiting or API issues
-- Improve search query patterns
+1. Update `update_job_status()` to set `appliedOn: datetime.utcnow()` when status = "applied"
+2. Update `update_jobs_status_bulk()` with same logic
+3. Update `/api/dashboard/application-stats` to query by `appliedOn` instead of `pipeline_run_at`
+4. Handle edge case: clear `appliedOn` if status changed FROM "applied" to something else?
+
+**Files**:
+- `frontend/app.py:537-586` - Status update endpoints
+- `frontend/app.py:798-855` - Application stats dashboard
 
 ---
 
@@ -766,19 +845,35 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 ---
 
 ### GAP-035: CV Generator Test Mocking
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2 hours
-**Impact**: CV generator tests make real API calls, fail when credits low
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: CV generator tests run reliably without API calls
 
-**Fix**: Add pytest fixture with mocked ChatAnthropic responses
-**Files**: `tests/unit/test_layer6_markdown_cv_generator.py`
+**Fix Applied** (2025-12-01):
+1. LLM mocking was already in place (`mock_llm_providers` fixture lines 22-51)
+2. Fixed parallel test race condition with `tmp_path` isolation
+3. Updated `cleanup_test_output` to use unique temp directories per test
+4. All 21 tests now pass with parallel execution
+
+**Key Changes**:
+- `tests/unit/test_layer6_markdown_cv_generator.py`: Changed `cleanup_test_output` fixture to use `tmp_path` and `os.chdir()` for test isolation
+- Removed manual cleanup code that caused race conditions
 
 ---
 
 ### GAP-036: Cost Tracking Per Pipeline Run
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 3 hours
-**Impact**: No visibility into LLM costs per job
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: Full visibility into LLM costs per job
 
-**Fix**: Create `src/common/cost_tracker.py` with token counting + pricing
+**Fix Applied** (2025-12-01):
+1. Added `total_cost_usd` and `token_usage` to initial state in `src/workflow.py`
+2. Capture token usage from `get_global_tracker()` after pipeline execution
+3. Persist cost fields to MongoDB in `src/layer7/output_publisher.py:374-379`
+4. Added cost summary to pipeline completion logs
+
+**Token Tracking Infrastructure** (already existed):
+- `src/common/token_tracker.py`: Comprehensive `TokenTracker` class with per-provider cost estimates
+- `UsageSummary` with `by_provider` dict containing input/output tokens and costs
+- Global tracker accessed via `get_global_tracker()`
 
 ---
 
