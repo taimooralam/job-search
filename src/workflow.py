@@ -21,6 +21,7 @@ from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
 from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
 from src.common.token_tracker import get_global_tracker
+from src.common.database import Database
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -41,6 +42,72 @@ from src.layer6 import outreach_generator_node  # Phase 9: Outreach Generator
 from src.layer6.generator import generator_node  # Legacy CV generator
 from src.layer6_v2 import cv_generator_v2_node  # CV Gen V2: 6-phase pipeline
 from src.layer7.output_publisher import output_publisher_node
+
+
+def save_pipeline_run_start(run_id: str, job_id: str, job_data: Dict[str, Any]) -> None:
+    """
+    Save pipeline run start to MongoDB (GAP-043).
+
+    Creates a record in pipeline_runs collection when a run begins.
+    """
+    try:
+        db = Database()
+        run_doc = {
+            "run_id": run_id,
+            "job_id": job_id,
+            "job_title": job_data.get("title", ""),
+            "company": job_data.get("company", ""),
+            "job_url": job_data.get("url", ""),
+            "source": job_data.get("source", "manual"),
+            "status": "processing",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "duration_ms": None,
+            "fit_score": None,
+            "fit_category": None,
+            "errors": [],
+            "trace_url": None,
+            "total_cost_usd": None,
+        }
+        db.pipeline_runs.insert_one(run_doc)
+        logger.debug(f"Pipeline run started: {run_id}")
+    except Exception as e:
+        logger.warning(f"Failed to save pipeline run start: {e}")
+
+
+def update_pipeline_run_complete(
+    run_id: str,
+    status: str,
+    duration_ms: int,
+    fit_score: int = None,
+    fit_category: str = None,
+    errors: list = None,
+    trace_url: str = None,
+    total_cost_usd: float = None,
+) -> None:
+    """
+    Update pipeline run with completion data (GAP-043).
+
+    Updates the pipeline_runs record with results after pipeline finishes.
+    """
+    try:
+        db = Database()
+        update_doc = {
+            "$set": {
+                "status": status,
+                "updated_at": datetime.utcnow(),
+                "duration_ms": duration_ms,
+                "fit_score": fit_score,
+                "fit_category": fit_category,
+                "errors": errors or [],
+                "trace_url": trace_url,
+                "total_cost_usd": total_cost_usd,
+            }
+        }
+        db.pipeline_runs.update_one({"run_id": run_id}, update_doc)
+        logger.debug(f"Pipeline run updated: {run_id} -> {status}")
+    except Exception as e:
+        logger.warning(f"Failed to update pipeline run: {e}")
 
 
 def create_workflow() -> StateGraph:
@@ -156,6 +223,9 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
         "company": job_data.get("company"),
         "run_id": run_id,
     })
+
+    # GAP-043: Save run start to MongoDB
+    save_pipeline_run_start(run_id, job_id, job_data)
 
     # Initialize state
     initial_state: JobState = {
@@ -282,6 +352,18 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
             },
         )
 
+        # GAP-043: Update run completion in MongoDB
+        update_pipeline_run_complete(
+            run_id=run_id,
+            status=final_state["status"],
+            duration_ms=pipeline_duration,
+            fit_score=final_state.get("fit_score"),
+            fit_category=final_state.get("fit_category"),
+            errors=final_state.get("errors"),
+            trace_url=trace_url,
+            total_cost_usd=final_state.get("total_cost_usd"),
+        )
+
     except Exception as e:
         run_logger.exception(f"Pipeline failed with exception: {e}")
         # Emit structured error event
@@ -290,6 +372,14 @@ def run_pipeline(job_data: Dict[str, Any], candidate_profile: str) -> JobState:
             status="error",
             duration_ms=pipeline_duration,
             metadata={"error": str(e), "trace_url": trace_url},
+        )
+        # GAP-043: Update run as failed in MongoDB
+        update_pipeline_run_complete(
+            run_id=run_id,
+            status="failed",
+            duration_ms=pipeline_duration,
+            errors=[f"Pipeline exception: {str(e)}"],
+            trace_url=trace_url,
         )
         # Create minimal final state with error
         final_state = initial_state.copy()
