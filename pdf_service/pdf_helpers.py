@@ -304,18 +304,18 @@ def build_pdf_html_template(
             padding: 0;
         }}
 
-        /* Typography Hierarchy */
+        /* Typography Hierarchy - Match editor line-height inheritance */
         h1, h2, h3, h4, h5, h6 {{
             font-family: var(--font-heading);
             color: var(--color-accent);
             font-weight: 700;
+            line-height: inherit; /* Match editor: inherit from document settings */
         }}
 
         h1 {{
             font-size: 34px;
             font-weight: 800;
-            margin-bottom: 12px;
-            margin-top: 0;
+            margin: 0 0 12px 0; /* Match editor exactly */
         }}
 
         h2 {{
@@ -329,6 +329,7 @@ def build_pdf_html_template(
         h2:first-child {{
             border-top: none;
             padding-top: 0;
+            margin-top: 0; /* Match editor */
         }}
 
         h3 {{
@@ -337,20 +338,35 @@ def build_pdf_html_template(
             margin: 12px 0 8px;
         }}
 
+        /* Paragraphs - Match editor: 0.5em top/bottom */
         p {{
-            margin-bottom: 8px;
+            margin: 0.5em 0;
+            line-height: inherit;
         }}
 
-        /* List Styling - Professional bullets */
+        p:first-child {{
+            margin-top: 0;
+        }}
+
+        p:last-child {{
+            margin-bottom: 0;
+        }}
+
+        /* List Styling - Match editor: 1.5em padding, 0.5em margin */
         ul, ol {{
-            padding-left: 20px;
-            margin: 6px 0;
+            padding-left: 1.5em;
+            margin: 0.5em 0;
             list-style-position: outside;
         }}
 
+        /* List items - Match editor: 0.25em margin */
         li {{
-            margin: 6px 0;
+            margin: 0.25em 0;
             line-height: inherit;
+        }}
+
+        li > p {{
+            margin: 0;
         }}
 
         ul li {{
