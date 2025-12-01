@@ -33,10 +33,13 @@ credentials/
 *~
 .DS_Store
 
-# Test / Coverage
+# Test / Coverage (GAP-019: added coverage_html and coverage.xml)
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage_html/
+coverage.xml
 .tox/
 .nox/
 
