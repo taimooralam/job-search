@@ -221,13 +221,29 @@ Integrity Check: Verified against master CV; no fabricated employers or dates.
 
 
 @pytest.fixture
-def cleanup_test_output():
-    """Cleanup test output directory after tests."""
-    yield
-    # Cleanup after test
-    test_dir = Path("applications/TechCorp")
-    if test_dir.exists():
-        shutil.rmtree(test_dir)
+def cleanup_test_output(tmp_path, monkeypatch):
+    """
+    Use unique temp directory for each test to avoid parallel test race conditions.
+
+    Monkeypatches the applications directory to be unique per test.
+    """
+    # Create unique applications dir for this test
+    test_applications = tmp_path / "applications"
+    test_applications.mkdir()
+
+    # Store original cwd and change to temp directory for this test
+    original_cwd = os.getcwd()
+
+    # Monkeypatch Path calls in the generator to use relative paths from our temp
+    # Actually, since the generator uses relative paths, we can just chdir
+    os.chdir(tmp_path)
+
+    yield tmp_path
+
+    # Restore original directory
+    os.chdir(original_cwd)
+
+    # Cleanup happens automatically when tmp_path is cleaned up by pytest
 
 
 # ===== BASIC FUNCTIONALITY TESTS =====
@@ -271,8 +287,8 @@ class TestMarkdownCVGenerator:
         generator = MarkdownCVGenerator()
         cv_path, _ = generator.generate_cv(sample_job_state)
 
-        # Verify directory structure
-        expected_dir = Path("applications") / "TechCorp" / "Senior_Engineering_Manager"
+        # Verify directory structure (relative to tmp_path from cleanup_test_output)
+        expected_dir = cleanup_test_output / "applications" / "TechCorp" / "Senior_Engineering_Manager"
         assert expected_dir.exists()
         assert (expected_dir / "CV.md").exists()
 
@@ -440,10 +456,9 @@ class TestMarkdownCVGeneratorEdgeCases:
         evidence.content = mock_evidence_response
         final_cv = MagicMock()
         final_cv.content = mock_llm_response
-        
+
         mock_llm = mock_llm_providers['instance']
         mock_llm.invoke.side_effect = [evidence, final_cv, final_cv]
-
 
         # Company with special characters
         state = sample_job_state.copy()
@@ -455,11 +470,7 @@ class TestMarkdownCVGeneratorEdgeCases:
         # Path should not contain slashes or dots from company name
         assert "/" not in Path(cv_path).parent.name
         assert "Tech_Corp_Inc" in cv_path
-
-        # Cleanup
-        test_dir = Path("applications/Tech_Corp_Inc")
-        if test_dir.exists():
-            shutil.rmtree(test_dir)
+        # Cleanup handled by cleanup_test_output fixture
 
     def test_handles_no_integrity_check_in_response(self, mock_llm_providers, sample_job_state, mock_evidence_response, cleanup_test_output):
         """Generator handles response without explicit verification section."""
