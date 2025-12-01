@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: 26 gaps fixed/documented)
+**Last Updated**: 2025-12-01 (Week 2 Sprint: 27 gaps fixed/documented)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -13,10 +13,10 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (11 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (2 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (29 fixed/documented, 35 open) | All identified gaps |
+| **P3 (LOW)** | 18 (3 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (30 fixed/documented, 34 open) | All identified gaps |
 
-**Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 879 unit tests passing, 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -999,11 +999,19 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 
 ---
 
-### GAP-040: API Documentation (OpenAPI)
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2 hours
-**Impact**: No interactive API docs for runner service
+### GAP-040: API Documentation (OpenAPI) ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: COMPLETE (2025-12-01) | **Effort**: 2 hours
+**Impact**: Interactive API documentation now available
 
-**Fix**: Add custom_openapi() to FastAPI at `/docs`
+**Fix Applied** (2025-12-01):
+1. Created `frontend/static/openapi.yaml` - Full OpenAPI 3.0.3 spec covering all API endpoints
+2. Created `frontend/templates/api_docs.html` - Swagger UI with custom styling
+3. Added routes in `frontend/app.py`:
+   - `/api-docs` → Swagger UI interface
+   - `/api/openapi.yaml` → Raw spec file
+4. Created `postman/Job-Search-Runner-API.postman_collection.json` - Postman collection
+
+**Access**: https://job-search-inky-sigma.vercel.app/api-docs
 
 ---
 
