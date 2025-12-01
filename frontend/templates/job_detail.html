@@ -183,7 +183,7 @@
                         </div>
                         <!-- Tier dropdown menu -->
                         <div x-show="open" x-transition
-                             class="absolute right-0 mt-2 w-72 rounded-lg shadow-lg theme-bg-primary border theme-border z-50">
+                             class="absolute right-0 mt-2 w-72 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
                             <div class="py-1">
                                 <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
                                     Processing Tier
@@ -268,6 +268,16 @@
                         <!-- Hidden input for selected tier -->
                         <input type="hidden" id="selected-tier" value="auto">
                     </div>
+                    <!-- Export Dossier PDF Button (GAP-033) -->
+                    <button id="export-dossier-btn"
+                            onclick="exportDossierPDF('{{ job._id }}')"
+                            class="btn btn-secondary btn-md ml-2"
+                            title="Export complete job dossier as PDF">
+                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span id="export-dossier-text">Export Dossier</span>
+                    </button>
                 </div>
             </div>
 
@@ -2179,6 +2189,66 @@
         } catch (error) {
             console.error('Export PDF failed:', error);
             showToast(error.message || 'Failed to export PDF. Try opening in new tab instead.', 'error');
+            textEl.textContent = originalText;
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    /**
+     * Export complete job dossier to PDF (GAP-033)
+     * Generates a comprehensive PDF with all job intelligence
+     */
+    async function exportDossierPDF(jobId) {
+        const btn = document.getElementById('export-dossier-btn');
+        const textEl = document.getElementById('export-dossier-text');
+        const originalText = textEl.textContent;
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        textEl.textContent = 'Generating...';
+
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/export-dossier-pdf`);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Export failed: ${response.status}`);
+            }
+
+            // Get the PDF blob
+            const blob = await response.blob();
+
+            // Get filename from Content-Disposition header or generate default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'dossier.pdf';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (match) filename = match[1];
+            }
+
+            // Create download link
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+
+            // Show success
+            textEl.textContent = 'Downloaded!';
+            showToast('Dossier PDF exported successfully', 'success');
+            setTimeout(() => {
+                textEl.textContent = originalText;
+            }, 2000);
+
+        } catch (error) {
+            console.error('Export dossier PDF failed:', error);
+            showToast(error.message || 'Failed to export dossier PDF', 'error');
             textEl.textContent = originalText;
         } finally {
             btn.disabled = false;
