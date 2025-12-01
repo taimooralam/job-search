@@ -54,7 +54,8 @@ class DatabaseClient:
         # Use database from URI or default to "job_intelligence"
         try:
             self._db = self._client.get_database()
-        except:
+        except Exception:
+            # No database specified in URI - use default
             self._db = self._client["job_intelligence"]
         logger.info(f"Connected to MongoDB: {self._db.name}")
 

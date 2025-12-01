@@ -495,7 +495,8 @@ class PeopleMapper:
                     if result and hasattr(result, 'markdown'):
                         # Limit to 2000 chars
                         return result.markdown[:2000]
-                except:
+                except Exception:
+                    # URL not found or scraping failed - try next URL
                     continue
 
             return None
