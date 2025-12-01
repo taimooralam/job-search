@@ -637,6 +637,59 @@ def update_job_status():
     })
 
 
+@app.route("/api/jobs/score", methods=["POST"])
+@login_required
+def update_job_score():
+    """
+    Update job score (GAP-067).
+
+    Request Body:
+        job_id: Job _id string
+        score: New score value (0-100) or null to clear
+
+    Returns:
+        JSON with updated job or error
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    data = request.get_json()
+    job_id = data.get("job_id")
+    new_score = data.get("score")
+
+    if not job_id:
+        return jsonify({"error": "job_id is required"}), 400
+
+    # Validate score (can be null to clear, or 0-100)
+    if new_score is not None:
+        try:
+            new_score = int(new_score)
+            if new_score < 0 or new_score > 100:
+                return jsonify({"error": "Score must be between 0 and 100"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Score must be a number"}), 400
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job_id format"}), 400
+
+    # Update the job score
+    result = collection.update_one(
+        {"_id": object_id},
+        {"$set": {"score": new_score}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "job_id": job_id,
+        "score": new_score,
+    })
+
+
 @app.route("/api/jobs/status/bulk", methods=["POST"])
 @login_required
 def update_jobs_status_bulk():
@@ -1060,6 +1113,41 @@ def get_application_stats():
             "month": month_count,
             "total": total_count,
             "legacy_without_timestamp": legacy_applied  # Jobs applied before GAP-064 fix
+        }
+    })
+
+
+@app.route("/health", methods=["GET"])
+def public_health_check():
+    """
+    Public health endpoint for external monitoring (GAP-037).
+
+    No authentication required - used by UptimeRobot, load balancers, etc.
+    Returns minimal info to avoid exposing sensitive data.
+    """
+    # Quick MongoDB check
+    try:
+        db.command("ping")
+        mongo_status = "connected"
+    except Exception:
+        mongo_status = "disconnected"
+
+    # Quick VPS Runner check
+    try:
+        runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+        response = requests.get(f"{runner_url}/health", timeout=3)
+        runner_status = "healthy" if response.status_code == 200 else "unhealthy"
+    except Exception:
+        runner_status = "unreachable"
+
+    overall = "healthy" if mongo_status == "connected" and runner_status == "healthy" else "degraded"
+
+    return jsonify({
+        "status": overall,
+        "version": APP_VERSION,
+        "services": {
+            "mongodb": mongo_status,
+            "runner": runner_status
         }
     })
 
