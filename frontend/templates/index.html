@@ -196,8 +196,11 @@
                         <!-- Month filters (purple) -->
                         <button type="button" onclick="setQuickDateFilter(this, 1, 'month')" class="quick-date-btn quick-date-btn-month btn btn-sm btn-ghost border">1m</button>
 
-                        <!-- Clear filter -->
+                        <!-- Clear date filter -->
                         <button type="button" onclick="clearDateFilter()" class="btn btn-sm btn-ghost">Clear</button>
+
+                        <!-- Reset ALL filters -->
+                        <button type="button" onclick="resetAllFilters()" class="btn btn-sm btn-error btn-ghost" title="Reset all filters to defaults">Reset All</button>
                     </div>
                 </div>
             </div>
@@ -713,6 +716,38 @@
         triggerTableRefresh();
     }
 
+    // Reset statuses to default (all checked except discarded, applied, interview scheduled)
+    function resetStatusesToDefault() {
+        const excludedStatuses = ['discarded', 'applied', 'interview scheduled'];
+        document.querySelectorAll('.status-checkbox').forEach(checkbox => {
+            checkbox.checked = !excludedStatuses.includes(checkbox.value);
+        });
+        updateActiveFilterCount();
+    }
+
+    // Reset ALL filters (date + status + search + locations)
+    function resetAllFilters() {
+        // Clear date filter
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        document.querySelectorAll('.quick-date-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Reset status to defaults
+        resetStatusesToDefault();
+
+        // Clear search
+        document.getElementById('search-input').value = '';
+
+        // Clear locations
+        selectedLocations = [];
+        renderSelectedLocations();
+
+        // Trigger table refresh
+        triggerTableRefresh();
+    }
+
     // ============================================================================
     // Event Listeners
     // ============================================================================
@@ -724,8 +759,11 @@
     // Load locations on page load
     document.addEventListener('DOMContentLoaded', loadLocations);
 
-    // Set 1-hour filter as default on page load
+    // Set default filters on page load: 1-hour date filter + default statuses
     document.addEventListener('DOMContentLoaded', function() {
+        // Reset statuses to default (overrides any browser-cached form state)
+        resetStatusesToDefault();
+
         // Find the 1h button and trigger the filter
         const oneHourBtn = document.querySelector('.quick-date-btn-hour');
         if (oneHourBtn && oneHourBtn.textContent.trim() === '1h') {
