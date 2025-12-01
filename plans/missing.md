@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (7 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (35 fixed/documented, 29 open) | All identified gaps |
+| **P3 (LOW)** | 18 (8 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (36 fixed/documented, 28 open) | All identified gaps |
 
 **Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -23,12 +23,13 @@
 
 ### Today's Fixes (2025-12-01)
 - **GAP-007**: Time filters now include hidden datetime inputs for hour-level precision
+- **GAP-007 (UTC Fix)**: Fixed timezone mismatch - JS now uses UTC methods to match MongoDB UTC dates
 - **GAP-009**: CV display now checks both `cv_text` and `cv_editor_state`
 - **GAP-012**: Bold/italic markdown parsing now works in CV text conversion
 - **GAP-014**: Middle East relocation tagline added automatically to CVs
 - **GAP-026**: CV spacing reduced by 20% for more compact layout
 - **GAP-028**: Runner terminal copy button verified as already implemented
-- **GAP-040**: Swagger API documentation added at `/api-docs`
+- **GAP-040**: Swagger API documentation added at `/api-docs` and `/api/docs` (both routes work)
 - **GAP-051**: Contact discovery improved with company name variations
 - **GAP-052**: Page break visualization verified as already implemented
 - **GAP-054**: CV display now matches editor exactly (headings, colors, borders)
@@ -37,6 +38,8 @@
 - **GAP-064**: appliedOn timestamp now set when marking jobs as applied
 - **GAP-022**: Pipeline progress UI verified as already implemented (7-layer stepper)
 - **Postman Collection**: Added runner API collection at `postman/Job-Search-Runner-API.postman_collection.json`
+- **MongoDB $project Bug**: Fixed aggregation pipeline error - removed exclusion from inclusion projection
+- **Default 1h Filter**: Dashboard now loads with 1-hour date filter pre-selected
 
 ---
 
@@ -854,8 +857,22 @@ Reduced margins/spacing across all CV elements by ~20%:
 ---
 
 ### GAP-029: UI/UX Design Refresh
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 8-16 hours
+**Priority**: P3 LOW | **Status**: ✅ FIXED (2025-12-01) | **Effort**: 2 hours
 **Impact**: Modern styling improvements needed
+
+**Fix Applied**:
+Design system enhancements:
+1. **Dark Mode Badges**: Added proper visibility adjustments for all badge variants
+2. **Status Colors**: Created theme-aware status classes (`status-success`, `status-error`, etc.)
+3. **Quick Date Filters**: Theme-aware button styles for hour/week/month filters
+4. **LinkedIn Brand Color**: Added `linkedin-color` class with dark mode support
+5. **Button Consistency**: Process Job button now uses design system `.btn-success`
+6. **Template Updates**: Replaced hardcoded Tailwind colors with theme variables
+
+**Files Modified**:
+- `frontend/templates/base.html` - Extended design system
+- `frontend/templates/index.html` - Updated quick date filter buttons
+- `frontend/templates/job_detail.html` - Updated Process Job button
 
 ---
 
