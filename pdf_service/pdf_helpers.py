@@ -313,9 +313,12 @@ def build_pdf_html_template(
         }}
 
         h1 {{
-            font-size: 34px;
-            font-weight: 800;
-            margin: 0 0 10px 0; /* GAP-026: 20% tighter spacing */
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 8px 0; /* GAP-026: 20% tighter spacing */
+            letter-spacing: 0.02em; /* Refined letter-spacing for elegance */
+            text-transform: uppercase; /* Executive styling - uppercase name */
+            color: #1e293b; /* slate-800 - darker for executive presence */
         }}
 
         h2 {{

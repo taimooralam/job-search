@@ -297,7 +297,12 @@ def build_pdf_html_template(
             margin-bottom: 8px;
         }}
 
-        h1 {{ font-size: {font_size * 1.8}pt; }}
+        h1 {{
+            font-size: {font_size * 1.8}pt;
+            letter-spacing: 0.02em; /* Refined letter-spacing for elegance */
+            text-transform: uppercase; /* Executive styling - uppercase name */
+            color: #1e293b; /* slate-800 - darker for executive presence */
+        }}
         h2 {{ font-size: {font_size * 1.5}pt; }}
         h3 {{ font-size: {font_size * 1.3}pt; }}
 
