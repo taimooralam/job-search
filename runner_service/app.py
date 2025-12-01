@@ -23,6 +23,8 @@ from io import BytesIO
 from .models import (
     HealthResponse,
     LayerProgress,
+    LinkedInImportRequest,
+    LinkedInImportResponse,
     PipelineProgressResponse,
     PIPELINE_LAYERS,
     RunBulkRequest,
@@ -259,6 +261,144 @@ async def run_jobs_bulk(
             )
         )
     return {"runs": responses}
+
+
+@app.post("/jobs/import-linkedin", response_model=LinkedInImportResponse, dependencies=[Depends(verify_token)])
+async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportResponse:
+    """
+    Import a job from LinkedIn by ID or URL (GAP-065).
+
+    This endpoint runs on the VPS runner service to avoid Vercel's timeout limits.
+    It scrapes LinkedIn, optionally scores the job, and stores it in MongoDB.
+    """
+    from pymongo import MongoClient
+
+    job_id_or_url = request.job_id_or_url.strip()
+
+    if not job_id_or_url:
+        raise HTTPException(status_code=400, detail="job_id_or_url is required")
+
+    try:
+        # Import the scraper
+        from src.services.linkedin_scraper import (
+            scrape_linkedin_job,
+            linkedin_job_to_mongodb_doc,
+            LinkedInScraperError,
+            JobNotFoundError,
+            RateLimitError,
+        )
+
+        # Scrape the job
+        logger.info(f"Importing LinkedIn job: {job_id_or_url}")
+        linkedin_data = scrape_linkedin_job(job_id_or_url)
+
+        # Convert to MongoDB document
+        mongo_doc = linkedin_job_to_mongodb_doc(linkedin_data)
+
+        # Connect to MongoDB
+        mongo_uri = os.getenv("MONGODB_URI")
+        if not mongo_uri:
+            raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
+
+        client = MongoClient(mongo_uri)
+        db = client[os.getenv("MONGODB_DATABASE", "jobs")]
+        level1_collection = db["level-1"]
+        level2_collection = db["level-2"]
+
+        # Check for duplicates
+        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level2:
+            logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
+            return LinkedInImportResponse(
+                success=True,
+                job_id=str(existing_level2["_id"]),
+                title=existing_level2.get("title", ""),
+                company=existing_level2.get("company", ""),
+                location=existing_level2.get("location"),
+                score=existing_level2.get("score"),
+                tier=existing_level2.get("tier"),
+                duplicate=True,
+                error="Job already exists in database",
+            )
+
+        existing_level1 = level1_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level1:
+            logger.info(f"Job already exists in level-1: {existing_level1['_id']}")
+            return LinkedInImportResponse(
+                success=True,
+                job_id=str(existing_level1["_id"]),
+                title=existing_level1.get("title", ""),
+                company=existing_level1.get("company", ""),
+                location=existing_level1.get("location"),
+                score=existing_level1.get("score"),
+                tier=existing_level1.get("tier"),
+                duplicate=True,
+                error="Job already exists in level-1 database",
+            )
+
+        # Quick score the job (optional)
+        score = None
+        score_rationale = None
+        tier = None
+        try:
+            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
+
+            score, score_rationale = quick_score_job(
+                title=linkedin_data.title,
+                company=linkedin_data.company,
+                location=linkedin_data.location,
+                description=linkedin_data.description,
+            )
+
+            if score is not None:
+                mongo_doc["score"] = score
+                tier = derive_tier_from_score(score)
+                mongo_doc["tier"] = tier
+                mongo_doc["score_rationale"] = score_rationale
+                logger.info(f"Quick scored job: {score} ({tier})")
+        except Exception as score_err:
+            logger.warning(f"Quick scoring failed (continuing without score): {score_err}")
+
+        # Insert into both collections
+        level1_doc = mongo_doc.copy()
+        level1_collection.insert_one(level1_doc)
+
+        level2_doc = mongo_doc.copy()
+        level2_result = level2_collection.insert_one(level2_doc)
+        job_id = str(level2_result.inserted_id)
+
+        logger.info(f"Imported LinkedIn job {job_id}: {linkedin_data.title} at {linkedin_data.company}")
+
+        return LinkedInImportResponse(
+            success=True,
+            job_id=job_id,
+            title=linkedin_data.title,
+            company=linkedin_data.company,
+            location=linkedin_data.location,
+            score=score,
+            tier=tier,
+            score_rationale=score_rationale,
+        )
+
+    except JobNotFoundError as e:
+        logger.warning(f"LinkedIn job not found: {e}")
+        raise HTTPException(status_code=404, detail=f"Job not found on LinkedIn: {str(e)}")
+
+    except RateLimitError as e:
+        logger.warning(f"LinkedIn rate limit: {e}")
+        raise HTTPException(status_code=429, detail="LinkedIn rate limit hit. Please try again later.")
+
+    except LinkedInScraperError as e:
+        logger.error(f"LinkedIn scraper error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to scrape LinkedIn: {str(e)}")
+
+    except ValueError as e:
+        logger.warning(f"Invalid job ID: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except Exception as e:
+        logger.exception(f"Unexpected error importing LinkedIn job: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 @app.get("/jobs/{run_id}/status", response_model=StatusResponse)
