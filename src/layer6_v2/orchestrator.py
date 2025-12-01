@@ -25,9 +25,14 @@ from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import sanitize_path_component
+from src.common.markdown_sanitizer import sanitize_markdown, sanitize_bullet_text
 
 from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
-from src.layer6_v2.role_generator import RoleGenerator, generate_all_roles_sequential
+from src.layer6_v2.role_generator import (
+    RoleGenerator,
+    generate_all_roles_sequential,
+    generate_all_roles_with_star_enforcement,
+)
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
 from src.layer6_v2.header_generator import HeaderGenerator, generate_header
@@ -60,6 +65,7 @@ class CVGeneratorV2:
         passing_threshold: float = 8.5,
         word_budget: Optional[int] = None,  # None = no limit, include all roles fully
         use_llm_grading: bool = True,
+        use_star_enforcement: bool = True,  # GAP-005: STAR format enforcement
     ):
         """
         Initialize the CV Generator V2 orchestrator.
@@ -69,12 +75,14 @@ class CVGeneratorV2:
             passing_threshold: Grade threshold to pass (default: 8.5)
             word_budget: Target word count (None = no limit, all roles included)
             use_llm_grading: Use LLM for grading vs rule-based (default: True)
+            use_star_enforcement: Enable STAR format enforcement with retry (default: True)
         """
         self._logger = get_logger(__name__)
         self.model = model or Config.DEFAULT_MODEL
         self.passing_threshold = passing_threshold
         self.word_budget = word_budget  # None = unlimited
         self.use_llm_grading = use_llm_grading
+        self.use_star_enforcement = use_star_enforcement  # GAP-005
 
         # Initialize components
         self.cv_loader = CVLoader()
@@ -253,11 +261,15 @@ class CVGeneratorV2:
         roles: List[RoleData],
         extracted_jd: Dict[str, Any],
     ) -> List[RoleBullets]:
-        """Generate bullets for all roles sequentially."""
+        """Generate bullets for all roles with optional STAR enforcement (GAP-005)."""
         from src.layer6_v2.types import CareerContext
 
         role_bullets_list = []
         role_category = extracted_jd.get("role_category", "engineering_manager")
+
+        # Log STAR enforcement status
+        if self.use_star_enforcement:
+            self._logger.info("  STAR format enforcement ENABLED (GAP-005)")
 
         for i, role in enumerate(roles):
             self._logger.info(f"  Generating bullets for: {role.title} @ {role.company}")
@@ -271,11 +283,21 @@ class CVGeneratorV2:
             )
 
             try:
-                role_bullets = self.role_generator.generate(
-                    role=role,
-                    extracted_jd=extracted_jd,
-                    career_context=career_context,
-                )
+                # GAP-005: Use STAR-enforced generation when enabled
+                if self.use_star_enforcement:
+                    role_bullets = self.role_generator.generate_with_star_enforcement(
+                        role=role,
+                        extracted_jd=extracted_jd,
+                        career_context=career_context,
+                        max_retries=2,
+                        star_threshold=0.8,
+                    )
+                else:
+                    role_bullets = self.role_generator.generate(
+                        role=role,
+                        extracted_jd=extracted_jd,
+                        career_context=career_context,
+                    )
                 role_bullets_list.append(role_bullets)
             except Exception as e:
                 self._logger.warning(f"  Failed to generate bullets for {role.company}: {e}")
@@ -338,9 +360,9 @@ class CVGeneratorV2:
         lines.append(" | ".join(contact_parts))
         lines.append("")
 
-        # Profile (GAP-006: no markdown)
+        # Profile (GAP-006: sanitize markdown)
         lines.append("PROFILE")
-        lines.append(header.profile.text)
+        lines.append(sanitize_markdown(header.profile.text))
         lines.append("")
 
         # Core competencies / Skills (GAP-006: no markdown)
@@ -361,7 +383,9 @@ class CVGeneratorV2:
             lines.append(f"{role.company}{location_part} | {role.period}")
             lines.append("")
             for bullet in role.bullets:
-                lines.append(f"• {bullet}")
+                # GAP-006: Sanitize any markdown that slipped through prompts
+                clean_bullet = sanitize_bullet_text(bullet)
+                lines.append(f"• {clean_bullet}")
             lines.append("")
 
         # Education & Certifications (GAP-006: no markdown)

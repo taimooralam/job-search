@@ -29,6 +29,8 @@ from src.layer6_v2.types import (
 from src.layer6_v2.prompts.role_generation import (
     ROLE_GENERATION_SYSTEM_PROMPT,
     build_role_generation_user_prompt,
+    STAR_CORRECTION_SYSTEM_PROMPT,
+    build_star_correction_user_prompt,
 )
 
 
@@ -281,6 +283,195 @@ class RoleGenerator:
 
         return role_bullets
 
+    def generate_with_star_enforcement(
+        self,
+        role: RoleData,
+        extracted_jd: ExtractedJD,
+        career_context: Optional[CareerContext] = None,
+        target_bullet_count: Optional[int] = None,
+        max_retries: int = 2,
+        star_threshold: float = 0.8,
+    ) -> RoleBullets:
+        """
+        Generate bullets with STAR format enforcement and retry (GAP-005).
+
+        This method:
+        1. Generates initial bullets
+        2. Validates STAR format using RoleQA
+        3. Corrects any failing bullets
+        4. Repeats up to max_retries times until threshold met
+
+        Args:
+            role: Role data from CV loader
+            extracted_jd: Structured JD intelligence
+            career_context: Career stage context
+            target_bullet_count: Target number of bullets
+            max_retries: Maximum correction attempts (default: 2)
+            star_threshold: Minimum STAR coverage to pass (default: 0.8 = 80%)
+
+        Returns:
+            RoleBullets with STAR-validated bullets
+        """
+        # Import here to avoid circular dependency
+        from src.layer6_v2.role_qa import RoleQA
+
+        # Build career context if not provided
+        if career_context is None:
+            career_context = CareerContext.build(
+                role_index=0,
+                total_roles=1,
+                is_current=role.is_current,
+                target_role_category=extracted_jd.get("role_category", "staff_principal_engineer"),
+            )
+
+        # Step 1: Generate initial bullets
+        role_bullets = self.generate(
+            role=role,
+            extracted_jd=extracted_jd,
+            career_context=career_context,
+            target_bullet_count=target_bullet_count,
+        )
+
+        # Step 2: Run STAR validation
+        qa = RoleQA()
+        star_result = qa.check_star_format(role_bullets)
+
+        if star_result.passed:
+            self._logger.info(f"✓ STAR validation passed ({star_result.star_coverage:.0%} coverage)")
+            return role_bullets
+
+        # Step 3: Correction loop for failing bullets
+        for retry in range(max_retries):
+            self._logger.info(
+                f"STAR validation failed ({star_result.star_coverage:.0%}). "
+                f"Retry {retry + 1}/{max_retries}..."
+            )
+
+            # Identify failing bullets by index
+            failing_indices = self._identify_failing_bullets(role_bullets, qa)
+
+            if not failing_indices:
+                self._logger.info("No specific failing bullets identified - regenerating all")
+                role_bullets = self.generate(
+                    role=role,
+                    extracted_jd=extracted_jd,
+                    career_context=career_context,
+                    target_bullet_count=target_bullet_count,
+                )
+            else:
+                # Correct each failing bullet
+                for idx in failing_indices:
+                    if idx < len(role_bullets.bullets):
+                        bullet = role_bullets.bullets[idx]
+                        missing = self._get_missing_star_elements(bullet.text, qa)
+                        corrected_text = self._correct_bullet_star(
+                            bullet=bullet,
+                            missing_elements=missing,
+                            role=role,
+                        )
+                        if corrected_text:
+                            # Update the bullet with corrected text
+                            role_bullets.bullets[idx] = GeneratedBullet(
+                                text=corrected_text,
+                                source_text=bullet.source_text,
+                                source_metric=bullet.source_metric,
+                                jd_keyword_used=bullet.jd_keyword_used,
+                                pain_point_addressed=bullet.pain_point_addressed,
+                                situation=None,  # Will be re-validated
+                                action=None,
+                                result=None,
+                            )
+
+            # Re-validate
+            star_result = qa.check_star_format(role_bullets)
+            if star_result.star_coverage >= star_threshold:
+                self._logger.info(
+                    f"✓ STAR validation passed after {retry + 1} retry(s) "
+                    f"({star_result.star_coverage:.0%} coverage)"
+                )
+                break
+
+        if not star_result.passed:
+            self._logger.warning(
+                f"STAR validation still below threshold after {max_retries} retries "
+                f"({star_result.star_coverage:.0%} coverage). Proceeding anyway."
+            )
+
+        return role_bullets
+
+    def _identify_failing_bullets(self, role_bullets: RoleBullets, qa) -> list[int]:
+        """Identify indices of bullets that fail STAR validation."""
+        failing_indices = []
+
+        for i, bullet in enumerate(role_bullets.bullets):
+            # Check if bullet has explicit STAR components
+            if bullet.has_star_components:
+                continue
+
+            # Check text-based detection
+            has_situation = qa._has_situation(bullet.text)
+            has_action = qa._has_action_with_skill(bullet.text)
+            has_result = qa._has_result(bullet.text)
+
+            if not (has_situation and has_action and has_result):
+                failing_indices.append(i)
+
+        return failing_indices
+
+    def _get_missing_star_elements(self, bullet_text: str, qa) -> list[str]:
+        """Get list of missing STAR elements for a bullet."""
+        missing = []
+
+        if not qa._has_situation(bullet_text):
+            missing.append("situation/challenge opener")
+        if not qa._has_action_with_skill(bullet_text):
+            missing.append("action with skill/technology")
+        if not qa._has_result(bullet_text):
+            missing.append("quantified result")
+
+        return missing
+
+    def _correct_bullet_star(
+        self,
+        bullet: GeneratedBullet,
+        missing_elements: list[str],
+        role: RoleData,
+    ) -> Optional[str]:
+        """
+        Call LLM to correct a bullet's STAR format.
+
+        Returns corrected bullet text or None if correction fails.
+        """
+        try:
+            user_prompt = build_star_correction_user_prompt(
+                failed_bullet=bullet.text,
+                source_text=bullet.source_text,
+                missing_elements=missing_elements,
+                role_title=role.title,
+                company=role.company,
+            )
+
+            messages = [
+                SystemMessage(content=STAR_CORRECTION_SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt),
+            ]
+
+            response = self.llm.invoke(messages)
+            corrected = response.content.strip()
+
+            # Clean up the response
+            if corrected.startswith('"') and corrected.endswith('"'):
+                corrected = corrected[1:-1]
+            if corrected.startswith("•") or corrected.startswith("-"):
+                corrected = corrected[1:].strip()
+
+            self._logger.debug(f"STAR correction: '{bullet.text[:50]}...' -> '{corrected[:50]}...'")
+            return corrected
+
+        except Exception as e:
+            self._logger.warning(f"Failed to correct bullet: {e}")
+            return None
+
 
 def generate_all_roles_sequential(
     roles: List[RoleData],
@@ -354,6 +545,101 @@ def generate_all_roles_sequential(
     logger.info(f"Total bullets: {total_bullets}")
     logger.info(f"Total words: {total_words}")
     logger.info(f"Roles with bullets: {sum(1 for rb in results if rb.bullet_count > 0)}/{total_roles}")
+    logger.info(f"{'='*50}")
+
+    return results
+
+
+def generate_all_roles_with_star_enforcement(
+    roles: List[RoleData],
+    extracted_jd: ExtractedJD,
+    generator: Optional[RoleGenerator] = None,
+    max_retries: int = 2,
+    star_threshold: float = 0.8,
+) -> List[RoleBullets]:
+    """
+    Generate bullets for all roles with STAR format enforcement (GAP-005).
+
+    This is the recommended method for production use as it ensures
+    all bullets follow the STAR format for maximum impact.
+
+    Args:
+        roles: List of roles from CV loader
+        extracted_jd: Structured JD intelligence
+        generator: RoleGenerator instance (created if not provided)
+        max_retries: Max correction attempts per role (default: 2)
+        star_threshold: Minimum STAR coverage to pass (default: 0.8)
+
+    Returns:
+        List of RoleBullets with STAR-validated bullets
+    """
+    logger = get_logger(__name__)
+    generator = generator or RoleGenerator()
+    results = []
+
+    target_role_category = extracted_jd.get("role_category", "staff_principal_engineer")
+    total_roles = len(roles)
+
+    logger.info(f"\n{'='*50}")
+    logger.info("STAR-ENFORCED GENERATION (GAP-005)")
+    logger.info(f"Processing {total_roles} roles with STAR validation")
+    logger.info(f"STAR threshold: {star_threshold:.0%}")
+    logger.info(f"{'='*50}")
+
+    star_pass_count = 0
+    star_retry_count = 0
+
+    for i, role in enumerate(roles):
+        logger.info(f"\n[Role {i+1}/{total_roles}] {role.company} - {role.title}")
+
+        # Build career context for this role
+        career_context = CareerContext.build(
+            role_index=i,
+            total_roles=total_roles,
+            is_current=role.is_current,
+            target_role_category=target_role_category,
+        )
+
+        try:
+            role_bullets = generator.generate_with_star_enforcement(
+                role=role,
+                extracted_jd=extracted_jd,
+                career_context=career_context,
+                max_retries=max_retries,
+                star_threshold=star_threshold,
+            )
+            results.append(role_bullets)
+
+            # Track STAR validation stats
+            from src.layer6_v2.role_qa import RoleQA
+            qa = RoleQA()
+            star_result = qa.check_star_format(role_bullets)
+            if star_result.passed:
+                star_pass_count += 1
+            logger.info(f"  ✓ Generated {role_bullets.bullet_count} bullets (STAR: {star_result.star_coverage:.0%})")
+
+        except Exception as e:
+            logger.error(f"  ✗ Failed: {e}")
+            results.append(RoleBullets(
+                role_id=role.id,
+                company=role.company,
+                title=role.title,
+                period=role.period,
+                location=role.location,
+                bullets=[],
+                word_count=0,
+                keywords_integrated=[],
+            ))
+
+    # Summary
+    total_bullets = sum(rb.bullet_count for rb in results)
+    total_words = sum(rb.word_count for rb in results)
+    logger.info(f"\n{'='*50}")
+    logger.info("STAR-ENFORCED GENERATION COMPLETE")
+    logger.info(f"Total bullets: {total_bullets}")
+    logger.info(f"Total words: {total_words}")
+    logger.info(f"Roles with bullets: {sum(1 for rb in results if rb.bullet_count > 0)}/{total_roles}")
+    logger.info(f"STAR validation passed: {star_pass_count}/{total_roles} roles")
     logger.info(f"{'='*50}")
 
     return results

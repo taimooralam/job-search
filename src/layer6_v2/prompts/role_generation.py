@@ -281,3 +281,81 @@ def build_correction_user_prompt(
 {keyword_text}
 
 Rewrite this bullet to fix the issue. Return ONLY the corrected bullet text."""
+
+
+# Prompt for STAR format correction (GAP-005)
+STAR_CORRECTION_SYSTEM_PROMPT = """You are a CV bullet editor specializing in STAR format.
+
+A generated bullet has FAILED STAR format validation. Your task: Rewrite it to follow STAR structure.
+
+=== STAR FORMAT (MANDATORY) ===
+
+TEMPLATE: "[SITUATION/CHALLENGE] [ACTION with SKILLS], [achieving/resulting in] [QUANTIFIED RESULT]"
+
+EXAMPLES OF GOOD STAR BULLETS:
+✓ "Facing 30% annual outage increase, led 12-month migration to event-driven microservices using AWS Lambda, achieving 75% incident reduction"
+✓ "To address team scaling challenges, established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers"
+✓ "Responding to customer churn concerns, architected real-time analytics platform processing 1B events/day, enabling 20% retention improvement"
+
+SITUATION OPENERS (must start with one):
+- "Facing...", "To address...", "Responding to...", "Given...", "When...", "After..."
+- "Amid...", "Following...", "Recognizing...", "Confronted with...", "Upon..."
+
+ACTION REQUIREMENTS:
+- Must include specific skills/technologies used (e.g., "using AWS Lambda", "with Kubernetes")
+- Must show what YOU did (active verbs: led, architected, designed, built)
+
+RESULT REQUIREMENTS:
+- Must include quantified outcome (%, $, x improvement, users, time saved)
+- Signal words: "achieving", "resulting in", "delivering", "enabling", "improving", "reducing"
+
+=== CRITICAL RULES ===
+1. Preserve ALL facts from the original bullet (metrics, technologies, outcomes)
+2. NEVER invent new metrics or claims
+3. If original lacks a situation opener, infer from context (what problem was being solved?)
+4. If original lacks skills, add ONLY skills mentioned in the source achievement
+5. NO MARKDOWN formatting (no **, *, #, etc.)
+6. Target: 20-35 words
+
+Return ONLY the corrected bullet text, no explanation."""
+
+
+def build_star_correction_user_prompt(
+    failed_bullet: str,
+    source_text: str,
+    missing_elements: List[str],
+    role_title: str = "",
+    company: str = "",
+) -> str:
+    """
+    Build prompt for correcting a bullet that failed STAR validation (GAP-005).
+
+    Args:
+        failed_bullet: The bullet that failed STAR format check
+        source_text: Original achievement from source
+        missing_elements: List of missing STAR elements (situation, action, result)
+        role_title: Job title for context
+        company: Company name for context
+
+    Returns:
+        Formatted user prompt for STAR correction
+    """
+    missing_text = ", ".join(missing_elements) if missing_elements else "incomplete STAR structure"
+    context = f" (as {role_title} at {company})" if role_title and company else ""
+
+    return f"""=== FAILED BULLET ===
+{failed_bullet}
+
+=== MISSING STAR ELEMENTS ===
+{missing_text}
+
+=== SOURCE ACHIEVEMENT{context} ===
+{source_text}
+
+=== YOUR TASK ===
+Rewrite this bullet to include ALL STAR elements:
+1. SITUATION opener (what problem/challenge prompted this?)
+2. ACTION with specific skills/technologies
+3. QUANTIFIED RESULT
+
+Preserve all metrics and facts from the source. Return ONLY the corrected bullet text."""
