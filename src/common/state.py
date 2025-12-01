@@ -5,11 +5,11 @@ This defines the data contract for the 7-layer LangGraph pipeline.
 Each layer reads from and writes to this shared state.
 """
 
-from typing import TypedDict, List, Optional, Dict
+from typing import TypedDict, List, Optional, Dict, Any
 
-# Import canonical STARRecord from types.py (Phase 2.1)
+# Import canonical STARRecord and FormField from types.py (Phase 2.1)
 # This is the 22-field schema with List-typed fields for tasks, actions, results, metrics, etc.
-from src.common.types import STARRecord
+from src.common.types import STARRecord, FormField
 
 
 class CompetencyWeights(TypedDict):
@@ -192,10 +192,15 @@ class JobState(TypedDict):
     # Phase 5.2: Role Researcher analyzes business impact and timing
     role_research: Optional[RoleResearch]  # Role analysis with "why now" context
 
+    # ===== LAYER 1.5: Application Form Extractor =====
+    # Extracts form fields from job application pages for pre-filling
+    application_form_fields: Optional[List[FormField]]  # Form fields with labels, types, requirements
+
     # ===== LAYER 4: Opportunity Mapper (Phase 6) =====
     fit_score: Optional[int]         # 0-100 overall fit rating
     fit_rationale: Optional[str]     # 2-3 sentence explanation of score with STAR citations + metrics
     fit_category: Optional[str]      # "exceptional" | "strong" | "good" | "moderate" | "weak"
+    tier: Optional[str]              # Job priority tier: "A" (85+), "B" (70-84), "C" (50-69), "D" (<50)
 
     # ===== LAYER 5: People Mapper (Phase 7) =====
     # Phase 7: Enhanced with primary/secondary classification and multi-source discovery
@@ -214,6 +219,7 @@ class JobState(TypedDict):
     cv_reasoning: Optional[str]      # Phase 8.2: Rationale for STAR selection, competency mix, gap mitigation
 
     # ===== LAYER 7: Publisher =====
+    dossier_path: Optional[str]      # Path to generated dossier file (local or Drive)
     drive_folder_url: Optional[str]  # Google Drive folder URL for this job
     sheet_row_id: Optional[int]      # Row number in tracking sheet
 
