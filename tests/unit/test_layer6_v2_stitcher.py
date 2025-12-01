@@ -162,16 +162,17 @@ class TestStitchedRole:
         )
         md = role.to_markdown()
 
-        # GAP-006: Now outputs plain text, not markdown
+        # CV uses markdown formatting for TipTap editor rendering
         assert "Test Company" in md
         assert "Technical Lead" in md
         assert "Munich, DE" in md
         assert "2020–Present" in md
         assert "• Led team of engineers" in md
         assert "• Built platform" in md
-        # Verify no markdown markers
+        # Verify no heading markers (we use bold ** instead)
         assert "###" not in md
-        assert "**" not in md
+        # Bold ** IS expected for company/title formatting
+        assert "**Test Company • Technical Lead**" in md
 
 
 # ===== TESTS: StitchedCV =====
@@ -209,14 +210,15 @@ class TestStitchedCV:
         cv = StitchedCV(roles=[role1, role2])
         md = cv.to_markdown()
 
-        # GAP-006: Now outputs plain text, not markdown
+        # CV uses markdown formatting for TipTap editor rendering
         assert "Company A" in md
         assert "Company B" in md
         assert "Achievement 1" in md
         assert "Achievement 2" in md
-        # Verify no markdown markers
+        # Verify no heading markers (we use bold ** instead)
         assert "###" not in md
-        assert "**" not in md
+        # Bold ** IS expected for company/title formatting
+        assert "**Company A • Lead**" in md
 
 
 # ===== TESTS: DeduplicationResult =====
@@ -478,13 +480,14 @@ class TestMarkdownOutput:
 
         md = result.to_markdown()
 
-        # GAP-006: Check structure without markdown markers
+        # CV uses markdown formatting for TipTap editor rendering
         assert "Current Company" in md
         assert "Previous Company" in md
         assert "•" in md  # Bullet points
-        # Verify no markdown markers
+        # Verify no heading markers (we use bold ** instead)
         assert "###" not in md
-        assert "**" not in md
+        # Bold ** IS expected for company/title formatting
+        assert "**" in md  # Bold markers expected for TipTap
 
     def test_roles_in_correct_order(
         self, sample_role_bullets_1, sample_role_bullets_2, sample_role_bullets_3

@@ -251,6 +251,51 @@ class CVStitcher:
 
         return result, compression_applied
 
+    def _compute_role_skills(
+        self,
+        hard_skills: List[str],
+        soft_skills: List[str],
+        target_keywords_lower: set,
+        max_skills: int = 8,
+    ) -> List[str]:
+        """
+        Compute combined skills for a role: JD-matching first, then role-specific.
+
+        Args:
+            hard_skills: Technical skills from this role
+            soft_skills: Soft skills from this role
+            target_keywords_lower: Lowercase JD keywords for matching
+            max_skills: Maximum number of skills to include
+
+        Returns:
+            List of skills, JD-matching first, then others, capped at max_skills
+        """
+        all_skills = hard_skills + soft_skills
+        jd_matching = []
+        other_skills = []
+
+        for skill in all_skills:
+            if skill.lower() in target_keywords_lower:
+                jd_matching.append(skill)
+            else:
+                other_skills.append(skill)
+
+        # Combine: JD-matching first, then others
+        combined = jd_matching + other_skills
+
+        # Deduplicate while preserving order
+        seen = set()
+        result = []
+        for skill in combined:
+            skill_lower = skill.lower()
+            if skill_lower not in seen:
+                seen.add(skill_lower)
+                result.append(skill)
+                if len(result) >= max_skills:
+                    break
+
+        return result
+
     def _collect_keywords(
         self,
         bullet_lists: List[List[str]],
@@ -307,11 +352,21 @@ class CVStitcher:
         )
         final_count = sum(len(b) for b in bullet_lists)
 
-        # Step 4: Build stitched roles
+        # Step 4: Build stitched roles with combined skills
         stitched_roles = []
+        target_keywords_lower = {kw.lower() for kw in (target_keywords or [])}
+
         for i, (role_bullets, bullets) in enumerate(zip(role_bullets_list, bullet_lists)):
             # Get location from CVLoader if available, otherwise use empty string
             location = getattr(role_bullets, 'location', '')
+
+            # Compute combined skills: JD-matching first, then role-specific (max 8)
+            role_skills = self._compute_role_skills(
+                role_bullets.hard_skills,
+                role_bullets.soft_skills,
+                target_keywords_lower,
+                max_skills=8,
+            )
 
             stitched_role = StitchedRole(
                 role_id=role_bullets.role_id,
@@ -320,6 +375,7 @@ class CVStitcher:
                 location=location,
                 period=role_bullets.period,
                 bullets=bullets,
+                skills=role_skills,
             )
             stitched_roles.append(stitched_role)
 

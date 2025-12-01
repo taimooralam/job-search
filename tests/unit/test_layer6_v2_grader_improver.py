@@ -340,12 +340,12 @@ class TestFinalCV:
         final = FinalCV(header=header, experience=experience)
         md = final.to_markdown()
 
-        # GAP-006: Now uses plain text, no markdown markers
+        # CV uses markdown formatting for TipTap editor rendering
         assert "John" in md
         assert "Professional Experience" in md or "Corp" in md  # Role content
         assert "Achievement" in md
-        # Verify no markdown markers
-        assert "**" not in md
+        # Bold ** markers ARE expected for TipTap to parse
+        assert "**Corp • Manager**" in md  # Bold company/title
 
 
 # ===== TESTS: CVGrader - Rule Based =====
