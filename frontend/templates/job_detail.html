@@ -940,56 +940,85 @@
 
             <!-- People Mapper / Contacts -->
             {% if (job.primary_contacts is defined and job.primary_contacts) or (job.secondary_contacts is defined and job.secondary_contacts) %}
-            <div class="mb-6">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                    <svg class="inline-block h-4 w-4 mr-1 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                    </svg>
-                    Key Contacts & Outreach
-                </h2>
+            <div class="mb-6" id="contacts-section">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        <svg class="inline-block h-4 w-4 mr-1 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Key Contacts & Outreach
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyFirecrawlPrompt()"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                                title="Copy FireCrawl prompt for Claude Code">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy Prompt
+                        </button>
+                        <button onclick="openAddContactsModal()"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition"
+                                title="Import contacts from JSON">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Add Contacts
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Primary Contacts -->
                 {% if job.primary_contacts is defined and job.primary_contacts %}
                 <div class="mb-4">
-                    <h3 class="text-xs font-semibold text-indigo-700 uppercase mb-2">Primary Contacts (Hiring-Related)</h3>
-                    <div class="space-y-3">
+                    <h3 class="text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase mb-2">Primary Contacts (Hiring-Related)</h3>
+                    <div class="space-y-3" id="primary-contacts-list">
                         {% for contact in job.primary_contacts %}
-                        <div class="p-4 bg-white border border-indigo-200 rounded-lg hover:shadow-md transition">
+                        <div class="contact-card p-4 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:shadow-md transition" data-contact-index="{{ loop.index0 }}" data-contact-type="primary">
                             <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h4 class="font-semibold text-gray-900">{{ contact.name or contact.contact_name }}</h4>
-                                    <p class="text-sm text-gray-600">{{ contact.role or contact.contact_role }}</p>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-gray-900 dark:text-gray-100">{{ contact.name or contact.contact_name }}</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ contact.role or contact.contact_role }}</p>
                                 </div>
-                                {% if contact.linkedin_url %}
-                                <a href="{{ contact.linkedin_url }}" target="_blank"
-                                   class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
-                                    <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                    </svg>
-                                    LinkedIn
-                                </a>
-                                {% endif %}
+                                <div class="flex items-center gap-2">
+                                    {% if contact.linkedin_url %}
+                                    <a href="{{ contact.linkedin_url }}" target="_blank"
+                                       class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition">
+                                        <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                        </svg>
+                                        LinkedIn
+                                    </a>
+                                    {% endif %}
+                                    <button onclick="deleteContact('primary', {{ loop.index0 }}, '{{ (contact.name or contact.contact_name)|e }}')"
+                                            class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
+                                            title="Remove contact">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             {% if contact.why_relevant %}
-                            <p class="text-xs text-gray-600 mb-2"><strong>Why relevant:</strong> {{ contact.why_relevant }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2"><strong>Why relevant:</strong> {{ contact.why_relevant }}</p>
                             {% endif %}
                             {% if contact.linkedin_message %}
                             <details class="mt-2">
-                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-800">View LinkedIn Message</summary>
-                                <div class="mt-2 p-3 bg-gray-50 rounded text-xs text-gray-700">{{ contact.linkedin_message }}</div>
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">View LinkedIn Message</summary>
+                                <div class="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300">{{ contact.linkedin_message }}</div>
                             </details>
                             {% endif %}
                             {% if contact.email_subject and contact.email_body %}
                             <details class="mt-2">
-                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 hover:text-indigo-800">View Email Outreach</summary>
+                                <summary class="cursor-pointer text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">View Email Outreach</summary>
                                 <div class="mt-2 space-y-2">
-                                    <div class="p-2 bg-gray-50 rounded">
-                                        <span class="text-xs font-semibold text-gray-700">Subject:</span>
-                                        <p class="text-xs text-gray-600 mt-1">{{ contact.email_subject }}</p>
+                                    <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Subject:</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ contact.email_subject }}</p>
                                     </div>
-                                    <div class="p-3 bg-gray-50 rounded">
-                                        <span class="text-xs font-semibold text-gray-700">Body:</span>
-                                        <p class="text-xs text-gray-700 mt-1 whitespace-pre-wrap">{{ contact.email_body }}</p>
+                                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Body:</span>
+                                        <p class="text-xs text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap">{{ contact.email_body }}</p>
                                     </div>
                                 </div>
                             </details>
@@ -1003,31 +1032,73 @@
                 <!-- Secondary Contacts -->
                 {% if job.secondary_contacts is defined and job.secondary_contacts %}
                 <div>
-                    <h3 class="text-xs font-semibold text-gray-600 uppercase mb-2">Secondary Contacts (Cross-Functional)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-2">Secondary Contacts (Cross-Functional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="secondary-contacts-list">
                         {% for contact in job.secondary_contacts %}
-                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div class="contact-card p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg" data-contact-index="{{ loop.index0 }}" data-contact-type="secondary">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="text-sm font-semibold text-gray-900">{{ contact.name or contact.contact_name }}</h4>
-                                    <p class="text-xs text-gray-600">{{ contact.role or contact.contact_role }}</p>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ contact.name or contact.contact_name }}</h4>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ contact.role or contact.contact_role }}</p>
                                 </div>
-                                {% if contact.linkedin_url %}
-                                <a href="{{ contact.linkedin_url }}" target="_blank" class="text-gray-400 hover:text-indigo-600 transition">
-                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                    </svg>
-                                </a>
-                                {% endif %}
+                                <div class="flex items-center gap-2">
+                                    {% if contact.linkedin_url %}
+                                    <a href="{{ contact.linkedin_url }}" target="_blank" class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                                        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                        </svg>
+                                    </a>
+                                    {% endif %}
+                                    <button onclick="deleteContact('secondary', {{ loop.index0 }}, '{{ (contact.name or contact.contact_name)|e }}')"
+                                            class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
+                                            title="Remove contact">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             {% if contact.why_relevant %}
-                            <p class="text-xs text-gray-500 mt-1">{{ contact.why_relevant }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ contact.why_relevant }}</p>
                             {% endif %}
                         </div>
                         {% endfor %}
                     </div>
                 </div>
                 {% endif %}
+            </div>
+            {% else %}
+            <!-- No contacts - show add button -->
+            <div class="mb-6" id="contacts-section">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        <svg class="inline-block h-4 w-4 mr-1 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Key Contacts & Outreach
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="copyFirecrawlPrompt()"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                                title="Copy FireCrawl prompt for Claude Code">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy Prompt
+                        </button>
+                        <button onclick="openAddContactsModal()"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition"
+                                title="Import contacts from JSON">
+                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            Add Contacts
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No contacts discovered yet. Use "Copy Prompt" to find contacts with Claude Code, or "Add Contacts" to import manually.</p>
+                </div>
             </div>
             {% endif %}
 
@@ -1660,6 +1731,94 @@
                     min-h-full mx-auto"
              style="max-width: 8.5in; min-height: 11in;">
             <!-- TipTap renders here -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Contacts Modal -->
+<div id="add-contacts-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddContactsModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Contacts</h2>
+                    <button onclick="closeAddContactsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Step 1: JSON Input -->
+                <div id="json-input-step">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Paste JSON array of contacts below. Use "Copy Prompt" to get a FireCrawl prompt for Claude Code.
+                    </p>
+                    <textarea
+                        id="contacts-json"
+                        class="w-full h-48 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder='[
+  {
+    "name": "Jane Doe",
+    "title": "Hiring Manager",
+    "linkedin_url": "https://linkedin.com/in/janedoe",
+    "email": "jane@company.com",
+    "relevance": "hiring_manager"
+  }
+]'></textarea>
+
+                    <div id="json-error" class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded"></div>
+
+                    <div class="mt-4 flex items-center gap-3">
+                        <label class="text-sm text-gray-600 dark:text-gray-400">Contact Type:</label>
+                        <select id="contact-type-select" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100">
+                            <option value="secondary">Secondary (Cross-Functional)</option>
+                            <option value="primary">Primary (Hiring-Related)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button onclick="closeAddContactsModal()" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                            Cancel
+                        </button>
+                        <button onclick="validateAndPreviewContacts()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">
+                            Preview
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Preview -->
+                <div id="preview-step" class="hidden">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Ready to import <strong id="import-count" class="text-indigo-600 dark:text-indigo-400">0</strong> contacts
+                    </p>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Title</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">LinkedIn</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-table" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button onclick="backToJsonInput()" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                            Back
+                        </button>
+                        <button onclick="importContacts()" id="import-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">
+                            Import Contacts
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -2854,6 +3013,222 @@
         }
     }
 
+    // ========================================================================
+    // Contact Management Functions
+    // ========================================================================
+
+    // Store validated contacts for import
+    let validatedContacts = [];
+
+    // Delete a contact with confirmation
+    async function deleteContact(contactType, contactIndex, contactName) {
+        const confirmed = confirm(`Remove ${contactName}?`);
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(
+                `/api/jobs/${jobId}/contacts/${contactType}/${contactIndex}`,
+                { method: 'DELETE' }
+            );
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Find and remove the contact card with animation
+                const card = document.querySelector(
+                    `.contact-card[data-contact-type="${contactType}"][data-contact-index="${contactIndex}"]`
+                );
+                if (card) {
+                    card.style.transition = 'opacity 0.3s, transform 0.3s';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Update indices for remaining cards
+                        updateContactIndices(contactType);
+                    }, 300);
+                }
+                showToast(result.message || 'Contact removed');
+            } else {
+                showToast(result.error || 'Failed to delete contact', 'error');
+            }
+        } catch (err) {
+            showToast('Failed to delete contact: ' + err.message, 'error');
+        }
+    }
+
+    // Update data-contact-index attributes after deletion
+    function updateContactIndices(contactType) {
+        const cards = document.querySelectorAll(
+            `.contact-card[data-contact-type="${contactType}"]`
+        );
+        cards.forEach((card, index) => {
+            card.setAttribute('data-contact-index', index);
+            // Update onclick handler
+            const deleteBtn = card.querySelector('button[onclick*="deleteContact"]');
+            if (deleteBtn) {
+                const contactName = deleteBtn.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1] || 'contact';
+                deleteBtn.setAttribute('onclick', `deleteContact('${contactType}', ${index}, '${contactName}')`);
+            }
+        });
+    }
+
+    // Copy FireCrawl prompt to clipboard
+    async function copyFirecrawlPrompt() {
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/contacts/prompt`);
+            const result = await response.json();
+
+            if (result.success) {
+                await navigator.clipboard.writeText(result.prompt);
+                showToast('FireCrawl prompt copied to clipboard!', 'success');
+            } else {
+                showToast(result.error || 'Failed to generate prompt', 'error');
+            }
+        } catch (err) {
+            showToast('Failed to copy prompt: ' + err.message, 'error');
+        }
+    }
+
+    // Open the Add Contacts modal
+    function openAddContactsModal() {
+        document.getElementById('add-contacts-modal').classList.remove('hidden');
+        document.getElementById('json-input-step').classList.remove('hidden');
+        document.getElementById('preview-step').classList.add('hidden');
+        document.getElementById('contacts-json').value = '';
+        document.getElementById('json-error').classList.add('hidden');
+        validatedContacts = [];
+    }
+
+    // Close the Add Contacts modal
+    function closeAddContactsModal() {
+        document.getElementById('add-contacts-modal').classList.add('hidden');
+        validatedContacts = [];
+    }
+
+    // Back to JSON input step
+    function backToJsonInput() {
+        document.getElementById('json-input-step').classList.remove('hidden');
+        document.getElementById('preview-step').classList.add('hidden');
+    }
+
+    // Validate contact schema
+    function validateContactSchema(contact) {
+        if (!contact.name || typeof contact.name !== 'string') return false;
+        if (!contact.title && !contact.role) return false;
+        if ((contact.title && typeof contact.title !== 'string') ||
+            (contact.role && typeof contact.role !== 'string')) return false;
+        if (!contact.linkedin_url || typeof contact.linkedin_url !== 'string') return false;
+        return true;
+    }
+
+    // Validate JSON and show preview
+    function validateAndPreviewContacts() {
+        const jsonText = document.getElementById('contacts-json').value;
+        const errorDiv = document.getElementById('json-error');
+
+        try {
+            const contacts = JSON.parse(jsonText);
+
+            if (!Array.isArray(contacts)) {
+                throw new Error('Input must be a JSON array');
+            }
+
+            // Validate each contact
+            validatedContacts = contacts.filter(contact => {
+                if (!validateContactSchema(contact)) {
+                    console.warn('Invalid contact schema:', contact);
+                    return false;
+                }
+                return true;
+            });
+
+            if (validatedContacts.length === 0) {
+                throw new Error('No valid contacts found. Each contact requires name, title/role, and linkedin_url');
+            }
+
+            // Show preview
+            displayPreview(validatedContacts);
+            errorDiv.classList.add('hidden');
+
+        } catch (error) {
+            errorDiv.textContent = error.message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
+    // Display preview table
+    function displayPreview(contacts) {
+        const tbody = document.getElementById('preview-table');
+        const countEl = document.getElementById('import-count');
+
+        tbody.innerHTML = contacts.map(c => `
+            <tr>
+                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">${escapeHtml(c.name)}</td>
+                <td class="px-3 py-2 text-gray-600 dark:text-gray-400">${escapeHtml(c.title || c.role)}</td>
+                <td class="px-3 py-2">
+                    <a href="${escapeHtml(c.linkedin_url)}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline truncate block max-w-[200px]">
+                        ${escapeHtml(c.linkedin_url.replace('https://linkedin.com/in/', '').replace('https://www.linkedin.com/in/', ''))}
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+
+        countEl.textContent = contacts.length;
+
+        // Switch to preview step
+        document.getElementById('json-input-step').classList.add('hidden');
+        document.getElementById('preview-step').classList.remove('hidden');
+    }
+
+    // Escape HTML for safe display
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Import contacts to API
+    async function importContacts() {
+        if (validatedContacts.length === 0) {
+            showToast('No contacts to import', 'error');
+            return;
+        }
+
+        const contactType = document.getElementById('contact-type-select').value;
+        const importBtn = document.getElementById('import-btn');
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+
+        try {
+            const response = await fetch(`/api/jobs/${jobId}/contacts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contacts: validatedContacts,
+                    contact_type: contactType
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(`Imported ${result.importedCount} contacts`, 'success');
+                closeAddContactsModal();
+                // Reload page to show new contacts
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast(result.error || 'Import failed', 'error');
+            }
+        } catch (err) {
+            showToast('Import failed: ' + err.message, 'error');
+        } finally {
+            importBtn.disabled = false;
+            importBtn.textContent = 'Import Contacts';
+        }
+    }
+
     // Expose inline handlers explicitly so they survive HTMX swaps & module scopes
     window.updateJobField = updateJobField;
     window.saveRemarks = saveRemarks;
@@ -2862,6 +3237,13 @@
     window.enableEdit = enableEdit;
     window.processJobDetail = processJobDetail;
     window.generateCoverLetterPDF = generateCoverLetterPDF;
+    window.deleteContact = deleteContact;
+    window.copyFirecrawlPrompt = copyFirecrawlPrompt;
+    window.openAddContactsModal = openAddContactsModal;
+    window.closeAddContactsModal = closeAddContactsModal;
+    window.validateAndPreviewContacts = validateAndPreviewContacts;
+    window.backToJsonInput = backToJsonInput;
+    window.importContacts = importContacts;
 </script>
 
 <!-- Phase 5.1: Page Break Calculator Module -->
