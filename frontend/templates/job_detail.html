@@ -104,16 +104,30 @@
                 Added {{ job.createdAt[:10] }}
             </div>
             {% endif %}
-            {% if job.score is not none %}
-            <div class="flex items-center">
-                <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                    {% if job.score >= 80 %}bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400
-                    {% elif job.score >= 60 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400
-                    {% else %}theme-bg-hover theme-text-secondary{% endif %}">
-                    Score: {{ job.score }}
+            <!-- Editable Score Badge (GAP-067) -->
+            <div class="flex items-center editable-score-container" data-job-id="{{ job._id }}">
+                <span class="score-display cursor-pointer hover:ring-2 hover:ring-accent-400 hover:ring-offset-1 rounded-full transition-all"
+                      onclick="enableScoreEditDetail(this, '{{ job._id }}', {{ job.score if job.score is not none else 'null' }})"
+                      title="Click to edit score">
+                    {% if job.score is not none %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                        {% if job.score >= 80 %}bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400
+                        {% elif job.score >= 60 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400
+                        {% else %}theme-bg-hover theme-text-secondary{% endif %}">
+                        Score: {{ job.score }}
+                    </span>
+                    {% else %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium theme-bg-hover theme-text-secondary">
+                        Score: —
+                    </span>
+                    {% endif %}
                 </span>
+                <input type="number" min="0" max="100"
+                       class="score-input hidden w-16 px-2 py-0.5 text-xs text-center rounded-full border theme-border theme-bg-secondary theme-text-primary focus:ring-2 focus:ring-accent-500"
+                       onblur="saveScoreDetail(this, '{{ job._id }}')"
+                       onkeydown="handleScoreKeydownDetail(event, this, '{{ job._id }}')"
+                       value="{{ job.score if job.score is not none else '' }}">
             </div>
-            {% endif %}
         </div>
 
         <!-- Main Content -->
@@ -148,14 +162,111 @@
                         Last updated: {{ job.updatedAt[:19] | replace('T', ' ') }}
                     </div>
                     {% endif %}
-                    <div class="ml-auto">
-                        <button onclick="processJobDetail('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
-                                class="btn btn-success btn-md">
-                            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            Process Job
-                        </button>
+                    <!-- Process Job Button with Tier Dropdown (GAP-045) -->
+                    <div class="ml-auto relative" x-data="{ open: false }">
+                        <div class="flex items-center">
+                            <!-- Main button - triggers with selected tier -->
+                            <button onclick="processJobDetail('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
+                                    class="btn btn-success btn-md rounded-r-none border-r border-green-700">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                <span id="process-btn-label">Process (Auto)</span>
+                            </button>
+                            <!-- Dropdown toggle -->
+                            <button @click="open = !open" @click.away="open = false"
+                                    class="btn btn-success btn-md rounded-l-none px-2">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Tier dropdown menu -->
+                        <div x-show="open" x-transition
+                             class="absolute right-0 mt-2 w-72 rounded-lg shadow-lg theme-bg-primary border theme-border z-50">
+                            <div class="py-1">
+                                <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
+                                    Processing Tier
+                                </div>
+                                <button onclick="setProcessingTier('auto'); $refs && ($refs.dropdown && $refs.dropdown.open = false)"
+                                        @click="open = false"
+                                        class="tier-option w-full text-left px-4 py-3 hover:theme-bg-secondary flex items-center gap-3"
+                                        data-tier="auto">
+                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                                        </svg>
+                                    </span>
+                                    <div class="flex-1">
+                                        <div class="font-medium theme-text-primary">Recommended (Auto)</div>
+                                        <div class="text-xs theme-text-tertiary">Auto-select tier based on fit score</div>
+                                    </div>
+                                    <span id="tier-check-auto" class="text-green-500 hidden">✓</span>
+                                </button>
+                                <button onclick="setProcessingTier('A')"
+                                        @click="open = false"
+                                        class="tier-option w-full text-left px-4 py-3 hover:theme-bg-secondary flex items-center gap-3"
+                                        data-tier="A">
+                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                    </span>
+                                    <div class="flex-1">
+                                        <div class="font-medium theme-text-primary">Gold (Tier A)</div>
+                                        <div class="text-xs theme-text-tertiary">Premium models, full pipeline, 5 contacts</div>
+                                    </div>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">Best</span>
+                                </button>
+                                <button onclick="setProcessingTier('B')"
+                                        @click="open = false"
+                                        class="tier-option w-full text-left px-4 py-3 hover:theme-bg-secondary flex items-center gap-3"
+                                        data-tier="B">
+                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </span>
+                                    <div class="flex-1">
+                                        <div class="font-medium theme-text-primary">Silver (Tier B)</div>
+                                        <div class="text-xs theme-text-tertiary">Standard models, full pipeline, 3 contacts</div>
+                                    </div>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">Balanced</span>
+                                </button>
+                                <button onclick="setProcessingTier('C')"
+                                        @click="open = false"
+                                        class="tier-option w-full text-left px-4 py-3 hover:theme-bg-secondary flex items-center gap-3"
+                                        data-tier="C">
+                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </span>
+                                    <div class="flex-1">
+                                        <div class="font-medium theme-text-primary">Bronze (Tier C)</div>
+                                        <div class="text-xs theme-text-tertiary">Economy models, abbreviated pipeline</div>
+                                    </div>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">Fast</span>
+                                </button>
+                                <button onclick="setProcessingTier('D')"
+                                        @click="open = false"
+                                        class="tier-option w-full text-left px-4 py-3 hover:theme-bg-secondary flex items-center gap-3"
+                                        data-tier="D">
+                                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </span>
+                                    <div class="flex-1">
+                                        <div class="font-medium theme-text-primary">Skip (Tier D)</div>
+                                        <div class="text-xs theme-text-tertiary">Minimal processing, marks as low-fit only</div>
+                                    </div>
+                                    <span class="text-xs px-2 py-0.5 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Minimal</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Hidden input for selected tier -->
+                        <input type="hidden" id="selected-tier" value="auto">
                     </div>
                 </div>
             </div>
@@ -2288,25 +2399,135 @@
     let statusPollingInterval = null;
     let eventSource = null;
 
+    // ===== GAP-067: Editable Score Field (Detail Page) =====
+    function enableScoreEditDetail(displayEl, jobId, currentScore) {
+        const container = displayEl.closest('.editable-score-container');
+        const input = container.querySelector('.score-input');
+
+        displayEl.classList.add('hidden');
+        input.classList.remove('hidden');
+        input.value = currentScore !== null ? currentScore : '';
+        input.focus();
+        input.select();
+    }
+
+    function handleScoreKeydownDetail(event, input, jobId) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            input.blur();
+        } else if (event.key === 'Escape') {
+            cancelScoreEditDetail(input);
+        }
+    }
+
+    function cancelScoreEditDetail(input) {
+        const container = input.closest('.editable-score-container');
+        const display = container.querySelector('.score-display');
+        input.classList.add('hidden');
+        display.classList.remove('hidden');
+    }
+
+    async function saveScoreDetail(input, jobId) {
+        const container = input.closest('.editable-score-container');
+        const display = container.querySelector('.score-display');
+        const newScore = input.value.trim();
+
+        let scoreValue = null;
+        if (newScore !== '') {
+            scoreValue = parseInt(newScore, 10);
+            if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+                showToast('Score must be between 0 and 100', 'error');
+                cancelScoreEditDetail(input);
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch('/api/jobs/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: jobId, score: scoreValue })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                updateScoreBadgeDetail(display, scoreValue);
+                showToast('Score updated', 'success');
+            } else {
+                showToast(result.error || 'Failed to update score', 'error');
+            }
+        } catch (error) {
+            console.error('Error updating score:', error);
+            showToast('Failed to update score', 'error');
+        }
+
+        input.classList.add('hidden');
+        display.classList.remove('hidden');
+    }
+
+    function updateScoreBadgeDetail(display, score) {
+        let badgeClass = 'theme-bg-hover theme-text-secondary';
+        let displayText = 'Score: —';
+
+        if (score !== null) {
+            displayText = `Score: ${score}`;
+            if (score >= 80) badgeClass = 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400';
+            else if (score >= 60) badgeClass = 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400';
+        }
+
+        display.innerHTML = `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">${displayText}</span>`;
+    }
+    // ===== End GAP-067 =====
+
     // Process job through pipeline
+    // GAP-045: Tier selection state
+    let selectedTier = 'auto';
+    const tierLabels = {
+        'auto': 'Auto',
+        'A': 'Gold (A)',
+        'B': 'Silver (B)',
+        'C': 'Bronze (C)',
+        'D': 'Skip (D)'
+    };
+
+    function setProcessingTier(tier) {
+        selectedTier = tier;
+        document.getElementById('selected-tier').value = tier;
+        document.getElementById('process-btn-label').textContent = `Process (${tierLabels[tier]})`;
+
+        // Update visual indicators
+        document.querySelectorAll('.tier-option').forEach(btn => {
+            const checkIcon = btn.querySelector('[id^="tier-check-"]');
+            if (checkIcon) checkIcon.classList.add('hidden');
+        });
+        const selectedCheck = document.getElementById(`tier-check-${tier}`);
+        if (selectedCheck) selectedCheck.classList.remove('hidden');
+    }
+
     async function processJobDetail(jobId, jobTitle) {
+        const tier = document.getElementById('selected-tier')?.value || 'auto';
+        const tierDisplay = tierLabels[tier] || 'Auto';
+
         const confirmed = confirm(
             `Process job through pipeline?\n\n` +
-            `Job: ${jobTitle}\n\n` +
-            `This will trigger the full processing pipeline on the VPS runner.`
+            `Job: ${jobTitle}\n` +
+            `Tier: ${tierDisplay}\n\n` +
+            `This will trigger the processing pipeline on the VPS runner.`
         );
 
         if (!confirmed) return;
 
         try {
-            showToast('Starting pipeline...', 'info');
+            showToast(`Starting pipeline (${tierDisplay})...`, 'info');
 
             const response = await fetch('/api/runner/jobs/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     job_id: jobId,
-                    level: 2
+                    level: 2,
+                    processing_tier: tier
                 })
             });
 
@@ -3249,6 +3470,7 @@
     window.toggleRawData = toggleRawData;
     window.enableEdit = enableEdit;
     window.processJobDetail = processJobDetail;
+    window.setProcessingTier = setProcessingTier;  // GAP-045
     window.generateCoverLetterPDF = generateCoverLetterPDF;
     window.deleteContact = deleteContact;
     window.copyFirecrawlPrompt = copyFirecrawlPrompt;
