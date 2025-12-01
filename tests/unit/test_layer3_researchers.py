@@ -682,10 +682,12 @@ class TestRoleResearcherSchema:
 class TestRoleResearcherWithMockedLLM:
     """Test Role Researcher with mocked LLM."""
 
+    @patch('src.layer3.role_researcher.FirecrawlApp')
     @patch('src.layer3.role_researcher.ChatOpenAI')
     def test_role_analysis_with_company_signals(
         self,
         mock_llm_class,
+        mock_firecrawl_class,
         sample_job_state,
         valid_role_research_json
     ):
@@ -732,10 +734,12 @@ class TestRoleResearcherWithMockedLLM:
         assert "DO NOT invent" in SYSTEM_PROMPT_ROLE_RESEARCH
         assert "explicitly reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower() or "reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower()
 
+    @patch('src.layer3.role_researcher.FirecrawlApp')
     @patch('src.layer3.role_researcher.ChatOpenAI')
     def test_role_research_handles_llm_failure_gracefully(
         self,
         mock_llm_class,
+        mock_firecrawl_class,
         sample_job_state
     ):
         """Role research handles LLM failures without blocking pipeline."""
@@ -793,9 +797,11 @@ def test_company_researcher_node_integration(
 
 
 @pytest.mark.integration
+@patch('src.layer3.role_researcher.FirecrawlApp')
 @patch('src.layer3.role_researcher.ChatOpenAI')
 def test_role_researcher_node_integration(
     mock_llm_class,
+    mock_firecrawl_class,
     sample_job_state,
     valid_role_research_json
 ):
@@ -981,6 +987,7 @@ class TestFireCrawlNormalizer:
 class TestCompanyResearcherFallback:
     """Tests for Phase 5 defensive fallback when multi-source scrape yields 0 signals."""
 
+    @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
     @patch.object(CompanyResearcher, '_scrape_multiple_sources')
@@ -993,6 +1000,7 @@ class TestCompanyResearcherFallback:
         mock_scrape_multi,
         mock_scrape_job,
         mock_cache,
+        mock_firecrawl_class,
         sample_job_state
     ):
         """Fallback is triggered when LLM returns 0 signals."""
@@ -1086,7 +1094,8 @@ class TestCompanyResearcherFallback:
 class TestSTARAwareness:
     """Tests for Phase 5 STAR-aware research prompts."""
 
-    def test_extract_star_context_with_selected_stars(self, sample_job_state):
+    @patch('src.layer3.company_researcher.FirecrawlApp')
+    def test_extract_star_context_with_selected_stars(self, mock_firecrawl_class, sample_job_state):
         """STAR context extraction works with selected_stars."""
         # Add selected_stars to state
         sample_job_state["selected_stars"] = [
@@ -1119,7 +1128,8 @@ class TestSTARAwareness:
         assert "Operational Efficiency" in outcomes
         assert "Velocity/Speed" in outcomes
 
-    def test_extract_star_context_returns_none_without_stars(self, sample_job_state):
+    @patch('src.layer3.company_researcher.FirecrawlApp')
+    def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, sample_job_state):
         """STAR context extraction returns None when no selected_stars."""
         researcher = CompanyResearcher()
         domains, outcomes = researcher._extract_star_context(sample_job_state)
@@ -1127,6 +1137,7 @@ class TestSTARAwareness:
         assert domains is None
         assert outcomes is None
 
+    @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
     @patch.object(CompanyResearcher, '_scrape_multiple_sources')
@@ -1139,6 +1150,7 @@ class TestSTARAwareness:
         mock_scrape_multi,
         mock_scrape_job,
         mock_cache,
+        mock_firecrawl_class,
         sample_job_state
     ):
         """STAR context is passed to _analyze_company_signals."""
@@ -1179,7 +1191,8 @@ class TestSTARAwareness:
 class TestRoleResearcherSTARAwareness:
     """Tests for STAR-awareness in Role Researcher."""
 
-    def test_extract_star_context_in_role_researcher(self, sample_job_state):
+    @patch('src.layer3.role_researcher.FirecrawlApp')
+    def test_extract_star_context_in_role_researcher(self, mock_firecrawl_class, sample_job_state):
         """Role researcher extracts STAR context correctly."""
         sample_job_state["selected_stars"] = [
             {
@@ -1201,6 +1214,7 @@ class TestRoleResearcherSTARAwareness:
 class TestPhase5Integration:
     """Integration tests for Phase 5 (Company & Role Research)."""
 
+    @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
     @patch.object(CompanyResearcher, '_scrape_multiple_sources')
@@ -1213,6 +1227,7 @@ class TestPhase5Integration:
         mock_scrape_multi,
         mock_scrape_job,
         mock_cache,
+        mock_firecrawl_class,
         sample_job_state
     ):
         """Company researcher produces valid schema output with signals."""
