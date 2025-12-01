@@ -191,6 +191,9 @@
 
     <!-- Custom styles -->
     <style>
+        /* Alpine.js cloak - hide elements until Alpine initializes */
+        [x-cloak] { display: none !important; }
+
         /* ============================================================================
          * Design System Foundation
          * Inspired by Linear, Notion, Stripe, Vercel, Figma
@@ -1845,6 +1848,13 @@
                 processBtn.classList.toggle('opacity-50', count === 0);
                 processBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
+            // Also enable/disable the tier dropdown toggle button
+            const tierToggle = document.getElementById('process-tier-toggle');
+            if (tierToggle) {
+                tierToggle.disabled = count === 0;
+                tierToggle.classList.toggle('opacity-50', count === 0);
+                tierToggle.classList.toggle('cursor-not-allowed', count === 0);
+            }
             if (applyBtn) {
                 applyBtn.disabled = count === 0;
                 applyBtn.classList.toggle('opacity-50', count === 0);
@@ -2156,13 +2166,31 @@
             }
         }
 
+        // Bulk processing tier labels
+        const bulkTierLabels = {
+            'auto': 'Auto',
+            'A': 'Gold (A)',
+            'B': 'Silver (B)',
+            'C': 'Bronze (C)'
+        };
+
+        // Set bulk processing tier
+        function setBulkProcessingTier(tier) {
+            document.getElementById('bulk-selected-tier').value = tier;
+            const label = document.getElementById('bulk-process-btn-label');
+            if (label) label.textContent = `Process (${bulkTierLabels[tier] || tier})`;
+        }
+
         // Process multiple selected jobs through pipeline (batch)
         async function processSelectedJobs() {
             if (selectedJobIds.size === 0) return;
 
+            const tier = document.getElementById('bulk-selected-tier')?.value || 'auto';
+            const tierDisplay = bulkTierLabels[tier] || tier;
             const count = selectedJobIds.size;
             const confirmed = confirm(
                 `Process ${count} job${count > 1 ? 's' : ''} through pipeline?\n\n` +
+                `Tier: ${tierDisplay}\n` +
                 `This will trigger the pipeline for all selected jobs on the VPS runner.\n` +
                 `Jobs will be processed concurrently (up to MAX_CONCURRENCY limit).`
             );
@@ -2170,7 +2198,7 @@
             if (!confirmed) return;
 
             try {
-                showToast(`Starting batch pipeline for ${count} jobs...`, 'info');
+                showToast(`Starting batch pipeline (${tierDisplay}) for ${count} jobs...`, 'info');
 
                 // Call bulk endpoint
                 const response = await fetch('/api/runner/jobs/run-bulk', {
@@ -2178,7 +2206,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         job_ids: Array.from(selectedJobIds),
-                        level: 2  // Process at level 2
+                        level: 2,
+                        processing_tier: tier
                     })
                 });
 
