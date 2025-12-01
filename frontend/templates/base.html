@@ -1579,7 +1579,7 @@
                             </div>
                             <div>
                                 <span class="text-xl font-bold transition-colors" style="color: var(--text-primary);">JobSearch</span>
-                                <p class="hidden sm:block text-xs" style="color: var(--text-tertiary);">Level-2 Manager</p>
+                                <p class="hidden sm:block text-xs" style="color: var(--text-tertiary);">Level-2 Manager <span class="font-mono text-[10px] px-1 py-0.5 rounded" style="background-color: var(--bg-hover);">v{{ version }}</span></p>
                             </div>
                         </div>
                     </a>
@@ -1591,6 +1591,20 @@
                         <div id="stats-container" class="text-xs sm:text-sm" style="color: var(--text-secondary);">
                             <!-- Stats loaded via HTMX -->
                         </div>
+
+                        <!-- API Docs Button -->
+                        <a
+                            href="/api/docs"
+                            target="_blank"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                            style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                            title="API Documentation (Swagger)"
+                            aria-label="API Documentation"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                            </svg>
+                        </a>
 
                         <!-- Theme Toggle Button -->
                         <button
