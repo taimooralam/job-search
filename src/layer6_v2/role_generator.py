@@ -37,17 +37,17 @@ from src.layer6_v2.prompts.role_generation import (
 # ===== SCHEMA VALIDATION =====
 
 class GeneratedBulletModel(BaseModel):
-    """Pydantic model for validating generated bullet with STAR format (GAP-005)."""
+    """Pydantic model for validating generated bullet with ARIS format (GAP-005 updated)."""
 
-    text: str = Field(..., min_length=20, max_length=250, description="STAR-formatted bullet text (20-35 words)")
+    text: str = Field(..., min_length=20, max_length=300, description="ARIS-formatted bullet text (25-40 words)")
     source_text: str = Field(..., min_length=10, description="Original achievement from source")
     source_metric: Optional[str] = Field(default=None, description="Exact metric from source")
     jd_keyword_used: Optional[str] = Field(default=None, description="JD keyword integrated")
     pain_point_addressed: Optional[str] = Field(default=None, description="Pain point addressed")
-    # STAR components (GAP-005)
-    situation: Optional[str] = Field(default=None, description="Challenge/context that prompted the action")
-    action: Optional[str] = Field(default=None, description="What was done including skills/technologies")
-    result: Optional[str] = Field(default=None, description="Quantified outcome achieved")
+    # ARIS components (GAP-005 updated to ARIS format)
+    action: Optional[str] = Field(default=None, description="What was done including skills/technologies (appears first)")
+    result: Optional[str] = Field(default=None, description="Quantified outcome achieved (appears after action)")
+    situation: Optional[str] = Field(default=None, description="Challenge/context tied to JD pain point (appears at end)")
 
     @field_validator('text')
     @classmethod
@@ -83,7 +83,7 @@ class RoleBulletsResponseModel(BaseModel):
     )
 
     def to_role_bullets(self, role: RoleData) -> RoleBullets:
-        """Convert to RoleBullets dataclass with STAR components (GAP-005)."""
+        """Convert to RoleBullets dataclass with ARIS components (GAP-005 updated)."""
         generated_bullets = [
             GeneratedBullet(
                 text=b.text,
@@ -107,6 +107,8 @@ class RoleBulletsResponseModel(BaseModel):
             bullets=generated_bullets,
             word_count=self.total_word_count,
             keywords_integrated=self.keywords_integrated,
+            hard_skills=role.hard_skills,
+            soft_skills=role.soft_skills,
         )
 
 
@@ -535,6 +537,8 @@ def generate_all_roles_sequential(
                 bullets=[],
                 word_count=0,
                 keywords_integrated=[],
+                hard_skills=role.hard_skills,
+                soft_skills=role.soft_skills,
             ))
 
     # Summary
@@ -629,6 +633,8 @@ def generate_all_roles_with_star_enforcement(
                 bullets=[],
                 word_count=0,
                 keywords_integrated=[],
+                hard_skills=role.hard_skills,
+                soft_skills=role.soft_skills,
             ))
 
     # Summary

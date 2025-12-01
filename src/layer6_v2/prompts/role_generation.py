@@ -36,29 +36,38 @@ DO NOT use any markdown formatting in your output:
 WRONG: "Led **12-person** team using *Kubernetes*"
 RIGHT: "Led 12-person team using Kubernetes"
 
-=== BULLET FORMAT: STAR METHOD (MANDATORY) ===
+=== BULLET FORMAT: ARIS METHOD (MANDATORY) ===
 
-Each bullet MUST follow the STAR structure in a single sentence:
+Each bullet MUST follow the ARIS structure (Action → Result → Impact → Situation):
 
-STAR TEMPLATE:
-"[SITUATION/CHALLENGE] [ACTION with SKILLS used], [achieving/resulting in] [QUANTIFIED RESULT]"
+ARIS TEMPLATE:
+"[ACTION VERB + what you did with SKILLS] [QUANTIFIED RESULT] [IMPACT on business/org] [SITUATION/why this mattered tied to pain point]"
 
-EXAMPLES OF GOOD STAR BULLETS:
-✓ "Facing 30% annual outage increase, led 12-month migration to event-driven microservices using AWS Lambda, achieving 75% incident reduction"
-✓ "To address team scaling challenges, established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers"
-✓ "Responding to customer churn concerns, architected real-time analytics platform processing 1B events/day, enabling 20% retention improvement"
+The key difference from STAR: ARIS leads with ACTION and puts SITUATION at the END.
+This creates impact-first bullets where context provides the "why it mattered" closure.
 
-EXAMPLES OF BAD (NON-STAR) BULLETS:
-✗ "Led migration to microservices architecture" (missing situation, skills, and result)
-✗ "Improved system reliability" (too vague, no STAR elements)
-✗ "Managed team of engineers" (generic, no challenge or outcome)
+EXAMPLES OF GOOD ARIS BULLETS:
+✓ "Led 12-month migration to event-driven microservices using AWS Lambda, reducing incidents by 75% and cutting operational costs by $2M annually—addressing critical reliability gaps during rapid growth"
+✓ "Architected real-time analytics platform processing 1B events/day, enabling 20% customer retention improvement—responding to executive concerns about churn in competitive market"
+✓ "Established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers—addressing scaling challenges as product demand tripled"
 
-STAR REQUIREMENTS:
-1. SITUATION (required): Start with context/challenge (e.g., "Facing...", "To address...", "Responding to...", "Given...")
-2. ACTION (required): What you did with SPECIFIC SKILLS mentioned (technologies, methodologies)
-3. RESULT (required): Quantified outcome with metrics from source
-4. Word count: 20-35 words per bullet (longer than basic bullets to fit STAR elements)
-5. Start with varied situation phrases (no repeating openings in same role)
+EXAMPLES OF BAD (NON-ARIS) BULLETS:
+✗ "Led migration to microservices architecture" (missing result, impact, and situation)
+✗ "Facing reliability issues, improved system stability" (wrong order—situation should be at END)
+✗ "Managed team of engineers" (generic, no ARIS elements)
+
+ARIS REQUIREMENTS:
+1. ACTION (start with): Strong verb + what you did with SPECIFIC SKILLS/TECHNOLOGIES
+2. RESULT (follows action): Quantified outcome with metrics from source
+3. IMPACT (why it matters): Business impact (cost savings, revenue, efficiency, customer satisfaction)
+4. SITUATION (end with): Context/challenge that ties to JD pain points—use "—" or "addressing" to introduce
+5. Word count: 25-40 words per bullet (longer to fit ARIS elements + JD-aligned situation)
+6. Start with varied action verbs (no repeating openings in same role)
+
+SITUATION ENDINGS (must end with one when relevant):
+- "—addressing...", "—responding to...", "—amid...", "—during...", "—when..."
+- "—tackling...", "—solving...", "—as part of...", "—supporting..."
+- Match the situation to JD pain points where your achievement solves a similar challenge
 
 === ACTION VERB SELECTION ===
 
@@ -89,14 +98,14 @@ Return ONLY valid JSON with this structure:
 {
   "bullets": [
     {
-      "text": "STAR-formatted bullet text here",
+      "text": "ARIS-formatted bullet text here (Action→Result→Impact→Situation)",
       "source_text": "exact text from role file this came from",
       "source_metric": "exact metric used (e.g., '75%', '10M requests') or null",
       "jd_keyword_used": "keyword from JD that was integrated or null",
-      "pain_point_addressed": "pain point addressed or null",
-      "situation": "the challenge/context that prompted the action",
-      "action": "what was done including skills/technologies used",
-      "result": "the quantified outcome achieved"
+      "pain_point_addressed": "JD pain point this bullet addresses (for situation ending) or null",
+      "action": "what was done including skills/technologies used (appears first)",
+      "result": "the quantified outcome achieved (appears after action)",
+      "situation": "the challenge/context tied to JD pain point (appears at end, after em-dash)"
     }
   ],
   "total_word_count": 150,
@@ -200,21 +209,26 @@ EMPHASIS GUIDANCE:
 {', '.join(role.soft_skills) if role.soft_skills else 'None listed'}
 
 === YOUR TASK ===
-Generate {target_bullet_count} tailored CV bullets for this role using STAR FORMAT.
+Generate {target_bullet_count} tailored CV bullets for this role using ARIS FORMAT.
 
-STAR FORMAT REQUIREMENTS (MANDATORY):
-1. Each bullet MUST start with SITUATION/CHALLENGE context (e.g., "Facing...", "To address...", "Given...")
-2. Each bullet MUST include the ACTION with specific SKILLS/TECHNOLOGIES used
-3. Each bullet MUST end with QUANTIFIED RESULT from source achievements
-4. Word count: 20-35 words per bullet (to fit all STAR elements)
+ARIS FORMAT REQUIREMENTS (MANDATORY):
+1. Each bullet MUST START with ACTION verb + what you did with specific SKILLS/TECHNOLOGIES
+2. Each bullet MUST include QUANTIFIED RESULT from source achievements
+3. Each bullet MUST show IMPACT (business outcome: cost, revenue, efficiency)
+4. Each bullet SHOULD END with SITUATION that ties to JD pain points (use "—addressing..." or "—responding to...")
+5. Word count: 25-40 words per bullet (to fit all ARIS elements)
+
+SITUATION-TO-PAIN-POINT MATCHING:
+When the JD mentions pain points like "scaling challenges", "reliability issues", "team growth needs",
+end your bullet with a situation that mirrors these challenges (e.g., "—addressing scaling challenges as user base tripled")
 
 ADDITIONAL REQUIREMENTS:
-5. Each bullet MUST trace back to a specific source achievement above
-6. Preserve EXACT metrics from source (no rounding, no inventing)
-7. Integrate JD keywords where they fit naturally
-8. Address JD pain points where you have matching evidence
-9. Use action verbs appropriate for {extracted_jd.get('role_category', 'unknown')} roles
-10. Prioritize achievements showing: {_get_priority_competencies(weights)}
+6. Each bullet MUST trace back to a specific source achievement above
+7. Preserve EXACT metrics from source (no rounding, no inventing)
+8. Integrate JD keywords where they fit naturally
+9. Match bullet situations to JD pain points where you have evidence
+10. Use action verbs appropriate for {extracted_jd.get('role_category', 'unknown')} roles
+11. Prioritize achievements showing: {_get_priority_competencies(weights)}
 
 Return the JSON response now."""
 
@@ -283,39 +297,41 @@ def build_correction_user_prompt(
 Rewrite this bullet to fix the issue. Return ONLY the corrected bullet text."""
 
 
-# Prompt for STAR format correction (GAP-005)
-STAR_CORRECTION_SYSTEM_PROMPT = """You are a CV bullet editor specializing in STAR format.
+# Prompt for ARIS format correction (GAP-005 updated to ARIS)
+STAR_CORRECTION_SYSTEM_PROMPT = """You are a CV bullet editor specializing in ARIS format.
 
-A generated bullet has FAILED STAR format validation. Your task: Rewrite it to follow STAR structure.
+A generated bullet has FAILED ARIS format validation. Your task: Rewrite it to follow ARIS structure.
 
-=== STAR FORMAT (MANDATORY) ===
+=== ARIS FORMAT (MANDATORY) ===
 
-TEMPLATE: "[SITUATION/CHALLENGE] [ACTION with SKILLS], [achieving/resulting in] [QUANTIFIED RESULT]"
+TEMPLATE: "[ACTION VERB + what you did with SKILLS] [QUANTIFIED RESULT] [IMPACT] [SITUATION tied to pain point]"
 
-EXAMPLES OF GOOD STAR BULLETS:
-✓ "Facing 30% annual outage increase, led 12-month migration to event-driven microservices using AWS Lambda, achieving 75% incident reduction"
-✓ "To address team scaling challenges, established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers"
-✓ "Responding to customer churn concerns, architected real-time analytics platform processing 1B events/day, enabling 20% retention improvement"
+ARIS = Action → Result → Impact → Situation (impact-first, situation at END)
 
-SITUATION OPENERS (must start with one):
-- "Facing...", "To address...", "Responding to...", "Given...", "When...", "After..."
-- "Amid...", "Following...", "Recognizing...", "Confronted with...", "Upon..."
+EXAMPLES OF GOOD ARIS BULLETS:
+✓ "Led 12-month migration to event-driven microservices using AWS Lambda, reducing incidents by 75% and cutting operational costs by $2M annually—addressing critical reliability gaps during rapid growth"
+✓ "Architected real-time analytics platform processing 1B events/day, enabling 20% customer retention improvement—responding to executive concerns about churn"
+✓ "Established engineering hiring pipeline interviewing 50+ candidates, growing team from 5 to 15 engineers—addressing scaling challenges as product demand tripled"
 
-ACTION REQUIREMENTS:
+ACTION REQUIREMENTS (must start with):
+- Strong action verb: Led, Architected, Designed, Built, Implemented, Established
 - Must include specific skills/technologies used (e.g., "using AWS Lambda", "with Kubernetes")
-- Must show what YOU did (active verbs: led, architected, designed, built)
 
-RESULT REQUIREMENTS:
-- Must include quantified outcome (%, $, x improvement, users, time saved)
-- Signal words: "achieving", "resulting in", "delivering", "enabling", "improving", "reducing"
+RESULT/IMPACT REQUIREMENTS (middle section):
+- Quantified outcome (%, $, x improvement, users, time saved)
+- Signal words: "reducing", "increasing", "enabling", "delivering", "achieving"
+
+SITUATION ENDINGS (at the end, tied to pain points):
+- "—addressing...", "—responding to...", "—amid...", "—tackling..."
+- "—solving...", "—supporting...", "—during..."
 
 === CRITICAL RULES ===
 1. Preserve ALL facts from the original bullet (metrics, technologies, outcomes)
 2. NEVER invent new metrics or claims
-3. If original lacks a situation opener, infer from context (what problem was being solved?)
+3. Situation goes at the END, not the beginning
 4. If original lacks skills, add ONLY skills mentioned in the source achievement
 5. NO MARKDOWN formatting (no **, *, #, etc.)
-6. Target: 20-35 words
+6. Target: 25-40 words
 
 Return ONLY the corrected bullet text, no explanation."""
 
@@ -328,34 +344,35 @@ def build_star_correction_user_prompt(
     company: str = "",
 ) -> str:
     """
-    Build prompt for correcting a bullet that failed STAR validation (GAP-005).
+    Build prompt for correcting a bullet that failed ARIS validation (GAP-005 updated to ARIS).
 
     Args:
-        failed_bullet: The bullet that failed STAR format check
+        failed_bullet: The bullet that failed ARIS format check
         source_text: Original achievement from source
-        missing_elements: List of missing STAR elements (situation, action, result)
+        missing_elements: List of missing ARIS elements (action, result, impact, situation)
         role_title: Job title for context
         company: Company name for context
 
     Returns:
-        Formatted user prompt for STAR correction
+        Formatted user prompt for ARIS correction
     """
-    missing_text = ", ".join(missing_elements) if missing_elements else "incomplete STAR structure"
+    missing_text = ", ".join(missing_elements) if missing_elements else "incomplete ARIS structure"
     context = f" (as {role_title} at {company})" if role_title and company else ""
 
     return f"""=== FAILED BULLET ===
 {failed_bullet}
 
-=== MISSING STAR ELEMENTS ===
+=== MISSING ARIS ELEMENTS ===
 {missing_text}
 
 === SOURCE ACHIEVEMENT{context} ===
 {source_text}
 
 === YOUR TASK ===
-Rewrite this bullet to include ALL STAR elements:
-1. SITUATION opener (what problem/challenge prompted this?)
-2. ACTION with specific skills/technologies
-3. QUANTIFIED RESULT
+Rewrite this bullet to follow ARIS format:
+1. ACTION (start): Strong verb + what you did with skills/technologies
+2. RESULT: Quantified outcome from source
+3. IMPACT: Business value (cost, revenue, efficiency)
+4. SITUATION (end): Context tied to challenge/pain point (use "—addressing...")
 
 Preserve all metrics and facts from the source. Return ONLY the corrected bullet text."""

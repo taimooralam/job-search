@@ -253,16 +253,17 @@ class TestSTARCorrectionPrompt:
         assert "Staff Engineer" in prompt
         assert "TechCorp" in prompt
 
-    def test_system_prompt_has_star_template(self):
-        """System prompt should include STAR format template."""
+    def test_system_prompt_has_aris_template(self):
+        """System prompt should include ARIS format template (updated from STAR)."""
         assert "SITUATION" in STAR_CORRECTION_SYSTEM_PROMPT or "situation" in STAR_CORRECTION_SYSTEM_PROMPT.lower()
         assert "ACTION" in STAR_CORRECTION_SYSTEM_PROMPT or "action" in STAR_CORRECTION_SYSTEM_PROMPT.lower()
         assert "RESULT" in STAR_CORRECTION_SYSTEM_PROMPT or "result" in STAR_CORRECTION_SYSTEM_PROMPT.lower()
 
     def test_system_prompt_has_examples(self):
-        """System prompt should include good examples."""
-        assert "Facing" in STAR_CORRECTION_SYSTEM_PROMPT
-        assert "achieving" in STAR_CORRECTION_SYSTEM_PROMPT
+        """System prompt should include good ARIS examples (situation at end)."""
+        # ARIS bullets start with action, situation at end with —addressing
+        assert "Led" in STAR_CORRECTION_SYSTEM_PROMPT  # Action starts bullets
+        assert "addressing" in STAR_CORRECTION_SYSTEM_PROMPT  # Situation endings
 
 
 # ===== STAR Enforcement Integration Tests =====
