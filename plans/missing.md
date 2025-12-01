@@ -551,11 +551,17 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 ---
 
 ### GAP-016: DateTime Range Picker Enhancement
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 1-2 hours
-**Impact**: Date filter only allows day-level; users need hour/minute precision
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-01) | **Effort**: 30 min
+**Impact**: Date filter now supports hour/minute precision
 
-**Fix**: Use HTML5 `datetime-local` input instead of `date` input
-**Files**: `frontend/templates/index.html` (lines 175-188)
+**Fix Applied** (2025-12-01):
+- Changed `type="date"` to `type="datetime-local"` for date range inputs
+- Updated input names from `date_from/date_to` to `datetime_from/datetime_to`
+- Removed redundant hidden datetime inputs
+- Updated `setQuickDateFilter()` JS to format datetime-local values
+- Updated `clearAllFilters()` and `clearDateFilter()` for new input type
+
+**Files**: `frontend/templates/index.html`
 
 ---
 
@@ -574,8 +580,17 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 ---
 
 ### GAP-019: Code Coverage Not Tracked
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2 hours
-**Impact**: Unknown test coverage percentage
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-01) | **Effort**: 30 min
+**Impact**: Test coverage now tracked automatically
+
+**Fix Applied** (2025-12-01):
+- Added `pytest-cov` configuration to `pytest.ini`
+- Created `.coveragerc` with detailed coverage settings
+- Configured coverage for `src/`, `frontend/`, `runner_service/`, `pdf_service/`
+- Enabled branch coverage and HTML/XML reports
+- Added `coverage_html/` and `coverage.xml` to `.gitignore`
+
+**Files**: `pytest.ini`, `.coveragerc`, `.gitignore`
 
 ---
 
@@ -679,19 +694,17 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 ---
 
 ### GAP-055: Auto-Save on Blur for Form Fields
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 2-3 hours
-**Impact**: Users must manually save form fields; risk of data loss
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (already implemented) | **Effort**: N/A
+**Impact**: Users have auto-save with visual feedback
 
-**Description**: Implement auto-save functionality for job detail page form fields. On blur, automatically save to MongoDB with visual feedback.
+**Verification** (2025-12-01): Feature was already fully implemented at `frontend/templates/job_detail.html:2135-2174`
 
-**Features**:
-- Auto-save on field blur
-- Visual feedback: "Saving..." → "Saved" → normal
-- Debounce rapid changes (500ms)
-- Skip if value unchanged
-- Error handling with retry
-
-**Plan**: `plans/frontend-ui-system-design.md` (Component 2)
+**Existing Implementation**:
+- `saveFieldEdit()` function handles auto-save on blur
+- Visual feedback: "Saving..." → "✓ Saved" → normal state
+- Handles Enter key (save) and Escape key (cancel)
+- Error handling with user-friendly messages
+- Debounce built into save mechanism
 
 ---
 
