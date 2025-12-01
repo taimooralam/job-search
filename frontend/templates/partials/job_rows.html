@@ -154,19 +154,32 @@
                     </select>
                 </td>
 
-                <!-- Score -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile">
-                    {% if job.score is not none %}
-                        {% if job.score >= 80 %}
-                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-success">{{ job.score }}</span>
-                        {% elif job.score >= 60 %}
-                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-warning">{{ job.score }}</span>
-                        {% else %}
-                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">{{ job.score }}</span>
-                        {% endif %}
-                    {% else %}
-                        <span class="theme-text-muted">-</span>
-                    {% endif %}
+                <!-- Score (Editable - GAP-067) -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile" onclick="event.stopPropagation()">
+                    <div class="editable-score-container" data-job-id="{{ job._id }}">
+                        <!-- Display mode -->
+                        <span class="score-display cursor-pointer hover:ring-2 hover:ring-accent-400 hover:ring-offset-1 rounded-full transition-all"
+                              onclick="enableScoreEdit(this, '{{ job._id }}', {{ job.score if job.score is not none else 'null' }})"
+                              title="Click to edit score">
+                            {% if job.score is not none %}
+                                {% if job.score >= 80 %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium badge-success">{{ job.score }}</span>
+                                {% elif job.score >= 60 %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium badge-warning">{{ job.score }}</span>
+                                {% else %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">{{ job.score }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray cursor-pointer">—</span>
+                            {% endif %}
+                        </span>
+                        <!-- Edit mode (hidden by default) -->
+                        <input type="number" min="0" max="100"
+                               class="score-input hidden w-14 px-2 py-1 text-xs text-center rounded-full border theme-border theme-bg-secondary theme-text-primary focus:ring-2 focus:ring-accent-500"
+                               onblur="saveScore(this, '{{ job._id }}')"
+                               onkeydown="handleScoreKeydown(event, this, '{{ job._id }}')"
+                               value="{{ job.score if job.score is not none else '' }}">
+                    </div>
                 </td>
 
                 <!-- Actions -->
