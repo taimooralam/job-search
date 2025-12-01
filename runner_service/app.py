@@ -470,11 +470,68 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
     i = 0
 
     def parse_inline_marks(text):
-        """Parse bold and italic marks from text."""
-        # Simple regex-based parsing for bold (**text**) and italic (*text*)
-        # For now, just return plain text node
-        # TODO: Implement proper inline mark parsing
-        return [{"type": "text", "text": text}]
+        """Parse bold and italic marks from text.
+
+        GAP-012 Fix: Properly parse **bold** and *italic* markdown to TipTap marks.
+
+        Supports:
+        - **bold** → text with bold mark
+        - *italic* → text with italic mark
+        - ***bold+italic*** → text with both marks
+        - Mixed text like "Hello **world** and *universe*"
+        """
+        import re
+
+        if not text:
+            return []
+
+        result = []
+
+        # Regex pattern for bold (**text**), italic (*text*), or bold+italic (***text***)
+        # Order matters: check *** first, then **, then *
+        pattern = r'(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*([^*]+?)\*)'
+
+        last_end = 0
+        for match in re.finditer(pattern, text):
+            # Add any plain text before this match
+            if match.start() > last_end:
+                plain_text = text[last_end:match.start()]
+                if plain_text:
+                    result.append({"type": "text", "text": plain_text})
+
+            # Determine which group matched
+            if match.group(2):  # ***bold+italic***
+                result.append({
+                    "type": "text",
+                    "text": match.group(2),
+                    "marks": [{"type": "bold"}, {"type": "italic"}]
+                })
+            elif match.group(3):  # **bold**
+                result.append({
+                    "type": "text",
+                    "text": match.group(3),
+                    "marks": [{"type": "bold"}]
+                })
+            elif match.group(4):  # *italic*
+                result.append({
+                    "type": "text",
+                    "text": match.group(4),
+                    "marks": [{"type": "italic"}]
+                })
+
+            last_end = match.end()
+
+        # Add any remaining plain text after the last match
+        if last_end < len(text):
+            remaining = text[last_end:]
+            if remaining:
+                result.append({"type": "text", "text": remaining})
+
+        # If no matches found, return the original text as plain
+        if not result:
+            result.append({"type": "text", "text": text})
+
+        return result
 
     while i < len(lines):
         line = lines[i].strip()
