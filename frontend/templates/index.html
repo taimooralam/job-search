@@ -368,6 +368,7 @@
             <div id="job-table-container"
                  hx-get="/partials/job-rows"
                  hx-trigger="load, refresh from:body"
+                 hx-include=".filter-input"
                  hx-indicator=".htmx-indicator">
                 <!-- Table content loaded via HTMX -->
                 <div class="p-8 text-center theme-text-tertiary">
