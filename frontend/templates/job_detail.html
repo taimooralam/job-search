@@ -67,8 +67,8 @@
     </div>
 
     <!-- Job Header -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-        <div class="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-indigo-700">
+    <div class="panel shadow-lg overflow-hidden mb-6">
+        <div class="px-6 py-5 border-b theme-border bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-700 dark:to-indigo-800">
             <div class="flex justify-between items-start">
                 <div>
                     <h1 class="text-2xl font-bold text-white">{{ job.title or 'Untitled Position' }}</h1>
@@ -88,8 +88,8 @@
         </div>
 
         <!-- Quick Info Bar -->
-        <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap gap-4 text-sm">
-            <div class="flex items-center text-gray-600">
+        <div class="px-6 py-3 theme-bg-secondary border-b theme-border flex flex-wrap gap-4 text-sm">
+            <div class="flex items-center theme-text-secondary">
                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -97,7 +97,7 @@
                 {{ job.location or 'Location not specified' }}
             </div>
             {% if job.createdAt %}
-            <div class="flex items-center text-gray-600">
+            <div class="flex items-center theme-text-secondary">
                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
@@ -107,9 +107,9 @@
             {% if job.score is not none %}
             <div class="flex items-center">
                 <span class="px-2 py-0.5 rounded-full text-xs font-medium
-                    {% if job.score >= 80 %}bg-green-100 text-green-800
-                    {% elif job.score >= 60 %}bg-yellow-100 text-yellow-800
-                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {% if job.score >= 80 %}bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400
+                    {% elif job.score >= 60 %}bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400
+                    {% else %}theme-bg-hover theme-text-secondary{% endif %}">
                     Score: {{ job.score }}
                 </span>
             </div>
@@ -119,13 +119,13 @@
         <!-- Main Content -->
         <div class="p-6">
             <!-- Status & Actions -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Status & Actions</h2>
+            <div class="mb-6 p-4 theme-bg-secondary rounded-lg">
+                <h2 class="text-sm font-semibold theme-text-secondary uppercase tracking-wide mb-3">Status & Actions</h2>
                 <div class="flex flex-wrap items-center gap-4">
                     <div>
-                        <label for="status-select" class="block text-xs text-gray-500 mb-1">Current Status</label>
+                        <label for="status-select" class="block text-xs theme-text-tertiary mb-1">Current Status</label>
                         <select id="status-select"
-                                class="border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                                class="form-select py-2 px-3 text-sm"
                                 onchange="updateJobField('status', this.value)">
                             {% for s in statuses %}
                             <option value="{{ s }}" {{ 'selected' if (job.status or 'not processed') == s else '' }}>{{ s }}</option>
@@ -133,9 +133,9 @@
                         </select>
                     </div>
                     <div>
-                        <label for="priority-select" class="block text-xs text-gray-500 mb-1">Priority</label>
+                        <label for="priority-select" class="block text-xs theme-text-tertiary mb-1">Priority</label>
                         <select id="priority-select"
-                                class="border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500"
+                                class="form-select py-2 px-3 text-sm"
                                 onchange="updateJobField('priority', this.value)">
                             <option value="" {{ 'selected' if not job.priority }}>None</option>
                             <option value="low" {{ 'selected' if job.priority == 'low' }}>Low</option>
@@ -144,7 +144,7 @@
                         </select>
                     </div>
                     {% if job.updatedAt %}
-                    <div class="text-xs text-gray-500">
+                    <div class="text-xs theme-text-tertiary">
                         Last updated: {{ job.updatedAt[:19] | replace('T', ' ') }}
                     </div>
                     {% endif %}
