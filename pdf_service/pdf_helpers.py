@@ -315,32 +315,32 @@ def build_pdf_html_template(
         h1 {{
             font-size: 34px;
             font-weight: 800;
-            margin: 0 0 12px 0; /* Match editor exactly */
+            margin: 0 0 10px 0; /* GAP-026: 20% tighter spacing */
         }}
 
         h2 {{
             font-size: 20px;
             font-weight: 700;
-            margin: 16px 0 10px;
-            padding-top: 8px;
+            margin: 12px 0 8px; /* GAP-026: 20% tighter spacing */
+            padding-top: 6px;
             border-top: 1px solid #e5e7eb;
         }}
 
         h2:first-child {{
             border-top: none;
             padding-top: 0;
-            margin-top: 0; /* Match editor */
+            margin-top: 0;
         }}
 
         h3 {{
             font-size: 16px;
             font-weight: 600;
-            margin: 12px 0 8px;
+            margin: 10px 0 6px; /* GAP-026: 20% tighter spacing */
         }}
 
-        /* Paragraphs - Match editor: 0.5em top/bottom */
+        /* Paragraphs - GAP-026: 20% tighter (0.4em vs 0.5em) */
         p {{
-            margin: 0.5em 0;
+            margin: 0.4em 0;
             line-height: inherit;
         }}
 
@@ -352,16 +352,16 @@ def build_pdf_html_template(
             margin-bottom: 0;
         }}
 
-        /* List Styling - Match editor: 1.5em padding, 0.5em margin */
+        /* List Styling - GAP-026: 20% tighter (0.4em vs 0.5em) */
         ul, ol {{
             padding-left: 1.5em;
-            margin: 0.5em 0;
+            margin: 0.4em 0;
             list-style-position: outside;
         }}
 
-        /* List items - Match editor: 0.25em margin */
+        /* List items - GAP-026: 20% tighter (0.2em vs 0.25em) */
         li {{
-            margin: 0.25em 0;
+            margin: 0.2em 0;
             line-height: inherit;
         }}
 

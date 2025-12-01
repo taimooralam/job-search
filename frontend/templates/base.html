@@ -1126,7 +1126,7 @@
             font-size: 34px;
             font-weight: 800;
             color: #475569;  /* slate-600 */
-            margin: 0 0 12px 0;
+            margin: 0 0 10px 0; /* GAP-026: 20% tighter spacing */
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
 
@@ -1135,8 +1135,8 @@
             font-size: 20px;
             font-weight: 700;
             color: #475569;  /* slate-600 */
-            margin: 16px 0 10px;
-            padding-top: 8px;
+            margin: 12px 0 8px; /* GAP-026: 20% tighter spacing */
+            padding-top: 6px;
             border-top: 1px solid #e5e7eb;
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
@@ -1152,13 +1152,13 @@
             font-size: 16px;
             font-weight: 600;
             color: #475569;  /* slate-600 */
-            margin: 12px 0 8px;
+            margin: 10px 0 6px; /* GAP-026: 20% tighter spacing */
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
 
-        /* Paragraphs - Bug #4: Inherit line-height from document settings */
+        /* Paragraphs - GAP-026: 20% tighter (0.4em vs 0.5em) */
         .ProseMirror p {
-            margin: 0.5em 0;
+            margin: 0.4em 0;
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
 
@@ -1184,10 +1184,11 @@
         }
 
         /* Lists */
+        /* Lists - GAP-026: 20% tighter spacing */
         .ProseMirror ul,
         .ProseMirror ol {
             padding-left: 1.5em;
-            margin: 0.5em 0;
+            margin: 0.4em 0; /* GAP-026: 20% tighter (was 0.5em) */
         }
 
         .ProseMirror ul {
@@ -1199,7 +1200,7 @@
         }
 
         .ProseMirror li {
-            margin: 0.25em 0;
+            margin: 0.2em 0; /* GAP-026: 20% tighter (was 0.25em) */
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
 
@@ -1207,12 +1208,12 @@
             margin: 0;
         }
 
-        /* Nested lists */
+        /* Nested lists - GAP-026: 20% tighter */
         .ProseMirror ul ul,
         .ProseMirror ol ul,
         .ProseMirror ul ol,
         .ProseMirror ol ol {
-            margin: 0.25em 0;
+            margin: 0.2em 0; /* GAP-026: 20% tighter (was 0.25em) */
         }
 
         /* Highlight/Mark */
@@ -1317,7 +1318,7 @@
             line-height: 1.15;
         }
 
-        /* Headings - GAP-054: Match .ProseMirror editor exactly */
+        /* Headings - GAP-054: Match .ProseMirror editor exactly, GAP-026: 20% tighter */
         #cv-markdown-display h1,
         #cv-container h1,
         #cv-display-area h1 {
@@ -1325,7 +1326,7 @@
             font-size: 34px;
             font-weight: 800;
             color: #475569;  /* slate-600 - matches editor */
-            margin: 0 0 12px 0;
+            margin: 0 0 10px 0; /* GAP-026: 20% tighter */
             line-height: inherit;
         }
 
@@ -1336,8 +1337,8 @@
             font-size: 20px;
             font-weight: 700;
             color: #475569;  /* slate-600 - matches editor */
-            margin: 16px 0 10px;
-            padding-top: 8px;
+            margin: 12px 0 8px; /* GAP-026: 20% tighter */
+            padding-top: 6px;
             border-top: 1px solid #e5e7eb;
             line-height: inherit;
         }
@@ -1357,15 +1358,15 @@
             font-size: 16px;
             font-weight: 600;
             color: #475569;  /* slate-600 - matches editor */
-            margin: 12px 0 8px;
+            margin: 10px 0 6px; /* GAP-026: 20% tighter */
             line-height: inherit;
         }
 
-        /* Paragraphs - Bug #4: Inherit line-height from container */
+        /* Paragraphs - GAP-026: 20% tighter (0.4em vs 0.5em) */
         #cv-markdown-display p,
         #cv-container p,
         #cv-display-area p {
-            margin: 0.5em 0;
+            margin: 0.4em 0;
             line-height: inherit; /* Bug #4: Inherit from document settings */
         }
 
@@ -1400,7 +1401,7 @@
             text-decoration: underline;
         }
 
-        /* Lists */
+        /* Lists - GAP-026: 20% tighter spacing */
         #cv-markdown-display ul,
         #cv-markdown-display ol,
         #cv-container ul,
@@ -1408,7 +1409,7 @@
         #cv-display-area ul,
         #cv-display-area ol {
             padding-left: 1.5em;
-            margin: 0.5em 0;
+            margin: 0.4em 0; /* GAP-026: 20% tighter (was 0.5em) */
         }
 
         #cv-markdown-display ul,
@@ -1426,7 +1427,7 @@
         #cv-markdown-display li,
         #cv-container li,
         #cv-display-area li {
-            margin: 0.25em 0;
+            margin: 0.2em 0; /* GAP-026: 20% tighter (was 0.25em) */
             line-height: inherit; /* Bug #4: Inherit from document settings */
             list-style-position: outside;
         }
@@ -1437,7 +1438,7 @@
             margin: 0;
         }
 
-        /* Nested lists */
+        /* Nested lists - GAP-026: 20% tighter */
         #cv-markdown-display ul ul,
         #cv-markdown-display ol ul,
         #cv-markdown-display ul ol,
@@ -1450,7 +1451,7 @@
         #cv-display-area ol ul,
         #cv-display-area ul ol,
         #cv-display-area ol ol {
-            margin: 0.25em 0;
+            margin: 0.2em 0; /* GAP-026: 20% tighter (was 0.25em) */
         }
 
         /* Highlight/Mark */
