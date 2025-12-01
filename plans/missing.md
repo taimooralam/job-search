@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: GAP-005 STAR enforcement fixed)
+**Last Updated**: 2025-12-01 (Week 2 Sprint: GAP-034 bulk processing, GAP-047/048 line spacing fixed)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -11,10 +11,10 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 17 (8 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (3 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P1 (HIGH)** | 17 (10 fixed) | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 25 (4 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 | Backlog - nice-to-have improvements |
-| **Total** | **63** (14 fixed/documented, 49 open) | All identified gaps |
+| **Total** | **63** (17 fixed/documented, 46 open) | All identified gaps |
 
 **Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -237,33 +237,38 @@ return [{"type": "text", "text": text}]  # Just returns plain text
 
 ---
 
-### GAP-047: Line Spacing Bug in CV Editor
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
-**Impact**: Line height/spacing inconsistent in TipTap editor vs PDF output
+### GAP-047: Line Spacing Bug in CV Editor ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 2-4 hours
+**Impact**: Line height/spacing now consistent between TipTap editor and PDF output
 
-**Description**: Line spacing in the CV editor doesn't match PDF output, breaking WYSIWYG experience.
+**Fix Applied** (2025-12-01):
+1. Audited `.ProseMirror` CSS line-height values in `frontend/templates/base.html`
+2. Updated `pdf_service/pdf_helpers.py` to use relative units (`em`) matching editor:
+   - Paragraphs: `margin: 0.5em 0` (was `margin-bottom: 8px`)
+   - Lists: `padding-left: 1.5em` (was `20px`)
+   - List items: `margin: 0.25em 0` (was `6px`)
+   - All elements: `line-height: inherit` for document-level cascade
+3. Editor and PDF now use identical spacing values
 
-**Root Cause**: CSS line-height values in `.ProseMirror` may not match PDF rendering styles.
-
-**Fix Required**:
-1. Audit `.ProseMirror` CSS line-height values
-2. Match with PDF service CSS
-3. Test across all paragraph types
-
-**Related**: GAP-049 (WYSIWYG Consistency)
+**Related**: GAP-048 (also fixed), GAP-049 (WYSIWYG Consistency)
 
 ---
 
-### GAP-048: Line Spacing Bug in CV Generation
-**Priority**: P1 HIGH | **Status**: PENDING | **Effort**: 2-4 hours
-**Impact**: Generated CVs have inconsistent line spacing compared to original master-cv
+### GAP-048: Line Spacing Bug in CV Generation ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 2-4 hours
+**Impact**: Generated CVs now have consistent line spacing matching editor and PDF
 
-**Description**: CV generation (Layer 6 V2) produces text with different line spacing than expected.
+**Fix Applied** (2025-12-01):
+Updated `pdf_service/pdf_helpers.py` CSS to match editor styling exactly:
+1. Headings: Added `line-height: inherit` to h1-h6 (matches editor cascade)
+2. Paragraphs: Changed from `margin-bottom: 8px` to `margin: 0.5em 0`
+3. First/last paragraph: Added margin override rules (matches editor)
+4. Lists: Changed `padding-left` from `20px` to `1.5em`, `margin` from `6px 0` to `0.5em 0`
+5. List items: Changed `margin` from `6px 0` to `0.25em 0`
+6. Nested list items: Added `li > p { margin: 0 }` rule (matches editor)
 
-**Fix Required**:
-1. Review `src/layer6_v2/` generation logic
-2. Ensure consistent spacing in output
-3. Match output to editor and PDF standards
+**Files Modified**: `pdf_service/pdf_helpers.py`
+**Tests**: All 31 PDF helper tests pass
 
 ---
 
@@ -680,23 +685,37 @@ python -m pytest tests/unit -n auto --tb=short
 
 ---
 
-### GAP-034: Bulk Job Processing
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 8-12 hours
-**Impact**: No batch processing capability; must process jobs one at a time
+### GAP-034: Bulk Job Processing ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE | **Effort**: 2 hours (backend existed)
+**Impact**: Batch processing now available via UI - select multiple jobs and process together
 
-**Current State**:
-- Pipeline processes single job per invocation
-- No queue management for multiple jobs
-- No parallel processing optimization
-- No bulk progress tracking
+**Discovery** (2025-12-01):
+The backend bulk processing was **already implemented** but had no frontend UI:
+- `/jobs/run-bulk` endpoint existed in `runner_service/app.py:236-256`
+- `RunBulkRequest` model existed in `runner_service/models.py:23-28`
+- Proxy endpoint existed in `frontend/runner.py:71-104`
+- Concurrency control via `asyncio.Semaphore(MAX_CONCURRENCY)` already in place
 
-**Fix Required**:
-1. Implement job queue with priority ordering
-2. Add batch processing endpoint in runner service
-3. Create bulk progress dashboard in frontend
-4. Optimize for parallel layer execution where possible
+**Fix Applied** (2025-12-01):
+1. Added "Process Selected" button to job list (`frontend/templates/index.html`)
+2. Updated `updateSelectionCount()` to enable/disable process button
+3. Added `processSelectedJobs()` function in `frontend/templates/base.html`
+4. Button calls `/api/runner/jobs/run-bulk` with selected job IDs
+5. Confirmation dialog shows job count before processing
+6. Selection clears after successful queue submission
 
-**Files**: `runner_service/app.py`, `scripts/run_pipeline.py`, `frontend/`
+**Concurrency Configuration**:
+```bash
+# Environment variable (default: 3, range: 1-20)
+MAX_CONCURRENCY=5  # Increase for batch processing day
+```
+
+**Usage**:
+1. Go to job list page
+2. Select jobs via checkboxes (or "Select All")
+3. Click green "Process Selected" button
+4. Confirm batch processing
+5. Jobs queued and processed (up to MAX_CONCURRENCY simultaneously)
 
 ---
 
