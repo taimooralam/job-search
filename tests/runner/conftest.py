@@ -3,18 +3,20 @@ Pytest fixtures for runner service tests.
 """
 
 import os
+
+# IMPORTANT: Set environment variables BEFORE any imports from runner_service
+# to ensure RunnerSettings is configured correctly when first loaded.
+# RunnerSettings validation requires:
+# - runner_api_secret: min 16 characters
+# - pipeline_timeout_seconds: min 60 seconds
+os.environ["ENVIRONMENT"] = "development"
+os.environ["RUNNER_API_SECRET"] = "test-secret-key-1234"  # Min 16 chars
+os.environ["MAX_CONCURRENCY"] = "2"
+os.environ["LOG_BUFFER_LIMIT"] = "100"
+os.environ["PIPELINE_TIMEOUT_SECONDS"] = "60"  # Min 60 seconds
+
 import pytest
 from fastapi.testclient import TestClient
-
-
-@pytest.fixture(scope="session", autouse=True)
-def set_test_env():
-    """Set test environment variables."""
-    os.environ["ENVIRONMENT"] = "development"
-    os.environ["RUNNER_API_SECRET"] = "test-secret-key"
-    os.environ["MAX_CONCURRENCY"] = "2"
-    os.environ["LOG_BUFFER_LIMIT"] = "100"
-    os.environ["PIPELINE_TIMEOUT_SECONDS"] = "30"
 
 
 @pytest.fixture
@@ -27,7 +29,7 @@ def client():
 @pytest.fixture
 def auth_headers():
     """Authentication headers for test requests."""
-    return {"Authorization": "Bearer test-secret-key"}
+    return {"Authorization": "Bearer test-secret-key-1234"}
 
 
 @pytest.fixture
