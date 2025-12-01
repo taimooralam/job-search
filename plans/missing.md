@@ -12,9 +12,9 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 25 (9 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 25 (10 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 18 (2 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (28 fixed/documented, 36 open) | All identified gaps |
+| **Total** | **64** (29 fixed/documented, 35 open) | All identified gaps |
 
 **Test Coverage**: 862 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -32,6 +32,7 @@
 - **GAP-064**: appliedOn timestamp now set when marking jobs as applied
 - **GAP-056**: Contact management (delete/copy/import) verified as already implemented
 - **GAP-022**: Pipeline progress UI verified as already implemented (7-layer stepper)
+- **GAP-054**: CV display now matches editor exactly (headings, colors, borders)
 
 ---
 
@@ -657,17 +658,24 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 
 ---
 
-### GAP-054: CV Editor WYSIWYG Consistency
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: Editor and detail page display render differently; breaks WYSIWYG
+### GAP-054: CV Editor WYSIWYG Consistency ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 30 minutes
+**Impact**: Editor and detail page now render identically - true WYSIWYG achieved
 
-**Description**: The CV editor (`.ProseMirror`) and detail page display (`#cv-markdown-display`) have different CSS styles, causing visual inconsistency.
+**Fix Applied** (2025-12-01):
+Unified display container styles with `.ProseMirror` editor in `frontend/templates/base.html`:
 
-**Fix Required**:
-1. Create unified `.cv-content` CSS class
-2. Apply to both editor and display containers
-3. Ensure both match PDF output
-4. Remove duplicate/conflicting CSS rules
+| Element | Before (Display) | After (Matches Editor) |
+|---------|------------------|------------------------|
+| h1 | `2em`, no color | `34px`, slate-600, Playfair Display |
+| h2 | `1.5em`, no border | `20px`, slate-600, border-top |
+| h3 | `1.25em`, no color | `16px`, slate-600 |
+| links | blue underline | slate-600, no underline |
+
+**Changes**:
+1. Updated `#cv-markdown-display`, `#cv-container`, `#cv-display-area` heading styles to exactly match `.ProseMirror`
+2. Added h2:first-child rule for consistent border behavior
+3. Updated link color from blue to slate-600 to match editor accent
 
 **Plan**: `plans/cv-editor-wysiwyg-consistency.md`
 
@@ -753,37 +761,38 @@ python -m pytest tests/unit -n auto --tb=short
 
 ---
 
-### GAP-065: LinkedIn Job Scraper - Import Jobs via Job ID
-**Priority**: P2 MEDIUM | **Status**: IN PROGRESS | **Effort**: 4-6 hours
+### GAP-065: LinkedIn Job Scraper - Import Jobs via Job ID ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-01) | **Effort**: 4 hours
 **Impact**: Quick job import from LinkedIn without manual data entry
 
-**Description**: Add ability to import LinkedIn jobs by entering just the job ID. Scrapes LinkedIn's public guest API to extract job details and creates a job record matching the level-2 MongoDB schema.
+**Fix Applied** (2025-12-01):
+Implemented ability to import LinkedIn jobs by entering just the job ID or URL. Scrapes LinkedIn's public guest API to extract job details and creates job records in both level-1 and level-2 MongoDB collections.
 
 **User Flow**:
-1. User enters LinkedIn job ID (e.g., `4081234567`) in dashboard input field
+1. User enters LinkedIn job ID (e.g., `4081234567`) or URL in dashboard input field
 2. System scrapes `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}`
 3. Parses HTML to extract: title, company, location, description, job criteria
-4. Creates job document in MongoDB level-2 collection with status "not processed"
-5. Runs cheap LLM (Haiku) to score job fit (since pipeline hasn't processed it)
+4. Creates job document in both MongoDB level-1 and level-2 collections with status "not processed"
+5. Runs quick LLM (gpt-4o-mini) to score job fit
 6. Redirects user to job detail page
 
-**API Reference** (LinkedIn Public Guest API):
-- Job details: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}`
-- CSS selectors:
-  - Description: `[class*=description] > section > div`
-  - Job criteria: `[class*=_job-criteria-list]`
+**Implementation Complete**:
+1. `src/services/linkedin_scraper.py` - Scraper service with BeautifulSoup HTML parsing
+2. `src/services/quick_scorer.py` - Lightweight LLM scoring using gpt-4o-mini
+3. `frontend/app.py` - POST `/api/jobs/import-linkedin` endpoint with duplicate detection
+4. `frontend/templates/index.html` - Input field + button UI with LinkedIn icon
+5. `frontend/templates/base.html` - JavaScript handler `importLinkedInJob()` with loading states
+6. `requirements.txt` - Added beautifulsoup4 and lxml dependencies
+7. `tests/unit/test_linkedin_scraper.py` - 24 unit tests passing
 
-**Implementation Components**:
-1. `src/services/linkedin_scraper.py` - Scraper service with HTML parsing
-2. `frontend/app.py` - POST `/api/jobs/import-linkedin` endpoint
-3. `frontend/templates/index.html` - Input field + button UI
-4. `src/services/quick_scorer.py` - Lightweight LLM scoring
+**DedupeKey Format**: `company|title|location|source` (all lowercase)
+Example: `testcorp|senior software engineer|san francisco, ca|linkedin_import`
 
-**Files**:
-- `src/services/linkedin_scraper.py` (new)
-- `src/services/quick_scorer.py` (new)
-- `frontend/app.py` - Add endpoint
-- `frontend/templates/index.html` - Add UI
+**Supported Input Formats**:
+- Raw job ID: `4081234567`
+- Full URL: `https://www.linkedin.com/jobs/view/4081234567`
+- URL with params: `https://linkedin.com/jobs/view/4081234567?trk=search`
+- currentJobId param: `https://linkedin.com/jobs/search/?currentJobId=4081234567`
 
 ---
 
