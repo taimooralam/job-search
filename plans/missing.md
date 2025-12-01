@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (15 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 25 (12 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 18 (4 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **64** (32 fixed/documented, 32 open) | All identified gaps |
+| **P3 (LOW)** | 18 (5 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **64** (33 fixed/documented, 31 open) | All identified gaps |
 
 **Test Coverage**: 886 unit tests passing, 48 E2E tests disabled, integration tests pending
 
@@ -1082,16 +1082,22 @@ Added missing fields to canonical `src/common/state.py`:
 ---
 
 ### GAP-057: CV Editor Margin Presets
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 2-3 hours
+**Priority**: P3 LOW | **Status**: ✅ FIXED (2025-12-01) | **Effort**: 1 hour
 **Impact**: Users must manually set margins; no quick presets
 
-**Description**: Add preset margin options (Normal, Narrow, Wide, Custom) for CV editor document styles.
+**Fix Applied**:
+Added margin preset dropdown to CV editor Document Settings:
+- **Normal** (1" all sides) - default
+- **Narrow** (0.5" all sides) - for compact CVs
+- **Moderate** (0.75" all sides) - balanced option
+- **Wide** (1.5" all sides) - for formal documents
+- **Custom** - shows individual margin controls
 
-**Presets**:
-- Normal: 1" all sides
-- Narrow: 0.5" all sides
-- Wide: 1.5" all sides
-- Custom: user-defined
+**Files**:
+- `frontend/templates/job_detail.html` - Added preset dropdown UI
+- `frontend/static/js/cv-editor.js` - Added `applyMarginPreset()` and `updateMarginPreset()` functions
+
+**UX**: Selecting Custom shows detailed controls; changing individual margins auto-detects matching presets
 
 ---
 
