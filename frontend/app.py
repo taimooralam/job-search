@@ -1534,6 +1534,22 @@ def logout():
 
 
 # ============================================================================
+# API Documentation
+# ============================================================================
+
+@app.route("/api-docs")
+def api_docs():
+    """Serve Swagger UI for API documentation."""
+    return render_template("api_docs.html")
+
+
+@app.route("/api/openapi.yaml")
+def openapi_spec():
+    """Serve the OpenAPI specification file."""
+    return app.send_static_file("openapi.yaml")
+
+
+# ============================================================================
 # HTML Routes (HTMX-powered)
 # ============================================================================
 
