@@ -1570,7 +1570,18 @@ def job_rows_partial():
     """
     # Reuse the list_jobs logic
     response = list_jobs()
-    data = response.get_json()
+
+    # Handle tuple response (error case returns (response, status_code))
+    if isinstance(response, tuple):
+        json_response, status_code = response
+        if status_code >= 400:
+            # Return error as HTML for HTMX
+            error_data = json_response.get_json()
+            error_msg = error_data.get("message", error_data.get("error", "Unknown error"))
+            return f'<tr><td colspan="8" class="px-4 py-8 text-center text-red-500">Error: {error_msg}</td></tr>', status_code
+        data = json_response.get_json()
+    else:
+        data = response.get_json()
 
     return render_template(
         "partials/job_rows.html",
