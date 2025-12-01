@@ -1,0 +1,66 @@
+# Coverage configuration (GAP-019)
+# Run tests with: pytest tests/unit
+# View HTML report: open coverage_html/index.html
+# Disable coverage for debugging: pytest --no-cov
+
+[run]
+# Source directories to measure
+source =
+    src
+    frontend
+    runner_service
+    pdf_service
+
+# Files/directories to exclude from coverage
+omit =
+    */tests/*
+    */__pycache__/*
+    */migrations/*
+    */.venv/*
+    */venv/*
+    setup.py
+    conftest.py
+
+# Enable branch coverage (if/else paths)
+branch = True
+
+# Parallel mode for pytest-xdist compatibility
+parallel = True
+
+[report]
+# Minimum coverage percentage (warning only, doesn't fail)
+# fail_under = 0
+
+# Skip files with 100% coverage in terminal output
+skip_covered = True
+
+# Show missing line numbers
+show_missing = True
+
+# Exclude specific patterns from coverage requirements
+exclude_lines =
+    # Standard exclusions
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstract
+    # Debugging code
+    if self\.debug:
+    if settings\.DEBUG
+    # Defensive programming
+    except ImportError:
+    except ModuleNotFoundError:
+
+[html]
+# Output directory for HTML report
+directory = coverage_html
+
+# Title for the HTML report
+title = Job Search Pipeline - Test Coverage
+
+[xml]
+# Output file for XML report (for CI integration)
+output = coverage.xml
