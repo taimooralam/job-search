@@ -1305,6 +1305,7 @@
 
         /* ============================================================================
          * Main CV Display Styles (Matches TipTap Editor WYSIWYG)
+         * GAP-054: Unified with .ProseMirror editor styles for true WYSIWYG
          * Applied to the read-only CV display on the detail page
          * ============================================================================ */
         /* CV Display containers - Bug #4: Use inherit for line-height cascade */
@@ -1316,32 +1317,48 @@
             line-height: 1.15;
         }
 
-        /* Headings - Bug #4: Inherit line-height from container */
+        /* Headings - GAP-054: Match .ProseMirror editor exactly */
         #cv-markdown-display h1,
         #cv-container h1,
         #cv-display-area h1 {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 0.67em 0;
-            line-height: inherit; /* Bug #4: Inherit from document settings */
+            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+            font-size: 34px;
+            font-weight: 800;
+            color: #475569;  /* slate-600 - matches editor */
+            margin: 0 0 12px 0;
+            line-height: inherit;
         }
 
         #cv-markdown-display h2,
         #cv-container h2,
         #cv-display-area h2 {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin: 0.5em 0;
-            line-height: inherit; /* Bug #4: Inherit from document settings */
+            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #475569;  /* slate-600 - matches editor */
+            margin: 16px 0 10px;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            line-height: inherit;
+        }
+
+        #cv-markdown-display h2:first-child,
+        #cv-container h2:first-child,
+        #cv-display-area h2:first-child {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
         }
 
         #cv-markdown-display h3,
         #cv-container h3,
         #cv-display-area h3 {
-            font-size: 1.25em;
-            font-weight: bold;
-            margin: 0.4em 0;
-            line-height: inherit; /* Bug #4: Inherit from document settings */
+            font-family: 'Playfair Display', 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #475569;  /* slate-600 - matches editor */
+            margin: 12px 0 8px;
+            line-height: inherit;
         }
 
         /* Paragraphs - Bug #4: Inherit line-height from container */
@@ -1507,19 +1524,19 @@
             color: #6b7280;
         }
 
-        /* Links */
+        /* Links - GAP-054: Match editor slate-600 accent */
         #cv-markdown-display a,
         #cv-container a,
         #cv-display-area a {
-            color: #3b82f6;
-            text-decoration: underline;
+            color: #475569;  /* slate-600 - matches editor */
+            text-decoration: none;
             cursor: pointer;
         }
 
         #cv-markdown-display a:hover,
         #cv-container a:hover,
         #cv-display-area a:hover {
-            color: #2563eb;
+            text-decoration: underline;
         }
 
         /* Collapsible details arrow rotation */
@@ -1997,6 +2014,99 @@
                 }
             } catch (err) {
                 showToast('Update failed: ' + err.message, 'error');
+            }
+        }
+
+        // Import LinkedIn job by ID or URL (GAP-065)
+        async function importLinkedInJob() {
+            const input = document.getElementById('linkedin-job-input');
+            const button = document.getElementById('linkedin-import-btn');
+            const statusDiv = document.getElementById('linkedin-import-status');
+            const jobIdOrUrl = input?.value?.trim();
+
+            if (!jobIdOrUrl) {
+                showToast('Please enter a LinkedIn job ID or URL', 'warning');
+                input?.focus();
+                return;
+            }
+
+            // Disable button and show loading state
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = `
+                    <svg class="animate-spin h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Importing...
+                `;
+            }
+
+            // Show status
+            if (statusDiv) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.className = 'text-sm text-blue-600';
+                statusDiv.textContent = 'Scraping LinkedIn job...';
+            }
+
+            try {
+                const response = await fetch('/api/jobs/import-linkedin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id_or_url: jobIdOrUrl })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.job_id) {
+                    // Update status
+                    if (statusDiv) {
+                        statusDiv.className = 'text-sm text-green-600';
+                        statusDiv.textContent = `Imported! Score: ${result.score || 'N/A'}. Redirecting...`;
+                    }
+
+                    showToast(`Job imported: ${result.title} at ${result.company}. Score: ${result.score || 'N/A'}`, 'success');
+
+                    // Clear input
+                    if (input) input.value = '';
+
+                    // Redirect to job detail page after a short delay
+                    setTimeout(() => {
+                        window.location.href = `/job/${result.job_id}`;
+                    }, 1500);
+                } else {
+                    // Show error
+                    if (statusDiv) {
+                        statusDiv.className = 'text-sm text-red-600';
+                        statusDiv.textContent = result.error || 'Import failed';
+                    }
+                    showToast(result.error || 'Failed to import LinkedIn job', 'error');
+                }
+            } catch (err) {
+                if (statusDiv) {
+                    statusDiv.className = 'text-sm text-red-600';
+                    statusDiv.textContent = 'Network error: ' + err.message;
+                }
+                showToast('Import failed: ' + err.message, 'error');
+            } finally {
+                // Re-enable button
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = `
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span class="hidden sm:inline">Import & Score</span>
+                        <span class="sm:hidden">Import</span>
+                    `;
+                }
+
+                // Hide status after 5 seconds on error
+                setTimeout(() => {
+                    if (statusDiv && statusDiv.classList.contains('text-red-600')) {
+                        statusDiv.classList.add('hidden');
+                    }
+                }, 5000);
             }
         }
 
