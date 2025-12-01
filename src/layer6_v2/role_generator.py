@@ -13,11 +13,11 @@ import json
 import re
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, ValidationError, field_validator
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import ExtractedJD
 from src.common.logger import get_logger
 from src.layer6_v2.cv_loader import RoleData
@@ -132,11 +132,11 @@ class RoleGenerator:
         """
         self.model = model or Config.DEFAULT_MODEL
         self.temperature = temperature if temperature is not None else 0.3  # Lower for consistency
-        self.llm = ChatOpenAI(
+        # GAP-066: Token tracking enabled
+        self.llm = create_tracked_llm(
             model=self.model,
             temperature=self.temperature,
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer6_v2_role",
         )
         self._logger = get_logger(__name__)
 

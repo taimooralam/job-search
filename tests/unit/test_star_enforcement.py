@@ -333,7 +333,7 @@ class TestSTAREnforcementIntegration:
         from src.layer6_v2.role_generator import RoleGenerator
 
         # Create a generator (won't actually call LLM in this test)
-        with patch('src.layer6_v2.role_generator.ChatOpenAI'):
+        with patch('src.layer6_v2.role_generator.create_tracked_llm'):
             generator = RoleGenerator()
 
         # Create bullets with mixed STAR compliance
@@ -371,7 +371,7 @@ class TestSTAREnforcementIntegration:
         """Should correctly identify which STAR elements are missing."""
         from src.layer6_v2.role_generator import RoleGenerator
 
-        with patch('src.layer6_v2.role_generator.ChatOpenAI'):
+        with patch('src.layer6_v2.role_generator.create_tracked_llm'):
             generator = RoleGenerator()
 
         qa = RoleQA()

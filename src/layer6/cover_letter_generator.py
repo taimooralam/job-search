@@ -11,11 +11,11 @@ Generates hyper-personalized cover letters with validation gates for:
 import logging
 import re
 from typing import List
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 
 
@@ -624,11 +624,11 @@ class CoverLetterGenerator:
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
 
-        self.llm = ChatOpenAI(
+        # GAP-066: Token tracking enabled
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=Config.CREATIVE_TEMPERATURE,  # 0.7 for creative writing
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer6_cover_letter",
         )
         self.max_validation_retries = 2
 

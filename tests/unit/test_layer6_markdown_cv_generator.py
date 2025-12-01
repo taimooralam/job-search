@@ -22,31 +22,21 @@ from src.common.state import JobState
 @pytest.fixture
 def mock_llm_providers():
     """
-    Mock both ChatAnthropic and ChatOpenAI to prevent real API calls.
+    Mock the LLM factory to prevent real API calls.
 
     This fixture ensures tests run without making real API requests,
     preventing costs and failures when API credits are low.
+
+    GAP-066: Updated to mock create_tracked_cv_llm factory.
     """
-    with patch('src.layer6.generator.ChatAnthropic') as mock_anthropic, \
-         patch('src.layer6.generator.ChatOpenAI') as mock_openai, \
-         patch('src.layer6.generator.Config') as mock_config:
+    with patch('src.layer6.generator.create_tracked_cv_llm') as mock_factory:
 
-        # Configure mock Config to use OpenAI by default (simpler for tests)
-        mock_config.get_cv_llm_provider.return_value = "openai"
-        mock_config.get_cv_llm_api_key.return_value = "test-api-key"
-        mock_config.get_cv_llm_base_url.return_value = "https://api.openai.com/v1"
-        mock_config.DEFAULT_MODEL = "gpt-4"
-        mock_config.ANALYTICAL_TEMPERATURE = 0.3
-
-        # Create mock LLM instances
+        # Create mock LLM instance
         mock_llm_instance = MagicMock()
-        mock_anthropic.return_value = mock_llm_instance
-        mock_openai.return_value = mock_llm_instance
+        mock_factory.return_value = mock_llm_instance
 
         yield {
-            'anthropic': mock_anthropic,
-            'openai': mock_openai,
-            'config': mock_config,
+            'factory': mock_factory,
             'instance': mock_llm_instance
         }
 

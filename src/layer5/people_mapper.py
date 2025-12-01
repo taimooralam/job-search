@@ -17,12 +17,12 @@ import logging
 import re
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field, field_validator
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 from firecrawl import FirecrawlApp
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -400,11 +400,11 @@ class PeopleMapper:
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
 
-        self.llm = ChatOpenAI(
+        # GAP-066: Token tracking enabled
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=0.4,  # Slightly creative for outreach
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer5",
         )
 
         # FireCrawl for contact discovery (disabled by default via config)

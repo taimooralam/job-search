@@ -18,12 +18,12 @@ Usage:
 import re
 from typing import List, Dict, Optional
 
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.layer6_v2.types import (
     GradeResult,
     ImprovementResult,
@@ -110,12 +110,12 @@ class CVImprover:
         self._logger = get_logger(__name__)
         self.temperature = temperature
 
+        # GAP-066: Token tracking enabled
         model_name = model or Config.DEFAULT_MODEL
-        self.llm = ChatOpenAI(
+        self.llm = create_tracked_llm(
             model=model_name,
             temperature=temperature,
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer6_v2_improver",
         )
         self._logger.info(f"CVImprover initialized with model: {model_name}")
 

@@ -13,11 +13,11 @@ Phase 6 Enhancements:
 import logging
 import re
 from typing import Dict, Any, Tuple, List, Optional
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -129,11 +129,11 @@ class OpportunityMapper:
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
 
-        self.llm = ChatOpenAI(
+        # GAP-066: Token tracking enabled
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for objective analysis
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer4",
         )
 
     def _derive_fit_category(self, fit_score: int) -> str:

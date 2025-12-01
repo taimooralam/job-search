@@ -13,12 +13,11 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_cv_llm
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
@@ -91,27 +90,8 @@ class MarkdownCVGenerator:
     """LLM-driven CV generator that outputs markdown to ./applications/<company>/<role>/CV.md."""
 
     def __init__(self):
-        # Select appropriate LLM client based on configuration
-        provider = Config.get_cv_llm_provider()
-        model = getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL)
-        temperature = getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE)
-
-        if provider == "anthropic":
-            # Use Anthropic client directly
-            self.llm = ChatAnthropic(
-                model=model,
-                temperature=temperature,
-                api_key=Config.get_cv_llm_api_key(),
-            )
-        else:
-            # Use OpenAI or OpenRouter (both use ChatOpenAI with different base URLs)
-            self.llm = ChatOpenAI(
-                model=model,
-                temperature=temperature,
-                api_key=Config.get_cv_llm_api_key(),
-                base_url=Config.get_cv_llm_base_url(),
-            )
-
+        # GAP-066: Token tracking enabled via factory
+        self.llm = create_tracked_cv_llm(layer="layer6_cv")
         self.prompt_path = Path("prompts/cv-creator.prompt.md")
 
     @retry(

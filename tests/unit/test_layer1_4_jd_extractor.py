@@ -280,7 +280,7 @@ class TestExtractedJDModelValidation:
 class TestLLMResponseParsing:
     """Test parsing of LLM responses."""
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_parses_valid_json_response(self, mock_llm_class, sample_job_state, sample_llm_response):
         """Valid JSON response is parsed correctly."""
         mock_llm = MagicMock()
@@ -296,7 +296,7 @@ class TestLLMResponseParsing:
         assert result["extracted_jd"]["role_category"] == "head_of_engineering"
         assert result["extracted_jd"]["competency_weights"]["leadership"] == 40
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_parses_json_with_markdown_wrapper(self, mock_llm_class, sample_job_state, sample_llm_response):
         """JSON wrapped in markdown code blocks is parsed correctly."""
         mock_llm = MagicMock()
@@ -311,7 +311,7 @@ class TestLLMResponseParsing:
         assert result["extracted_jd"] is not None
         assert result["extracted_jd"]["title"] == "Head of Engineering"
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_handles_invalid_json_gracefully(self, mock_llm_class, sample_job_state):
         """Invalid JSON returns None and adds error."""
         mock_llm = MagicMock()
@@ -333,7 +333,7 @@ class TestLLMResponseParsing:
 class TestRoleCategoryDetection:
     """Test role category is detected correctly from JD context."""
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_engineering_manager_classification(self, mock_llm_class):
         """Engineering Manager JD is classified correctly."""
         state = {
@@ -384,7 +384,7 @@ class TestRoleCategoryDetection:
 class TestJDExtractorNode:
     """Test jd_extractor_node LangGraph integration."""
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_node_returns_state_updates(self, mock_llm_class, sample_job_state, sample_llm_response):
         """Node function returns correct state updates."""
         mock_llm = MagicMock()
@@ -399,7 +399,7 @@ class TestJDExtractorNode:
         assert updates["extracted_jd"]["role_category"] == "head_of_engineering"
         assert len(updates["extracted_jd"]["top_keywords"]) == 15
 
-    @patch('src.layer1_4.jd_extractor.ChatOpenAI')
+    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
     def test_node_handles_errors_gracefully(self, mock_llm_class, sample_job_state):
         """Node function handles errors without crashing."""
         mock_llm = MagicMock()

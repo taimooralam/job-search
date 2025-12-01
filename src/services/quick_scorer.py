@@ -13,10 +13,10 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple
 
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_cheap_llm
 
 logger = logging.getLogger(__name__)
 
@@ -117,13 +117,8 @@ def quick_score_job(
     )
 
     try:
-        # Use cheap model for quick scoring
-        llm = ChatOpenAI(
-            model=Config.CHEAP_MODEL,  # gpt-4o-mini
-            temperature=0.3,  # Lower temperature for consistent scoring
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
-        )
+        # GAP-066: Use tracked cheap model for quick scoring
+        llm = create_tracked_cheap_llm(layer="quick_scorer")
 
         response = llm.invoke([
             SystemMessage(content=QUICK_SCORE_SYSTEM),

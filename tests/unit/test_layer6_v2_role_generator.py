@@ -613,7 +613,7 @@ class TestRoleQAATSKeywords:
 class TestPhase3Integration:
     """Integration tests for Phase 3 components."""
 
-    @patch('src.layer6_v2.role_generator.ChatOpenAI')
+    @patch('src.layer6_v2.role_generator.create_tracked_llm')
     def test_generator_with_mocked_llm(
         self, mock_llm_class, sample_role_data, sample_extracted_jd
     ):
