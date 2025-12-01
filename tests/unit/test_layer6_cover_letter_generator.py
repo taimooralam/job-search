@@ -347,7 +347,7 @@ I have applied for this role. Calendly: https://calendly.com/taimooralam/15min""
 class TestCoverLetterGenerator:
     """Test CoverLetterGenerator class."""
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_generates_cover_letter_successfully(self, mock_llm_class, sample_job_state, valid_cover_letter):
         """CoverLetterGenerator.generate_cover_letter returns valid letter."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -367,7 +367,7 @@ class TestCoverLetterGenerator:
         assert "75%" in result  # Contains metric
         assert "TechCorp" in result  # Contains company name
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_retry_on_invalid_output(self, mock_llm_class, sample_job_state, invalid_cover_letter_no_metrics, valid_cover_letter):
         """Generator retries on validation failure and succeeds with valid output."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -392,7 +392,7 @@ class TestCoverLetterGenerator:
         assert result == valid_cover_letter
         assert mock_llm.invoke.call_count == 2
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_raises_after_max_retries(self, mock_llm_class, sample_job_state, invalid_cover_letter_no_metrics):
         """Generator raises error after exhausting retries."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -413,7 +413,7 @@ class TestCoverLetterGenerator:
         # Should have tried multiple times (1 initial + 2 retries = 3 total)
         assert mock_llm.invoke.call_count == 3
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_includes_company_research_in_prompt(self, mock_llm_class, sample_job_state, valid_cover_letter):
         """Generator includes company research in LLM prompt."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -434,7 +434,7 @@ class TestCoverLetterGenerator:
         assert "Series B" in prompt_text or "funding" in prompt_text.lower()
         assert "TechCorp" in prompt_text
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_includes_role_research_in_prompt(self, mock_llm_class, sample_job_state, valid_cover_letter):
         """Generator includes role research in LLM prompt."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -455,7 +455,7 @@ class TestCoverLetterGenerator:
         assert "reliability" in prompt_text.lower() or "scale" in prompt_text.lower()
         assert "Business Impact" in prompt_text or "Why Now" in prompt_text
 
-    @patch('src.layer6.cover_letter_generator.ChatOpenAI')
+    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
     def test_references_star_metrics(self, mock_llm_class, sample_job_state, valid_cover_letter):
         """Generated cover letter references STAR metrics."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
@@ -479,7 +479,7 @@ class TestCoverLetterGenerator:
 
         # This test verifies the integration: generate -> validate -> return
         # We'll use a mock that returns invalid output to trigger validation
-        with patch('src.layer6.cover_letter_generator.ChatOpenAI') as mock_llm_class:
+        with patch('src.layer6.cover_letter_generator.create_tracked_llm') as mock_llm_class:
             mock_llm = MagicMock()
             mock_llm_class.return_value = mock_llm
 

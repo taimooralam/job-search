@@ -21,6 +21,7 @@ from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
 from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
 from src.common.token_tracker import get_global_tracker
+from src.common.llm_factory import set_run_context, clear_run_context
 from src.common.database import Database
 
 # Initialize logging
@@ -212,6 +213,9 @@ def run_pipeline(
     # Create structured logger for JSON events
     job_id = job_data.get("job_id", "")
     struct_logger = get_structured_logger(job_id)
+
+    # GAP-066: Set run context for automatic token tracking
+    set_run_context(run_id=run_id, job_id=job_id)
 
     run_logger.info("="*70)
     run_logger.info("STARTING JOB INTELLIGENCE PIPELINE")
@@ -413,6 +417,8 @@ def run_pipeline(
         final_state["errors"] = [f"Pipeline exception: {str(e)}"]
         final_state["status"] = "failed"
         final_state["trace_url"] = trace_url
+        # GAP-066: Clear run context on error
+        clear_run_context()
         raise
 
     # Write final state to JSON file for runner service to read
@@ -458,6 +464,9 @@ def run_pipeline(
             run_logger.warning(f"  - {error}")
 
     run_logger.info("="*70)
+
+    # GAP-066: Clear run context after pipeline completes
+    clear_run_context()
 
     return final_state
 

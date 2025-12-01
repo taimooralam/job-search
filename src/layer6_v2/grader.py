@@ -20,12 +20,12 @@ import re
 from typing import List, Dict, Set, Optional, Tuple
 from collections import Counter
 
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.layer6_v2.types import (
     DimensionScore,
     GradeResult,
@@ -94,12 +94,12 @@ class CVGrader:
         self.passing_threshold = passing_threshold
         self.use_llm_grading = use_llm_grading
 
+        # GAP-066: Token tracking enabled
         model_name = model or Config.DEFAULT_MODEL
-        self.llm = ChatOpenAI(
+        self.llm = create_tracked_llm(
             model=model_name,
             temperature=0.1,  # Low temperature for consistent grading
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer6_v2_grader",
         )
         self._logger.info(f"CVGrader initialized with model: {model_name}")
 

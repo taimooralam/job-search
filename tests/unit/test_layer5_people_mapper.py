@@ -365,7 +365,7 @@ class TestFireCrawlContactDiscovery:
 class TestLLMContactClassification:
     """Test LLM-based contact classification into primary/secondary."""
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_classifies_into_primary_and_secondary(self, mock_llm_class, sample_job_state):
         """LLM classifies contacts into primary vs secondary buckets."""
         mock_llm = MagicMock()
@@ -449,7 +449,7 @@ class TestLLMContactClassification:
         primary_roles = [c["role"] for c in result["primary_contacts"]]
         assert any("VP" in role or "Director" in role or "Manager" in role or "Talent" in role for role in primary_roles)
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_falls_back_to_role_based_contacts(self, mock_llm_class, sample_job_state):
         """Generates role-based contacts when no names found."""
         mock_llm = MagicMock()
@@ -527,7 +527,7 @@ class TestLLMContactClassification:
         assert len(result["primary_contacts"]) >= 4
         assert len(result["secondary_contacts"]) >= 4
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_enriches_contacts_with_recent_signals(self, mock_llm_class, sample_job_state):
         """Enriches contacts with recent_signals from company research."""
         # Add company signals to state
@@ -577,7 +577,7 @@ class TestLLMContactClassification:
 class TestOutreachPackageGeneration:
     """Test OutreachPackage generation with length constraints."""
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_generates_outreach_packages_for_contacts(self, mock_llm_class, sample_job_state):
         """Generates OutreachPackage for each primary contact."""
         # Mock outreach generation
@@ -627,7 +627,7 @@ class TestOutreachPackageGeneration:
         trimmed = mapper._validate_email_subject(long_subject)
         assert len(trimmed) <= 100
 
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_outreach_cites_star_metrics(self, mock_llm_class, sample_job_state):
         """Outreach messages cite specific STAR metrics."""
         mock_llm = MagicMock()
@@ -753,7 +753,7 @@ class TestOutreachPackageGeneration:
 @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
 @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
 @patch('src.layer5.people_mapper.FirecrawlApp')
-@patch('src.layer5.people_mapper.ChatOpenAI')
+@patch('src.layer5.people_mapper.create_tracked_llm')
 def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sample_job_state):
     """Integration test for people_mapper_node."""
     # Mock FireCrawl with valid search results to trigger LLM classification path
@@ -837,7 +837,7 @@ class TestPeopleMapperQualityGates:
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
     @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_quality_gate_minimum_primary_contacts(self, mock_llm_class, mock_firecrawl_class, sample_job_state):
         """Quality gate: verifies GAP-060 contact limits (3 primary + 2 secondary)."""
         # Setup mocks with valid search results to trigger LLM classification path
@@ -895,7 +895,7 @@ class TestPeopleMapperQualityGates:
         assert len(result["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
 
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    @patch('src.layer5.people_mapper.ChatOpenAI')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_quality_gate_specific_why_relevant(self, mock_llm_class, mock_firecrawl_class, sample_job_state):
         """Quality gate: why_relevant is specific and grounded."""
         # Setup mocks

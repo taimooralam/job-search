@@ -188,7 +188,7 @@ class TestCompanyResearcherSchema:
 class TestCompanyResearcherWithMockedDependencies:
     """Test Company Researcher with mocked FireCrawl and LLM."""
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_multi_source_scraping_and_signal_extraction(
@@ -234,7 +234,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_summary"] == valid_company_research_json["summary"]
         assert result["company_url"] == valid_company_research_json["url"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_cache_hit_returns_cached_data(
@@ -279,7 +279,7 @@ class TestCompanyResearcherWithMockedDependencies:
         # Job posting scrape may happen (intentional), but search shouldn't be called
         mock_firecrawl.search.assert_not_called()
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_hallucination_controls_in_prompt(
@@ -298,7 +298,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "NEVER invent" in SYSTEM_PROMPT_COMPANY_SIGNALS
         assert "unknown" in SYSTEM_PROMPT_COMPANY_SIGNALS.lower()
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_funding(
@@ -344,7 +344,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "funding"
         assert "100M" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_acquisition(
@@ -390,7 +390,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "acquisition"
         assert "DataCo" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_leadership_change(
@@ -436,7 +436,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "leadership_change"
         assert "Jane Smith" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_product_launch(
@@ -482,7 +482,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "product_launch"
         assert "analytics" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_partnership(
@@ -528,7 +528,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "partnership"
         assert "AWS" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_growth(
@@ -574,7 +574,7 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "growth"
         assert "200" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_quality_gate_minimum_signals(
@@ -683,7 +683,7 @@ class TestRoleResearcherWithMockedLLM:
     """Test Role Researcher with mocked LLM."""
 
     @patch('src.layer3.role_researcher.FirecrawlApp')
-    @patch('src.layer3.role_researcher.ChatOpenAI')
+    @patch('src.layer3.role_researcher.create_tracked_llm')
     def test_role_analysis_with_company_signals(
         self,
         mock_llm_class,
@@ -724,7 +724,7 @@ class TestRoleResearcherWithMockedLLM:
         # Verify "why_now" mentions signal context
         assert "funding" in result["role_research"]["why_now"].lower() or "$50m" in result["role_research"]["why_now"].lower()
 
-    @patch('src.layer3.role_researcher.ChatOpenAI')
+    @patch('src.layer3.role_researcher.create_tracked_llm')
     def test_hallucination_controls_in_role_prompt(self, mock_llm_class):
         """Role Researcher prompt includes hallucination prevention."""
         from src.layer3.role_researcher import SYSTEM_PROMPT_ROLE_RESEARCH
@@ -735,7 +735,7 @@ class TestRoleResearcherWithMockedLLM:
         assert "explicitly reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower() or "reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower()
 
     @patch('src.layer3.role_researcher.FirecrawlApp')
-    @patch('src.layer3.role_researcher.ChatOpenAI')
+    @patch('src.layer3.role_researcher.create_tracked_llm')
     def test_role_research_handles_llm_failure_gracefully(
         self,
         mock_llm_class,
@@ -761,7 +761,7 @@ class TestRoleResearcherWithMockedLLM:
 # ===== INTEGRATION TESTS =====
 
 @pytest.mark.integration
-@patch('src.layer3.company_researcher.ChatOpenAI')
+@patch('src.layer3.company_researcher.create_tracked_llm')
 @patch('src.layer3.company_researcher.MongoClient')
 @patch('src.layer3.company_researcher.FirecrawlApp')
 def test_company_researcher_node_integration(
@@ -798,7 +798,7 @@ def test_company_researcher_node_integration(
 
 @pytest.mark.integration
 @patch('src.layer3.role_researcher.FirecrawlApp')
-@patch('src.layer3.role_researcher.ChatOpenAI')
+@patch('src.layer3.role_researcher.create_tracked_llm')
 def test_role_researcher_node_integration(
     mock_llm_class,
     mock_firecrawl_class,
@@ -1226,7 +1226,7 @@ class TestPhase5Integration:
     @patch.object(CompanyResearcher, '_scrape_job_posting')
     @patch.object(CompanyResearcher, '_scrape_multiple_sources')
     @patch.object(CompanyResearcher, '_store_cache')
-    @patch('src.layer3.company_researcher.ChatOpenAI')
+    @patch('src.layer3.company_researcher.create_tracked_llm')
     def test_company_researcher_produces_valid_output(
         self,
         mock_llm_class,
@@ -1274,7 +1274,7 @@ class TestPhase5Integration:
             assert "description" in signal
             assert "source" in signal
 
-    @patch('src.layer3.role_researcher.ChatOpenAI')
+    @patch('src.layer3.role_researcher.create_tracked_llm')
     @patch('src.layer3.role_researcher.FirecrawlApp')
     def test_role_researcher_produces_valid_output(
         self,

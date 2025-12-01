@@ -154,7 +154,7 @@ class TestFitCategoryDerivation:
 class TestSTARCitationValidation:
     """Test rationale must cite at least one STAR by ID."""
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_rationale_with_star_reference_passes(self, mock_llm_class, sample_job_state):
         """Rationale citing STAR #1 passes validation."""
         # Mock LLM to return rationale with STAR reference
@@ -180,7 +180,7 @@ move away from monolith architecture.
         assert "STAR #1" in result["fit_rationale"]
         assert result["fit_category"] == "strong"
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_rationale_without_star_reference_fails(self, mock_llm_class, sample_job_state):
         """Rationale without STAR reference fails validation."""
         # Mock LLM to return generic rationale without STAR citation
@@ -210,7 +210,7 @@ automation. Their background in microservices and CI/CD makes them well-suited f
 class TestMetricValidation:
     """Test rationale must include quantified metrics."""
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_rationale_with_metrics_passes(self, mock_llm_class, sample_job_state):
         """Rationale with quantified metrics passes validation."""
         mock_llm = MagicMock()
@@ -232,7 +232,7 @@ from STAR #2 aligns with their need to build platform team capability.
         assert "75%" in result["fit_rationale"]
         assert "24x" in result["fit_rationale"]
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_rationale_without_metrics_fails(self, mock_llm_class, sample_job_state):
         """Rationale without quantified metrics fails validation."""
         mock_llm = MagicMock()
@@ -259,7 +259,7 @@ The candidate has proven experience with CI/CD and automation.
 class TestGenericPhraseDetection:
     """Test validation catches generic boilerplate."""
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_generic_rationale_fails(self, mock_llm_class, sample_job_state):
         """Rationale with only generic phrases is flagged via quality warnings but still returns a score."""
         mock_llm = MagicMock()
@@ -286,7 +286,7 @@ for this position.
 class TestCompanyRoleResearchIntegration:
     """Test prompts include company_research and role_research."""
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_uses_company_research_in_prompt(self, mock_llm_class, sample_job_state):
         """Prompt includes company research summary and signals."""
         mock_llm = MagicMock()
@@ -306,7 +306,7 @@ class TestCompanyRoleResearchIntegration:
         assert "Series B SaaS platform" in prompt_text or "TechCorp" in prompt_text
         assert "$50M" in prompt_text or "funding" in prompt_text
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_uses_role_research_in_prompt(self, mock_llm_class, sample_job_state):
         """Prompt includes role research business impact and why_now."""
         mock_llm = MagicMock()
@@ -326,7 +326,7 @@ class TestCompanyRoleResearchIntegration:
         assert "10x user growth" in prompt_text or "platform team" in prompt_text
         assert "enterprise expansion" in prompt_text or "why_now" in prompt_text.lower()
 
-    @patch('src.layer4.opportunity_mapper.ChatOpenAI')
+    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
     def test_backward_compatibility_without_research(self, mock_llm_class):
         """Mapper works without company_research or role_research."""
         # State without Phase 5 fields
@@ -364,7 +364,7 @@ class TestCompanyRoleResearchIntegration:
 # ===== TESTS: Integration with node function =====
 
 @pytest.mark.integration
-@patch('src.layer4.opportunity_mapper.ChatOpenAI')
+@patch('src.layer4.opportunity_mapper.create_tracked_llm')
 def test_opportunity_mapper_node_integration(mock_llm_class, sample_job_state):
     """Integration test for opportunity_mapper_node."""
     mock_llm = MagicMock()

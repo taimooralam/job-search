@@ -178,7 +178,7 @@ def test_competency_mix_analysis_mock_llm():
     """Test _analyze_competency_mix with mocked LLM response."""
     from src.layer6.cv_generator import CVGenerator
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         # Mock LLM response
         mock_response = MagicMock()
         mock_response.content = """```json
@@ -311,7 +311,7 @@ def test_hallucination_qa_detects_fake_employer():
     Tech Lead | FinTech Startup | 2018-2020
     """
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_response = MagicMock()
         mock_response.content = """```json
 {
@@ -347,7 +347,7 @@ def test_hallucination_qa_detects_fake_dates():
     Engineering Manager | AdTech Co | 2018-2023
     """
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_response = MagicMock()
         mock_response.content = """```json
 {
@@ -387,7 +387,7 @@ def test_hallucination_qa_passes_valid_cv():
     B.S. Computer Science | State University | 2015
     """
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_response = MagicMock()
         mock_response.content = """```json
 {
@@ -446,7 +446,7 @@ def test_generate_cv_full_pipeline(sample_job_state):
     """Integration test for full CV generation pipeline."""
     from src.layer6.cv_generator import CVGenerator
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         # Create a mock that returns appropriate responses based on call count
         call_count = [0]
 
@@ -497,7 +497,7 @@ def test_generate_cv_retries_on_hallucination_failure(sample_job_state):
     from src.layer6.cv_generator import CVGenerator
     from tenacity import RetryError
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         # Mock that always returns QA failure
         qa_fail_response = MagicMock()
         qa_fail_response.content = """```json
@@ -552,7 +552,7 @@ def test_quality_gate_cv_uses_real_employers_only(sample_job_state):
     test_state["selected_stars"] = sample_job_state["selected_stars"] + [fake_star]
     test_state["all_stars"] = sample_job_state["selected_stars"] + [fake_star]
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_llm_instance = MagicMock()
         mock_llm.return_value = mock_llm_instance
 
@@ -677,7 +677,7 @@ Startup Inc | CTO | 2011-2013
 """
 
     # Mock ChatOpenAI before creating generator
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         # Mock competency mix response
         mock_llm_instance = MagicMock()
         mock_llm.return_value = mock_llm_instance
@@ -747,7 +747,7 @@ def test_cv_generator_creates_docx_with_proper_structure(sample_job_state):
     test_state["all_stars"] = sample_job_state["selected_stars"]
 
     # Mock ChatOpenAI before creating generator
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_llm_instance = MagicMock()
         mock_llm.return_value = mock_llm_instance
 
@@ -826,7 +826,7 @@ def test_cv_generator_handles_empty_star_list(sample_job_state):
     test_state["selected_stars"] = []
     test_state["all_stars"] = []
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_llm_instance = MagicMock()
         mock_llm.return_value = mock_llm_instance
 
@@ -880,7 +880,7 @@ def test_cv_generator_handles_single_star(sample_job_state):
     test_state["selected_stars"] = [sample_job_state["selected_stars"][0]]  # Just first STAR
     test_state["all_stars"] = [sample_job_state["selected_stars"][0]]
 
-    with patch('src.layer6.cv_generator.ChatOpenAI') as mock_llm:
+    with patch('src.layer6.cv_generator.create_tracked_cv_llm') as mock_llm:
         mock_llm_instance = MagicMock()
         mock_llm.return_value = mock_llm_instance
 

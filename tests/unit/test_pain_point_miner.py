@@ -252,7 +252,7 @@ class TestPainPointMinerParsing:
 class TestPainPointMinerWithMockedLLM:
     """Test full extraction flow with mocked LLM calls."""
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
     def test_successful_extraction(self, mock_llm_class, sample_job_state, valid_pain_point_json):
         """Successful LLM call should return validated data."""
         # Mock LLM to return valid JSON
@@ -269,7 +269,7 @@ class TestPainPointMinerWithMockedLLM:
         assert result["strategic_needs"] == valid_pain_point_json["strategic_needs"]
         assert "errors" not in result
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
     def test_llm_returns_invalid_json(self, mock_llm_class, sample_job_state):
         """LLM returning invalid JSON should return empty lists with error."""
         mock_llm_instance = MagicMock()
@@ -291,7 +291,7 @@ class TestPainPointMinerWithMockedLLM:
         assert len(result["errors"]) > 0
         assert "failed" in result["errors"][0].lower()
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
     def test_llm_returns_incomplete_schema(self, mock_llm_class, sample_job_state):
         """LLM returning incomplete schema should return empty lists with error."""
         mock_llm_instance = MagicMock()
@@ -317,7 +317,7 @@ class TestPainPointMinerWithMockedLLM:
 class TestPainPointMinerNode:
     """Test LangGraph node wrapper function."""
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
     def test_node_returns_updates_dict(self, mock_llm_class, sample_job_state, valid_pain_point_json):
         """Node function should return dict with pain point updates."""
         mock_llm_instance = MagicMock()
@@ -335,7 +335,7 @@ class TestPainPointMinerNode:
         assert "success_metrics" in updates
         assert len(updates["pain_points"]) == 3
 
-    @patch('src.layer2.pain_point_miner.ChatOpenAI')
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
     def test_node_handles_errors_gracefully(self, mock_llm_class, sample_job_state):
         """Node function should handle errors without crashing."""
         mock_llm_instance = MagicMock()

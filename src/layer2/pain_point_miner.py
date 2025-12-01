@@ -15,12 +15,12 @@ import json
 import re
 from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 from enum import Enum
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -460,11 +460,10 @@ class PainPointMiner:
                                 If False (default), returns legacy format (string lists)
                                 for backward compatibility.
         """
-        self.llm = ChatOpenAI(
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer2",
         )
         self.use_enhanced_format = use_enhanced_format
 

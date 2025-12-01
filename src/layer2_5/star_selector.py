@@ -8,11 +8,11 @@ Uses LLM to score each STAR's relevance to each pain point.
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.star_parser import parse_star_records
 from src.common.types import STARRecord
@@ -93,11 +93,11 @@ class STARSelector:
 
     def __init__(self):
         """Initialize LLM and load STAR records."""
-        self.llm = ChatOpenAI(
+        # GAP-066: Token tracking enabled
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=0.2,  # Low temperature for consistent scoring
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer2_5_star",
         )
 
         # Load STAR records from knowledge base

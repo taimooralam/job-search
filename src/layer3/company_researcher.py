@@ -18,12 +18,12 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
 from firecrawl import FirecrawlApp
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 from pymongo import MongoClient
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, CompanySignal, CompanyResearch
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -354,12 +354,11 @@ class CompanyResearcher:
         # FireCrawl for web scraping
         self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
 
-        # LLM for summarization
-        self.llm = ChatOpenAI(
+        # LLM for summarization (GAP-066: Token tracking enabled)
+        self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual summaries
-            api_key=Config.get_llm_api_key(),
-            base_url=Config.get_llm_base_url(),
+            layer="layer3_company",
         )
 
         # MongoDB for caching (Phase 1.3)

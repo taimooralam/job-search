@@ -18,11 +18,10 @@ import json
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 from pydantic import BaseModel, Field, validator
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
+from src.common.llm_factory import create_tracked_cv_llm
 from src.common.state import JobState, STARRecord
 from docx import Document
 from docx.shared import Pt, Inches
@@ -116,32 +115,9 @@ class CVGenerator:
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
 
-        provider = Config.get_cv_llm_provider()
-        model = getattr(Config, "CV_MODEL", Config.DEFAULT_MODEL)
-        temperature = getattr(Config, "CV_TEMPERATURE", Config.ANALYTICAL_TEMPERATURE)
-        api_key = Config.get_cv_llm_api_key()
-
-        if provider == "anthropic":
-            # Use direct Anthropic SDK
-            self.llm = ChatAnthropic(
-                model=model,
-                temperature=temperature,
-                anthropic_api_key=api_key
-            )
-            self.logger.info(f"Using Anthropic API directly (model: {model})")
-        else:
-            # Use OpenAI SDK (for OpenAI or OpenRouter)
-            base_url = Config.get_cv_llm_base_url()
-            self.llm = ChatOpenAI(
-                model=model,
-                temperature=temperature,
-                base_url=base_url,
-                api_key=api_key
-            )
-            if provider == "openrouter":
-                self.logger.info(f"Using OpenRouter proxy (model: {model})")
-            else:
-                self.logger.info(f"Using OpenAI API directly (model: {model})")
+        # GAP-066: Token tracking enabled via factory
+        self.llm = create_tracked_cv_llm(layer="layer6_cv_v2")
+        self.logger.info(f"Using tracked CV LLM (provider: {Config.get_cv_llm_provider()})")
 
     # ===== COMPETENCY MIX ANALYSIS =====
 
