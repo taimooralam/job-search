@@ -1506,6 +1506,27 @@ Return the three letters separated by \"---\" lines.
         if not state.get("candidate_profile"):
             self.logger.warning("candidate_profile missing - outreach will use generic content")
 
+        # ===== CHECK FOR EXISTING CONTACTS (Skip FireCrawl if already present) =====
+        existing_primary = state.get("primary_contacts", [])
+        existing_secondary = state.get("secondary_contacts", [])
+
+        if existing_primary or existing_secondary:
+            # Contacts already exist - skip FireCrawl discovery
+            self.logger.info("="*60)
+            self.logger.info("CONTACTS ALREADY PRESENT - SKIPPING FIRECRAWL DISCOVERY")
+            self.logger.info("="*60)
+            self.logger.info(f"  Existing primary contacts: {len(existing_primary)}")
+            self.logger.info(f"  Existing secondary contacts: {len(existing_secondary)}")
+
+            # Return existing contacts as-is (they may already have outreach)
+            return {
+                "primary_contacts": existing_primary,
+                "secondary_contacts": existing_secondary,
+                "people": existing_primary + existing_secondary,  # Legacy field
+                "outreach_packages": [],  # May already be populated in contacts
+                "fallback_cover_letters": state.get("fallback_cover_letters", []),
+            }
+
         try:
             # Step 1: Multi-source discovery
             if self.firecrawl_disabled:
