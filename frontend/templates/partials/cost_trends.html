@@ -9,10 +9,10 @@
     </div>
 </div>
 {% else %}
-<div class="bg-white rounded-lg border border-gray-200 p-4">
+<div class="panel p-4">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        <h3 class="text-sm font-semibold theme-text-secondary flex items-center gap-2">
             <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
             </svg>
@@ -20,23 +20,23 @@
         </h3>
         <div class="flex items-center gap-2">
             <!-- Period Toggle -->
-            <div class="flex rounded-md bg-gray-100 p-0.5 text-xs">
+            <div class="flex rounded-md theme-bg-secondary p-0.5 text-xs">
                 <button
                     hx-get="/partials/cost-trends?period=hourly&count=24"
                     hx-target="#cost-trends-container"
                     hx-swap="innerHTML"
-                    class="px-2 py-1 rounded {% if period == 'hourly' %}bg-white shadow-sm text-gray-700{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    class="px-2 py-1 rounded {% if period == 'hourly' %}theme-bg-card shadow-sm theme-text-primary{% else %}theme-text-muted hover:theme-text-primary{% endif %}">
                     24h
                 </button>
                 <button
                     hx-get="/partials/cost-trends?period=daily&count=7"
                     hx-target="#cost-trends-container"
                     hx-swap="innerHTML"
-                    class="px-2 py-1 rounded {% if period == 'daily' %}bg-white shadow-sm text-gray-700{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+                    class="px-2 py-1 rounded {% if period == 'daily' %}theme-bg-card shadow-sm theme-text-primary{% else %}theme-text-muted hover:theme-text-primary{% endif %}">
                     7d
                 </button>
             </div>
-            <span class="text-xs text-gray-400">#15</span>
+            <span class="text-xs theme-text-muted">#15</span>
         </div>
     </div>
 
@@ -47,7 +47,7 @@
             <div class="h-12 flex items-center">
                 {{ sparkline_svg|safe }}
             </div>
-            <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <div class="flex justify-between text-xs theme-text-muted mt-1">
                 {% if costs %}
                 <span>{{ costs[0].period[-8:] if period == 'hourly' else costs[0].period[-5:] }}</span>
                 <span>{{ costs[-1].period[-8:] if period == 'hourly' else costs[-1].period[-5:] }}</span>
@@ -61,17 +61,17 @@
         <!-- Summary Stats -->
         <div class="text-right space-y-1 min-w-[100px]">
             <div>
-                <div class="text-xs text-gray-400">Total</div>
-                <div class="text-sm font-semibold text-gray-900">${{ "%.4f"|format(summary.total_cost_usd) }}</div>
+                <div class="text-xs theme-text-muted">Total</div>
+                <div class="text-sm font-semibold theme-text-primary">${{ "%.4f"|format(summary.total_cost_usd) }}</div>
             </div>
             <div>
-                <div class="text-xs text-gray-400">Avg/{{ 'hour' if period == 'hourly' else 'day' }}</div>
-                <div class="text-xs text-gray-600">${{ "%.6f"|format(summary.avg_cost_usd) }}</div>
+                <div class="text-xs theme-text-muted">Avg/{{ 'hour' if period == 'hourly' else 'day' }}</div>
+                <div class="text-xs theme-text-secondary">${{ "%.6f"|format(summary.avg_cost_usd) }}</div>
             </div>
             {% if summary.max_cost_usd > 0 %}
             <div>
-                <div class="text-xs text-gray-400">Peak</div>
-                <div class="text-xs text-emerald-600">${{ "%.6f"|format(summary.max_cost_usd) }}</div>
+                <div class="text-xs theme-text-muted">Peak</div>
+                <div class="text-xs text-emerald-600 dark:text-emerald-400">${{ "%.6f"|format(summary.max_cost_usd) }}</div>
             </div>
             {% endif %}
         </div>
@@ -80,24 +80,24 @@
     <!-- Detailed breakdown (collapsible) -->
     {% if costs and costs|length > 0 %}
     <details class="mt-4">
-        <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+        <summary class="text-xs theme-text-tertiary cursor-pointer hover:theme-text-primary">
             View detailed breakdown ({{ costs|length }} periods)
         </summary>
         <div class="mt-2 max-h-32 overflow-y-auto">
             <table class="w-full text-xs">
-                <thead class="text-gray-500">
+                <thead class="theme-text-tertiary">
                     <tr>
                         <th class="text-left py-1">{{ 'Hour' if period == 'hourly' else 'Date' }}</th>
                         <th class="text-right py-1">Cost</th>
                         <th class="text-right py-1">Calls</th>
                     </tr>
                 </thead>
-                <tbody class="text-gray-700">
+                <tbody class="theme-text-secondary">
                     {% for item in costs|reverse %}
-                    <tr class="border-t border-gray-100">
+                    <tr class="border-t theme-border">
                         <td class="py-1">{{ item.period[-11:] if period == 'hourly' else item.period }}</td>
                         <td class="text-right py-1">${{ "%.6f"|format(item.cost_usd) }}</td>
-                        <td class="text-right py-1 text-gray-400">{{ item.calls }}</td>
+                        <td class="text-right py-1 theme-text-muted">{{ item.calls }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

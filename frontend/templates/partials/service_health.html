@@ -1,7 +1,7 @@
 <!-- Service Health Status Indicators (Gap #13) -->
 <div class="flex flex-wrap items-center gap-3 text-sm">
     <!-- Overall Status Indicator -->
-    <div class="flex items-center gap-2 pr-3 border-r border-gray-200">
+    <div class="flex items-center gap-2 pr-3 theme-border border-r">
         {% if health.overall == 'healthy' %}
             <span class="relative flex h-3 w-3">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -24,34 +24,34 @@
     </div>
 
     <!-- MongoDB Status -->
-    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-100 cursor-help transition-colors">
+    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:theme-bg-hover cursor-help transition-colors">
         {% if health.mongodb.status == 'healthy' %}
             <span class="inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            <span class="text-gray-600">MongoDB</span>
+            <span class="theme-text-secondary">MongoDB</span>
         {% else %}
             <span class="inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             <span class="text-red-600">MongoDB</span>
         {% endif %}
         <!-- Tooltip -->
         <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-            <div class="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+            <div class="bg-dark-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                 {% if health.mongodb.status == 'healthy' %}
                     Connected: {{ health.mongodb.uri|truncate(30, True) }}
                 {% else %}
                     Error: {{ health.mongodb.error|default('Connection failed')|truncate(50, True) }}
                 {% endif %}
             </div>
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-dark-900"></div>
         </div>
     </div>
 
     <!-- Runner Status -->
-    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-100 cursor-help transition-colors">
+    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:theme-bg-hover cursor-help transition-colors">
         {% if health.runner.status == 'healthy' %}
             <span class="inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            <span class="text-gray-600">Pipeline</span>
+            <span class="theme-text-secondary">Pipeline</span>
             {% if health.runner.active_runs is defined %}
-                <span class="text-xs text-gray-400">({{ health.runner.active_runs }}/{{ health.runner.max_concurrency }})</span>
+                <span class="text-xs theme-text-tertiary">({{ health.runner.active_runs }}/{{ health.runner.max_concurrency }})</span>
             {% endif %}
         {% elif health.runner.status == 'busy' %}
             <span class="inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
@@ -63,23 +63,23 @@
         {% endif %}
         <!-- Tooltip -->
         <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-            <div class="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+            <div class="bg-dark-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                 {% if health.runner.status == 'healthy' or health.runner.status == 'busy' %}
                     VPS Runner: {{ health.runner.capacity_percent }}% capacity
                 {% else %}
                     Error: {{ health.runner.error|default('Connection failed')|truncate(50, True) }}
                 {% endif %}
             </div>
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-dark-900"></div>
         </div>
     </div>
 
     <!-- n8n Status (if configured) -->
     {% if health.n8n %}
-    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-gray-100 cursor-help transition-colors">
+    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:theme-bg-hover cursor-help transition-colors">
         {% if health.n8n.status == 'healthy' %}
             <span class="inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            <span class="text-gray-600">n8n</span>
+            <span class="theme-text-secondary">n8n</span>
         {% elif health.n8n.status == 'degraded' %}
             <span class="inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
             <span class="text-yellow-600">n8n</span>
@@ -89,20 +89,20 @@
         {% endif %}
         <!-- Tooltip -->
         <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-            <div class="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+            <div class="bg-dark-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                 {% if health.n8n.status == 'healthy' %}
                     Automation: {{ health.n8n.url|truncate(30, True) }}
                 {% else %}
                     Error: {{ health.n8n.error|default('Connection failed')|truncate(50, True) }}
                 {% endif %}
             </div>
-            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-dark-900"></div>
         </div>
     </div>
     {% endif %}
 
     <!-- Last Updated -->
-    <div class="ml-auto text-xs text-gray-400">
+    <div class="ml-auto text-xs theme-text-muted">
         Updated: {{ health.timestamp[:19]|replace('T', ' ') }} UTC
     </div>
 </div>
