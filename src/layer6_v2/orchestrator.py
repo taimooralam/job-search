@@ -27,6 +27,32 @@ from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import sanitize_path_component
 from src.common.markdown_sanitizer import sanitize_markdown, sanitize_bullet_text
 
+# GAP-014: Middle East countries for relocation tagline
+MIDDLE_EAST_COUNTRIES = [
+    "saudi arabia", "uae", "united arab emirates", "dubai", "abu dhabi",
+    "kuwait", "qatar", "doha", "oman", "bahrain", "pakistan", "karachi",
+    "lahore", "islamabad", "riyadh", "jeddah", "muscat", "manama"
+]
+
+RELOCATION_TAGLINE = "Open to International Relocation | Available to start within 2 months"
+
+
+def is_middle_east_location(location: str) -> bool:
+    """
+    GAP-014: Check if job location is in Middle East region.
+
+    Args:
+        location: Job location string
+
+    Returns:
+        True if location matches any Middle East country/city
+    """
+    if not location:
+        return False
+    location_lower = location.lower()
+    return any(country in location_lower for country in MIDDLE_EAST_COUNTRIES)
+
+
 from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
 from src.layer6_v2.role_generator import (
     RoleGenerator,
@@ -184,7 +210,9 @@ class CVGeneratorV2:
             self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")
 
             # Assemble full CV text
-            cv_text = self._assemble_cv_text(header_output, stitched_cv, candidate_data)
+            # GAP-014: Pass job location for Middle East relocation tagline
+            job_location = extracted_jd.get("location", "") or state.get("location", "")
+            cv_text = self._assemble_cv_text(header_output, stitched_cv, candidate_data, job_location)
 
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
@@ -345,6 +373,7 @@ class CVGeneratorV2:
         header: HeaderOutput,
         stitched: StitchedCV,
         candidate: CandidateData,
+        job_location: str = "",
     ) -> str:
         """Assemble the full CV markdown text."""
         lines = []
@@ -358,6 +387,12 @@ class CVGeneratorV2:
             language_str = f"Languages: {', '.join(candidate.languages)}"
             contact_parts.append(language_str)
         lines.append(" | ".join(contact_parts))
+
+        # GAP-014: Add relocation tagline for Middle East locations
+        if job_location and is_middle_east_location(job_location):
+            lines.append(RELOCATION_TAGLINE)
+            self._logger.info(f"  [GAP-014] Added relocation tagline for: {job_location}")
+
         lines.append("")
 
         # Profile (GAP-006: sanitize markdown)
