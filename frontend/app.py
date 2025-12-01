@@ -1622,6 +1622,7 @@ def logout():
 # ============================================================================
 
 @app.route("/api-docs")
+@app.route("/api/docs")
 def api_docs():
     """Serve Swagger UI for API documentation."""
     return render_template("api_docs.html")
