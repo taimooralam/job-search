@@ -345,6 +345,8 @@ class CVGeneratorV2:
                     period=role.period,
                     location=role.location,
                     bullets=fallback_bullets,
+                    hard_skills=role.hard_skills,
+                    soft_skills=role.soft_skills,
                     qa_result=None,
                 )
                 role_bullets_list.append(role_bullets)
@@ -375,18 +377,34 @@ class CVGeneratorV2:
         candidate: CandidateData,
         job_location: str = "",
     ) -> str:
-        """Assemble the full CV markdown text."""
+        """Assemble the full CV markdown text with formatting.
+
+        Supports markdown formatting that will be parsed by TipTap editor:
+        - **bold** for section headers and role titles
+        - *italic* for tagline
+        - Emoji icons for contact info
+        """
         lines = []
 
-        # Header with name and contact
+        # Header with name (as heading)
         lines.append(f"# {candidate.name}")
 
-        # Build contact line with optional languages
-        contact_parts = [candidate.email, candidate.phone, candidate.linkedin]
+        # Build tagline with emoji icons - italic formatting
+        tagline_parts = []
+        if candidate.email:
+            tagline_parts.append(f"📧 {candidate.email}")
+        if candidate.phone:
+            tagline_parts.append(f"📱 {candidate.phone}")
+        if candidate.linkedin:
+            tagline_parts.append(f"🔗 {candidate.linkedin}")
+        if candidate.location:
+            tagline_parts.append(f"🌍 {candidate.location}")
         if candidate.languages:
-            language_str = f"Languages: {', '.join(candidate.languages)}"
-            contact_parts.append(language_str)
-        lines.append(" | ".join(contact_parts))
+            languages_str = ", ".join(candidate.languages)
+            tagline_parts.append(f"🗣️ {languages_str}")
+
+        tagline = " | ".join(tagline_parts)
+        lines.append(f"*{tagline}*")  # Italic formatting
 
         # GAP-014: Add relocation tagline for Middle East locations
         if job_location and is_middle_east_location(job_location):
@@ -395,36 +413,39 @@ class CVGeneratorV2:
 
         lines.append("")
 
-        # Profile (GAP-006: sanitize markdown)
-        lines.append("PROFILE")
+        # Profile - bold section header, sanitize LLM output
+        lines.append("**PROFILE**")
         lines.append(sanitize_markdown(header.profile.text))
         lines.append("")
 
-        # Core competencies / Skills (GAP-006: no markdown)
-        lines.append("CORE COMPETENCIES")
+        # Core competencies / Skills - bold section header and category names
+        lines.append("**CORE COMPETENCIES**")
         for section in header.skills_sections:
             skill_names = ", ".join(section.skill_names)
-            lines.append(f"{section.category}: {skill_names}")
+            lines.append(f"**{section.category}:** {skill_names}")
         lines.append("")
 
-        # Professional Experience (GAP-006: no markdown)
-        lines.append("PROFESSIONAL EXPERIENCE")
+        # Professional Experience - bold section header
+        lines.append("**PROFESSIONAL EXPERIENCE**")
         lines.append("")
 
         for role in stitched.roles:
-            lines.append(role.title)
-            # Only include location if it's not empty
+            # Role header: Bold company • title | location | period
             location_part = f" | {role.location}" if role.location else ""
-            lines.append(f"{role.company}{location_part} | {role.period}")
+            lines.append(f"**{role.company} • {role.title}**{location_part} | {role.period}")
             lines.append("")
             for bullet in role.bullets:
-                # GAP-006: Sanitize any markdown that slipped through prompts
+                # GAP-006: Sanitize any markdown that slipped through LLM prompts
                 clean_bullet = sanitize_bullet_text(bullet)
                 lines.append(f"• {clean_bullet}")
+            # Add skills line for this role (computed in stitcher: JD-matching first, then role-specific)
+            if role.skills:
+                skills_str = ", ".join(role.skills[:8])  # Max 8 skills
+                lines.append(f"**Skills:** {skills_str}")
             lines.append("")
 
-        # Education & Certifications (GAP-006: no markdown)
-        lines.append("EDUCATION & CERTIFICATIONS")
+        # Education & Certifications - bold section header
+        lines.append("**EDUCATION & CERTIFICATIONS**")
         lines.append(f"• {candidate.education_masters}")
         if candidate.education_bachelors:
             lines.append(f"• {candidate.education_bachelors}")
