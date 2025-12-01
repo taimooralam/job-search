@@ -21,6 +21,7 @@ from src.layer5.people_mapper import (
     ContactModel,
     PeopleMapperOutput
 )
+from src.common.config import Config
 
 
 # ===== FIXTURES =====
@@ -749,6 +750,8 @@ class TestOutreachPackageGeneration:
 # ===== TESTS: Integration and Quality Gates =====
 
 @pytest.mark.integration
+@patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
+@patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
 @patch('src.layer5.people_mapper.FirecrawlApp')
 @patch('src.layer5.people_mapper.ChatOpenAI')
 def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sample_job_state):
@@ -831,6 +834,8 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
 class TestPeopleMapperQualityGates:
     """Test Phase 7 quality gates."""
 
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
+    @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
     @patch('src.layer5.people_mapper.ChatOpenAI')
     def test_quality_gate_minimum_primary_contacts(self, mock_llm_class, mock_firecrawl_class, sample_job_state):

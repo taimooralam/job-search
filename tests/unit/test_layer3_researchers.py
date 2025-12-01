@@ -987,6 +987,7 @@ class TestFireCrawlNormalizer:
 class TestCompanyResearcherFallback:
     """Tests for Phase 5 defensive fallback when multi-source scrape yields 0 signals."""
 
+    @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1001,6 +1002,7 @@ class TestCompanyResearcherFallback:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
+        mock_mongo_class,
         sample_job_state
     ):
         """Fallback is triggered when LLM returns 0 signals."""
@@ -1094,8 +1096,9 @@ class TestCompanyResearcherFallback:
 class TestSTARAwareness:
     """Tests for Phase 5 STAR-aware research prompts."""
 
+    @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
-    def test_extract_star_context_with_selected_stars(self, mock_firecrawl_class, sample_job_state):
+    def test_extract_star_context_with_selected_stars(self, mock_firecrawl_class, mock_mongo_class, sample_job_state):
         """STAR context extraction works with selected_stars."""
         # Add selected_stars to state
         sample_job_state["selected_stars"] = [
@@ -1128,8 +1131,9 @@ class TestSTARAwareness:
         assert "Operational Efficiency" in outcomes
         assert "Velocity/Speed" in outcomes
 
+    @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
-    def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, sample_job_state):
+    def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, mock_mongo_class, sample_job_state):
         """STAR context extraction returns None when no selected_stars."""
         researcher = CompanyResearcher()
         domains, outcomes = researcher._extract_star_context(sample_job_state)
@@ -1137,6 +1141,7 @@ class TestSTARAwareness:
         assert domains is None
         assert outcomes is None
 
+    @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1151,6 +1156,7 @@ class TestSTARAwareness:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
+        mock_mongo_class,
         sample_job_state
     ):
         """STAR context is passed to _analyze_company_signals."""
@@ -1214,6 +1220,7 @@ class TestRoleResearcherSTARAwareness:
 class TestPhase5Integration:
     """Integration tests for Phase 5 (Company & Role Research)."""
 
+    @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1228,6 +1235,7 @@ class TestPhase5Integration:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
+        mock_mongo_class,
         sample_job_state
     ):
         """Company researcher produces valid schema output with signals."""
