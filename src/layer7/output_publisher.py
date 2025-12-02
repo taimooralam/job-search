@@ -357,12 +357,9 @@ class OutputPublisher:
 
             # Add extracted JD from Layer 1.4 (CV Gen V2)
             extracted_jd = state.get('extracted_jd')
-            self.logger.info(f"[DEBUG] extracted_jd in state: {extracted_jd is not None}, type: {type(extracted_jd)}")
             if extracted_jd:
-                self.logger.info(f"[DEBUG] Saving extracted_jd with keys: {list(extracted_jd.keys()) if isinstance(extracted_jd, dict) else 'N/A'}")
+                self.logger.info(f"Persisting extracted_jd: role_category={extracted_jd.get('role_category', 'N/A')}")
                 update_data['extracted_jd'] = extracted_jd
-            else:
-                self.logger.warning("[DEBUG] extracted_jd is None or empty - not saving to MongoDB")
 
             # Add Drive/Sheets references
             if state.get('drive_folder_url'):
@@ -379,7 +376,7 @@ class OutputPublisher:
                 update_data['token_usage'] = state['token_usage']
 
             # Build pipeline run entry for history tracking
-            from datetime import datetime
+            # NOTE: datetime is already imported at module level (line 13)
             pipeline_run_entry = {
                 "run_id": state.get('run_id', f"run_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"),
                 "tier": state.get('processing_tier', 'unknown'),
@@ -751,6 +748,13 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
     logger.info("LAYER 7: Output Publisher")
     logger.info("="*60)
 
+    # DEBUG: Check if extracted_jd survived LangGraph state propagation
+    input_extracted_jd = state.get("extracted_jd")
+    if input_extracted_jd:
+        logger.info(f"[STATE-CHECK] extracted_jd present in Layer 7 input: role_category={input_extracted_jd.get('role_category', 'N/A')}")
+    else:
+        logger.warning("[STATE-CHECK] extracted_jd is MISSING in Layer 7 input state - LangGraph may have lost it!")
+
     with LayerContext(struct_logger, 7, "output_publisher") as ctx:
         publisher = OutputPublisher()
         updates = publisher.publish(state)
@@ -801,5 +805,15 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
         ctx.add_metadata("mongodb_persisted", updates.get("mongodb_persisted", False))
         ctx.add_metadata("drive_uploaded", updates.get("drive_folder_url") is not None)
         ctx.add_metadata("sheets_logged", updates.get("sheet_row_id") is not None)
+
+        # DEFENSIVE FIX: Explicitly preserve extracted_jd in return dict
+        # This ensures LangGraph doesn't lose it during state merge
+        # Added 2025-12-01 to fix extracted_jd loss between Layer 1.4 and Layer 7
+        extracted_jd_from_state = state.get("extracted_jd")
+        if extracted_jd_from_state and "extracted_jd" not in updates:
+            logger.info("[FIX] Explicitly preserving extracted_jd in Layer 7 return")
+            updates["extracted_jd"] = extracted_jd_from_state
+        elif not extracted_jd_from_state:
+            logger.warning("[DEBUG] extracted_jd not found in input state to Layer 7")
 
         return updates
