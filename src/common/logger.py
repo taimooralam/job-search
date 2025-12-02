@@ -2,11 +2,28 @@
 Centralized logging configuration for the job intelligence pipeline.
 
 Provides structured logging with run_id and layer tagging for easy debugging.
+Supports debug_mode flag for verbose logging when API passes debug=true.
 """
 
 import logging
+import os
 import sys
 from typing import Optional
+
+
+# Global debug mode flag - can be set via environment or API
+_GLOBAL_DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+
+
+def set_global_debug_mode(enabled: bool) -> None:
+    """Set global debug mode (used by API debug=true parameter)."""
+    global _GLOBAL_DEBUG_MODE
+    _GLOBAL_DEBUG_MODE = enabled
+
+
+def is_debug_mode() -> bool:
+    """Check if debug mode is enabled globally."""
+    return _GLOBAL_DEBUG_MODE
 
 
 class PipelineLogger:
@@ -16,7 +33,13 @@ class PipelineLogger:
     Adds contextual information like run_id and layer to all log messages.
     """
 
-    def __init__(self, name: str, run_id: Optional[str] = None, layer: Optional[str] = None):
+    def __init__(
+        self,
+        name: str,
+        run_id: Optional[str] = None,
+        layer: Optional[str] = None,
+        debug_mode: Optional[bool] = None
+    ):
         """
         Initialize pipeline logger.
 
@@ -24,10 +47,24 @@ class PipelineLogger:
             name: Logger name (usually __name__)
             run_id: Optional run identifier for correlation
             layer: Optional layer name (e.g., "layer2", "layer6")
+            debug_mode: If True, enables DEBUG level for this logger.
+                       If None, uses global debug mode setting.
         """
         self.logger = logging.getLogger(name)
         self.run_id = run_id
         self.layer = layer
+
+        # Determine debug mode: explicit param > global setting
+        self._debug_mode = debug_mode if debug_mode is not None else is_debug_mode()
+
+        # Set logger level based on debug mode
+        if self._debug_mode:
+            self.logger.setLevel(logging.DEBUG)
+
+    @property
+    def level(self) -> int:
+        """Get current logging level."""
+        return self.logger.level
 
     def _format_message(self, message: str) -> str:
         """Add contextual prefix to message."""
@@ -99,7 +136,12 @@ def setup_logging(level: str = "INFO", format: str = "simple") -> None:
     root_logger.setLevel(log_level)
 
 
-def get_logger(name: str, run_id: Optional[str] = None, layer: Optional[str] = None) -> PipelineLogger:
+def get_logger(
+    name: str,
+    run_id: Optional[str] = None,
+    layer: Optional[str] = None,
+    debug_mode: Optional[bool] = None
+) -> PipelineLogger:
     """
     Get a pipeline logger instance.
 
@@ -107,8 +149,9 @@ def get_logger(name: str, run_id: Optional[str] = None, layer: Optional[str] = N
         name: Logger name (usually __name__)
         run_id: Optional run identifier
         layer: Optional layer name
+        debug_mode: If True, enables DEBUG level. If None, uses global setting.
 
     Returns:
         PipelineLogger instance
     """
-    return PipelineLogger(name, run_id, layer)
+    return PipelineLogger(name, run_id, layer, debug_mode)
