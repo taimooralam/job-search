@@ -71,9 +71,9 @@ def save_pipeline_run_start(run_id: str, job_id: str, job_data: Dict[str, Any]) 
             "total_cost_usd": None,
         }
         db.pipeline_runs.insert_one(run_doc)
-        logger.debug(f"Pipeline run started: {run_id}")
+        logger.info(f"[PipelineTracking] ✓ Run started: {run_id[:8]}...")
     except Exception as e:
-        logger.warning(f"Failed to save pipeline run start: {e}")
+        logger.error(f"[PipelineTracking] ✗ Failed to save run start: {e}", exc_info=True)
 
 
 def update_pipeline_run_complete(
@@ -105,10 +105,14 @@ def update_pipeline_run_complete(
                 "total_cost_usd": total_cost_usd,
             }
         }
-        db.pipeline_runs.update_one({"run_id": run_id}, update_doc)
-        logger.debug(f"Pipeline run updated: {run_id} -> {status}")
+        result = db.pipeline_runs.update_one({"run_id": run_id}, update_doc)
+        if result.modified_count > 0:
+            cost_str = f"${total_cost_usd:.4f}" if total_cost_usd else "N/A"
+            logger.info(f"[PipelineTracking] ✓ Run completed: {run_id[:8]}... -> {status} ({cost_str})")
+        else:
+            logger.warning(f"[PipelineTracking] No document updated for run_id: {run_id[:8]}...")
     except Exception as e:
-        logger.warning(f"Failed to update pipeline run: {e}")
+        logger.error(f"[PipelineTracking] ✗ Failed to update run completion: {e}", exc_info=True)
 
 
 def create_workflow() -> StateGraph:
@@ -189,7 +193,8 @@ def create_workflow() -> StateGraph:
 def run_pipeline(
     job_data: Dict[str, Any],
     candidate_profile: str,
-    tier_config: Any = None
+    tier_config: Any = None,
+    debug: bool = False
 ) -> JobState:
     """
     Run the complete job intelligence pipeline.
@@ -198,10 +203,16 @@ def run_pipeline(
         job_data: Dict with job details (job_id, title, company, description, url, source)
         candidate_profile: String with candidate profile/CV text
         tier_config: Optional TierConfig for tiered processing (GAP-045)
+        debug: Enable verbose DEBUG level logging throughout the pipeline
 
     Returns:
         Final JobState with all outputs populated
     """
+    # Set global debug mode if requested
+    from src.common.logger import set_global_debug_mode
+    if debug:
+        set_global_debug_mode(True)
+        logger.info("[Debug] Verbose logging enabled for this pipeline run")
     # Generate metadata
     run_id = str(uuid7()) if uuid7 else str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat() + 'Z'
@@ -287,6 +298,7 @@ def run_pipeline(
 
         # GAP-045: Tiered processing
         "processing_tier": tier_config.tier.value if tier_config else None,
+        "debug_mode": debug,  # Propagate debug flag to all layers
         "tier_config": {
             "cv_model": tier_config.cv_model,
             "role_model": tier_config.role_model,
@@ -353,9 +365,12 @@ def run_pipeline(
                 }
                 for provider, usage in summary.by_provider.items()
             }
-            run_logger.info(f"Token usage: ${summary.total_cost_usd:.4f} USD total")
+            run_logger.info(f"[TokenTracking] ✓ Total cost: ${summary.total_cost_usd:.4f} USD")
         except Exception as e:
-            run_logger.warning(f"Failed to capture token usage: {e}")
+            run_logger.error(f"[TokenTracking] ✗ Failed to capture token usage: {e}", exc_info=True)
+            # Ensure we still have some tracking data even if summary fails
+            final_state["total_cost_usd"] = None
+            final_state["token_usage"] = {"error": str(e)}
 
         # Update status based on errors
         if final_state.get("errors"):
@@ -435,9 +450,9 @@ def run_pipeline(
                 serializable_state[key] = value
 
         state_output_path.write_text(json.dumps(serializable_state, indent=2, default=str))
-        run_logger.info(f"Pipeline state written to: {state_output_path}")
+        run_logger.info(f"[StateFile] ✓ Pipeline state written to: {state_output_path}")
     except Exception as e:
-        run_logger.warning(f"Failed to write pipeline state: {e}")
+        run_logger.error(f"[StateFile] ✗ Failed to write pipeline state: {e}", exc_info=True)
 
     # Log summary
     run_logger.info("="*70)
@@ -467,6 +482,10 @@ def run_pipeline(
 
     # GAP-066: Clear run context after pipeline completes
     clear_run_context()
+
+    # Reset debug mode to prevent affecting future runs
+    if debug:
+        set_global_debug_mode(False)
 
     return final_state
 
