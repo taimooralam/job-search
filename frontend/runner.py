@@ -40,6 +40,7 @@ def run_single_job():
     Request Body:
         job_id: MongoDB job ID
         level: Processing level (1 or 2)
+        debug: Optional boolean - enable verbose debug logging
 
     Returns:
         JSON with run_id and status
@@ -48,6 +49,10 @@ def run_single_job():
         data = request.get_json()
         if not data or "job_id" not in data:
             return jsonify({"error": "job_id is required"}), 400
+
+        # Ensure debug flag is included in request (defaults to False)
+        if "debug" not in data:
+            data["debug"] = False
 
         # Proxy request to runner service
         response = requests.post(
@@ -76,6 +81,7 @@ def run_bulk_jobs():
     Request Body:
         job_ids: List of MongoDB job IDs
         level: Processing level (1 or 2)
+        debug: Optional boolean - enable verbose debug logging
 
     Returns:
         JSON with run_ids array
@@ -84,6 +90,10 @@ def run_bulk_jobs():
         data = request.get_json()
         if not data or "job_ids" not in data:
             return jsonify({"error": "job_ids array is required"}), 400
+
+        # Ensure debug flag is included in request (defaults to False)
+        if "debug" not in data:
+            data["debug"] = False
 
         # Proxy request to runner service
         response = requests.post(
