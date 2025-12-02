@@ -33,44 +33,43 @@ env:
 
 jobs:
   # Unit tests with parallel execution (GAP-063)
-  # TEMPORARILY DISABLED for faster deployment - re-enable after VPS connectivity fixed
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.11'
-  #         cache: 'pip'
-  #
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r requirements.txt
-  #         pip install pytest pytest-asyncio pytest-xdist httpx
-  #         pip install -e .  # Install package in editable mode for module imports
-  #
-  #     - name: Run unit tests (parallel execution)
-  #       run: |
-  #         # Run unit tests for runner, PDF service, and all unit tests
-  #         # Using pytest-xdist for parallel execution (-n auto)
-  #         # This reduces CI time by 60-80%
-  #         python -m pytest \
-  #           tests/runner/test_executor.py \
-  #           tests/runner/test_runner_api.py \
-  #           tests/runner/test_pdf_integration.py \
-  #           tests/pdf_service/ \
-  #           tests/unit/ \
-  #           -v --tb=short -n auto
-  #       env:
-  #         PYTHONPATH: ${{ github.workspace }}
-  #         RUNNER_API_SECRET: test-secret
-  #         ENVIRONMENT: development
-  #         MONGODB_URI: mongodb://localhost:27017/test
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-xdist httpx
+          pip install -e .  # Install package in editable mode for module imports
+
+      - name: Run unit tests (parallel execution)
+        run: |
+          # Run unit tests for runner, PDF service, and all unit tests
+          # Using pytest-xdist for parallel execution (-n auto)
+          # This reduces CI time by 60-80%
+          python -m pytest \
+            tests/runner/test_executor.py \
+            tests/runner/test_runner_api.py \
+            tests/runner/test_pdf_integration.py \
+            tests/pdf_service/ \
+            tests/unit/ \
+            -v --tb=short -n auto
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          RUNNER_API_SECRET: test-secret
+          ENVIRONMENT: development
+          MONGODB_URI: mongodb://localhost:27017/test
 
   build:
-    # needs: test  # TEMPORARILY DISABLED - re-enable after VPS connectivity fixed
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
@@ -127,7 +126,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    # environment: production  # Commented out to use repository secrets directly
 
     steps:
       - uses: actions/checkout@v4
@@ -138,22 +136,50 @@ jobs:
           echo "Large images (1.27GB PDF service) need extra time for manifest indexing"
           sleep 90
 
-      - name: Copy deployment files to VPS
-        uses: appleboy/scp-action@v0.1.7
+      - name: Copy deployment files to VPS (with retry)
+        uses: nick-fields/retry@v3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "master-cv.md,docker-compose.runner.yml,data/master-cv"
-          target: "/root/job-runner/"
+          timeout_minutes: 2
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            # Install SSH client
+            which ssh || sudo apt-get update && sudo apt-get install -y openssh-client
 
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
+            # Setup SSH key
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+
+            # Add host to known_hosts (skip verification for CI)
+            ssh-keyscan -t rsa -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+            # Copy files using scp (30s connection timeout)
+            scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 \
+              master-cv.md docker-compose.runner.yml \
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/
+
+            # Copy data directory
+            scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -r \
+              data/master-cv \
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/data/
+
+      - name: Deploy to VPS (with retry)
+        uses: nick-fields/retry@v3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: |
+            # Setup SSH key
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+            chmod 600 ~/.ssh/deploy_key
+
+            # Execute deployment script via SSH (30s connection timeout)
+            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 \
+              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
+
             cd /root/job-runner
 
             # Pull latest images (runner + pdf-service) with retry logic
@@ -198,3 +224,5 @@ jobs:
 
             # Show container status
             docker compose -f docker-compose.runner.yml ps
+
+            DEPLOY_SCRIPT
