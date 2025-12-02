@@ -271,9 +271,11 @@ class OutputPublisher:
                 object_id = ObjectId(job_id)
                 job_record = collection.find_one({"_id": object_id})
                 if job_record:
-                    self.logger.info(f"Found job by _id (ObjectId): {job_id}")
-            except Exception:
-                pass  # Not a valid ObjectId, try other strategies
+                    self.logger.info(f"[MongoDB] Found job by _id (ObjectId): {job_id}")
+                else:
+                    self.logger.debug(f"[MongoDB] ObjectId lookup returned no results: {job_id}")
+            except Exception as e:
+                self.logger.debug(f"[MongoDB] ObjectId strategy failed (will try alternatives): {e}")
 
             # Strategy 2: Try as integer jobId field (legacy schema)
             if not job_record:
@@ -281,9 +283,11 @@ class OutputPublisher:
                     job_id_int = int(job_id)
                     job_record = collection.find_one({"jobId": job_id_int})
                     if job_record:
-                        self.logger.info(f"Found job by jobId (int): {job_id_int}")
-                except ValueError:
-                    pass
+                        self.logger.info(f"[MongoDB] Found job by jobId (int): {job_id_int}")
+                    else:
+                        self.logger.debug(f"[MongoDB] Integer jobId lookup returned no results: {job_id_int}")
+                except ValueError as e:
+                    self.logger.debug(f"[MongoDB] Integer jobId strategy failed (not an integer): {e}")
 
             # Strategy 3: Try as string jobId field
             if not job_record:
@@ -292,7 +296,7 @@ class OutputPublisher:
                     self.logger.info(f"Found job by jobId (string): {job_id}")
 
             if not job_record:
-                self.logger.warning(f"Job {job_id} not found in MongoDB level-2 collection (tried _id, jobId int/string)")
+                self.logger.error(f"[MongoDB] Job {job_id} not found in level-2 collection (tried _id, jobId int/string)")
                 return False
 
             # Prepare update data
@@ -395,14 +399,18 @@ class OutputPublisher:
             )
 
             if result.modified_count > 0:
-                self.logger.info(f"Updated MongoDB record (jobId: {job_id})")
+                self.logger.info(f"[MongoDB] ✓ Updated {result.modified_count} document(s) for job {job_id}")
+                self.logger.info(f"[MongoDB] Persisted fields: {list(update_data.keys())[:10]}...")
+                return True
+            elif result.matched_count > 0:
+                self.logger.info(f"[MongoDB] ✓ Document matched but not modified (data unchanged) for job {job_id}")
                 return True
             else:
-                self.logger.info("MongoDB record not modified (may already have same data)")
-                return True  # Still success, just no changes needed
+                self.logger.error(f"[MongoDB] ✗ No documents matched for update (job_id: {job_id})")
+                return False
 
         except Exception as e:
-            self.logger.warning(f"MongoDB update failed: {str(e)}")
+            self.logger.error(f"[MongoDB] ✗ Persistence failed: {str(e)}", exc_info=True)
             return False
 
     def _format_contacts_file(self, people: list, state: JobState) -> str:
@@ -514,34 +522,39 @@ class OutputPublisher:
             self.logger.info(f"Dossier generated ({len(dossier_content)} chars)")
 
         except Exception as e:
-            error_msg = f"Dossier generation failed: {str(e)[:100]}"
-            self.logger.warning(error_msg)
+            error_msg = f"[Dossier] Generation failed: {str(e)[:100]}"
+            self.logger.error(error_msg, exc_info=True)
             errors.append(error_msg)
             dossier_content = "Dossier generation failed"
             result['dossier_generated'] = False
 
         try:
             # Step 1: Save files locally
-            self.logger.info("Saving files to local disk")
+            self.logger.info("[Local] Saving files to local disk")
             local_paths = self._save_files_locally(state, dossier_content)
             result['local_paths'] = local_paths
             result['local_save_success'] = True
+            self.logger.info(f"[Local] ✓ Saved {len(local_paths)} files")
 
         except Exception as e:
-            error_msg = f"Local file save failed: {str(e)[:100]}"
-            self.logger.warning(error_msg)
+            error_msg = f"[Local] File save failed: {str(e)[:100]}"
+            self.logger.error(error_msg, exc_info=True)
             errors.append(error_msg)
             result['local_save_success'] = False
 
         try:
             # Step 2: Persist to MongoDB
-            self.logger.info("Updating MongoDB")
+            self.logger.info("[MongoDB] Starting persistence")
             mongo_success = self._persist_to_mongodb(state, dossier_content)
             result['mongodb_persisted'] = mongo_success
+            if mongo_success:
+                self.logger.info("[MongoDB] ✓ Persistence completed")
+            else:
+                self.logger.error("[MongoDB] ✗ Persistence returned False")
 
         except Exception as e:
-            error_msg = f"MongoDB persistence failed: {str(e)[:100]}"
-            self.logger.warning(error_msg)
+            error_msg = f"[MongoDB] Persistence exception: {str(e)[:100]}"
+            self.logger.error(error_msg, exc_info=True)
             errors.append(error_msg)
             result['mongodb_persisted'] = False
 
@@ -597,8 +610,8 @@ class OutputPublisher:
                     )
                     self.logger.info("Dossier uploaded")
             except Exception as e:
-                error_msg = f"Dossier upload failed: {str(e)[:100]}"
-                self.logger.warning(error_msg)
+                error_msg = f"[Drive] Dossier upload failed: {str(e)[:100]}"
+                self.logger.error(error_msg)
                 errors.append(error_msg)
 
             # Step 5: Upload cover letter
@@ -632,8 +645,8 @@ class OutputPublisher:
                     # Cleanup temp file
                     os.remove(cover_letter_path)
                 except Exception as e:
-                    error_msg = f"Cover letter upload failed (folder created): {str(e)[:100]}"
-                    self.logger.warning(error_msg)
+                    error_msg = f"[Drive] Cover letter upload failed: {str(e)[:100]}"
+                    self.logger.error(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 6: Upload CV
@@ -653,8 +666,8 @@ class OutputPublisher:
                     )
                     self.logger.info("CV uploaded")
                 except Exception as e:
-                    error_msg = f"CV upload failed (folder created): {str(e)[:100]}"
-                    self.logger.warning(error_msg)
+                    error_msg = f"[Drive] CV upload failed: {str(e)[:100]}"
+                    self.logger.error(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 7: Upload per-person outreach files (Phase 1.3)
@@ -690,8 +703,8 @@ class OutputPublisher:
                     os.remove(contacts_path)
 
                 except Exception as e:
-                    error_msg = f"Contacts upload failed: {str(e)[:100]}"
-                    self.logger.warning(error_msg)
+                    error_msg = f"[Drive] Contacts upload failed: {str(e)[:100]}"
+                    self.logger.error(error_msg)
                     upload_errors.append(error_msg)
 
             # Step 8: Log to Google Sheets
@@ -741,7 +754,8 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
     Returns:
         Dictionary with updates to merge into state
     """
-    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer7")
+    debug_mode = state.get("debug_mode", False)
+    logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer7", debug_mode=debug_mode)
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
@@ -783,7 +797,7 @@ def output_publisher_node(state: JobState) -> Dict[str, Any]:
         if updates.get("mongodb_persisted"):
             logger.info("✅ MongoDB: Job record updated")
         else:
-            logger.warning("MongoDB: Update failed or skipped")
+            logger.error("❌ MongoDB: Update failed or skipped")
 
         # Drive
         if updates.get("drive_folder_url"):
