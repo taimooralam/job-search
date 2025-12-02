@@ -22,7 +22,7 @@ from src.common.structured_logger import get_structured_logger, StructuredLogger
 from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
 from src.common.token_tracker import get_global_tracker
 from src.common.llm_factory import set_run_context, clear_run_context
-from src.common.database import Database
+from src.common.database import DatabaseClient
 
 # Initialize logging
 log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -52,7 +52,7 @@ def save_pipeline_run_start(run_id: str, job_id: str, job_data: Dict[str, Any]) 
     Creates a record in pipeline_runs collection when a run begins.
     """
     try:
-        db = Database()
+        db = DatabaseClient()
         run_doc = {
             "run_id": run_id,
             "job_id": job_id,
@@ -92,7 +92,7 @@ def update_pipeline_run_complete(
     Updates the pipeline_runs record with results after pipeline finishes.
     """
     try:
-        db = Database()
+        db = DatabaseClient()
         update_doc = {
             "$set": {
                 "status": status,
