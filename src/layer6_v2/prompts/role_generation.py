@@ -8,6 +8,7 @@ with full traceability to prevent hallucination.
 from typing import List, Optional
 from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.types import CareerContext
+from src.layer6_v2.achievement_mapper import map_achievements_to_pain_points
 from src.common.state import ExtractedJD
 
 
@@ -145,6 +146,13 @@ def build_role_generation_user_prompt(
     # Format achievements for the prompt
     achievements_text = "\n".join(f"• {a}" for a in role.achievements)
 
+    # Pre-compute achievement to pain point mapping (Priority 1 improvement)
+    pain_points = extracted_jd.get("implied_pain_points", [])
+    _, achievement_mapping_text = map_achievements_to_pain_points(
+        achievements=role.achievements,
+        pain_points=pain_points[:5],  # Limit to top 5 pain points
+    )
+
     # Format competency weights
     weights = extracted_jd.get("competency_weights", {})
     competency_text = (
@@ -154,8 +162,7 @@ def build_role_generation_user_prompt(
         f"- Leadership: {weights.get('leadership', 25)}%"
     )
 
-    # Format pain points
-    pain_points = extracted_jd.get("implied_pain_points", [])
+    # Format pain points (already fetched above for mapping)
     pain_points_text = "\n".join(f"• {p}" for p in pain_points[:5]) if pain_points else "None specified"
 
     # Format target keywords
@@ -202,6 +209,8 @@ EMPHASIS GUIDANCE:
 === SOURCE ACHIEVEMENTS (your ONLY source of truth) ===
 {achievements_text}
 
+{achievement_mapping_text}
+
 === HARD SKILLS FROM THIS ROLE ===
 {', '.join(role.hard_skills) if role.hard_skills else 'None listed'}
 
@@ -218,9 +227,10 @@ ARIS FORMAT REQUIREMENTS (MANDATORY):
 4. Each bullet SHOULD END with SITUATION that ties to JD pain points (use "—addressing..." or "—responding to...")
 5. Word count: 25-40 words per bullet (to fit all ARIS elements)
 
-SITUATION-TO-PAIN-POINT MATCHING:
-When the JD mentions pain points like "scaling challenges", "reliability issues", "team growth needs",
-end your bullet with a situation that mirrors these challenges (e.g., "—addressing scaling challenges as user base tripled")
+SITUATION-TO-PAIN-POINT MATCHING (use the pre-computed mapping above):
+Use the ACHIEVEMENT TO PAIN POINT MAPPING section above to decide which pain points to address.
+For achievements with high/medium confidence matches, end with a situation using that pain point.
+For achievements with no match, focus on general impact without forcing a pain point connection.
 
 ADDITIONAL REQUIREMENTS:
 6. Each bullet MUST trace back to a specific source achievement above
