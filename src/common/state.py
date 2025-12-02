@@ -249,3 +249,7 @@ class JobState(TypedDict):
     # Tracks each pipeline run with cost and tier for historical analysis
     # Each entry: {"run_id": str, "tier": str, "cost_usd": float, "timestamp": str, "status": str}
     pipeline_runs: Optional[List[Dict[str, Any]]]
+
+    # ===== DEBUG MODE (API debug=true) =====
+    # When enabled, verbose logging throughout the pipeline
+    debug_mode: Optional[bool]  # True enables DEBUG level logging across all layers
