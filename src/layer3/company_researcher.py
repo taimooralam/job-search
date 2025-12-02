@@ -796,7 +796,7 @@ class CompanyResearcher:
                         self.logger.info(f"✗ Filtered {source_name} (low quality)")
 
             except Exception as e:
-                self.logger.warning(f"Failed to scrape {source_name}: {e}")
+                self.logger.info(f"[Scrape] ✗ {source_name} failed (non-critical): {e}")
                 continue
 
         return scraped_data
@@ -1019,7 +1019,7 @@ Output JSON only:
                     cached_data["scraped_job_posting"] = scraped_job_posting
                 return cached_data
         except Exception as e:
-            self.logger.warning(f"Cache check failed: {e}, proceeding with research")
+            self.logger.info(f"[Cache] Check failed, proceeding with fresh research: {e}")
 
         # Cache miss - proceed with Phase 5.1 research
         try:
@@ -1053,8 +1053,9 @@ Output JSON only:
             # Step 3: Store in cache (Phase 5.1 format)
             try:
                 self._store_cache(company, company_research=company_research_output)
+                self.logger.info(f"[Cache] ✓ Stored research for {company}")
             except Exception as e:
-                self.logger.warning(f"Failed to cache results: {e}")
+                self.logger.error(f"[Cache] ✗ Failed to cache results (future lookups will re-scrape): {e}")
 
             # Convert to TypedDict format for JobState
             company_research: CompanyResearch = {
@@ -1100,8 +1101,9 @@ Output JSON only:
                 # Store in cache (legacy format)
                 try:
                     self._store_cache(company, summary=company_summary, url=company_url)
+                    self.logger.info(f"[Cache] ✓ Stored legacy research for {company}")
                 except Exception as cache_error:
-                    self.logger.warning(f"Failed to cache results: {cache_error}")
+                    self.logger.error(f"[Cache] ✗ Failed to cache legacy results: {cache_error}")
 
                 return {
                     "company_summary": company_summary,
