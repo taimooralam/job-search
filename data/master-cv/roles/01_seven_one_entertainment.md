@@ -4,46 +4,365 @@
 **Location**: Munich, DE
 **Period**: 2020–Present
 **Is Current**: true
+**Career Stage**: Senior/Leadership (Position 1 of 6 — Current Role)
+**Duration**: 5 years
+
+---
+
+## Design Notes
+
+Per the CV generation critique recommendations:
+- Using **variant selection** instead of pure generation
+- Each achievement has multiple emphasis variants for JD matching
+- Allowing **format diversity** (not forcing ARIS on everything)
+- **Qualitative specificity** balanced with verifiable metrics
+- All variants are **interview-defensible**
+- Current role — **flagship achievements** with maximum depth
+
+---
 
 ## Achievements
 
-• Led multi-year transformation of large-scale legacy Javascript monolithic AdTech platform processing millions of impressions daily into choreographed event-driven microservices in typescript in AWS using lambda, serverless functions and Eventbridge, achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery
-• devised a technical vision and roadmap, aligning with company strategy of increasing reach and consented users, preserved and increased ad impressions despite global industry wide decline in linear TV viewership, using techniques such as adaptive algorithmic blacklisting
-• designed and implemented an Architectural Runway to simultaneously address extensive technical debt and accelerate feature development. Successfully executed a strategic, incremental multi-year roadmap, achieving ~70% refactoring of complex large scale distributed system components while continuously delivering business-critical features, balancing quality with speed of shipping
-• enhanced system architecture & reduced technical debt by mentoring engineers about the DDD framework to standardize best practices for coding & design. Inspired decoupled modules using event-based systems, strategically moving to thin front-end client and towards business-logic-heavy, autonomous & choregraphed backend microservices deployed on AWS. This led to architectural flexibility, maintainability, scalability, resilience and cost optimization. Used TDD and BDD to keep the quality of the code base top-notch.
-• Led the initiative to plan, architect and realize the much-needed data and observability pipeline to channel millions of data points to opensearch. The real-time dashboards, helped uncover issues and debug scenarios that would otherwise not have been possible, thereby increasing shipping speed, resolving issues faster and ultimately increasing a significant amount of revenue
-• Led and optimized the scaling of multi-million user backend systems around bursty traffic, used agentic AI to expedite this process
-• Was seen and consulted as the subject matter experts on the technical challenges and possibilities in the Addressable TV domain.
-• Managed and scaled delivery across matrixed cross-functional engineering teams, implementing Domain-Driven Design principles that reduced developer onboarding from 6 to 3 months and improved team velocity by 25%
-• Architected real-time data observability pipeline processing billions of events daily using OpenSearch and AWS, reducing operational costs by 10x and enabling data-driven decision making across engineering teams
-• Drove technical strategy aligning architecture roadmap with business OKRs, resulting in 15% YoY impression growth despite declining linear TV market through improved ad supply optimization
-• Established engineering excellence standards including blameless postmortems, automated testing frameworks, and architecture governance that improved delivery predictability by 25% and reduced release cycles from weeks to days
-• Led GDPR/TCF compliance program across multiple product lines, implementing consent management platform that passed BLM regulatory audits and protected €30M annual revenue exposure
-• Introduced ubiquitous language and bounded contexts through DDD, enabling consistent business-tech communication and reducing requirement misalignment by 40%
-• Scaled AWS infrastructure for bursty traffic patterns using Lambda and ECS auto-scaling, optimizing cost-performance balance and reducing missed impressions by 20%
-• Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices, promoting 3 engineers to lead positions
-• Implemented comprehensive monitoring and alerting system that reduced MTTR by 60% through proactive incident detection and automated response workflows
-• Collaborated with product owners, enterprise architects and other stakeholders in the organization to identify core business metrics, and led their realization across the technical stack
-• Analysed the risks to the system and communicated them transparently to all business stakeholders to have them well-informed about the consequences of future business decisions.
-• Brainstormed, developed and led initiative to realize value innovation such as adaptive blacklisting to ~20% reach and revenue
-• Collaborated a with business stakeholders to break complex projects down into technical requirements, decide what would be an MVP and lead, development and deployment incrementally to balance speed vs quality
-• Took hard decisions despite ambiguity, executed quickly and collected data to adapt and iterate
-• Cultivated a culture of innovation in the teams by establishing the process of Lean Friday: One Friday every sprint where the team would work on any technical improvement topic they wanted: this resulted in breakthrough tools that resulted in quicker development, QA and business processes increasing team productivity by orders of magnitude
-• Cultivated a culture of knowledge sharing, onboarding, mentoring engineers with kindness and patience and creating a ripple affect culture across the whole department.
-• By driving enhancement & modernization of CI/CD, fostered a culture of atomic deployments, for better QA and increased shipping to the market
-• Anticipated future requirements and challenges and got prepared for them either in plan or in partial execution, strategically while driving refactoring and features
-• drove architectural improvements and initiatives across multiple dimensions with the explicit intention to make the tech stack, state-of-the-art, to reduce onboarding time for new joiners including revamping the architecture, introducing DDD, devolving monoliths into microservices
-• cultivated, and led by example the culture of incident management and blameless post mortems
-• attended conferences to maintain professional connections that were needed and gathered knowledge, stay on top of industry trends and distributed this knowledge to the team
-• maintained the approach of eyes-on hands-off, intervening in a hands on way when required
-• led the hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments
-• maintained a low turn-over by incentivizing developers to grow incl. upgrading to state of the art technologies, and other cultural incentives described above
-• maximimized team level decisions, heard all voices and opinions, used the principle of people are strongest when they belong at work
-• led multiple successful GDPR related CMP audits by the Bavarian Media Regulatory Authority BLM, and created a professional relationship of good faith
-• preserved 30M euro revenue by designing and leading the development of a TCF GDPR approved compliant CMP, and became the first movers to do so in the EU region.
+### Achievement 1: Legacy Modernization & Platform Transformation
+
+**Core Fact**: Led multi-year transformation of large-scale legacy JavaScript monolithic AdTech platform (processing millions of impressions daily) into choreographed event-driven microservices in TypeScript on AWS (Lambda, EventBridge, ECS), achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery.
+
+**Variants**:
+- **Architecture**: Led multi-year transformation of legacy JavaScript monolith into event-driven TypeScript microservices on AWS, achieving 75% incident reduction and 3 years zero downtime
+- **Technical**: Architected migration from JavaScript monolith to choreographed TypeScript microservices using Lambda, EventBridge, and ECS, processing millions of daily impressions
+- **Leadership**: Drove platform modernization initiative balancing continuous feature delivery with architectural transformation, achieving 75% incident reduction
+- **Impact**: Transformed AdTech platform serving millions of impressions into resilient microservices architecture with zero downtime for 3 consecutive years
+- **Short**: Legacy-to-microservices transformation—75% fewer incidents, 3 years zero downtime
+
+**Keywords**: legacy modernization, microservices, TypeScript, AWS Lambda, EventBridge, ECS, event-driven architecture, monolith decomposition, AdTech
+
+**Interview Defensibility**: ✅ Can explain decomposition strategy, event choreography patterns, why EventBridge, migration phases, how zero downtime was achieved
+
+---
+
+### Achievement 2: Architectural Runway & Technical Debt Strategy
+
+**Core Fact**: Designed and implemented Architectural Runway approach to simultaneously address extensive technical debt and accelerate feature development. Executed strategic multi-year roadmap achieving ~70% refactoring of complex distributed system components while continuously delivering business-critical features.
+
+**Variants**:
+- **Strategy**: Designed Architectural Runway balancing technical debt reduction with feature delivery, achieving 70% system refactoring over multi-year roadmap
+- **Architecture**: Implemented incremental architectural transformation strategy enabling 70% codebase modernization without disrupting business delivery
+- **Leadership**: Led strategic technical debt initiative using Architectural Runway pattern, balancing quality with shipping velocity
+- **Impact**: Enabled sustained feature delivery while achieving 70% system modernization through strategic architectural planning
+- **Short**: Architectural Runway strategy—70% refactoring while shipping features continuously
+
+**Keywords**: architectural runway, technical debt, strategic planning, incremental modernization, refactoring, legacy systems
+
+**Interview Defensibility**: ✅ Can explain Architectural Runway concept, prioritization framework, how debt was quantified, trade-off decisions
+
+---
+
+### Achievement 3: Real-Time Observability Pipeline
+
+**Core Fact**: Led initiative to architect and realize data observability pipeline channeling billions of events daily to OpenSearch on AWS. Real-time dashboards uncovered issues and debug scenarios previously invisible, increasing shipping speed, faster issue resolution, and significant revenue increase.
+
+**Variants**:
+- **Technical**: Architected real-time observability pipeline processing billions of events daily using OpenSearch and AWS, enabling data-driven engineering decisions
+- **Impact**: Built observability infrastructure that reduced operational costs by 10x and enabled previously impossible debugging scenarios
+- **Architecture**: Designed event streaming architecture from distributed microservices to OpenSearch, enabling real-time operational dashboards
+- **Leadership**: Led observability initiative from concept to production, transforming team's ability to detect and resolve issues proactively
+- **Short**: Observability pipeline—billions of daily events, 10x cost reduction, real-time debugging
+
+**Keywords**: observability, OpenSearch, AWS, event streaming, real-time analytics, dashboards, monitoring, data pipeline
+
+**Interview Defensibility**: ✅ Can explain pipeline architecture, why OpenSearch, cost optimization strategies, specific debugging scenarios enabled
+
+---
+
+### Achievement 4: DDD & Engineering Excellence Standards
+
+**Core Fact**: Enhanced system architecture and reduced technical debt by introducing Domain-Driven Design framework. Established ubiquitous language and bounded contexts, reducing developer onboarding from 6 to 3 months, improving team velocity by 25%, and reducing requirement misalignment by 40%.
+
+**Variants**:
+- **Architecture**: Introduced Domain-Driven Design with bounded contexts and ubiquitous language, reducing requirement misalignment by 40%
+- **Leadership**: Established DDD framework as engineering standard, cutting developer onboarding time from 6 to 3 months
+- **Process**: Implemented DDD principles enabling consistent business-tech communication and 25% velocity improvement
+- **Mentoring**: Mentored engineers on DDD patterns, fostering decoupled modules and autonomous backend microservices
+- **Short**: DDD adoption—50% faster onboarding, 25% velocity gain, 40% fewer requirement misalignments
+
+**Keywords**: Domain-Driven Design, DDD, bounded contexts, ubiquitous language, engineering standards, onboarding, velocity
+
+**Interview Defensibility**: ✅ Can explain specific bounded contexts, how ubiquitous language was established, measurement methodology
+
+---
+
+### Achievement 5: GDPR/TCF Compliance & Regulatory Success
+
+**Core Fact**: Led GDPR/TCF compliance program across multiple product lines, implementing consent management platform that passed BLM regulatory audits. First movers in EU region for TCF GDPR-approved compliant CMP, protecting €30M annual revenue exposure.
+
+**Variants**:
+- **Compliance**: Led GDPR/TCF compliance program implementing consent management platform that passed BLM regulatory audits, protecting €30M revenue
+- **Leadership**: Drove regulatory compliance initiative as first-movers in EU for TCF-approved CMP, establishing professional relationship with Bavarian Media Authority
+- **Architecture**: Designed TCF-compliant consent management architecture integrated across multiple product lines for regulatory approval
+- **Impact**: Preserved €30M annual revenue through successful GDPR compliance implementation and multiple regulatory audits
+- **Short**: GDPR/TCF compliance—€30M revenue protected, first-mover EU TCF-approved CMP
+
+**Keywords**: GDPR, TCF, compliance, consent management, CMP, regulatory, BLM, privacy, data protection
+
+**Interview Defensibility**: ✅ Can explain TCF framework, CMP architecture, audit process, regulatory relationship management
+
+---
+
+### Achievement 6: Technical Vision & Business Alignment
+
+**Core Fact**: Devised technical vision and roadmap aligned with company strategy of increasing reach and consented users. Preserved and increased ad impressions (15% YoY growth) despite global industry-wide decline in linear TV viewership through adaptive algorithmic blacklisting and ad supply optimization.
+
+**Variants**:
+- **Strategy**: Devised technical roadmap aligned with business OKRs, achieving 15% YoY impression growth despite declining linear TV market
+- **Innovation**: Developed adaptive algorithmic blacklisting technique increasing reach and revenue by ~20% against industry headwinds
+- **Leadership**: Aligned technical architecture with company strategy, turning industry decline into competitive advantage
+- **Impact**: Preserved ad revenue through technical innovation despite global linear TV viewership decline
+- **Short**: Technical vision driving 15% growth against declining market through algorithmic innovation
+
+**Keywords**: technical strategy, OKRs, business alignment, ad optimization, algorithmic blacklisting, AdTech, impression growth
+
+**Interview Defensibility**: ✅ Can explain blacklisting algorithm, how OKRs translated to technical decisions, market context
+
+---
+
+### Achievement 7: Scalability & Performance Optimization
+
+**Core Fact**: Led and optimized scaling of multi-million user backend systems around bursty traffic patterns using Lambda and ECS auto-scaling. Reduced missed impressions by 20% while optimizing cost-performance balance.
+
+**Variants**:
+- **Technical**: Scaled AWS infrastructure for bursty traffic using Lambda and ECS auto-scaling, reducing missed impressions by 20%
+- **Architecture**: Designed auto-scaling patterns handling multi-million user traffic bursts while optimizing cloud costs
+- **Performance**: Optimized backend systems for bursty traffic patterns, balancing cost-performance and reducing missed impressions
+- **Innovation**: Used agentic AI to expedite scaling optimization process for multi-million user systems
+- **Short**: Auto-scaling architecture—20% fewer missed impressions, cost-optimized bursty traffic handling
+
+**Keywords**: AWS, Lambda, ECS, auto-scaling, performance, scalability, bursty traffic, cost optimization
+
+**Interview Defensibility**: ✅ Can explain scaling triggers, cost optimization strategies, traffic patterns, agentic AI usage
+
+---
+
+### Achievement 8: Monitoring & Incident Management
+
+**Core Fact**: Implemented comprehensive monitoring and alerting system reducing MTTR by 60% through proactive incident detection and automated response workflows. Cultivated culture of incident management and blameless postmortems.
+
+**Variants**:
+- **Technical**: Implemented monitoring and alerting system with automated response workflows, reducing MTTR by 60%
+- **Process**: Established incident management culture with blameless postmortems, improving operational excellence
+- **Leadership**: Cultivated blameless postmortem culture transforming incident response from reactive to proactive
+- **Impact**: Reduced mean time to resolution by 60% through proactive detection and automated response
+- **Short**: Monitoring system—60% MTTR reduction, blameless postmortem culture
+
+**Keywords**: monitoring, alerting, MTTR, incident management, postmortems, operational excellence, automation
+
+**Interview Defensibility**: ✅ Can explain alerting strategy, postmortem process, specific MTTR improvements, automation examples
+
+---
+
+### Achievement 9: Engineering Team Development & Mentorship
+
+**Core Fact**: Mentored 10+ senior engineers on architectural patterns, event-driven design, and cloud best practices. Promoted 3 engineers to lead positions. Maintained low turnover through growth opportunities and cultural incentives.
+
+**Variants**:
+- **Leadership**: Mentored 10+ senior engineers on architecture and cloud patterns, promoting 3 to lead positions
+- **Culture**: Cultivated knowledge-sharing culture through mentoring with kindness and patience, creating ripple effect across department
+- **Retention**: Maintained low turnover by incentivizing growth through technology upgrades and cultural initiatives
+- **Development**: Developed engineering talent through architectural mentorship and career pathing
+- **Short**: Mentored 10+ engineers, promoted 3 to leads, maintained low turnover through growth culture
+
+**Keywords**: mentoring, leadership, talent development, team building, culture, retention, career growth
+
+**Interview Defensibility**: ✅ Can describe specific mentorship approaches, promotion criteria, retention strategies
+
+---
+
+### Achievement 10: Innovation Culture (Lean Friday)
+
+**Core Fact**: Cultivated culture of innovation by establishing Lean Friday: one Friday per sprint where team works on any technical improvement. Resulted in breakthrough tools increasing team productivity by orders of magnitude.
+
+**Variants**:
+- **Culture**: Established Lean Friday innovation program resulting in breakthrough productivity tools
+- **Leadership**: Created structured innovation time producing tools that improved development, QA, and business processes
+- **Process**: Implemented Lean Friday practice enabling team-driven innovation and productivity improvements
+- **Impact**: Innovation program produced breakthrough tools increasing productivity by orders of magnitude
+- **Short**: Lean Friday initiative—breakthrough tools, orders of magnitude productivity gains
+
+**Keywords**: innovation, culture, Lean Friday, productivity, continuous improvement, team empowerment
+
+**Interview Defensibility**: ✅ Can describe specific tools created, how Lean Friday was structured, productivity measurements
+
+---
+
+### Achievement 11: Hiring & Team Building
+
+**Core Fact**: Led hiring process for software engineers by defining selection criteria, designing interview strategies, and developing technical assessments. Scaled delivery across matrixed cross-functional engineering teams.
+
+**Variants**:
+- **Leadership**: Led engineering hiring by defining selection criteria and designing technical assessments
+- **Process**: Designed interview strategies and evaluation frameworks for engineering recruitment
+- **Scaling**: Scaled delivery across matrixed cross-functional teams through strategic hiring and team building
+- **Short**: Engineering hiring leadership—selection criteria, technical assessments, cross-functional scaling
+
+**Keywords**: hiring, recruitment, interviews, technical assessments, team building, cross-functional, scaling
+
+**Interview Defensibility**: ✅ Can describe selection criteria, interview format, assessment design, cross-functional coordination
+
+---
+
+### Achievement 12: CI/CD & Deployment Excellence
+
+**Core Fact**: Drove enhancement and modernization of CI/CD pipelines, fostering culture of atomic deployments. Reduced release cycles from weeks to days, improving delivery predictability by 25%.
+
+**Variants**:
+- **Technical**: Modernized CI/CD pipelines enabling atomic deployments and reducing release cycles from weeks to days
+- **Process**: Fostered atomic deployment culture improving delivery predictability by 25%
+- **Impact**: CI/CD modernization reduced release cycles from weeks to days with improved predictability
+- **Short**: CI/CD modernization—release cycles from weeks to days, 25% better predictability
+
+**Keywords**: CI/CD, deployment, atomic deploys, release cycles, DevOps, automation, delivery
+
+**Interview Defensibility**: ✅ Can explain pipeline architecture, atomic deployment strategy, predictability measurement
+
+---
+
+### Achievement 13: Subject Matter Expertise & Stakeholder Collaboration
+
+**Core Fact**: Consulted as subject matter expert on technical challenges in Addressable TV domain. Collaborated with product owners, enterprise architects, and stakeholders to identify core business metrics and led their realization across technical stack.
+
+**Variants**:
+- **Expertise**: Served as subject matter expert on Addressable TV technical challenges and possibilities
+- **Collaboration**: Collaborated with product owners and enterprise architects to translate business metrics into technical implementations
+- **Leadership**: Bridged business and technical domains, identifying core metrics and leading their realization
+- **Short**: Addressable TV subject matter expert—business metric realization across technical stack
+
+**Keywords**: subject matter expert, SME, Addressable TV, AdTech, stakeholder collaboration, business metrics
+
+**Interview Defensibility**: ✅ Can explain Addressable TV domain, specific technical challenges, stakeholder collaboration examples
+
+---
+
+### Achievement 14: Risk Management & Strategic Communication
+
+**Core Fact**: Analyzed system risks and communicated them transparently to all business stakeholders, keeping them well-informed about consequences of future business decisions. Took hard decisions despite ambiguity, executed quickly, and collected data to adapt.
+
+**Variants**:
+- **Leadership**: Analyzed and communicated system risks transparently to business stakeholders for informed decision-making
+- **Strategy**: Made decisive calls amid ambiguity, executed quickly, and collected data to iterate
+- **Communication**: Maintained transparent risk communication enabling informed business decisions
+- **Short**: Risk analysis and transparent stakeholder communication for informed business decisions
+
+**Keywords**: risk management, stakeholder communication, transparency, decision-making, ambiguity, strategic communication
+
+**Interview Defensibility**: ✅ Can describe specific risks identified, communication approach, decisions made under ambiguity
+
+---
 
 ## Skills
 
-**Hard Skills**: domain-driven-design, architecture, architectural runway, nodejs, lambda, s3, aws, redis, ecs, eventbridge, cloudfront, microservices, DDD, python, git, terraform, scaling, serverless, opensearch
+**Hard Skills**:
+- **Languages**: TypeScript, JavaScript, Python
+- **Cloud**: AWS (Lambda, ECS, EventBridge, S3, CloudFront), Terraform, Serverless
+- **Architecture**: Domain-Driven Design, Event-Driven Architecture, Microservices, CQRS
+- **Data**: OpenSearch, Redis, Event Streaming
+- **DevOps**: CI/CD, Infrastructure as Code, Monitoring, Alerting
+- **Domains**: AdTech, Addressable TV, GDPR, TCF, Consent Management
 
-**Soft Skills**: technical leadership, mentoring, handling technical debt, overhauling legacy systems, leading architectural initiatives, requirement analysis, SCRUM, hiring & interviewing, risk analysis and mitigation, cmp, tcf, gdpr, mentoring
+**Soft Skills**: Technical Leadership, Mentoring, Strategic Planning, Stakeholder Management, Risk Analysis, Hiring & Interviewing, Cross-Functional Collaboration, Change Management, Innovation Culture, Blameless Postmortems
+
+---
+
+## Context for Generation
+
+### Role Summary
+Technical Lead driving platform modernization, architectural excellence, and team development at Seven.One Entertainment Group (ProSiebenSat.1 subsidiary). Responsible for AdTech platform serving millions of impressions daily across German broadcast TV digital properties.
+
+### Key Technologies
+| Category | Technologies |
+|----------|--------------|
+| Cloud | AWS Lambda, ECS, EventBridge, S3, CloudFront |
+| Languages | TypeScript, JavaScript, Python |
+| Architecture | DDD, Event-Driven, Microservices, CQRS |
+| Data | OpenSearch, Redis |
+| Infrastructure | Terraform, Serverless Framework |
+| Compliance | GDPR, TCF, CMP |
+
+### Business Context
+- **Company**: Seven.One Entertainment Group (ProSiebenSat.1 Media)
+- **Domain**: Addressable TV advertising technology
+- **Scale**: Millions of daily ad impressions
+- **Challenge**: Maintaining revenue growth despite declining linear TV viewership
+- **Regulatory**: GDPR/TCF compliance with BLM oversight
+
+### Leadership Scope
+- 10+ engineers mentored
+- 3 engineers promoted to lead
+- Cross-functional matrixed teams
+- Multi-year transformation ownership
+- €30M revenue responsibility (compliance)
+
+---
+
+## LinkedIn Consistency Check
+
+- [x] Technical Lead title and tenure
+- [x] Platform transformation scope
+- [x] AWS/serverless architecture
+- [x] DDD and microservices
+- [x] Team leadership numbers
+- [x] GDPR/compliance work
+
+---
+
+## Selection Guide by JD Type
+
+| JD Emphasis | Recommended Achievements |
+|-------------|-------------------------|
+| Platform/Modernization | 1, 2 (transformation, architectural runway) |
+| Architecture/Design | 1, 3, 4 (microservices, observability, DDD) |
+| Leadership/Management | 4, 9, 10, 11 (DDD standards, mentoring, culture, hiring) |
+| AWS/Cloud | 1, 3, 7 (Lambda/ECS, observability, scaling) |
+| Data/Analytics | 3 (observability pipeline) |
+| Compliance/Regulatory | 5 (GDPR/TCF) |
+| Strategy/Vision | 2, 6, 14 (runway, business alignment, risk) |
+| DevOps/CI/CD | 8, 12 (monitoring, deployment) |
+| AdTech/Media | 6, 13 (impression growth, SME) |
+| Culture/Mentoring | 9, 10 (team development, Lean Friday) |
+| Scaling/Performance | 7 (auto-scaling, bursty traffic) |
+| Process/Agile | 4, 8, 12 (DDD, postmortems, atomic deploys) |
+
+---
+
+## Interview Preparation Notes
+
+### Flagship Stories (Know Cold)
+
+1. **Platform Transformation** (Achievement 1)
+   - Why event-driven over request-response
+   - EventBridge choreography patterns
+   - Zero downtime migration strategy
+   - 75% incident reduction measurement
+
+2. **GDPR/TCF Compliance** (Achievement 5)
+   - TCF framework explanation
+   - CMP architecture decisions
+   - BLM audit process
+   - €30M revenue protection calculation
+
+3. **DDD Introduction** (Achievement 4)
+   - How bounded contexts were identified
+   - Ubiquitous language workshops
+   - Onboarding time measurement
+   - Velocity improvement calculation
+
+### Metrics to Defend
+
+| Metric | Source/Calculation |
+|--------|-------------------|
+| 75% incident reduction | Before/after incident tracking |
+| 3 years zero downtime | Monitoring system records |
+| 6→3 months onboarding | New hire time-to-productivity |
+| 25% velocity improvement | Sprint burndown comparison |
+| 40% requirement misalignment reduction | Rework tracking |
+| €30M revenue protection | Annual advertising revenue exposure |
+| 60% MTTR reduction | Incident resolution time tracking |
+| 15% YoY impression growth | Business metrics dashboards |
