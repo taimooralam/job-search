@@ -11,6 +11,11 @@ This approach:
 2. Allows manual curation of role files
 3. Makes it easy to add/remove bullets per role
 4. Provides structured metadata for intelligent selection
+
+Enhanced Format Support (2024-12):
+- Supports variant-based achievement structure
+- Each achievement can have multiple variants (Technical, Architecture, Impact, etc.)
+- Uses VariantParser for enhanced format, falls back to simple bullets
 """
 
 import json
@@ -18,6 +23,14 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
 from dataclasses import dataclass, field
 from src.common.logger import get_logger
+
+# Import enhanced format support
+from src.layer6_v2.variant_parser import (
+    VariantParser,
+    EnhancedRoleData,
+    Achievement,
+    AchievementVariant,
+)
 
 
 @dataclass
@@ -44,10 +57,41 @@ class RoleData:
     soft_skills: List[str] = field(default_factory=list)
     raw_content: str = ""
 
+    # Enhanced format support (populated when using enhanced role files)
+    enhanced_data: Optional[EnhancedRoleData] = None
+
     @property
     def bullet_count(self) -> int:
         """Return count of achievements (computed, not stored)."""
         return len(self.achievements)
+
+    @property
+    def has_variants(self) -> bool:
+        """Check if this role has enhanced variant data."""
+        return self.enhanced_data is not None and len(self.enhanced_data.achievements) > 0
+
+    @property
+    def variant_count(self) -> int:
+        """Return total number of variants if enhanced data available."""
+        if self.enhanced_data:
+            return self.enhanced_data.total_variants
+        return 0
+
+    def get_achievement_variants(self, achievement_index: int) -> Optional[Achievement]:
+        """
+        Get structured achievement with variants by index (0-based).
+
+        Args:
+            achievement_index: Index of the achievement
+
+        Returns:
+            Achievement object with variants, or None if not available
+        """
+        if not self.enhanced_data:
+            return None
+        if 0 <= achievement_index < len(self.enhanced_data.achievements):
+            return self.enhanced_data.achievements[achievement_index]
+        return None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for state/serialization."""
@@ -69,6 +113,8 @@ class RoleData:
             "achievements": self.achievements,
             "hard_skills": self.hard_skills,
             "soft_skills": self.soft_skills,
+            "has_variants": self.has_variants,
+            "variant_count": self.variant_count,
         }
 
 
@@ -122,6 +168,11 @@ class CVLoader:
     This class reads the static role files and metadata that were
     created during initial setup. No dynamic parsing needed.
 
+    Enhanced Format Support:
+    When role files use the variant-based format (with ### Achievement N:
+    headers), the loader automatically parses variants using VariantParser
+    and populates the enhanced_data field on each RoleData.
+
     Usage:
         loader = CVLoader()
         candidate = loader.load()
@@ -129,25 +180,34 @@ class CVLoader:
         # Access all roles
         for role in candidate.roles:
             print(f"{role.company}: {len(role.achievements)} bullets")
+            if role.has_variants:
+                print(f"  Enhanced: {role.variant_count} variants available")
 
         # Filter by competency
         leadership_roles = loader.filter_by_competency("leadership")
+
+        # Get enhanced role data for variant selection
+        enhanced_roles = loader.get_enhanced_roles()
     """
 
     DEFAULT_DATA_PATH = Path("data/master-cv")
 
-    def __init__(self, data_path: Optional[Path] = None):
+    def __init__(self, data_path: Optional[Path] = None, use_enhanced: bool = True):
         """
         Initialize the CV loader.
 
         Args:
             data_path: Path to master-cv data directory.
                        Defaults to data/master-cv/
+            use_enhanced: Whether to parse enhanced variant format (default True)
         """
         self.data_path = data_path or self.DEFAULT_DATA_PATH
         self.metadata_path = self.data_path / "role_metadata.json"
         self.roles_path = self.data_path / "roles"
         self._candidate: Optional[CandidateData] = None
+        self._enhanced_roles: Optional[Dict[str, EnhancedRoleData]] = None
+        self._use_enhanced = use_enhanced
+        self._variant_parser = VariantParser() if use_enhanced else None
         self._logger = get_logger(__name__)
 
     def load(self) -> CandidateData:
@@ -209,9 +269,29 @@ class CVLoader:
         with open(role_file, "r") as f:
             content = f.read()
 
-        # Parse achievements and skills from content
-        achievements = self._parse_achievements(content)
-        hard_skills, soft_skills = self._parse_skills(content)
+        # Try to parse as enhanced format first
+        enhanced_data = None
+        if self._use_enhanced and self._variant_parser:
+            try:
+                enhanced_data = self._variant_parser.parse_role_file(role_file)
+                # Cache for later use
+                if self._enhanced_roles is None:
+                    self._enhanced_roles = {}
+                self._enhanced_roles[role_meta["id"]] = enhanced_data
+            except Exception as e:
+                self._logger.warning(f"Failed to parse enhanced format for {role_file}: {e}")
+                enhanced_data = None
+
+        # Parse achievements - use enhanced data if available
+        if enhanced_data and enhanced_data.achievements:
+            # Extract core facts as achievements for backward compatibility
+            achievements = [a.core_fact for a in enhanced_data.achievements]
+            hard_skills = enhanced_data.hard_skills
+            soft_skills = enhanced_data.soft_skills
+        else:
+            # Fall back to simple bullet parsing
+            achievements = self._parse_achievements(content)
+            hard_skills, soft_skills = self._parse_skills(content)
 
         return RoleData(
             id=role_meta["id"],
@@ -231,6 +311,7 @@ class CVLoader:
             hard_skills=hard_skills,
             soft_skills=soft_skills,
             raw_content=content,
+            enhanced_data=enhanced_data,
         )
 
     def _parse_achievements(self, content: str) -> List[str]:
@@ -397,3 +478,124 @@ class CVLoader:
         skill_lower = skill.lower()
         all_skills = self.get_all_hard_skills() + self.get_all_soft_skills()
         return any(s.lower() == skill_lower for s in all_skills)
+
+    # =========================================================================
+    # ENHANCED FORMAT METHODS
+    # =========================================================================
+
+    def get_enhanced_roles(self) -> Dict[str, EnhancedRoleData]:
+        """
+        Get all enhanced role data for variant selection.
+
+        This method returns the parsed enhanced format data that can be
+        used with VariantSelector for intelligent bullet selection.
+
+        Returns:
+            Dictionary mapping role_id to EnhancedRoleData
+
+        Raises:
+            ValueError: If enhanced parsing is disabled or failed
+        """
+        if self._candidate is None:
+            self.load()
+
+        if not self._use_enhanced:
+            raise ValueError("Enhanced parsing is disabled. Initialize with use_enhanced=True")
+
+        if self._enhanced_roles is None:
+            raise ValueError("No enhanced role data available. Role files may not be in enhanced format.")
+
+        return self._enhanced_roles
+
+    def get_enhanced_role(self, role_id: str) -> Optional[EnhancedRoleData]:
+        """
+        Get enhanced data for a specific role.
+
+        Args:
+            role_id: The role ID (e.g., "01_seven_one_entertainment")
+
+        Returns:
+            EnhancedRoleData for the role, or None if not available
+        """
+        if self._candidate is None:
+            self.load()
+
+        if self._enhanced_roles:
+            return self._enhanced_roles.get(role_id)
+        return None
+
+    def has_enhanced_data(self) -> bool:
+        """
+        Check if enhanced variant data is available.
+
+        Returns:
+            True if at least one role has enhanced data
+        """
+        if self._candidate is None:
+            self.load()
+
+        return bool(self._enhanced_roles)
+
+    def get_total_variants(self) -> int:
+        """
+        Get total number of variants across all roles.
+
+        Returns:
+            Total variant count, or 0 if no enhanced data
+        """
+        if not self.has_enhanced_data():
+            return 0
+
+        return sum(
+            role.total_variants
+            for role in self._enhanced_roles.values()
+        )
+
+    def get_all_achievement_keywords(self) -> List[str]:
+        """
+        Get all unique keywords from all achievements across all roles.
+
+        These are ATS-optimized keywords extracted from enhanced role files.
+
+        Returns:
+            Sorted list of unique keywords
+        """
+        if not self.has_enhanced_data():
+            return []
+
+        keywords = set()
+        for role in self._enhanced_roles.values():
+            keywords.update(role.all_keywords)
+
+        return sorted(keywords)
+
+    def get_roles_with_variants(self) -> List[RoleData]:
+        """
+        Get only roles that have enhanced variant data.
+
+        Returns:
+            List of RoleData objects that have has_variants=True
+        """
+        if self._candidate is None:
+            self.load()
+
+        return [role for role in self._candidate.roles if role.has_variants]
+
+    def print_enhanced_summary(self) -> None:
+        """Print a summary of enhanced role data for debugging."""
+        if self._candidate is None:
+            self.load()
+
+        print("\n=== CV Loader Enhanced Summary ===")
+        print(f"Total roles: {len(self._candidate.roles)}")
+        print(f"Roles with variants: {len(self.get_roles_with_variants())}")
+        print(f"Total variants: {self.get_total_variants()}")
+        print(f"Achievement keywords: {len(self.get_all_achievement_keywords())}")
+
+        if self._enhanced_roles:
+            print("\nPer-role breakdown:")
+            for role_id, enhanced in self._enhanced_roles.items():
+                print(f"  {role_id}:")
+                print(f"    Achievements: {enhanced.achievement_count}")
+                print(f"    Variants: {enhanced.total_variants}")
+                print(f"    Keywords: {len(enhanced.all_keywords)}")

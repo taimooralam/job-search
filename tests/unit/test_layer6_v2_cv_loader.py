@@ -382,11 +382,24 @@ class TestRealDataIntegration:
         # Verify first role (Seven.One)
         current = loader.get_current_role()
         assert current.company == "Seven.One Entertainment Group"
-        assert len(current.achievements) >= 30  # Has many bullets
 
-        # Verify total bullets
+        # Enhanced format: achievements = core facts (structured, fewer items)
+        # Legacy format: achievements = simple bullets (30+ items)
+        # Test for either format
+        if current.has_variants:
+            # Enhanced format - has structured achievements with variants
+            assert len(current.achievements) >= 3  # Core facts
+            assert current.variant_count >= 10  # Many variants across achievements
+        else:
+            # Legacy format - simple bullets
+            assert len(current.achievements) >= 30
+
+        # Verify total bullets (core facts in enhanced format)
         total = loader.get_total_bullets()
-        assert total >= 60  # Should have plenty of bullets
+        if current.has_variants:
+            assert total >= 10  # Core facts across all roles
+        else:
+            assert total >= 60  # Legacy bullets
 
     def test_real_data_filtering(self):
         """Tests filtering on real data."""
@@ -395,11 +408,65 @@ class TestRealDataIntegration:
         if not loader.metadata_path.exists():
             pytest.skip("Real master-cv data not available")
 
-        # Filter by leadership competency
-        leadership_roles = loader.filter_by_competency("leadership")
-        assert len(leadership_roles) >= 1
+        # Filter by architecture competency (used in multiple roles)
+        architecture_roles = loader.filter_by_competency("architecture")
+        assert len(architecture_roles) >= 1
 
         # Get all keywords
         keywords = loader.get_all_keywords()
         assert "AWS" in keywords
         assert "DDD" in keywords
+
+    def test_real_data_enhanced_format(self):
+        """Tests enhanced format support on real data."""
+        loader = CVLoader(use_enhanced=True)
+
+        if not loader.metadata_path.exists():
+            pytest.skip("Real master-cv data not available")
+
+        candidate = loader.load()
+
+        # Check if enhanced data is available
+        current = loader.get_current_role()
+        if not current.has_variants:
+            pytest.skip("Real data not in enhanced format")
+
+        # Verify enhanced data properties
+        assert current.enhanced_data is not None
+        assert len(current.enhanced_data.achievements) >= 1
+
+        # Verify variant count
+        total_variants = loader.get_total_variants()
+        assert total_variants >= 50  # Many variants across all roles
+
+        # Verify achievement structure
+        first_achievement = current.enhanced_data.achievements[0]
+        assert first_achievement.title
+        assert first_achievement.core_fact
+        assert len(first_achievement.variants) >= 2  # At least 2 variant types
+
+        # Verify variant types exist
+        variant_types = list(first_achievement.variants.keys())
+        assert any(vt in variant_types for vt in ["Technical", "Impact", "Leadership"])
+
+    def test_can_disable_enhanced_parsing(self):
+        """Tests that enhanced parsing can be disabled."""
+        loader = CVLoader(use_enhanced=False)
+
+        if not loader.metadata_path.exists():
+            pytest.skip("Real master-cv data not available")
+
+        candidate = loader.load()
+        current = loader.get_current_role()
+
+        # With enhanced disabled, enhanced_data should be None
+        assert not current.has_variants
+        assert current.enhanced_data is None
+
+        # NOTE: When enhanced parsing is disabled, the simple bullet parser
+        # looks for `• ` bullet points. Enhanced-format files use structured
+        # `### Achievement N:` blocks, so simple parsing returns 0 bullets.
+        # This is expected behavior - use_enhanced=False is for backward
+        # compatibility with legacy format files, not for downgrading enhanced files.
+        # The raw content is still available for any custom parsing needs.
+        assert current.raw_content  # Raw content should be available
