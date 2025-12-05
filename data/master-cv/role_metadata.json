@@ -30,8 +30,12 @@
       "file": "roles/01_seven_one_entertainment.md",
       "industry": "AdTech",
       "team_size": "10+",
-      "primary_competencies": ["leadership", "architecture", "delivery", "hiring", "onboarding", "cloud", "serverless", "event-driven architecture", "mentoring"],
-      "keywords": ["AWS", "DDD", "microservices", "event-driven", "GDPR", "observability", "Lambda", "ECS", "nodejs", "technical debt", "high permorning teams", "high throughput, low latency system"]
+      "primary_competencies": ["technical leadership", "platform modernization", "architecture", "delivery", "hiring", "onboarding", "cloud", "serverless", "event-driven architecture", "mentoring", "DDD", "compliance", "observability", "strategic planning", "stakeholder management"],
+      "keywords": ["AWS", "Lambda", "ECS", "EventBridge", "S3", "CloudFront", "DDD", "microservices", "event-driven", "GDPR", "TCF", "CMP", "observability", "OpenSearch", "TypeScript", "Python", "Terraform", "Serverless", "technical debt", "architectural runway", "high-performing teams", "high throughput", "low latency", "Addressable TV", "AdTech", "compliance", "blameless postmortems"],
+      "hard_skills": ["TypeScript", "JavaScript", "Python", "AWS Lambda", "AWS ECS", "EventBridge", "S3", "CloudFront", "OpenSearch", "Redis", "Terraform", "Serverless Framework", "Domain-Driven Design", "Event-Driven Architecture", "Microservices", "CQRS", "CI/CD", "Infrastructure as Code"],
+      "soft_skills": ["Technical Leadership", "Mentoring", "Strategic Planning", "Stakeholder Management", "Risk Analysis", "Hiring & Interviewing", "Cross-Functional Collaboration", "Change Management", "Innovation Culture", "Blameless Postmortems", "Technical Vision"],
+      "achievement_themes": ["legacy modernization", "platform transformation", "architectural runway", "observability pipeline", "DDD adoption", "GDPR compliance", "TCF CMP", "technical vision", "scalability", "incident management", "team development", "innovation culture", "CI/CD excellence"],
+      "career_stage": "senior/leadership"
     },
     {
       "id": "02_samdock_daypaio",
@@ -46,8 +50,12 @@
       "file": "roles/02_samdock_daypaio.md",
       "industry": "SaaS/CRM",
       "team_size": "6",
-      "primary_competencies": ["architecture", "delivery", "process", "domain driven design", "microservices", "angular", "event-driven architecture"],
-      "keywords": ["CQRS", "event-sourcing", "NestJS", "TypeScript", "Angular", "CI/CD", "startup", "0->1", "saas", "web-based", "UI", "UX"]
+      "primary_competencies": ["architecture", "delivery", "process", "domain driven design", "event sourcing", "CQRS", "microservices", "angular", "event-driven architecture", "team leadership", "event storming", "mentoring", "0→1"],
+      "keywords": ["CQRS", "event-sourcing", "EventStore", "NestJS", "TypeScript", "Angular", "CI/CD", "startup", "0→1", "saas", "web-based", "multi-tenant", "component library", "Jest", "Swagger", "API design", "GCP"],
+      "hard_skills": ["TypeScript", "JavaScript", "NestJS", "EventStore", "CQRS", "Event Sourcing", "Angular", "Jest", "Swagger", "OpenAPI", "GCP", "CI/CD", "Terraform", "REST API"],
+      "soft_skills": ["Technical Leadership", "Event Storming Facilitation", "Mentoring", "SCRUM", "Agile", "Stakeholder Management", "Startup Velocity"],
+      "achievement_themes": ["event-sourced platform", "0→1 product launch", "event storming", "engineering standards", "API design", "team leadership", "CI/CD automation", "scalability architecture", "mentorship"],
+      "career_stage": "mid-senior"
     },
     {
       "id": "03_ki_labs",
@@ -62,8 +70,12 @@
       "file": "roles/03_ki_labs.md",
       "industry": "Tech Consulting",
       "team_size": "5-10",
-      "primary_competencies": ["delivery", "process", "backend", "data-pipeline", "robust api", "large scale data pipeline"],
-      "keywords": ["Python", "Flask", "MongoDB", "REST API", "testing", "backend", "data engineering"]
+      "primary_competencies": ["delivery", "process", "backend", "data-pipeline", "API design", "testing", "documentation", "onion architecture", "event-driven"],
+      "keywords": ["Python", "Flask", "MongoDB", "REST API", "JWT", "testing", "unit tests", "E2E", "snapshot testing", "Swagger", "OpenAPI", "backend", "data engineering", "onion architecture", "message queues", "consulting"],
+      "hard_skills": ["Python", "Flask", "MongoDB", "REST API", "JWT", "Unit Testing", "E2E Testing", "Snapshot Testing", "Swagger", "OpenAPI", "Onion Architecture", "Event-Driven Architecture", "Linux"],
+      "soft_skills": ["Agile Methodologies", "Team Collaboration", "SCRUM", "Interpersonal Communication", "Client Delivery"],
+      "achievement_themes": ["REST API development", "data pipeline", "comprehensive testing", "API documentation", "MongoDB optimization", "event-driven communication", "consulting delivery"],
+      "career_stage": "mid"
     },
     {
       "id": "04_fortis",
@@ -78,8 +90,12 @@
       "file": "roles/04_fortis.md",
       "industry": "Research",
       "team_size": "3-5",
-      "primary_competencies": ["delivery", "nodejs", "microservices", "message brokers", "api design"],
-      "keywords": ["Node.js", "RabbitMQ", "microservices", "Swagger", "cloud", "research"]
+      "primary_competencies": ["delivery", "nodejs", "microservices", "message brokers", "api design", "event-driven architecture", "research collaboration"],
+      "keywords": ["Node.js", "JavaScript", "RabbitMQ", "pub/sub", "microservices", "Swagger", "OpenAPI", "cloud", "Docker", "MongoDB", "SQL", "research", "academic"],
+      "hard_skills": ["Node.js", "JavaScript", "RabbitMQ", "Pub/Sub", "Microservices", "Swagger", "OpenAPI", "MongoDB", "SQL", "Docker", "Event-Driven Architecture"],
+      "soft_skills": ["Agile Methodologies", "Client Communication", "Research Collaboration", "Interpersonal Communication", "SCRUM"],
+      "achievement_themes": ["microservices architecture", "RabbitMQ messaging", "API standards", "research collaboration", "service design"],
+      "career_stage": "early-mid"
     },
     {
       "id": "05_osram",
@@ -94,8 +110,12 @@
       "file": "roles/05_osram.md",
       "industry": "IoT/Enterprise",
       "team_size": "10+",
-      "primary_competencies": ["delivery", "architecture"],
-      "keywords": ["IoT", "C++", "Qt", "CoAP", "Python", "embedded"]
+      "primary_competencies": ["delivery", "protocol design", "cross-platform development", "middleware", "legacy integration", "technical documentation"],
+      "keywords": ["IoT", "C++", "Qt", "QML", "CoAP", "OSCOAP", "Python", "embedded", "UDP", "REST", "OpenAIS", "multicast", "security", "cross-platform", "mobile", "desktop", "middleware", "protocol translation", "smart lighting"],
+      "hard_skills": ["Python", "C++", "C", "Qt", "QML", "CoAP", "OSCOAP", "UDP", "REST", "Linux", "Git", "Eclipse", "IoT", "Protocol Design", "Middleware Development", "Cross-Platform Development", "Embedded Systems"],
+      "soft_skills": ["Agile Methodologies", "SCRUM", "Technical Documentation", "Team Collaboration", "Client Demonstrations", "Interpersonal Communication"],
+      "achievement_themes": ["cross-platform IoT application", "protocol middleware", "CoAP security enhancement", "reference implementation", "legacy system integration", "technical documentation"],
+      "career_stage": "early"
     },
     {
       "id": "06_clary_icon",
@@ -108,10 +128,14 @@
       "is_current": false,
       "duration_years": 2,
       "file": "roles/06_clary_icon.md",
-      "industry": "Software Services",
+      "industry": "Video Conferencing / Real-Time Communications",
       "team_size": "5-10",
-      "primary_competencies": ["delivery"],
-      "keywords": ["C++", "Node.js", "WebRTC", "FFmpeg", "SIP", "Qt"]
+      "primary_competencies": ["delivery", "backend", "real-time systems", "desktop applications", "video processing", "client communication", "cross-platform development", "full-stack"],
+      "keywords": ["C++", "Node.js", "WebRTC", "FFmpeg", "SIP", "Qt", "JavaScript", "Licode", "REST API", "WebSocket", "MySQL", "MongoDB", "C#", "WPF", "Linux", "video recording", "transcoding", "real-time streaming", "multi-party sync", "compliance"],
+      "hard_skills": ["Node.js", "JavaScript", "C++", "Qt", "WebRTC", "Licode", "FFmpeg", "REST API", "WebSocket", "MySQL", "MongoDB", "C#", "WPF", "SIP", "Linux", "Visual Studio", "Git", "OOP", "SQL", "HTML", "CSS", "Video Transcoding", "Real-Time Streaming"],
+      "soft_skills": ["Client Communication", "Initiative", "Problem Solving", "Self-Direction", "Technical Writing", "Team Collaboration", "Software Documentation", "Requirements Gathering", "Stakeholder Management"],
+      "achievement_themes": ["video recording systems", "media transcoding", "real-time playback", "multi-party synchronization", "desktop UI development", "user onboarding tutorials", "client delivery", "reverse engineering", "cross-platform polyglot"],
+      "career_stage": "early"
     }
   ]
 }
