@@ -1,0 +1,1494 @@
+/**
+ * Job Detail Page Scripts
+ *
+ * This module provides functionality for the job detail page including:
+ * - Toast notifications
+ * - Inline field editing
+ * - Pipeline processing and monitoring
+ * - CV and Cover Letter management
+ * - Contact management
+ *
+ * Updated 2025-12-06 - Extracted from job_detail.html template
+ */
+
+// Job ID is set by the template before this script loads
+// Expected: window.JOB_DETAIL_CONFIG = { jobId: '...' }
+const getJobId = () => window.JOB_DETAIL_CONFIG?.jobId || '';
+
+// ============================================================================
+// Toast Notifications
+// ============================================================================
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+
+    // Map type to toast class
+    const typeClass = type === 'error' ? 'toast-error' : type === 'info' ? 'toast-info' : 'toast-success';
+    toast.className = `toast ${typeClass}`;
+
+    // Icon based on type
+    const icons = {
+        success: `<svg class="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`,
+        error: `<svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`,
+        info: `<svg class="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>`
+    };
+
+    toast.innerHTML = `
+        ${icons[type] || icons.success}
+        <span class="text-sm font-medium text-gray-900">${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-auto text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(2rem)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// ============================================================================
+// Field Updates
+// ============================================================================
+
+async function updateJobField(field, value) {
+    const jobId = getJobId();
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: value })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast(`${field} updated successfully`);
+        } else {
+            showToast(result.error || 'Update failed', 'error');
+        }
+    } catch (err) {
+        showToast('Update failed: ' + err.message, 'error');
+    }
+}
+
+async function saveRemarks() {
+    const jobId = getJobId();
+    const remarks = document.getElementById('remarks-textarea').value;
+    const notes = document.getElementById('notes-textarea').value;
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ remarks, notes })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Notes saved successfully');
+        } else {
+            showToast(result.error || 'Save failed', 'error');
+        }
+    } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+    }
+}
+
+async function deleteJob() {
+    const jobId = getJobId();
+    if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/jobs/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_ids: [jobId] })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Job deleted successfully');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        } else {
+            showToast(result.error || 'Delete failed', 'error');
+        }
+    } catch (err) {
+        showToast('Delete failed: ' + err.message, 'error');
+    }
+}
+
+// ============================================================================
+// Toggle Functions
+// ============================================================================
+
+function toggleRawData() {
+    const container = document.getElementById('raw-data-container');
+    const chevron = document.getElementById('raw-data-chevron');
+
+    container.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-90');
+}
+
+function toggleJobDescription() {
+    const preview = document.getElementById('job-description-preview');
+    const full = document.getElementById('job-description-full');
+    const chevron = document.getElementById('job-description-chevron');
+
+    if (preview.classList.contains('hidden')) {
+        preview.classList.remove('hidden');
+        full.classList.add('hidden');
+        chevron.classList.remove('rotate-90');
+    } else {
+        preview.classList.add('hidden');
+        full.classList.remove('hidden');
+        chevron.classList.add('rotate-90');
+    }
+}
+
+function toggleJobViewer() {
+    const container = document.getElementById('job-viewer-container');
+    const icon = document.getElementById('job-viewer-icon');
+    const button = document.querySelector('[aria-controls="job-viewer-container"]');
+
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        icon.classList.add('rotate-90');
+        button.setAttribute('aria-expanded', 'true');
+
+        const iframe = document.getElementById('job-iframe');
+        if (!iframe.dataset.initialized) {
+            iframe.dataset.initialized = 'true';
+            setupIframeHandlers();
+        }
+    } else {
+        container.classList.add('hidden');
+        icon.classList.remove('rotate-90');
+        button.setAttribute('aria-expanded', 'false');
+    }
+}
+
+// ============================================================================
+// Export Functions
+// ============================================================================
+
+async function exportPagePDF(jobId, url) {
+    const btn = document.getElementById('export-page-pdf-btn');
+    const textEl = document.getElementById('export-page-pdf-text');
+    const originalText = textEl.textContent;
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    textEl.textContent = 'Generating...';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/export-page-pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMsg = errorData.error || `PDF generation failed (${response.status})`;
+            throw new Error(errorMsg);
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'job_posting.pdf';
+        if (contentDisposition && contentDisposition.includes('filename=')) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (match) filename = match[1];
+        }
+        a.download = filename;
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        textEl.textContent = 'Downloaded!';
+        setTimeout(() => { textEl.textContent = originalText; }, 2000);
+
+    } catch (error) {
+        console.error('Export PDF failed:', error);
+        showToast(error.message || 'Failed to export PDF. Try opening in new tab instead.', 'error');
+        textEl.textContent = originalText;
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+async function exportDossierPDF(jobId) {
+    const btn = document.getElementById('export-dossier-btn');
+    const textEl = document.getElementById('export-dossier-text');
+    const originalText = textEl.textContent;
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    textEl.textContent = 'Generating...';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/export-dossier-pdf`);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Export failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'dossier.pdf';
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (match) filename = match[1];
+        }
+
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        textEl.textContent = 'Downloaded!';
+        showToast('Dossier PDF exported successfully', 'success');
+        setTimeout(() => { textEl.textContent = originalText; }, 2000);
+
+    } catch (error) {
+        console.error('Export dossier PDF failed:', error);
+        showToast(error.message || 'Failed to export dossier PDF', 'error');
+        textEl.textContent = originalText;
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+async function copyMetaPrompt(jobId) {
+    const btn = document.getElementById('copy-meta-prompt-btn');
+    const textEl = document.getElementById('copy-meta-prompt-text');
+    const originalText = textEl.textContent;
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    textEl.textContent = 'Generating...';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/meta-prompt`);
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Failed to generate meta prompt: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const metaPrompt = data.prompt;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(metaPrompt);
+            textEl.textContent = 'Copied!';
+            showToast('Meta prompt copied to clipboard! Paste into Claude Code.', 'success');
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = metaPrompt;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            textEl.textContent = 'Copied!';
+            showToast('Meta prompt copied to clipboard! Paste into Claude Code.', 'success');
+        }
+
+        setTimeout(() => { textEl.textContent = originalText; }, 2000);
+
+    } catch (error) {
+        console.error('Copy meta prompt failed:', error);
+        showToast(error.message || 'Failed to copy meta prompt', 'error');
+        textEl.textContent = originalText;
+    } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// ============================================================================
+// Iframe Handlers
+// ============================================================================
+
+function setupIframeHandlers() {
+    const iframe = document.getElementById('job-iframe');
+    const loading = document.getElementById('iframe-loading');
+    const error = document.getElementById('iframe-error');
+
+    const loadTimeout = setTimeout(() => {
+        if (!loading.classList.contains('hidden')) {
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+        }
+    }, 10000);
+
+    iframe.addEventListener('load', function() {
+        clearTimeout(loadTimeout);
+        loading.classList.add('hidden');
+
+        try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if (iframeDoc) {
+                iframe.classList.remove('hidden');
+            } else {
+                error.classList.remove('hidden');
+            }
+        } catch (e) {
+            error.classList.remove('hidden');
+        }
+    });
+
+    iframe.addEventListener('error', function() {
+        clearTimeout(loadTimeout);
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+    });
+}
+
+// ============================================================================
+// Inline Editing (GAP-055)
+// ============================================================================
+
+const originalFieldValues = new Map();
+
+function enableEdit(fieldElement) {
+    const valueEl = fieldElement.querySelector('.field-value');
+    const inputEl = fieldElement.querySelector('.field-input');
+    const editBtn = fieldElement.querySelector('.edit-btn');
+    const field = fieldElement.dataset.field;
+
+    originalFieldValues.set(field, inputEl.value);
+
+    valueEl.classList.add('hidden');
+    inputEl.classList.remove('hidden');
+    editBtn.classList.add('hidden');
+
+    inputEl.focus();
+    inputEl.select();
+
+    inputEl.addEventListener('blur', () => saveFieldEdit(fieldElement), { once: true });
+
+    inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            inputEl.blur();
+        }
+        if (e.key === 'Escape') {
+            cancelFieldEdit(fieldElement);
+        }
+    });
+}
+
+function showFieldSaveIndicator(fieldElement, status) {
+    let indicator = fieldElement.querySelector('.save-indicator');
+    if (!indicator) {
+        indicator = document.createElement('span');
+        indicator.className = 'save-indicator text-xs ml-2 transition-opacity duration-300';
+        const label = fieldElement.querySelector('.text-xs.text-gray-500');
+        if (label) {
+            label.appendChild(indicator);
+        }
+    }
+
+    if (status === 'saving') {
+        indicator.className = 'save-indicator text-xs ml-2 text-amber-600 animate-pulse';
+        indicator.textContent = 'Saving...';
+        indicator.style.opacity = '1';
+    } else if (status === 'saved') {
+        indicator.className = 'save-indicator text-xs ml-2 text-green-600';
+        indicator.textContent = '✓ Saved';
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 300);
+        }, 2000);
+    } else if (status === 'error') {
+        indicator.className = 'save-indicator text-xs ml-2 text-red-600';
+        indicator.textContent = '✗ Error';
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 300);
+        }, 3000);
+    }
+}
+
+async function saveFieldEdit(fieldElement) {
+    const jobId = getJobId();
+    const field = fieldElement.dataset.field;
+    const valueEl = fieldElement.querySelector('.field-value');
+    const inputEl = fieldElement.querySelector('.field-input');
+    const editBtn = fieldElement.querySelector('.edit-btn');
+
+    let newValue = inputEl.value.trim();
+    const originalValue = originalFieldValues.get(field) || '';
+
+    if (newValue === originalValue) {
+        valueEl.classList.remove('hidden');
+        inputEl.classList.add('hidden');
+        editBtn.classList.remove('hidden');
+        return;
+    }
+
+    if (field === 'score' && newValue !== '') {
+        newValue = parseInt(newValue, 10);
+        if (isNaN(newValue)) newValue = null;
+    }
+
+    showFieldSaveIndicator(fieldElement, 'saving');
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: newValue || null })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            if (field === 'url' && newValue) {
+                valueEl.innerHTML = `<a href="${escapeHtml(newValue)}" target="_blank" class="text-indigo-600 hover:underline break-all">${escapeHtml(newValue)}</a>`;
+            } else {
+                valueEl.textContent = newValue || '-';
+            }
+            originalFieldValues.set(field, typeof newValue === 'string' ? newValue : String(newValue || ''));
+            showFieldSaveIndicator(fieldElement, 'saved');
+        } else {
+            showFieldSaveIndicator(fieldElement, 'error');
+            showToast(result.error || 'Update failed', 'error');
+        }
+    } catch (err) {
+        showFieldSaveIndicator(fieldElement, 'error');
+        showToast('Update failed: ' + err.message, 'error');
+    }
+
+    valueEl.classList.remove('hidden');
+    inputEl.classList.add('hidden');
+    editBtn.classList.remove('hidden');
+}
+
+function cancelFieldEdit(fieldElement) {
+    const valueEl = fieldElement.querySelector('.field-value');
+    const inputEl = fieldElement.querySelector('.field-input');
+    const editBtn = fieldElement.querySelector('.edit-btn');
+
+    inputEl.value = valueEl.textContent === '-' ? '' : valueEl.textContent;
+
+    valueEl.classList.remove('hidden');
+    inputEl.classList.add('hidden');
+    editBtn.classList.remove('hidden');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================================================
+// Pipeline Processing
+// ============================================================================
+
+let statusPollingInterval = null;
+let eventSource = null;
+
+// GAP-067: Editable Score Field (Detail Page)
+function enableScoreEditDetail(displayEl, jobId, currentScore) {
+    const container = displayEl.closest('.editable-score-container');
+    const input = container.querySelector('.score-input');
+
+    displayEl.classList.add('hidden');
+    input.classList.remove('hidden');
+    input.value = currentScore !== null ? currentScore : '';
+    input.focus();
+    input.select();
+}
+
+function handleScoreKeydownDetail(event, input, jobId) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        input.blur();
+    } else if (event.key === 'Escape') {
+        cancelScoreEditDetail(input);
+    }
+}
+
+function cancelScoreEditDetail(input) {
+    const container = input.closest('.editable-score-container');
+    const display = container.querySelector('.score-display');
+    input.classList.add('hidden');
+    display.classList.remove('hidden');
+}
+
+async function saveScoreDetail(input, jobId) {
+    const container = input.closest('.editable-score-container');
+    const display = container.querySelector('.score-display');
+    const newScore = input.value.trim();
+
+    let scoreValue = null;
+    if (newScore !== '') {
+        scoreValue = parseInt(newScore, 10);
+        if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+            showToast('Score must be between 0 and 100', 'error');
+            cancelScoreEditDetail(input);
+            return;
+        }
+    }
+
+    try {
+        const response = await fetch('/api/jobs/score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, score: scoreValue })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            updateScoreBadgeDetail(display, scoreValue);
+            showToast('Score updated', 'success');
+        } else {
+            showToast(result.error || 'Failed to update score', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating score:', error);
+        showToast('Failed to update score', 'error');
+    }
+
+    input.classList.add('hidden');
+    display.classList.remove('hidden');
+}
+
+function updateScoreBadgeDetail(display, score) {
+    let badgeClass = 'theme-bg-hover theme-text-secondary';
+    let displayText = 'Score: —';
+
+    if (score !== null) {
+        displayText = `Score: ${score}`;
+        if (score >= 80) badgeClass = 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400';
+        else if (score >= 60) badgeClass = 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-400';
+    }
+
+    display.innerHTML = `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">${displayText}</span>`;
+}
+
+// GAP-045: Tier selection
+let selectedTier = 'auto';
+const tierLabels = {
+    'auto': 'Auto',
+    'A': 'Gold (A)',
+    'B': 'Silver (B)',
+    'C': 'Bronze (C)',
+    'D': 'Skip (D)'
+};
+
+function setProcessingTier(tier) {
+    selectedTier = tier;
+    document.getElementById('selected-tier').value = tier;
+    document.getElementById('process-btn-label').textContent = `Process (${tierLabels[tier]})`;
+
+    document.querySelectorAll('.tier-option').forEach(btn => {
+        const checkIcon = btn.querySelector('[id^="tier-check-"]');
+        if (checkIcon) checkIcon.classList.add('hidden');
+    });
+    const selectedCheck = document.getElementById(`tier-check-${tier}`);
+    if (selectedCheck) selectedCheck.classList.remove('hidden');
+}
+
+async function processJobDetail(jobId, jobTitle) {
+    const tier = document.getElementById('selected-tier')?.value || 'auto';
+    const tierDisplay = tierLabels[tier] || 'Auto';
+
+    const confirmed = confirm(
+        `Process job through pipeline?\n\n` +
+        `Job: ${jobTitle}\n` +
+        `Tier: ${tierDisplay}\n\n` +
+        `This will trigger the processing pipeline on the VPS runner.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        showToast(`Starting pipeline (${tierDisplay})...`, 'info');
+
+        const response = await fetch('/api/runner/jobs/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                job_id: jobId,
+                level: 2,
+                processing_tier: tier
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage;
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.error || errorData.detail || `Server error: ${response.status}`;
+            } catch {
+                errorMessage = `Server error: ${response.status} - ${errorText}`;
+            }
+            showToast(errorMessage, 'error');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.run_id) {
+            showToast(`Pipeline started! Run ID: ${result.run_id}`);
+            monitorPipeline(result.run_id);
+        } else {
+            showToast(result.error || 'Failed to start pipeline', 'error');
+        }
+    } catch (err) {
+        console.error('Pipeline execution error:', err);
+        showToast(`Pipeline failed: ${err.message}`, 'error');
+    }
+}
+
+function monitorPipeline(runId) {
+    const container = document.getElementById('pipeline-progress-container');
+    container.classList.remove('hidden');
+
+    document.getElementById('pipeline-run-id').textContent = `Run: ${runId}`;
+
+    resetPipelineSteps();
+    startLogStreaming(runId);
+
+    statusPollingInterval = setInterval(() => pollPipelineStatus(runId), 2000);
+    pollPipelineStatus(runId);
+}
+
+function resetPipelineSteps() {
+    const steps = document.querySelectorAll('.pipeline-step');
+    steps.forEach(step => {
+        step.className = 'pipeline-step pending';
+        step.querySelector('.step-status').textContent = 'Pending';
+        step.querySelector('.step-error').textContent = '';
+        step.querySelector('.step-error').style.display = 'none';
+        step.querySelector('.step-duration').textContent = '--';
+    });
+
+    document.getElementById('pipeline-overall-percent').textContent = '0%';
+    document.getElementById('pipeline-overall-progress-bar').style.width = '0%';
+}
+
+function connectPipelineSSE(runId) {
+    if (eventSource) {
+        eventSource.close();
+    }
+
+    eventSource = new EventSource(`/api/runner/jobs/${runId}/progress`);
+
+    eventSource.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            handlePipelineProgressUpdate(data);
+        } catch (err) {
+            console.error('Failed to parse SSE data:', err);
+        }
+    };
+
+    eventSource.onerror = (err) => {
+        console.error('SSE connection error:', err);
+        eventSource.close();
+        if (!statusPollingInterval) {
+            statusPollingInterval = setInterval(() => pollPipelineStatus(runId), 2000);
+        }
+    };
+}
+
+function handlePipelineProgressUpdate(data) {
+    if (!data) return;
+
+    if (data.layer && data.status) {
+        updatePipelineStep(data.layer, data.status, data.error, data.duration);
+    }
+
+    if (data.progress !== undefined) {
+        updateOverallProgress(data.progress);
+    }
+
+    if (data.status === 'complete' || data.status === 'completed') {
+        handlePipelineComplete();
+    }
+
+    if (data.status === 'failed') {
+        handlePipelineFailed(data.error);
+    }
+}
+
+function updatePipelineStep(layerName, status, errorMessage, duration) {
+    const step = document.querySelector(`[data-layer="${layerName}"]`);
+    if (!step) {
+        console.warn(`Layer not found: ${layerName}`);
+        return;
+    }
+
+    step.classList.remove('pending', 'executing', 'success', 'failed', 'skipped');
+    step.classList.add(status);
+
+    const statusEl = step.querySelector('.step-status');
+    const statusText = {
+        pending: 'Pending',
+        executing: 'Executing...',
+        success: 'Complete',
+        failed: 'Failed',
+        skipped: 'Skipped'
+    };
+    statusEl.textContent = statusText[status] || status;
+
+    const errorEl = step.querySelector('.step-error');
+    if (status === 'failed' && errorMessage) {
+        errorEl.textContent = errorMessage;
+        errorEl.style.display = 'block';
+    } else {
+        errorEl.style.display = 'none';
+    }
+
+    if (duration) {
+        const durationEl = step.querySelector('.step-duration');
+        durationEl.textContent = formatDuration(duration);
+    }
+
+    if (status === 'executing') {
+        step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function updateOverallProgress(percent) {
+    const percentEl = document.getElementById('pipeline-overall-percent');
+    const progressBar = document.getElementById('pipeline-overall-progress-bar');
+
+    percentEl.textContent = `${Math.round(percent)}%`;
+    progressBar.style.width = `${percent}%`;
+}
+
+function calculateOverallProgress() {
+    const steps = document.querySelectorAll('.pipeline-step');
+    const totalSteps = steps.length;
+    let completedSteps = 0;
+
+    steps.forEach(step => {
+        if (step.classList.contains('success')) {
+            completedSteps++;
+        } else if (step.classList.contains('executing')) {
+            completedSteps += 0.5;
+        }
+    });
+
+    const progress = (completedSteps / totalSteps) * 100;
+    updateOverallProgress(progress);
+}
+
+function handlePipelineComplete() {
+    if (statusPollingInterval) {
+        clearInterval(statusPollingInterval);
+        statusPollingInterval = null;
+    }
+
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+
+    updateOverallProgress(100);
+    showToast('Pipeline completed successfully!', 'success');
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 3000);
+}
+
+function handlePipelineFailed(errorMessage) {
+    if (statusPollingInterval) {
+        clearInterval(statusPollingInterval);
+        statusPollingInterval = null;
+    }
+
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+
+    showToast(errorMessage || 'Pipeline failed', 'error');
+}
+
+function formatDuration(seconds) {
+    if (seconds < 1) return '<1s';
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${minutes}m ${secs}s`;
+}
+
+async function pollPipelineStatus(runId) {
+    try {
+        const response = await fetch(`/api/runner/jobs/${runId}/status`);
+        const data = await response.json();
+
+        if (response.ok) {
+            handlePipelineProgressUpdate(data);
+
+            if (data.layers && Array.isArray(data.layers)) {
+                data.layers.forEach(layer => {
+                    updatePipelineStep(layer.name, layer.status, layer.error, layer.duration);
+                });
+                calculateOverallProgress();
+            } else {
+                const progressValue = data.progress ? Math.round(data.progress * 100) : 0;
+                updateOverallProgress(progressValue);
+            }
+
+            if (data.status === 'completed' || data.status === 'failed') {
+                if (data.status === 'completed') {
+                    handlePipelineComplete();
+                } else {
+                    handlePipelineFailed(data.error);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Status poll failed:', err);
+    }
+}
+
+function startLogStreaming(runId) {
+    const logsContent = document.getElementById('logs-content');
+    logsContent.textContent = '';
+
+    eventSource = new EventSource(`/api/runner/jobs/${runId}/logs`);
+
+    eventSource.onmessage = (event) => {
+        const logLine = document.createElement('div');
+        logLine.textContent = event.data;
+        logsContent.appendChild(logLine);
+
+        parseLogAndUpdateSteps(event.data);
+
+        const logsContainer = document.getElementById('logs-container');
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+    };
+
+    eventSource.addEventListener('end', (event) => {
+        const endLine = document.createElement('div');
+        endLine.className = 'text-yellow-400';
+        endLine.textContent = `Pipeline ${event.data}`;
+        logsContent.appendChild(endLine);
+
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+    });
+
+    eventSource.addEventListener('error', (event) => {
+        console.error('Log stream error:', event);
+        const errorLine = document.createElement('div');
+        errorLine.className = 'text-red-400';
+        errorLine.textContent = 'Log streaming ended or encountered an error';
+        logsContent.appendChild(errorLine);
+
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
+    });
+}
+
+function parseLogAndUpdateSteps(logText) {
+    const layerPatterns = {
+        'intake': /Layer 1.*Intake|Starting intake|Intake layer/i,
+        'pain_points': /Layer 2.*Pain|Pain Point Mining|Starting pain/i,
+        'company_research': /Layer 3.*Company|Company Research|Researching company/i,
+        'role_research': /Layer 4.*Role|Role Research|Researching role/i,
+        'fit_scoring': /Layer 5.*Fit|Fit Scoring|Calculating fit/i,
+        'people_mapping': /Layer 6.*People|People Mapping|Finding contacts/i,
+        'cv_outreach_generation': /Layer 7.*CV|Outreach|Generating CV/i
+    };
+
+    for (const [layerName, pattern] of Object.entries(layerPatterns)) {
+        if (pattern.test(logText)) {
+            if (/starting|running|executing|processing/i.test(logText)) {
+                updatePipelineStep(layerName, 'executing');
+                calculateOverallProgress();
+            } else if (/complete|finished|done|success/i.test(logText)) {
+                updatePipelineStep(layerName, 'success');
+                calculateOverallProgress();
+            } else if (/failed|error|exception/i.test(logText)) {
+                updatePipelineStep(layerName, 'failed', logText);
+                calculateOverallProgress();
+            }
+        }
+    }
+
+    const completionMatch = logText.match(/[✓✔]\s*(Layer\s*)?(\d+|intake|pain|company|role|fit|people|cv)/i);
+    if (completionMatch) {
+        const layerMap = {
+            '1': 'intake',
+            '2': 'pain_points',
+            '3': 'company_research',
+            '4': 'role_research',
+            '5': 'fit_scoring',
+            '6': 'people_mapping',
+            '7': 'cv_outreach_generation'
+        };
+        const layerKey = layerMap[completionMatch[2]] || completionMatch[2].toLowerCase();
+        const layerName = Object.keys(layerPatterns).find(name =>
+            name.includes(layerKey) || layerKey.includes(name.split('_')[0])
+        );
+        if (layerName) {
+            updatePipelineStep(layerName, 'success');
+            calculateOverallProgress();
+        }
+    }
+}
+
+function displayArtifacts(runId, artifacts) {
+    const container = document.getElementById('artifacts-container');
+    const list = document.getElementById('artifacts-list');
+
+    if (!artifacts || artifacts.length === 0) return;
+
+    container.classList.remove('hidden');
+    list.innerHTML = '';
+
+    artifacts.forEach(artifact => {
+        const button = document.createElement('a');
+        button.href = `/api/runner/jobs/${runId}/artifacts/${artifact}`;
+        button.download = artifact;
+        button.className = 'inline-flex items-center px-3 py-2 border border-indigo-300 rounded-md text-sm font-medium text-indigo-700 bg-white hover:bg-indigo-50 transition';
+        button.innerHTML = `
+            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+            </svg>
+            ${artifact}
+        `;
+        list.appendChild(button);
+    });
+}
+
+function toggleLogsFull() {
+    const logsContainer = document.getElementById('logs-container');
+    const toggleText = document.getElementById('logs-toggle-text');
+
+    if (logsContainer.classList.contains('hidden')) {
+        logsContainer.classList.remove('hidden');
+        toggleText.textContent = 'Hide';
+    } else {
+        logsContainer.classList.add('hidden');
+        toggleText.textContent = 'Show';
+    }
+}
+
+async function copyLogsToClipboard() {
+    const logsContent = document.getElementById('logs-content');
+
+    if (!logsContent) {
+        showToast('Logs not found', 'error');
+        return;
+    }
+
+    const logsText = logsContent.innerText || logsContent.textContent;
+
+    if (!logsText || logsText.trim() === '' || logsText.includes('Waiting for logs')) {
+        showToast('No logs to copy', 'info');
+        return;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(logsText);
+            showToast('Logs copied to clipboard!', 'success');
+        } catch (err) {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyTextToClipboard(logsText);
+        }
+    } else {
+        fallbackCopyTextToClipboard(logsText);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+
+    textArea.style.position = 'fixed';
+    textArea.style.top = '-9999px';
+    textArea.style.left = '-9999px';
+    textArea.style.opacity = '0';
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showToast('Logs copied to clipboard!', 'success');
+        } else {
+            showToast('Failed to copy logs', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        showToast('Copy not supported in this browser', 'error');
+    }
+
+    document.body.removeChild(textArea);
+}
+
+// ============================================================================
+// CV Editor Functions
+// ============================================================================
+
+async function exportCVFromDetailPage() {
+    const jobId = getJobId();
+    try {
+        showToast('Generating PDF...', 'info');
+        console.log('Requesting PDF generation for job:', jobId);
+
+        const response = await fetch(`/api/jobs/${jobId}/cv-editor/pdf`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        console.log('PDF generation response status:', response.status);
+
+        if (!response.ok) {
+            let errorMessage = 'PDF generation failed';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.detail || errorMessage;
+                console.error('PDF generation error:', errorData);
+            } catch (parseErr) {
+                const errorText = await response.text();
+                console.error('PDF generation error (non-JSON):', errorText);
+                errorMessage = errorText || errorMessage;
+            }
+            throw new Error(errorMessage);
+        }
+
+        const blob = await response.blob();
+        console.log('PDF blob size:', blob.size, 'bytes');
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'CV.pdf';
+        if (contentDisposition) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+            if (matches != null && matches[1]) {
+                filename = matches[1].replace(/['"]/g, '');
+            }
+        }
+        console.log('Downloading PDF as:', filename);
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('PDF downloaded successfully');
+    } catch (err) {
+        console.error('Export PDF error:', err);
+        showToast('PDF generation failed: ' + err.message, 'error');
+    }
+}
+
+// ============================================================================
+// Cover Letter Editing
+// ============================================================================
+
+let clEditMode = false;
+
+function toggleCoverLetterEdit() {
+    clEditMode = !clEditMode;
+
+    const editBtn = document.getElementById('edit-cl-btn');
+    const editText = document.getElementById('edit-cl-text');
+    const saveBtn = document.getElementById('save-cl-btn');
+    const displayDiv = document.getElementById('cl-display');
+    const textArea = document.getElementById('cl-textarea');
+    const warningsDiv = document.getElementById('cl-warnings');
+
+    if (clEditMode) {
+        editText.textContent = 'Cancel';
+        editBtn.classList.remove('text-purple-700', 'bg-purple-50', 'border-purple-200');
+        editBtn.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
+        saveBtn.classList.remove('hidden');
+        displayDiv.classList.add('hidden');
+        textArea.classList.remove('hidden');
+        warningsDiv.classList.add('hidden');
+        textArea.focus();
+    } else {
+        editText.textContent = 'Edit';
+        editBtn.classList.remove('text-red-700', 'bg-red-50', 'border-red-200');
+        editBtn.classList.add('text-purple-700', 'bg-purple-50', 'border-purple-200');
+        saveBtn.classList.add('hidden');
+        displayDiv.classList.remove('hidden');
+        textArea.classList.add('hidden');
+        textArea.value = document.getElementById('cl-text').textContent;
+    }
+}
+
+async function saveCoverLetterChanges() {
+    const jobId = getJobId();
+    const textArea = document.getElementById('cl-textarea');
+    const newText = textArea.value.trim();
+
+    if (!newText) {
+        showToast('Cover letter cannot be empty', 'error');
+        return;
+    }
+
+    showToast('Saving cover letter...', 'info');
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cover_letter: newText })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            document.getElementById('cl-text').textContent = newText;
+            showToast('Cover letter saved');
+            validateCoverLetter(newText);
+            toggleCoverLetterEdit();
+        } else {
+            showToast(result.error || 'Failed to save', 'error');
+        }
+    } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+    }
+}
+
+function validateCoverLetter(text) {
+    const warnings = [];
+    const words = text.split(/\s+/).length;
+
+    if (words < 180) warnings.push('Cover letter is short (' + words + ' words, recommended: 180-420)');
+    if (words > 420) warnings.push('Cover letter is long (' + words + ' words, recommended: 180-420)');
+
+    if (!/\d+%|\d+x|\$\d+|\d+\s*(years?|months?|days?|hours?)/i.test(text)) {
+        warnings.push('No quantified metrics found (add percentages, multipliers, or dollar amounts)');
+    }
+
+    if (!text.includes('calendly.com/taimooralam')) {
+        warnings.push('Missing Calendly link (required for call-to-action)');
+    }
+
+    const boilerplate = ['excited to apply', 'dream job', 'perfect fit', 'passionate about', 'eager to'];
+    const found = boilerplate.filter(phrase => text.toLowerCase().includes(phrase));
+    if (found.length > 2) {
+        warnings.push('Contains generic phrases: ' + found.join(', '));
+    }
+
+    const warningsDiv = document.getElementById('cl-warnings');
+    if (warnings.length > 0) {
+        warningsDiv.innerHTML = '<strong>Validation Warnings:</strong><ul class="list-disc ml-4 mt-1">' +
+            warnings.map(w => '<li>' + w + '</li>').join('') + '</ul>';
+        warningsDiv.classList.remove('hidden');
+    } else {
+        warningsDiv.classList.add('hidden');
+    }
+}
+
+async function generateCoverLetterPDF() {
+    const jobId = getJobId();
+    try {
+        showToast('Generating cover letter PDF...', 'info');
+
+        const response = await fetch(`/api/jobs/${jobId}/cover-letter/pdf`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('PDF generated successfully');
+            setTimeout(() => {
+                window.location.href = `/api/jobs/${jobId}/cover-letter/download`;
+            }, 500);
+        } else {
+            showToast(result.error || 'PDF generation failed', 'error');
+        }
+    } catch (err) {
+        showToast('PDF generation failed: ' + err.message, 'error');
+    }
+}
+
+// ============================================================================
+// Contact Management Functions
+// ============================================================================
+
+let validatedContacts = [];
+
+async function deleteContact(contactType, contactIndex, contactName) {
+    const jobId = getJobId();
+    const confirmed = confirm(`Remove ${contactName}?`);
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(
+            `/api/jobs/${jobId}/contacts/${contactType}/${contactIndex}`,
+            { method: 'DELETE' }
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+            const card = document.querySelector(
+                `.contact-card[data-contact-type="${contactType}"][data-contact-index="${contactIndex}"]`
+            );
+            if (card) {
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    card.remove();
+                    updateContactIndices(contactType);
+                }, 300);
+            }
+            showToast(result.message || 'Contact removed');
+        } else {
+            showToast(result.error || 'Failed to delete contact', 'error');
+        }
+    } catch (err) {
+        showToast('Failed to delete contact: ' + err.message, 'error');
+    }
+}
+
+function updateContactIndices(contactType) {
+    const cards = document.querySelectorAll(
+        `.contact-card[data-contact-type="${contactType}"]`
+    );
+    cards.forEach((card, index) => {
+        card.setAttribute('data-contact-index', index);
+        const deleteBtn = card.querySelector('button[onclick*="deleteContact"]');
+        if (deleteBtn) {
+            const contactName = deleteBtn.getAttribute('onclick').match(/'([^']+)'\)$/)?.[1] || 'contact';
+            deleteBtn.setAttribute('onclick', `deleteContact('${contactType}', ${index}, '${contactName}')`);
+        }
+    });
+}
+
+async function copyFirecrawlPrompt() {
+    const jobId = getJobId();
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/contacts/prompt`);
+        const result = await response.json();
+
+        if (result.success) {
+            await navigator.clipboard.writeText(result.prompt);
+            showToast('FireCrawl prompt copied to clipboard!', 'success');
+        } else {
+            showToast(result.error || 'Failed to generate prompt', 'error');
+        }
+    } catch (err) {
+        showToast('Failed to copy prompt: ' + err.message, 'error');
+    }
+}
+
+function openAddContactsModal() {
+    const modal = document.getElementById('add-contacts-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.getElementById('contacts-json-input').value = '';
+        document.getElementById('json-input-step').classList.remove('hidden');
+        document.getElementById('preview-step').classList.add('hidden');
+    }
+}
+
+function closeAddContactsModal() {
+    const modal = document.getElementById('add-contacts-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function backToJsonInput() {
+    document.getElementById('json-input-step').classList.remove('hidden');
+    document.getElementById('preview-step').classList.add('hidden');
+}
+
+function validateContactSchema(contact) {
+    const required = ['name', 'role', 'linkedin_url'];
+    const missing = required.filter(field => !contact[field] && !contact[`contact_${field}`]);
+    return missing.length === 0;
+}
+
+function validateAndPreviewContacts() {
+    const input = document.getElementById('contacts-json-input').value.trim();
+    let contacts;
+
+    try {
+        contacts = JSON.parse(input);
+        if (!Array.isArray(contacts)) {
+            contacts = [contacts];
+        }
+    } catch (e) {
+        showToast('Invalid JSON format', 'error');
+        return;
+    }
+
+    validatedContacts = contacts.filter(c => validateContactSchema(c));
+
+    if (validatedContacts.length === 0) {
+        showToast('No valid contacts found. Required: name, role, linkedin_url', 'error');
+        return;
+    }
+
+    displayPreview(validatedContacts);
+    document.getElementById('json-input-step').classList.add('hidden');
+    document.getElementById('preview-step').classList.remove('hidden');
+}
+
+function displayPreview(contacts) {
+    const previewList = document.getElementById('contacts-preview-list');
+    previewList.innerHTML = contacts.map((c, i) => `
+        <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="font-medium">${escapeHtml(c.name || c.contact_name)}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">${escapeHtml(c.role || c.contact_role)}</div>
+            <a href="${escapeHtml(c.linkedin_url)}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline truncate block max-w-[200px]">
+                ${escapeHtml(c.linkedin_url)}
+            </a>
+        </div>
+    `).join('');
+
+    document.getElementById('contacts-preview-count').textContent = `${contacts.length} contact(s) ready to import`;
+}
+
+async function importContacts() {
+    const jobId = getJobId();
+    if (validatedContacts.length === 0) {
+        showToast('No contacts to import', 'error');
+        return;
+    }
+
+    const contactType = document.getElementById('contact-type-select').value;
+    const importBtn = document.getElementById('import-btn');
+    importBtn.disabled = true;
+    importBtn.textContent = 'Importing...';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/contacts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contacts: validatedContacts,
+                contact_type: contactType
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast(`Imported ${result.importedCount} contacts`, 'success');
+            closeAddContactsModal();
+            setTimeout(() => location.reload(), 500);
+        } else {
+            showToast(result.error || 'Import failed', 'error');
+        }
+    } catch (err) {
+        showToast('Import failed: ' + err.message, 'error');
+    } finally {
+        importBtn.disabled = false;
+        importBtn.textContent = 'Import Contacts';
+    }
+}
+
+// ============================================================================
+// Initialization
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const runId = urlParams.get('run_id');
+    if (runId) {
+        monitorPipeline(runId);
+    }
+});
+
+// ============================================================================
+// Global Exports (for inline onclick handlers)
+// ============================================================================
+
+window.showToast = showToast;
+window.updateJobField = updateJobField;
+window.saveRemarks = saveRemarks;
+window.deleteJob = deleteJob;
+window.toggleRawData = toggleRawData;
+window.toggleJobDescription = toggleJobDescription;
+window.toggleJobViewer = toggleJobViewer;
+window.exportPagePDF = exportPagePDF;
+window.exportDossierPDF = exportDossierPDF;
+window.copyMetaPrompt = copyMetaPrompt;
+window.setupIframeHandlers = setupIframeHandlers;
+window.enableEdit = enableEdit;
+window.saveFieldEdit = saveFieldEdit;
+window.cancelFieldEdit = cancelFieldEdit;
+window.enableScoreEditDetail = enableScoreEditDetail;
+window.handleScoreKeydownDetail = handleScoreKeydownDetail;
+window.cancelScoreEditDetail = cancelScoreEditDetail;
+window.saveScoreDetail = saveScoreDetail;
+window.setProcessingTier = setProcessingTier;
+window.processJobDetail = processJobDetail;
+window.monitorPipeline = monitorPipeline;
+window.toggleLogsFull = toggleLogsFull;
+window.copyLogsToClipboard = copyLogsToClipboard;
+window.exportCVFromDetailPage = exportCVFromDetailPage;
+window.toggleCoverLetterEdit = toggleCoverLetterEdit;
+window.saveCoverLetterChanges = saveCoverLetterChanges;
+window.generateCoverLetterPDF = generateCoverLetterPDF;
+window.deleteContact = deleteContact;
+window.copyFirecrawlPrompt = copyFirecrawlPrompt;
+window.openAddContactsModal = openAddContactsModal;
+window.closeAddContactsModal = closeAddContactsModal;
+window.backToJsonInput = backToJsonInput;
+window.validateAndPreviewContacts = validateAndPreviewContacts;
+window.importContacts = importContacts;

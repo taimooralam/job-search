@@ -537,10 +537,14 @@ class TestPDFExportEnhancements:
 
 
 class TestJavaScriptFunctions:
-    """Tests for JavaScript function presence and structure."""
+    """Tests for JavaScript function presence and structure.
 
-    def test_toggle_job_description_function_exists(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should define toggleJobDescription function."""
+    Note: JavaScript functions were refactored to an external file (job-detail.js)
+    for maintainability. Tests now verify the script include and config setup.
+    """
+
+    def test_job_detail_js_script_included(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should include the external job-detail.js script."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
@@ -548,11 +552,11 @@ class TestJavaScriptFunctions:
 
         assert response.status_code == 200
         data = response.data.decode('utf-8')
-        # Should have function definition
-        assert 'function toggleJobDescription()' in data
+        # Should include external JavaScript file
+        assert 'job-detail.js' in data
 
-    def test_setup_iframe_handlers_function_exists(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should define setupIframeHandlers function."""
+    def test_job_config_object_present(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should define JOB_DETAIL_CONFIG with jobId."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
@@ -560,11 +564,16 @@ class TestJavaScriptFunctions:
 
         assert response.status_code == 200
         data = response.data.decode('utf-8')
-        # Should have function definition
-        assert 'function setupIframeHandlers()' in data
+        # Should have config object with job ID
+        assert 'JOB_DETAIL_CONFIG' in data
+        assert str(job_id) in data
 
     def test_iframe_load_timeout_logic(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should implement timeout logic for detecting blocked iframes."""
+        """Should implement timeout logic for detecting blocked iframes.
+
+        Note: Actual timeout logic is in job-detail.js (10000ms).
+        This test verifies the HTML structure supports iframe handling.
+        """
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
@@ -572,13 +581,12 @@ class TestJavaScriptFunctions:
 
         assert response.status_code == 200
         data = response.data.decode('utf-8')
-        # Should have setTimeout for detecting load failures
-        assert 'setTimeout' in data
-        # Should have logic to show error state
-        assert '10000' in data or '10 seconds' in data  # 10 second timeout
+        # Should have the iframe container elements
+        assert 'iframe-loading' in data
+        assert 'iframe-error' in data
 
-    def test_iframe_event_listeners(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should attach load and error event listeners to iframe."""
+    def test_toggle_job_description_onclick_present(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should have onclick handler for toggling job description."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
@@ -586,9 +594,8 @@ class TestJavaScriptFunctions:
 
         assert response.status_code == 200
         data = response.data.decode('utf-8')
-        # Should add event listeners
-        assert "addEventListener('load'" in data or 'addEventListener("load"' in data
-        assert "addEventListener('error'" in data or 'addEventListener("error"' in data
+        # Should have onclick referencing toggleJobDescription
+        assert 'toggleJobDescription' in data
 
 
 class TestAccessibility:

@@ -1,0 +1,191 @@
+{# Pipeline Progress Indicator - Extracted from job_detail.html #}
+{# Shows 7-layer pipeline execution progress when processing a job #}
+<div id="pipeline-progress-container" class="hidden mb-6">
+    <div class="card">
+        <div class="card-header flex items-start justify-between">
+            <div>
+                <h2 class="text-base font-semibold theme-text-primary flex items-center gap-2">
+                    <svg class="h-5 w-5 status-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Pipeline Execution Progress
+                </h2>
+                <p class="text-sm theme-text-secondary mt-1">7-layer intelligence pipeline processing job application</p>
+            </div>
+            <span id="pipeline-run-id" class="text-xs font-mono text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-200"></span>
+        </div>
+
+        <div class="card-body">
+            {# Overall Progress Bar #}
+            <div class="pipeline-overall-progress">
+                <div class="pipeline-overall-progress-text">
+                    <span class="font-medium">Overall Progress</span>
+                    <span id="pipeline-overall-percent" class="font-semibold text-indigo-700">0%</span>
+                </div>
+                <div class="pipeline-overall-progress-bar-container">
+                    <div id="pipeline-overall-progress-bar" class="pipeline-overall-progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            {# Pipeline Stepper #}
+            <ol class="pipeline-stepper" id="pipeline-stepper">
+                {# Layer 1: Intake #}
+                <li class="pipeline-step pending" data-layer="intake">
+                    <div class="step-icon">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Intake</div>
+                        <div class="step-description">Parse job posting and candidate profile</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 2: Pain Point Mining #}
+                <li class="pipeline-step pending" data-layer="pain_points">
+                    <div class="step-icon">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Pain Point Mining</div>
+                        <div class="step-description">Extract company and role pain points</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 3: Company Research #}
+                <li class="pipeline-step pending" data-layer="company_research">
+                    <div class="step-icon">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Company Research</div>
+                        <div class="step-description">Research company via FireCrawl</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 4: Role Research #}
+                <li class="pipeline-step pending" data-layer="role_research">
+                    <div class="step-icon">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Role Research</div>
+                        <div class="step-description">Research specific role requirements</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 5: Fit Scoring #}
+                <li class="pipeline-step pending" data-layer="fit_scoring">
+                    <div class="step-icon">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Fit Scoring</div>
+                        <div class="step-description">Score candidate fit (0-100)</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 6: People Mapping #}
+                <li class="pipeline-step pending" data-layer="people_mapping">
+                    <div class="step-icon">6</div>
+                    <div class="step-content">
+                        <div class="step-title">People Mapping</div>
+                        <div class="step-description">Find LinkedIn recruiters and contacts</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                {# Layer 7: CV/Outreach Generation #}
+                <li class="pipeline-step pending" data-layer="cv_outreach_generation">
+                    <div class="step-icon">7</div>
+                    <div class="step-content">
+                        <div class="step-title">CV &amp; Outreach Generation</div>
+                        <div class="step-description">Generate personalized CV and outreach messages</div>
+                        <div class="step-status">Pending</div>
+                        <div class="step-error"></div>
+                        <div class="step-metadata">
+                            <div class="step-metadata-item">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="step-duration">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ol>
+
+            {# Logs Terminal (collapsed by default) #}
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Live Logs</h3>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="copyLogsToClipboard()"
+                                class="inline-flex items-center text-xs text-gray-600 hover:text-gray-800 font-medium transition"
+                                title="Copy all logs to clipboard">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copy
+                        </button>
+                        <button onclick="toggleLogsFull()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                            <span id="logs-toggle-text">Show</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="logs-container" class="hidden bg-gray-900 rounded-lg p-4 font-mono text-xs text-green-400 h-64 overflow-y-auto">
+                    <div id="logs-content">Waiting for logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
