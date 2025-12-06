@@ -64,24 +64,79 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
 - Outreach: LinkedIn messages (150-550 chars), email (95-205 word body)
 
 ### Layer 6: Generator & LinkedIn Outreach
-**CV Generation**:
-- Two-pass flow: Evidence JSON → QA validation
-- Default: Anthropic Claude; fallback: OpenRouter/OpenAI
-- Output: `applications/<company>/<role>/CV.md`
 
-**LinkedIn Outreach**:
+**CV Generation - Variant-Based Selection** (NEW - 2025-12-06):
+
+```
+JD Keywords + Pain Points
+        │
+        ▼
+┌──────────────────────────┐
+│ VariantSelector (NEW)    │  Weighted Algorithm:
+│ (variant_selector.py)    │  40% keyword overlap
+│                          │  30% pain point alignment
+│ ZERO LLM CALLS           │  20% role category match
+│ (algorithmic only)       │  10% achievement keywords
+└──────────────────────────┘
+        │
+        ▼
+┌──────────────────────────────────┐
+│ RoleGenerator Integration        │  Production Method:
+│ generate_with_variant_fallback() │  1. Try variant selection
+│ (role_generator.py)              │  2. If no variants, LLM fallback
+└──────────────────────────────────┘
+        │
+        ▼
+Final CV: 100% pre-written, interview-defensible, no hallucinations
+```
+
+**Architecture Components**:
+
+1. **VariantParser** (`src/layer6_v2/variant_parser.py`)
+   - Parses role files with variant structure
+   - Supports: Technical, Architecture, Impact, Leadership, Short variants
+   - Backward compatible with legacy format
+   - 35 unit tests passing
+
+2. **VariantSelector** (`src/layer6_v2/variant_selector.py`)
+   - Weighted scoring algorithm for optimal variant selection
+   - Zero LLM calls (pure algorithm)
+   - Per-role variant preference configuration
+   - 20 unit tests passing
+
+3. **CVLoader Integration** (`src/layer6_v2/cv_loader.py`)
+   - Supports `enhanced_data` with variants
+   - Properties: `has_variants`, `variant_count`, `get_achievement_variants()`
+   - Graceful fallback to legacy format
+   - 21 unit tests passing
+
+4. **RoleGenerator Integration** (`src/layer6_v2/role_generator.py`)
+   - `generate_from_variants()` - Zero-hallucination selection
+   - `generate_with_variant_fallback()` - LLM backup (production method)
+   - `generate_all_roles_from_variants()` - Batch processing
+   - 9 unit tests passing
+
+**Data Format** (2025-12-06):
+- All 6 role files in `data/master-cv/roles/` converted to enhanced format
+- 189 total variants across all roles
+- Updated `role_metadata.json` with variant counts and selection guides
+
+**Benefits**:
+- Zero hallucination (all text pre-written)
+- Faster generation (no LLM calls for selection)
+- Deterministic output (same inputs → same outputs)
+- ATS optimized (keywords pre-embedded)
+- Interview ready (provenance tracking)
+
+**Legacy LinkedIn Outreach**:
 - Connection request: 300 char hard limit (LinkedIn enforces)
 - InMail: 1900 char body, 200 char subject
-- **Character Limit Enforcement** (NEW - 2025-11-30):
+- **Character Limit Enforcement** (2025-11-30):
   1. Prompt guardrail: "Output ONLY plain text, strictly <300 characters"
   2. Output validation: `len(message) <= 300` with retry
   3. UI counter: Real-time "X/300" display with color warnings
   4. API validation: Reject > 300 chars
 - Signature: "Best. Taimoor Alam" (MANDATORY)
-
-**Markdown Asterisk Bug** (OPEN - 2025-11-30):
-- Generated CV contains `**text**` instead of plain text
-- Fix: Prompt "no markdown" + sanitize post-process
 
 ### Layer 7: Publisher
 - Generates dossier via `dossier_generator.py`

@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-01 (Week 2 Sprint: 28 gaps fixed/documented)
+**Last Updated**: 2025-12-06 (Variant-Based CV Generation Complete - GAP-020)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,11 +12,11 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 26 (14 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 26 (15 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 19 (9 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **67** (40 fixed/documented, 27 open) | All identified gaps |
+| **Total** | **67** (41 fixed/documented, 26 open) | All identified gaps |
 
-**Test Coverage**: 892 tests passing (887 unit + 5 benchmark), 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 977 tests passing (85 variant-related + 887 existing unit + 5 benchmark), 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -571,11 +571,71 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 
 ---
 
-### GAP-020: STAR Selector Disabled/Incomplete
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: TBD
-**Impact**: Feature flag `ENABLE_STAR_SELECTOR=false` by default
+### GAP-020: STAR Selector → Variant-Based Selection ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-06) | **Effort**: 3 days
+**Impact**: Zero-hallucination CV generation via pre-written variants with deterministic selection
 
-**Missing**: Embeddings, caching, graph edges for STAR selection
+**Implementation** (2025-12-06):
+
+**Phase 1: VariantParser** (`src/layer6_v2/variant_parser.py` - 476 lines)
+- Dataclasses: `AchievementVariant`, `Achievement`, `RoleMetadata`, `SelectionGuide`, `EnhancedRoleData`
+- Parses role files with variant structure: Technical, Architecture, Impact, Leadership, Short
+- Supports both enhanced format (variants) and legacy format (simple bullets)
+- 35 unit tests in `tests/test_variant_parser.py` - all passing
+
+**Phase 2: VariantSelector** (`src/layer6_v2/variant_selector.py` - 391 lines)
+- Weighted scoring algorithm for variant selection:
+  - 40% keyword overlap (JD keywords in variant text)
+  - 30% pain point alignment (pain points in variant text)
+  - 20% role category match (variant category vs role category)
+  - 10% achievement keywords (contextual relevance)
+- `VARIANT_PREFERENCES` mapping role categories to preferred variant types
+- Zero LLM calls - pure algorithm-based selection
+- 20 unit tests in `tests/test_variant_selector.py` - all passing
+
+**Phase 3: CVLoader Integration** (`src/layer6_v2/cv_loader.py` - updated)
+- Added `enhanced_data` field to `RoleData` with variant support
+- Added properties: `has_variants`, `variant_count`, `get_achievement_variants()`
+- Helper methods: `get_total_variants()`, `get_enhanced_roles()`
+- Backward compatible with legacy format (graceful fallback)
+- 21 tests updated/added in `tests/unit/test_layer6_v2_cv_loader.py` - all passing
+
+**Phase 4: RoleGenerator Integration** (`src/layer6_v2/role_generator.py` - updated)
+- `generate_from_variants()` - Zero-hallucination bullet selection from variants
+- `generate_with_variant_fallback()` - Production method with LLM backup
+- `generate_all_roles_from_variants()` - Batch processing function
+- `_extract_metric()` - Extracts metrics from variant text
+- 9 new tests in `tests/unit/test_layer6_v2_role_generator.py` - all passing
+
+**Data Migration** (2025-12-06):
+All 6 role files in `data/master-cv/roles/` converted to enhanced format:
+- 01_senior_backend.md, 02_platform_engineer.md, 03_staff_architect.md
+- 04_tech_lead.md, 05_startup_engineer.md, 06_clary_icon.md
+- Each achievement has 4-5 variants (Technical, Architecture, Impact, Leadership, Short)
+- Total: 189 variants across all roles
+- Updated `role_metadata.json` with variant counts and selection guides
+
+**Benefits**:
+1. **Zero Hallucination**: All text is pre-written and interview-defensible
+2. **Faster Generation**: No LLM calls for variant selection (algorithmic)
+3. **Deterministic**: Same inputs produce same outputs
+4. **ATS Optimized**: Keywords pre-embedded in variants during role file creation
+5. **Interview Ready**: Each variant has defensibility context and notes
+6. **Provenance**: Every bullet traces back to pre-approved variant
+
+**Test Coverage**: 85 tests - 35 variant parser + 20 selector + 21 cv_loader + 9 role_generator
+
+**Files Modified**:
+- `src/layer6_v2/variant_parser.py` - New (476 lines)
+- `src/layer6_v2/variant_selector.py` - New (391 lines)
+- `src/layer6_v2/cv_loader.py` - Updated with enhanced_data support
+- `src/layer6_v2/role_generator.py` - Added variant generation methods
+- `tests/test_variant_parser.py` - New (35 tests)
+- `tests/test_variant_selector.py` - New (20 tests)
+- `tests/unit/test_layer6_v2_cv_loader.py` - Updated (21 tests)
+- `tests/unit/test_layer6_v2_role_generator.py` - Updated (9 tests)
+- `data/master-cv/roles/*.md` - All 6 files converted to enhanced format
+- `data/master-cv/role_metadata.json` - Updated with variant counts
 
 ---
 
