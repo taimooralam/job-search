@@ -1,0 +1,76 @@
+{# Add Contacts Modal - Extracted from job_detail.html #}
+<div id="add-contacts-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeAddContactsModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Import Contacts</h2>
+                    <button onclick="closeAddContactsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {# Step 1: JSON Input #}
+                <div id="json-input-step">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Paste JSON array of contacts below. Use "Copy Prompt" to get a FireCrawl prompt for Claude Code.
+                    </p>
+                    <textarea
+                        id="contacts-json-input"
+                        class="w-full h-48 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder='[
+  {
+    "name": "Jane Doe",
+    "role": "Hiring Manager",
+    "linkedin_url": "https://linkedin.com/in/janedoe",
+    "email": "jane@company.com",
+    "relevance": "hiring_manager"
+  }
+]'></textarea>
+
+                    <div id="json-error" class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded"></div>
+
+                    <div class="mt-4 flex items-center gap-3">
+                        <label class="text-sm text-gray-600 dark:text-gray-400">Contact Type:</label>
+                        <select id="contact-type-select" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100">
+                            <option value="secondary">Secondary (Cross-Functional)</option>
+                            <option value="primary">Primary (Hiring-Related)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button onclick="closeAddContactsModal()" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                            Cancel
+                        </button>
+                        <button onclick="validateAndPreviewContacts()" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">
+                            Preview
+                        </button>
+                    </div>
+                </div>
+
+                {# Step 2: Preview #}
+                <div id="preview-step" class="hidden">
+                    <p id="contacts-preview-count" class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        0 contact(s) ready to import
+                    </p>
+
+                    <div id="contacts-preview-list" class="grid gap-2 max-h-64 overflow-y-auto">
+                        {# Populated by JavaScript #}
+                    </div>
+
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button onclick="backToJsonInput()" class="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                            Back
+                        </button>
+                        <button onclick="importContacts()" id="import-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md">
+                            Import Contacts
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

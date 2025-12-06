@@ -1,0 +1,500 @@
+{# CV Rich Text Editor Side Panel - Extracted from job_detail.html #}
+{# Phase 5: Skip link for accessibility #}
+<a href="#cv-editor-content" class="skip-link">Skip to CV editor</a>
+
+<div id="cv-editor-overlay"
+     class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-200"
+     onclick="closeCVEditorPanel()"
+     role="presentation"
+     aria-hidden="true">
+</div>
+
+<div id="cv-editor-panel"
+     class="fixed inset-y-0 right-0 w-11/12 sm:w-2/3 lg:w-1/2 bg-white shadow-2xl
+            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+     role="dialog"
+     aria-labelledby="cv-editor-title"
+     aria-modal="true">
+
+    {# Header #}
+    <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <button onclick="closeCVEditorPanel()"
+                    class="text-gray-400 hover:text-gray-600 transition p-2"
+                    aria-label="Close CV editor (Escape key)"
+                    title="Close (Esc)">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <h2 id="cv-editor-title" class="text-base sm:text-lg font-semibold text-gray-900">Edit CV</h2>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            {# Phase 5.2: Undo/Redo Buttons #}
+            <div class="hidden sm:flex items-center gap-1" role="group" aria-label="Edit history">
+                <button id="cv-undo-btn"
+                        onclick="if(cvEditorInstance && cvEditorInstance.editor) cvEditorInstance.editor.chain().focus().undo().run()"
+                        class="text-gray-400 hover:text-gray-600 transition p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Undo (Ctrl+Z)"
+                        title="Undo (Ctrl+Z)"
+                        disabled>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                </button>
+                <button id="cv-redo-btn"
+                        onclick="if(cvEditorInstance && cvEditorInstance.editor) cvEditorInstance.editor.chain().focus().redo().run()"
+                        class="text-gray-400 hover:text-gray-600 transition p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Redo (Ctrl+Shift+Z)"
+                        title="Redo (Ctrl+Shift+Z)"
+                        disabled>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"/>
+                    </svg>
+                </button>
+            </div>
+
+            {# Divider (hidden on mobile) #}
+            <div class="hidden sm:block w-px h-6 bg-gray-300"></div>
+
+            {# Phase 5.2: Keyboard Shortcuts Help Button #}
+            <button onclick="toggleKeyboardShortcutsPanel()"
+                    class="hidden sm:block text-gray-400 hover:text-gray-600 transition p-2"
+                    aria-label="Keyboard shortcuts (Ctrl+/)"
+                    title="Keyboard Shortcuts (Ctrl+/)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </button>
+
+            {# Divider #}
+            <div class="hidden sm:block w-px h-6 bg-gray-300"></div>
+
+            {# Phase 5.2: Enhanced Save Indicator #}
+            <span id="cv-save-indicator"
+                  class="text-xs sm:text-sm text-gray-500"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true">
+                <span class="text-green-500" aria-label="CV saved successfully">● Saved</span>
+            </span>
+
+            {# Expand/Collapse Button #}
+            <button onclick="toggleCVPanelSize()"
+                    class="hidden sm:block text-gray-400 hover:text-gray-600 transition p-2"
+                    aria-label="Toggle panel size"
+                    title="Expand/Collapse">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+            </button>
+
+            {# Export PDF Button #}
+            <button onclick="exportCVToPDF()"
+                    class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium
+                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    aria-label="Export CV as PDF (Ctrl+P)"
+                    title="Export PDF (Ctrl+P)">
+                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                <span class="hidden sm:inline">Export PDF</span>
+                <span class="sm:hidden">PDF</span>
+            </button>
+        </div>
+    </div>
+
+    {# Toolbar (Phase 2: Enhanced, Phase 5: Accessible + Mobile) #}
+    <div class="px-4 sm:px-6 py-3 border-b border-gray-200 bg-white cv-toolbar"
+         role="toolbar"
+         aria-label="Text formatting controls"
+         aria-controls="cv-editor-content">
+        <div class="flex flex-wrap items-center gap-2">
+            {# Font Group #}
+            <div class="flex gap-1">
+                <label for="cv-font-family" class="sr-only">Font family</label>
+                <select id="cv-font-family" onchange="applyCVFormat('fontFamily', this.value)"
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-48"
+                        aria-label="Select font family">
+                    <optgroup label="Serif (Professional)">
+                        <option value="Crimson Text">Crimson Text</option>
+                        <option value="EB Garamond">EB Garamond</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Spectral">Spectral</option>
+                        <option value="Source Serif Pro">Source Serif Pro</option>
+                        <option value="PT Serif">PT Serif</option>
+                        <option value="Bitter">Bitter</option>
+                        <option value="Arvo">Arvo</option>
+                        <option value="Cardo">Cardo</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="Neuton">Neuton</option>
+                        <option value="Vollkorn">Vollkorn</option>
+                    </optgroup>
+                    <optgroup label="Sans-Serif (Modern)">
+                        <option value="Inter" selected>Inter</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Lato">Lato</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Work Sans">Work Sans</option>
+                        <option value="IBM Plex Sans">IBM Plex Sans</option>
+                        <option value="Karla">Karla</option>
+                        <option value="Rubik">Rubik</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="Manrope">Manrope</option>
+                        <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Archivo">Archivo</option>
+                        <option value="Public Sans">Public Sans</option>
+                        <option value="Red Hat Display">Red Hat Display</option>
+                    </optgroup>
+                    <optgroup label="Monospace (Technical)">
+                        <option value="Fira Code">Fira Code</option>
+                        <option value="JetBrains Mono">JetBrains Mono</option>
+                        <option value="Source Code Pro">Source Code Pro</option>
+                        <option value="IBM Plex Mono">IBM Plex Mono</option>
+                        <option value="Roboto Mono">Roboto Mono</option>
+                        <option value="Inconsolata">Inconsolata</option>
+                    </optgroup>
+                    <optgroup label="Display (Creative)">
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Archivo Black">Archivo Black</option>
+                        <option value="Righteous">Righteous</option>
+                        <option value="Josefin Sans">Josefin Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Anton">Anton</option>
+                        <option value="Kanit">Kanit</option>
+                    </optgroup>
+                    <optgroup label="Condensed (Space-Saving)">
+                        <option value="Roboto Condensed">Roboto Condensed</option>
+                        <option value="PT Sans Narrow">PT Sans Narrow</option>
+                        <option value="Fira Sans Condensed">Fira Sans Condensed</option>
+                        <option value="Barlow Condensed">Barlow Condensed</option>
+                    </optgroup>
+                    <optgroup label="Rounded (Friendly)">
+                        <option value="Nunito Sans">Nunito Sans</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Varela Round">Varela Round</option>
+                        <option value="Comfortaa">Comfortaa</option>
+                    </optgroup>
+                </select>
+                <label for="cv-font-size" class="sr-only">Font size</label>
+                <select id="cv-font-size" onchange="applyCVFormat('fontSize', this.value)"
+                        class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-20"
+                        aria-label="Select font size">
+                    <option value="8pt">8pt</option>
+                    <option value="9pt">9pt</option>
+                    <option value="10pt">10pt</option>
+                    <option value="10.5pt">10.5pt</option>
+                    <option value="11pt" selected>11pt</option>
+                    <option value="12pt">12pt</option>
+                    <option value="13pt">13pt</option>
+                    <option value="14pt">14pt</option>
+                    <option value="16pt">16pt</option>
+                    <option value="18pt">18pt</option>
+                    <option value="20pt">20pt</option>
+                    <option value="24pt">24pt</option>
+                    <option value="28pt">28pt</option>
+                    <option value="32pt">32pt</option>
+                </select>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
+
+            {# Formatting Group #}
+            <div class="flex gap-1" role="group" aria-label="Text formatting">
+                <button onclick="applyCVFormat('bold')" data-format="bold"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 font-bold transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Bold (Ctrl+B)"
+                        aria-pressed="false"
+                        title="Bold (Ctrl+B)">B</button>
+                <button onclick="applyCVFormat('italic')" data-format="italic"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 italic transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Italic (Ctrl+I)"
+                        aria-pressed="false"
+                        title="Italic (Ctrl+I)">I</button>
+                <button onclick="applyCVFormat('underline')" data-format="underline"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 underline transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Underline (Ctrl+U)"
+                        aria-pressed="false"
+                        title="Underline (Ctrl+U)">U</button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
+
+            {# Heading Group #}
+            <div class="flex gap-1" role="group" aria-label="Heading levels">
+                <button onclick="applyCVFormat('heading', 1)" data-heading="1"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 text-xs font-bold transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Heading 1"
+                        aria-pressed="false"
+                        title="Heading 1">H1</button>
+                <button onclick="applyCVFormat('heading', 2)" data-heading="2"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 text-xs font-bold transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Heading 2"
+                        aria-pressed="false"
+                        title="Heading 2">H2</button>
+                <button onclick="applyCVFormat('heading', 3)" data-heading="3"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 text-xs font-bold transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Heading 3"
+                        aria-pressed="false"
+                        title="Heading 3">H3</button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
+
+            {# List Group #}
+            <div class="flex gap-1" role="group" aria-label="List formatting">
+                <button onclick="applyCVFormat('bulletList')" data-format="bulletList"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Bullet list"
+                        aria-pressed="false"
+                        title="Bullet List">
+                    <span aria-hidden="true">•</span>
+                </button>
+                <button onclick="applyCVFormat('orderedList')" data-format="orderedList"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Numbered list"
+                        aria-pressed="false"
+                        title="Numbered List">
+                    <span aria-hidden="true">1.</span>
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
+
+            {# Alignment Group (Phase 2) #}
+            <div class="flex gap-1" role="group" aria-label="Text alignment">
+                <button onclick="applyCVFormat('textAlign', 'left')" data-align="left"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align left"
+                        aria-pressed="true"
+                        title="Align Left">
+                    <span aria-hidden="true">⬅</span>
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'center')" data-align="center"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align center"
+                        aria-pressed="false"
+                        title="Align Center">
+                    <span aria-hidden="true">↔</span>
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'right')" data-align="right"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Align right"
+                        aria-pressed="false"
+                        title="Align Right">
+                    <span aria-hidden="true">➡</span>
+                </button>
+                <button onclick="applyCVFormat('textAlign', 'justify')" data-align="justify"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition border border-transparent min-w-[2.75rem]"
+                        aria-label="Justify"
+                        aria-pressed="false"
+                        title="Justify">
+                    <span aria-hidden="true">⬌</span>
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300"></div>
+
+            {# Indentation Group (Phase 2) #}
+            <div class="flex gap-1" role="group" aria-label="Text indentation">
+                <button onclick="cvEditorInstance?.decreaseIndent()"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        aria-label="Decrease indent (Shift+Tab)"
+                        title="Decrease Indent (Shift+Tab)">
+                    <span aria-hidden="true">⬅</span> <span class="hidden sm:inline">Outdent</span>
+                </button>
+                <button onclick="cvEditorInstance?.increaseIndent()"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs"
+                        aria-label="Increase indent (Tab)"
+                        title="Increase Indent (Tab)">
+                    <span class="hidden sm:inline">Indent</span> <span aria-hidden="true">➡</span>
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-gray-300" aria-hidden="true"></div>
+
+            {# Color Group (Phase 2) #}
+            <div class="flex gap-1" role="group" aria-label="Text and highlight colors">
+                <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       aria-label="Text color picker"
+                       title="Text Color">
+                    <span aria-hidden="true">A</span> <span class="ml-1 text-xs" aria-hidden="true">▼</span>
+                    <input type="color" id="cv-text-color" value="#1a1a1a"
+                           onchange="applyCVFormat('color', this.value)"
+                           aria-label="Select text color"
+                           class="hidden">
+                </label>
+                <label class="px-2 py-1.5 rounded hover:bg-gray-200 cursor-pointer inline-flex items-center text-xs border border-gray-300"
+                       aria-label="Highlight color picker"
+                       title="Highlight Color">
+                    <span aria-hidden="true">🖍</span>
+                    <input type="color" id="cv-highlight-color" value="#ffff00"
+                           onchange="applyCVFormat('highlight', this.value)"
+                           aria-label="Select highlight color"
+                           class="hidden">
+                </label>
+                <button onclick="applyCVFormat('removeHighlight')"
+                        class="px-2 py-1.5 rounded hover:bg-gray-200 transition text-xs border border-gray-300"
+                        aria-label="Remove highlight"
+                        title="Remove Highlight">
+                    <span aria-hidden="true">✕</span>
+                </button>
+            </div>
+        </div>
+
+        {# Phase 3: Document-Level Styles Toolbar #}
+        <div class="px-4 sm:px-6 py-3 border-b border-gray-200 bg-gray-100 cv-document-settings"
+             role="region"
+             aria-labelledby="document-settings-heading">
+            <details class="group">
+                <summary class="cursor-pointer text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 hover:text-indigo-600"
+                         id="document-settings-heading"
+                         aria-expanded="false"
+                         aria-controls="document-settings-content">
+                    <span class="inline-block transform transition-transform group-open:rotate-90" aria-hidden="true">▶</span>
+                    Document Settings (Page Layout)
+                </summary>
+                <div id="document-settings-content" class="flex flex-wrap items-center gap-4 pl-5">
+                    {# Line Height #}
+                    <div class="flex flex-col gap-1">
+                        <label for="cv-line-height" class="text-xs text-gray-600">Line Height</label>
+                        <select id="cv-line-height" onchange="applyDocumentStyle('lineHeight')"
+                                class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-28">
+                            <option value="1.0">Single (1.0)</option>
+                            <option value="1.15" selected>Standard (1.15)</option>
+                            <option value="1.5">1.5 Lines</option>
+                            <option value="2.0">Double (2.0)</option>
+                        </select>
+                    </div>
+
+                    <div class="w-px h-12 bg-gray-300"></div>
+
+                    {# Margin Presets #}
+                    <div class="flex flex-col gap-1">
+                        <label for="cv-margin-preset" class="text-xs text-gray-600">Margins</label>
+                        <select id="cv-margin-preset" onchange="applyMarginPreset()"
+                                class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-28">
+                            <option value="normal" selected>Normal (1")</option>
+                            <option value="narrow">Narrow (0.5")</option>
+                            <option value="moderate">Moderate (0.75")</option>
+                            <option value="wide">Wide (1.5")</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                    </div>
+
+                    {# Custom Margins (hidden by default) #}
+                    <div id="custom-margins-container" class="flex flex-col gap-1 hidden">
+                        <label class="text-xs text-gray-600">Custom (inches)</label>
+                        <div class="flex gap-2">
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-gray-500">Top</span>
+                                <select id="cv-margin-top" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
+                                        class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
+                                    <option value="0.5">0.5"</option>
+                                    <option value="0.75">0.75"</option>
+                                    <option value="1.0" selected>1.0"</option>
+                                    <option value="1.25">1.25"</option>
+                                    <option value="1.5">1.5"</option>
+                                    <option value="1.75">1.75"</option>
+                                    <option value="2.0">2.0"</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-gray-500">Right</span>
+                                <select id="cv-margin-right" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
+                                        class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
+                                    <option value="0.5">0.5"</option>
+                                    <option value="0.75">0.75"</option>
+                                    <option value="1.0" selected>1.0"</option>
+                                    <option value="1.25">1.25"</option>
+                                    <option value="1.5">1.5"</option>
+                                    <option value="1.75">1.75"</option>
+                                    <option value="2.0">2.0"</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-gray-500">Bottom</span>
+                                <select id="cv-margin-bottom" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
+                                        class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
+                                    <option value="0.5">0.5"</option>
+                                    <option value="0.75">0.75"</option>
+                                    <option value="1.0" selected>1.0"</option>
+                                    <option value="1.25">1.25"</option>
+                                    <option value="1.5">1.5"</option>
+                                    <option value="1.75">1.75"</option>
+                                    <option value="2.0">2.0"</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-gray-500">Left</span>
+                                <select id="cv-margin-left" onchange="applyDocumentStyle('margins'); updateMarginPreset()"
+                                        class="text-sm border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-20">
+                                    <option value="0.5">0.5"</option>
+                                    <option value="0.75">0.75"</option>
+                                    <option value="1.0" selected>1.0"</option>
+                                    <option value="1.25">1.25"</option>
+                                    <option value="1.5">1.5"</option>
+                                    <option value="1.75">1.75"</option>
+                                    <option value="2.0">2.0"</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-px h-12 bg-gray-300"></div>
+
+                    {# Page Size #}
+                    <div class="flex flex-col gap-1">
+                        <label for="cv-page-size" class="text-xs text-gray-600">Page Size</label>
+                        <select id="cv-page-size" onchange="applyDocumentStyle('pageSize')"
+                                class="text-sm border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 w-32">
+                            <option value="letter" selected>Letter (8.5" x 11")</option>
+                            <option value="a4">A4 (210mm x 297mm)</option>
+                        </select>
+                    </div>
+
+                    <div class="w-px h-12 bg-gray-300"></div>
+
+                    {# Header/Footer #}
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs text-gray-600">Header/Footer (Optional)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="cv-header-text" placeholder="Header text (e.g., Name | Email | Phone)"
+                                   class="text-xs border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-64"
+                                   onchange="applyDocumentStyle('header')">
+                            <input type="text" id="cv-footer-text" placeholder="Footer text (e.g., Page number)"
+                                   class="text-xs border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-indigo-500 w-64"
+                                   onchange="applyDocumentStyle('footer')">
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    {# Editor Content Area #}
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div id="cv-editor-content"
+             class="bg-white border border-gray-200 rounded-lg shadow-inner
+                    min-h-full mx-auto"
+             style="max-width: 8.5in; min-height: 11in;">
+            {# TipTap renders here #}
+        </div>
+    </div>
+</div>
