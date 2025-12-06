@@ -58,6 +58,7 @@ from src.layer6_v2.role_generator import (
     RoleGenerator,
     generate_all_roles_sequential,
     generate_all_roles_with_star_enforcement,
+    generate_all_roles_from_variants,
 )
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
@@ -92,6 +93,7 @@ class CVGeneratorV2:
         word_budget: Optional[int] = None,  # None = no limit, include all roles fully
         use_llm_grading: bool = True,
         use_star_enforcement: bool = True,  # GAP-005: STAR format enforcement
+        use_variant_selection: bool = True,  # Use pre-written variants (zero hallucination)
     ):
         """
         Initialize the CV Generator V2 orchestrator.
@@ -102,6 +104,7 @@ class CVGeneratorV2:
             word_budget: Target word count (None = no limit, all roles included)
             use_llm_grading: Use LLM for grading vs rule-based (default: True)
             use_star_enforcement: Enable STAR format enforcement with retry (default: True)
+            use_variant_selection: Use pre-written variants for zero-hallucination generation (default: True)
         """
         self._logger = get_logger(__name__)
         self.model = model or Config.DEFAULT_MODEL
@@ -109,6 +112,7 @@ class CVGeneratorV2:
         self.word_budget = word_budget  # None = unlimited
         self.use_llm_grading = use_llm_grading
         self.use_star_enforcement = use_star_enforcement  # GAP-005
+        self.use_variant_selection = use_variant_selection  # Variant-based generation
 
         # Initialize components
         self.cv_loader = CVLoader()
@@ -289,11 +293,28 @@ class CVGeneratorV2:
         roles: List[RoleData],
         extracted_jd: Dict[str, Any],
     ) -> List[RoleBullets]:
-        """Generate bullets for all roles with optional STAR enforcement (GAP-005)."""
+        """Generate bullets for all roles with variant selection or LLM generation."""
         from src.layer6_v2.types import CareerContext
 
-        role_bullets_list = []
         role_category = extracted_jd.get("role_category", "engineering_manager")
+
+        # Log generation mode
+        if self.use_variant_selection:
+            self._logger.info("  Variant-based generation ENABLED (zero hallucination)")
+            # Check if roles have variant data
+            roles_with_variants = sum(1 for r in roles if r.has_variants)
+            self._logger.info(f"  Roles with variants: {roles_with_variants}/{len(roles)}")
+
+            # Use batch variant-based generation
+            return generate_all_roles_from_variants(
+                roles=roles,
+                extracted_jd=extracted_jd,
+                generator=self.role_generator,
+                fallback_to_llm=True,  # Fall back to LLM for roles without variants
+            )
+
+        # Legacy LLM-based generation
+        role_bullets_list = []
 
         # Log STAR enforcement status
         if self.use_star_enforcement:
