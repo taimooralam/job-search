@@ -32,6 +32,12 @@ from src.layer6_v2.prompts.role_generation import (
     STAR_CORRECTION_SYSTEM_PROMPT,
     build_star_correction_user_prompt,
 )
+# Variant-based generation support
+from src.layer6_v2.variant_selector import (
+    VariantSelector,
+    SelectionResult,
+    select_variants_for_role,
+)
 
 
 # ===== SCHEMA VALIDATION =====
@@ -284,6 +290,169 @@ class RoleGenerator:
         self._logger.info(f"Keywords integrated: {len(role_bullets.keywords_integrated)}")
 
         return role_bullets
+
+    def generate_from_variants(
+        self,
+        role: RoleData,
+        extracted_jd: ExtractedJD,
+        target_bullet_count: Optional[int] = None,
+    ) -> Optional[RoleBullets]:
+        """
+        Generate bullets by selecting from pre-written variants.
+
+        This method uses the VariantSelector to choose optimal achievement
+        variants based on JD requirements. It's faster and more deterministic
+        than LLM generation, with zero hallucination risk since all text is
+        pre-written and interview-defensible.
+
+        Args:
+            role: Role data with enhanced_data containing variants
+            extracted_jd: Structured JD intelligence from Layer 1.4
+            target_bullet_count: Target number of bullets (defaults to role's achievement count)
+
+        Returns:
+            RoleBullets with selected variants, or None if role has no variants
+        """
+        # Check if role has variant data
+        if not role.has_variants or not role.enhanced_data:
+            self._logger.info(f"No variant data for {role.company} - skipping variant selection")
+            return None
+
+        self._logger.info(f"Selecting variants for: {role.company} - {role.title}")
+        self._logger.info(f"Available achievements: {len(role.enhanced_data.achievements)}")
+        self._logger.info(f"Total variants: {role.variant_count}")
+
+        # Build JD context for variant selection
+        jd_context = {
+            "role_category": extracted_jd.get("role_category", "default"),
+            "top_keywords": extracted_jd.get("top_keywords", []),
+            "technical_skills": extracted_jd.get("technical_skills", []),
+            "soft_skills": extracted_jd.get("soft_skills", []),
+            "implied_pain_points": extracted_jd.get("implied_pain_points", []),
+        }
+
+        # Determine target count
+        if target_bullet_count is None:
+            target_bullet_count = min(len(role.enhanced_data.achievements), 6)
+
+        # Select variants using the VariantSelector
+        selector = VariantSelector()
+        selection_result = selector.select_variants(
+            role=role.enhanced_data,
+            extracted_jd=jd_context,
+            target_count=target_bullet_count,
+        )
+
+        self._logger.info(f"Selected {selection_result.selection_count} variants")
+        self._logger.info(f"Keyword coverage: {selection_result.keyword_coverage:.1%}")
+
+        # Convert selected variants to GeneratedBullet format
+        generated_bullets = []
+        keywords_integrated = list(selection_result.jd_keywords_covered)
+
+        for selected in selection_result.selected_variants:
+            # Find the original achievement for source_text
+            achievement = role.enhanced_data.get_achievement_by_id(selected.achievement_id)
+            source_text = achievement.core_fact if achievement else ""
+
+            # Extract any metrics from the variant text (simple pattern matching)
+            source_metric = self._extract_metric(selected.text)
+
+            # Create GeneratedBullet with traceability
+            bullet = GeneratedBullet(
+                text=selected.text,
+                source_text=source_text,
+                source_metric=source_metric,
+                jd_keyword_used=selected.score.matched_keywords[0] if selected.score.matched_keywords else None,
+                pain_point_addressed=None,  # Variant selection doesn't track pain points per-bullet
+                # STAR components not explicitly tracked in variant selection
+                situation=None,
+                action=None,
+                result=None,
+            )
+            generated_bullets.append(bullet)
+
+        # Build RoleBullets
+        role_bullets = RoleBullets(
+            role_id=role.id,
+            company=role.company,
+            title=role.title,
+            period=role.period,
+            location=role.location,
+            bullets=generated_bullets,
+            word_count=sum(b.word_count for b in generated_bullets),
+            keywords_integrated=keywords_integrated,
+            hard_skills=role.hard_skills,
+            soft_skills=role.soft_skills,
+        )
+
+        self._logger.info(f"Generated {role_bullets.bullet_count} bullets from variants")
+        self._logger.info(f"Word count: {role_bullets.word_count}")
+        self._logger.info(f"Keywords integrated: {len(keywords_integrated)}")
+
+        return role_bullets
+
+    def _extract_metric(self, text: str) -> Optional[str]:
+        """Extract a metric (percentage, number, etc.) from bullet text."""
+        import re
+        # Match percentages, dollar amounts, multipliers, and large numbers
+        patterns = [
+            r'\d+\.?\d*%',              # 75%, 99.9%
+            r'\$[\d,]+[KMB]?',          # $30M, $1,000
+            r'€[\d,]+[KMB]?',           # €30M
+            r'\d+x',                    # 10x
+            r'\d+[\d,]*\+?\s*(users|events|requests|impressions)',  # 1M users
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                return match.group(0)
+        return None
+
+    def generate_with_variant_fallback(
+        self,
+        role: RoleData,
+        extracted_jd: ExtractedJD,
+        career_context: Optional[CareerContext] = None,
+        target_bullet_count: Optional[int] = None,
+        prefer_variants: bool = True,
+    ) -> RoleBullets:
+        """
+        Generate bullets with variant selection first, LLM as fallback.
+
+        This is the recommended generation method for production use:
+        1. Try variant selection (fast, deterministic, zero hallucination)
+        2. Fall back to LLM generation if variants unavailable
+
+        Args:
+            role: Role data from CV loader
+            extracted_jd: Structured JD intelligence
+            career_context: Career stage context
+            target_bullet_count: Target number of bullets
+            prefer_variants: If True, try variant selection first (default: True)
+
+        Returns:
+            RoleBullets with generated/selected bullets
+        """
+        # Try variant-based generation first if preferred and available
+        if prefer_variants and role.has_variants:
+            variant_result = self.generate_from_variants(
+                role=role,
+                extracted_jd=extracted_jd,
+                target_bullet_count=target_bullet_count,
+            )
+            if variant_result and variant_result.bullet_count > 0:
+                self._logger.info(f"✓ Used variant selection for {role.company}")
+                return variant_result
+
+        # Fall back to LLM generation
+        self._logger.info(f"Using LLM generation for {role.company}")
+        return self.generate(
+            role=role,
+            extracted_jd=extracted_jd,
+            career_context=career_context,
+            target_bullet_count=target_bullet_count,
+        )
 
     def generate_with_star_enforcement(
         self,
@@ -646,6 +815,146 @@ def generate_all_roles_with_star_enforcement(
     logger.info(f"Total words: {total_words}")
     logger.info(f"Roles with bullets: {sum(1 for rb in results if rb.bullet_count > 0)}/{total_roles}")
     logger.info(f"STAR validation passed: {star_pass_count}/{total_roles} roles")
+    logger.info(f"{'='*50}")
+
+    return results
+
+
+def generate_all_roles_from_variants(
+    roles: List[RoleData],
+    extracted_jd: ExtractedJD,
+    generator: Optional[RoleGenerator] = None,
+    bullet_counts: Optional[Dict[str, int]] = None,
+    fallback_to_llm: bool = True,
+) -> List[RoleBullets]:
+    """
+    Generate bullets for all roles using variant selection.
+
+    This is the recommended production method for CV generation:
+    - Uses pre-written, interview-defensible variant text
+    - Zero hallucination risk (all text from source)
+    - Fast and deterministic (no LLM calls for variant selection)
+    - Falls back to LLM generation if role has no variants
+
+    Args:
+        roles: List of roles from CV loader (should have enhanced_data)
+        extracted_jd: Structured JD intelligence from Layer 1.4
+        generator: RoleGenerator instance (created if not provided)
+        bullet_counts: Optional dict mapping role_id to target bullet count
+        fallback_to_llm: If True, use LLM for roles without variants (default: True)
+
+    Returns:
+        List of RoleBullets, one per role
+    """
+    logger = get_logger(__name__)
+    generator = generator or RoleGenerator()
+    results = []
+
+    target_role_category = extracted_jd.get("role_category", "staff_principal_engineer")
+    total_roles = len(roles)
+
+    logger.info(f"\n{'='*50}")
+    logger.info("VARIANT-BASED GENERATION")
+    logger.info(f"Processing {total_roles} roles")
+    logger.info(f"Target role category: {target_role_category}")
+    logger.info(f"Fallback to LLM: {fallback_to_llm}")
+    logger.info(f"{'='*50}")
+
+    variant_count = 0
+    llm_count = 0
+    skip_count = 0
+
+    for i, role in enumerate(roles):
+        logger.info(f"\n[Role {i+1}/{total_roles}] {role.company} - {role.title}")
+
+        # Determine target bullet count
+        target_count = None
+        if bullet_counts and role.id in bullet_counts:
+            target_count = bullet_counts[role.id]
+
+        # Build career context for fallback
+        career_context = CareerContext.build(
+            role_index=i,
+            total_roles=total_roles,
+            is_current=role.is_current,
+            target_role_category=target_role_category,
+        )
+
+        try:
+            if role.has_variants:
+                # Use variant selection
+                role_bullets = generator.generate_from_variants(
+                    role=role,
+                    extracted_jd=extracted_jd,
+                    target_bullet_count=target_count,
+                )
+
+                if role_bullets and role_bullets.bullet_count > 0:
+                    results.append(role_bullets)
+                    variant_count += 1
+                    logger.info(
+                        f"  ✓ Selected {role_bullets.bullet_count} variants "
+                        f"({role_bullets.word_count} words)"
+                    )
+                    continue
+
+            # Fallback to LLM if enabled
+            if fallback_to_llm:
+                role_bullets = generator.generate(
+                    role=role,
+                    extracted_jd=extracted_jd,
+                    career_context=career_context,
+                    target_bullet_count=target_count,
+                )
+                results.append(role_bullets)
+                llm_count += 1
+                logger.info(
+                    f"  ⚡ LLM generated {role_bullets.bullet_count} bullets "
+                    f"({role_bullets.word_count} words)"
+                )
+            else:
+                # Skip role if no variants and no fallback
+                skip_count += 1
+                logger.warning(f"  ⊘ Skipped - no variants and LLM fallback disabled")
+                results.append(RoleBullets(
+                    role_id=role.id,
+                    company=role.company,
+                    title=role.title,
+                    period=role.period,
+                    location=role.location,
+                    bullets=[],
+                    word_count=0,
+                    keywords_integrated=[],
+                    hard_skills=role.hard_skills,
+                    soft_skills=role.soft_skills,
+                ))
+
+        except Exception as e:
+            logger.error(f"  ✗ Failed: {e}")
+            results.append(RoleBullets(
+                role_id=role.id,
+                company=role.company,
+                title=role.title,
+                period=role.period,
+                location=role.location,
+                bullets=[],
+                word_count=0,
+                keywords_integrated=[],
+                hard_skills=role.hard_skills,
+                soft_skills=role.soft_skills,
+            ))
+
+    # Summary
+    total_bullets = sum(rb.bullet_count for rb in results)
+    total_words = sum(rb.word_count for rb in results)
+    logger.info(f"\n{'='*50}")
+    logger.info("VARIANT-BASED GENERATION COMPLETE")
+    logger.info(f"Total bullets: {total_bullets}")
+    logger.info(f"Total words: {total_words}")
+    logger.info(f"Roles processed: {total_roles}")
+    logger.info(f"  - Variant selection: {variant_count}")
+    logger.info(f"  - LLM fallback: {llm_count}")
+    logger.info(f"  - Skipped: {skip_count}")
     logger.info(f"{'='*50}")
 
     return results

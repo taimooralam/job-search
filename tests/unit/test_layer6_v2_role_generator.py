@@ -673,3 +673,157 @@ class TestPhase3Integration:
                 text="This is a valid bullet text with enough words",
                 source_text="",  # Empty
             )
+
+
+# ===== TESTS: Variant-Based Generation =====
+
+class TestVariantBasedGeneration:
+    """Tests for variant-based bullet generation."""
+
+    @pytest.fixture
+    def sample_role_with_variants(self):
+        """Sample RoleData with enhanced variant data."""
+        from src.layer6_v2.cv_loader import CVLoader
+
+        loader = CVLoader(use_enhanced=True)
+        if not loader.metadata_path.exists():
+            pytest.skip("Real master-cv data not available")
+
+        loader.load()
+        return loader.get_current_role()
+
+    @pytest.fixture
+    def sample_extracted_jd(self):
+        """Sample extracted JD for testing."""
+        return {
+            "role_category": "tech_lead",
+            "top_keywords": ["aws", "microservices", "kubernetes", "leadership", "architecture"],
+            "technical_skills": ["AWS", "TypeScript", "Kubernetes"],
+            "soft_skills": ["leadership", "communication"],
+            "implied_pain_points": [
+                "Need to modernize legacy systems",
+                "Scale infrastructure",
+            ],
+        }
+
+    def test_generate_from_variants_returns_role_bullets(
+        self, sample_role_with_variants, sample_extracted_jd
+    ):
+        """generate_from_variants returns RoleBullets with selected variants."""
+        generator = RoleGenerator()
+        result = generator.generate_from_variants(
+            role=sample_role_with_variants,
+            extracted_jd=sample_extracted_jd,
+            target_bullet_count=5,
+        )
+
+        assert result is not None
+        assert isinstance(result, RoleBullets)
+        assert result.bullet_count == 5
+        assert result.word_count > 0
+
+    def test_generate_from_variants_has_traceability(
+        self, sample_role_with_variants, sample_extracted_jd
+    ):
+        """Generated bullets have source traceability."""
+        generator = RoleGenerator()
+        result = generator.generate_from_variants(
+            role=sample_role_with_variants,
+            extracted_jd=sample_extracted_jd,
+            target_bullet_count=3,
+        )
+
+        for bullet in result.bullets:
+            assert bullet.text  # Has generated text
+            assert bullet.source_text  # Has source text for traceability
+
+    def test_generate_from_variants_extracts_metrics(
+        self, sample_role_with_variants, sample_extracted_jd
+    ):
+        """Variant generation extracts metrics from bullet text."""
+        generator = RoleGenerator()
+        result = generator.generate_from_variants(
+            role=sample_role_with_variants,
+            extracted_jd=sample_extracted_jd,
+            target_bullet_count=5,
+        )
+
+        # At least some bullets should have extracted metrics
+        bullets_with_metrics = [b for b in result.bullets if b.source_metric]
+        assert len(bullets_with_metrics) >= 1
+
+    def test_generate_from_variants_returns_none_without_variants(self, sample_extracted_jd):
+        """Returns None when role has no variant data."""
+        role_without_variants = RoleData(
+            id="test",
+            company="Test",
+            title="Engineer",
+            location="Test",
+            period="2020-2024",
+            start_year=2020,
+            end_year=2024,
+            is_current=False,
+            duration_years=4,
+            industry="Tech",
+            team_size="5",
+            primary_competencies=[],
+            keywords=[],
+            achievements=["Simple bullet point"],
+            # No enhanced_data
+        )
+
+        generator = RoleGenerator()
+        result = generator.generate_from_variants(
+            role=role_without_variants,
+            extracted_jd=sample_extracted_jd,
+        )
+
+        assert result is None
+
+    def test_generate_from_variants_integrates_keywords(
+        self, sample_role_with_variants, sample_extracted_jd
+    ):
+        """Variant generation tracks integrated keywords."""
+        generator = RoleGenerator()
+        result = generator.generate_from_variants(
+            role=sample_role_with_variants,
+            extracted_jd=sample_extracted_jd,
+            target_bullet_count=5,
+        )
+
+        assert len(result.keywords_integrated) > 0
+
+    def test_generate_with_variant_fallback_uses_variants(
+        self, sample_role_with_variants, sample_extracted_jd
+    ):
+        """generate_with_variant_fallback uses variants when available."""
+        generator = RoleGenerator()
+        result = generator.generate_with_variant_fallback(
+            role=sample_role_with_variants,
+            extracted_jd=sample_extracted_jd,
+            target_bullet_count=3,
+            prefer_variants=True,
+        )
+
+        assert result is not None
+        assert result.bullet_count == 3
+
+    def test_extract_metric_finds_percentages(self):
+        """_extract_metric finds percentage values."""
+        generator = RoleGenerator()
+
+        assert generator._extract_metric("Reduced errors by 75%") == "75%"
+        assert generator._extract_metric("Improved to 99.9%") == "99.9%"
+
+    def test_extract_metric_finds_currency(self):
+        """_extract_metric finds currency values."""
+        generator = RoleGenerator()
+
+        assert generator._extract_metric("Protected €30M revenue") == "€30M"
+        assert generator._extract_metric("Saved $5K monthly") == "$5K"
+
+    def test_extract_metric_finds_multipliers(self):
+        """_extract_metric finds multiplier values."""
+        generator = RoleGenerator()
+
+        assert generator._extract_metric("Achieved 10x improvement") == "10x"
