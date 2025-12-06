@@ -460,6 +460,154 @@ class StitchedCV:
 
 # ===== PHASE 5: HEADER GENERATOR TYPES =====
 
+# ----- Skills Taxonomy Types (Role-Based Skills Selection) -----
+
+@dataclass
+class TaxonomySection:
+    """
+    A pre-defined skill section from the role skills taxonomy.
+
+    Each section represents a category of skills appropriate for a target role,
+    with JD signals to help determine when to include this section.
+    """
+
+    name: str                          # Section name (e.g., "Technical Leadership")
+    priority: int                      # Default priority (1 = highest)
+    description: str                   # Description of what this section covers
+    skills: List[str]                  # Pre-curated skills for this section
+    jd_signals: List[str]              # Keywords that indicate this section is relevant
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "name": self.name,
+            "priority": self.priority,
+            "description": self.description,
+            "skills": self.skills,
+            "jd_signals": self.jd_signals,
+        }
+
+
+@dataclass
+class RoleSkillsTaxonomy:
+    """
+    Complete skills taxonomy for a target role.
+
+    Contains multiple sections with their skills, plus configuration
+    for how many sections/skills to include in the final CV.
+    """
+
+    role_category: str                 # e.g., "engineering_manager"
+    display_name: str                  # e.g., "Engineering Manager"
+    sections: List[TaxonomySection]    # Pre-defined sections for this role
+    max_sections: int = 4              # Maximum sections to include in CV
+    max_skills_per_section: int = 6    # Maximum skills per section
+    lax_multiplier: float = 1.3        # Multiplier for "lax" generation (1.3 = 30% more)
+
+    @property
+    def all_skills(self) -> List[str]:
+        """Return all skills across all sections."""
+        skills = []
+        for section in self.sections:
+            skills.extend(section.skills)
+        return skills
+
+    @property
+    def section_names(self) -> List[str]:
+        """Return all section names."""
+        return [s.name for s in self.sections]
+
+    def get_section_by_name(self, name: str) -> Optional["TaxonomySection"]:
+        """Get a section by its name (case-insensitive)."""
+        for section in self.sections:
+            if section.name.lower() == name.lower():
+                return section
+        return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "role_category": self.role_category,
+            "display_name": self.display_name,
+            "sections": [s.to_dict() for s in self.sections],
+            "max_sections": self.max_sections,
+            "max_skills_per_section": self.max_skills_per_section,
+            "lax_multiplier": self.lax_multiplier,
+        }
+
+
+@dataclass
+class SectionScore:
+    """
+    Score for a taxonomy section based on JD alignment.
+
+    Used to rank sections for selection during skills generation.
+    """
+
+    section: TaxonomySection           # The section being scored
+    jd_keyword_score: float            # Score from JD keyword overlap (0-1)
+    responsibility_score: float        # Score from JD responsibility match (0-1)
+    priority_score: float              # Score from section priority (0-1)
+    total_score: float = 0.0           # Weighted total score
+
+    def __post_init__(self):
+        """Calculate total score if not provided."""
+        if self.total_score == 0.0:
+            # Weights: 50% keyword, 30% responsibility, 20% priority
+            self.total_score = (
+                0.5 * self.jd_keyword_score +
+                0.3 * self.responsibility_score +
+                0.2 * self.priority_score
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "section_name": self.section.name,
+            "jd_keyword_score": self.jd_keyword_score,
+            "responsibility_score": self.responsibility_score,
+            "priority_score": self.priority_score,
+            "total_score": self.total_score,
+        }
+
+
+@dataclass
+class SkillScore:
+    """
+    Score for an individual skill based on JD alignment and evidence.
+
+    Used to rank skills within a section for selection.
+    """
+
+    skill: str                         # The skill being scored
+    jd_match_score: float              # 1.0 if in JD keywords, else 0.0
+    evidence_score: float              # Based on evidence frequency (0-1)
+    recency_score: float               # Based on how recently used (0-1)
+    total_score: float = 0.0           # Weighted total score
+
+    def __post_init__(self):
+        """Calculate total score if not provided."""
+        if self.total_score == 0.0:
+            # Weights: 40% JD match, 30% evidence, 30% recency
+            self.total_score = (
+                0.4 * self.jd_match_score +
+                0.3 * self.evidence_score +
+                0.3 * self.recency_score
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "skill": self.skill,
+            "jd_match_score": self.jd_match_score,
+            "evidence_score": self.evidence_score,
+            "recency_score": self.recency_score,
+            "total_score": self.total_score,
+        }
+
+
+# ----- Original Header Generator Types -----
+
 @dataclass
 class SkillEvidence:
     """

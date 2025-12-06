@@ -8,10 +8,10 @@ Key Principles:
 1. Profile includes quantified highlights FROM experience section
 2. Skills ONLY include items evidenced in experience bullets
 3. JD keywords are prioritized when they have evidence
-4. 4 skill categories: Leadership, Technical, Platform, Delivery
+4. Skills sections use pre-defined role-based taxonomy (replaces LLM-generated categories)
 
 Usage:
-    generator = HeaderGenerator()
+    generator = HeaderGenerator(skill_whitelist=whitelist)
     header = generator.generate(
         stitched_cv=stitched_cv,
         extracted_jd=extracted_jd,
@@ -29,7 +29,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.logger import get_logger
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
-from src.layer6_v2.category_generator import CategoryGenerator
+from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
 from src.layer6_v2.types import (
     StitchedCV,
     SkillEvidence,
@@ -117,7 +117,7 @@ class HeaderGenerator:
         model: Optional[str] = None,
         temperature: float = 0.3,
         skill_whitelist: Optional[Dict[str, List[str]]] = None,
-        use_dynamic_categories: bool = True,
+        lax_mode: bool = True,
     ):
         """
         Initialize the header generator.
@@ -128,13 +128,11 @@ class HeaderGenerator:
             skill_whitelist: Master-CV skill whitelist to prevent hallucinations.
                              Dict with 'hard_skills' and 'soft_skills' lists.
                              If not provided, loads from CVLoader automatically.
-            use_dynamic_categories: If True (default), generate JD-specific categories.
-                                   If False, use static categories [Leadership, Technical, Platform, Delivery].
-                                   GAP-002 fix.
+            lax_mode: If True (default), generate 30% more skills for manual pruning.
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
-        self.use_dynamic_categories = use_dynamic_categories
+        self.lax_mode = lax_mode
 
         # Store skill whitelist (GAP-001 fix: prevent hallucinated skills)
         self._skill_whitelist = skill_whitelist
@@ -144,8 +142,21 @@ class HeaderGenerator:
                 f"{len(skill_whitelist.get('soft_skills', []))} soft skills"
             )
 
-        # Initialize category generator (GAP-002 fix: dynamic categories)
-        self._category_generator = CategoryGenerator(model=model, temperature=temperature) if use_dynamic_categories else None
+        # Initialize taxonomy-based skills generator (replaces CategoryGenerator)
+        # This uses the pre-defined role-specific taxonomy instead of LLM-generated categories
+        self._taxonomy_generator: Optional[TaxonomyBasedSkillsGenerator] = None
+        if skill_whitelist:
+            try:
+                taxonomy = SkillsTaxonomy()
+                self._taxonomy_generator = TaxonomyBasedSkillsGenerator(
+                    taxonomy=taxonomy,
+                    skill_whitelist=skill_whitelist,
+                    lax_mode=lax_mode,
+                )
+                self._logger.info("Using taxonomy-based skills generator")
+            except Exception as e:
+                self._logger.warning(f"Failed to load skills taxonomy: {e}. Will use fallback.")
+                self._taxonomy_generator = None
 
         # Initialize LLM (GAP-066: Token tracking enabled)
         model_name = model or Config.DEFAULT_MODEL
@@ -546,7 +557,8 @@ Generate the profile JSON:"""
         """
         Generate skills sections grounded in experience.
 
-        GAP-002 FIX: Uses dynamic JD-specific categories instead of static 4 categories.
+        Uses the pre-defined role-based taxonomy for consistent, ATS-optimized output.
+        Falls back to static categories if taxonomy is not available.
 
         Args:
             stitched_cv: Stitched experience section
@@ -565,156 +577,42 @@ Generate the profile JSON:"""
                 all_bullets.append(bullet)
                 role_companies.append(role.company)
 
+        # Use taxonomy-based generator if available
+        if self._taxonomy_generator:
+            self._logger.info("Using taxonomy-based skills generator...")
+            sections = self._taxonomy_generator.generate_sections(
+                extracted_jd=extracted_jd,
+                experience_bullets=all_bullets,
+                role_companies=role_companies,
+            )
+            self._logger.info(f"Generated {sum(s.skill_count for s in sections)} skills across {len(sections)} sections")
+            return sections
+
+        # Fallback: Static categories (if taxonomy not available)
+        self._logger.warning("Taxonomy not available, using static categories fallback")
+
         # Extract JD keywords for skill matching
         jd_keywords = extracted_jd.get("top_keywords", [])
-        # Also include technical_skills from JD
         jd_technical = extracted_jd.get("technical_skills", [])
         all_jd_keywords = list(set(jd_keywords + jd_technical))
 
-        # Extract skills with evidence, including JD keywords (using static categories for extraction)
+        # Extract skills with evidence using static categories
         skills_by_category = self._extract_skills_from_bullets(
             all_bullets, role_companies, jd_keywords=all_jd_keywords
         )
         skills_by_category = self._prioritize_jd_keywords(skills_by_category, jd_keywords)
 
-        # GAP-002 FIX: Generate dynamic categories or use static ones
-        if self.use_dynamic_categories and self._category_generator:
-            self._logger.info("Generating dynamic JD-specific categories...")
-            categories = self._generate_dynamic_categories(extracted_jd, skills_by_category)
-
-            # Re-categorize skills into dynamic categories
-            all_evidenced_skills = []
-            for cat_skills in skills_by_category.values():
-                all_evidenced_skills.extend(cat_skills)
-
-            # Use category generator to assign skills to new categories
-            all_skill_names = [s.skill for s in all_evidenced_skills]
-            categorized = self._category_generator.categorize_skills(
-                categories, all_skill_names, jd_keywords
-            )
-
-            # Build sections with dynamic categories
-            sections = self._build_dynamic_skill_sections(
-                categories, categorized, all_evidenced_skills
-            )
-        else:
-            # Static categories (original behavior)
-            self._logger.info("Using static categories [Leadership, Technical, Platform, Delivery]")
-            sections = []
-            for category in ["Leadership", "Technical", "Platform", "Delivery"]:
-                skills = skills_by_category.get(category, [])
-                if skills:  # Only include categories with skills
-                    sections.append(SkillsSection(
-                        category=category,
-                        skills=skills[:8],  # Limit to 8 skills per category
-                    ))
-
-        self._logger.info(f"Extracted {sum(s.skill_count for s in sections)} skills across {len(sections)} categories")
-        return sections
-
-    def _generate_dynamic_categories(
-        self,
-        extracted_jd: Dict,
-        skills_by_category: Dict[str, List[SkillEvidence]],
-    ) -> List[str]:
-        """
-        Generate JD-specific category names using the CategoryGenerator.
-
-        Issue 8 Enhancement: Now uses responsibilities and qualifications from JD
-        to generate categories that directly address what the employer is looking for.
-
-        Args:
-            extracted_jd: Extracted JD intelligence
-            skills_by_category: Skills already extracted (for candidate skill list)
-
-        Returns:
-            List of 3-4 dynamic category names
-        """
-        # Get JD keywords
-        jd_keywords = extracted_jd.get("top_keywords", [])
-        jd_technical = extracted_jd.get("technical_skills", [])
-        all_jd_keywords = list(set(jd_keywords + jd_technical))
-
-        # Issue 8: Get responsibilities and qualifications from JD
-        responsibilities = extracted_jd.get("responsibilities", [])
-        qualifications = extracted_jd.get("qualifications", [])
-
-        # Get candidate skills (from whitelist or extracted)
-        if self._skill_whitelist:
-            candidate_skills = (
-                self._skill_whitelist.get("hard_skills", []) +
-                self._skill_whitelist.get("soft_skills", [])
-            )
-        else:
-            # Fallback: use skills that were extracted with evidence
-            candidate_skills = []
-            for skills in skills_by_category.values():
-                for s in skills:
-                    candidate_skills.append(s.skill)
-
-        # Get role category from JD
-        role_category = extracted_jd.get("role_category", "engineering_manager")
-
-        # Generate dynamic categories with responsibilities/qualifications (Issue 8)
-        categories = self._category_generator.generate(
-            jd_keywords=all_jd_keywords,
-            candidate_skills=candidate_skills,
-            role_category=role_category,
-            responsibilities=responsibilities,
-            qualifications=qualifications,
-        )
-
-        self._logger.info(f"Generated dynamic categories: {categories}")
-        return categories
-
-    def _build_dynamic_skill_sections(
-        self,
-        categories: List[str],
-        categorized: Dict[str, List[str]],
-        all_evidenced_skills: List[SkillEvidence],
-    ) -> List[SkillsSection]:
-        """
-        Build SkillsSection objects using dynamic categories.
-
-        Args:
-            categories: Dynamic category names
-            categorized: Mapping of category to skill names
-            all_evidenced_skills: All skills with their evidence
-
-        Returns:
-            List of SkillsSection objects
-        """
-        # Create a lookup for skill evidence
-        evidence_lookup = {s.skill.lower(): s for s in all_evidenced_skills}
-
+        # Build static sections
         sections = []
-        for category in categories:
-            skill_names = categorized.get(category, [])
-            if not skill_names:
-                continue
-
-            # Get evidence for each skill
-            skills_with_evidence = []
-            for name in skill_names[:8]:  # Limit to 8 per category
-                # Look up evidence (case-insensitive)
-                evidence = evidence_lookup.get(name.lower())
-                if evidence:
-                    skills_with_evidence.append(evidence)
-                else:
-                    # Create placeholder evidence if not found
-                    skills_with_evidence.append(SkillEvidence(
-                        skill=name,
-                        evidence_bullets=[],
-                        source_roles=[],
-                        is_jd_keyword=False,
-                    ))
-
-            if skills_with_evidence:
+        for category in ["Leadership", "Technical", "Platform", "Delivery"]:
+            skills = skills_by_category.get(category, [])
+            if skills:  # Only include categories with skills
                 sections.append(SkillsSection(
                     category=category,
-                    skills=skills_with_evidence,
+                    skills=skills[:8],  # Limit to 8 skills per category
                 ))
 
+        self._logger.info(f"Extracted {sum(s.skill_count for s in sections)} skills across {len(sections)} categories")
         return sections
 
     def generate(
@@ -823,7 +721,7 @@ def generate_header(
     extracted_jd: Dict,
     candidate_data: Dict,
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
-    use_dynamic_categories: bool = True,
+    lax_mode: bool = True,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -834,14 +732,13 @@ def generate_header(
         candidate_data: Candidate info (name, contact, education)
         skill_whitelist: Master-CV skill whitelist to prevent hallucinations (GAP-001).
                         If not provided, skills may be hallucinated.
-        use_dynamic_categories: If True, generate JD-specific categories (GAP-002).
-                               If False, use static [Leadership, Technical, Platform, Delivery].
+        lax_mode: If True, generate 30% more skills for manual pruning.
 
     Returns:
         HeaderOutput with all header sections
     """
     generator = HeaderGenerator(
         skill_whitelist=skill_whitelist,
-        use_dynamic_categories=use_dynamic_categories,
+        lax_mode=lax_mode,
     )
     return generator.generate(stitched_cv, extracted_jd, candidate_data)

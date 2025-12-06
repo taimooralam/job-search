@@ -24,6 +24,7 @@ credentials/
 !tsconfig.json
 !vercel.json
 !data/master-cv/role_metadata.json
+!data/master-cv/role_skills_taxonomy.json
 
 # IDE / Editor
 .idea/

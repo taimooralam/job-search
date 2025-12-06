@@ -599,3 +599,57 @@ class CVLoader:
                 print(f"    Achievements: {enhanced.achievement_count}")
                 print(f"    Variants: {enhanced.total_variants}")
                 print(f"    Keywords: {len(enhanced.all_keywords)}")
+
+    # =========================================================================
+    # SKILLS TAXONOMY METHODS
+    # =========================================================================
+
+    def load_skills_taxonomy(self) -> "SkillsTaxonomy":
+        """
+        Load the role-based skills taxonomy.
+
+        The taxonomy defines pre-curated skill sections for each target role.
+        This replaces the LLM-generated category approach.
+
+        Returns:
+            SkillsTaxonomy instance for generating skills sections
+
+        Raises:
+            FileNotFoundError: If taxonomy file doesn't exist
+        """
+        from src.layer6_v2.skills_taxonomy import SkillsTaxonomy
+
+        taxonomy_path = self.data_path / "role_skills_taxonomy.json"
+        return SkillsTaxonomy(taxonomy_path)
+
+    def create_taxonomy_skills_generator(
+        self,
+        lax_mode: bool = True,
+    ) -> "TaxonomyBasedSkillsGenerator":
+        """
+        Create a taxonomy-based skills generator.
+
+        This is the preferred method for creating a skills generator that
+        uses the pre-defined taxonomy instead of LLM-generated categories.
+
+        Args:
+            lax_mode: If True, generate 30% more skills for manual pruning
+
+        Returns:
+            Configured TaxonomyBasedSkillsGenerator
+
+        Example:
+            loader = CVLoader()
+            generator = loader.create_taxonomy_skills_generator()
+            sections = generator.generate_sections(extracted_jd, bullets, roles)
+        """
+        from src.layer6_v2.skills_taxonomy import TaxonomyBasedSkillsGenerator
+
+        taxonomy = self.load_skills_taxonomy()
+        skill_whitelist = self.get_skill_whitelist()
+
+        return TaxonomyBasedSkillsGenerator(
+            taxonomy=taxonomy,
+            skill_whitelist=skill_whitelist,
+            lax_mode=lax_mode,
+        )
