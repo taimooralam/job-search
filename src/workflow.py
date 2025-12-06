@@ -471,6 +471,10 @@ def run_pipeline(
         run_logger.info(f"Total Cost: ${final_state.get('total_cost_usd'):.4f} USD")
     if final_state.get("token_usage"):
         for provider, usage in final_state["token_usage"].items():
+            # Skip error entries (when token tracking fails, it sets {"error": "message"})
+            if not isinstance(usage, dict):
+                run_logger.warning(f"  {provider}: {usage}")
+                continue
             run_logger.info(f"  {provider}: {usage.get('input_tokens', 0):,} in / {usage.get('output_tokens', 0):,} out (${usage.get('estimated_cost_usd', 0):.4f})")
 
     if final_state.get("errors"):
