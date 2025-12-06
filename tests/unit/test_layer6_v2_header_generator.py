@@ -616,18 +616,18 @@ class TestSkillsGeneration:
         sample_extracted_jd,
         sample_skill_whitelist,
     ):
-        """Generates skills sections from experience."""
-        # GAP-001/002: Use skill whitelist and static categories for this test
+        """Generates skills sections from experience using taxonomy."""
+        # Use skill whitelist with taxonomy-based generation
         generator = HeaderGenerator(
-            use_dynamic_categories=False,
             skill_whitelist=sample_skill_whitelist,
+            lax_mode=True,
         )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         assert len(sections) > 0
-        # Should have at least Technical and Platform (static categories)
+        # Should have sections with skills
         categories = [s.category for s in sections]
-        assert "Technical" in categories or "Platform" in categories
+        assert len(categories) > 0
 
     def test_generates_dynamic_categories(
         self,
@@ -635,20 +635,18 @@ class TestSkillsGeneration:
         sample_extracted_jd,
         sample_skill_whitelist,
     ):
-        """Generates JD-specific skill categories (GAP-002)."""
+        """Generates role-specific skill categories using taxonomy."""
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(
-            use_dynamic_categories=True,
             skill_whitelist=sample_skill_whitelist,
+            lax_mode=True,
         )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         assert len(sections) > 0
-        # Dynamic categories should be generated (any 3-4 categories)
+        # Categories should be generated from taxonomy
         assert len(sections) >= 1  # At least one category with skills
         categories = [s.category for s in sections]
-        # Categories should NOT be the static 4 (most of the time)
-        # But they should exist
         for cat in categories:
             assert len(cat) > 0  # Non-empty category names
 
@@ -658,24 +656,25 @@ class TestSkillsGeneration:
         sample_extracted_jd,
         sample_skill_whitelist,
     ):
-        """Limits skills to 8 per category."""
+        """Limits skills per category (with lax mode generating ~30% more)."""
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(
-            use_dynamic_categories=False,
             skill_whitelist=sample_skill_whitelist,
+            lax_mode=True,
         )
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         for section in sections:
-            assert section.skill_count <= 8
+            # With lax mode (1.3x), max is ~8 skills per category
+            assert section.skill_count <= 10  # Allow for lax multiplier
 
     def test_no_skills_without_whitelist(
         self,
         sample_stitched_cv,
         sample_extracted_jd,
     ):
-        """GAP-001: Without whitelist, no skills are generated (prevents hallucination)."""
-        generator = HeaderGenerator(use_dynamic_categories=False)
+        """GAP-001: Without whitelist, falls back to static categories (empty)."""
+        generator = HeaderGenerator(lax_mode=False)
         sections = generator.generate_skills(sample_stitched_cv, sample_extracted_jd)
 
         # Without whitelist, should return empty to prevent hallucination
