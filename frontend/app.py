@@ -2267,6 +2267,286 @@ def export_dossier_pdf(job_id: str):
         }), 500
 
 
+@app.route("/api/jobs/<job_id>/meta-prompt", methods=["GET"])
+@login_required
+def get_meta_prompt(job_id: str):
+    """
+    Generate meta prompt for Claude Code application review.
+
+    Creates a comprehensive prompt containing:
+    - Complete job dossier (pain points, opportunity mapper, company research)
+    - Generated CV text
+    - Multi-step reasoning instructions for Claude
+
+    Returns:
+        JSON with the meta prompt string
+    """
+    try:
+        # Fetch job state from MongoDB
+        job_doc = collection.find_one({"_id": ObjectId(job_id)})
+        if not job_doc:
+            return jsonify({"error": "Job not found"}), 404
+
+        # Generate the meta prompt
+        prompt = _build_meta_prompt(job_doc)
+
+        return jsonify({"prompt": prompt})
+
+    except Exception as e:
+        logger.exception(f"Error generating meta prompt for job {job_id}")
+        return jsonify({
+            "error": f"Meta prompt generation failed: {str(e)}"
+        }), 500
+
+
+def _build_meta_prompt(job_doc: dict) -> str:
+    """
+    Build the comprehensive meta prompt for Claude Code review.
+
+    Includes all dossier data and CV with multi-step reasoning instructions.
+    """
+    company = job_doc.get("company", "Unknown Company")
+    title = job_doc.get("title", "Unknown Role")
+    location = job_doc.get("location", "")
+    url = job_doc.get("url", "")
+
+    # Extract all dossier sections
+    extracted_jd = job_doc.get("extracted_jd", {})
+    pain_points = job_doc.get("pain_points", [])
+    opportunity_map = job_doc.get("opportunity_map", {})
+    company_research = job_doc.get("company_research", {})
+    fit_score = job_doc.get("fit_score", {})
+    contacts = job_doc.get("contacts", [])
+    cv_text = job_doc.get("cv_text", "")
+    cv_reasoning = job_doc.get("cv_reasoning", "")
+    outreach = job_doc.get("outreach", {})
+
+    # Format sections
+    sections = []
+
+    # Header
+    sections.append(f"""# Claude Code Application Review Request
+
+## Target Position
+- **Company:** {company}
+- **Role:** {title}
+- **Location:** {location}
+- **URL:** {url}
+
+---""")
+
+    # Job Description Analysis
+    if extracted_jd:
+        sections.append(f"""## Job Description Intelligence
+
+**Role Category:** {extracted_jd.get('role_category', 'N/A')}
+**Seniority Level:** {extracted_jd.get('seniority_level', 'N/A')}
+
+### Top Keywords
+{_format_list(extracted_jd.get('top_keywords', []))}
+
+### Technical Skills Required
+{_format_list(extracted_jd.get('technical_skills', []))}
+
+### Soft Skills Required
+{_format_list(extracted_jd.get('soft_skills', []))}
+
+### Implied Pain Points (from JD)
+{_format_list(extracted_jd.get('implied_pain_points', []))}
+
+### Success Metrics
+{_format_list(extracted_jd.get('success_metrics', []))}
+
+---""")
+
+    # Pain Points (detailed)
+    if pain_points:
+        sections.append(f"""## Detailed Pain Point Analysis
+
+{_format_pain_points(pain_points)}
+
+---""")
+
+    # Opportunity Map
+    if opportunity_map:
+        sections.append(f"""## Opportunity Mapping
+
+### Company Pain Points
+{_format_list(opportunity_map.get('company_pain_points', []))}
+
+### Role Pain Points
+{_format_list(opportunity_map.get('role_pain_points', []))}
+
+### Growth Opportunities
+{_format_list(opportunity_map.get('growth_opportunities', []))}
+
+### Cultural Signals
+{_format_list(opportunity_map.get('cultural_signals', []))}
+
+---""")
+
+    # Company Research
+    if company_research:
+        sections.append(f"""## Company Research
+
+**Industry:** {company_research.get('industry', 'N/A')}
+**Size:** {company_research.get('company_size', 'N/A')}
+**Stage:** {company_research.get('funding_stage', 'N/A')}
+
+### Recent News
+{_format_list(company_research.get('recent_news', []))}
+
+### Tech Stack
+{_format_list(company_research.get('tech_stack', []))}
+
+### Culture Signals
+{_format_list(company_research.get('culture_signals', []))}
+
+---""")
+
+    # Fit Score
+    if fit_score:
+        sections.append(f"""## Fit Analysis
+
+**Overall Score:** {fit_score.get('score', 'N/A')}/100
+**Confidence:** {fit_score.get('confidence', 'N/A')}
+
+### Rationale
+{fit_score.get('rationale', 'N/A')}
+
+### Strengths
+{_format_list(fit_score.get('strengths', []))}
+
+### Gaps
+{_format_list(fit_score.get('gaps', []))}
+
+---""")
+
+    # Contacts
+    if contacts:
+        sections.append(f"""## People Mapper (Contacts)
+
+{_format_contacts(contacts)}
+
+---""")
+
+    # CV
+    if cv_text:
+        sections.append(f"""## Generated CV
+
+```
+{cv_text}
+```
+
+### CV Generation Reasoning
+{cv_reasoning if cv_reasoning else 'N/A'}
+
+---""")
+
+    # Outreach
+    if outreach:
+        sections.append(f"""## Outreach Draft
+
+**Subject:** {outreach.get('subject', 'N/A')}
+
+### Email Body
+{outreach.get('body', 'N/A')}
+
+---""")
+
+    # Multi-step reasoning instructions
+    sections.append("""## Your Task: Deep Application Review
+
+Using extended thinking and high reasoning, please perform the following analysis:
+
+### Step 1: Pain Point Assessment
+- Review the extracted pain points and opportunity mapping
+- Are there any missed pain points based on the JD?
+- How well does the CV address each pain point?
+- Suggest improvements to pain point coverage
+
+### Step 2: CV Optimization Analysis
+- Review the generated CV against ATS best practices
+- Check keyword coverage and density
+- Assess STAR format compliance in each bullet
+- Identify any weak bullets that could be strengthened
+- Check for authenticity - does it sound genuine or over-optimized?
+
+### Step 3: Differentiation Strategy
+- What makes this candidate unique for this specific role?
+- What stories/achievements should be emphasized more?
+- Are there any red flags a recruiter might notice?
+- How does the career narrative flow?
+
+### Step 4: Application Strategy
+- Based on the contacts, who should be reached out to first?
+- What's the best approach for each contact?
+- What customizations would make this application stand out?
+- What interview questions should the candidate prepare for?
+
+### Step 5: Killer Application Recommendations
+Provide specific, actionable recommendations to create a killer job application that:
+1. Sounds authentic and genuine (not over-optimized)
+2. Directly addresses the company's pain points
+3. Demonstrates clear value proposition
+4. Tells a compelling career story
+5. Is memorable and differentiated from other applicants
+
+### Output Format
+Please provide:
+1. **Executive Summary** (2-3 sentences on overall application strength)
+2. **Critical Improvements** (top 3 changes that would have the biggest impact)
+3. **CV Rewrite Suggestions** (specific bullet rewrites if needed)
+4. **Outreach Strategy** (who to contact, what to say)
+5. **Interview Preparation** (likely questions based on the application)
+
+Be specific and actionable. Reference exact bullets or sections when making suggestions.""")
+
+    return "\n\n".join(sections)
+
+
+def _format_list(items: list) -> str:
+    """Format a list as bullet points."""
+    if not items:
+        return "- None specified"
+    return "\n".join(f"- {item}" for item in items)
+
+
+def _format_pain_points(pain_points: list) -> str:
+    """Format pain points with details."""
+    if not pain_points:
+        return "No pain points extracted."
+
+    lines = []
+    for i, pp in enumerate(pain_points, 1):
+        if isinstance(pp, dict):
+            lines.append(f"**{i}. {pp.get('category', 'Pain Point')}**")
+            lines.append(f"   - Description: {pp.get('description', 'N/A')}")
+            lines.append(f"   - Evidence: {pp.get('evidence', 'N/A')}")
+            lines.append(f"   - Severity: {pp.get('severity', 'N/A')}")
+        else:
+            lines.append(f"- {pp}")
+    return "\n".join(lines)
+
+
+def _format_contacts(contacts: list) -> str:
+    """Format contacts list."""
+    if not contacts:
+        return "No contacts identified."
+
+    lines = []
+    for i, contact in enumerate(contacts, 1):
+        if isinstance(contact, dict):
+            lines.append(f"**{i}. {contact.get('name', 'Unknown')}**")
+            lines.append(f"   - Title: {contact.get('title', 'N/A')}")
+            lines.append(f"   - Company: {contact.get('company', 'N/A')}")
+            lines.append(f"   - LinkedIn: {contact.get('linkedin', 'N/A')}")
+            lines.append(f"   - Relevance: {contact.get('relevance', 'N/A')}")
+        else:
+            lines.append(f"- {contact}")
+    return "\n".join(lines)
+
+
 def build_pdf_html_template(
     content_html: str,
     font_family: str,
