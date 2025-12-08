@@ -216,7 +216,9 @@ class CVGeneratorV2:
             # Assemble full CV text
             # GAP-014: Pass job location for Middle East relocation tagline
             job_location = extracted_jd.get("location", "") or state.get("location", "")
-            cv_text = self._assemble_cv_text(header_output, stitched_cv, candidate_data, job_location)
+            cv_text = self._assemble_cv_text(
+                header_output, stitched_cv, candidate_data, job_location, extracted_jd
+            )
 
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
@@ -391,41 +393,59 @@ class CVGeneratorV2:
         for dim in grade_result.dimension_scores:
             self._logger.info(f"    {dim.dimension}: {dim.score:.1f}/10")
 
+    def _get_generic_title(self, role_category: str) -> str:
+        """Map role category to a generic professional title for the tagline."""
+        title_map = {
+            "engineering_manager": "Engineering Leader",
+            "staff_principal_engineer": "Technical Leader",
+            "director_of_engineering": "Engineering Executive",
+            "head_of_engineering": "Engineering Executive",
+            "cto": "Technology Executive",
+            "tech_lead": "Technical Leader",
+            "senior_engineer": "Software Engineer",
+        }
+        return title_map.get(role_category, "Engineering Professional")
+
     def _assemble_cv_text(
         self,
         header: HeaderOutput,
         stitched: StitchedCV,
         candidate: CandidateData,
         job_location: str = "",
+        extracted_jd: Dict = None,
     ) -> str:
         """Assemble the full CV markdown text with formatting.
 
         Supports markdown formatting that will be parsed by TipTap editor:
         - **bold** for section headers and role titles
         - *italic* for tagline
-        - Emoji icons for contact info
+        - Dot separators for elegant contact info
         """
         lines = []
+        extracted_jd = extracted_jd or {}
 
-        # Header with name (as heading)
-        lines.append(f"# {candidate.name}")
+        # Header with name in uppercase (as H1 heading)
+        lines.append(f"# {candidate.name.upper()}")
 
-        # Build tagline with emoji icons - italic formatting
-        tagline_parts = []
+        # Role tagline (H3): JD Title · Generic Title
+        job_title = extracted_jd.get("title", "Engineering Professional")
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        generic_title = self._get_generic_title(role_category)
+        lines.append(f"### {job_title} · {generic_title}")
+
+        # Build contact info with dot separators - elegant styling, no emojis
+        contact_parts = []
         if candidate.email:
-            tagline_parts.append(f"📧 {candidate.email}")
+            contact_parts.append(candidate.email)
         if candidate.phone:
-            tagline_parts.append(f"📱 {candidate.phone}")
+            contact_parts.append(candidate.phone)
         if candidate.linkedin:
-            tagline_parts.append(f"🔗 {candidate.linkedin}")
+            contact_parts.append(candidate.linkedin)
         if candidate.location:
-            tagline_parts.append(f"🌍 {candidate.location}")
-        if candidate.languages:
-            languages_str = ", ".join(candidate.languages)
-            tagline_parts.append(f"🗣️ {languages_str}")
+            contact_parts.append(candidate.location)
 
-        tagline = " | ".join(tagline_parts)
-        lines.append(f"*{tagline}*")  # Italic formatting
+        contact_line = " · ".join(contact_parts)
+        lines.append(f"*{contact_line}*")  # Italic formatting
 
         # GAP-014: Add relocation tagline for Middle East locations
         if job_location and is_middle_east_location(job_location):
