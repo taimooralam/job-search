@@ -1040,6 +1040,18 @@ function startLogStreaming(runId) {
             eventSource.close();
             eventSource = null;
         }
+
+        // Check if pipeline completed or failed based on the event data
+        const eventData = event.data ? event.data.toLowerCase() : '';
+        if (eventData.includes('completed') || eventData.includes('success')) {
+            handlePipelineComplete();
+        } else if (eventData.includes('failed') || eventData.includes('error')) {
+            handlePipelineFailed(event.data);
+        } else {
+            // Default to completed if we get an 'end' event without explicit status
+            // This handles cases where the pipeline finishes but status isn't explicit
+            handlePipelineComplete();
+        }
     });
 
     eventSource.addEventListener('error', (event) => {
@@ -1124,7 +1136,8 @@ function parseLogAndUpdateSteps(logText) {
     }
 
     // Check for "Pipeline completed" message
-    if (/pipeline.*completed|all layers.*complete|run.*complete/i.test(logText)) {
+    if (/pipeline.*completed|all layers.*complete|run.*complete|Pipeline complete|Persisted to MongoDB/i.test(logText)) {
+        console.log('[Pipeline] Completion message detected in logs');
         // Mark all steps as complete
         ['intake', 'pain_points', 'company_research', 'role_research', 'fit_scoring', 'people_mapping', 'cv_outreach_generation'].forEach(layer => {
             const step = document.querySelector(`.pipeline-step-h[data-layer="${layer}"]`);
@@ -1133,6 +1146,14 @@ function parseLogAndUpdateSteps(logText) {
             }
         });
         calculateOverallProgress();
+        // Trigger the completion handler after a brief delay to let final logs appear
+        setTimeout(() => handlePipelineComplete(), 1000);
+    }
+
+    // Check for pipeline failure message
+    if (/pipeline.*failed|fatal error|critical error/i.test(logText)) {
+        console.log('[Pipeline] Failure message detected in logs');
+        handlePipelineFailed(logText);
     }
 }
 
