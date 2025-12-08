@@ -121,6 +121,28 @@ class CompanyResearchOutput(BaseModel):
     url: str = Field(..., min_length=1, description="Primary company URL")
 
 
+class CompanyTypeClassification(BaseModel):
+    """
+    Pydantic schema for company type classification (recruitment agency detection).
+
+    Used to determine if a company is a direct employer or recruitment/staffing agency.
+    This affects the depth of research and outreach strategy.
+    """
+    company_type: str = Field(
+        ...,
+        description="Classification: 'employer' | 'recruitment_agency' | 'unknown'"
+    )
+    confidence: str = Field(
+        default="medium",
+        description="Confidence level: 'high' | 'medium' | 'low'"
+    )
+    reasoning: str = Field(
+        ...,
+        min_length=10,
+        description="Brief explanation for the classification"
+    )
+
+
 # ===== PROMPT DESIGN =====
 
 # Phase 5.1: Multi-source signal extraction prompts
@@ -298,6 +320,53 @@ Extract:
 
 JSON only - no additional text:"""
 
+# ===== COMPANY TYPE CLASSIFICATION PROMPT =====
+
+SYSTEM_PROMPT_COMPANY_TYPE = """You are a business analyst classifying companies as direct employers or recruitment/staffing agencies.
+
+**CLASSIFICATION CRITERIA:**
+
+RECRUITMENT AGENCY indicators:
+- Company name contains: staffing, recruitment, recruiting, talent, placement, search, headhunters
+- Company provides staffing/recruitment services to other companies
+- Job description mentions "client", "on behalf of", "multiple clients"
+- Company specializes in placing candidates at other organizations
+- Terms like "contract positions", "temp-to-perm", "consulting services"
+- Company is known recruitment firm (Robert Half, Hays, Michael Page, Randstad, etc.)
+
+DIRECT EMPLOYER indicators:
+- Company has its own products or services (not recruitment)
+- Job description describes internal team/department
+- Company is hiring for their own operations
+- Well-known companies in tech, finance, retail, etc. (Google, Amazon, etc.)
+
+**OUTPUT FORMAT (JSON only):**
+{
+  "company_type": "employer" | "recruitment_agency" | "unknown",
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "Brief explanation (1-2 sentences)"
+}
+
+Rules:
+- Output ONLY valid JSON, no other text
+- "high" confidence: Clear indicators present
+- "medium" confidence: Some indicators but not definitive
+- "low" confidence: Insufficient information
+- When unsure, default to "employer" (most jobs are direct hires)
+"""
+
+USER_PROMPT_COMPANY_TYPE_TEMPLATE = """Classify this company:
+
+COMPANY: {company}
+JOB TITLE: {job_title}
+JOB DESCRIPTION (excerpt):
+{job_description}
+
+Is this a recruitment/staffing agency or a direct employer hiring for their own team?
+
+JSON only:"""
+
+
 # Legacy prompts (Phase 1.3 - for fallback)
 
 SYSTEM_PROMPT_SCRAPE = """You are a business research analyst specializing in company intelligence.
@@ -366,6 +435,78 @@ class CompanyResearcher:
         self.cache_collection = self.mongo_client["jobs"]["company_cache"]
         # Create TTL index on cached_at field (7 days)
         self.cache_collection.create_index("cached_at", expireAfterSeconds=7*24*60*60)
+
+    def _classify_company_type(self, state: JobState) -> str:
+        """
+        Classify company as employer or recruitment agency using LLM.
+
+        Uses job description and company name to determine if this is a
+        direct employer or a recruitment/staffing agency. Agencies get
+        minimal research and different outreach strategies.
+
+        Args:
+            state: JobState with company, title, job_description
+
+        Returns:
+            "employer" | "recruitment_agency" | "unknown"
+        """
+        company = state.get("company", "")
+        job_title = state.get("title", "")
+        job_description = state.get("job_description", "")
+
+        # Quick heuristic check first (avoid LLM call for obvious cases)
+        company_lower = company.lower()
+        agency_keywords = [
+            "staffing", "recruitment", "recruiting", "talent",
+            "placement", "headhunter", "search firm", "hays",
+            "robert half", "michael page", "randstad", "adecco",
+            "manpower", "kelly services", "kforce"
+        ]
+
+        for keyword in agency_keywords:
+            if keyword in company_lower:
+                self.logger.info(f"Agency detected by keyword '{keyword}' in company name")
+                return "recruitment_agency"
+
+        # LLM classification for ambiguous cases
+        try:
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT_COMPANY_TYPE),
+                HumanMessage(
+                    content=USER_PROMPT_COMPANY_TYPE_TEMPLATE.format(
+                        company=company,
+                        job_title=job_title,
+                        job_description=job_description[:800]  # Limit for token efficiency
+                    )
+                )
+            ]
+
+            response = self.llm.invoke(messages)
+            llm_output = response.content.strip()
+
+            # Remove markdown code blocks if present
+            if llm_output.startswith("```"):
+                llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
+                llm_output = re.sub(r'\s*```$', '', llm_output)
+                llm_output = llm_output.strip()
+
+            # Parse and validate
+            data = json.loads(llm_output)
+            classification = CompanyTypeClassification(**data)
+
+            self.logger.info(
+                f"Company type classification: {classification.company_type} "
+                f"(confidence: {classification.confidence}) - {classification.reasoning}"
+            )
+
+            return classification.company_type
+
+        except (json.JSONDecodeError, ValidationError) as e:
+            self.logger.warning(f"Company type classification failed: {e}, defaulting to 'employer'")
+            return "employer"
+        except Exception as e:
+            self.logger.warning(f"Company type classification error: {e}, defaulting to 'employer'")
+            return "employer"
 
     def _assess_content_quality(self, content: str) -> str:
         """
@@ -988,14 +1129,16 @@ Output JSON only:
         Main function to research company and generate structured research.
 
         Strategy (Phase 5.1 with multi-source scraping + Phase 5 enhancements):
-        0. Check MongoDB cache (7-day TTL)
-        1. Extract STAR context if available (Phase 5 STAR-awareness)
-        2. If cache miss, scrape multiple sources (official site, LinkedIn, Crunchbase, news)
-        3. Extract structured signals via LLM (JSON-only with Pydantic validation)
-        4. If 0 signals extracted, run defensive fallback on official_site content
-        5. Store result in cache with CompanyResearch structure
-        6. Fall back to legacy approach if Phase 5.1 fails
-        7. Log any errors but don't block pipeline
+        0. Classify company type (employer vs recruitment agency)
+        1. Check MongoDB cache (7-day TTL)
+        2. If recruitment agency: minimal research (basic summary, no signals)
+        3. If employer: Extract STAR context if available (Phase 5 STAR-awareness)
+        4. If cache miss, scrape multiple sources (official site, LinkedIn, Crunchbase, news)
+        5. Extract structured signals via LLM (JSON-only with Pydantic validation)
+        6. If 0 signals extracted, run defensive fallback on official_site content
+        7. Store result in cache with CompanyResearch structure
+        8. Fall back to legacy approach if Phase 5.1 fails
+        9. Log any errors but don't block pipeline
 
         Args:
             state: Current JobState with company name (and optionally selected_stars)
@@ -1006,12 +1149,32 @@ Output JSON only:
         company = state["company"]
         scraped_job_posting = self._scrape_job_posting(state.get("job_url", ""))
 
-        # Phase 5 STAR-awareness: Extract candidate context if available
+        # Step 0: Classify company type (employer vs recruitment agency)
+        company_type = self._classify_company_type(state)
+        self.logger.info(f"Company classification: {company_type}")
+
+        # Step 0.5: Handle recruitment agencies with minimal research
+        if company_type == "recruitment_agency":
+            self.logger.info("Recruitment agency detected - using minimal research flow")
+            company_research: CompanyResearch = {
+                "summary": f"{company} is a recruitment/staffing agency sourcing candidates for their clients.",
+                "signals": [],  # No business signals needed for agencies
+                "url": self._construct_company_url(company),
+                "company_type": "recruitment_agency"
+            }
+            return {
+                "company_research": company_research,
+                "scraped_job_posting": scraped_job_posting,
+                "company_summary": company_research["summary"],
+                "company_url": company_research["url"]
+            }
+
+        # Phase 5 STAR-awareness: Extract candidate context if available (employers only)
         star_domains, star_outcomes = self._extract_star_context(state)
         if star_domains:
             self.logger.info(f"STAR context available: {len(star_domains.split(', '))} domain(s)")
 
-        # Step 0: Check cache first
+        # Step 1: Check cache first
         try:
             cached_data = self._check_cache(company)
             if cached_data:
@@ -1069,7 +1232,8 @@ Output JSON only:
                     }
                     for sig in company_research_output.signals
                 ],
-                "url": company_research_output.url
+                "url": company_research_output.url,
+                "company_type": "employer"  # Classified as direct employer
             }
 
             return {
