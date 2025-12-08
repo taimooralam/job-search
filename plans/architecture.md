@@ -101,6 +101,48 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
   - File: `src/layer6/recruiter_cover_letter.py`
   - Routing: `CoverLetterGenerator` checks `company_type` to select appropriate generator
 
+**LinkedIn Outreach & Contact Classification** (NEW - 2025-12-08):
+
+**Contact Type Classification** (`src/layer5/people_mapper.py`):
+- Five-tier contact classification system:
+  - `hiring_manager`: Hiring/recruiting keywords → direct authority
+  - `recruiter`: Recruiter, talent, staffing keywords → agency/external
+  - `vp_director`: VP, Director, leadership keywords → strategic
+  - `executive`: C-level, founder, CEO keywords → top decision maker
+  - `peer`: Fallback → peer network/IC
+- Algorithmic keyword matching (no LLM calls)
+- Priority order: hiring_manager → recruiter → vp_director → executive → peer
+- Enables contact-type-specific outreach routing
+
+**Outreach Package Generation** (`src/layer6/outreach_generator.py`):
+- Creates 2 optimized outreach packages per contact:
+  1. **linkedin_connection** (≤300 chars with Calendly):
+     - Warm greeting + specific role interest + personalization
+     - Includes Calendly link for scheduling
+     - Character count enforcement (LinkedIn hard limit)
+  2. **inmail_email** (400-600 chars with subject):
+     - Combined package works for both InMail and Email
+     - Prefers InMail content, falls back to email_body
+     - Professional subject line + extended body
+     - Call-to-action with clear next steps
+- "Already applied" framing patterns:
+  - Detects if position was already submitted
+  - Adjusts messaging tone for follow-ups
+  - Re-engagement strategies
+
+**LinkedIn Outreach Reference Document** (`linkedin/outreach.md`):
+- Comprehensive guide for all outreach strategies
+- Contact type messaging templates with examples
+- Dual LinkedIn format specifications:
+  - Connection: warm, brief, personal touch
+  - InMail: professional, detailed, value-focused
+- MENA regional context:
+  - Cultural considerations
+  - Business etiquette
+  - Language/tone adjustments
+- Character limits and validation rules
+- Pre-applied messaging patterns
+
 **CV Styling & Display** (Updated - 2025-12-08):
 
 **Name & Contact Formatting**:
@@ -214,7 +256,7 @@ class JobState(TypedDict):
     # Layer outputs
     pain_points: List[str]
     company_research: Dict
-    company_type: str  # "employer" | "recruitment_agency" | "unknown" (NEW - 2025-12-08)
+    company_type: str  # "employer" | "recruitment_agency" | "unknown" (2025-12-08)
     fit_score: int
     primary_contacts: List[Dict]
     cv_path: str
@@ -226,6 +268,29 @@ class JobState(TypedDict):
 
     # Errors
     errors: List[str]
+```
+
+**Contact** (`src/common/state.py` - NEW 2025-12-08):
+```python
+class Contact(TypedDict):
+    name: str
+    title: str
+    linkedin_url: str
+    contact_type: str  # "hiring_manager" | "recruiter" | "vp_director" | "executive" | "peer" (NEW)
+    linkedin_connection_message: str  # ≤300 chars with Calendly (NEW)
+    linkedin_inmail: str  # InMail body 400-600 chars (NEW)
+    linkedin_inmail_subject: str  # InMail subject line (NEW)
+    email: str
+    already_applied_frame: bool  # For pre-applied positions (NEW)
+```
+
+**OutreachPackage** (`src/common/state.py` - UPDATED 2025-12-08):
+```python
+class OutreachPackage(TypedDict):
+    contact_type: str  # NEW: Identifies contact classification
+    email_body: str
+    linkedin_message: str
+    email_subject: str
 ```
 
 **MongoDB Collections**:
@@ -302,6 +367,30 @@ class JobState(TypedDict):
   - Purple badge: "Agency" for recruitment agencies
   - Blue badge: "Direct" for direct employers
   - Helps users quickly identify agency vs direct roles
+
+**Intelligence Summary Section** (NEW - 2025-12-08):
+- Collapsible section with comprehensive job analysis
+- Four-part breakdown:
+  1. **Pain Points**: 4 dimensions (technical, operational, strategic, cultural)
+  2. **Company Signals**: Key insights from research
+  3. **Strategic Needs**: How the role aligns with company direction
+  4. **Risks**: Potential concerns identified during analysis
+- Appears prominently after pipeline progress indicator
+- Provides context for outreach strategy
+
+**Contact Cards with Type Badges** (NEW - 2025-12-08):
+- Color-coded badges identify contact role:
+  - Purple badge: Recruiter
+  - Blue badge: Hiring Manager
+  - Green badge: VP/Director
+  - Orange badge: Executive
+  - Grey badge: Peer
+- Primary and secondary contacts use identical formatting
+- Two optimized outreach options per contact:
+  1. **Connection Request** (LinkedIn): Pre-filled ≤300 char message with Calendly
+  2. **InMail/Email**: Professional subject + body (works for both platforms)
+- Contact type and outreach options visible at a glance
+- Enables smart routing based on contact authority level
 
 ### Dashboard
 - Application stats: Today/week/month/total counts

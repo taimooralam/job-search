@@ -1222,6 +1222,97 @@ Added comprehensive FireCrawl credit tracking and dashboard widget.
 
 ---
 
+### GAP-074: LinkedIn Outreach Integration - Simplified 2-Package Design ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-08) | **Effort**: 3 hours
+**Impact**: Simplified LinkedIn outreach with 2 optimized packages per contact (reduced from 3)
+
+**Implementation** (2025-12-08):
+
+**State Schema Updates** (`src/common/state.py`):
+- Added `ContactType` Literal type: `"hiring_manager"` | `"recruiter"` | `"vp_director"` | `"executive"` | `"peer"`
+- Enhanced `Contact` TypedDict with new fields:
+  - `contact_type`: Classification for routing decisions
+  - `linkedin_connection_message`: Connection request text (≤300 chars with Calendly)
+  - `linkedin_inmail`: Combined InMail/Email body (400-600 chars)
+  - `linkedin_inmail_subject`: InMail subject line
+  - `already_applied_frame`: Boolean flag for pre-applied positions
+- Updated `OutreachPackage` with `contact_type` field
+
+**Layer 5: People Mapper - Contact Classification** (`src/layer5/people_mapper.py`):
+- New `classify_contact_type()` function using keyword matching:
+  - Priority order: hiring_manager → recruiter → vp_director → executive → peer
+  - Keywords per type (e.g., "hiring" → hiring_manager, "recruiter" → recruiter)
+  - Fallback to "peer" if no keywords match
+- Integrated into contact generation workflow
+- No additional LLM calls (algorithmic classification)
+
+**Layer 6: Outreach Generator - Simplified 2-Package Design** (`src/layer6/outreach_generator.py`):
+- Creates 2 optimized packages per contact (simplified from 3):
+  1. **linkedin_connection** (≤300 chars with Calendly):
+     - Warm greeting + specific role interest + personalization
+     - Includes Calendly link for scheduling
+     - Character count enforcement (LinkedIn hard limit)
+  2. **inmail_email** (400-600 chars with subject):
+     - Combined package works for both InMail and Email
+     - Prefers InMail content, falls back to email_body
+     - Professional subject line + extended body
+     - Call-to-action with clear next steps
+- "Already applied" framing patterns for positions already submitted
+- System prompts simplified for 2-format consistency
+
+**LinkedIn/Outreach Document** (`linkedin/outreach.md` - NEW):
+- Comprehensive guide synthesizing outreach best practices
+- Contact type strategies with messaging templates
+- Simplified 2-package specifications:
+  - Connection package: Warm greeting + role interest + personalization + Calendly (≤300 chars)
+  - InMail/Email package: Subject + professional body + CTA (400-600 chars)
+- "Already applied" framing patterns for follow-ups
+- MENA regional context and cultural considerations
+- Character limits and tone guidance per contact type
+
+**Frontend Updates** (`frontend/templates/job_detail.html`):
+- New Intelligence Summary collapsible section combining:
+  - Pain points (4 dimensions)
+  - Company signals
+  - Strategic needs
+  - Risks
+- Contact cards with contact type badges (color-coded):
+  - Purple: Recruiter
+  - Blue: Hiring Manager
+  - Green: VP/Director
+  - Orange: Executive
+  - Grey: Peer
+- Simplified outreach options for each contact:
+  - Connection Request button (≤300 chars preview)
+  - InMail/Email button (subject + body, works for both)
+- Primary and secondary contacts now have identical formatting
+- Contact type and outreach options visible at a glance
+
+**Files Modified**:
+- `src/common/state.py` - New ContactType + updated Contact/OutreachPackage
+- `src/layer5/people_mapper.py` - Added `classify_contact_type()` function
+- `src/layer6/outreach_generator.py` - Simplified 2-package generation
+- `frontend/templates/job_detail.html` - Simplified contact cards (2 options instead of 3)
+
+**Files Created**:
+- `linkedin/outreach.md` - Comprehensive LinkedIn outreach guide
+
+**Files Deleted**:
+- `linkedin/outreach-claude.md` - Replaced by unified document
+- `linkedin/outreach-chatgpt.md` - Replaced by unified document
+
+**Benefits**:
+- Reduced complexity (2 packages vs 3)
+- Smarter contact routing (message tailored to contact type)
+- Better response rates (contact-type-specific messaging)
+- Faster outreach (2 optimized formats pre-generated)
+- Simplified UX (fewer options per contact)
+- MENA regional awareness (cultural context)
+- Interview-ready (proven outreach patterns)
+- Complete pipeline traceability with contact type
+
+---
+
 ## P3: LOW (Backlog)
 
 ### GAP-026: CV V2 - Spacing 20% Narrower ✅ COMPLETE
