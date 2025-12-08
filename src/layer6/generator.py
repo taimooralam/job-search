@@ -23,6 +23,7 @@ from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.layer6.cover_letter_generator import CoverLetterGenerator
+from src.layer6.recruiter_cover_letter import RecruiterCoverLetterGenerator
 
 
 CV_SYSTEM_PROMPT = """You are the second pass of a two-stage CV builder. Convert provided ROLE BULLET EVIDENCE JSON into a non-hallucinated, ATS-friendly, personalized CV that mirrors the job description language.
@@ -482,6 +483,7 @@ class Generator:
         self.logger = logging.getLogger(__name__)
 
         self.cover_letter_gen = CoverLetterGenerator()  # Phase 8.1: Enhanced cover letter generator
+        self.recruiter_cover_letter_gen = RecruiterCoverLetterGenerator()  # Agency-specific cover letter
         self.cv_gen = MarkdownCVGenerator()  # Markdown CV generator grounded in master CV
 
         # HTML CV generator for web display and PDF export
@@ -502,9 +504,20 @@ class Generator:
             Dict with cover_letter, cv_path, and cv_reasoning keys (Phase 8.2)
         """
         try:
-            self.logger.info("Generating cover letter")
-            cover_letter = self.cover_letter_gen.generate_cover_letter(state)
-            self.logger.info(f"Cover letter generated ({len(cover_letter)} chars)")
+            # Check if this is a recruitment agency
+            company_research = state.get("company_research") or {}
+            company_type = company_research.get("company_type", "employer")
+            is_agency = company_type == "recruitment_agency"
+
+            # Use appropriate cover letter generator
+            if is_agency:
+                self.logger.info("Generating RECRUITER cover letter (agency detected)")
+                cover_letter = self.recruiter_cover_letter_gen.generate_cover_letter(state)
+                self.logger.info(f"Recruiter cover letter generated ({len(cover_letter)} chars)")
+            else:
+                self.logger.info("Generating cover letter")
+                cover_letter = self.cover_letter_gen.generate_cover_letter(state)
+                self.logger.info(f"Cover letter generated ({len(cover_letter)} chars)")
 
             self.logger.info("Generating tailored CV")
             cv_path, cv_reasoning = self.cv_gen.generate_cv(state)
