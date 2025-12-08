@@ -2311,6 +2311,7 @@ def get_meta_prompt(job_id: str):
     """
     try:
         # Fetch job state from MongoDB
+        db = get_db()
         collection = db["level-2"]
         job_doc = collection.find_one({"_id": ObjectId(job_id)})
         if not job_doc:
