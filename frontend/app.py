@@ -1460,6 +1460,34 @@ def get_firecrawl_credits():
             }), 500
 
 
+@app.route("/api/openrouter/credits", methods=["GET"])
+@login_required
+def get_openrouter_credits():
+    """API endpoint: Return OpenRouter credit balance as JSON.
+
+    Proxies to VPS runner service which calls the OpenRouter API.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+
+    try:
+        response = requests.get(f"{runner_url}/openrouter/credits", timeout=10)
+        if response.status_code == 200:
+            return jsonify(response.json())
+        else:
+            return jsonify({
+                "error": f"VPS returned {response.status_code}",
+                "credits_remaining": 0.0,
+                "status": "exhausted",
+            }), response.status_code
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"VPS OpenRouter credits endpoint unavailable: {e}")
+        return jsonify({
+            "error": str(e),
+            "credits_remaining": 0.0,
+            "status": "exhausted",
+        }), 503
+
+
 @app.route("/partials/firecrawl-credits", methods=["GET"])
 @login_required
 def firecrawl_credits_partial():
