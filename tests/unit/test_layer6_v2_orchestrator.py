@@ -318,8 +318,8 @@ class TestCVAssembly:
             sample_candidate_data,
         )
 
-        # Check header (GAP-006: now plain text, no markdown)
-        assert "Test Candidate" in cv_text
+        # Check header (GAP-006: now plain text, no markdown; name is uppercase)
+        assert "TEST CANDIDATE" in cv_text
         assert "test@example.com" in cv_text
 
         # Check profile (GAP-006: uppercase section headers)
