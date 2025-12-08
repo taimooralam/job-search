@@ -510,6 +510,18 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
             score, rationale, category = self._analyze_fit(state)
 
+            # Add agency note to rationale if this is a recruitment agency
+            company_research = state.get("company_research") or {}
+            company_type = company_research.get("company_type", "employer")
+            if company_type == "recruitment_agency":
+                agency_note = (
+                    "\n\n**Note:** This is a recruitment agency position. "
+                    "The role is sourced by an agency on behalf of an undisclosed client company. "
+                    "Score is based on job requirements only, not employer-specific factors."
+                )
+                rationale = rationale + agency_note
+                self.logger.info("Added recruitment agency note to fit rationale")
+
             self.logger.info(f"Generated fit score: {score}/100 ({category})")
             self.logger.info(f"Generated rationale ({len(rationale)} chars)")
             self.logger.info("Rationale validation: see any quality warnings above")
