@@ -813,6 +813,53 @@ class PeopleMapper:
 
         return limited_primary, limited_secondary
 
+    def _generate_agency_recruiter_contacts(self, state: JobState) -> Dict[str, List[Dict]]:
+        """
+        Generate 2 recruiter contacts for recruitment agency jobs.
+
+        For agencies, we only need to contact the recruiters handling this specific role,
+        not the hiring company (which is unknown for agency postings).
+
+        Args:
+            state: JobState with company (agency name) and title info
+
+        Returns:
+            Dict with primary_contacts (2 recruiters) and secondary_contacts (empty)
+        """
+        agency = state.get("company") or "the agency"
+        title = state.get("title") or "this role"
+        agency_url = _safe_get_nested(
+            state, "company_research", "url",
+            default=f"https://linkedin.com/company/{agency.lower().replace(' ', '-')}"
+        )
+
+        # 2 recruiters for agency jobs
+        recruiter_templates = [
+            {
+                "role": "Recruiter",
+                "why": f"Primary recruiting contact sourcing candidates for {title}"
+            },
+            {
+                "role": "Account Manager",
+                "why": f"Manages client relationship for the {title} position at {agency}"
+            },
+        ]
+
+        primary_contacts = []
+        for template in recruiter_templates:
+            primary_contacts.append({
+                "name": f"{template['role']} at {agency}",
+                "role": template["role"],
+                "linkedin_url": f"{agency_url}/people",
+                "why_relevant": template["why"],
+                "recent_signals": []
+            })
+
+        return {
+            "primary_contacts": primary_contacts,
+            "secondary_contacts": []  # No secondary contacts for agencies
+        }
+
     def _generate_synthetic_contacts(self, state: JobState) -> Dict[str, List[Dict]]:
         """
         Generate 3 minimal role-based synthetic contacts when FireCrawl discovery fails.
@@ -1505,7 +1552,7 @@ Return the three letters separated by \"---\" lines.
         1. Multi-source contact discovery via FireCrawl (skipped when DISABLE_FIRECRAWL_OUTREACH is true)
         2. LLM-based classification into primary/secondary
         3. OutreachPackage generation for each contact
-        4. Quality gates: 4-6 primary, 4-6 secondary
+        4. Quality gates: 4-6 primary, 4-6 secondary (reduced for agencies: 2 primary, 0 secondary)
 
         Returns:
             Dict with primary_contacts, secondary_contacts, outreach_packages
@@ -1515,6 +1562,12 @@ Return the three letters separated by \"---\" lines.
         self.logger.info("="*80)
         if self.firecrawl_disabled:
             self.logger.info("FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only)")
+
+        # Check if this is a recruitment agency
+        company_type = _safe_get_nested(state, "company_research", "company_type", default="employer")
+        is_agency = company_type == "recruitment_agency"
+        if is_agency:
+            self.logger.info("RECRUITMENT AGENCY DETECTED - Using limited recruiter discovery (2 contacts max)")
 
         # ===== VALIDATE UPSTREAM DEPENDENCIES =====
         # Check critical fields (Layer 5 cannot proceed without these)
@@ -1578,8 +1631,42 @@ Return the three letters separated by \"---\" lines.
                 "fallback_cover_letters": state.get("fallback_cover_letters", []),
             }
 
+        # ===== AGENCY-SPECIFIC HANDLING =====
+        # For recruitment agencies, skip full discovery and use 2 recruiters only
+        if is_agency:
+            self.logger.info("="*60)
+            self.logger.info("AGENCY FLOW: Generating 2 recruiter contacts only")
+            self.logger.info("="*60)
+
+            agency_contacts = self._generate_agency_recruiter_contacts(state)
+            primary_contacts = agency_contacts["primary_contacts"]
+
+            self.logger.info(f"Generated {len(primary_contacts)} agency recruiter contacts")
+
+            # Generate outreach for recruiters (no secondary contacts for agencies)
+            enriched_primary = []
+            for i, contact in enumerate(primary_contacts, 1):
+                self.logger.info(f"Generating outreach {i}/{len(primary_contacts)}: {contact['name']}")
+                try:
+                    outreach = self._generate_outreach_package(contact, state)
+                    enriched_contact = {**contact, **outreach}
+                    enriched_primary.append(enriched_contact)
+                except Exception as e:
+                    self.logger.warning(f"Failed to generate outreach for recruiter: {e}")
+                    enriched_primary.append(contact)
+
+            self.logger.info("Completed agency recruiter outreach generation")
+
+            return {
+                "primary_contacts": enriched_primary,
+                "secondary_contacts": [],  # No secondary contacts for agencies
+                "people": enriched_primary,  # Legacy field
+                "outreach_packages": [],
+                "fallback_cover_letters": []
+            }
+
         try:
-            # Step 1: Multi-source discovery
+            # Step 1: Multi-source discovery (for regular employers only)
             if self.firecrawl_disabled:
                 raw_contacts, found_contacts = (
                     "FireCrawl discovery is disabled. Use role-based identifiers.",
