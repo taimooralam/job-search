@@ -432,8 +432,32 @@ class HeaderGenerator:
         for role in stitched_cv.roles:
             all_bullets.extend(role.bullets)
 
+        combined_text = " ".join(all_bullets).lower()
+
         # Extract top metrics for grounding
         top_metrics = self._extract_metrics_from_bullets(all_bullets)
+
+        # GAP-001 FIX: Filter JD keywords to only those evidenced in experience bullets
+        # This prevents hallucinating skills like "Solidity", "Rust" that the candidate doesn't have
+        jd_keywords = extracted_jd.get('top_keywords', [])[:15]
+        grounded_keywords = []
+        for kw in jd_keywords:
+            kw_lower = kw.lower()
+            # Check if keyword appears in experience OR is in whitelist
+            if kw_lower in combined_text:
+                grounded_keywords.append(kw)
+            elif self._skill_whitelist:
+                # Also accept if it's in the master CV skill whitelist
+                all_whitelist = (
+                    self._skill_whitelist.get("hard_skills", []) +
+                    self._skill_whitelist.get("soft_skills", [])
+                )
+                if any(kw_lower == s.lower() for s in all_whitelist):
+                    grounded_keywords.append(kw)
+
+        self._logger.debug(
+            f"Profile keywords: {len(grounded_keywords)}/{len(jd_keywords)} grounded in experience"
+        )
 
         # Build prompt
         system_prompt = """You are a CV profile writer specializing in executive summaries.
@@ -441,12 +465,15 @@ class HeaderGenerator:
 Your mission: Write a 2-3 sentence profile summary that:
 1. Leads with the candidate's core superpower for the target role
 2. Includes 1-2 quantified highlights FROM the experience bullets provided
-3. Uses 2-3 JD keywords naturally
+3. Uses 2-3 JD keywords naturally (ONLY from the pre-filtered list provided)
 4. Matches the seniority level of the target role
 
-RULES:
+CRITICAL ANTI-HALLUCINATION RULES:
 - ONLY reference achievements that appear in the experience bullets
 - ONLY use metrics that appear EXACTLY in the bullets (no rounding or inventing)
+- ONLY use keywords from the "GROUNDED JD KEYWORDS" list (these have been pre-verified)
+- NEVER mention technologies, languages, or skills not in the experience bullets
+- If a JD keyword isn't in the grounded list, DO NOT use it
 - Keep to 50-80 words
 - Write in third person or omit subject (e.g., "Engineering leader with..." not "I am...")
 
@@ -462,7 +489,9 @@ Return valid JSON with:
 
 TARGET ROLE: {extracted_jd.get('title', 'Engineering Leader')}
 ROLE CATEGORY: {extracted_jd.get('role_category', 'engineering_manager')}
-TOP JD KEYWORDS: {', '.join(extracted_jd.get('top_keywords', [])[:10])}
+
+GROUNDED JD KEYWORDS (pre-verified to exist in candidate's experience - ONLY use these):
+{', '.join(grounded_keywords[:10]) if grounded_keywords else 'None available - focus on achievements only'}
 
 EXPERIENCE BULLETS (use ONLY achievements from these):
 {chr(10).join(f'• {b}' for b in all_bullets[:15])}
