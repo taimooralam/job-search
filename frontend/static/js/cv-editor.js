@@ -204,11 +204,16 @@ class CVEditor {
                 {
                     type: 'heading',
                     attrs: { level: 1 },
-                    content: [{ type: 'text', text: 'Your Name' }]
+                    content: [{ type: 'text', text: 'TAIMOOR ALAM' }]
+                },
+                {
+                    type: 'heading',
+                    attrs: { level: 3 },
+                    content: [{ type: 'text', text: 'Job Title · Engineering Leader' }]
                 },
                 {
                     type: 'paragraph',
-                    content: [{ type: 'text', text: 'Software Engineer | your.email@example.com' }]
+                    content: [{ type: 'text', text: 'your.email@example.com · +49 123 456 7890 · linkedin.com/in/yourprofile' }]
                 },
                 {
                     type: 'heading',
@@ -688,6 +693,20 @@ class CVEditor {
                 break;
             case 'removeHighlight':
                 this.editor.chain().focus().unsetHighlight().run();
+                break;
+            case 'smallCaps':
+                // Toggle small caps using TextStyle mark with CSS
+                if (this.editor.isActive('textStyle', { fontVariant: 'small-caps' })) {
+                    this.editor.chain().focus().unsetMark('textStyle').run();
+                } else {
+                    this.editor.chain().focus().setMark('textStyle', { fontVariant: 'small-caps' }).run();
+                }
+                break;
+            case 'heading':
+                // Handle heading levels passed as value
+                if (value >= 1 && value <= 6) {
+                    this.editor.chain().focus().toggleHeading({ level: value }).run();
+                }
                 break;
             default:
                 console.warn('Unknown format command:', command);
