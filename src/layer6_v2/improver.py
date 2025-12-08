@@ -47,14 +47,15 @@ class CVImprover:
     """
 
     # Dimension-specific improvement strategies
+    # NOTE: Anti-hallucination fix - DO NOT add JD keywords unless candidate has evidence
     IMPROVEMENT_STRATEGIES = {
         "ats_optimization": {
             "focus": "Keyword integration and format",
             "tactics": [
-                "Naturally integrate missing JD keywords into existing bullets",
+                "Naturally integrate JD keywords ONLY if the candidate has evidence of that skill",
                 "Ensure standard section headers (Profile, Experience, Education)",
                 "Use consistent bullet formatting",
-                "Add keywords to skills section if not already present",
+                "NEVER add skills the candidate doesn't have - only use skills already in the CV",
             ],
         },
         "impact_clarity": {
@@ -155,7 +156,7 @@ SPECIFIC ISSUES TO FIX:
 IMPROVEMENT TACTICS:
 {chr(10).join(f'- {tactic}' for tactic in tactics)}
 
-JD KEYWORDS TO INTEGRATE (if missing):
+JD KEYWORDS (for reference only - DO NOT add skills the candidate doesn't have):
 {', '.join(jd_keywords[:10])}
 
 PAIN POINTS TO ADDRESS:
@@ -166,12 +167,15 @@ ROLE CATEGORY: {role_category}
 === CURRENT CV ===
 {cv_text}
 
-=== RULES ===
+=== CRITICAL ANTI-HALLUCINATION RULES ===
 1. Make MINIMAL changes - only fix the specific dimension issues
 2. Preserve all accurate information and metrics
 3. Do NOT add fabricated achievements or inflated numbers
-4. Maintain the overall structure and flow
-5. Natural language only - no keyword stuffing
+4. NEVER add skills, technologies, or keywords that the candidate doesn't demonstrate in the CV
+5. JD keywords should ONLY be used if the candidate already has that skill evidenced
+6. Do NOT add new skills to the Skills sections that aren't already mentioned
+7. Maintain the overall structure and flow
+8. Natural language only - no keyword stuffing
 
 Return the improved CV with changes highlighted in your summary."""
 
@@ -196,10 +200,16 @@ PRINCIPLES:
 4. MAINTAIN STRUCTURE: Keep the CV's overall organization
 5. RESPECT METRICS: All numbers must match the source exactly
 
+CRITICAL ANTI-HALLUCINATION RULE:
+- NEVER add skills, technologies, or languages that aren't already in the CV
+- JD keywords like "Solidity", "Rust", "Go", "Java" should ONLY be used if the candidate already has them
+- If a JD asks for a skill the candidate doesn't have, DO NOT add it
+- The goal is to optimize existing content, NOT to fabricate new skills
+
 QUALITY STANDARDS:
 - Every bullet should have a quantified outcome
 - Strong action verbs at the start of each bullet
-- JD keywords naturally integrated
+- JD keywords naturally integrated ONLY if candidate has that skill
 - Strategic framing for leadership roles
 - No vague statements or filler content
 
