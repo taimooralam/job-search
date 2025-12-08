@@ -12,156 +12,191 @@
                 </h2>
                 <p class="text-sm theme-text-secondary mt-1">7-layer intelligence pipeline processing job application</p>
             </div>
-            <span id="pipeline-run-id" class="text-xs font-mono text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-200"></span>
+            <span id="pipeline-run-id" class="text-xs font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-3 py-1.5 rounded-md border border-indigo-200 dark:border-indigo-700"></span>
         </div>
 
         <div class="card-body">
             {# Overall Progress Bar #}
-            <div class="pipeline-overall-progress">
-                <div class="pipeline-overall-progress-text">
-                    <span class="font-medium">Overall Progress</span>
-                    <span id="pipeline-overall-percent" class="font-semibold text-indigo-700">0%</span>
+            <div class="pipeline-overall-progress mb-6">
+                <div class="pipeline-overall-progress-text flex justify-between mb-2">
+                    <span class="font-medium text-sm theme-text-primary">Overall Progress</span>
+                    <span id="pipeline-overall-percent" class="font-semibold text-indigo-700 dark:text-indigo-400">0%</span>
                 </div>
-                <div class="pipeline-overall-progress-bar-container">
-                    <div id="pipeline-overall-progress-bar" class="pipeline-overall-progress-bar" style="width: 0%"></div>
+                <div class="pipeline-overall-progress-bar-container h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div id="pipeline-overall-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
-            {# Pipeline Stepper #}
-            <ol class="pipeline-stepper" id="pipeline-stepper">
-                {# Layer 1: Intake #}
-                <li class="pipeline-step pending" data-layer="intake">
-                    <div class="step-icon">1</div>
-                    <div class="step-content">
-                        <div class="step-title">Intake</div>
-                        <div class="step-description">Parse job posting and candidate profile</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
-                        </div>
-                    </div>
-                </li>
+            {# Horizontal Pipeline Stepper - Icons Only #}
+            <div class="pipeline-stepper-horizontal mb-6" id="pipeline-stepper">
+                <div class="flex items-center justify-between relative">
+                    {# Connector line behind all steps #}
+                    <div class="absolute top-6 left-6 right-6 h-0.5 bg-gray-200 dark:bg-gray-700 -z-0"></div>
+                    <div id="pipeline-progress-line" class="absolute top-6 left-6 h-0.5 bg-indigo-500 -z-0 transition-all duration-500" style="width: 0%"></div>
 
-                {# Layer 2: Pain Point Mining #}
-                <li class="pipeline-step pending" data-layer="pain_points">
-                    <div class="step-icon">2</div>
-                    <div class="step-content">
-                        <div class="step-title">Pain Point Mining</div>
-                        <div class="step-description">Extract company and role pain points</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 1: Intake #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="intake" data-step="1">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="Intake: Parse job posting">
+                            <span class="step-number">1</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">Intake</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
 
-                {# Layer 3: Company Research #}
-                <li class="pipeline-step pending" data-layer="company_research">
-                    <div class="step-icon">3</div>
-                    <div class="step-content">
-                        <div class="step-title">Company Research</div>
-                        <div class="step-description">Research company via FireCrawl</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 2: Pain Points #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="pain_points" data-step="2">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="Pain Point Mining">
+                            <span class="step-number">2</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">Pain Points</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
 
-                {# Layer 4: Role Research #}
-                <li class="pipeline-step pending" data-layer="role_research">
-                    <div class="step-icon">4</div>
-                    <div class="step-content">
-                        <div class="step-title">Role Research</div>
-                        <div class="step-description">Research specific role requirements</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 3: Company Research #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="company_research" data-step="3">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="Company Research">
+                            <span class="step-number">3</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">Company</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
 
-                {# Layer 5: Fit Scoring #}
-                <li class="pipeline-step pending" data-layer="fit_scoring">
-                    <div class="step-icon">5</div>
-                    <div class="step-content">
-                        <div class="step-title">Fit Scoring</div>
-                        <div class="step-description">Score candidate fit (0-100)</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 4: Role Research #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="role_research" data-step="4">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="Role Research">
+                            <span class="step-number">4</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">Role</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
 
-                {# Layer 6: People Mapping #}
-                <li class="pipeline-step pending" data-layer="people_mapping">
-                    <div class="step-icon">6</div>
-                    <div class="step-content">
-                        <div class="step-title">People Mapping</div>
-                        <div class="step-description">Find LinkedIn recruiters and contacts</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 5: Fit Scoring #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="fit_scoring" data-step="5">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="Fit Scoring">
+                            <span class="step-number">5</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">Fit Score</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
 
-                {# Layer 7: CV/Outreach Generation #}
-                <li class="pipeline-step pending" data-layer="cv_outreach_generation">
-                    <div class="step-icon">7</div>
-                    <div class="step-content">
-                        <div class="step-title">CV &amp; Outreach Generation</div>
-                        <div class="step-description">Generate personalized CV and outreach messages</div>
-                        <div class="step-status">Pending</div>
-                        <div class="step-error"></div>
-                        <div class="step-metadata">
-                            <div class="step-metadata-item">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="step-duration">--</span>
-                            </div>
+                    {# Layer 6: People Mapping #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="people_mapping" data-step="6">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="People Mapping">
+                            <span class="step-number">6</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
                         </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">People</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
                     </div>
-                </li>
-            </ol>
+
+                    {# Layer 7: CV/Outreach #}
+                    <div class="pipeline-step-h pending flex flex-col items-center relative z-10" data-layer="cv_outreach_generation" data-step="7">
+                        <div class="step-icon-h w-12 h-12 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-lg transition-all duration-300 cursor-pointer hover:scale-110" title="CV & Outreach Generation">
+                            <span class="step-number">7</span>
+                            <svg class="step-check hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg class="step-spinner hidden w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg class="step-error hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <span class="step-label-h text-xs mt-2 text-center font-medium text-gray-500 dark:text-gray-400 max-w-[60px]">CV</span>
+                        <span class="step-duration-h text-xs text-gray-400 dark:text-gray-500 hidden">--</span>
+                    </div>
+                </div>
+            </div>
+
+            {# Current Step Details (shows when a step is active) #}
+            <div id="current-step-details" class="hidden mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div id="current-step-title" class="font-semibold text-indigo-900 dark:text-indigo-100">Processing...</div>
+                        <div id="current-step-description" class="text-sm text-indigo-700 dark:text-indigo-300">Analyzing job data</div>
+                    </div>
+                </div>
+            </div>
+
+            {# Error Display #}
+            <div id="pipeline-error-display" class="hidden mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <div class="font-semibold text-red-900 dark:text-red-100">Pipeline Error</div>
+                        <div id="pipeline-error-message" class="text-sm text-red-700 dark:text-red-300 mt-1"></div>
+                    </div>
+                </div>
+            </div>
 
             {# Logs Terminal (collapsed by default) #}
             <div class="mt-6">
