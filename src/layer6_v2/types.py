@@ -673,32 +673,321 @@ class SkillsSection:
 @dataclass
 class ProfileOutput:
     """
-    Generated profile summary grounded in achievements.
+    Research-aligned profile summary for senior technical leadership.
 
-    The profile should:
-    - Lead with role-category-appropriate superpower
-    - Include 1-2 quantified highlights from experience
-    - Use top 3 JD keywords naturally
-    - Be 2-3 sentences (50-80 words)
+    Based on research from 625 hiring managers and eye-tracking studies:
+    - Profile receives 80% of initial attention
+    - First 7.4 seconds determine continue/reject decision
+    - Candidates with exact job title are 10.6x more likely to get interviews
+
+    Structure follows the hybrid approach:
+    - Headline: "[EXACT TITLE] | [YEARS] Years Technology Leadership"
+    - Narrative: 3-5 sentences (100-150 words) following 60/30/10 formula
+    - Core Competencies: 6-8 ATS-optimized keyword bullets
+
+    The narrative must answer 4 questions:
+    1. Who are you professionally? (Identity)
+    2. What problems can you solve? (Relevance)
+    3. What proof do you have? (Evidence)
+    4. Why should they call you? (Differentiation)
     """
 
-    text: str                          # The profile text
-    highlights_used: List[str]         # Quantified achievements referenced
-    keywords_integrated: List[str]     # JD keywords naturally included
+    # Core content - new research-aligned structure
+    headline: str = ""                 # "[EXACT TITLE] | [YEARS] Years Technology Leadership"
+    narrative: str = ""                # 3-5 sentence paragraph (100-150 words)
+    core_competencies: List[str] = field(default_factory=list)  # 6-8 ATS keyword bullets
+
+    # Grounding evidence
+    highlights_used: List[str] = field(default_factory=list)  # Quantified achievements referenced
+    keywords_integrated: List[str] = field(default_factory=list)  # JD keywords naturally included
+    exact_title_used: str = ""         # The exact JD title incorporated in headline
+
+    # Validation - tracks if all 4 questions are answered
+    answers_who: bool = False          # Identity and level
+    answers_what_problems: bool = False  # Relevance to their needs
+    answers_proof: bool = False        # Evidence of impact (metrics)
+    answers_why_you: bool = False      # Differentiation
+
+    # Configuration
     word_count: int = 0
+    regional_variant: str = "us_eu"    # "us_eu" | "gulf"
+
+    # Legacy field for backward compatibility
+    _legacy_text: str = ""
 
     def __post_init__(self):
-        """Calculate word count if not provided."""
+        """Calculate word count and ensure backward compatibility."""
+        # Calculate word count from narrative (primary content)
+        if self.word_count == 0 and self.narrative:
+            self.word_count = len(self.narrative.split())
+        # If no word count yet but legacy text exists, use that
+        elif self.word_count == 0 and self._legacy_text:
+            self.word_count = len(self._legacy_text.split())
+
+    @property
+    def text(self) -> str:
+        """Combined text for backward compatibility."""
+        if self.narrative:
+            return self.narrative
+        return self._legacy_text
+
+    @text.setter
+    def text(self, value: str):
+        """Allow setting text for backward compatibility."""
+        self._legacy_text = value
+        if not self.narrative:
+            self.narrative = value
         if self.word_count == 0:
-            self.word_count = len(self.text.split())
+            self.word_count = len(value.split())
+
+    @property
+    def all_four_questions_answered(self) -> bool:
+        """Check if profile answers all 4 hiring manager questions."""
+        return all([
+            self.answers_who,
+            self.answers_what_problems,
+            self.answers_proof,
+            self.answers_why_you,
+        ])
+
+    @property
+    def formatted_header(self) -> str:
+        """Return ATS-optimized header with Professional Summary title."""
+        if not self.headline:
+            return "PROFESSIONAL SUMMARY"
+        return f"PROFESSIONAL SUMMARY\n{self.headline}"
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
-            "text": self.text,
+            "headline": self.headline,
+            "narrative": self.narrative,
+            "core_competencies": self.core_competencies,
+            "text": self.text,  # Legacy compatibility
             "highlights_used": self.highlights_used,
             "keywords_integrated": self.keywords_integrated,
+            "exact_title_used": self.exact_title_used,
             "word_count": self.word_count,
+            "regional_variant": self.regional_variant,
+            "answers_who": self.answers_who,
+            "answers_what_problems": self.answers_what_problems,
+            "answers_proof": self.answers_proof,
+            "answers_why_you": self.answers_why_you,
+            "all_four_questions_answered": self.all_four_questions_answered,
+        }
+
+    @classmethod
+    def from_legacy(
+        cls,
+        text: str,
+        highlights_used: List[str],
+        keywords_integrated: List[str],
+    ) -> "ProfileOutput":
+        """Create ProfileOutput from legacy format for backward compatibility."""
+        return cls(
+            narrative=text,
+            _legacy_text=text,
+            highlights_used=highlights_used,
+            keywords_integrated=keywords_integrated,
+            word_count=len(text.split()),
+        )
+
+    # ===== ATS OPTIMIZATION VALIDATION METHODS =====
+
+    # Common acronyms that should have full form included (ATS guide requirement)
+    ATS_ACRONYMS = {
+        "AWS": "Amazon Web Services",
+        "GCP": "Google Cloud Platform",
+        "CI/CD": "Continuous Integration/Continuous Deployment",
+        "SRE": "Site Reliability Engineering",
+        "ML": "Machine Learning",
+        "AI": "Artificial Intelligence",
+        "API": "Application Programming Interface",
+        "SDK": "Software Development Kit",
+        "MVP": "Minimum Viable Product",
+        "OKR": "Objectives and Key Results",
+        "KPI": "Key Performance Indicator",
+        "ETL": "Extract, Transform, Load",
+        "SQL": "Structured Query Language",
+        "NoSQL": "Not Only SQL",
+        "REST": "Representational State Transfer",
+        "IaC": "Infrastructure as Code",
+        "VP": "Vice President",
+        "CTO": "Chief Technology Officer",
+        "CEO": "Chief Executive Officer",
+        "COO": "Chief Operating Officer",
+        "MBA": "Master of Business Administration",
+        "PMP": "Project Management Professional",
+        "SEO": "Search Engine Optimization",
+    }
+
+    def check_acronym_expansion(self) -> Dict[str, Any]:
+        """
+        Check if common acronyms have their full form included.
+
+        ATS Guide Finding: Greenhouse, Lever, Taleo do NOT recognize
+        abbreviations as equivalent to full terms. Always include both.
+
+        Returns:
+            Dict with 'expanded' (good), 'missing_expansion' (needs fix),
+            and 'ats_score' (0-100)
+        """
+        import re
+        combined_text = f"{self.headline} {self.narrative} {' '.join(self.core_competencies)}"
+
+        expanded = []
+        missing_expansion = []
+
+        for acronym, full_form in self.ATS_ACRONYMS.items():
+            # Check if acronym appears in text
+            if re.search(rf'\b{re.escape(acronym)}\b', combined_text, re.IGNORECASE):
+                # Check if full form also appears (or the pattern "Full Form (ACRONYM)")
+                full_pattern = rf'{re.escape(full_form)}|{re.escape(full_form)}\s*\({re.escape(acronym)}\)'
+                if re.search(full_pattern, combined_text, re.IGNORECASE):
+                    expanded.append(acronym)
+                else:
+                    missing_expansion.append(acronym)
+
+        total_acronyms = len(expanded) + len(missing_expansion)
+        ats_score = 100 if total_acronyms == 0 else int((len(expanded) / total_acronyms) * 100)
+
+        return {
+            "expanded": expanded,
+            "missing_expansion": missing_expansion,
+            "ats_score": ats_score,
+            "recommendation": (
+                f"Add full forms for: {', '.join(missing_expansion)}"
+                if missing_expansion else "All acronyms properly expanded"
+            ),
+        }
+
+    def check_keyword_frequency(self, target_keywords: List[str]) -> Dict[str, Any]:
+        """
+        Check if target keywords appear with optimal frequency.
+
+        ATS Guide Finding: Greenhouse ranks resumes with more mentions of
+        a keyword higher. Aim for 2-3 natural repetitions of key terms.
+
+        Args:
+            target_keywords: List of keywords to check frequency for
+
+        Returns:
+            Dict with keyword counts and ATS optimization score
+        """
+        import re
+        combined_text = f"{self.headline} {self.narrative} {' '.join(self.core_competencies)}"
+        combined_lower = combined_text.lower()
+
+        keyword_counts = {}
+        optimal_count = 0  # Keywords appearing 2-3 times
+        single_count = 0   # Keywords appearing only once
+        missing_count = 0  # Keywords not appearing
+
+        for keyword in target_keywords:
+            count = len(re.findall(rf'\b{re.escape(keyword.lower())}\b', combined_lower))
+            keyword_counts[keyword] = count
+
+            if count >= 2:
+                optimal_count += 1
+            elif count == 1:
+                single_count += 1
+            else:
+                missing_count += 1
+
+        total = len(target_keywords)
+        ats_score = 0 if total == 0 else int(
+            ((optimal_count * 1.0 + single_count * 0.5) / total) * 100
+        )
+
+        return {
+            "keyword_counts": keyword_counts,
+            "optimal_frequency": [k for k, v in keyword_counts.items() if v >= 2],
+            "single_mention": [k for k, v in keyword_counts.items() if v == 1],
+            "missing": [k for k, v in keyword_counts.items() if v == 0],
+            "ats_score": min(ats_score, 100),
+        }
+
+    def check_scale_metrics(self) -> Dict[str, Any]:
+        """
+        Check if profile includes quantifiable scale metrics.
+
+        ATS Guide Finding: Numbers read perfectly to ATS AND recruiters.
+        Include team sizes, revenue impact, user scale, budget responsibility.
+
+        Returns:
+            Dict with found metrics and recommendations
+        """
+        import re
+        combined_text = f"{self.headline} {self.narrative}"
+
+        # Patterns for different metric types
+        patterns = {
+            "team_size": r'\b(\d+)\+?\s*(?:engineers?|developers?|team members?|reports?|people)',
+            "revenue": r'\$[\d,.]+[MBK]?\+?\s*(?:revenue|ARR|annual)',
+            "users": r'[\d,.]+[MBK]?\+?\s*(?:users?|customers?|MAU|DAU)',
+            "scale": r'[\d,.]+[MBK]?\+?\s*(?:requests?|transactions?|QPS|TPS|RPS)',
+            "budget": r'\$[\d,.]+[MBK]?\+?\s*(?:budget|spend|investment)',
+            "percentage": r'\d+(?:\.\d+)?%',
+            "years": r'(\d+)\+?\s*years?',
+        }
+
+        found_metrics = {}
+        for metric_type, pattern in patterns.items():
+            matches = re.findall(pattern, combined_text, re.IGNORECASE)
+            if matches:
+                found_metrics[metric_type] = matches
+
+        metric_types_found = len(found_metrics)
+        ats_score = min(metric_types_found * 20, 100)  # 20 points per metric type, max 100
+
+        recommendations = []
+        if "team_size" not in found_metrics:
+            recommendations.append("Add team size (e.g., 'team of 25+ engineers')")
+        if "revenue" not in found_metrics and "budget" not in found_metrics:
+            recommendations.append("Add revenue/budget impact (e.g., '$100M+ revenue')")
+        if "percentage" not in found_metrics:
+            recommendations.append("Add percentage improvements (e.g., '40% efficiency gain')")
+
+        return {
+            "found_metrics": found_metrics,
+            "metric_types_count": metric_types_found,
+            "ats_score": ats_score,
+            "recommendations": recommendations if recommendations else ["Good metric coverage"],
+        }
+
+    def get_ats_optimization_report(self, target_keywords: List[str] = None) -> Dict[str, Any]:
+        """
+        Generate comprehensive ATS optimization report for the profile.
+
+        Combines all ATS checks into a single actionable report.
+
+        Args:
+            target_keywords: Optional list of JD keywords to check frequency
+
+        Returns:
+            Dict with overall ATS score and detailed breakdowns
+        """
+        acronym_check = self.check_acronym_expansion()
+        scale_check = self.check_scale_metrics()
+        keyword_check = self.check_keyword_frequency(target_keywords or self.keywords_integrated)
+
+        # Calculate overall ATS score (weighted average)
+        overall_score = int(
+            acronym_check["ats_score"] * 0.3 +
+            scale_check["ats_score"] * 0.3 +
+            keyword_check["ats_score"] * 0.4
+        )
+
+        return {
+            "overall_ats_score": overall_score,
+            "word_count": self.word_count,
+            "word_count_optimal": 100 <= self.word_count <= 150,
+            "four_questions_answered": self.all_four_questions_answered,
+            "acronym_expansion": acronym_check,
+            "scale_metrics": scale_check,
+            "keyword_frequency": keyword_check,
+            "headline_present": bool(self.headline),
+            "core_competencies_count": len(self.core_competencies),
         }
 
 
@@ -772,7 +1061,15 @@ class HeaderOutput:
         }
 
     def to_markdown(self) -> str:
-        """Convert to plain text format for CV header (GAP-006: no markdown)."""
+        """
+        Convert to ATS-optimized plain text format for CV header.
+
+        Research-aligned structure:
+        - "PROFESSIONAL SUMMARY" header (ATS universal recognition)
+        - Headline with exact job title + years (10.6x interview factor)
+        - Narrative paragraph (100-150 words, 60/30/10 formula)
+        - Core Competencies as keyword bullets (hybrid scannability)
+        """
         lines = []
 
         # Contact info header
@@ -780,26 +1077,55 @@ class HeaderOutput:
         email = self.contact_info.get("email", "")
         phone = self.contact_info.get("phone", "")
         linkedin = self.contact_info.get("linkedin", "")
+        location = self.contact_info.get("location", "")
 
         lines.append(name)
-        lines.append(f"{email} | {phone} | {linkedin}")
+        contact_parts = [p for p in [email, phone, linkedin, location] if p]
+        lines.append(" | ".join(contact_parts))
         lines.append("")
 
-        # Profile
-        lines.append("PROFILE")
+        # Professional Summary (ATS-optimized header)
+        lines.append("PROFESSIONAL SUMMARY")
+
+        # Add headline if available (research: exact title + years)
+        if self.profile.headline:
+            lines.append(self.profile.headline)
+            lines.append("")
+
+        # Narrative paragraph (100-150 words)
         lines.append(self.profile.text)
         lines.append("")
 
-        # Skills
-        lines.append("CORE COMPETENCIES")
+        # Core Competencies - inline format for ATS (from profile if available)
+        if self.profile.core_competencies:
+            competencies_str = " | ".join(self.profile.core_competencies)
+            lines.append(f"Core Competencies: {competencies_str}")
+            lines.append("")
+
+        # Skills sections (detailed breakdown)
+        lines.append("SKILLS & EXPERTISE")
         for section in self.skills_sections:
             lines.append(section.to_markdown())
         lines.append("")
 
         # Education
-        lines.append("EDUCATION")
-        for edu in self.education:
-            lines.append(f"• {edu}")
+        if self.education:
+            lines.append("EDUCATION")
+            for edu in self.education:
+                lines.append(f"• {edu}")
+            lines.append("")
+
+        # Certifications (if any)
+        if self.certifications:
+            lines.append("CERTIFICATIONS")
+            for cert in self.certifications:
+                lines.append(f"• {cert}")
+            lines.append("")
+
+        # Languages (if any)
+        if self.languages:
+            lines.append("LANGUAGES")
+            lines.append(", ".join(self.languages))
 
         return "\n".join(lines)
 
