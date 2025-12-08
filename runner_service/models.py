@@ -151,3 +151,18 @@ class FireCrawlCreditsResponse(BaseModel):
         "healthy",
         description="Status: healthy, warning (>80%), critical (>90%), exhausted (100%)"
     )
+
+
+# === OpenRouter Credits Models ===
+
+class OpenRouterCreditsResponse(BaseModel):
+    """Response for OpenRouter credit balance tracking."""
+
+    provider: str = "openrouter"
+    credits_remaining: float = Field(..., description="Remaining credits in USD")
+    credits_used: Optional[float] = Field(None, description="Credits used (if available)")
+    status: str = Field(
+        "healthy",
+        description="Status: healthy, warning (<$5), critical (<$1), exhausted ($0)"
+    )
+    error: Optional[str] = Field(None, description="Error message if API call failed")

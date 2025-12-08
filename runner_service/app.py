@@ -26,6 +26,7 @@ from .models import (
     LayerProgress,
     LinkedInImportRequest,
     LinkedInImportResponse,
+    OpenRouterCreditsResponse,
     PipelineProgressResponse,
     PIPELINE_LAYERS,
     RunBulkRequest,
@@ -535,11 +536,54 @@ async def get_firecrawl_credits() -> FireCrawlCreditsResponse:
     """
     Get FireCrawl API credit usage (GAP-070).
 
-    Returns current usage against daily limit with status indicators.
-    Used by dashboard to display credit consumption.
+    Calls actual FireCrawl API to get token usage, falls back to local rate limiter.
     """
+    import httpx
     from src.common.rate_limiter import get_rate_limiter
 
+    # Try actual FireCrawl API first
+    if settings.firecrawl_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(
+                    "https://api.firecrawl.dev/v1/team/token-usage",
+                    headers={"Authorization": f"Bearer {settings.firecrawl_api_key}"}
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    # Parse FireCrawl API response
+                    # Expected fields: credits_used, credits_remaining, total_credits, etc.
+                    total_credits = data.get("total_credits", 500)
+                    credits_used = data.get("credits_used", 0)
+                    credits_remaining = data.get("credits_remaining", total_credits - credits_used)
+
+                    used_percent = (credits_used / total_credits * 100) if total_credits > 0 else 0
+
+                    if used_percent >= 100:
+                        status = "exhausted"
+                    elif used_percent >= 90:
+                        status = "critical"
+                    elif used_percent >= 80:
+                        status = "warning"
+                    else:
+                        status = "healthy"
+
+                    return FireCrawlCreditsResponse(
+                        provider="firecrawl",
+                        daily_limit=total_credits,
+                        used_today=credits_used,
+                        remaining=credits_remaining,
+                        used_percent=round(used_percent, 1),
+                        requests_this_minute=0,
+                        requests_per_minute_limit=10,
+                        last_request_at=None,
+                        daily_reset_at=None,
+                        status=status,
+                    )
+        except Exception as e:
+            logger.warning(f"FireCrawl API call failed, falling back to rate limiter: {e}")
+
+    # Fallback to local rate limiter tracking
     limiter = get_rate_limiter("firecrawl")
     stats = limiter.get_stats()
     remaining = limiter.get_remaining_daily() or 0
@@ -548,7 +592,6 @@ async def get_firecrawl_credits() -> FireCrawlCreditsResponse:
     used_today = stats.requests_today
     used_percent = (used_today / daily_limit * 100) if daily_limit > 0 else 0
 
-    # Determine status based on usage
     if used_percent >= 100:
         status = "exhausted"
     elif used_percent >= 90:
@@ -570,6 +613,65 @@ async def get_firecrawl_credits() -> FireCrawlCreditsResponse:
         daily_reset_at=stats.daily_reset_at,
         status=status,
     )
+
+
+@app.get("/openrouter/credits", response_model=OpenRouterCreditsResponse)
+async def get_openrouter_credits() -> OpenRouterCreditsResponse:
+    """
+    Get OpenRouter API credit balance.
+
+    Calls OpenRouter API to get remaining credits.
+    """
+    import httpx
+
+    if not settings.openrouter_api_key:
+        return OpenRouterCreditsResponse(
+            credits_remaining=0.0,
+            credits_used=None,
+            status="exhausted",
+            error="OpenRouter API key not configured"
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://openrouter.ai/api/v1/auth/key",
+                headers={"Authorization": f"Bearer {settings.openrouter_api_key}"}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                # OpenRouter returns: {"data": {"limit": float, "usage": float, ...}}
+                limit = data.get("data", {}).get("limit", 0)
+                usage = data.get("data", {}).get("usage", 0)
+                remaining = limit - usage if limit else 0
+
+                if remaining <= 0:
+                    status = "exhausted"
+                elif remaining < 1:
+                    status = "critical"
+                elif remaining < 5:
+                    status = "warning"
+                else:
+                    status = "healthy"
+
+                return OpenRouterCreditsResponse(
+                    credits_remaining=round(remaining, 2),
+                    credits_used=round(usage, 2),
+                    status=status,
+                )
+            else:
+                return OpenRouterCreditsResponse(
+                    credits_remaining=0.0,
+                    status="exhausted",
+                    error=f"API returned status {response.status_code}"
+                )
+    except Exception as e:
+        logger.warning(f"OpenRouter API call failed: {e}")
+        return OpenRouterCreditsResponse(
+            credits_remaining=0.0,
+            status="exhausted",
+            error=str(e)
+        )
 
 
 @app.get("/artifacts/{run_id}/{filename}")
