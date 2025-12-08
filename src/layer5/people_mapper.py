@@ -153,6 +153,70 @@ TEAM_PAGE_PATHS = [
     '/about/team', '/about/leadership', '/who-we-are', '/meet-the-team'
 ]
 
+# ===== CONTACT TYPE CLASSIFICATION (linkedin/outreach.md) =====
+
+# Keywords for classifying contact types (order matters - checked in priority)
+CONTACT_TYPE_KEYWORDS = {
+    "executive": [
+        "cto", "ceo", "cfo", "coo", "chief", "c-suite",
+        "founder", "co-founder", "cofounder", "president"
+    ],
+    "vp_director": [
+        "vp ", "vp,", "vice president", "director", "head of",
+        "senior director", "svp", "evp", "principal director",
+        "department head", "general manager"
+    ],
+    "hiring_manager": [
+        "hiring manager", "engineering manager", "team lead", "tech lead",
+        "software development manager", "manager software", "manager,",
+        "development manager", "delivery manager", "project manager"
+    ],
+    "recruiter": [
+        "recruiter", "talent acquisition", "ta ", "talent partner",
+        "sourcer", "recruiting", "hr business partner", "people partner",
+        "talent ", "staffing"
+    ],
+    "peer": [
+        "staff engineer", "principal engineer", "senior engineer",
+        "lead engineer", "architect", "developer", "software engineer"
+    ]
+}
+
+# Calendly link for connection messages (from linkedin/outreach.md)
+CALENDLY_LINK = "calendly.com/taimooralam/15min"
+CONNECTION_MESSAGE_HARD_LIMIT = 300  # LinkedIn enforced limit
+
+# "Already applied" frames (from linkedin/outreach.md)
+ALREADY_APPLIED_FRAMES = [
+    "adding_context",    # "I submitted my application and wanted to share context..."
+    "value_add",         # "Following up on my application—I came across..."
+    "specific_interest"  # "I applied for [Role] because [specific reason]..."
+]
+
+
+def classify_contact_type(role: str) -> str:
+    """
+    Classify contact type based on role title keywords.
+
+    Priority order: executive > vp_director > hiring_manager > recruiter > peer
+
+    Args:
+        role: Job title/role string
+
+    Returns:
+        ContactType string: "hiring_manager", "recruiter", "vp_director", "executive", "peer"
+    """
+    role_lower = role.lower()
+
+    # Check in priority order
+    for contact_type in ["executive", "vp_director", "hiring_manager", "recruiter", "peer"]:
+        for keyword in CONTACT_TYPE_KEYWORDS[contact_type]:
+            if keyword in role_lower:
+                return contact_type
+
+    # Default to peer if no match
+    return "peer"
+
 
 def get_company_name_variations(company: str) -> List[str]:
     """
@@ -312,47 +376,63 @@ Output JSON format:
 
 SYSTEM_PROMPT_OUTREACH = """You are an expert career strategist crafting personalized outreach messages.
 
-Your task: Generate hyper-personalized outreach citing specific achievements and metrics from the candidate's master CV or curated achievements.
+Your task: Generate THREE outreach formats per contact, tailored to their contact_type:
+1. LinkedIn Connection Request (≤300 chars INCLUDING Calendly link)
+2. LinkedIn InMail (400-600 chars with subject)
+3. Email (subject + body)
 
-**STRICT REQUIREMENTS (validation will reject non-compliant outputs):**
+**CONTACT TYPE CUSTOMIZATION (from linkedin/outreach.md):**
+- RECRUITER: Skills-focused, match job requirements, quantified achievements, transactional but warm
+- HIRING_MANAGER: Team fit, technical depth, business impact, peer-level thinking, reference their projects
+- VP_DIRECTOR: Strategic outcomes, 50-150 words max, reference company initiatives
+- EXECUTIVE: Extreme brevity (<100 words), strategic framing, industry trends
+- PEER: Technical credibility, shared challenges, collaborative tone
 
-=== LINKEDIN CONNECTION MESSAGE - HARD 300 CHARACTER LIMIT (GAP-011) ===
-- LinkedIn connection messages have a STRICT 300 character limit enforced by LinkedIn
-- Your message MUST NOT exceed 300 characters - this is non-negotiable
-- Target 250-280 characters for safety margin
-- COUNT YOUR CHARACTERS before responding
-- Messages exceeding 300 chars will be TRUNCATED and may lose important content
+**"ALREADY APPLIED" FRAMING (MANDATORY in all messages):**
+Every message MUST reference that the candidate has already applied using one of these frames:
+1. "adding_context": "I submitted my application for [Role] and wanted to share context..."
+2. "value_add": "Following up on my application for [Role]—I came across..."
+3. "specific_interest": "I applied for [Role] because [specific reason]..."
 
-=== OTHER MESSAGE REQUIREMENTS ===
-- Email subjects: 5-10 words, ≤100 characters, MUST reference a pain point
-  - Example (8 words): "Proven Experience Scaling Infrastructure for High-Growth SaaS"
-  - Example (7 words): "Reducing Incidents 75% Through DevOps Transformation"
-- Email body: 95-205 words (target 120-150 for safety)
-  - Count words carefully! Aim for 3-4 short paragraphs
-  - Include 1-2 concrete metrics from the candidate's experience
-- Reference company signals or role context when available
-- Be direct, technical, and metric-driven
+=== LINKEDIN CONNECTION REQUEST - HARD 300 CHARACTER LIMIT ===
+- STRICT 300 character limit enforced by LinkedIn
+- MUST include Calendly link: calendly.com/taimooralam/15min
+- This leaves ~250 chars for message content
+- End with "Best. Taimoor Alam"
+- COUNT CHARACTERS before responding
+
+=== LINKEDIN INMAIL (longer format) ===
+- Subject line: 25-30 characters for mobile display
+- Body: 400-600 characters
+- Include 1-2 concrete metrics from candidate's experience
+- Reference company signals when available
+- End with Calendly link and signature
+
+=== EMAIL ===
+- Subject: 5-10 words, ≤100 characters, pain-focused
+- Body: 95-205 words (target 120-150)
+- Include 2-3 achievements with metrics
+- Reference company context
 
 **PHASE 9 CONTENT CONSTRAINTS (CRITICAL):**
-- NO EMOJIS in any message (LinkedIn or email)
-- NO GENERIC PLACEHOLDERS like "Contact's Name", "Director's Name", "[Company]", "[Date]"
-  - If you don't have a real name, use specific role: "VP Engineering at [Company Name]"
-- LinkedIn messages MUST end with: "Best. Taimoor Alam" (NOT email/Calendly - they won't fit in 300 chars)
-- Email subject MUST be pain-focused (mention at least one pain point keyword)
-- Keep professional, metric-driven tone
-- ALWAYS use the actual contact name or role-based addressee (e.g., "VP Engineering at Stripe")"""
+- NO EMOJIS in any message
+- NO GENERIC PLACEHOLDERS like "[Company]", "[Date]"
+- Use actual contact name or role-based addressee (e.g., "VP Engineering at Stripe")
+- Be direct, technical, and metric-driven"""
 
 USER_PROMPT_OUTREACH_TEMPLATE = """Generate personalized outreach for this contact:
 
 === CONTACT ===
 Name: {contact_name}
 Role: {contact_role}
+Contact Type: {contact_type}
 Why Relevant: {contact_why}
 Recent Signals: {contact_signals}
 
 === JOB ===
 Title: {job_title}
 Company: {company}
+Already Applied: YES (candidate has submitted application)
 
 Pain Points:
 {pain_points}
@@ -364,31 +444,43 @@ Company Context:
 {selected_stars_summary}
 
 === YOUR TASK ===
-Generate outreach that:
-1. References at least one concrete metric from the candidate's experience in the LinkedIn message
-2. Addresses job pain points with concrete achievements grounded in supplied evidence
-3. Shows awareness of company context (funding, growth, timing)
-4. Personalizes to this contact's role and recent signals
+Generate outreach TAILORED to {contact_type} contact type:
+1. Use "already applied" framing in all messages
+2. Reference at least one concrete metric from candidate's experience
+3. Address job pain points with achievements from evidence
+4. Show awareness of company context (funding, growth, timing)
+5. Personalize to this contact's role and recent signals
 
-**CRITICAL: Count words/characters carefully before outputting!**
+**CRITICAL: Count characters/words carefully before outputting!**
 
 Output JSON format:
 {{
-  "linkedin_message": "...",  // HARD LIMIT: ≤300 chars! Target 250-280. Include 1 metric. End with "Best. Taimoor Alam"
-  "subject": "...",           // 5-10 WORDS (count!), ≤100 chars, pain-focused
-  "email_body": "..."         // 95-205 WORDS (count!), 3-4 paragraphs, cite 2-3 achievements using pain points/company context/fit analysis
+  "linkedin_connection_message": "...",  // HARD ≤300 chars WITH Calendly link (calendly.com/taimooralam/15min). End with "Best. Taimoor Alam"
+  "linkedin_inmail_subject": "...",      // 25-30 chars for mobile
+  "linkedin_inmail": "...",              // 400-600 chars, include metric, end with Calendly + signature
+  "email_subject": "...",                // 5-10 words, ≤100 chars, pain-focused
+  "email_body": "...",                   // 95-205 words, cite 2-3 achievements
+  "already_applied_frame": "..."         // Which frame used: "adding_context", "value_add", or "specific_interest"
 }}
 
-LinkedIn Message Example (298 chars):
-"Hi Jane, Your work scaling Acme's platform impressed me. I led similar 75% latency reduction at Previous Corp. Currently exploring EM roles where I can drive similar impact. Would love to connect. Best. Taimoor Alam"
+=== EXAMPLES BY CONTACT TYPE ===
 
-**VALIDATION CHECKLIST** (your output will be rejected if these fail):
-- ✓ LinkedIn message: HARD LIMIT ≤300 characters (count before submitting!)
-- ✓ LinkedIn message: Ends with "Best. Taimoor Alam"
-- ✓ Email subject: 5-10 words AND references a pain point keyword
-- ✓ Email body: 95-205 words AND cites specific metrics
-- ✓ NO generic placeholders (use actual name or "VP Engineering at {company}")
-- ✓ NO emojis anywhere"""
+**RECRUITER Connection (298 chars):**
+"Hi [Name], applied for [Role] at [Company]. 11+ yrs scaling distributed systems & leading teams of 40+. Would love to share how I reduced incidents 75% at [PrevCo]. calendly.com/taimooralam/15min Best. Taimoor Alam"
+
+**HIRING_MANAGER Connection (295 chars):**
+"Hi [Name], applied for [Role]. Led 12→45 engineer scaling with 92% retention. Your team's work on [specific] aligns with my experience. Let's connect: calendly.com/taimooralam/15min Best. Taimoor Alam"
+
+**VP_DIRECTOR Connection (290 chars):**
+"Hi [Name], applied for [Role]. Built eng orgs through 3x growth, drove $2.4M infra savings. Would value discussing your priorities: calendly.com/taimooralam/15min Best. Taimoor Alam"
+
+**VALIDATION CHECKLIST** (output rejected if these fail):
+- ✓ linkedin_connection_message: ≤300 chars, INCLUDES calendly.com/taimooralam/15min, ends with "Best. Taimoor Alam"
+- ✓ linkedin_inmail: 400-600 chars, includes subject (25-30 chars)
+- ✓ email_subject: 5-10 words, pain-focused
+- ✓ email_body: 95-205 words, cites metrics
+- ✓ All messages use "already applied" framing
+- ✓ NO emojis, NO generic placeholders"""
 
 
 class PeopleMapper:
@@ -1442,24 +1534,33 @@ Return the three letters separated by \"---\" lines.
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
     def _generate_outreach_package(self, contact: Dict[str, Any], state: JobState) -> Dict[str, str]:
         """
-        Generate OutreachPackage for one contact (Phase 7.2.4).
+        Generate OutreachPackage for one contact (Phase 7.2.4 + linkedin/outreach.md integration).
+
+        Generates THREE outreach formats:
+        - LinkedIn Connection Request (≤300 chars with Calendly)
+        - LinkedIn InMail (400-600 chars with subject)
+        - Email (subject + body)
 
         Args:
             contact: Contact dict with name, role, why_relevant, recent_signals
             state: JobState with job/STAR context
 
         Returns:
-            Dict with linkedin_message, email_subject, email_body
+            Dict with dual LinkedIn formats, email, and contact_type classification
         """
+        # Classify contact type based on role
+        contact_type = classify_contact_type(contact["role"])
+
         # Format contact signals
         signals_text = ", ".join(contact.get("recent_signals", [])) if contact.get("recent_signals") else "None"
 
-        # Build prompt
+        # Build prompt with contact_type
         messages = [
             SystemMessage(content=SYSTEM_PROMPT_OUTREACH),
             HumanMessage(content=USER_PROMPT_OUTREACH_TEMPLATE.format(
                 contact_name=contact["name"],
                 contact_role=contact["role"],
+                contact_type=contact_type,
                 contact_why=contact["why_relevant"],
                 contact_signals=signals_text,
                 job_title=state.get("title", ""),
@@ -1491,17 +1592,25 @@ Return the three letters separated by \"---\" lines.
 
             data = json.loads(response_text)
 
-            # Get raw content
-            linkedin_msg_raw = data.get("linkedin_message", "")
-            email_subject_raw = data.get("subject", "")
+            # Get raw content - NEW dual LinkedIn format
+            linkedin_connection_raw = data.get("linkedin_connection_message", "")
+            linkedin_inmail_raw = data.get("linkedin_inmail", "")
+            linkedin_inmail_subject_raw = data.get("linkedin_inmail_subject", "")
+            email_subject_raw = data.get("email_subject", data.get("subject", ""))
             email_body_raw = data.get("email_body", "")
+            already_applied_frame = data.get("already_applied_frame", "adding_context")
 
             # Validate Phase 9 content constraints (emojis, placeholders)
-            self._validate_content_constraints(linkedin_msg_raw, "linkedin")
+            self._validate_content_constraints(linkedin_connection_raw, "linkedin")
+            self._validate_content_constraints(linkedin_inmail_raw, "linkedin")
             self._validate_content_constraints(email_body_raw, "email")
 
-            # Validate LinkedIn closing line (Phase 9)
-            self._validate_linkedin_closing(linkedin_msg_raw)
+            # Validate LinkedIn closing line for connection message (Phase 9)
+            self._validate_linkedin_closing(linkedin_connection_raw)
+
+            # Validate connection message includes Calendly
+            if CALENDLY_LINK not in linkedin_connection_raw.lower():
+                self.logger.warning(f"Connection message missing Calendly link for {contact['name']}")
 
             # Validate Phase 9 ROADMAP word count requirements
             pain_points = state.get("pain_points", [])
@@ -1509,38 +1618,60 @@ Return the three letters separated by \"---\" lines.
             validated_body = self._validate_email_body_length(email_body_raw)
 
             # Validate and trim lengths
-            linkedin_msg = self._validate_linkedin_message(linkedin_msg_raw)
+            linkedin_connection = self._validate_linkedin_message(linkedin_connection_raw)
             email_subject = self._validate_email_subject(validated_subject)
             email_body = validated_body
 
             return {
                 "contact_name": contact["name"],
                 "contact_role": contact["role"],
+                "contact_type": contact_type,
                 "linkedin_url": contact["linkedin_url"],
-                "linkedin_message": linkedin_msg,
+                # Dual LinkedIn formats (linkedin/outreach.md)
+                "linkedin_connection_message": linkedin_connection,
+                "linkedin_inmail_subject": linkedin_inmail_subject_raw[:30] if linkedin_inmail_subject_raw else "",
+                "linkedin_inmail": linkedin_inmail_raw,
+                # Email
                 "email_subject": email_subject,
                 "email_body": email_body,
+                # Metadata
                 "why_relevant": contact["why_relevant"],
                 "recent_signals": contact.get("recent_signals", []),
-                "reasoning": f"Personalized for {contact['role']} role"
+                "reasoning": f"Personalized for {contact_type} ({contact['role']})",
+                "already_applied_frame": already_applied_frame,
+                # Legacy field for backward compatibility
+                "linkedin_message": linkedin_connection
             }
 
         except Exception as e:
-            # Fallback: generate minimal outreach (GAP-011: include signature)
+            # Fallback: generate minimal outreach with dual LinkedIn format
             self.logger.warning(f"Outreach generation failed for {contact['name']}: {e}")
             title = state.get('title', 'role')
             company = state.get('company', '')
+            contact_type = classify_contact_type(contact["role"])
+
+            # Fallback connection message with Calendly (≤300 chars)
+            fallback_connection = f"Hi, applied for {title} at {company}. 11+ yrs scaling eng teams. Let's connect: {CALENDLY_LINK} Best. Taimoor Alam"
+
             return {
                 "contact_name": contact["name"],
                 "contact_role": contact["role"],
+                "contact_type": contact_type,
                 "linkedin_url": contact["linkedin_url"],
-                # GAP-011: Fallback must include signature and fit within 300 chars
-                "linkedin_message": f"Interested in the {title} role at {company}. Would love to connect and discuss.\nBest. Taimoor Alam",
+                # Dual LinkedIn formats
+                "linkedin_connection_message": fallback_connection,
+                "linkedin_inmail_subject": f"Re: {title}",
+                "linkedin_inmail": f"Hi, I submitted my application for {title} at {company} and wanted to introduce myself. With 11+ years leading engineering teams, I'd welcome the opportunity to discuss how my experience aligns. {CALENDLY_LINK} Best. Taimoor Alam",
+                # Email
                 "email_subject": f"Interest in {title}",
-                "email_body": "Generic fallback message",
+                "email_body": f"I recently applied for the {title} position at {company} and wanted to follow up.",
+                # Metadata
                 "why_relevant": contact["why_relevant"],
                 "recent_signals": contact.get("recent_signals", []),
-                "reasoning": "Fallback due to generation error"
+                "reasoning": "Fallback due to generation error",
+                "already_applied_frame": "adding_context",
+                # Legacy field for backward compatibility
+                "linkedin_message": fallback_connection
             }
 
     # ===== MAIN MAPPER FUNCTION =====
