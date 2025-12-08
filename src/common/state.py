@@ -126,6 +126,7 @@ class CompanyResearch(TypedDict):
     summary: str                    # 2-3 sentence company summary
     signals: List[CompanySignal]   # Business signals with dates and sources
     url: str                       # Primary company URL
+    company_type: str              # "employer" | "recruitment_agency" | "unknown"
 
 
 class RoleResearch(TypedDict):
