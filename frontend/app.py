@@ -2345,7 +2345,9 @@ def _build_meta_prompt(job_doc: dict) -> str:
     pain_points = job_doc.get("pain_points", [])
     opportunity_map = job_doc.get("opportunity_map", {})
     company_research = job_doc.get("company_research", {})
-    fit_score = job_doc.get("fit_score", {})
+    # fit_score can be int or dict depending on pipeline version
+    fit_score_raw = job_doc.get("fit_score")
+    fit_rationale = job_doc.get("fit_rationale", "")
     contacts = job_doc.get("contacts", [])
     cv_text = job_doc.get("cv_text", "")
     cv_reasoning = job_doc.get("cv_reasoning", "")
@@ -2434,21 +2436,23 @@ def _build_meta_prompt(job_doc: dict) -> str:
 
 ---""")
 
-    # Fit Score
-    if fit_score:
+    # Fit Score - handle both int (current schema) and dict (legacy) formats
+    if fit_score_raw is not None:
+        # Normalize: if int, use fit_rationale from separate field
+        if isinstance(fit_score_raw, (int, float)):
+            score_value = fit_score_raw
+            rationale_text = fit_rationale or 'N/A'
+        else:
+            # Legacy dict format
+            score_value = fit_score_raw.get('score', 'N/A')
+            rationale_text = fit_score_raw.get('rationale', fit_rationale or 'N/A')
+
         sections.append(f"""## Fit Analysis
 
-**Overall Score:** {fit_score.get('score', 'N/A')}/100
-**Confidence:** {fit_score.get('confidence', 'N/A')}
+**Overall Score:** {score_value}/100
 
 ### Rationale
-{fit_score.get('rationale', 'N/A')}
-
-### Strengths
-{_format_list(fit_score.get('strengths', []))}
-
-### Gaps
-{_format_list(fit_score.get('gaps', []))}
+{rationale_text}
 
 ---""")
 
