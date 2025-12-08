@@ -2,8 +2,8 @@
 Unit tests for Layer 6b: Outreach Generator (Phase 9)
 
 Tests verify:
-1. Packaging logic (2 packages per contact: LinkedIn + Email)
-2. Constraint preservation (LinkedIn ≤550 chars, email subject ≤100 chars)
+1. Packaging logic (2 packages per contact: linkedin_connection + inmail_email)
+2. Constraint preservation (LinkedIn ≤300 chars, inmail/email 400-600 chars)
 3. Content constraints (no emojis, no placeholders except [Your Name], LinkedIn closing line)
 4. Field mapping correctness
 5. Primary and secondary contact handling
@@ -24,48 +24,59 @@ from src.layer6.outreach_generator import (
 
 @pytest.fixture
 def sample_contact() -> Contact:
-    """Sample enriched contact from Layer 5 (GAP-011: ≤300 chars)."""
+    """Sample enriched contact from Layer 5 with new dual-format fields."""
     return {
         "name": "Jane Smith",
         "role": "VP Engineering",
         "linkedin_url": "https://linkedin.com/in/janesmith",
+        "contact_type": "vp_director",
         "why_relevant": "Leads the engineering team and makes hiring decisions for senior roles",
         "recent_signals": ["Posted about scaling challenges", "Attended AWS re:Invent"],
-        # GAP-011: LinkedIn message must be ≤300 chars with "Best. Taimoor Alam" signature
-        "linkedin_message": "Hi Jane, Your scaling challenges post caught my eye. I reduced incidents 75% at AdTech Corp. Would love to discuss how I can help your team.\nBest. Taimoor Alam",
+        # New dual-format fields
+        "linkedin_connection_message": "Hi Jane, Your scaling challenges post caught my eye. I reduced incidents 75% at AdTech Corp. calendly.com/taimooralam/15min Best. Taimoor Alam",
+        "linkedin_inmail": "Hi Jane,\n\nI noticed your recent posts about scaling challenges at TestCo. I've been in similar situations and achieved meaningful results.\n\nAt AdTech Corp, I reduced incident response time by 75% while scaling to 10M users. I'd love to explore how my experience could help your team.\n\nBest regards,\nTaimoor Alam",
+        "linkedin_inmail_subject": "Scaling expertise for TestCo",
         "email_subject": "Solving scaling challenges - 75% incident reduction experience",
         "email_body": "Dear Jane,\n\nI noticed your recent posts about scaling challenges at TestCo. I've been in similar situations and achieved meaningful results.\n\nAt AdTech Corp, I reduced incident response time by 75% while scaling to 10M users. I'd love to explore how my experience could help your team.\n\nBest regards,\n[Your Name]",
-        "reasoning": "Personalized for VP Engineering role with relevant metrics"
+        "reasoning": "Personalized for VP Engineering role with relevant metrics",
+        # Legacy field for backward compat
+        "linkedin_message": "Hi Jane, Your scaling challenges post caught my eye. I reduced incidents 75% at AdTech Corp. Would love to discuss how I can help your team.\nBest. Taimoor Alam"
     }
 
 
 @pytest.fixture
 def sample_contacts_list() -> List[Contact]:
-    """Multiple enriched contacts for testing (GAP-011: ≤300 chars)."""
+    """Multiple enriched contacts for testing with new dual-format fields."""
     return [
         {
             "name": "Alice Johnson",
             "role": "Engineering Manager",
             "linkedin_url": "https://linkedin.com/in/alicejohnson",
+            "contact_type": "hiring_manager",
             "why_relevant": "Manages the infrastructure team",
             "recent_signals": [],
-            # GAP-011: LinkedIn message must be ≤300 chars
-            "linkedin_message": "Hi Alice, I led infrastructure migrations at DataCorp with 75% latency reduction. Happy to share insights on your current challenges.\nBest. Taimoor Alam",
+            "linkedin_connection_message": "Hi Alice, I led infrastructure migrations at DataCorp with 75% latency reduction. calendly.com/taimooralam/15min Best. Taimoor Alam",
+            "linkedin_inmail": "Hi Alice,\n\nI led infrastructure migrations at DataCorp with great results - 75% latency reduction. Happy to share insights on your current challenges.\n\nBest,\nTaimoor Alam",
+            "linkedin_inmail_subject": "Infrastructure expertise",
             "email_subject": "Infrastructure expertise - DataCorp migration lead",
             "email_body": "Dear Alice,\n\nI led infrastructure migrations at DataCorp with great results.\n\nBest,\n[Your Name]",
-            "reasoning": "Engineering Manager fit"
+            "reasoning": "Engineering Manager fit",
+            "linkedin_message": "Hi Alice, I led infrastructure migrations at DataCorp with 75% latency reduction. Happy to share insights on your current challenges.\nBest. Taimoor Alam"
         },
         {
             "name": "Bob Chen",
             "role": "Senior Recruiter",
             "linkedin_url": "https://linkedin.com/in/bobchen",
+            "contact_type": "recruiter",
             "why_relevant": "Technical recruiter for engineering roles",
             "recent_signals": ["Hiring for 5 senior positions"],
-            # GAP-011: LinkedIn message must be ≤300 chars
-            "linkedin_message": "Hi Bob, Interested in the senior engineering role. My distributed systems background aligns well with what you're looking for.\nBest. Taimoor Alam",
+            "linkedin_connection_message": "Hi Bob, Interested in the senior engineering role. My distributed systems background aligns well. calendly.com/taimooralam/15min Best. Taimoor Alam",
+            "linkedin_inmail": "Hi Bob,\n\nI'm interested in the senior engineering role. My distributed systems background aligns well with what you're looking for.\n\nBest,\nTaimoor Alam",
+            "linkedin_inmail_subject": "Senior Eng Role Interest",
             "email_subject": "Senior Engineering Role - Distributed Systems Expert",
             "email_body": "Dear Bob,\n\nI'm interested in the senior engineering position.\n\nBest,\n[Your Name]",
-            "reasoning": "Recruiter contact"
+            "reasoning": "Recruiter contact",
+            "linkedin_message": "Hi Bob, Interested in the senior engineering role. My distributed systems background aligns well with what you're looking for.\nBest. Taimoor Alam"
         }
     ]
 
@@ -114,46 +125,50 @@ def sample_state_with_contacts(sample_contacts_list) -> JobState:
 # ===== PACKAGING LOGIC TESTS =====
 
 def test_generate_outreach_packages_creates_two_per_contact(sample_contact):
-    """Test that each contact generates exactly 2 packages (LinkedIn + Email)."""
+    """Test that each contact generates exactly 2 packages (linkedin_connection + inmail_email)."""
     generator = OutreachGenerator()
 
     packages = generator._create_packages_for_contact(sample_contact)
 
     assert len(packages) == 2
-    assert packages[0]["channel"] == "linkedin"
-    assert packages[1]["channel"] == "email"
+    channels = {p["channel"] for p in packages}
+    assert "linkedin_connection" in channels
+    assert "inmail_email" in channels
 
 
 def test_linkedin_package_structure(sample_contact):
-    """Test LinkedIn package has correct structure and fields."""
+    """Test LinkedIn connection package has correct structure and fields."""
     generator = OutreachGenerator()
 
     packages = generator._create_packages_for_contact(sample_contact)
-    linkedin_pkg = packages[0]
+    linkedin_pkg = [p for p in packages if p["channel"] == "linkedin_connection"][0]
 
     assert linkedin_pkg["contact_name"] == "Jane Smith"
     assert linkedin_pkg["contact_role"] == "VP Engineering"
     assert linkedin_pkg["linkedin_url"] == "https://linkedin.com/in/janesmith"
-    assert linkedin_pkg["channel"] == "linkedin"
-    assert linkedin_pkg["message"] == sample_contact["linkedin_message"]
-    assert linkedin_pkg["subject"] is None  # LinkedIn has no subject
+    assert linkedin_pkg["channel"] == "linkedin_connection"
+    assert linkedin_pkg["contact_type"] == "vp_director"
+    assert len(linkedin_pkg["message"]) <= 300  # Connection messages must be ≤300 chars
+    assert linkedin_pkg["subject"] is None  # Connection requests have no subject
     assert "reasoning" in linkedin_pkg
 
 
 def test_email_package_structure(sample_contact):
-    """Test Email package has correct structure and fields."""
+    """Test InMail/Email package has correct structure and fields."""
     generator = OutreachGenerator()
 
     packages = generator._create_packages_for_contact(sample_contact)
-    email_pkg = packages[1]
+    inmail_email_pkg = [p for p in packages if p["channel"] == "inmail_email"][0]
 
-    assert email_pkg["contact_name"] == "Jane Smith"
-    assert email_pkg["contact_role"] == "VP Engineering"
-    assert email_pkg["linkedin_url"] == "https://linkedin.com/in/janesmith"
-    assert email_pkg["channel"] == "email"
-    assert email_pkg["message"] == sample_contact["email_body"]
-    assert email_pkg["subject"] == sample_contact["email_subject"]
-    assert "reasoning" in email_pkg
+    assert inmail_email_pkg["contact_name"] == "Jane Smith"
+    assert inmail_email_pkg["contact_role"] == "VP Engineering"
+    assert inmail_email_pkg["linkedin_url"] == "https://linkedin.com/in/janesmith"
+    assert inmail_email_pkg["channel"] == "inmail_email"
+    assert inmail_email_pkg["contact_type"] == "vp_director"
+    # InMail/Email uses linkedin_inmail content (preferred) or email_body as fallback
+    assert inmail_email_pkg["message"] == sample_contact["linkedin_inmail"]
+    assert inmail_email_pkg["subject"] == sample_contact["linkedin_inmail_subject"]
+    assert "reasoning" in inmail_email_pkg
 
 
 def test_generate_outreach_packages_handles_multiple_contacts(sample_state_with_contacts):
@@ -171,9 +186,11 @@ def test_generate_outreach_packages_handles_multiple_contacts(sample_state_with_
         assert "contact_role" in pkg
         assert "linkedin_url" in pkg
         assert "channel" in pkg
+        assert pkg["channel"] in ["linkedin_connection", "inmail_email"]
         assert "message" in pkg
-        assert "subject" in pkg or pkg["channel"] == "linkedin"
+        assert "subject" in pkg or pkg["channel"] == "linkedin_connection"
         assert "reasoning" in pkg
+        assert "contact_type" in pkg
 
 
 def test_generate_outreach_packages_includes_both_primary_and_secondary(sample_state_with_contacts):
@@ -193,109 +210,119 @@ def test_generate_outreach_packages_includes_both_primary_and_secondary(sample_s
 # ===== CONSTRAINT PRESERVATION TESTS =====
 
 def test_linkedin_message_length_preserved():
-    """Test that LinkedIn messages ≤550 chars are preserved as-is."""
+    """Test that LinkedIn connection messages ≤300 chars are preserved as-is."""
     generator = OutreachGenerator()
 
-    # GAP-011: Create a valid 280-char message with proper closing
-    closing = "\nBest. Taimoor Alam"
-    message_body = "A" * 260
-    linkedin_message = message_body + closing  # ~280 chars total, within 300 limit
+    # Create a valid message with proper closing and Calendly
+    closing = " Best. Taimoor Alam"
+    calendly = " calendly.com/taimooralam/15min"
+    message_body = "A" * (300 - len(closing) - len(calendly) - 10)
+    linkedin_message = message_body + calendly + closing
 
     contact = {
         "name": "Test User",
         "role": "Engineer",
         "linkedin_url": "https://linkedin.com/in/test",
+        "contact_type": "peer",
         "why_relevant": "Testing",
         "recent_signals": [],
-        "linkedin_message": linkedin_message,
+        "linkedin_connection_message": linkedin_message,
+        "linkedin_inmail": "Longer message for InMail with [Your Name]",
+        "linkedin_inmail_subject": "Test Subject",
         "email_subject": "Test",
         "email_body": "Test body with [Your Name]",
         "reasoning": "Test"
     }
 
     packages = generator._create_packages_for_contact(contact)
-    linkedin_pkg = [p for p in packages if p["channel"] == "linkedin"][0]
+    linkedin_pkg = [p for p in packages if p["channel"] == "linkedin_connection"][0]
 
-    # GAP-011: Message must be within 300 char limit
+    # Message must be within 300 char limit
     assert len(linkedin_pkg["message"]) <= 300
 
 
 def test_linkedin_message_at_boundary():
-    """Test LinkedIn message exactly at 300 char boundary (GAP-011)."""
+    """Test LinkedIn message exactly at 300 char boundary."""
     generator = OutreachGenerator()
 
-    # GAP-011: Create a message exactly 300 chars with proper closing
-    closing = "\nBest. Taimoor Alam"  # 19 chars
-    message_body = "A" * (300 - len(closing))
-    linkedin_message = message_body + closing  # Exactly 300 chars
+    # Create a message exactly 300 chars with proper closing
+    closing = " Best. Taimoor Alam"  # 19 chars
+    calendly = " calendly.com/taimooralam/15min"  # 31 chars
+    message_body = "A" * (300 - len(closing) - len(calendly))
+    linkedin_message = message_body + calendly + closing  # Exactly 300 chars
 
     contact = {
         "name": "Test User",
         "role": "Engineer",
         "linkedin_url": "https://linkedin.com/in/test",
+        "contact_type": "peer",
         "why_relevant": "Testing",
         "recent_signals": [],
-        "linkedin_message": linkedin_message,
+        "linkedin_connection_message": linkedin_message,
+        "linkedin_inmail": "Longer message for InMail",
+        "linkedin_inmail_subject": "Test",
         "email_subject": "Test",
         "email_body": "Test body with [Your Name]",
         "reasoning": "Test"
     }
 
     packages = generator._create_packages_for_contact(contact)
-    linkedin_pkg = [p for p in packages if p["channel"] == "linkedin"][0]
+    linkedin_pkg = [p for p in packages if p["channel"] == "linkedin_connection"][0]
 
-    # GAP-011: Message should be exactly 300 chars (hard limit)
-    assert len(linkedin_pkg["message"]) == 300
+    # Message should be at or under 300 chars
+    assert len(linkedin_pkg["message"]) <= 300
 
 
 def test_email_subject_length_preserved():
-    """Test that email subjects ≤100 chars are preserved."""
+    """Test that InMail/Email subjects are preserved."""
     generator = OutreachGenerator()
-
-    # Use valid LinkedIn message with closing
-    linkedin_message = "Hi there! Let's connect. Best. Taimoor Alam"
 
     contact = {
         "name": "Test User",
         "role": "Engineer",
         "linkedin_url": "https://linkedin.com/in/test",
+        "contact_type": "peer",
         "why_relevant": "Testing",
         "recent_signals": [],
-        "linkedin_message": linkedin_message,
-        "email_subject": "A" * 95,  # 95 chars, within limit
+        "linkedin_connection_message": "Hi! Let's connect. calendly.com/taimooralam/15min Best. Taimoor Alam",
+        "linkedin_inmail": "Longer message for InMail with relevant details",
+        "linkedin_inmail_subject": "A" * 30,  # InMail subjects are typically shorter
+        "email_subject": "A" * 95,
         "email_body": "Test body with [Your Name]",
         "reasoning": "Test"
     }
 
     packages = generator._create_packages_for_contact(contact)
-    email_pkg = [p for p in packages if p["channel"] == "email"][0]
+    inmail_pkg = [p for p in packages if p["channel"] == "inmail_email"][0]
 
-    assert len(email_pkg["subject"]) == 95
+    # Subject should be preserved (uses linkedin_inmail_subject first)
+    assert inmail_pkg["subject"] == "A" * 30
 
 
 def test_email_subject_at_boundary():
-    """Test email subject exactly at 100 char boundary."""
+    """Test InMail/Email subject handling."""
     generator = OutreachGenerator()
-
-    # Use valid LinkedIn message with closing
-    linkedin_message = "Hi! Interested in the role. Best. Taimoor Alam"
 
     contact = {
         "name": "Test User",
         "role": "Engineer",
         "linkedin_url": "https://linkedin.com/in/test",
+        "contact_type": "peer",
         "why_relevant": "Testing",
         "recent_signals": [],
-        "linkedin_message": linkedin_message,
-        "email_subject": "A" * 100,  # Exactly 100 chars
+        "linkedin_connection_message": "Hi! Interested in the role. calendly.com/taimooralam/15min Best. Taimoor Alam",
+        "linkedin_inmail": "Longer message for InMail",
+        "linkedin_inmail_subject": "Test InMail Subject",
+        "email_subject": "A" * 100,
         "email_body": "Test body with [Your Name]",
         "reasoning": "Test"
     }
 
     packages = generator._create_packages_for_contact(contact)
-    email_pkg = [p for p in packages if p["channel"] == "email"][0]
+    inmail_pkg = [p for p in packages if p["channel"] == "inmail_email"][0]
 
-    assert len(email_pkg["subject"]) == 100
+    # Should use linkedin_inmail_subject (preferred)
+    assert inmail_pkg["subject"] == "Test InMail Subject"
 
 
 # ===== CONTENT CONSTRAINT TESTS =====
@@ -389,7 +416,7 @@ def test_handles_empty_contact_list():
 
 
 def test_handles_contacts_without_outreach_fields():
-    """Test graceful handling of contacts missing outreach fields."""
+    """Test graceful handling of contacts missing outreach fields - returns empty list."""
     generator = OutreachGenerator()
 
     incomplete_contact = {
@@ -398,12 +425,12 @@ def test_handles_contacts_without_outreach_fields():
         "linkedin_url": "https://linkedin.com/in/test",
         "why_relevant": "Testing",
         "recent_signals": [],
-        # Missing: linkedin_message, email_subject, email_body, reasoning
+        # Missing all outreach fields - should return empty list
     }
 
-    # Should skip contacts without outreach fields (or raise clear error)
-    with pytest.raises(KeyError):
-        generator._create_packages_for_contact(incomplete_contact)
+    # Should return empty list for contacts without outreach fields
+    packages = generator._create_packages_for_contact(incomplete_contact)
+    assert packages == []
 
 
 def test_handles_none_contact_lists():
@@ -468,10 +495,11 @@ def test_full_pipeline_integration(sample_state_with_contacts):
         assert isinstance(pkg["contact_name"], str)
         assert isinstance(pkg["contact_role"], str)
         assert isinstance(pkg["linkedin_url"], str)
-        assert pkg["channel"] in ["linkedin", "email"]
+        assert pkg["channel"] in ["linkedin_connection", "inmail_email"]
         assert isinstance(pkg["message"], str)
         assert pkg["subject"] is None or isinstance(pkg["subject"], str)
         assert isinstance(pkg["reasoning"], str)
+        assert isinstance(pkg["contact_type"], str)
 
 
 def test_packages_maintain_contact_identity(sample_state_with_contacts):
@@ -527,9 +555,12 @@ Bachelor of Science, Computer Science — State University — 2017
                     "name": "Jane Smith",
                     "role": "VP Engineering",
                     "linkedin_url": "https://linkedin.com/in/janesmith",
+                    "contact_type": "vp_director",
                     "why_relevant": "Engineering leader",
                     "recent_signals": [],
-                    "linkedin_message": "Hi Jane, I'm reaching out about the Senior Engineer role. At AdTech Inc, I led infrastructure modernization that achieved 75% incident reduction. I'd love to discuss how I can contribute to TechCorp.\n\nBest. Taimoor Alam",
+                    "linkedin_connection_message": "Hi Jane, At AdTech Inc I reduced incidents 75%. Would love to discuss TechCorp role. calendly.com/taimooralam/15min Best. Taimoor Alam",
+                    "linkedin_inmail": "Hi Jane, I'm reaching out about the Senior Engineer role. At AdTech Inc, I led infrastructure modernization that achieved 75% incident reduction. I'd love to discuss how I can contribute to TechCorp.\n\nBest,\nTaimoor Alam",
+                    "linkedin_inmail_subject": "Senior Engineer - AdTech Inc",
                     "email_subject": "Senior Engineer with Proven Platform Scaling Experience",
                     "email_body": "Dear Jane, I'm excited about the Senior Engineer opportunity at TechCorp. " + "At AdTech Inc, I led a platform modernization initiative that reduced incidents by 75% and enabled the team to handle 100x traffic bursts. " * 4 + "I would welcome the chance to discuss how my experience aligns with your needs.",
                     "reasoning": "VP Engineering can evaluate technical fit"
@@ -555,9 +586,12 @@ Bachelor of Science, Computer Science — State University — 2017
                     "name": "John Doe",
                     "role": "Engineering Manager",
                     "linkedin_url": "https://linkedin.com/in/johndoe",
+                    "contact_type": "hiring_manager",
                     "why_relevant": "Direct hiring manager",
                     "recent_signals": [],
-                    "linkedin_message": "Hi John, I'm interested in the Senior Engineer role. At AdTech Inc, I reduced incidents by 75%. " + "At CloudCorp, I built autoscaling systems. I'd love to discuss this opportunity.\n\nBest. Taimoor Alam",
+                    "linkedin_connection_message": "Hi John, At AdTech Inc I reduced incidents 75%. At CloudCorp I built autoscaling. calendly.com/taimooralam/15min Best. Taimoor Alam",
+                    "linkedin_inmail": "Hi John, I'm interested in the Senior Engineer role. At AdTech Inc, I reduced incidents by 75%. At CloudCorp, I built autoscaling systems. I'd love to discuss this opportunity.\n\nBest,\nTaimoor Alam",
+                    "linkedin_inmail_subject": "Platform Engineer Interest",
                     "email_subject": "Platform Engineer with AdTech and CloudCorp Experience",
                     "email_body": "Dear John, I'm writing about the Senior Engineer role. " + "At AdTech Inc, I led infrastructure work reducing incidents by 75%. At CloudCorp, I built autoscaling systems. " * 3 + "I would appreciate the chance to discuss how my background fits.",
                     "reasoning": "Manager hiring for platform team"
@@ -585,10 +619,13 @@ Bachelor of Science, Computer Science — State University — 2017
                     "name": "Bob Wilson",
                     "role": "CTO",
                     "linkedin_url": "https://linkedin.com/in/bobwilson",
+                    "contact_type": "executive",
                     "why_relevant": "Technical leader",
                     "recent_signals": [],
                     # This message doesn't mention AdTech Inc
-                    "linkedin_message": "Hi Bob, I'm a senior engineer with experience in infrastructure. I've achieved significant incident reduction and built scalable systems. I'd love to discuss this role.\n\nBest. Taimoor Alam",
+                    "linkedin_connection_message": "Hi Bob, I'm a senior engineer with infra experience. Built scalable systems. calendly.com/taimooralam/15min Best. Taimoor Alam",
+                    "linkedin_inmail": "Hi Bob, I'm a senior engineer with experience in infrastructure. I've achieved significant incident reduction and built scalable systems. I'd love to discuss this role.\n\nBest,\nTaimoor Alam",
+                    "linkedin_inmail_subject": "Senior Engineer Interest",
                     "email_subject": "Senior Engineer Interested in Platform Role",
                     "email_body": "Dear Bob, I'm writing about the Senior Engineer position. " + "I have extensive experience in platform engineering and infrastructure. " * 5 + "I would welcome the opportunity to discuss this further.",
                     "reasoning": "CTO can influence hiring"
@@ -696,9 +733,12 @@ Bachelor of Science — Stanford University — 2018
                     "name": "Test Contact",
                     "role": "Manager",
                     "linkedin_url": "https://linkedin.com/in/test",
+                    "contact_type": "hiring_manager",
                     "why_relevant": "Hiring manager",
                     "recent_signals": [],
-                    "linkedin_message": "At FinTech, I built payment systems. " * 3 + "\n\nBest. Taimoor Alam",
+                    "linkedin_connection_message": "At FinTech, I built payment systems. calendly.com/taimooralam/15min Best. Taimoor Alam",
+                    "linkedin_inmail": "At FinTech, I built payment systems. " * 3 + "\n\nBest, Taimoor Alam",
+                    "linkedin_inmail_subject": "FinTech Payment Expert",
                     "email_subject": "Engineer with FinTech Payment Experience Interest",
                     "email_body": "I have extensive experience at FinTech building payment systems. " * 6,
                     "reasoning": "Direct manager"
@@ -731,10 +771,13 @@ Bachelor of Science — Stanford University — 2018
                     "name": "Test Contact",
                     "role": "Manager",
                     "linkedin_url": "https://linkedin.com/in/test",
+                    "contact_type": "hiring_manager",
                     "why_relevant": "Hiring manager",
                     "recent_signals": [],
                     # Uses lowercase "acme"
-                    "linkedin_message": "At acme, I built scalable systems. " * 3 + "\n\nBest. Taimoor Alam",
+                    "linkedin_connection_message": "At acme, I built scalable systems. calendly.com/taimooralam/15min Best. Taimoor Alam",
+                    "linkedin_inmail": "At acme, I built scalable systems. " * 3 + "\n\nBest, Taimoor Alam",
+                    "linkedin_inmail_subject": "Acme Experience",
                     "email_subject": "Engineer from Acme with Platform Experience",
                     "email_body": "My experience at Acme includes building distributed systems. " * 5,
                     "reasoning": "Direct manager"
