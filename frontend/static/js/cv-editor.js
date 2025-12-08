@@ -449,6 +449,11 @@ class CVEditor {
 
             console.log('CV saved successfully at', result.savedAt);
 
+            // Refresh the CV preview in the job detail page if it exists
+            if (typeof renderCVPreview === 'function') {
+                renderCVPreview();
+            }
+
         } catch (error) {
             console.error('Save failed:', error);
             this.saveStatus = 'error';
