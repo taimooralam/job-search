@@ -698,17 +698,49 @@ function monitorPipeline(runId) {
 }
 
 function resetPipelineSteps() {
-    const steps = document.querySelectorAll('.pipeline-step');
-    steps.forEach(step => {
-        step.className = 'pipeline-step pending';
-        step.querySelector('.step-status').textContent = 'Pending';
-        step.querySelector('.step-error').textContent = '';
-        step.querySelector('.step-error').style.display = 'none';
-        step.querySelector('.step-duration').textContent = '--';
+    // Reset horizontal steps
+    const stepsH = document.querySelectorAll('.pipeline-step-h');
+    stepsH.forEach(step => {
+        step.classList.remove('executing', 'success', 'failed');
+        step.classList.add('pending');
+
+        const icon = step.querySelector('.step-icon-h');
+        icon.classList.remove('bg-indigo-600', 'bg-green-500', 'bg-red-500', 'text-white');
+        icon.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400');
+
+        // Reset icon display
+        step.querySelector('.step-number').classList.remove('hidden');
+        step.querySelector('.step-check').classList.add('hidden');
+        step.querySelector('.step-spinner').classList.add('hidden');
+        step.querySelector('.step-error').classList.add('hidden');
+
+        // Reset label color
+        const label = step.querySelector('.step-label-h');
+        label.classList.remove('text-indigo-600', 'dark:text-indigo-400', 'text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400');
+        label.classList.add('text-gray-500', 'dark:text-gray-400');
+
+        // Hide duration
+        const duration = step.querySelector('.step-duration-h');
+        if (duration) {
+            duration.classList.add('hidden');
+            duration.textContent = '--';
+        }
     });
 
+    // Reset progress bar and line
     document.getElementById('pipeline-overall-percent').textContent = '0%';
     document.getElementById('pipeline-overall-progress-bar').style.width = '0%';
+
+    const progressLine = document.getElementById('pipeline-progress-line');
+    if (progressLine) progressLine.style.width = '0%';
+
+    // Hide error display
+    const errorDisplay = document.getElementById('pipeline-error-display');
+    if (errorDisplay) errorDisplay.classList.add('hidden');
+
+    // Hide current step details
+    const stepDetails = document.getElementById('current-step-details');
+    if (stepDetails) stepDetails.classList.add('hidden');
 }
 
 function connectPipelineSSE(runId) {
@@ -756,42 +788,124 @@ function handlePipelineProgressUpdate(data) {
     }
 }
 
+// Step titles for current step display
+const stepTitles = {
+    'intake': { title: 'Intake', description: 'Parsing job posting and candidate profile...' },
+    'pain_points': { title: 'Pain Point Mining', description: 'Extracting company and role pain points...' },
+    'company_research': { title: 'Company Research', description: 'Researching company via FireCrawl...' },
+    'role_research': { title: 'Role Research', description: 'Analyzing specific role requirements...' },
+    'fit_scoring': { title: 'Fit Scoring', description: 'Calculating candidate fit score (0-100)...' },
+    'people_mapping': { title: 'People Mapping', description: 'Finding LinkedIn contacts and recruiters...' },
+    'cv_outreach_generation': { title: 'CV & Outreach', description: 'Generating personalized CV and outreach messages...' }
+};
+
 function updatePipelineStep(layerName, status, errorMessage, duration) {
-    const step = document.querySelector(`[data-layer="${layerName}"]`);
+    const step = document.querySelector(`.pipeline-step-h[data-layer="${layerName}"]`);
     if (!step) {
         console.warn(`Layer not found: ${layerName}`);
         return;
     }
 
+    const icon = step.querySelector('.step-icon-h');
+    const numberEl = step.querySelector('.step-number');
+    const checkEl = step.querySelector('.step-check');
+    const spinnerEl = step.querySelector('.step-spinner');
+    const errorEl = step.querySelector('.step-error');
+    const labelEl = step.querySelector('.step-label-h');
+    const durationEl = step.querySelector('.step-duration-h');
+
+    // Remove all state classes
     step.classList.remove('pending', 'executing', 'success', 'failed', 'skipped');
     step.classList.add(status);
 
-    const statusEl = step.querySelector('.step-status');
-    const statusText = {
-        pending: 'Pending',
-        executing: 'Executing...',
-        success: 'Complete',
-        failed: 'Failed',
-        skipped: 'Skipped'
-    };
-    statusEl.textContent = statusText[status] || status;
+    // Reset icon classes
+    icon.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'bg-indigo-600', 'bg-green-500', 'bg-red-500', 'text-gray-500', 'dark:text-gray-400', 'text-white', 'ring-4', 'ring-indigo-200', 'dark:ring-indigo-900');
+    labelEl.classList.remove('text-gray-500', 'dark:text-gray-400', 'text-indigo-600', 'dark:text-indigo-400', 'text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400');
 
-    const errorEl = step.querySelector('.step-error');
-    if (status === 'failed' && errorMessage) {
-        errorEl.textContent = errorMessage;
-        errorEl.style.display = 'block';
-    } else {
-        errorEl.style.display = 'none';
+    // Hide all icon variants first
+    numberEl.classList.add('hidden');
+    checkEl.classList.add('hidden');
+    spinnerEl.classList.add('hidden');
+    errorEl.classList.add('hidden');
+
+    switch (status) {
+        case 'executing':
+            icon.classList.add('bg-indigo-600', 'text-white', 'ring-4', 'ring-indigo-200', 'dark:ring-indigo-900');
+            labelEl.classList.add('text-indigo-600', 'dark:text-indigo-400');
+            spinnerEl.classList.remove('hidden');
+            // Show current step details
+            showCurrentStepDetails(layerName);
+            break;
+        case 'success':
+            icon.classList.add('bg-green-500', 'text-white');
+            labelEl.classList.add('text-green-600', 'dark:text-green-400');
+            checkEl.classList.remove('hidden');
+            // Update progress line
+            updateProgressLine(layerName);
+            break;
+        case 'failed':
+            icon.classList.add('bg-red-500', 'text-white');
+            labelEl.classList.add('text-red-600', 'dark:text-red-400');
+            errorEl.classList.remove('hidden');
+            if (errorMessage) {
+                showPipelineError(errorMessage);
+            }
+            break;
+        default: // pending, skipped
+            icon.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400');
+            labelEl.classList.add('text-gray-500', 'dark:text-gray-400');
+            numberEl.classList.remove('hidden');
     }
 
-    if (duration) {
-        const durationEl = step.querySelector('.step-duration');
+    // Show duration if provided
+    if (duration && durationEl) {
         durationEl.textContent = formatDuration(duration);
+        durationEl.classList.remove('hidden');
     }
+}
 
-    if (status === 'executing') {
-        step.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+function showCurrentStepDetails(layerName) {
+    const details = document.getElementById('current-step-details');
+    const titleEl = document.getElementById('current-step-title');
+    const descEl = document.getElementById('current-step-description');
+
+    if (!details || !titleEl || !descEl) return;
+
+    const stepInfo = stepTitles[layerName] || { title: 'Processing...', description: 'Working on pipeline step...' };
+    titleEl.textContent = stepInfo.title;
+    descEl.textContent = stepInfo.description;
+    details.classList.remove('hidden');
+}
+
+function showPipelineError(message) {
+    const errorDisplay = document.getElementById('pipeline-error-display');
+    const errorMessage = document.getElementById('pipeline-error-message');
+
+    if (!errorDisplay || !errorMessage) return;
+
+    errorMessage.textContent = message;
+    errorDisplay.classList.remove('hidden');
+
+    // Hide current step details
+    const stepDetails = document.getElementById('current-step-details');
+    if (stepDetails) stepDetails.classList.add('hidden');
+}
+
+function updateProgressLine(layerName) {
+    const progressLine = document.getElementById('pipeline-progress-line');
+    if (!progressLine) return;
+
+    // Find completed step number
+    const step = document.querySelector(`.pipeline-step-h[data-layer="${layerName}"]`);
+    if (!step) return;
+
+    const stepNum = parseInt(step.dataset.step, 10);
+    const totalSteps = 7;
+
+    // Calculate width as percentage (each step is ~14.3% of total width)
+    // Account for the spacing - the line goes from step 1 to step 7
+    const widthPercent = ((stepNum - 1) / (totalSteps - 1)) * 100;
+    progressLine.style.width = `${widthPercent}%`;
 }
 
 function updateOverallProgress(percent) {
@@ -803,7 +917,7 @@ function updateOverallProgress(percent) {
 }
 
 function calculateOverallProgress() {
-    const steps = document.querySelectorAll('.pipeline-step');
+    const steps = document.querySelectorAll('.pipeline-step-h');
     const totalSteps = steps.length;
     let completedSteps = 0;
 
