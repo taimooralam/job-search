@@ -1007,7 +1007,15 @@ async function pollPipelineStatus(runId) {
 
 function startLogStreaming(runId) {
     const logsContent = document.getElementById('logs-content');
+    const logsContainer = document.getElementById('logs-container');
     logsContent.textContent = '';
+
+    // Show logs container automatically when streaming starts
+    logsContainer.classList.remove('hidden');
+    document.getElementById('logs-toggle-text').textContent = 'Hide';
+
+    // Mark first step as executing immediately
+    updatePipelineStep('intake', 'executing');
 
     eventSource = new EventSource(`/api/runner/jobs/${runId}/logs`);
 
@@ -1049,32 +1057,55 @@ function startLogStreaming(runId) {
 }
 
 function parseLogAndUpdateSteps(logText) {
+    // Layer detection patterns - match both module names and log messages
+    // Logs look like: "2025-12-08 21:22:00 [INFO] src.layer3.company_researcher: Searching..."
+    // Or: "LAYER 2: Pain-Point Miner"
     const layerPatterns = {
-        'intake': /Layer 1.*Intake|Starting intake|Intake layer/i,
-        'pain_points': /Layer 2.*Pain|Pain Point Mining|Starting pain/i,
-        'company_research': /Layer 3.*Company|Company Research|Researching company/i,
-        'role_research': /Layer 4.*Role|Role Research|Researching role/i,
-        'fit_scoring': /Layer 5.*Fit|Fit Scoring|Calculating fit/i,
-        'people_mapping': /Layer 6.*People|People Mapping|Finding contacts/i,
-        'cv_outreach_generation': /Layer 7.*CV|Outreach|Generating CV/i
+        'intake': /layer1[^0-9]|layer_1|LAYER 1|intake_processor|jd_extractor/i,
+        'pain_points': /layer2[^0-9]|layer_2|LAYER 2|pain.?point|pain_point_miner/i,
+        'company_research': /layer3[^0-9]|layer_3|LAYER 3|company_research|company_researcher|crunchbase|glassdoor/i,
+        'role_research': /layer4[^0-9]|layer_4|LAYER 4|role_research|role_researcher/i,
+        'fit_scoring': /layer5[^0-9]|layer_5|LAYER 5|fit_scor|fit_analysis/i,
+        'people_mapping': /people_mapper|contact.*discovery|linkedin.*search/i,
+        'cv_outreach_generation': /layer6[^0-9]|layer_6|LAYER 6|layer7|layer_7|LAYER 7|cv_gen|outreach_gen|cv_generator|header_generator|markdown_cv|layer6_v2/i
     };
+
+    // Track which layer we detected
+    let detectedLayer = null;
 
     for (const [layerName, pattern] of Object.entries(layerPatterns)) {
         if (pattern.test(logText)) {
-            if (/starting|running|executing|processing/i.test(logText)) {
-                updatePipelineStep(layerName, 'executing');
-                calculateOverallProgress();
-            } else if (/complete|finished|done|success/i.test(logText)) {
-                updatePipelineStep(layerName, 'success');
-                calculateOverallProgress();
-            } else if (/failed|error|exception/i.test(logText)) {
-                updatePipelineStep(layerName, 'failed', logText);
-                calculateOverallProgress();
-            }
+            detectedLayer = layerName;
+            console.log(`[Pipeline] Detected layer: ${layerName} from log: ${logText.substring(0, 80)}...`);
+            break;
         }
     }
 
-    const completionMatch = logText.match(/[✓✔]\s*(Layer\s*)?(\d+|intake|pain|company|role|fit|people|cv)/i);
+    if (detectedLayer) {
+        // Check for start indicators - be more aggressive about detecting "executing" state
+        const isStarting = /LAYER \d:|Starting|Begin|Searching|Scraping|Processing|Analyzing|Generating|Mining|Researching|Running|Extracting/i.test(logText);
+        // Check for completion indicators
+        const isComplete = /complete|finished|done\b|✓|✔|success|Extracted \d+|Generated|Found \d+|Persisted|published/i.test(logText);
+        // Check for error indicators
+        const isError = /failed|error|exception|❌/i.test(logText);
+
+        if (isError) {
+            console.log(`[Pipeline] ${detectedLayer} -> FAILED`);
+            updatePipelineStep(detectedLayer, 'failed', logText);
+            calculateOverallProgress();
+        } else if (isComplete) {
+            console.log(`[Pipeline] ${detectedLayer} -> SUCCESS`);
+            updatePipelineStep(detectedLayer, 'success');
+            calculateOverallProgress();
+        } else if (isStarting) {
+            console.log(`[Pipeline] ${detectedLayer} -> EXECUTING`);
+            updatePipelineStep(detectedLayer, 'executing');
+            calculateOverallProgress();
+        }
+    }
+
+    // Also check for explicit layer completion markers
+    const completionMatch = logText.match(/[✓✔]\s*(Layer\s*)?(\d+)/i);
     if (completionMatch) {
         const layerMap = {
             '1': 'intake',
@@ -1085,14 +1116,23 @@ function parseLogAndUpdateSteps(logText) {
             '6': 'people_mapping',
             '7': 'cv_outreach_generation'
         };
-        const layerKey = layerMap[completionMatch[2]] || completionMatch[2].toLowerCase();
-        const layerName = Object.keys(layerPatterns).find(name =>
-            name.includes(layerKey) || layerKey.includes(name.split('_')[0])
-        );
+        const layerName = layerMap[completionMatch[2]];
         if (layerName) {
             updatePipelineStep(layerName, 'success');
             calculateOverallProgress();
         }
+    }
+
+    // Check for "Pipeline completed" message
+    if (/pipeline.*completed|all layers.*complete|run.*complete/i.test(logText)) {
+        // Mark all steps as complete
+        ['intake', 'pain_points', 'company_research', 'role_research', 'fit_scoring', 'people_mapping', 'cv_outreach_generation'].forEach(layer => {
+            const step = document.querySelector(`.pipeline-step-h[data-layer="${layer}"]`);
+            if (step && !step.classList.contains('success') && !step.classList.contains('failed')) {
+                updatePipelineStep(layer, 'success');
+            }
+        });
+        calculateOverallProgress();
     }
 }
 
