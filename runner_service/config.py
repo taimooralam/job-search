@@ -78,6 +78,16 @@ class RunnerSettings(BaseSettings):
         description="Redis connection URL (optional)"
     )
 
+    # === API Keys for Usage Tracking ===
+    firecrawl_api_key: Optional[str] = Field(
+        default=None,
+        description="FireCrawl API key for usage tracking"
+    )
+    openrouter_api_key: Optional[str] = Field(
+        default=None,
+        description="OpenRouter API key for credits tracking"
+    )
+
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
