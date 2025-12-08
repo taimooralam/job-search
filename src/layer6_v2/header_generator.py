@@ -42,7 +42,30 @@ from src.layer6_v2.types import (
 
 # Pydantic models for structured LLM output
 class ProfileResponse(BaseModel):
-    """Structured response for profile generation."""
+    """
+    Research-aligned structured response for profile generation.
+
+    Based on research from 625 hiring managers:
+    - 100-150 word narrative (3-5 sentences)
+    - Headline with exact job title (10.6x interview factor)
+    - Core competencies for ATS optimization
+    - 4-question framework validation
+    """
+    headline: str = Field(description="[EXACT JD TITLE] | [X]+ Years Technology Leadership")
+    narrative: str = Field(description="3-5 sentence profile paragraph (100-150 words)")
+    core_competencies: List[str] = Field(description="6-8 ATS-friendly keyword competencies")
+    highlights_used: List[str] = Field(description="Quantified achievements referenced")
+    keywords_integrated: List[str] = Field(description="JD keywords naturally included")
+    exact_title_used: str = Field(description="The exact title from the JD")
+    # 4-question framework validation
+    answers_who: bool = Field(default=True, description="Answers 'Who are you professionally?'")
+    answers_what_problems: bool = Field(default=True, description="Answers 'What problems can you solve?'")
+    answers_proof: bool = Field(default=True, description="Answers 'What proof do you have?'")
+    answers_why_you: bool = Field(default=True, description="Answers 'Why should they call you?'")
+
+
+class LegacyProfileResponse(BaseModel):
+    """Legacy response format for backward compatibility."""
     profile_text: str = Field(description="2-3 sentence profile summary")
     highlights_used: List[str] = Field(description="Quantified achievements referenced")
     keywords_integrated: List[str] = Field(description="JD keywords naturally included")
@@ -415,18 +438,51 @@ class HeaderGenerator:
             evidence_map=evidence_map,
         )
 
+    def _calculate_years_experience(self, stitched_cv: StitchedCV) -> int:
+        """
+        Calculate approximate years of experience from role periods.
+
+        Extracts years from role periods and calculates span.
+        """
+        import re
+        years = []
+        for role in stitched_cv.roles:
+            # Extract years from period strings like "2020–Present", "2018-2020"
+            year_matches = re.findall(r'20\d{2}|19\d{2}', role.period)
+            years.extend([int(y) for y in year_matches])
+
+        if years:
+            # Calculate span from earliest to latest/current
+            min_year = min(years)
+            max_year = max(years) if max(years) > 2020 else 2024  # Assume current if recent
+            return max(max_year - min_year, 5)  # Minimum 5 years for senior roles
+        return 10  # Default for senior technical leadership
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def _generate_profile_llm(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
         candidate_name: str,
+        regional_variant: str = "us_eu",
     ) -> ProfileResponse:
         """
-        Generate profile using LLM with structured output.
+        Generate research-aligned profile using LLM with structured output.
+
+        Based on research from 625 hiring managers:
+        - 100-150 word narrative (3-5 sentences)
+        - Headline with exact job title (10.6x interview factor)
+        - Core competencies for ATS optimization
+        - 4-question framework (Who/What/Proof/Why)
+        - 60/30/10 content formula
 
         Uses Pydantic for response validation.
         """
+        from src.layer6_v2.prompts.header_generation import (
+            PROFILE_SYSTEM_PROMPT,
+            build_profile_user_prompt,
+        )
+
         # Collect all bullets for context
         all_bullets = []
         for role in stitched_cv.roles:
@@ -438,7 +494,6 @@ class HeaderGenerator:
         top_metrics = self._extract_metrics_from_bullets(all_bullets)
 
         # GAP-001 FIX: Filter JD keywords to only those evidenced in experience bullets
-        # This prevents hallucinating skills like "Solidity", "Rust" that the candidate doesn't have
         jd_keywords = extracted_jd.get('top_keywords', [])[:15]
         grounded_keywords = []
         for kw in jd_keywords:
@@ -447,7 +502,6 @@ class HeaderGenerator:
             if kw_lower in combined_text:
                 grounded_keywords.append(kw)
             elif self._skill_whitelist:
-                # Also accept if it's in the master CV skill whitelist
                 all_whitelist = (
                     self._skill_whitelist.get("hard_skills", []) +
                     self._skill_whitelist.get("soft_skills", [])
@@ -459,52 +513,43 @@ class HeaderGenerator:
             f"Profile keywords: {len(grounded_keywords)}/{len(jd_keywords)} grounded in experience"
         )
 
-        # Build prompt
-        system_prompt = """You are a CV profile writer specializing in executive summaries.
+        # Calculate years of experience for headline
+        years_experience = self._calculate_years_experience(stitched_cv)
 
-Your mission: Write a 2-3 sentence profile summary that:
-1. Leads with the candidate's core superpower for the target role
-2. Includes 1-2 quantified highlights FROM the experience bullets provided
-3. Uses 2-3 JD keywords naturally (ONLY from the pre-filtered list provided)
-4. Matches the seniority level of the target role
+        # Extract pain points for "What problems can you solve?" question
+        jd_pain_points = extracted_jd.get('pain_points', [])
+        if not jd_pain_points:
+            # Fallback: use responsibilities as proxy for pain points
+            jd_pain_points = extracted_jd.get('responsibilities', [])[:5]
 
-CRITICAL ANTI-HALLUCINATION RULES:
-- ONLY reference achievements that appear in the experience bullets
-- ONLY use metrics that appear EXACTLY in the bullets (no rounding or inventing)
-- ONLY use keywords from the "GROUNDED JD KEYWORDS" list (these have been pre-verified)
-- NEVER mention technologies, languages, or skills not in the experience bullets
-- If a JD keyword isn't in the grounded list, DO NOT use it
-- Keep to 50-80 words
-- Write in third person or omit subject (e.g., "Engineering leader with..." not "I am...")
+        # Extract differentiators from candidate skills for "Why you?" question
+        candidate_differentiators = []
+        if self._skill_whitelist:
+            # Use top soft skills as differentiators
+            candidate_differentiators = self._skill_whitelist.get('soft_skills', [])[:3]
 
-Return valid JSON with:
-{
-  "profile_text": "The 2-3 sentence profile",
-  "highlights_used": ["metric 1 used", "metric 2 used"],
-  "keywords_integrated": ["keyword1", "keyword2"]
-}
-"""
+        # Get exact job title from JD (critical for 10.6x factor)
+        exact_job_title = extracted_jd.get('title', 'Engineering Leader')
+        role_category = extracted_jd.get('role_category', 'engineering_manager')
 
-        user_prompt = f"""Write a profile summary for {candidate_name}.
-
-TARGET ROLE: {extracted_jd.get('title', 'Engineering Leader')}
-ROLE CATEGORY: {extracted_jd.get('role_category', 'engineering_manager')}
-
-GROUNDED JD KEYWORDS (pre-verified to exist in candidate's experience - ONLY use these):
-{', '.join(grounded_keywords[:10]) if grounded_keywords else 'None available - focus on achievements only'}
-
-EXPERIENCE BULLETS (use ONLY achievements from these):
-{chr(10).join(f'• {b}' for b in all_bullets[:15])}
-
-QUANTIFIED METRICS AVAILABLE:
-{chr(10).join(f'- {m}' for m in top_metrics)}
-
-Generate the profile JSON:"""
+        # Build research-aligned prompt
+        user_prompt = build_profile_user_prompt(
+            candidate_name=candidate_name,
+            job_title=exact_job_title,
+            role_category=role_category,
+            top_keywords=grounded_keywords,
+            experience_bullets=all_bullets[:20],
+            metrics=top_metrics,
+            years_experience=years_experience,
+            regional_variant=regional_variant,
+            jd_pain_points=jd_pain_points,
+            candidate_differentiators=candidate_differentiators,
+        )
 
         # Call LLM with structured output
         structured_llm = self.llm.with_structured_output(ProfileResponse)
         response = structured_llm.invoke([
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": PROFILE_SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ])
 
@@ -515,32 +560,71 @@ Generate the profile JSON:"""
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
         candidate_name: str,
+        regional_variant: str = "us_eu",
     ) -> ProfileOutput:
         """
-        Generate profile summary grounded in achievements.
+        Generate research-aligned profile summary grounded in achievements.
+
+        Based on research from 625 hiring managers:
+        - 100-150 word narrative (3-5 sentences)
+        - Headline with exact job title (10.6x interview factor)
+        - Core competencies for ATS optimization
+        - 4-question framework validation
 
         Args:
             stitched_cv: Stitched experience section
             extracted_jd: Extracted JD intelligence
             candidate_name: Candidate name for profile
+            regional_variant: "us_eu" (default) or "gulf"
 
         Returns:
-            ProfileOutput with grounded summary
+            ProfileOutput with research-aligned structure
         """
-        self._logger.info("Generating profile summary...")
+        self._logger.info("Generating research-aligned profile summary...")
 
         try:
-            response = self._generate_profile_llm(stitched_cv, extracted_jd, candidate_name)
+            response = self._generate_profile_llm(
+                stitched_cv, extracted_jd, candidate_name, regional_variant
+            )
+
+            # Build new research-aligned ProfileOutput
             profile = ProfileOutput(
-                text=response.profile_text,
+                headline=response.headline,
+                narrative=response.narrative,
+                core_competencies=response.core_competencies,
                 highlights_used=response.highlights_used,
                 keywords_integrated=response.keywords_integrated,
+                exact_title_used=response.exact_title_used,
+                answers_who=response.answers_who,
+                answers_what_problems=response.answers_what_problems,
+                answers_proof=response.answers_proof,
+                answers_why_you=response.answers_why_you,
+                regional_variant=regional_variant,
             )
+
+            # Log 4-question framework validation
+            if profile.all_four_questions_answered:
+                self._logger.info("✓ Profile answers all 4 hiring manager questions")
+            else:
+                missing = []
+                if not profile.answers_who:
+                    missing.append("Who are you?")
+                if not profile.answers_what_problems:
+                    missing.append("What problems?")
+                if not profile.answers_proof:
+                    missing.append("What proof?")
+                if not profile.answers_why_you:
+                    missing.append("Why you?")
+                self._logger.warning(f"Profile missing answers to: {', '.join(missing)}")
+
         except Exception as e:
             self._logger.warning(f"LLM profile generation failed: {e}. Using fallback.")
             # Fallback: Simple template-based profile
             role_category = extracted_jd.get("role_category", "engineering_manager")
-            profile = self._generate_fallback_profile(stitched_cv, role_category, candidate_name)
+            job_title = extracted_jd.get("title", "Engineering Leader")
+            profile = self._generate_fallback_profile(
+                stitched_cv, role_category, candidate_name, job_title, regional_variant
+            )
 
         self._logger.info(f"Profile generated: {profile.word_count} words")
         return profile
@@ -550,32 +634,120 @@ Generate the profile JSON:"""
         stitched_cv: StitchedCV,
         role_category: str,
         candidate_name: str,
+        job_title: str = "Engineering Leader",
+        regional_variant: str = "us_eu",
     ) -> ProfileOutput:
-        """Generate a simple fallback profile when LLM fails."""
+        """
+        Generate a research-aligned fallback profile when LLM fails.
+
+        Still follows the research principles:
+        - Headline with job title
+        - 100+ word narrative
+        - Core competencies
+        """
         # Extract some metrics
         all_bullets = []
         for role in stitched_cv.roles:
             all_bullets.extend(role.bullets)
         metrics = self._extract_metrics_from_bullets(all_bullets)
 
-        # Role-specific opening
-        openings = {
-            "engineering_manager": "Engineering leader with track record of building high-performing teams",
-            "staff_principal_engineer": "Staff engineer specializing in system architecture and technical strategy",
-            "director_of_engineering": "Engineering director experienced in scaling organizations",
-            "head_of_engineering": "Head of Engineering with experience building engineering functions",
-            "cto": "Technology executive driving business outcomes through engineering excellence",
+        # Calculate years of experience
+        years_experience = self._calculate_years_experience(stitched_cv)
+
+        # Generate headline (research: 10.6x interview factor)
+        headline = f"{job_title} | {years_experience}+ Years Technology Leadership"
+
+        # Role-specific narrative templates (expanded to ~100 words)
+        narratives = {
+            "engineering_manager": (
+                "Engineering leader with a proven track record of building and scaling "
+                "high-performing teams that deliver exceptional results. Combines deep technical "
+                "expertise with strong people leadership to create environments where engineers "
+                "thrive and grow. Experienced in hiring, mentoring, and developing talent while "
+                "driving delivery excellence across complex technical initiatives. Passionate about "
+                "establishing engineering culture, improving processes, and enabling teams to "
+                "consistently exceed expectations."
+            ),
+            "staff_principal_engineer": (
+                "Staff engineer specializing in system architecture and technical strategy, "
+                "with expertise in designing scalable, resilient systems. Combines hands-on "
+                "technical depth with cross-team influence to drive architectural decisions "
+                "that enable business growth. Experienced in leading complex technical initiatives, "
+                "mentoring senior engineers, and establishing technical standards across organizations. "
+                "Proven ability to translate business requirements into elegant technical solutions."
+            ),
+            "director_of_engineering": (
+                "Engineering director experienced in scaling organizations and building "
+                "multi-team engineering functions. Proven ability to develop engineering managers, "
+                "establish strategic technical direction, and deliver complex programs on time "
+                "and within budget. Combines organizational leadership with technical credibility "
+                "to drive engineering excellence at scale. Passionate about creating high-performing "
+                "engineering cultures that attract and retain top talent."
+            ),
+            "head_of_engineering": (
+                "Head of Engineering with extensive experience building engineering functions "
+                "from the ground up. Expert in org design, talent strategy, and establishing "
+                "engineering excellence at scale. Combines executive presence with deep technical "
+                "understanding to drive business outcomes through technology. Proven track record "
+                "of transforming engineering organizations and delivering strategic initiatives "
+                "that create measurable business value."
+            ),
+            "cto": (
+                "Technology executive driving business transformation through engineering "
+                "excellence and strategic technology leadership. Experienced in board-level "
+                "communication, M&A technical due diligence, and defining technology vision "
+                "that enables business growth. Combines deep technical expertise with business "
+                "acumen to lead organizations through complex transformations. Proven track record "
+                "of building and scaling world-class engineering teams."
+            ),
         }
 
-        opening = openings.get(role_category, openings["engineering_manager"])
-        metric_phrase = f", achieving {metrics[0]}" if metrics else ""
+        narrative = narratives.get(role_category, narratives["engineering_manager"])
 
-        text = f"{opening}{metric_phrase}. Proven ability to deliver complex technical initiatives while developing talent and improving processes."
+        # Add metric if available
+        if metrics:
+            narrative = narrative.rstrip('.') + f", achieving outcomes like {metrics[0]}."
+
+        # Default core competencies based on role category
+        competencies_by_role = {
+            "engineering_manager": [
+                "Engineering Leadership", "Team Building", "People Development",
+                "Agile Delivery", "Technical Strategy", "Performance Management"
+            ],
+            "staff_principal_engineer": [
+                "System Architecture", "Technical Strategy", "Cross-team Collaboration",
+                "Mentorship", "Code Quality", "Performance Optimization"
+            ],
+            "director_of_engineering": [
+                "Organizational Leadership", "Strategic Planning", "Program Management",
+                "Manager Development", "Engineering Excellence", "Stakeholder Management"
+            ],
+            "head_of_engineering": [
+                "Function Building", "Org Design", "Executive Leadership",
+                "Talent Strategy", "Engineering Culture", "Business Alignment"
+            ],
+            "cto": [
+                "Technology Vision", "Executive Leadership", "Business Transformation",
+                "M&A Due Diligence", "Board Communication", "Strategic Planning"
+            ],
+        }
+
+        core_competencies = competencies_by_role.get(
+            role_category, competencies_by_role["engineering_manager"]
+        )
 
         return ProfileOutput(
-            text=text,
+            headline=headline,
+            narrative=narrative,
+            core_competencies=core_competencies,
             highlights_used=metrics[:2],
             keywords_integrated=[],
+            exact_title_used=job_title,
+            answers_who=True,
+            answers_what_problems=True,
+            answers_proof=bool(metrics),
+            answers_why_you=True,
+            regional_variant=regional_variant,
         )
 
     def generate_skills(
