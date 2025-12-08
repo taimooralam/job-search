@@ -186,37 +186,83 @@ class TestSkillsSection:
 # ===== TESTS: ProfileOutput =====
 
 class TestProfileOutput:
-    """Test ProfileOutput dataclass."""
+    """Test ProfileOutput dataclass - research-aligned version."""
 
-    def test_creates_with_text(self):
-        """Creates ProfileOutput with text."""
+    def test_creates_with_narrative(self):
+        """Creates ProfileOutput with research-aligned narrative."""
         profile = ProfileOutput(
-            text="Engineering leader with track record of building teams.",
+            headline="Senior Engineering Manager | 12+ Years Technology Leadership",
+            narrative="Engineering leader with track record of building teams.",
+            core_competencies=["Engineering Leadership", "Team Building"],
             highlights_used=["75% latency reduction"],
             keywords_integrated=["Team Leadership"],
         )
-        assert "Engineering leader" in profile.text
+        assert "Engineering leader" in profile.text  # text property returns narrative
         assert profile.word_count > 0
+        assert "12+ Years" in profile.headline
 
     def test_calculates_word_count(self):
-        """Calculates word count automatically."""
+        """Calculates word count automatically from narrative."""
         profile = ProfileOutput(
-            text="One two three four five six seven eight nine ten",
+            narrative="One two three four five six seven eight nine ten",
             highlights_used=[],
             keywords_integrated=[],
         )
         assert profile.word_count == 10
 
     def test_to_dict(self):
-        """Converts to dictionary."""
+        """Converts to dictionary with all research-aligned fields."""
         profile = ProfileOutput(
-            text="Profile text here.",
+            headline="CTO | 15+ Years Technology Leadership",
+            narrative="Profile text here.",
+            core_competencies=["Technology Vision", "Executive Leadership"],
+            highlights_used=["metric1"],
+            keywords_integrated=["keyword1"],
+            exact_title_used="CTO",
+            answers_who=True,
+            answers_what_problems=True,
+            answers_proof=True,
+            answers_why_you=True,
+        )
+        data = profile.to_dict()
+        assert data["text"] == "Profile text here."  # Legacy compatibility
+        assert data["narrative"] == "Profile text here."
+        assert data["headline"] == "CTO | 15+ Years Technology Leadership"
+        assert "word_count" in data
+        assert data["all_four_questions_answered"] is True
+
+    def test_four_questions_validation(self):
+        """Tests the 4-question framework validation."""
+        profile = ProfileOutput(
+            narrative="Some profile text",
+            answers_who=True,
+            answers_what_problems=True,
+            answers_proof=False,  # Missing proof
+            answers_why_you=True,
+        )
+        assert profile.all_four_questions_answered is False
+
+        profile.answers_proof = True
+        # Need to recalculate by creating a new instance
+        profile2 = ProfileOutput(
+            narrative="Some profile text",
+            answers_who=True,
+            answers_what_problems=True,
+            answers_proof=True,
+            answers_why_you=True,
+        )
+        assert profile2.all_four_questions_answered is True
+
+    def test_legacy_from_legacy_classmethod(self):
+        """Tests backward compatibility with legacy format."""
+        profile = ProfileOutput.from_legacy(
+            text="Legacy profile text here.",
             highlights_used=["metric1"],
             keywords_integrated=["keyword1"],
         )
-        data = profile.to_dict()
-        assert data["text"] == "Profile text here."
-        assert "word_count" in data
+        assert profile.text == "Legacy profile text here."
+        assert profile.narrative == "Legacy profile text here."
+        assert profile.word_count == 4
 
 
 # ===== TESTS: ValidationResult =====
@@ -250,12 +296,14 @@ class TestValidationResult:
 # ===== TESTS: HeaderOutput =====
 
 class TestHeaderOutput:
-    """Test HeaderOutput dataclass."""
+    """Test HeaderOutput dataclass - research-aligned version."""
 
     def test_creates_complete_header(self):
-        """Creates HeaderOutput with all sections."""
+        """Creates HeaderOutput with all research-aligned sections."""
         profile = ProfileOutput(
-            text="Profile summary.",
+            headline="Senior Engineering Manager | 12+ Years Technology Leadership",
+            narrative="Profile summary with research-aligned content.",
+            core_competencies=["Engineering Leadership", "Team Building"],
             highlights_used=[],
             keywords_integrated=[],
         )
@@ -273,8 +321,14 @@ class TestHeaderOutput:
         assert "Python" in header.all_skill_names
 
     def test_to_markdown(self):
-        """Converts to plain text format (GAP-006: no markdown)."""
-        profile = ProfileOutput("Profile text.", [], [])
+        """Converts to ATS-optimized format with PROFESSIONAL SUMMARY header."""
+        profile = ProfileOutput(
+            headline="CTO | 15+ Years Technology Leadership",
+            narrative="Profile text with research-aligned content.",
+            core_competencies=["Technology Vision", "Executive Leadership", "Cloud Architecture"],
+            highlights_used=[],
+            keywords_integrated=[],
+        )
         skills = [
             SkillsSection("Technical", [
                 SkillEvidence("Python", [], []),
@@ -293,10 +347,13 @@ class TestHeaderOutput:
             },
         )
         md = header.to_markdown()
-        # CV uses markdown formatting for TipTap editor rendering
+        # Research-aligned structure
         assert "John Developer" in md
-        assert "PROFILE" in md
-        assert "CORE COMPETENCIES" in md
+        assert "PROFESSIONAL SUMMARY" in md  # ATS-optimized header
+        assert "CTO | 15+ Years" in md  # Headline with exact title
+        assert "Core Competencies:" in md  # New competencies section
+        assert "Technology Vision" in md  # From core_competencies
+        assert "SKILLS & EXPERTISE" in md  # Skills section
         assert "EDUCATION" in md
         # Verify no heading markers (we use bold ** instead)
         assert "##" not in md
