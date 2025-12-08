@@ -5,7 +5,17 @@ This defines the data contract for the 7-layer LangGraph pipeline.
 Each layer reads from and writes to this shared state.
 """
 
-from typing import TypedDict, List, Optional, Dict, Any
+from typing import TypedDict, List, Optional, Dict, Any, Literal
+
+# Contact type classification for outreach tailoring
+# Based on linkedin/outreach.md guide principles
+ContactType = Literal[
+    "hiring_manager",   # Direct decision-maker: Engineering Manager, Team Lead, Hiring Manager
+    "recruiter",        # Talent Acquisition, Recruiter, Sourcer, HR Business Partner
+    "vp_director",      # VP Engineering, Director of X, Head of, Department Head
+    "executive",        # C-level: CEO, CTO, CFO, COO, Founder, Co-Founder
+    "peer"              # Staff/Principal Engineers, Architects, Senior ICs
+]
 
 # Import canonical STARRecord and FormField from types.py (Phase 2.1)
 # This is the 22-field schema with List-typed fields for tasks, actions, results, metrics, etc.
@@ -74,17 +84,37 @@ class Contact(TypedDict):
     Contact person at target company (Phase 7).
 
     Identified by Layer 5 with personalized outreach messages.
-    Enhanced with recent_signals for context-aware outreach.
+    Enhanced with contact_type classification and dual-format LinkedIn outreach.
+
+    Contact types (from linkedin/outreach.md):
+    - hiring_manager: Skills + team fit, peer-level thinking
+    - recruiter: Keywords matching JD, quantified achievements
+    - vp_director: Strategic outcomes, 50-150 words max
+    - executive: Extreme brevity, industry trends
+    - peer: Technical credibility, collaborative tone
     """
     name: str
     role: str
     linkedin_url: str
+    contact_type: str              # ContactType: hiring_manager, recruiter, vp_director, executive, peer
     why_relevant: str
     recent_signals: List[str]      # Recent posts, promotions, projects (Phase 7)
-    linkedin_message: str
-    email_subject: str
-    email_body: str
+
+    # Dual LinkedIn formats (from linkedin/outreach.md)
+    linkedin_connection_message: str   # ≤300 chars INCLUDING Calendly link
+    linkedin_inmail_subject: str       # 25-30 chars for mobile display
+    linkedin_inmail: str               # 400-600 chars, longer format
+
+    # Email outreach
+    email_subject: str             # 5-10 words, ≤100 chars, pain-focused
+    email_body: str                # 95-205 words with 2-3 metrics
+
+    # Metadata
     reasoning: str
+    already_applied_frame: str     # "adding_context" | "value_add" | "specific_interest"
+
+    # Legacy field (backward compatibility)
+    linkedin_message: str          # Deprecated: Use linkedin_connection_message or linkedin_inmail
 
 
 class OutreachPackage(TypedDict):
@@ -93,13 +123,19 @@ class OutreachPackage(TypedDict):
 
     Structured outreach for a specific contact across channels.
     Used by Layer 6b for per-lead personalization.
+
+    Channels:
+    - linkedin_connection: ≤300 chars with Calendly (connection request)
+    - linkedin_inmail: 400-600 chars with subject (InMail/DM)
+    - email: Full email with subject and body
     """
     contact_name: str
     contact_role: str
+    contact_type: str              # ContactType for tailored approach
     linkedin_url: str
-    channel: str                   # "linkedin" or "email"
+    channel: str                   # "linkedin_connection" | "linkedin_inmail" | "email"
     message: str                   # Main outreach message
-    subject: Optional[str]         # Email subject (None for LinkedIn)
+    subject: Optional[str]         # Email/InMail subject (None for connection request)
     reasoning: str                 # Why this approach works for this contact
 
 
