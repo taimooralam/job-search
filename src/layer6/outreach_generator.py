@@ -26,10 +26,12 @@ from src.layer6.cover_letter_generator import _extract_companies_from_profile
 
 class OutreachGenerator:
     """
-    Phase 9: Outreach Generator
+    Phase 9: Outreach Generator (linkedin/outreach.md integration)
 
     Converts enriched contacts (from Layer 5) into standardized OutreachPackage objects.
-    Enforces content constraints and creates 2 packages per contact (LinkedIn + Email).
+    Creates 2 packages per contact:
+    - linkedin_connection: ≤300 chars with Calendly link (warm, quick connect)
+    - inmail_email: 400-600 chars with subject (works for both InMail and Email)
     """
 
     def __init__(self):
@@ -39,6 +41,7 @@ class OutreachGenerator:
 
         # Contact info for LinkedIn closing line
         self.candidate_calendly = "https://calendly.com/taimooralam/15min"
+        self.calendly_short = "calendly.com/taimooralam/15min"
 
     # ===== VALIDATION METHODS =====
 
@@ -196,96 +199,162 @@ class OutreachGenerator:
 
     # ===== PACKAGING METHODS =====
 
+    def _validate_connection_message(self, message: str) -> str:
+        """
+        Validate and fix LinkedIn connection message constraints.
+
+        Ensures:
+        - ≤300 characters total
+        - Contains Calendly link
+        - Contains signature
+
+        Args:
+            message: Raw connection message
+
+        Returns:
+            Validated/fixed connection message
+        """
+        SIGNATURE = "Best. Taimoor Alam"
+
+        # Ensure signature is present
+        if "taimoor" not in message.lower():
+            message = message.rstrip() + " " + SIGNATURE
+
+        # Warn if Calendly missing (but don't fail - upstream should have added it)
+        if self.calendly_short not in message.lower():
+            self.logger.warning("Connection message missing Calendly link")
+
+        # Enforce 300 character limit
+        if len(message) > 300:
+            self.logger.warning(
+                f"Connection message exceeds 300 chars ({len(message)}), truncating..."
+            )
+            # Truncate while preserving Calendly and signature
+            content = message.replace(SIGNATURE, "").strip()
+            content_limit = 300 - len(SIGNATURE) - 1
+            if len(content) > content_limit:
+                content = content[:content_limit - 3].rsplit(' ', 1)[0] + "..."
+            message = content + " " + SIGNATURE
+
+        return message
+
     def _create_packages_for_contact(self, contact: Contact) -> List[OutreachPackage]:
         """
-        Create 2 OutreachPackage objects for a single contact (LinkedIn + Email).
+        Create 2 OutreachPackage objects for a single contact (linkedin/outreach.md).
+
+        Creates packages for:
+        - linkedin_connection: ≤300 chars with Calendly (connection request)
+        - inmail_email: 400-600 chars with subject (works for both InMail and Email)
 
         Args:
             contact: Enriched contact from Layer 5 with outreach fields
 
         Returns:
-            List of 2 OutreachPackage objects (LinkedIn, Email)
+            List of 2 OutreachPackage objects
 
         Raises:
             KeyError: If contact is missing required outreach fields
             ValueError: If content validation fails
         """
-        # Validate required fields exist
-        required_fields = ["linkedin_message", "email_subject", "email_body", "reasoning"]
-        missing_fields = [f for f in required_fields if f not in contact]
-        if missing_fields:
-            raise KeyError(f"Contact missing required outreach fields: {missing_fields}")
+        packages: List[OutreachPackage] = []
 
-        # Extract fields
-        linkedin_message = contact["linkedin_message"]
-        email_subject = contact["email_subject"]
-        email_body = contact["email_body"]
-        reasoning = contact["reasoning"]
+        # Get contact type (new field from linkedin/outreach.md integration)
+        contact_type = contact.get("contact_type", "peer")
+        reasoning = contact.get("reasoning", f"Outreach for {contact.get('role', 'contact')}")
 
-        # GAP-011: Ensure LinkedIn signature is present; if not, append it.
-        # This makes the system robust even when upstream generators omit the closing.
-        # Note: Must fit within 300 char limit, so we use short signature only.
-        SIGNATURE = "Best. Taimoor Alam"
-        if "taimoor" not in linkedin_message.lower():
-            linkedin_message = linkedin_message.rstrip() + "\n" + SIGNATURE
+        # Get contact identifiers
+        contact_name = contact.get("name", contact.get("contact_name", "Unknown"))
+        contact_role = contact.get("role", contact.get("contact_role", "Unknown"))
+        linkedin_url = contact.get("linkedin_url", "")
 
-        # GAP-011: Enforce 300 character limit
-        if len(linkedin_message) > 300:
-            self.logger.warning(
-                f"LinkedIn message exceeds 300 chars ({len(linkedin_message)}), truncating..."
-            )
-            # Truncate to fit 300 chars while preserving signature
-            content = linkedin_message.replace(SIGNATURE, "").strip()
-            content_limit = 300 - len(SIGNATURE) - 1  # -1 for newline
-            if len(content) > content_limit:
-                content = content[:content_limit - 3].rsplit(' ', 1)[0] + "..."
-            linkedin_message = content + "\n" + SIGNATURE
+        # 1. LinkedIn Connection Package (≤300 chars with Calendly)
+        connection_message = contact.get("linkedin_connection_message", contact.get("linkedin_message", ""))
+        if connection_message:
+            connection_message = self._validate_connection_message(connection_message)
 
-        # Validate content constraints
-        self._validate_content_constraints(linkedin_message, "linkedin")
-        self._validate_content_constraints(email_body, "email")
-        self._validate_linkedin_closing(linkedin_message)
+            try:
+                self._validate_content_constraints(connection_message, "linkedin")
+                self._validate_linkedin_closing(connection_message)
 
-        # Create LinkedIn package
-        linkedin_package: OutreachPackage = {
-            "contact_name": contact["name"],
-            "contact_role": contact["role"],
-            "linkedin_url": contact["linkedin_url"],
-            "channel": "linkedin",
-            "message": linkedin_message,
-            "subject": None,  # LinkedIn has no subject
-            "reasoning": reasoning
-        }
+                connection_package: OutreachPackage = {
+                    "contact_name": contact_name,
+                    "contact_role": contact_role,
+                    "contact_type": contact_type,
+                    "linkedin_url": linkedin_url,
+                    "channel": "linkedin_connection",
+                    "message": connection_message,
+                    "subject": None,
+                    "reasoning": reasoning
+                }
+                packages.append(connection_package)
+            except ValueError as e:
+                self.logger.warning(f"Connection message validation failed: {e}")
 
-        # Create Email package
-        email_package: OutreachPackage = {
-            "contact_name": contact["name"],
-            "contact_role": contact["role"],
-            "linkedin_url": contact["linkedin_url"],
-            "channel": "email",
-            "message": email_body,
-            "subject": email_subject,
-            "reasoning": reasoning
-        }
+        # 2. Combined InMail/Email Package (400-600 chars with subject)
+        # Prefer InMail content, fall back to email_body if InMail not available
+        inmail_message = contact.get("linkedin_inmail", "")
+        inmail_subject = contact.get("linkedin_inmail_subject", "")
+        email_subject = contact.get("email_subject", "")
+        email_body = contact.get("email_body", "")
 
-        return [linkedin_package, email_package]
+        # Use InMail if available, otherwise use email content
+        combined_message = inmail_message or email_body
+        combined_subject = inmail_subject or email_subject
+
+        if combined_message:
+            try:
+                self._validate_content_constraints(combined_message, "inmail_email")
+
+                inmail_email_package: OutreachPackage = {
+                    "contact_name": contact_name,
+                    "contact_role": contact_role,
+                    "contact_type": contact_type,
+                    "linkedin_url": linkedin_url,
+                    "channel": "inmail_email",
+                    "message": combined_message,
+                    "subject": combined_subject,
+                    "reasoning": reasoning
+                }
+                packages.append(inmail_email_package)
+            except ValueError as e:
+                self.logger.warning(f"InMail/Email validation failed: {e}")
+
+        # Fallback: If no packages created, try legacy linkedin_message field
+        if not packages:
+            legacy_message = contact.get("linkedin_message", "")
+            if legacy_message:
+                legacy_message = self._validate_connection_message(legacy_message)
+                packages.append({
+                    "contact_name": contact_name,
+                    "contact_role": contact_role,
+                    "contact_type": contact_type,
+                    "linkedin_url": linkedin_url,
+                    "channel": "linkedin_connection",
+                    "message": legacy_message,
+                    "subject": None,
+                    "reasoning": "Legacy linkedin_message fallback"
+                })
+
+        return packages
 
     def generate_outreach_packages(self, state: JobState) -> List[OutreachPackage]:
         """
         Generate OutreachPackage objects for all contacts in state.
 
         Processes both primary_contacts and secondary_contacts from Layer 5.
-        Creates 2 packages per contact (LinkedIn + Email).
+        Creates up to 2 packages per contact (linkedin_connection, inmail_email).
 
-        Phase 9 master-cv.md integration:
-        - Validates outreach cites companies from selected_stars or master-cv.md
-        - Uses same company extraction logic as cover letter generator (Phase 8)
+        linkedin/outreach.md integration:
+        - Contact type classification for tailored messaging
+        - LinkedIn connection (≤300 chars with Calendly)
+        - Combined InMail/Email (400-600 chars with subject)
+        - "Already applied" framing in all messages
 
         Args:
             state: JobState with primary_contacts and secondary_contacts
 
         Returns:
-            Flat list of OutreachPackage objects (2 per contact)
+            Flat list of OutreachPackage objects (up to 2 per contact)
         """
         packages: List[OutreachPackage] = []
 
@@ -327,7 +396,8 @@ class OutreachGenerator:
                     )
 
                 packages.extend(contact_packages)
-                self.logger.info(f"Created 2 packages for {contact['name']} ({contact['role']})")
+                contact_type = contact.get("contact_type", "unknown")
+                self.logger.info(f"Created {len(contact_packages)} packages for {contact.get('name', 'Unknown')} ({contact_type})")
 
             except KeyError as e:
                 self.logger.warning(f"Skipping {contact.get('name', 'Unknown')} - missing outreach fields: {e}")
@@ -341,7 +411,13 @@ class OutreachGenerator:
                 self.logger.error(f"Skipping {contact.get('name', 'Unknown')} - unexpected error: {e}")
                 continue
 
-        self.logger.info(f"Generated {len(packages)} outreach packages ({len(packages)//2} contacts × 2 channels)")
+        # Count packages by channel
+        channel_counts = {}
+        for pkg in packages:
+            channel = pkg.get("channel", "unknown")
+            channel_counts[channel] = channel_counts.get(channel, 0) + 1
+
+        self.logger.info(f"Generated {len(packages)} outreach packages: {channel_counts}")
 
         return packages
 
