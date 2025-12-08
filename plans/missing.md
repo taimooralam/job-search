@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-06 (Variant-Based CV Generation Complete - GAP-020)
+**Last Updated**: 2025-12-08 (API Integrations & CV Styling Complete)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -1050,6 +1050,97 @@ Added comprehensive FireCrawl credit tracking and dashboard widget.
 - Auto-refresh every 30 seconds via HTMX
 - Progress bar with color coding
 - Fallback to local rate limiter when VPS unavailable
+
+---
+
+### GAP-071: FireCrawl API Integration & Token Usage ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-08) | **Effort**: 1.5 hours
+**Impact**: Real-time API usage tracking and fallback support
+
+**Implementation** (2025-12-08):
+
+**FireCrawl API Usage** (`runner_service/app.py:533-614`):
+1. Calls actual `GET https://api.firecrawl.dev/v1/team/token-usage` API
+2. Parses response with proper error handling
+3. Falls back to local rate limiter if API unavailable
+4. Added `firecrawl_api_key` to `src/common/config.py`
+
+**OpenRouter Credits API** (`runner_service/app.py:618-674`):
+1. New endpoint `/openrouter/credits` calls OpenRouter API
+2. Returns remaining credits and reset date
+3. Models added to `runner_service/models.py`:
+   - `OpenRouterCreditsResponse` - Full response with credits and reset info
+   - Used in `/openrouter/credits` endpoint
+4. Frontend proxy endpoint in `frontend/app.py` for CORS handling
+5. Added `openrouter_api_key` to `src/common/config.py`
+
+**Files Modified**:
+- `runner_service/app.py` - Added both API endpoints with error handling
+- `runner_service/models.py` - Added `OpenRouterCreditsResponse` model
+- `frontend/app.py` - Added proxy endpoint for OpenRouter credits
+- `src/common/config.py` - Added `firecrawl_api_key` and `openrouter_api_key`
+
+**API Endpoints**:
+- `GET /firecrawl/credits` - Returns FireCrawl token usage data
+- `GET /openrouter/credits` - Returns OpenRouter credits info
+- Frontend proxies: `/api/firecrawl/credits`, `/api/openrouter/credits`
+
+---
+
+### GAP-072: CV Editor & Generation Styling Enhancements ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-08) | **Effort**: 2 hours
+**Impact**: Professional CV styling with improved typography and consistency
+
+**Implementation** (2025-12-08):
+
+**Name Display Styling** (`cv-editor.js:207`):
+- Name now renders in full caps: "TAIMOOR ALAM"
+- Uses text-transform: uppercase CSS
+- Consistent across editor and PDF output
+
+**Role Tagline** (`cv-editor.js:210-212`):
+- New H3 role tagline placeholder added
+- Format: `{JD Title} · {Generic Title}`
+- Example: "Principal Engineer · Staff Architect"
+- Added `_get_generic_title()` helper in orchestrator for role category mapping
+
+**Small Caps Toggle** (`_cv_editor_panel.html:235-240`):
+- New button added to CV editor toolbar
+- Toggles small caps styling on name and section headings
+- Visual indicator shows when small caps is active
+
+**CV Generation Styling** (`src/layer6_v2/orchestrator.py`):
+- Removed emojis from contact info for professional appearance
+- Changed separators to dot (·) format
+- Contact line format: `Email · Phone · LinkedIn · GitHub`
+- Name renders in uppercase
+- Added role tagline as H3: `{JD Title} · {Generic Title}`
+- Added `_get_generic_title()` helper for role category mapping:
+  - Backend Engineer → "Senior Backend Engineer"
+  - Platform Engineer → "Staff Platform Engineer"
+  - etc.
+
+**Small Caps CSS** (`cv-editor.css:337-341`):
+```css
+.small-caps-enabled h1 {
+    font-variant: small-caps;
+}
+.small-caps-enabled h2 {
+    font-variant: small-caps;
+}
+```
+
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Updated name display and tagline logic
+- `frontend/templates/_cv_editor_panel.html` - Added small caps toggle button
+- `frontend/static/css/cv-editor.css` - Added small caps styling
+- `src/layer6_v2/orchestrator.py` - Updated CV text assembly with new styling
+  - Removed emojis from contact info
+  - Added dot separators
+  - Added uppercase name and tagline
+  - Added `_get_generic_title()` helper method
+
+**Result**: CVs now have consistent, professional styling across editor and generated output
 
 ---
 
