@@ -198,10 +198,12 @@ def sample_stitched_cv():
 
 @pytest.fixture
 def sample_header_output():
-    """Sample header output."""
+    """Sample header output with research-aligned profile."""
     return HeaderOutput(
         profile=ProfileOutput(
-            text="Engineering leader with 10+ years experience building high-performing teams.",
+            headline="Senior Engineering Manager | 12+ Years Technology Leadership",
+            narrative="Engineering leader with 10+ years experience building high-performing teams.",
+            core_competencies=["Engineering Leadership", "Team Building", "Platform Architecture"],
             highlights_used=["Platform migration", "75% latency reduction"],
             keywords_integrated=["engineering", "leader", "platform"],
         ),
