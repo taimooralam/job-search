@@ -334,6 +334,12 @@
     -moz-user-select: none;
 }
 
+/* Small caps styling for editor content */
+#cv-editor-content .ProseMirror span[style*="font-variant: small-caps"],
+#cv-editor-content .ProseMirror .small-caps {
+    font-variant: small-caps;
+}
+
 /* Smooth scrolling for editor content */
 #cv-editor-content {
     scroll-behavior: smooth;
