@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-11-30 | **Status**: 7 layers + frontend complete, infrastructure hardened
+**Last Updated**: 2025-12-08 | **Status**: 7 layers + frontend complete, API integrations & CV styling enhanced
 
 ---
 
@@ -65,7 +65,25 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
 
 ### Layer 6: Generator & LinkedIn Outreach
 
-**CV Generation - Variant-Based Selection** (NEW - 2025-12-06):
+**CV Styling & Display** (Updated - 2025-12-08):
+
+**Name & Contact Formatting**:
+- Name: Uppercase rendering "TAIMOOR ALAM"
+- Contact separators: Dot format (·) instead of emoji
+- Contact line: `Email · Phone · LinkedIn · GitHub`
+
+**Role Tagline** (NEW):
+- H3 format: `{JD Title} · {Generic Title}`
+- Example: "Principal Engineer · Staff Architect"
+- Helper method: `_get_generic_title()` maps role categories to generic titles
+- Auto-inserted after contact line
+
+**Small Caps Option** (NEW - Frontend):
+- Toggle button in CV editor toolbar
+- Applies `font-variant: small-caps` to headings
+- Persistent across editor sessions
+
+**CV Generation - Variant-Based Selection** (Completed - 2025-12-06):
 
 ```
 JD Keywords + Pain Points
@@ -214,6 +232,24 @@ class JobState(TypedDict):
 | **FireCrawl** | 3, 5 | Web scraping, contact discovery |
 | **Google Drive** | 7 | Optional output storage |
 | **Google Sheets** | 7 | Optional tracking |
+| **FireCrawl Credits API** | 5 | Real-time token usage tracking (NEW 2025-12-08) |
+| **OpenRouter Credits API** | Dashboard | Credit balance monitoring (NEW 2025-12-08) |
+
+### API Integration Details (NEW - 2025-12-08)
+
+**FireCrawl Token Usage**:
+- Endpoint: `GET /firecrawl/credits` (runner service)
+- Calls: `GET https://api.firecrawl.dev/v1/team/token-usage`
+- Returns: Used credits, remaining, daily limit
+- Fallback: Local rate limiter if API unavailable
+- Config: `FIRECRAWL_API_KEY` env variable
+
+**OpenRouter Credits**:
+- Endpoint: `GET /openrouter/credits` (runner service)
+- Calls: OpenRouter REST API
+- Returns: Remaining credits, reset date
+- Frontend proxy: `/api/openrouter/credits` (CORS handling)
+- Config: `OPENROUTER_API_KEY` env variable
 
 ---
 
@@ -233,7 +269,7 @@ class JobState(TypedDict):
 
 ---
 
-## CV Rich Text Editor (Phases 1-6 Complete)
+## CV Rich Text Editor (Phases 1-6 Complete, Enhanced 2025-12-08)
 
 **Technology**: TipTap v2 (ProseMirror), 60+ Google Fonts, Playwright PDF
 
@@ -258,6 +294,13 @@ Pipeline (Markdown) ──► MongoDB cv_text
 - Endpoints: `/health`, `/render-pdf`, `/cv-to-pdf`
 - HTML to PDF via Playwright with embedded fonts, margin validation (defense-in-depth)
 - Error handling: 400 (invalid state), 500 (rendering failed), 503 (service unavailable)
+
+**Enhanced Features** (2025-12-08):
+- Name displays in uppercase styling
+- Role tagline added as H3 below contact info
+- Contact info uses dot separators (no emoji)
+- Small caps toggle button in toolbar
+- Consistent styling between editor and generated output
 
 ---
 
