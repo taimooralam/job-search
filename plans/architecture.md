@@ -48,22 +48,58 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
 - Disabled by default (`ENABLE_STAR_SELECTOR=false`)
 
 ### Layer 3 & 3.5: Company & Role Research
-- **Company**: FireCrawl queries → cached in MongoDB (7-day TTL)
-- **Role**: Summary, business impact, "why now" timing
-- Sources: Official site, LinkedIn, Crunchbase, news
+
+**Company Research** (Layer 3):
+- **Direct Employers**: FireCrawl queries → cached in MongoDB (7-day TTL)
+  - Sources: Official site, LinkedIn, Crunchbase, news
+  - Full research for company signals and culture fit
+- **Recruitment Agencies** (NEW - 2025-12-08):
+  - Company type detection: Heuristic keywords + LLM fallback
+  - Skips deep research (no LinkedIn, Crunchbase, news scraping)
+  - Returns basic summary with empty signals list
+  - Sets `company_type: "recruitment_agency"` in response
+  - Keywords detected: "recruitment", "staffing", "talent", "headhunter", "agency", "employment", "placement"
+
+**Role Research** (Layer 3.5):
+- **Direct Employers**: Summary, business impact, "why now" timing
+- **Recruitment Agencies** (NEW):
+  - Skips processing entirely (client company unknown)
+  - Returns `role_research: None`
+  - Signals downstream layers to adapt behavior
 
 ### Layer 4: Opportunity Mapper
 - Fit scoring (0-100) with rationale
 - Validates against job requirements
+- **Recruitment Agencies** (NEW - 2025-12-08):
+  - Adds contextual note to fit_rationale: "This is a recruitment agency position..."
+  - Scoring based on job requirements only (no company signals considered)
+  - Prevents culture fit assessment (client company unknown)
 
 ### Layer 5: People Mapper
-- **FireCrawl Enabled** (default disabled): SEO-style LinkedIn queries + top-4 contact filtering
-  - Scoring: Authority > Role relevance > Engagement recency > Accessibility
-  - Cost impact: 80% reduction in API calls (4 vs 20 contacts)
-- **FireCrawl Disabled**: Synthetic contacts (4 primary + 4 secondary)
+- **Direct Employers**:
+  - **FireCrawl Enabled** (default disabled): SEO-style LinkedIn queries + top-4 contact filtering
+    - Scoring: Authority > Role relevance > Engagement recency > Accessibility
+    - Cost impact: 80% reduction in API calls (4 vs 20 contacts)
+  - **FireCrawl Disabled**: Synthetic contacts (4 primary + 4 secondary)
+- **Recruitment Agencies** (NEW - 2025-12-08):
+  - Limited contact count: 2 recruiter contacts maximum (vs 6+6 for employers)
+  - Synthetic recruiter-specific contact generation
+  - Reduces LLM calls and outreach cost
+  - Method: `_generate_agency_recruiter_contacts()`
 - Outreach: LinkedIn messages (150-550 chars), email (95-205 word body)
 
 ### Layer 6: Generator & LinkedIn Outreach
+
+**Cover Letter Generation**:
+- **Direct Employers**: Full cover letter (220-380 words) with company signals
+  - Focus: Company research, culture fit, specific pain points
+  - File: `src/layer6/cover_letter_generator.py`
+- **Recruitment Agencies** (NEW - 2025-12-08): Recruiter-specific format (150-250 words)
+  - Focus: Skills match and availability (not company signals)
+  - Tone: Direct and professional
+  - Message structure: Greeting → Skills match → Availability → CTA → Signature
+  - File: `src/layer6/recruiter_cover_letter.py`
+  - Routing: `CoverLetterGenerator` checks `company_type` to select appropriate generator
 
 **CV Styling & Display** (Updated - 2025-12-08):
 
@@ -178,6 +214,7 @@ class JobState(TypedDict):
     # Layer outputs
     pain_points: List[str]
     company_research: Dict
+    company_type: str  # "employer" | "recruitment_agency" | "unknown" (NEW - 2025-12-08)
     fit_score: int
     primary_contacts: List[Dict]
     cv_path: str
@@ -260,6 +297,11 @@ class JobState(TypedDict):
 - Side panel: CV editor (TipTap, Phase 1-5 complete)
 - Buttons: Process, Export PDF, Edit CV
 - Auto-refresh: Health status, metrics, application stats
+- **Company Type Badge** (NEW - 2025-12-08):
+  - Displays in Quick Info Bar (top right)
+  - Purple badge: "Agency" for recruitment agencies
+  - Blue badge: "Direct" for direct employers
+  - Helps users quickly identify agency vs direct roles
 
 ### Dashboard
 - Application stats: Today/week/month/total counts

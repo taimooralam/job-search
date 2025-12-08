@@ -12,11 +12,11 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 26 (15 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 27 (16 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 19 (9 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **67** (41 fixed/documented, 26 open) | All identified gaps |
+| **Total** | **68** (42 fixed/documented, 26 open) | All identified gaps |
 
-**Test Coverage**: 977 tests passing (85 variant-related + 887 existing unit + 5 benchmark), 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 992 tests passing (85 variant-related + 887 existing unit + 15 agency detection + 5 benchmark), 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -1141,6 +1141,84 @@ Added comprehensive FireCrawl credit tracking and dashboard widget.
   - Added `_get_generic_title()` helper method
 
 **Result**: CVs now have consistent, professional styling across editor and generated output
+
+---
+
+### GAP-073: Recruitment Agency Detection & Handling ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-08) | **Effort**: 4 hours
+**Impact**: Recruitment agency positions now handled distinctly with optimized processing, contacts, and copy
+
+**Implementation** (2025-12-08):
+
+**Layer 3: Company Type Classification** (`src/common/state.py`, `src/layer3/company_researcher.py`):
+- Added `company_type` field to `CompanyResearch` TypedDict (values: `"employer"` | `"recruitment_agency"` | `"unknown"`)
+- New `_classify_company_type()` method uses heuristic keyword matching (fast path) + LLM fallback for ambiguous cases
+- Keywords detected: "recruitment", "staffing", "talent", "headhunter", "agency", "employment", "placement", "hunter"
+- Agencies skip deep research (no LinkedIn, Crunchbase, news scraping) - returns basic summary only
+- Test coverage: 15 unit tests in `tests/unit/test_agency_detection.py`
+
+**Layer 3.5: Role Research Skip** (`src/layer3/role_researcher.py`):
+- Role researcher skips processing for agencies (client company unknown)
+- Returns `role_research: None` to signal downstream layers to adapt
+
+**Layer 4: Fit Scoring Note** (`src/layer4/opportunity_mapper.py`):
+- Adds contextual note to `fit_rationale`: "This is a recruitment agency position..."
+- Scoring based on job requirements only (no company signals considered)
+
+**Layer 5: Optimized Contact Count** (`src/layer5/people_mapper.py`):
+- Limit to 2 recruiter contacts maximum (vs 6+6 for employers)
+- New method `_generate_agency_recruiter_contacts()` creates synthetic recruiter contacts
+- Reduces LLM calls and outreach cost for agencies
+
+**Layer 6: Recruiter-Specific Cover Letter** (`src/layer6/recruiter_cover_letter.py` - NEW):
+- New file with `RecruiterCoverLetterGenerator` class
+- Shorter format: 150-250 words (vs 220-380 for employers)
+- Focus: skills match and availability (not company signals/culture fit)
+- Tone: Direct and professional
+- Message structure:
+  1. Greeting + role interest
+  2. Skills match (2-3 key technical + soft skills)
+  3. Availability statement
+  4. Call to action
+  5. Signature
+
+**Generator Adaptation** (`src/layer6/generator.py`):
+- Updated `CoverLetterGenerator` to conditionally select appropriate cover letter type
+- Uses `company_type` from state to route to `RecruiterCoverLetterGenerator` for agencies
+
+**Frontend UI** (`frontend/templates/job_detail.html`):
+- Company type badge displays in Quick Info Bar (top right)
+- Purple badge: "Agency" for recruitment agencies
+- Blue badge: "Direct" for direct employers
+- Badge position: Next to processing tier
+
+**Test Coverage**:
+- `tests/unit/test_agency_detection.py` (15 unit tests):
+  - Heuristic detection for common agency keywords
+  - LLM fallback classification
+  - Minimal research path validation
+  - Contact generation verification
+  - Recruiter cover letter formatting validation
+  - All tests passing with full coverage
+
+**Files Modified**:
+- `src/common/state.py` - Added company_type to CompanyResearch
+- `src/layer3/company_researcher.py` - Agency classification logic
+- `src/layer3/role_researcher.py` - Skip logic for agencies
+- `src/layer4/opportunity_mapper.py` - Agency note in rationale
+- `src/layer5/people_mapper.py` - Contact limits (2 max)
+- `src/layer6/generator.py` - Conditional cover letter selection
+- `frontend/templates/job_detail.html` - Agency badge display
+
+**Files Created**:
+- `src/layer6/recruiter_cover_letter.py` - Recruiter-specific generator (NEW)
+- `tests/unit/test_agency_detection.py` - 15 agency detection tests (NEW)
+
+**Benefits**:
+- Improved processing efficiency for agency roles (skip expensive company research)
+- Cost savings (fewer contacts, minimal research)
+- Better user experience (appropriate copy tailored to recruiter audience)
+- Full pipeline traceability with company_type field
 
 ---
 
