@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-08 (API Integrations & CV Styling Complete)
+**Last Updated**: 2025-12-08 (Pipeline UI Horizontal Layout, Meta-Prompt Fix, CV Save Refresh, Anti-Hallucination Filters)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -20,6 +20,14 @@
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
+
+### Today's Fixes (2025-12-08)
+
+- **Pipeline UI Horizontal Layout**: Converted vertical pipeline steps to horizontal with progress line and icons
+- **Meta-Prompt Endpoint Fix**: Fixed "db not defined" error in meta-prompt route
+- **CV Save Display Refresh**: Added renderCVPreview() call after successful save for immediate visual feedback
+- **Skills Hallucination Fix - Profile**: Added keyword grounding filter to only use JD keywords with evidence
+- **Skills Hallucination Fix - Improver**: Updated IMPROVEMENT_STRATEGIES with anti-hallucination rules
 
 ### Today's Fixes (2025-12-01)
 - **GAP-007**: Time filters now include hidden datetime inputs for hour-level precision
@@ -50,18 +58,28 @@
 ## P0: CRITICAL (Must Fix Immediately)
 
 ### GAP-001: CV V2 - Hallucinated Skills
-**Priority**: P0 CRITICAL | **Status**: ✅ FIXED (2025-11-30) | **Effort**: 1.5 days
+**Priority**: P0 CRITICAL | **Status**: ✅ FIXED (2025-12-08 ENHANCED) | **Effort**: 1.5 days
 **Impact**: CVs claim Java/PHP/Spring Boot expertise candidate DOESN'T have
 
 **Root Cause**: Hardcoded skill lists in `src/layer6_v2/header_generator.py:200-226`
 
-**Fix Implemented**:
+**Original Fix** (2025-11-30):
 1. Added `get_all_hard_skills()`, `get_all_soft_skills()`, `get_skill_whitelist()` to CVLoader
 2. Replaced hardcoded skill lists with dynamic whitelist from master-CV
 3. Only skills from `data/master-cv/roles/*.md` now appear in generated CVs
 4. JD keywords only included if they have evidence in experience bullets
 
-**Commit**: `85bebfea` - fix(cv-v2): prevent hallucinated skills and add dynamic categories
+**Enhanced Fix** (2025-12-08):
+1. **Profile Section** (`header_generator.py:440-502`): Added keyword grounding filter
+   - Only uses JD keywords if candidate has explicit evidence
+   - Checks against experience bullets and master-CV skills whitelist
+   - Prevents profile from claiming skills with no defensive evidence
+2. **CV Improver** (`improver.py`): Added anti-hallucination tactics to IMPROVEMENT_STRATEGIES
+   - Explicit "CRITICAL ANTI-HALLUCINATION RULES" in system prompt
+   - Forbids adding skills candidate doesn't have evidence for
+   - Validates all generated skills against master-CV whitelist
+
+**Commits**: `85bebfea`, `[session-08-12-2025]` - Enhanced anti-hallucination filtering
 
 ---
 
@@ -1219,6 +1237,84 @@ Added comprehensive FireCrawl credit tracking and dashboard widget.
 - Cost savings (fewer contacts, minimal research)
 - Better user experience (appropriate copy tailored to recruiter audience)
 - Full pipeline traceability with company_type field
+
+---
+
+### GAP-075: Pipeline UI Horizontal Layout ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-08) | **Effort**: 2-3 hours
+**Impact**: Pipeline progress steps now display horizontally with progress line and visual icons
+
+**Implementation** (2025-12-08):
+
+**Frontend Updates** (`frontend/templates/partials/job_detail/_pipeline_progress.html`):
+- Converted 7-layer pipeline from vertical stepper to horizontal layout
+- Added progress line connecting steps with gradient styling
+- Added circular icons for each pipeline layer (integrated, analyzing, researching, scoring, mapping, generating, publishing)
+- Visual states: pending (gray) → executing (blue animated pulse) → success (green checkmark) → failed (red X) → skipped (gray)
+- Responsive design with horizontal scrolling on mobile
+
+**JavaScript Updates** (`frontend/static/js/job-detail.js`):
+- Updated `resetPipelineSteps()` for horizontal layout
+- Updated `updatePipelineStep()` to handle new DOM structure
+- Added `showCurrentStepDetails()` to display layer details on click
+- Added `updateProgressLine()` to render connecting line as steps complete
+
+**Visual Enhancements**:
+- Progress line animates from left to right as steps complete
+- Current executing step has animated pulse ring effect
+- Completed steps show green checkmark with instant color transition
+- Step labels display below horizontal row for clarity
+- Overall progress percentage displayed in header
+
+**Files Modified**:
+- `frontend/templates/partials/job_detail/_pipeline_progress.html` - New horizontal layout
+- `frontend/static/js/job-detail.js` - Updated progress functions
+
+---
+
+### GAP-076: Meta-Prompt Endpoint Database Connection ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE (2025-12-08) | **Effort**: 15 minutes
+**Impact**: Meta-prompt endpoint now properly connects to MongoDB without "db not defined" error
+
+**Issue**: Endpoint was calling `db["level-2"]` without first obtaining database connection
+
+**Fix Applied** (2025-12-08):
+Added `db = get_db()` at start of meta-prompt route in `frontend/app.py:~2314`:
+```python
+@app.route('/api/meta-prompt/<job_id>', methods=['GET'])
+def get_meta_prompt(job_id):
+    db = get_db()  # ADDED: Initialize database connection
+    job = db["level-2"].find_one({"_id": ObjectId(job_id)})
+    # ... rest of endpoint
+```
+
+**Files Modified**:
+- `frontend/app.py` - Added `db = get_db()` initialization
+
+---
+
+### GAP-077: CV Save Display Refresh ✅ COMPLETE
+**Priority**: P1 HIGH | **Status**: COMPLETE (2025-12-08) | **Effort**: 30 minutes
+**Impact**: CV editor changes now display immediately in preview after save
+
+**Issue**: After saving CV in editor, preview pane didn't refresh showing new changes
+
+**Fix Applied** (2025-12-08):
+Added `renderCVPreview()` call immediately after successful save in `frontend/static/js/cv-editor.js`:
+```javascript
+// After successful save response
+response = await response.json();
+if (response.status === "success") {
+    showToast("CV saved successfully", "success");
+    renderCVPreview();  // ADDED: Refresh preview immediately
+    updatePageBreaks();
+}
+```
+
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Added `renderCVPreview()` after save success
+
+**Result**: Users see CV changes reflected instantly in preview pane, improving UX feedback
 
 ---
 
