@@ -548,6 +548,15 @@ def role_researcher_node(state: JobState) -> Dict[str, Any]:
     logger.info("="*60)
     logger.info("LAYER 3.5: Role Researcher (Phase 5.2)")
     logger.info("="*60)
+
+    # Skip role research for recruitment agencies (no client company to research)
+    company_research = state.get("company_research") or {}
+    company_type = company_research.get("company_type", "employer")
+    if company_type == "recruitment_agency":
+        logger.info("SKIPPING: Recruitment agency detected - role research not applicable")
+        logger.info("="*60)
+        return {"role_research": None}
+
     logger.info(f"Analyzing role: {state['title']} at {state['company']}")
 
     # Use layer number 3.5 rounded to 4 for structured events (layer_start uses int)
