@@ -645,9 +645,12 @@ class TestOutreachPackageGeneration:
             "I am available for a brief call at your convenience to explore how we can address your specific challenges. Best regards, [Your Name]"
         )
 
+        # New dual-format response structure
         mock_response.content = json.dumps({
-            "linkedin_message": "Reduced incidents 75% at AdTech through automation. Interested in TechCorp's challenges.\nBest. Taimoor Alam",
-            "subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
+            "linkedin_connection_message": "Reduced incidents 75% at AdTech. calendly.com/taimooralam/15min Best. Taimoor Alam",
+            "linkedin_inmail": "At AdTech Corp, I achieved 75% incident reduction through automation. Interested in TechCorp's challenges.\n\nBest, Taimoor Alam",
+            "linkedin_inmail_subject": "75% Incident Reduction Expert",
+            "email_subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
             "email_body": email_body_150_words
         })
         mock_llm.invoke.return_value = mock_response
@@ -657,12 +660,13 @@ class TestOutreachPackageGeneration:
         contact = {"name": "Sarah", "role": "VP", "linkedin_url": "https://li.com/sarah", "why_relevant": "Manager", "recent_signals": []}
         outreach = mapper._generate_outreach_package(contact, sample_job_state)
 
-        # Should reference metrics from selected_stars
-        linkedin_msg = outreach["linkedin_message"]
-        email_body = outreach["email_body"]
+        # Should reference metrics from selected_stars - check new field names
+        linkedin_connection = outreach.get("linkedin_connection_message", "")
+        linkedin_inmail = outreach.get("linkedin_inmail", "")
+        email_body = outreach.get("email_body", "")
 
-        # Check for metrics from STAR (75%, 24x)
-        assert "75%" in linkedin_msg or "75%" in email_body or "incident" in linkedin_msg.lower()
+        # Check for metrics from STAR (75%, 24x) in any outreach format
+        assert "75%" in linkedin_connection or "75%" in linkedin_inmail or "75%" in email_body or "incident" in linkedin_connection.lower()
 
     def test_validates_email_body_length_too_short(self):
         """Email body must be at least 100 words (Phase 9 ROADMAP requirement)."""
