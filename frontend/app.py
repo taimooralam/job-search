@@ -3301,13 +3301,15 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
                 "content": parse_inline_marks(line[4:].strip())
             })
 
-        # Bullet point
-        elif line.startswith('- '):
+        # Bullet point (support both dash '-' and Unicode bullet '•')
+        elif line.startswith('- ') or line.startswith('• '):
+            # Determine prefix length: both '-' and '•' are followed by space
+            prefix_len = 2
             list_item = {
                 "type": "listItem",
                 "content": [{
                     "type": "paragraph",
-                    "content": parse_inline_marks(line[2:].strip())
+                    "content": parse_inline_marks(line[prefix_len:].strip())
                 }]
             }
 
@@ -4231,6 +4233,292 @@ def get_master_cv_stats():
         "success": True,
         "stats": stats
     })
+
+
+# ============================================================================
+# Phase 7: Interview Prep & Outcome Tracking API Endpoints
+# ============================================================================
+
+
+@app.route("/api/jobs/<job_id>/interview-prep", methods=["GET"])
+@login_required
+def get_interview_prep(job_id: str):
+    """
+    Get interview prep data for a job.
+
+    Returns:
+        JSON with interview_prep data and has_prep flag
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID"}), 400
+
+    job = collection.find_one({"_id": object_id}, {"interview_prep": 1})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    interview_prep = job.get("interview_prep")
+    return jsonify({
+        "success": True,
+        "interview_prep": interview_prep,
+        "has_prep": interview_prep is not None,
+    })
+
+
+@app.route("/api/jobs/<job_id>/interview-prep/generate", methods=["POST"])
+@login_required
+def generate_interview_prep(job_id: str):
+    """
+    Generate interview prep questions from annotations.
+
+    Uses the InterviewPredictor from layer7 to generate questions
+    based on gap annotations and concerns.
+
+    Returns:
+        JSON with generated interview_prep data
+    """
+    from src.layer7.interview_predictor import InterviewPredictor
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Check if annotations exist
+    jd_annotations = job.get("jd_annotations")
+    if not jd_annotations:
+        return jsonify({
+            "error": "No annotations found. Add gap annotations first."
+        }), 400
+
+    # Build job state from document
+    state = {
+        "job_id": str(job["_id"]),
+        "title": job.get("title", ""),
+        "company": job.get("company", ""),
+        "jd_annotations": jd_annotations,
+        "extracted_jd": job.get("extracted_jd"),
+        "company_research": job.get("company_research"),
+        "role_research": job.get("role_research"),
+        "all_stars": job.get("selected_stars") or [],
+    }
+
+    # Generate questions
+    try:
+        predictor = InterviewPredictor()
+        interview_prep = predictor.predict_questions(state)
+    except Exception as e:
+        logger.error(f"Failed to generate interview prep: {e}")
+        return jsonify({"error": f"Generation failed: {str(e)}"}), 500
+
+    # Save to database
+    collection.update_one(
+        {"_id": object_id},
+        {"$set": {
+            "interview_prep": interview_prep,
+            "updatedAt": datetime.utcnow()
+        }}
+    )
+
+    return jsonify({
+        "success": True,
+        "interview_prep": interview_prep,
+    })
+
+
+@app.route("/api/jobs/<job_id>/interview-prep/questions/<question_id>", methods=["PATCH"])
+@login_required
+def update_interview_question(job_id: str, question_id: str):
+    """
+    Update a specific interview question (practice status, notes).
+
+    Request Body:
+        practice_status: str (optional) - "not_started", "practiced", "confident"
+        user_notes: str (optional) - user's notes for the question
+
+    Returns:
+        JSON with success status
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID"}), 400
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    allowed_fields = ["practice_status", "user_notes"]
+    updates = {k: v for k, v in data.items() if k in allowed_fields}
+
+    if not updates:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    # Update specific question in array
+    set_fields = {f"interview_prep.predicted_questions.$.{k}": v for k, v in updates.items()}
+    set_fields["updatedAt"] = datetime.utcnow()
+
+    result = collection.update_one(
+        {
+            "_id": object_id,
+            "interview_prep.predicted_questions.question_id": question_id
+        },
+        {"$set": set_fields}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Question not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "updated": result.modified_count > 0
+    })
+
+
+@app.route("/api/jobs/<job_id>/outcome", methods=["GET"])
+@login_required
+def get_job_outcome(job_id: str):
+    """
+    Get application outcome for a job.
+
+    Returns:
+        JSON with outcome data
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID"}), 400
+
+    job = collection.find_one({"_id": object_id}, {"application_outcome": 1})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    outcome = job.get("application_outcome") or {
+        "status": "not_applied",
+        "interview_rounds": 0,
+    }
+
+    return jsonify({
+        "success": True,
+        "outcome": outcome,
+    })
+
+
+@app.route("/api/jobs/<job_id>/outcome", methods=["PATCH"])
+@login_required
+def update_job_outcome(job_id: str):
+    """
+    Update application outcome for a job.
+
+    Request Body:
+        status: str - outcome status
+        applied_via: str (optional)
+        response_type: str (optional)
+        interview_rounds: int (optional)
+        offer_details: str (optional)
+        notes: str (optional)
+
+    Returns:
+        JSON with updated outcome
+    """
+    from src.analytics.outcome_tracker import OutcomeTracker
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    try:
+        tracker = OutcomeTracker()
+        status = data.pop("status", None)
+        outcome = tracker.update_outcome(job_id, status=status, **data)
+
+        if outcome is None:
+            return jsonify({"error": "Failed to update outcome"}), 500
+
+        return jsonify({
+            "success": True,
+            "outcome": outcome,
+        })
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        logger.error(f"Error updating outcome: {e}")
+        return jsonify({"error": f"Update failed: {str(e)}"}), 500
+
+
+@app.route("/api/analytics/outcomes", methods=["GET"])
+@login_required
+def get_outcome_analytics():
+    """
+    Get aggregated outcome analytics.
+
+    Query Parameters:
+        days: int (optional, default 90) - date range in days
+
+    Returns:
+        JSON with effectiveness report
+    """
+    from src.analytics.outcome_tracker import OutcomeTracker
+
+    days = request.args.get("days", 90, type=int)
+
+    try:
+        tracker = OutcomeTracker()
+        report = tracker.get_effectiveness_report(date_range_days=days)
+
+        return jsonify({
+            "success": True,
+            "report": report,
+        })
+    except Exception as e:
+        logger.error(f"Error generating analytics: {e}")
+        return jsonify({"error": f"Analytics failed: {str(e)}"}), 500
+
+
+@app.route("/api/analytics/funnel", methods=["GET"])
+@login_required
+def get_conversion_funnel():
+    """
+    Get application conversion funnel metrics.
+
+    Query Parameters:
+        days: int (optional, default 90) - date range in days
+
+    Returns:
+        JSON with funnel metrics and conversion rates
+    """
+    from src.analytics.outcome_tracker import OutcomeTracker
+
+    days = request.args.get("days", 90, type=int)
+
+    try:
+        tracker = OutcomeTracker()
+        funnel = tracker.get_conversion_funnel(date_range_days=days)
+
+        return jsonify({
+            "success": True,
+            "funnel": funnel,
+        })
+    except Exception as e:
+        logger.error(f"Error generating funnel: {e}")
+        return jsonify({"error": f"Funnel calculation failed: {str(e)}"}), 500
 
 
 # ============================================================================
