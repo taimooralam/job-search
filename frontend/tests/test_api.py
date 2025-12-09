@@ -62,7 +62,12 @@ class TestSerializeJob:
         """Test that regular fields are passed through."""
         job = {"title": "Engineer", "company": "Acme", "score": 85}
         result = serialize_job(job)
-        assert result == job
+        # Regular fields passed through
+        assert result["title"] == "Engineer"
+        assert result["company"] == "Acme"
+        assert result["score"] == 85
+        # Description is always normalized (empty string if not present)
+        assert result["description"] == ""
 
 
 class TestListJobsAPI:
