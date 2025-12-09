@@ -219,6 +219,12 @@
                         Last updated: {{ job.updatedAt[:19] | replace('T', ' ') }}
                     </div>
                     {% endif %}
+                </div>
+                {# Phase 7: Application Outcome Tracker #}
+                <div class="mt-4 pt-4 border-t theme-border">
+                    {% include 'partials/job_detail/_outcome_tracker.html' %}
+                </div>
+                <div class="flex flex-wrap items-center gap-4 mt-4">
                     <!-- Process Job Button with Tier Dropdown (GAP-045) -->
                     <div class="ml-auto relative" x-data="{ open: false }" @click.away="open = false">
                         <div class="flex items-center">
@@ -735,6 +741,9 @@
             {% endif %}
 
             <!-- ===== END JOB INTELLIGENCE SECTION ===== -->
+
+            {# Phase 7: Interview Prep Panel #}
+            {% include 'partials/job_detail/_interview_prep_panel.html' %}
 
             <!-- CV Section -->
             {% if job.has_cv %}
@@ -1480,4 +1489,7 @@
 
 <!-- JD Annotation System Script -->
 <script src="/static/js/jd-annotation.js?v=20251209"></script>
+
+<!-- Phase 7: Interview Prep & Outcome Tracker Script -->
+<script src="/static/js/interview-prep.js?v=20251209"></script>
 {% endblock %}
