@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Phase 6 Outreach Annotation Integration complete
+**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, 118 tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal
 
 ---
 
@@ -268,10 +268,61 @@ Final CV: 100% pre-written, interview-defensible, no hallucinations
   4. API validation: Reject > 300 chars
 - Signature: "Best. Taimoor Alam" (MANDATORY)
 
-### Layer 7: Publisher
+### Layer 7: Publisher + Interview Prep & Analytics
+
+**Publisher** (Original Layer 7):
 - Generates dossier via `dossier_generator.py`
 - Updates MongoDB `level-2` with results
 - **DEPRECATED**: Local file storage (being replaced with PDF export API)
+
+**Interview Predictor** (NEW - 2025-12-09):
+- Module: `src/layer7/interview_predictor.py`
+- Predicts likely interview questions from CV/JD analysis gaps and concerns
+- Methods:
+  - `predict_questions_from_concerns()` - Questions addressing identified red flags
+  - `predict_questions_from_gaps()` - Questions targeting skill/experience gaps
+  - `predict_technical_questions()` - Role-specific technical questions
+  - `predict_behavioral_questions()` - Company/culture fit questions
+  - `format_prep_materials()` - Structures questions with difficulty levels and prep guidance
+- Difficulty levels: Entry, Intermediate, Advanced (difficulty-based preparation prioritization)
+- Output includes:
+  - Question text with context
+  - Expected keywords to mention
+  - Likely follow-up questions
+  - Preparation strategy per question
+  - Confidence scoring
+
+**Outcome Tracker** (NEW - 2025-12-09):
+- Module: `src/analytics/outcome_tracker.py`
+- Tracks application progression through pipeline to final outcome
+- Supported statuses: Applied → Phone Screen → Technical Interview → Final Round → Offer/Rejected/No Response/Withdrawn
+- Methods:
+  - `record_outcome()` - Log status changes with timestamp validation
+  - `get_outcome_history()` - Full timeline of status changes
+  - `calculate_conversion_rates()` - Analyze success metrics (applied→phone screen, phone screen→offer, etc.)
+  - `predict_outcome_timing()` - Estimate response times based on company signals
+  - `generate_outcome_report()` - Summary statistics and trends by company type/tier
+- Data model stores:
+  - Current status
+  - All historical transitions with timestamps
+  - Notes and feedback per status change
+  - Salary/offer details if applicable
+  - Days since application
+
+**Enhanced Type System** (NEW - 2025-12-09):
+- New types in `src/common/annotation_types.py`:
+  - `InterviewQuestion` - Question with difficulty, category, prep guidance
+  - `InterviewPrep` - Job-specific prep state with predicted questions and notes
+  - `ApplicationOutcome` - Outcome tracking with status timeline and salary info
+  - `OutcomeStatus` - Literal type for type-safe status values
+
+**Test Coverage** (NEW - 2025-12-09):
+- `test_layer7_interview_predictor.py` - 30 unit tests
+- `test_layer7_interview_predictor_edge_cases.py` - 35 edge case tests (large inputs, concurrency, budget limits)
+- `test_analytics_outcome_tracker.py` - 28 unit tests
+- `test_analytics_outcome_tracker_edge_cases.py` - 30 edge case tests (concurrent updates, timezone handling, large histories)
+- `test_annotation_types_phase7.py` - 25 type validation tests
+- Total: 118 new tests for Phase 7
 
 ---
 
@@ -413,9 +464,52 @@ class OutreachPackage(TypedDict):
 
 ---
 
+### Job Detail Page - Interview Prep & Outcome Tracking (NEW - 2025-12-09)
+
+**Interview Prep Panel** (`frontend/templates/partials/job_detail/_interview_prep_panel.html`):
+- Collapsible panel showing predicted interview questions
+- Question cards with difficulty badges (Entry/Intermediate/Advanced)
+- Category tags (Technical/Behavioral/Situational)
+- Preparation guides with expected keywords and follow-up questions
+- "Mark as Prepared" checkboxes with progress tracking (X/Y prepared)
+- User notes textarea for personal preparation notes
+- Search/filter by difficulty and category
+- "Regenerate Questions" button to trigger re-prediction
+
+**Outcome Tracker Panel** (`frontend/templates/partials/job_detail/_outcome_tracker.html`):
+- Timeline view of application status progression
+- Status change form with date/time, notes, and optional feedback
+- Color-coded status badges (green=progress, yellow=pending, red=rejected)
+- Current status summary with days since application
+- Expected next steps based on current status
+- Salary/offer details section (visible when status="offer")
+- Conversion statistics (phone screen rate, offer rate, avg response time)
+
+**API Integration** (`frontend/app.py`):
+- 7 new endpoints for interview prep and outcome tracking:
+  1. `GET /api/jobs/<id>/interview-prep` - Fetch interview prep data
+  2. `POST /api/jobs/<id>/interview-prep/predict` - Trigger question prediction
+  3. `POST /api/jobs/<id>/interview-prep/mark-prepared` - Mark question as prepared
+  4. `PUT /api/jobs/<id>/interview-prep/notes` - Save preparation notes
+  5. `GET /api/jobs/<id>/outcome-history` - Fetch full outcome timeline
+  6. `POST /api/jobs/<id>/outcome` - Log outcome status change
+  7. `GET /api/jobs/<id>/outcome-stats` - Get conversion statistics
+
+**JavaScript Functions** (`frontend/static/js/interview-prep.js`):
+- `loadInterviewPrep()` - Fetch and display questions
+- `markQuestionPrepared()` - Toggle prepared status
+- `savePreparationNotes()` - Auto-save notes with debounce
+- `filterQuestionsByDifficulty()` - Filter display by difficulty level
+- `expandQuestionDetails()` - Show full preparation guide
+- `generateNewQuestions()` - Trigger re-prediction
+
+---
+
 ### Job Detail Page
 - Main content: Cover letter, pain points, contacts
 - Pipeline progress: Horizontal layout with progress line (NEW - 2025-12-08)
+- Interview prep: Predicted questions with difficulty levels and prep guides (NEW - 2025-12-09)
+- Outcome tracker: Status timeline and conversion statistics (NEW - 2025-12-09)
 - Side panel: CV editor (TipTap, Phase 1-5 complete)
 - Buttons: Process, Export PDF, Edit CV
 - Auto-refresh: Health status, metrics, application stats
