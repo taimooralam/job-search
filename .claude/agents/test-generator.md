@@ -268,11 +268,14 @@ When generating tests, provide:
 ## Running These Tests
 
 ```bash
-# Run just these tests
-source .venv/bin/activate && pytest tests/unit/test_[module].py -v
+# Run just these tests (with parallel execution)
+source .venv/bin/activate && pytest tests/unit/test_[module].py -v -n auto
 
-# Run with coverage
-pytest tests/unit/test_[module].py -v --cov=src/[module]
+# Run with coverage (parallel)
+source .venv/bin/activate && pytest tests/unit/test_[module].py -v -n auto --cov=src/[module]
+
+# Run all unit tests in parallel
+source .venv/bin/activate && pytest tests/unit/ -v -n auto
 ```
 ```
 
@@ -297,4 +300,4 @@ You are part of a 7-agent system. After generating tests, suggest next steps:
 | Tests need UI validation | `frontend-developer` |
 | Pipeline tests needed | `pipeline-analyst` (to validate first) |
 
-End your output with: "Tests generated. Recommend running `pytest [path] -v` then using **[agent-name]** if [condition]."
+End your output with: "Tests generated. Recommend running `source .venv/bin/activate && pytest [path] -v -n auto` then using **[agent-name]** if [condition]."

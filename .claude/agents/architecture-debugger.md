@@ -1,7 +1,7 @@
 ---
 name: architecture-debugger
 description: Use this agent when: (1) The user explicitly asks to debug code or architecture-level issues, e.g., 'debug the code and architecture level issues'; (2) The user reports system-wide failures, integration problems, or design flaws across multiple components; (3) After implementing a significant feature or refactoring, when the user asks for a comprehensive review of potential issues; (4) When deployment or integration tests reveal cross-cutting concerns that span multiple layers or modules.\n\nExamples:\n- user: 'The LangGraph pipeline is failing at multiple nodes and I'm not sure why'\n  assistant: 'I'll use the architecture-debugger agent to analyze the pipeline architecture and identify the root causes of these failures.'\n- user: 'After adding the FireCrawl integration, nothing works correctly'\n  assistant: 'Let me launch the architecture-debugger agent to investigate the integration issues and their cascading effects on the system.'\n- user: 'Can you find and fix any issues in the current codebase?'\n  assistant: 'I'll use the architecture-debugger agent to perform a comprehensive analysis of code and architectural issues, then provide actionable fixes.'
-model: sonnet
+model: opus
 color: pink
 ---
 
@@ -95,6 +95,22 @@ For each issue (same numbering):
 
 ## Testing Recommendations
 [New tests needed, existing tests to update]
+
+## Running Tests After Fixes
+
+```bash
+# Always use venv and parallel execution for fast feedback
+source .venv/bin/activate && pytest tests/unit/ -v -n auto
+
+# Run specific tests related to the fix
+source .venv/bin/activate && pytest tests/unit/test_[affected_module].py -v -n auto
+
+# Verify no regressions with full test suite
+source .venv/bin/activate && pytest tests/ -v -n auto --ignore=tests/integration/ --ignore=tests/e2e/
+
+# Run integration tests after unit tests pass (sequential - may have shared state)
+source .venv/bin/activate && pytest tests/integration/ -v
+```
 
 **Quality Assurance:**
 - Cross-reference your findings with the project's architecture docs (`architecture.md`, `requirements.md`, CLAUDE.md)

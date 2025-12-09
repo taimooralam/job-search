@@ -11,12 +11,13 @@ Guidance for using Claude Code with this repository.
 | Agent | Model | When to Use |
 |-------|-------|-------------|
 | `session-continuity` | haiku | Start of session, context lost, need project briefing |
-| `job-search-architect` | sonnet | System design, requirements analysis, architecture decisions |
+| `job-search-architect` | opus | System design, requirements analysis, architecture decisions |
 | `pipeline-analyst` | sonnet | After pipeline runs, validating outputs, investigating failures |
 | `test-generator` | sonnet | Writing tests after implementing features |
 | `doc-sync` | haiku | Updating missing.md, architecture.md after work |
-| `frontend-developer` | sonnet | TipTap editor, Tailwind UI, Flask templates |
-| `architecture-debugger` | sonnet | Cross-cutting bugs, integration issues, system failures |
+| `frontend-developer` | opus | TipTap editor, Tailwind UI, Flask templates |
+| `backend-developer` | opus | Runner, FastAPI, MongoDB, LangGraph nodes, Python services |
+| `architecture-debugger` | opus | Cross-cutting bugs, integration issues, system failures |
 
 ### Delegation Decision Tree
 
@@ -34,6 +35,8 @@ User Request
     ├─ "Update docs / mark as complete" ─────→ doc-sync
     │
     ├─ "Build UI / implement editor" ────────→ frontend-developer
+    │
+    ├─ "Implement runner / API / pipeline" ──→ backend-developer
     │
     ├─ "Debug / fix / why is X failing" ─────→ architecture-debugger
     │
