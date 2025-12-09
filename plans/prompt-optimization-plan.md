@@ -1,27 +1,48 @@
-# Prompt Optimization Plan
+# Prompt Optimization Plan (GAP-030)
 
 **Created**: 2025-11-28
-**Status**: Planning
-**Related Issues**: bugs.md #4, #5, #6
+**Updated**: 2025-12-09
+**Status**: Architecture Complete, Implementation Pending
+**Priority**: P3 LOW (Phase 2 focus)
+**Related Issues**: bugs.md #4, #5, #6, missing.md GAP-030
 
 ---
 
 ## Executive Summary
 
-This plan addresses comprehensive prompt improvements across the Job Intelligence Pipeline to enhance:
+This plan addresses comprehensive prompt improvements across the 7-layer Job Intelligence Pipeline to enhance:
 - **Quality**: Reduce hallucinations, increase specificity, improve grounding
 - **Personalization**: Better STAR story mapping, role-specific CV tailoring
 - **Consistency**: Apply universal prompting best practices across all layers
 
-### Scope
+### Full Layer Inventory (December 2025 Update)
 
-Three critical components require prompt overhaul:
-1. **Layer 4 - Opportunity Mapper**: Improve fit analysis with better STAR integration
-2. **Layer 6a - Cover Letter Generator**: Enhance personalization and reduce boilerplate
-3. **Layer 6b - CV Generator**: Major overhaul for master-cv.md interpretation and role-specific nuance
+After comprehensive analysis of all pipeline layers, here is the current state:
+
+| Layer | Component | Prompt Quality | Anti-Hallucination | Priority |
+|-------|-----------|----------------|-------------------|----------|
+| 1-4 | JD Extraction & Pain Points | Good | Partial | P3 |
+| 5 | People Mapper | **Excellent** | **Excellent** | P4 |
+| 6a | Cover Letter Generator | Good | Good | P2 |
+| 6b | CV Generator | Good | **Excellent** | P2 |
+| 7 | Interview Predictor | Good | Good | **P1** |
+| 7 | Dossier Generator | N/A (formatter) | N/A | Skip |
+
+### Scope (Updated December 2025)
+
+**Five components** require optimization (updated from original 3):
+
+1. **Layer 7 - Interview Predictor** (NEW - P1): Add few-shot examples and validation
+2. **Layer 6a - Cover Letter Generator** (P2): Enhance with source citation rules
+3. **Layer 6b - CV Generator** (P2): Add competency examples, enhance hybrid QA
+4. **Layer 4 - Opportunity Mapper** (P3): Improve fit analysis with STAR integration
+5. **Layer 1-4 - Pain Point Extraction** (P3): Add confidence scoring
+
+**Template for other layers**: Layer 5 (People Mapper) sets the gold standard and should be referenced.
 
 ### Expected Improvements
 
+- **Interview Questions**: 40% quality improvement through few-shot examples
 - **Fit Analysis**: 30% improvement in rationale specificity through structured reasoning
 - **Cover Letters**: 50% reduction in generic phrases, better pain point mapping
 - **CV Generation**: Role-specific tailoring with competency-driven STAR selection
@@ -39,6 +60,190 @@ Three critical components require prompt overhaul:
 ---
 
 ## A. Current State Analysis
+
+### Layer 7 - Interview Predictor (NEW - Highest Priority)
+
+**Location**: `/Users/ala0001t/pers/projects/job-search/src/layer7/interview_predictor.py`
+
+**Current Implementation**:
+```python
+QUESTION_GENERATION_SYSTEM_PROMPT = """You are an expert interview coach who predicts likely interview questions based on job requirements and candidate gaps.
+
+## Your Task
+Analyze the provided gaps (skills/experience the candidate lacks) and concerns (red flags or mismatches) to predict 8-12 interview questions the candidate is likely to face.
+
+## CRITICAL Anti-Hallucination Rules
+1. ONLY generate questions based on the provided gaps and concerns - do NOT invent new topics
+2. Each question MUST directly relate to a specific gap or concern provided
+...
+```
+
+**Strengths**:
+- Uses `.with_structured_output(QuestionGenerationOutput)` for type safety
+- Pydantic schemas (`PredictedQuestion`, `QuestionGenerationOutput`) enforce structure
+- Anti-hallucination rules explicitly stated in prompt
+- Question types and difficulty levels well-defined
+- Source linking to gaps/concerns
+
+**Issues Identified**:
+
+1. **No Few-Shot Examples**:
+   - No examples of high-quality vs. low-quality questions
+   - LLM may generate generic questions without concrete guidance
+   - Missing examples for each question type (gap_probe, concern_probe, behavioral, etc.)
+
+2. **No Programmatic Validation**:
+   - Relies entirely on Pydantic schema validation
+   - No validation of question quality (e.g., yes/no format detection)
+   - No validation that suggested_answer_approach is substantive
+
+3. **Generic Distribution Guidance**:
+   - Says "8-12 questions" without strategic distribution
+   - No guarantee each gap/concern gets adequate coverage
+   - Could generate too many of one type
+
+4. **Missing Source Attribution**:
+   - Questions don't explicitly cite which gap/concern they address
+   - `source_annotation_id` is assigned programmatically, not by LLM
+
+**Proposed V2 Improvements**:
+
+```python
+# Add to QUESTION_GENERATION_SYSTEM_PROMPT
+
+## QUESTION QUALITY EXAMPLES
+
+### GOOD Gap Probe Question:
+GAP: "5+ years Kubernetes experience required" (candidate has 2 years)
+QUESTION: "I see you have 2 years of Kubernetes experience. Can you describe your most complex K8s deployment and what challenges you'd anticipate managing larger clusters?"
+WHY GOOD:
+- Acknowledges the gap honestly
+- Gives candidate opportunity to demonstrate depth
+- Opens door for transferable skills
+
+### BAD Gap Probe Question:
+QUESTION: "Do you have 5 years of Kubernetes experience?"
+WHY BAD:
+- Yes/no format reveals gap without redemption
+- No opportunity to demonstrate capability
+
+### GOOD Concern Probe Question:
+CONCERN: "Candidate's last role was at a much smaller company"
+QUESTION: "Your experience at StartupCo was impressive. What processes or structures would you expect to adapt when working with our 500-person engineering org?"
+WHY GOOD:
+- Positive framing
+- Shows awareness of concern
+- Tests adaptability
+
+## QUESTION DISTRIBUTION REQUIREMENTS
+- 2-3 gap probe questions (one per major gap)
+- 2-3 concern probe questions (one per flagged concern)
+- 2-3 behavioral questions (STAR format)
+- 1-2 technical deep-dives (role-specific)
+- 1 situational question (hypothetical scenario)
+
+For each question, explicitly state:
+- source_gap: "The specific gap this addresses"
+- source_concern: "The specific concern this addresses"
+```
+
+**New Validation Function**:
+```python
+def validate_question_quality(question: InterviewQuestion) -> List[str]:
+    """Post-generation quality check."""
+    errors = []
+
+    # Check 1: Question length (avoid too short/long)
+    if len(question.question) < 20:
+        errors.append(f"Question too short: {len(question.question)} chars (min 20)")
+    if len(question.question) > 300:
+        errors.append(f"Question too long: {len(question.question)} chars (max 300)")
+
+    # Check 2: Not yes/no format
+    yes_no_starters = ["do you", "have you", "can you", "will you", "are you", "did you"]
+    if any(question.question.lower().startswith(s) for s in yes_no_starters):
+        errors.append("Yes/no question format - rephrase as open-ended")
+
+    # Check 3: Approach guidance is substantive
+    if len(question.suggested_answer_approach) < 50:
+        errors.append(f"Answer approach too brief: {len(question.suggested_answer_approach)} chars (min 50)")
+
+    # Check 4: Difficulty is valid
+    if question.difficulty not in ["easy", "medium", "hard"]:
+        errors.append(f"Invalid difficulty: {question.difficulty}")
+
+    return errors
+```
+
+---
+
+### Layer 5 - People Mapper (Gold Standard Reference)
+
+**Location**: `/Users/ala0001t/pers/projects/job-search/src/layer5/people_mapper.py`
+
+**Why This Is The Gold Standard**:
+
+Layer 5 has the most mature prompt and validation implementation. Key patterns to replicate:
+
+1. **Explicit Character Count Constraints**:
+```python
+# From prompt:
+"LinkedIn Connection Request (<=300 chars INCLUDING Calendly link)"
+"LinkedIn InMail (400-600 chars with subject)"
+"Email body: 95-205 words (target 120-150)"
+```
+
+2. **Validation Checklist in Prompt**:
+```python
+**VALIDATION CHECKLIST** (output rejected if these fail):
+- linkedin_connection_message: <=300 chars, INCLUDES calendly.com/taimooralam/15min
+- linkedin_inmail: 400-600 chars, includes subject (25-30 chars)
+- email_subject: 5-10 words, pain-focused
+- email_body: 95-205 words, cites metrics
+- All messages use "already applied" framing
+- NO emojis, NO generic placeholders
+```
+
+3. **Programmatic Post-Validation**:
+```python
+def _validate_content_constraints(self, message: str, channel: str) -> None:
+    """Validates emoji, placeholder, and possessive placeholders."""
+    # Emoji pattern detection
+    # Placeholder detection (allows role-based titles)
+    # Possessive placeholder detection
+
+def _validate_linkedin_closing(self, message: str) -> None:
+    """Validates signature presence."""
+
+def _validate_linkedin_message(self, message: str) -> str:
+    """Validate and truncate to <=300 chars with intelligent truncation."""
+```
+
+4. **Few-Shot Examples Per Contact Type**:
+```python
+=== EXAMPLES BY CONTACT TYPE ===
+
+**RECRUITER Connection (298 chars):**
+"Hi [Name], applied for [Role] at [Company]. 11+ yrs scaling distributed systems..."
+
+**HIRING_MANAGER Connection (295 chars):**
+"Hi [Name], applied for [Role]. Led 12->45 engineer scaling with 92% retention..."
+
+**VP_DIRECTOR Connection (290 chars):**
+"Hi [Name], applied for [Role]. Built eng orgs through 3x growth..."
+```
+
+5. **Retry Logic with Progressive Strictness**:
+```python
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
+def _generate_outreach_package(self, contact: Dict[str, Any], state: JobState) -> Dict[str, str]:
+    # ... validation with specific error messages
+    # Fallback generation if validation fails
+```
+
+**Recommendation**: When optimizing other layers, reference Layer 5 patterns.
+
+---
 
 ### Layer 4 - Opportunity Mapper
 
