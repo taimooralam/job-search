@@ -304,24 +304,44 @@ class ImprovementSuggestions(TypedDict):
 class InterviewQuestion(TypedDict):
     """
     Predicted interview question based on gaps/concerns.
+
+    Enhanced for Phase 7 with:
+    - source_type to track origin (gap/concern/general)
+    - difficulty classification for practice prioritization
+    - sample_answer_outline for answer prep guidance
+    - practice_status tracking for user progress
+    - user_notes for personal answer notes
     """
     question_id: str                        # UUID
     question: str                           # The predicted question
     source_annotation_id: str               # Gap/concern annotation that triggered this
-    question_type: str                      # "gap_probe" | "concern_probe" | "behavioral"
+    source_type: str                        # "gap" | "concern" | "general"
+    question_type: str                      # "gap_probe" | "concern_probe" | "behavioral" | "technical" | "situational"
+    difficulty: str                         # "easy" | "medium" | "hard"
     suggested_answer_approach: str          # How to approach answering
+    sample_answer_outline: Optional[str]    # Brief answer structure (not full answer)
     relevant_star_ids: List[str]            # STAR stories to reference
+    practice_status: str                    # "not_started" | "practiced" | "confident"
+    user_notes: Optional[str]               # User's own answer notes
     created_at: str
 
 
 class InterviewPrep(TypedDict):
     """
     Interview preparation data for a job.
+
+    Enhanced for Phase 7 with:
+    - company_context for key company facts
+    - role_context for key role insights
+    - generated_by to track model used
     """
     predicted_questions: List[InterviewQuestion]
     gap_summary: str                        # Summary of gaps to address
     concerns_summary: str                   # Summary of concerns to address
+    company_context: str                    # Key company facts for interview
+    role_context: str                       # Key role insights
     generated_at: str
+    generated_by: str                       # Model used for generation
 
 
 # =============================================================================
@@ -358,6 +378,47 @@ class AnnotationOutcome(TypedDict):
     # Computed metrics
     days_to_response: Optional[int]
     days_to_interview: Optional[int]
+
+
+# Outcome Status Constants (Phase 7)
+OutcomeStatus = Literal[
+    "not_applied",                          # Default state
+    "applied",                              # Application submitted
+    "response_received",                    # Got a response (any type)
+    "screening_scheduled",                  # Phone/video screen scheduled
+    "interview_scheduled",                  # Interview scheduled
+    "interviewing",                         # In interview process
+    "offer_received",                       # Got an offer
+    "offer_accepted",                       # Accepted the offer
+    "rejected",                             # Application rejected
+    "withdrawn",                            # User withdrew
+]
+
+
+class ApplicationOutcome(TypedDict):
+    """
+    Tracks application outcome for a specific job (Phase 7).
+
+    Stored in job document for per-job tracking.
+    Enables annotation effectiveness analysis via OutcomeTracker.
+    """
+    status: str                             # OutcomeStatus value
+    applied_at: Optional[str]               # ISO timestamp
+    applied_via: Optional[str]              # "linkedin" | "website" | "email" | "referral"
+    response_at: Optional[str]
+    response_type: Optional[str]            # "rejection" | "interest" | "screening"
+    screening_at: Optional[str]
+    interview_at: Optional[str]
+    interview_rounds: int                   # Number of interview rounds
+    offer_at: Optional[str]
+    offer_details: Optional[str]            # Brief notes about offer
+    final_status_at: Optional[str]          # When final status was set
+    notes: Optional[str]                    # User notes
+
+    # Computed for analytics
+    days_to_response: Optional[int]
+    days_to_interview: Optional[int]
+    days_to_offer: Optional[int]
 
 
 # =============================================================================
