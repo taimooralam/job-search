@@ -1,0 +1,145 @@
+{# Annotation Popover - Appears when user selects text in JD viewer #}
+{# This floating popover enables quick annotation creation #}
+
+<div id="annotation-popover"
+     class="fixed z-[60] hidden bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80"
+     role="dialog"
+     aria-labelledby="popover-title"
+     style="max-height: 80vh; overflow-y: auto;">
+
+    {# Header #}
+    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+        <h3 id="popover-title" class="text-sm font-semibold text-gray-900">Create Annotation</h3>
+        <button onclick="hideAnnotationPopover()"
+                class="text-gray-400 hover:text-gray-600 p-1"
+                aria-label="Close popover">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    {# Selected Text Preview #}
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Selected Text</label>
+        <p id="popover-selected-text" class="text-sm text-gray-800 bg-yellow-50 p-2 rounded border border-yellow-200 line-clamp-3"></p>
+    </div>
+
+    {# Relevance Level #}
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Match Strength</label>
+        <div class="grid grid-cols-5 gap-1">
+            <button onclick="setPopoverRelevance('core_strength')"
+                    data-relevance="core_strength"
+                    class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
+                    title="5+ years direct experience; could teach others">
+                Core
+            </button>
+            <button onclick="setPopoverRelevance('extremely_relevant')"
+                    data-relevance="extremely_relevant"
+                    class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                    title="3-5 years; used daily in recent role">
+                Strong
+            </button>
+            <button onclick="setPopoverRelevance('relevant')"
+                    data-relevance="relevant"
+                    class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100"
+                    title="1-3 years; transferable with minor framing">
+                Medium
+            </button>
+            <button onclick="setPopoverRelevance('tangential')"
+                    data-relevance="tangential"
+                    class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                    title="Less than 1 year; requires significant reframing">
+                Weak
+            </button>
+            <button onclick="setPopoverRelevance('gap')"
+                    data-relevance="gap"
+                    class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                    title="No experience; needs mitigation strategy">
+                Gap
+            </button>
+        </div>
+    </div>
+
+    {# Requirement Type #}
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Requirement Type</label>
+        <div class="flex gap-2">
+            <button onclick="setPopoverRequirement('must_have')"
+                    data-requirement="must_have"
+                    class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                    title="Required/essential for the role">
+                Must-Have
+            </button>
+            <button onclick="setPopoverRequirement('nice_to_have')"
+                    data-requirement="nice_to_have"
+                    class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                    title="Preferred but not required">
+                Nice-to-Have
+            </button>
+            <button onclick="setPopoverRequirement('neutral')"
+                    data-requirement="neutral"
+                    class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
+                           bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100"
+                    title="Informational only">
+                Neutral
+            </button>
+        </div>
+    </div>
+
+    {# STAR Story Links #}
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Link STAR Stories</label>
+        <div id="popover-star-selector" class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
+            {# STAR checkboxes populated by JS #}
+            <p class="text-xs text-gray-400 italic">Loading STAR stories...</p>
+        </div>
+    </div>
+
+    {# Reframe Note (for gaps and tangential) #}
+    <div class="mb-3" id="popover-reframe-container">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
+            Reframe Note
+            <span class="text-gray-400 font-normal">(how to position your experience)</span>
+        </label>
+        <textarea id="popover-reframe-note"
+                  class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  rows="2"
+                  placeholder="e.g., 'While I haven't used X directly, my experience with Y demonstrates similar...'"></textarea>
+    </div>
+
+    {# Keywords #}
+    <div class="mb-4">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
+            ATS Keywords
+            <span class="text-gray-400 font-normal">(comma separated)</span>
+        </label>
+        <input type="text"
+               id="popover-keywords"
+               class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+               placeholder="e.g., Kubernetes, K8s, container orchestration">
+    </div>
+
+    {# Actions #}
+    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+        <button onclick="hideAnnotationPopover()"
+                class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition">
+            Cancel
+        </button>
+        <button onclick="saveAnnotationFromPopover()"
+                id="popover-save-btn"
+                class="px-4 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+            Add Annotation
+        </button>
+    </div>
+</div>

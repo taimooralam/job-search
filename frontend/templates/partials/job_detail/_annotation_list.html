@@ -1,0 +1,98 @@
+{# Annotation List Sidebar - Shows all annotations with filtering #}
+
+<div class="flex flex-col h-full">
+    {# Header #}
+    <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold text-gray-900">Annotations</h3>
+            <span id="annotation-list-count" class="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">0</span>
+        </div>
+
+        {# Filter Controls #}
+        <div class="flex flex-wrap gap-1">
+            <button onclick="filterAnnotations('all')"
+                    data-filter="all"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800 transition">
+                All
+            </button>
+            <button onclick="filterAnnotations('core_strength')"
+                    data-filter="core_strength"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700 transition">
+                Core
+            </button>
+            <button onclick="filterAnnotations('gap')"
+                    data-filter="gap"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-700 transition">
+                Gaps
+            </button>
+            <button onclick="filterAnnotations('must_have')"
+                    data-filter="must_have"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition">
+                Must-Have
+            </button>
+            <button onclick="filterAnnotations('active')"
+                    data-filter="active"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700 transition">
+                Active
+            </button>
+        </div>
+    </div>
+
+    {# Annotation List #}
+    <div id="annotation-list" class="flex-1 overflow-y-auto">
+        {# Empty State #}
+        <div id="annotation-list-empty" class="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            <p class="text-sm text-gray-500 mb-1">No annotations yet</p>
+            <p class="text-xs text-gray-400">Select text in the JD to create annotations</p>
+        </div>
+
+        {# Annotation Items Container #}
+        <div id="annotation-items" class="divide-y divide-gray-100">
+            {# Annotations rendered here by JS #}
+        </div>
+    </div>
+
+    {# Section Summary #}
+    <div class="border-t border-gray-200 bg-gray-50 px-4 py-3">
+        <details class="group">
+            <summary class="cursor-pointer text-xs font-medium text-gray-500 uppercase flex items-center justify-between">
+                <span>Section Coverage</span>
+                <svg class="h-4 w-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </summary>
+            <div id="section-coverage-list" class="mt-2 space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Responsibilities</span>
+                    <span class="text-gray-500">0/5</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Qualifications</span>
+                    <span class="text-gray-500">0/5</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Technical Skills</span>
+                    <span class="text-gray-500">0/4</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Nice-to-Haves</span>
+                    <span class="text-gray-500">0/2</span>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    {# Boost Preview #}
+    <div class="border-t border-gray-200 bg-white px-4 py-3">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-gray-500 uppercase">Total Boost</span>
+            <span id="total-boost-value" class="text-sm font-semibold text-indigo-600">1.0x</span>
+        </div>
+        <div class="mt-1 text-xs text-gray-400">
+            Combined multiplier for CV bullet prioritization
+        </div>
+    </div>
+</div>
