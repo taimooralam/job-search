@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="/static/css/pipeline-progress.css">
 <!-- CV Editor Styles - Phase 5.2: Mobile Responsiveness & Accessibility -->
 <link rel="stylesheet" href="/static/css/cv-editor.css">
+<!-- JD Annotation System Styles -->
+<link rel="stylesheet" href="/static/css/jd-annotation.css">
 <!-- CV Preview Styles -->
 <style>
 .cv-preview-content {
@@ -677,6 +679,14 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs text-gray-500">{{ job.description|length }} chars</span>
+                                    <button onclick="event.stopPropagation(); openAnnotationPanel();"
+                                            class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 transition"
+                                            title="Annotate JD for CV personalization">
+                                        <svg class="inline-block h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                                        </svg>
+                                        Annotate
+                                    </button>
                                     <svg class="h-4 w-4 text-gray-400 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
@@ -1444,6 +1454,8 @@
 
 {% include 'partials/job_detail/_cv_editor_panel.html' %}
 
+{% include 'partials/job_detail/_jd_annotation_panel.html' %}
+
 {% include 'partials/job_detail/_add_contacts_modal.html' %}
 
 {% endblock %}
@@ -1465,4 +1477,7 @@
 
 <!-- CV Rich Text Editor Script -->
 <script src="/static/js/cv-editor.js?v=20251128-fix"></script>
+
+<!-- JD Annotation System Script -->
+<script src="/static/js/jd-annotation.js?v=20251209"></script>
 {% endblock %}

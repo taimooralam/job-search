@@ -3598,6 +3598,642 @@ Expected format:
 
 
 # ============================================================================
+# JD Annotation System API
+# ============================================================================
+
+@app.route("/api/jobs/<job_id>/jd-annotations", methods=["GET"])
+@login_required
+def get_jd_annotations(job_id: str):
+    """
+    Get JD annotations for a job.
+
+    Returns:
+        JSON with processed JD HTML and annotations
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Return existing annotations or empty structure
+    annotations = job.get("jd_annotations", {
+        "annotation_version": 1,
+        "processed_jd_html": None,
+        "annotations": [],
+        "settings": {
+            "auto_highlight": True,
+            "show_confidence": True,
+            "min_confidence_threshold": 0.5
+        },
+        "section_summaries": {}
+    })
+
+    return jsonify({
+        "success": True,
+        "annotations": annotations,
+        "job_id": str(job["_id"]),
+        "company": job.get("company"),
+        "title": job.get("title")
+    })
+
+
+@app.route("/api/jobs/<job_id>/jd-annotations", methods=["PUT"])
+@login_required
+def update_jd_annotations(job_id: str):
+    """
+    Save JD annotations for a job.
+
+    Request Body:
+        JDAnnotations structure with annotations array
+
+    Returns:
+        JSON with success status
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    # Validate required fields
+    if "annotations" not in data:
+        return jsonify({"error": "Missing annotations array"}), 400
+
+    # Build the annotations document
+    annotations_doc = {
+        "annotation_version": data.get("annotation_version", 1),
+        "processed_jd_html": data.get("processed_jd_html"),
+        "annotations": data.get("annotations", []),
+        "settings": data.get("settings", {}),
+        "section_summaries": data.get("section_summaries", {}),
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+    # Update the job
+    result = collection.update_one(
+        {"_id": object_id},
+        {
+            "$set": {
+                "jd_annotations": annotations_doc,
+                "updatedAt": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "message": f"Saved {len(annotations_doc['annotations'])} annotations"
+    })
+
+
+@app.route("/api/jobs/<job_id>/process-jd", methods=["POST"])
+@login_required
+def process_job_description(job_id: str):
+    """
+    Process a job description for annotation (structure into HTML sections).
+
+    Request Body (optional):
+        use_llm: boolean - whether to use LLM for enhanced processing
+
+    Returns:
+        JSON with processed JD structure
+    """
+    from src.layer1_4 import process_jd_sync, processed_jd_to_dict
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    # Get JD text from various possible fields
+    jd_text = job.get("job_description") or job.get("jobDescription") or job.get("description") or ""
+
+    if not jd_text:
+        return jsonify({"error": "No job description text found"}), 400
+
+    data = request.get_json() or {}
+    use_llm = data.get("use_llm", False)
+
+    try:
+        # Process the JD
+        processed = process_jd_sync(jd_text, use_llm=use_llm)
+        result = processed_jd_to_dict(processed)
+
+        # Store processed JD in annotations
+        existing_annotations = job.get("jd_annotations", {})
+        existing_annotations["processed_jd_html"] = result.get("html")
+        existing_annotations["annotation_version"] = existing_annotations.get("annotation_version", 0) + 1
+
+        collection.update_one(
+            {"_id": object_id},
+            {
+                "$set": {
+                    "jd_annotations": existing_annotations,
+                    "updatedAt": datetime.utcnow()
+                }
+            }
+        )
+
+        return jsonify({
+            "success": True,
+            "processed_jd": result,
+            "section_count": len(result.get("sections", []))
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to process JD for job {job_id}: {e}")
+        return jsonify({"error": f"Failed to process JD: {str(e)}"}), 500
+
+
+@app.route("/api/jobs/<job_id>/generate-suggestions", methods=["POST"])
+@login_required
+def generate_improvement_suggestions(job_id: str):
+    """
+    Generate improvement suggestions based on JD annotations.
+
+    Analyzes gaps and suggests updates to master-cv taxonomy/metadata.
+
+    Returns:
+        JSON with improvement suggestions
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    annotations = job.get("jd_annotations", {})
+    annotation_list = annotations.get("annotations", [])
+
+    # Find gaps (annotations with relevance="gap")
+    gaps = [a for a in annotation_list if a.get("relevance") == "gap"]
+
+    # Generate suggestions structure
+    suggestions = {
+        "gap_analysis": [
+            {
+                "annotation_id": gap.get("id"),
+                "gap_text": gap.get("target", {}).get("text", ""),
+                "severity": "critical" if gap.get("requirement_type") == "must_have" else "significant",
+                "mitigation_strategy": gap.get("reframe_note", ""),
+                "suggested_learning": [],
+                "transferable_skills": []
+            }
+            for gap in gaps
+        ],
+        "skills_taxonomy_suggestions": [],
+        "role_metadata_suggestions": [],
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
+    # Store suggestions in job
+    collection.update_one(
+        {"_id": object_id},
+        {
+            "$set": {
+                "improvement_suggestions": suggestions,
+                "updatedAt": datetime.utcnow()
+            }
+        }
+    )
+
+    return jsonify({
+        "success": True,
+        "suggestions": suggestions,
+        "gap_count": len(gaps)
+    })
+
+
+# ============================================================================
+# Master-CV API Endpoints
+# ============================================================================
+
+@app.route("/api/master-cv/metadata", methods=["GET"])
+@login_required
+def get_master_cv_metadata():
+    """
+    Get the master-cv metadata (candidate info + role list).
+
+    Returns:
+        JSON with metadata document
+    """
+    from src.common.master_cv_store import get_store
+
+    store = get_store(use_mongodb=True)
+    metadata = store.get_metadata()
+
+    if not metadata:
+        return jsonify({"error": "Metadata not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "metadata": metadata
+    })
+
+
+@app.route("/api/master-cv/metadata", methods=["PUT"])
+@login_required
+def update_master_cv_metadata():
+    """
+    Update the master-cv metadata.
+
+    Request Body:
+        candidate: dict - candidate info
+        roles: list - role metadata list
+
+    Returns:
+        JSON with success status and new version
+    """
+    from src.common.master_cv_store import get_store
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    store = get_store(use_mongodb=True)
+    change_summary = data.pop("change_summary", "Updated via API")
+
+    success = store.update_metadata(
+        data,
+        updated_by="user",
+        change_summary=change_summary
+    )
+
+    if not success:
+        return jsonify({"error": "Failed to update metadata"}), 500
+
+    # Get new version
+    metadata = store.get_metadata()
+
+    return jsonify({
+        "success": True,
+        "message": "Metadata updated",
+        "version": metadata.get("version") if metadata else None
+    })
+
+
+@app.route("/api/master-cv/metadata/roles/<role_id>", methods=["PUT"])
+@login_required
+def update_master_cv_metadata_role(role_id: str):
+    """
+    Update a specific role within metadata.
+
+    Request Body:
+        Role fields to update (id, keywords, etc.)
+
+    Returns:
+        JSON with success status
+    """
+    from src.common.master_cv_store import get_store
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    store = get_store(use_mongodb=True)
+    change_summary = data.pop("change_summary", f"Updated role {role_id}")
+
+    success = store.update_metadata_role(
+        role_id,
+        data,
+        updated_by="user",
+        change_summary=change_summary
+    )
+
+    if not success:
+        return jsonify({"error": "Failed to update role metadata"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Role {role_id} updated"
+    })
+
+
+@app.route("/api/master-cv/taxonomy", methods=["GET"])
+@login_required
+def get_master_cv_taxonomy():
+    """
+    Get the skills taxonomy.
+
+    Returns:
+        JSON with taxonomy document
+    """
+    from src.common.master_cv_store import get_store
+
+    store = get_store(use_mongodb=True)
+    taxonomy = store.get_taxonomy()
+
+    if not taxonomy:
+        return jsonify({"error": "Taxonomy not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "taxonomy": taxonomy
+    })
+
+
+@app.route("/api/master-cv/taxonomy", methods=["PUT"])
+@login_required
+def update_master_cv_taxonomy():
+    """
+    Update the skills taxonomy.
+
+    Request Body:
+        target_roles: dict
+        skill_aliases: dict
+
+    Returns:
+        JSON with success status and new version
+    """
+    from src.common.master_cv_store import get_store
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    store = get_store(use_mongodb=True)
+    change_summary = data.pop("change_summary", "Updated via API")
+
+    success = store.update_taxonomy(
+        data,
+        updated_by="user",
+        change_summary=change_summary
+    )
+
+    if not success:
+        return jsonify({"error": "Failed to update taxonomy"}), 500
+
+    taxonomy = store.get_taxonomy()
+
+    return jsonify({
+        "success": True,
+        "message": "Taxonomy updated",
+        "version": taxonomy.get("version") if taxonomy else None
+    })
+
+
+@app.route("/api/master-cv/taxonomy/skill", methods=["POST"])
+@login_required
+def add_skill_to_taxonomy():
+    """
+    Add a skill to a specific section in the taxonomy.
+
+    Request Body:
+        role_category: str - e.g., "engineering_manager"
+        section_name: str - e.g., "Technical Leadership"
+        skill: str - skill to add
+
+    Returns:
+        JSON with success status
+    """
+    from src.common.master_cv_store import get_store
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    role_category = data.get("role_category")
+    section_name = data.get("section_name")
+    skill = data.get("skill")
+
+    if not all([role_category, section_name, skill]):
+        return jsonify({"error": "Missing required fields: role_category, section_name, skill"}), 400
+
+    store = get_store(use_mongodb=True)
+    success = store.add_skill_to_taxonomy(
+        role_category,
+        section_name,
+        skill,
+        updated_by="user"
+    )
+
+    if not success:
+        return jsonify({"error": "Failed to add skill"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Added '{skill}' to {role_category}/{section_name}"
+    })
+
+
+@app.route("/api/master-cv/roles", methods=["GET"])
+@login_required
+def get_master_cv_roles():
+    """
+    Get all role documents.
+
+    Returns:
+        JSON with list of role documents
+    """
+    from src.common.master_cv_store import get_store
+
+    store = get_store(use_mongodb=True)
+    roles = store.get_all_roles()
+
+    return jsonify({
+        "success": True,
+        "roles": roles,
+        "count": len(roles)
+    })
+
+
+@app.route("/api/master-cv/roles/<role_id>", methods=["GET"])
+@login_required
+def get_master_cv_role(role_id: str):
+    """
+    Get a specific role document.
+
+    Returns:
+        JSON with role document
+    """
+    from src.common.master_cv_store import get_store
+
+    store = get_store(use_mongodb=True)
+    role = store.get_role(role_id)
+
+    if not role:
+        return jsonify({"error": f"Role {role_id} not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "role": role
+    })
+
+
+@app.route("/api/master-cv/roles/<role_id>", methods=["PUT"])
+@login_required
+def update_master_cv_role(role_id: str):
+    """
+    Update a role document.
+
+    Request Body:
+        markdown_content: str - role markdown content
+        parsed: dict (optional) - parsed structure
+
+    Returns:
+        JSON with success status and new version
+    """
+    from src.common.master_cv_store import get_store
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    markdown_content = data.get("markdown_content")
+    if not markdown_content:
+        return jsonify({"error": "Missing markdown_content"}), 400
+
+    store = get_store(use_mongodb=True)
+    change_summary = data.get("change_summary", f"Updated role {role_id}")
+
+    success = store.update_role(
+        role_id,
+        markdown_content,
+        parsed=data.get("parsed"),
+        updated_by="user",
+        change_summary=change_summary
+    )
+
+    if not success:
+        return jsonify({"error": "Failed to update role"}), 500
+
+    role = store.get_role(role_id)
+
+    return jsonify({
+        "success": True,
+        "message": f"Role {role_id} updated",
+        "version": role.get("version") if role else None
+    })
+
+
+@app.route("/api/master-cv/history/<collection_name>", methods=["GET"])
+@login_required
+def get_master_cv_history(collection_name: str):
+    """
+    Get version history for a collection.
+
+    Query Parameters:
+        doc_id: str (optional) - filter by document ID
+        limit: int (optional, default 10) - max entries to return
+
+    Returns:
+        JSON with history entries
+    """
+    from src.common.master_cv_store import get_store
+
+    valid_collections = ["master_cv_metadata", "master_cv_taxonomy", "master_cv_roles"]
+    if collection_name not in valid_collections:
+        return jsonify({"error": f"Invalid collection. Must be one of: {valid_collections}"}), 400
+
+    doc_id = request.args.get("doc_id")
+    limit = int(request.args.get("limit", 10))
+
+    store = get_store(use_mongodb=True)
+    history = store.get_history(collection_name, doc_id=doc_id, limit=limit)
+
+    return jsonify({
+        "success": True,
+        "history": history,
+        "count": len(history)
+    })
+
+
+@app.route("/api/master-cv/rollback/<collection_name>/<int:target_version>", methods=["POST"])
+@login_required
+def rollback_master_cv(collection_name: str, target_version: int):
+    """
+    Rollback a document to a previous version.
+
+    Request Body:
+        doc_id: str - document ID to rollback (required for roles)
+
+    Returns:
+        JSON with success status
+    """
+    from src.common.master_cv_store import get_store
+
+    valid_collections = ["master_cv_metadata", "master_cv_taxonomy", "master_cv_roles"]
+    if collection_name not in valid_collections:
+        return jsonify({"error": f"Invalid collection. Must be one of: {valid_collections}"}), 400
+
+    data = request.get_json() or {}
+
+    # For metadata and taxonomy, doc_id is "canonical"
+    # For roles, doc_id must be provided
+    if collection_name == "master_cv_roles":
+        doc_id = data.get("doc_id")
+        if not doc_id:
+            return jsonify({"error": "doc_id required for roles rollback"}), 400
+    else:
+        doc_id = "canonical"
+
+    store = get_store(use_mongodb=True)
+    success = store.rollback(
+        collection_name,
+        doc_id,
+        target_version,
+        updated_by="user"
+    )
+
+    if not success:
+        return jsonify({"error": f"Failed to rollback to version {target_version}"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Rolled back {collection_name}/{doc_id} to version {target_version}"
+    })
+
+
+@app.route("/api/master-cv/stats", methods=["GET"])
+@login_required
+def get_master_cv_stats():
+    """
+    Get statistics about master-cv data.
+
+    Returns:
+        JSON with stats
+    """
+    from src.common.master_cv_store import get_store
+
+    store = get_store(use_mongodb=True)
+    stats = store.get_stats()
+
+    return jsonify({
+        "success": True,
+        "stats": stats
+    })
+
+
+# ============================================================================
 # Application Entry Point
 # ============================================================================
 
