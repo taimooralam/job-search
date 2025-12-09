@@ -15,6 +15,10 @@
 // Expected: window.JOB_DETAIL_CONFIG = { jobId: '...' }
 const getJobId = () => window.JOB_DETAIL_CONFIG?.jobId || '';
 
+// Track highest layer reached (monotonic progress)
+let highestLayerReached = 0;
+const layerOrder = ['intake', 'pain_points', 'company_research', 'role_research', 'fit_scoring', 'people_mapping', 'cv_outreach_generation'];
+
 // ============================================================================
 // Toast Notifications
 // ============================================================================
@@ -698,6 +702,9 @@ function monitorPipeline(runId) {
 }
 
 function resetPipelineSteps() {
+    // Reset monotonic progress tracker
+    highestLayerReached = 0;
+
     // Reset horizontal steps
     const stepsH = document.querySelectorAll('.pipeline-step-h');
     stepsH.forEach(step => {
@@ -1072,14 +1079,15 @@ function parseLogAndUpdateSteps(logText) {
     // Layer detection patterns - match both module names and log messages
     // Logs look like: "2025-12-08 21:22:00 [INFO] src.layer3.company_researcher: Searching..."
     // Or: "LAYER 2: Pain-Point Miner"
+    // NOTE: Patterns are more specific to avoid false positives (e.g., pain_point in company_research)
     const layerPatterns = {
-        'intake': /layer1[^0-9]|layer_1|LAYER 1|intake_processor|jd_extractor/i,
-        'pain_points': /layer2[^0-9]|layer_2|LAYER 2|pain.?point|pain_point_miner/i,
-        'company_research': /layer3[^0-9]|layer_3|LAYER 3|company_research|company_researcher|crunchbase|glassdoor/i,
-        'role_research': /layer4[^0-9]|layer_4|LAYER 4|role_research|role_researcher/i,
-        'fit_scoring': /layer5[^0-9]|layer_5|LAYER 5|fit_scor|fit_analysis/i,
-        'people_mapping': /people_mapper|contact.*discovery|linkedin.*search/i,
-        'cv_outreach_generation': /layer6[^0-9]|layer_6|LAYER 6|layer7|layer_7|LAYER 7|cv_gen|outreach_gen|cv_generator|header_generator|markdown_cv|layer6_v2/i
+        'intake': /(?:layer1[^0-9]|layer_1|LAYER 1:|src\.layer1\.|intake_processor|jd_extractor)/i,
+        'pain_points': /(?:layer2[^0-9]|layer_2|LAYER 2:|src\.layer2\.|pain_point_miner)/i,
+        'company_research': /(?:layer3[^0-9]|layer_3|LAYER 3:|src\.layer3\.|company_research(?:er)?(?:\.|:))/i,
+        'role_research': /(?:layer4[^0-9]|layer_4|LAYER 4:|src\.layer4\.|role_research(?:er)?(?:\.|:))/i,
+        'fit_scoring': /(?:layer5[^0-9]|layer_5|LAYER 5:|src\.layer5\.|fit_scor(?:ing|er)?(?:\.|:)|fit_analysis)/i,
+        'people_mapping': /(?:people_mapper(?:\.|:)|contact.*discovery|linkedin.*search)/i,
+        'cv_outreach_generation': /(?:layer6[^0-9]|layer_6|LAYER 6:|layer7[^0-9]|layer_7|LAYER 7:|src\.layer6\.|src\.layer7\.|cv_gen(?:erator)?(?:\.|:)|outreach_gen(?:\.|:)|header_generator|markdown_cv|layer6_v2)/i
     };
 
     // Track which layer we detected
@@ -1094,6 +1102,14 @@ function parseLogAndUpdateSteps(logText) {
     }
 
     if (detectedLayer) {
+        const detectedIndex = layerOrder.indexOf(detectedLayer);
+
+        // MONOTONIC ENFORCEMENT: Only update if moving forward
+        if (detectedIndex >= 0 && detectedIndex < highestLayerReached) {
+            console.log(`[Pipeline] Ignoring regression: ${detectedLayer} (${detectedIndex}) < highest (${highestLayerReached})`);
+            return;
+        }
+
         // Check for start indicators - be more aggressive about detecting "executing" state
         const isStarting = /LAYER \d:|Starting|Begin|Searching|Scraping|Processing|Analyzing|Generating|Mining|Researching|Running|Extracting/i.test(logText);
         // Check for completion indicators
@@ -1108,6 +1124,8 @@ function parseLogAndUpdateSteps(logText) {
         } else if (isComplete) {
             console.log(`[Pipeline] ${detectedLayer} -> SUCCESS`);
             updatePipelineStep(detectedLayer, 'success');
+            // Update monotonic tracker on success
+            highestLayerReached = Math.max(highestLayerReached, detectedIndex + 1);
             calculateOverallProgress();
         } else if (isStarting) {
             console.log(`[Pipeline] ${detectedLayer} -> EXECUTING`);
