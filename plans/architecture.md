@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, 118 tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal
+**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), 1321 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal
 
 ---
 
@@ -100,6 +100,31 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
   - Message structure: Greeting → Skills match → Availability → CTA → Signature
   - File: `src/layer6/recruiter_cover_letter.py`
   - Routing: `CoverLetterGenerator` checks `company_type` to select appropriate generator
+
+**Prompt Quality Enhancements** (GAP-030 - NEW 2025-12-09):
+- **Layer 6a - Cover Letter Quality** (`src/layer6/cover_letter_generator.py`):
+  - Enhanced system prompt with:
+    - Explicit STAR citation rules: CORRECT examples (grounded in achievements) vs WRONG examples (generic claims)
+    - Generic phrases blocklist: 12 phrases banned ("diverse team", "best practices", "synergy", "passionate", "love working", "dynamic environment", "outside the box", "next level", "leverage", "disruptive", "game-changer", "touch base")
+    - Pain point mapping requirement: Every paragraph must explicitly link to 1+ identified pain points
+    - Few-shot examples: High-quality cover letter paragraphs showing proper citations and pain point mapping
+    - Anti-hallucination checklist: Writer must verify all claims have supporting evidence
+  - Test coverage: 24 unit tests validating source citation rules, generic phrase detection, pain point mapping, and quality gates
+  - File: `tests/unit/test_layer6_cover_letter_improvements.py`
+
+- **Layer 7 - Interview Question Quality** (`src/layer7/interview_predictor.py`):
+  - Enhanced system prompt with:
+    - Few-shot examples: High-quality interview questions with context and difficulty levels
+    - Distribution requirements: Technical questions (40%), Behavioral (35%), Situational (25%)
+    - Yes/no question filtering: Explicitly rejects simple yes/no questions
+    - Length validation: Questions must be 1-3 sentences (avoid run-on, overly detailed questions)
+    - Source attribution: All questions must cite which CV/JD gap or concern they address
+  - Added `validate_question_quality()` function:
+    - Filters low-quality questions (yes/no, too short, too long, missing context)
+    - Maintains distribution targets for balanced question set
+    - Returns only high-confidence questions with supporting evidence
+  - Test coverage: 22 unit tests validating question quality, yes/no detection, length validation, type distribution, and source attribution
+  - File: `tests/unit/test_layer7_prompt_improvements.py`
 
 **LinkedIn Outreach & Contact Classification** (NEW - 2025-12-08):
 

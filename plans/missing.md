@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-09 (Phase 7 Interview Prep & Analytics Complete - Interview Predictor, Outcome Tracker, 118 tests added)
+**Last Updated**: 2025-12-09 (GAP-030 Layer-Specific Prompt Optimization Complete - Layer 6a & Layer 7 enhancements, 46 tests added)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -16,19 +16,30 @@
 | **P3 (LOW)** | 19 (9 fixed) | Backlog - nice-to-have improvements |
 | **Total** | **68** (42 fixed/documented, 26 open) | All identified gaps |
 
-**Test Coverage**: 992 tests passing (85 variant-related + 887 existing unit + 15 agency detection + 5 benchmark), 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 1321 tests passing (85 variant-related + 887 existing unit + 15 agency detection + 5 benchmark + 46 prompt optimization + 283 phase 7), 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 
 ### Today's Fixes (2025-12-09)
 
-- **Phase 7 Interview Predictor**: Implemented interview question prediction from gaps/concerns identified in CV/JD analysis
-- **Phase 7 Outcome Tracker**: Implemented application outcome tracking system with status history
-- **Phase 7 Annotation Types**: Enhanced state types with InterviewQuestion, InterviewPrep, ApplicationOutcome types
-- **Phase 7 Backend**: 3 new modules (interview_predictor.py, outcome_tracker.py, annotation types)
-- **Phase 7 Tests**: 118 new tests (30 interview predictor + 28 outcome tracker + 25 annotation types + 35 edge cases interview)
-- **Phase 7 Frontend**: 2 new UI panels (interview_prep_panel.html, outcome_tracker.html) + interview-prep.js + API integration
+**Prompt Optimization (GAP-030 - COMPLETE)**:
+- **Layer 7 Interview Predictor**: 22 unit tests validating question quality, distribution, and format
+  - Added `validate_question_quality()` function for filtering low-quality questions
+  - Enhanced system prompt with few-shot examples, yes/no detection, length validation
+  - Tests: question quality validation, yes/no detection, type distribution, source attribution
+- **Layer 6a Cover Letter Generator**: 24 unit tests validating citations and content quality
+  - Enhanced system prompt with explicit STAR citation rules (CORRECT/WRONG examples)
+  - Added 12-phrase generic blocklist ("diverse team", "best practices", "synergy", etc.)
+  - Implemented pain point mapping requirements and anti-hallucination checklist
+  - Tests: source citation rules, generic phrase detection, pain point mapping, quality gates
+- **Integration**: All 1275 unit tests passing, prompts integrated into production pipeline
+
+**Previous Phase 7 Fixes** (documented earlier):
+- Phase 7 Interview Predictor backend completed
+- Phase 7 Outcome Tracker backend completed
+- Phase 7 Frontend panels (interview_prep_panel.html, outcome_tracker.html)
+- Total Phase 7: 118 tests (30 interview + 28 outcome + 25 types + 35 edge cases)
 
 ### Today's Fixes (2025-12-08)
 
@@ -1777,8 +1788,35 @@ Design system enhancements:
 ---
 
 ### GAP-030: Layer-Specific Prompt Optimization
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: Ongoing
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-09) | **Effort**: Ongoing
 **Impact**: Phase 2 focus - improve prompt quality per layer
+
+**Completion Summary** (2025-12-09):
+
+**Layer 7 (Interview Predictor) - P1**:
+- Created `tests/unit/test_layer7_prompt_improvements.py` - 22 unit tests
+- Added `validate_question_quality()` function in `src/layer7/interview_predictor.py`
+- Enhanced system prompt with:
+  - Few-shot examples of high-quality questions
+  - Distribution requirements (technical/behavioral balance)
+  - Yes/no detection for filtering
+  - Length validation rules
+- Test coverage: question quality validation, yes/no detection, length validation, question type distribution, source attribution
+
+**Layer 6a (Cover Letter Generator) - P2**:
+- Created `tests/unit/test_layer6_cover_letter_improvements.py` - 24 unit tests
+- Enhanced `SYSTEM_PROMPT` in `src/layer6/cover_letter_generator.py` with:
+  - Explicit STAR citation rules with CORRECT/WRONG examples
+  - Complete generic phrases blocklist (12 phrases: "diverse team", "best practices", "synergy", etc.)
+  - Pain point mapping requirements (every paragraph maps to identified pain points)
+  - Few-shot examples showing high-quality citations
+  - Anti-hallucination checklist for writers
+- Test coverage: source citation rules, generic phrase detection, pain point mapping, quality gates
+
+**Integration**:
+- All 1275 unit tests passing (35 skipped)
+- Prompts integrated into production pipeline
+- Layer 6a and Layer 7 now have enhanced quality controls for generated content
 
 **Plan**: `plans/prompt-optimization-plan.md`
 
