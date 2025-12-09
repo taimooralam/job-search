@@ -13,8 +13,8 @@
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
 | **P2 (MEDIUM)** | 27 (16 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 19 (9 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **68** (42 fixed/documented, 26 open) | All identified gaps |
+| **P3 (LOW)** | 19 (13 fixed) | Backlog - nice-to-have improvements |
+| **Total** | **68** (48 fixed/documented, 20 open) | All identified gaps |
 
 **Test Coverage**: 1321 tests passing (85 variant-related + 887 existing unit + 15 agency detection + 5 benchmark + 46 prompt optimization + 283 phase 7), 48 E2E tests disabled, integration tests pending
 
@@ -22,6 +22,12 @@
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 
 ### Today's Fixes (2025-12-09)
+
+**Job Detail Page Frontend Fixes (4 Issues)**:
+1. **Job Description Button Not Visible**: Fixed field normalization in `frontend/app.py` - `serialize_job()` now normalizes both `job_description` and `jobDescription` to `description`
+2. **Progress Bar Goes Backwards**: Fixed monotonic tracking in `frontend/static/js/job-detail.js` - Added `highestLayerReached` to ensure progress only moves forward, improved regex patterns to avoid false positives
+3. **CV Not Displayed After Pipeline**: Added disk fallback in `frontend/app.py` `get_cv_editor_state()` and warning logging in `src/layer7/output_publisher.py` for missing cv_text
+4. **JD Annotation Editor Not Visible**: Fixed button implementation - `frontend/templates/job_detail.html` now passes jobId to `openAnnotationPanel()`, `frontend/static/js/jd-annotation.js` reads jobId from data attribute as fallback
 
 **Prompt Optimization (GAP-030 - COMPLETE)**:
 - **Layer 7 Interview Predictor**: 22 unit tests validating question quality, distribution, and format
