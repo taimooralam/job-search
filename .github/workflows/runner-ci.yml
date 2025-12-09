@@ -169,6 +169,7 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
+  # Docker builds run in parallel using matrix strategy
   build:
     needs: [test-unit, test-services]
     runs-on: ubuntu-latest
@@ -176,6 +177,16 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: runner
+            dockerfile: Dockerfile.runner
+            image_name: runner
+          - name: pdf-service
+            dockerfile: Dockerfile.pdf-service
+            image_name: pdf-service
 
     steps:
       - uses: actions/checkout@v4
@@ -187,41 +198,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract runner image metadata
-        id: runner-meta
+      - name: Extract image metadata
+        id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.RUNNER_IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image.image_name }}
           tags: |
             type=raw,value=latest
             type=sha,prefix={{branch}}-
 
-      - name: Build and push runner image
+      - name: Build and push ${{ matrix.image.name }} image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.runner
+          file: ./${{ matrix.image.dockerfile }}
           push: true
-          tags: ${{ steps.runner-meta.outputs.tags }}
-          labels: ${{ steps.runner-meta.outputs.labels }}
-
-      - name: Extract PDF service image metadata
-        id: pdf-meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.PDF_IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix={{branch}}-
-
-      - name: Build and push PDF service image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.pdf-service
-          push: true
-          tags: ${{ steps.pdf-meta.outputs.tags }}
-          labels: ${{ steps.pdf-meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     needs: build
