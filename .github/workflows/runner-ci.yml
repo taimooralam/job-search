@@ -112,8 +112,15 @@ jobs:
       fail-fast: false
       matrix:
         service-group:
-          - name: runner-api
-            paths: tests/runner/test_runner_api.py
+          # Split runner-api tests for parallel execution (~5min -> ~1.5min each)
+          - name: runner-api-auth
+            paths: tests/runner/test_runner_api.py -k "auth or requires"
+          - name: runner-api-job
+            paths: tests/runner/test_runner_api.py -k "run_job or bulk_run or missing_job or empty_bulk"
+          - name: runner-api-status
+            paths: tests/runner/test_runner_api.py -k "status or logs or artifact"
+          - name: runner-api-other
+            paths: tests/runner/test_runner_api.py -k "health or concurrency or firecrawl"
           - name: executor
             paths: tests/runner/test_executor.py
           # NOTE: runner-integration requires MongoDB service - run locally only
