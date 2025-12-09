@@ -1,5 +1,5 @@
 """
-Layer 1.4: JD Extractor
+Layer 1.4: JD Extractor & Processor
 
 Extracts structured intelligence from job descriptions to enable precise CV tailoring.
 This layer runs BEFORE Layer 2 (Pain Point Miner) and provides:
@@ -9,10 +9,32 @@ This layer runs BEFORE Layer 2 (Pain Point Miner) and provides:
 3. ATS Keywords: Top 15 keywords for CV optimization
 4. Structured Content: responsibilities, qualifications, nice-to-haves, skills
 5. Inferred Intelligence: implied pain points, success metrics, industry background
+6. JD Processing: Structures raw JD into annotatable HTML sections (for annotation system)
 
 The extracted data augments Layer 2's analysis and drives role-category-aware CV generation.
 """
 
 from src.layer1_4.jd_extractor import jd_extractor_node, JDExtractor
+from src.layer1_4.jd_processor import (
+    process_jd,
+    process_jd_sync,
+    ProcessedJD,
+    JDSection,
+    JDSectionType,
+    processed_jd_to_dict,
+    dict_to_processed_jd,
+)
 
-__all__ = ["jd_extractor_node", "JDExtractor"]
+__all__ = [
+    # JD Extractor
+    "jd_extractor_node",
+    "JDExtractor",
+    # JD Processor (for annotation system)
+    "process_jd",
+    "process_jd_sync",
+    "ProcessedJD",
+    "JDSection",
+    "JDSectionType",
+    "processed_jd_to_dict",
+    "dict_to_processed_jd",
+]

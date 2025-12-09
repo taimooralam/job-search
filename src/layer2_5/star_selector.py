@@ -3,11 +3,14 @@ Layer 2.5: STAR Selector
 
 Maps job pain points to candidate's 2-3 most relevant STAR achievements.
 Uses LLM to score each STAR's relevance to each pain point.
+
+Phase 4 Enhancement: Integrates JD annotation boost to prioritize STAR records
+that have been manually linked to annotations.
 """
 
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -16,6 +19,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.star_parser import parse_star_records
 from src.common.types import STARRecord
+from src.common.annotation_boost import AnnotationBoostCalculator
 
 
 # ===== PROMPT DESIGN =====
@@ -209,14 +213,44 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
 
         return scored_stars
 
-    def _select_top_stars(self, scored_stars: List[Dict[str, Any]],
-                         pain_points: List[str]) -> Tuple[List[STARRecord], Dict[str, List[str]]]:
+    def _select_top_stars(
+        self,
+        scored_stars: List[Dict[str, Any]],
+        pain_points: List[str],
+        annotation_calculator: Optional[AnnotationBoostCalculator] = None,
+    ) -> Tuple[List[STARRecord], Dict[str, List[str]], Dict[str, float]]:
         """
         Select top 2-3 STARs and create pain point mapping.
 
+        Phase 4: Applies annotation boost to prioritize STAR records
+        that have been manually linked to annotations.
+
+        Args:
+            scored_stars: List of scored STAR records
+            pain_points: List of job pain points
+            annotation_calculator: Optional calculator for annotation boost
+
         Returns:
-            (selected_stars, star_to_pain_mapping)
+            Tuple of (selected_stars, star_to_pain_mapping, annotation_boosts)
         """
+        # Phase 4: Apply annotation boost to aggregate scores
+        annotation_boosts: Dict[str, float] = {}
+
+        if annotation_calculator and annotation_calculator.has_annotations():
+            for scored in scored_stars:
+                star_id = scored['star_id']
+                boost_result = annotation_calculator.get_boost_for_star(star_id)
+
+                if boost_result.boost != 1.0:
+                    # Apply boost to aggregate score
+                    original_score = scored['aggregate']
+                    boosted_score = original_score * boost_result.boost
+                    scored['aggregate'] = boosted_score
+                    scored['annotation_boost'] = boost_result.boost
+                    scored['annotation_ids'] = boost_result.contributing_annotations
+                    annotation_boosts[star_id] = boost_result.boost
+                    print(f"   📌 STAR {star_id[:8]}... boosted: {original_score:.0f} → {boosted_score:.0f} ({boost_result.boost:.1f}x)")
+
         # Sort by aggregate score (descending)
         scored_stars.sort(key=lambda x: x['aggregate'], reverse=True)
 
@@ -245,7 +279,7 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
             if relevant_star_ids:
                 star_to_pain_mapping[f"Pain Point {i+1}"] = relevant_star_ids
 
-        return selected_stars, star_to_pain_mapping
+        return selected_stars, star_to_pain_mapping, annotation_boosts
 
     def select_stars(self, state: JobState) -> Dict[str, Any]:
         """
@@ -253,16 +287,24 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
 
         Selects 2-3 best STAR records matching job across 4 dimensions.
 
+        Phase 4 Enhancement: Applies annotation boost to prioritize STAR records
+        that have been manually linked to JD annotations.
+
         Args:
-            state: JobState with pain_points, strategic_needs, risks_if_unfilled, success_metrics
+            state: JobState with pain_points, strategic_needs, risks_if_unfilled,
+                   success_metrics, and optionally jd_annotations
 
         Returns:
-            Dict with selected_stars and star_to_pain_mapping
+            Dict with selected_stars, star_to_pain_mapping, and annotation metadata
         """
         pain_points = state.get('pain_points', [])
         strategic_needs = state.get('strategic_needs', [])
         risks = state.get('risks_if_unfilled', [])
         metrics = state.get('success_metrics', [])
+
+        # Phase 4: Get JD annotations for boost calculation
+        jd_annotations = state.get('jd_annotations')
+        annotation_calculator = AnnotationBoostCalculator(jd_annotations) if jd_annotations else None
 
         total_items = len(pain_points) + len(strategic_needs) + len(risks) + len(metrics)
 
@@ -284,6 +326,14 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
         print(f"  - Success metrics: {len(metrics)}")
         print(f"Available STARs: {len(self.star_records)}")
 
+        # Phase 4: Log annotation status
+        if annotation_calculator and annotation_calculator.has_annotations():
+            stats = annotation_calculator.get_stats()
+            print(f"📌 Annotation boost ACTIVE:")
+            print(f"   - Active annotations: {stats['total_active']}")
+            print(f"   - STARs linked: {stats['stars_linked']}")
+            print(f"   - Core strengths: {stats['core_strengths']}")
+
         try:
             # Score all STARs
             print("Scoring STARs across all dimensions...")
@@ -293,19 +343,31 @@ Outcome Types: {', '.join(star.get('outcome_types', [])) or 'N/A'}
             scored_stars = self._parse_scores(llm_response, total_items)
             print(f"Scored {len(scored_stars)} STARs")
 
-            # Select top STARs
-            selected_stars, mapping = self._select_top_stars(scored_stars, pain_points)
+            # Select top STARs (Phase 4: with annotation boost)
+            selected_stars, mapping, annotation_boosts = self._select_top_stars(
+                scored_stars, pain_points, annotation_calculator
+            )
 
             print(f"✅ Selected {len(selected_stars)} top STARs:")
             for i, star in enumerate(selected_stars, 1):
                 role_title = star.get('role_title', 'Unknown')[:50]
-                print(f"   {i}. {star['company']} - {role_title}... (ID: {star['id'][:8]}...)")
+                boost_info = ""
+                if star['id'] in annotation_boosts:
+                    boost_info = f" [📌 {annotation_boosts[star['id']]:.1f}x boost]"
+                print(f"   {i}. {star['company']} - {role_title}...{boost_info} (ID: {star['id'][:8]}...)")
 
-            return {
+            result = {
                 'selected_stars': selected_stars,
                 'star_to_pain_mapping': mapping,
-                'all_stars': self.star_records  # Phase 8.2: Provide full library for CV generation
+                'all_stars': self.star_records,  # Phase 8.2: Provide full library for CV generation
             }
+
+            # Phase 4: Include annotation metadata if boosts were applied
+            if annotation_boosts:
+                result['annotation_boosts'] = annotation_boosts
+                result['annotation_influenced'] = True
+
+            return result
 
         except Exception as e:
             print(f"❌ STAR selection failed: {e}")

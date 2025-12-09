@@ -204,6 +204,13 @@ class JobState(TypedDict):
     # Extracts structured intelligence from job descriptions
     extracted_jd: Optional[ExtractedJD]  # Structured JD extraction for CV tailoring
 
+    # ===== JD ANNOTATION SYSTEM =====
+    # Human-in-the-loop annotation of JD sections for CV/outreach personalization
+    # See src/common/annotation_types.py for full type definitions
+    jd_annotations: Optional[Dict[str, Any]]           # JDAnnotations: annotations, settings, validation state
+    improvement_suggestions: Optional[Dict[str, Any]]  # ImprovementSuggestions: gaps, taxonomy/metadata/role suggestions
+    interview_prep: Optional[Dict[str, Any]]           # InterviewPrep: predicted questions from gaps/concerns
+
     # ===== LAYER 2: Pain-Point Miner (JSON Mode - Phase 1.3) =====
     # Returns 4 arrays analyzing the underlying business drivers
     pain_points: Optional[List[str]]              # Specific problems they need solved
