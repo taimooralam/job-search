@@ -140,39 +140,25 @@ class TestProcessJobDetailFunction:
         self, authenticated_client, mock_db, sample_job
     ):
         """processJobDetail() function should be defined."""
-        # Arrange
-        job_id = str(sample_job["_id"])
-        mock_db.find_one.return_value = sample_job
+        # Arrange - Read the external JavaScript file
+        with open('frontend/static/js/job-detail.js', 'r') as f:
+            js_content = f.read()
 
-        # Act
-        response = authenticated_client.get(f"/job/{job_id}")
-
-        # Assert
-        assert response.status_code == 200
-        html_content = response.data.decode('utf-8')
-
-        # Check for function definition
-        assert 'async function processJobDetail' in html_content or \
-               'function processJobDetail' in html_content
+        # Assert - Check for function definition
+        assert 'async function processJobDetail' in js_content or \
+               'function processJobDetail' in js_content
 
     def test_processjobdetail_accepts_job_parameters(
         self, authenticated_client, mock_db, sample_job
     ):
         """processJobDetail() should accept jobId and jobTitle parameters."""
-        # Arrange
-        job_id = str(sample_job["_id"])
-        mock_db.find_one.return_value = sample_job
+        # Arrange - Read the external JavaScript file
+        with open('frontend/static/js/job-detail.js', 'r') as f:
+            js_content = f.read()
 
-        # Act
-        response = authenticated_client.get(f"/job/{job_id}")
-
-        # Assert
-        assert response.status_code == 200
-        html_content = response.data.decode('utf-8')
-
-        # Function should have jobId and jobTitle parameters
-        assert 'processJobDetail(jobId' in html_content or \
-               'processJobDetail (jobId' in html_content
+        # Assert - Function should have jobId and jobTitle parameters
+        assert 'processJobDetail(jobId' in js_content or \
+               'processJobDetail (jobId' in js_content
 
     def test_processjobdetail_calls_runner_api(
         self, authenticated_client, mock_db, sample_job

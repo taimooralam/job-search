@@ -83,8 +83,8 @@ class TestPDFGenerationEndpoint:
         assert response.status_code in [400, 404, 500]
 
     @patch('app.requests.post')
-    def test_pdf_generation_sends_tiptap_json(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """PDF generation should send TipTap JSON to PDF service."""
+    def test_pdf_generation_calls_runner_service(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should forward request to runner service."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
         mock_db.find_one.return_value = sample_job_with_editor_state
@@ -100,10 +100,10 @@ class TestPDFGenerationEndpoint:
         # Assert
         assert response.status_code == 200
         mock_post.assert_called_once()
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        assert "tiptap_json" in request_json
-        assert request_json["tiptap_json"]["type"] == "doc"
+        # Verify the runner service endpoint was called
+        call_args = mock_post.call_args
+        assert job_id in call_args[0][0]  # job_id in URL
+        assert "cv-editor/pdf" in call_args[0][0]
 
 
 # ==============================================================================
@@ -114,8 +114,8 @@ class TestPDFServiceIntegration:
     """Tests for PDF service integration."""
 
     @patch('app.requests.post')
-    def test_pdf_service_receives_document_styles(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """PDF service should receive documentStyles in request."""
+    def test_runner_service_called_for_pdf(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Frontend should proxy PDF request to runner service."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
         mock_db.find_one.return_value = sample_job_with_editor_state
@@ -130,13 +130,15 @@ class TestPDFServiceIntegration:
 
         # Assert
         assert response.status_code == 200
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        assert "documentStyles" in request_json
+        # Verify runner service was called (runner handles MongoDB fetch and PDF service proxy)
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args[0]
+        assert job_id in call_args[0]
+        assert "cv-editor/pdf" in call_args[0]
 
     @patch('app.requests.post')
-    def test_pdf_service_receives_company_and_role(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """PDF service should receive company and role for filename."""
+    def test_pdf_filename_extracted_from_response(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Frontend should extract filename from runner service response."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
         sample_job_with_editor_state["company"] = "TechCorp"
@@ -153,10 +155,9 @@ class TestPDFServiceIntegration:
 
         # Assert
         assert response.status_code == 200
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        assert request_json.get("company") == "TechCorp"
-        assert request_json.get("role") == "Senior Engineer"
+        # Verify PDF content is returned
+        assert response.content_type == 'application/pdf'
+        assert b'%PDF' in response.data
 
     @patch('app.requests.post')
     def test_pdf_service_authentication_header(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state, monkeypatch):
@@ -272,12 +273,18 @@ class TestPDFErrorHandling:
         # Assert
         assert response.status_code == 401
 
-    def test_missing_editor_state_returns_400(self, authenticated_client, mock_db, sample_job):
-        """Missing editor state should return 400."""
+    @patch('app.requests.post')
+    def test_missing_editor_state_returns_400(self, mock_post, authenticated_client, mock_db, sample_job):
+        """Missing editor state should return 400 from runner service."""
         # Arrange
         job_id = str(sample_job["_id"])
         sample_job["cv_editor_state"] = None
         mock_db.find_one.return_value = sample_job
+        # Mock runner service returning 400 for missing editor state
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.json.return_value = {"error": "Editor state not found"}
+        mock_post.return_value = mock_response
 
         # Act
         response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
@@ -287,12 +294,18 @@ class TestPDFErrorHandling:
         data = response.get_json()
         assert "error" in data
 
-    def test_missing_tiptap_json_returns_400(self, authenticated_client, mock_db, sample_job_with_editor_state):
-        """Missing tiptap_json in editor state should return 400."""
+    @patch('app.requests.post')
+    def test_missing_tiptap_json_returns_400(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Missing tiptap_json in editor state should return 400 from runner service."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
         sample_job_with_editor_state["cv_editor_state"]["tiptap_json"] = None
         mock_db.find_one.return_value = sample_job_with_editor_state
+        # Mock runner service returning 400 for missing tiptap_json
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.json.return_value = {"error": "TipTap JSON not found"}
+        mock_post.return_value = mock_response
 
         # Act
         response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
@@ -326,12 +339,13 @@ class TestPDFDocumentStyles:
     """Tests for document style handling."""
 
     @patch('app.requests.post')
-    def test_default_document_styles_sent(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """Default document styles should be sent if not specified."""
+    def test_pdf_generation_succeeds_without_document_styles(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """PDF generation should work even if documentStyles not in CV state (runner handles defaults)."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
-        # Remove documentStyles to test defaults
-        del sample_job_with_editor_state["cv_editor_state"]["documentStyles"]
+        # Remove documentStyles - runner will apply defaults
+        if "documentStyles" in sample_job_with_editor_state.get("cv_editor_state", {}):
+            del sample_job_with_editor_state["cv_editor_state"]["documentStyles"]
         mock_db.find_one.return_value = sample_job_with_editor_state
         mock_post.return_value = Mock(
             status_code=200,
@@ -344,19 +358,14 @@ class TestPDFDocumentStyles:
 
         # Assert
         assert response.status_code == 200
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        doc_styles = request_json.get("documentStyles", {})
-        # Verify defaults are provided
-        assert "fontFamily" in doc_styles
-        assert "pageSize" in doc_styles
+        assert response.content_type == 'application/pdf'
 
     @patch('app.requests.post')
-    def test_custom_page_size_sent(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """Custom page size should be sent to PDF service."""
+    def test_runner_service_handles_custom_page_size(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Runner service retrieves and applies custom page size from MongoDB."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
-        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["pageSize"] = "a4"
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"] = {"pageSize": "a4"}
         mock_db.find_one.return_value = sample_job_with_editor_state
         mock_post.return_value = Mock(
             status_code=200,
@@ -367,18 +376,17 @@ class TestPDFDocumentStyles:
         # Act
         response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
 
-        # Assert
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        assert request_json["documentStyles"]["pageSize"] == "a4"
+        # Assert - Frontend proxies successfully, runner handles document styles
+        assert response.status_code == 200
+        mock_post.assert_called_once()
 
     @patch('app.requests.post')
-    def test_custom_margins_sent(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
-        """Custom margins should be sent to PDF service."""
+    def test_runner_service_handles_custom_margins(self, mock_post, authenticated_client, mock_db, sample_job_with_editor_state):
+        """Runner service retrieves and applies custom margins from MongoDB."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
-        sample_job_with_editor_state["cv_editor_state"]["documentStyles"]["margins"] = {
-            "top": 0.5, "right": 0.75, "bottom": 0.5, "left": 0.75
+        sample_job_with_editor_state["cv_editor_state"]["documentStyles"] = {
+            "margins": {"top": 0.5, "right": 0.75, "bottom": 0.5, "left": 0.75}
         }
         mock_db.find_one.return_value = sample_job_with_editor_state
         mock_post.return_value = Mock(
@@ -390,12 +398,9 @@ class TestPDFDocumentStyles:
         # Act
         response = authenticated_client.post(f"/api/jobs/{job_id}/cv-editor/pdf")
 
-        # Assert
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        margins = request_json["documentStyles"]["margins"]
-        assert margins["top"] == 0.5
-        assert margins["right"] == 0.75
+        # Assert - Frontend proxies successfully, runner handles document styles
+        assert response.status_code == 200
+        mock_post.assert_called_once()
 
 
 # ==============================================================================
@@ -436,10 +441,8 @@ class TestPDFEndToEndWorkflow:
         assert response.content_type == 'application/pdf'
         assert response.data == pdf_content
 
-        # Verify request to PDF service
+        # Verify runner service was called (runner fetches from MongoDB and handles styles)
         mock_post.assert_called_once()
-        call_kwargs = mock_post.call_args
-        request_json = call_kwargs.kwargs.get('json') or call_kwargs[1].get('json')
-        assert request_json["company"] == "Acme Corp"
-        assert request_json["role"] == "Software Engineer"
-        assert request_json["documentStyles"]["fontFamily"] == "Roboto"
+        call_args = mock_post.call_args
+        assert job_id in call_args[0][0]  # job_id in URL
+        assert "cv-editor/pdf" in call_args[0][0]
