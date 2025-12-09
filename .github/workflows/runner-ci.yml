@@ -34,10 +34,36 @@ env:
   UV_SYSTEM_PYTHON: 1
 
 jobs:
-  # Unit tests - single job runs all tests in parallel with pytest-xdist
-  # This avoids ~2min setup overhead per matrix job (was 10 jobs × 2min = 20min compute)
+  # Unit tests split into parallel jobs for faster execution
   test-unit:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Split tests into groups that run in parallel
+        # Note: No layer2 test files exist currently
+        # Optimized: Heavy test files split for <1m execution time
+        test-group:
+          - name: layer1-3
+            paths: tests/unit/test_layer1*.py tests/unit/test_layer3*.py
+          - name: layer4
+            paths: tests/unit/test_layer4*.py
+          - name: layer5-people
+            paths: tests/unit/test_layer5_people_mapper.py
+          - name: layer5-null
+            paths: tests/unit/test_layer5_null_handling.py
+          - name: layer6
+            paths: tests/unit/test_layer6*.py
+          - name: layer7
+            paths: tests/unit/test_layer7*.py
+          - name: analytics
+            paths: tests/unit/test_analytics*.py tests/unit/test_annotation_types*.py
+          - name: circuit-breaker
+            paths: tests/unit/test_circuit_breaker.py
+          - name: token-rate
+            paths: tests/unit/test_token_tracker.py tests/unit/test_rate_limiter.py
+          - name: utilities
+            paths: tests/unit/test_agency_detection.py tests/unit/test_ats_checker.py tests/unit/test_common_utils.py tests/unit/test_linkedin_scraper.py tests/unit/test_markdown_sanitizer.py tests/unit/test_pain_point_miner.py tests/unit/test_skills_taxonomy.py tests/unit/test_star_enforcement.py tests/unit/test_structured_logger.py tests/unit/test_tracing.py
 
     steps:
       - uses: actions/checkout@v4
@@ -66,9 +92,9 @@ jobs:
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
 
-      - name: Run all unit tests (parallel with pytest-xdist)
+      - name: Run unit tests (${{ matrix.test-group.name }})
         run: |
-          python -m pytest tests/unit/ \
+          python -m pytest ${{ matrix.test-group.paths }} \
             --tb=short \
             -n auto \
             -q \
