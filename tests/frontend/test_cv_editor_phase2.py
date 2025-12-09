@@ -279,8 +279,8 @@ class TestPhase2FontControls:
         assert '<optgroup label="Condensed (Space-Saving)">' in html
         assert '<optgroup label="Rounded (Friendly)">' in html
 
-    def test_font_size_selector_has_12_options(self, authenticated_client, mock_db, sample_job):
-        """Font size selector should have options from 8pt to 24pt."""
+    def test_font_size_selector_has_14_options(self, authenticated_client, mock_db, sample_job):
+        """Font size selector should have options from 8pt to 32pt."""
         # Arrange
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job
@@ -290,7 +290,7 @@ class TestPhase2FontControls:
         html = response.data.decode('utf-8')
 
         # Assert
-        for size in ['8pt', '9pt', '10pt', '11pt', '12pt', '13pt', '14pt', '16pt', '18pt', '20pt', '22pt', '24pt']:
+        for size in ['8pt', '9pt', '10pt', '10.5pt', '11pt', '12pt', '13pt', '14pt', '16pt', '18pt', '20pt', '24pt', '28pt', '32pt']:
             assert f'value="{size}"' in html
 
     def test_default_font_is_inter(self, authenticated_client, mock_db, sample_job):

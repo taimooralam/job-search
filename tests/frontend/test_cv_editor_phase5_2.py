@@ -143,20 +143,20 @@ class TestUndoRedoUIButtons:
     """Tests for undo/redo buttons in editor header."""
 
     def test_undo_button_exists_in_template(self):
-        """Undo button should exist in job_detail.html."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        """Undo button should exist in CV editor panel partial."""
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             assert 'id="cv-undo-btn"' in content
 
     def test_redo_button_exists_in_template(self):
-        """Redo button should exist in job_detail.html."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        """Redo button should exist in CV editor panel partial."""
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             assert 'id="cv-redo-btn"' in content
 
     def test_undo_button_has_aria_label(self):
         """Undo button should have aria-label for accessibility."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             # Find undo button section and check for aria-label
             undo_section = content[content.find('id="cv-undo-btn"'):content.find('id="cv-undo-btn"') + 500]
@@ -165,7 +165,7 @@ class TestUndoRedoUIButtons:
 
     def test_redo_button_has_aria_label(self):
         """Redo button should have aria-label for accessibility."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             redo_section = content[content.find('id="cv-redo-btn"'):content.find('id="cv-redo-btn"') + 500]
             assert 'aria-label' in redo_section
@@ -173,21 +173,21 @@ class TestUndoRedoUIButtons:
 
     def test_undo_button_starts_disabled(self):
         """Undo button should have disabled attribute by default."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             undo_section = content[content.find('id="cv-undo-btn"'):content.find('id="cv-undo-btn"') + 500]
             assert 'disabled' in undo_section
 
     def test_redo_button_starts_disabled(self):
         """Redo button should have disabled attribute by default."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             redo_section = content[content.find('id="cv-redo-btn"'):content.find('id="cv-redo-btn"') + 500]
             assert 'disabled' in redo_section
 
     def test_undo_button_has_onclick_handler(self):
         """Undo button should have onclick handler."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             undo_section = content[content.find('id="cv-undo-btn"'):content.find('id="cv-undo-btn"') + 500]
             assert 'onclick' in undo_section
@@ -195,7 +195,7 @@ class TestUndoRedoUIButtons:
 
     def test_redo_button_has_onclick_handler(self):
         """Redo button should have onclick handler."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             redo_section = content[content.find('id="cv-redo-btn"'):content.find('id="cv-redo-btn"') + 500]
             assert 'onclick' in redo_section
@@ -291,7 +291,7 @@ class TestAccessibilityEnhancements:
 
     def test_keyboard_shortcuts_button_exists_in_header(self):
         """Keyboard shortcuts help button should exist in header."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             assert 'toggleKeyboardShortcutsPanel' in content
 
@@ -323,7 +323,7 @@ class TestAccessibilityEnhancements:
 
     def test_toolbar_has_role_toolbar(self):
         """Toolbar should have role="toolbar" for accessibility."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             # Check for toolbar role
             toolbar_section = content[content.find('cv-toolbar'):content.find('cv-toolbar') + 200]
@@ -400,7 +400,7 @@ class TestPhase52Integration:
 
     def test_toolbar_formatting_buttons_still_exist(self):
         """Toolbar formatting buttons (Phase 1-2) should still exist."""
-        with open('frontend/templates/job_detail.html', 'r') as f:
+        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
             content = f.read()
             assert 'data-format="bold"' in content
             assert 'data-format="italic"' in content
