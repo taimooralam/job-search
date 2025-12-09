@@ -116,8 +116,9 @@ jobs:
             paths: tests/runner/test_runner_api.py
           - name: executor
             paths: tests/runner/test_executor.py
-          - name: runner-integration
-            paths: tests/runner/test_integration.py
+          # NOTE: runner-integration requires MongoDB service - run locally only
+          # - name: runner-integration
+          #   paths: tests/runner/test_integration.py
           - name: pdf-service
             paths: tests/pdf_service/
           - name: pdf-integration
