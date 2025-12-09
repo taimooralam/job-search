@@ -81,7 +81,9 @@ from src.layer6_v2.types import (
     GradeResult,
     ImprovementResult,
     FinalCV,
+    HeaderGenerationContext,
 )
+from src.layer6_v2.annotation_header_context import build_header_context
 
 
 class CVGeneratorV2:
@@ -174,8 +176,12 @@ class CVGeneratorV2:
             self._logger.info(f"  Loaded {len(roles)} roles from master CV")
 
             # Phase 2: Generate tailored bullets for each role
+            # Phase 4: Pass JD annotations for boost calculation
+            jd_annotations = state.get("jd_annotations")
             self._logger.info("Phase 2: Generating tailored bullets per role...")
-            role_bullets_list = self._generate_all_role_bullets(roles, extracted_jd)
+            if jd_annotations:
+                self._logger.info("  📌 JD annotations detected - will apply boost")
+            role_bullets_list = self._generate_all_role_bullets(roles, extracted_jd, jd_annotations)
             self._logger.info(f"  Generated bullets for {len(role_bullets_list)} roles")
 
             # Phase 3: Run QA on all roles
@@ -201,6 +207,20 @@ class CVGeneratorV2:
             # GAP-001 FIX: Pass skill whitelist to prevent hallucinated skills
             skill_whitelist = self.cv_loader.get_skill_whitelist()
             self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
+
+            # Phase 4.5: Build annotation context for header generation
+            annotation_context = None
+            all_stars = state.get("all_stars", [])
+            if jd_annotations:
+                annotation_context = build_header_context(jd_annotations, all_stars)
+                if annotation_context.has_annotations:
+                    self._logger.info(
+                        f"  📌 Phase 4.5: Annotation context built - "
+                        f"{len(annotation_context.priorities)} priorities, "
+                        f"{len(annotation_context.must_have_priorities)} must-haves"
+                    )
+                    if annotation_context.gap_mitigation:
+                        self._logger.info(f"  Gap mitigation: {annotation_context.gap_mitigation[:50]}...")
 
             # Prepare candidate data dict
             candidate_dict = {
@@ -229,6 +249,7 @@ class CVGeneratorV2:
                     candidate_dict,
                     fit_score=fit_score,
                     skill_whitelist=skill_whitelist,
+                    annotation_context=annotation_context,  # Phase 4.5
                 )
                 # Log ensemble metadata
                 if header_output.ensemble_metadata:
@@ -243,7 +264,16 @@ class CVGeneratorV2:
                     extracted_jd,
                     candidate_dict,
                     skill_whitelist=skill_whitelist,
+                    annotation_context=annotation_context,  # Phase 4.5
                 )
+
+            # Phase 4.5: Log annotation influence
+            if header_output.profile.annotation_influenced:
+                provenance = header_output.profile.provenance
+                if provenance:
+                    self._logger.info(
+                        f"  ✓ Profile influenced by {provenance.total_annotations_used} annotations"
+                    )
 
             self._logger.info(f"  Profile: {header_output.profile.word_count} words")
             self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")
@@ -329,8 +359,12 @@ class CVGeneratorV2:
         self,
         roles: List[RoleData],
         extracted_jd: Dict[str, Any],
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> List[RoleBullets]:
-        """Generate bullets for all roles with variant selection or LLM generation."""
+        """Generate bullets for all roles with variant selection or LLM generation.
+
+        Phase 4: Supports JD annotations for boost calculation.
+        """
         from src.layer6_v2.types import CareerContext
 
         role_category = extracted_jd.get("role_category", "engineering_manager")
@@ -342,12 +376,13 @@ class CVGeneratorV2:
             roles_with_variants = sum(1 for r in roles if r.has_variants)
             self._logger.info(f"  Roles with variants: {roles_with_variants}/{len(roles)}")
 
-            # Use batch variant-based generation
+            # Use batch variant-based generation (Phase 4: with annotations)
             return generate_all_roles_from_variants(
                 roles=roles,
                 extracted_jd=extracted_jd,
                 generator=self.role_generator,
                 fallback_to_llm=True,  # Fall back to LLM for roles without variants
+                jd_annotations=jd_annotations,
             )
 
         # Legacy LLM-based generation

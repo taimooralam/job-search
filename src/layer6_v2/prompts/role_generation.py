@@ -3,9 +3,14 @@ Prompts for Per-Role CV Bullet Generation (Phase 3).
 
 These prompts generate tailored achievement bullets for a single role,
 with full traceability to prevent hallucination.
+
+Phase 5 Enhancement (JD Annotation System):
+- Accepts annotation reframe guidance from manual JD annotations
+- Integrates reframe notes into bullet generation
+- Prioritizes annotated pain points and keywords
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.types import CareerContext
 from src.layer6_v2.achievement_mapper import map_achievements_to_pain_points
@@ -93,6 +98,15 @@ Executive Roles (head_of_engineering, cto):
 3. Mirror JD terminology where it fits
 4. Emphasize competencies matching JD weights (delivery, process, architecture, leadership)
 
+=== ANNOTATION REFRAME GUIDANCE (when provided) ===
+
+When the user prompt includes "ANNOTATION REFRAME GUIDANCE" section:
+1. Apply the suggested reframes to position your experience using JD-aligned terminology
+2. Use reframe guidance to bridge skill gaps (e.g., "container orchestration" → "Kubernetes experience")
+3. Prioritize must-have requirements marked in annotations
+4. Include annotation keywords for ATS optimization
+5. Reframes should feel natural—don't force awkward phrasing
+
 === OUTPUT FORMAT ===
 
 Return ONLY valid JSON with this structure:
@@ -121,6 +135,7 @@ def build_role_generation_user_prompt(
     extracted_jd: ExtractedJD,
     career_context: CareerContext,
     target_bullet_count: Optional[int] = None,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Build the user prompt for generating bullets for a specific role.
@@ -130,6 +145,7 @@ def build_role_generation_user_prompt(
         extracted_jd: Structured JD intelligence from Layer 1.4
         career_context: Career stage context for emphasis guidance
         target_bullet_count: Target number of bullets (defaults based on career stage)
+        jd_annotations: Optional JD annotations with reframe guidance (Phase 5)
 
     Returns:
         Formatted user prompt string
@@ -172,6 +188,9 @@ def build_role_generation_user_prompt(
     # Format technical skills from JD
     tech_skills = extracted_jd.get("technical_skills", [])
     tech_skills_text = ", ".join(tech_skills[:10]) if tech_skills else "None specified"
+
+    # Phase 5: Format annotation reframe guidance
+    annotation_guidance_text = _format_annotation_reframe_guidance(jd_annotations)
 
     # Build the prompt
     prompt = f"""=== TARGET JOB ===
@@ -217,7 +236,7 @@ EMPHASIS GUIDANCE:
 === SOFT SKILLS FROM THIS ROLE ===
 {', '.join(role.soft_skills) if role.soft_skills else 'None listed'}
 
-=== YOUR TASK ===
+{annotation_guidance_text}=== YOUR TASK ===
 Generate {target_bullet_count} tailored CV bullets for this role using ARIS FORMAT.
 
 ARIS FORMAT REQUIREMENTS (MANDATORY):
@@ -253,6 +272,92 @@ def _get_priority_competencies(weights: dict) -> str:
     sorted_comps = sorted(weights.items(), key=lambda x: x[1], reverse=True)
     top_two = [c[0] for c in sorted_comps[:2]]
     return " and ".join(top_two)
+
+
+def _format_annotation_reframe_guidance(jd_annotations: Optional[Dict[str, Any]]) -> str:
+    """
+    Format annotation reframe guidance for inclusion in the prompt.
+
+    Extracts reframe notes from active annotations to guide bullet generation.
+
+    Args:
+        jd_annotations: JD annotations dictionary with 'annotations' list
+
+    Returns:
+        Formatted string for prompt inclusion, or empty string if no guidance
+    """
+    if not jd_annotations:
+        return ""
+
+    annotations = jd_annotations.get("annotations", [])
+    if not annotations:
+        return ""
+
+    # Filter to active annotations with reframe guidance
+    active_with_reframe = [
+        a for a in annotations
+        if a.get("is_active", False)
+        and a.get("has_reframe", False)
+        and a.get("reframe_note")
+    ]
+
+    # Get must-have annotations for prioritization
+    must_haves = [
+        a for a in annotations
+        if a.get("is_active", False)
+        and a.get("requirement_type") == "must_have"
+    ]
+
+    # Get all annotation keywords for ATS
+    annotation_keywords = set()
+    for a in annotations:
+        if a.get("is_active", False):
+            annotation_keywords.update(a.get("suggested_keywords", []))
+
+    if not active_with_reframe and not must_haves and not annotation_keywords:
+        return ""
+
+    lines = []
+    lines.append("=== ANNOTATION REFRAME GUIDANCE (from manual JD review) ===")
+    lines.append("")
+
+    # Section 1: Reframe guidance
+    if active_with_reframe:
+        lines.append("REFRAME SUGGESTIONS (apply these framings to relevant achievements):")
+        for i, ann in enumerate(active_with_reframe[:5], 1):
+            target_text = ann.get("target", {}).get("text", "")[:50]
+            reframe_note = ann.get("reframe_note", "")
+            relevance = ann.get("relevance", "relevant").upper()
+
+            lines.append(f"  {i}. [{relevance}] JD mentions: \"{target_text}...\"")
+            lines.append(f"     → Reframe as: {reframe_note}")
+
+            # Include matched skill if available
+            if ann.get("matching_skill"):
+                lines.append(f"     → Your match: {ann['matching_skill']}")
+            lines.append("")
+
+    # Section 2: Must-have priorities
+    if must_haves:
+        lines.append("MUST-HAVE REQUIREMENTS (prioritize these in your bullets):")
+        for ann in must_haves[:5]:
+            target_text = ann.get("target", {}).get("text", "")[:60]
+            matching_skill = ann.get("matching_skill", "")
+            relevance = ann.get("relevance", "relevant")
+
+            if matching_skill:
+                lines.append(f"  • \"{target_text}...\" → You have: {matching_skill}")
+            else:
+                lines.append(f"  • \"{target_text}...\" ({relevance})")
+        lines.append("")
+
+    # Section 3: ATS keywords
+    if annotation_keywords:
+        lines.append("ANNOTATION KEYWORDS (integrate for ATS optimization):")
+        lines.append(f"  {', '.join(sorted(annotation_keywords)[:15])}")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 # Prompt for bullet correction after QA failure

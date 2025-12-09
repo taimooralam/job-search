@@ -132,6 +132,37 @@ Format: Short phrases, ATS-friendly (e.g., "Engineering Leadership", not "Leadin
    - Write "$5M" not "five million dollars"
    - ATS reads numbers perfectly and recruiters love them
 
+=== PHASE 4.5: ANNOTATION-DRIVEN PRIORITIES ===
+
+When JD annotation context is provided, follow these priority rules:
+
+1. **MUST-HAVE Requirements (highest priority)**:
+   - These requirements appear under "### MUST-HAVE" in the context
+   - ALWAYS include matching skills in headline/tagline
+   - Reference STAR proof statements when provided
+   - Example: If "Kubernetes" is must-have with proof "reduced deployment time by 75%",
+     include both the skill AND the metric
+
+2. **CORE STRENGTHS (emphasize in summary)**:
+   - Appear under "### CORE STRENGTHS"
+   - Feature these prominently in the narrative paragraph
+   - Use them to answer "What problems can you solve?"
+
+3. **REFRAME GUIDANCE (apply to phrasing)**:
+   - Appear under "### REFRAME GUIDANCE"
+   - Replace generic phrasing with the specified reframe
+   - Example: "platform engineering" → "platform modernization leadership"
+
+4. **GAP MITIGATION (include once)**:
+   - Appears under "### GAP MITIGATION"
+   - Include this clause ONCE in the summary (not multiple times)
+   - Position positively as adjacent strength
+
+5. **ATS KEYWORD REQUIREMENTS**:
+   - Include BOTH acronym AND full form for specified keywords
+   - Target the specified mention count (usually 2-3x)
+   - Example: "Kubernetes (K8s)" appears 2-3 times across header/summary/skills
+
 === ANTI-HALLUCINATION RULES ===
 
 CRITICAL - These are absolute rules:

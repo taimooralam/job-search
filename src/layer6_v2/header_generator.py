@@ -20,7 +20,7 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Optional, Tuple, Any
 from collections import defaultdict
 
 from pydantic import BaseModel, Field
@@ -37,6 +37,8 @@ from src.layer6_v2.types import (
     ProfileOutput,
     ValidationResult,
     HeaderOutput,
+    HeaderGenerationContext,
+    HeaderProvenance,
 )
 
 
@@ -141,6 +143,7 @@ class HeaderGenerator:
         temperature: float = 0.3,
         skill_whitelist: Optional[Dict[str, List[str]]] = None,
         lax_mode: bool = True,
+        annotation_context: Optional[HeaderGenerationContext] = None,
     ):
         """
         Initialize the header generator.
@@ -152,10 +155,21 @@ class HeaderGenerator:
                              Dict with 'hard_skills' and 'soft_skills' lists.
                              If not provided, loads from CVLoader automatically.
             lax_mode: If True (default), generate 30% more skills for manual pruning.
+            annotation_context: Phase 4.5 - HeaderGenerationContext with annotation
+                               priorities, reframes, and ATS requirements.
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self.lax_mode = lax_mode
+
+        # Phase 4.5: Store annotation context for header generation
+        self._annotation_context = annotation_context
+        if annotation_context and annotation_context.has_annotations:
+            self._logger.info(
+                f"Using annotation context: {len(annotation_context.priorities)} priorities, "
+                f"{len(annotation_context.must_have_priorities)} must-haves, "
+                f"{len(annotation_context.gap_priorities)} gaps"
+            )
 
         # Store skill whitelist (GAP-001 fix: prevent hallucinated skills)
         self._skill_whitelist = skill_whitelist
@@ -167,6 +181,7 @@ class HeaderGenerator:
 
         # Initialize taxonomy-based skills generator (replaces CategoryGenerator)
         # This uses the pre-defined role-specific taxonomy instead of LLM-generated categories
+        # Phase 4.5: Now accepts annotation_context for annotation-aware scoring
         self._taxonomy_generator: Optional[TaxonomyBasedSkillsGenerator] = None
         if skill_whitelist:
             try:
@@ -175,6 +190,7 @@ class HeaderGenerator:
                     taxonomy=taxonomy,
                     skill_whitelist=skill_whitelist,
                     lax_mode=lax_mode,
+                    annotation_context=annotation_context,
                 )
                 self._logger.info("Using taxonomy-based skills generator")
             except Exception as e:
@@ -465,7 +481,7 @@ class HeaderGenerator:
         extracted_jd: Dict,
         candidate_name: str,
         regional_variant: str = "us_eu",
-    ) -> ProfileResponse:
+    ) -> Tuple[ProfileResponse, HeaderProvenance]:
         """
         Generate research-aligned profile using LLM with structured output.
 
@@ -476,11 +492,21 @@ class HeaderGenerator:
         - 4-question framework (Who/What/Proof/Why)
         - 60/30/10 content formula
 
+        Phase 4.5: Now injects annotation context into prompt for must-have
+        emphasis, reframes, and gap mitigation.
+
         Uses Pydantic for response validation.
+
+        Returns:
+            Tuple of (ProfileResponse, HeaderProvenance) for traceability
         """
         from src.layer6_v2.prompts.header_generation import (
             PROFILE_SYSTEM_PROMPT,
             build_profile_user_prompt,
+        )
+        from src.layer6_v2.annotation_header_context import (
+            format_priorities_for_prompt,
+            format_ats_guidance_for_prompt,
         )
 
         # Collect all bullets for context
@@ -532,6 +558,62 @@ class HeaderGenerator:
         exact_job_title = extracted_jd.get('title', 'Engineering Leader')
         role_category = extracted_jd.get('role_category', 'engineering_manager')
 
+        # Phase 4.5: Build annotation guidance for prompt injection
+        annotation_guidance = ""
+        ats_guidance = ""
+        provenance = HeaderProvenance(title_source="jd_mapping")
+
+        if self._annotation_context and self._annotation_context.has_annotations:
+            self._logger.debug("Injecting annotation context into profile prompt")
+
+            # Format priorities for prompt
+            annotation_guidance = format_priorities_for_prompt(self._annotation_context)
+            ats_guidance = format_ats_guidance_for_prompt(self._annotation_context)
+
+            # Build provenance for traceability
+            provenance.tagline_keywords = self._annotation_context.top_keywords[:3]
+            provenance.tagline_annotation_ids = [
+                aid for p in self._annotation_context.must_have_priorities[:3]
+                for aid in p.annotation_ids
+            ]
+            provenance.summary_annotation_ids = [
+                aid for p in self._annotation_context.priorities[:5]
+                for aid in p.annotation_ids
+            ]
+            # Collect STAR IDs from priorities
+            provenance.summary_star_ids = [
+                star_id
+                for p in self._annotation_context.priorities[:5]
+                for snippet in p.star_snippets
+                for star_id in p.annotation_ids  # Approximate: use annotation IDs
+            ][:5]  # Limit to 5
+            # Track gap mitigation
+            if self._annotation_context.gap_mitigation:
+                provenance.gap_mitigation_annotation_id = (
+                    self._annotation_context.gap_mitigation_annotation_id
+                )
+            # Track reframes
+            provenance.reframes_applied = [
+                aid for p in self._annotation_context.priorities
+                if p.has_reframe
+                for aid in p.annotation_ids
+            ][:5]
+
+            # Enhance grounded keywords with annotation keywords
+            for p in self._annotation_context.priorities[:10]:
+                if p.matching_skill and p.matching_skill not in grounded_keywords:
+                    grounded_keywords.append(p.matching_skill)
+                for variant in p.ats_variants[:2]:
+                    if variant not in grounded_keywords:
+                        grounded_keywords.append(variant)
+
+            # Use annotation STAR snippets as additional proof
+            annotation_proofs = []
+            for p in self._annotation_context.must_have_priorities[:3]:
+                annotation_proofs.extend(p.star_snippets[:1])
+            if annotation_proofs:
+                top_metrics = annotation_proofs[:3] + top_metrics
+
         # Build research-aligned prompt
         user_prompt = build_profile_user_prompt(
             candidate_name=candidate_name,
@@ -546,6 +628,14 @@ class HeaderGenerator:
             candidate_differentiators=candidate_differentiators,
         )
 
+        # Phase 4.5: Append annotation guidance to user prompt
+        if annotation_guidance:
+            user_prompt = user_prompt + "\n\n" + annotation_guidance
+        if ats_guidance:
+            user_prompt = user_prompt + "\n\n" + ats_guidance
+        if self._annotation_context and self._annotation_context.gap_mitigation:
+            user_prompt = user_prompt + f"\n\nGAP MITIGATION (include once): {self._annotation_context.gap_mitigation}"
+
         # Call LLM with structured output
         structured_llm = self.llm.with_structured_output(ProfileResponse)
         response = structured_llm.invoke([
@@ -553,7 +643,7 @@ class HeaderGenerator:
             {"role": "user", "content": user_prompt},
         ])
 
-        return response
+        return response, provenance
 
     def generate_profile(
         self,
@@ -582,12 +672,13 @@ class HeaderGenerator:
         """
         self._logger.info("Generating research-aligned profile summary...")
 
+        provenance = None
         try:
-            response = self._generate_profile_llm(
+            response, provenance = self._generate_profile_llm(
                 stitched_cv, extracted_jd, candidate_name, regional_variant
             )
 
-            # Build new research-aligned ProfileOutput
+            # Build new research-aligned ProfileOutput with Phase 4.5 provenance
             profile = ProfileOutput(
                 headline=response.headline,
                 narrative=response.narrative,
@@ -600,6 +691,9 @@ class HeaderGenerator:
                 answers_proof=response.answers_proof,
                 answers_why_you=response.answers_why_you,
                 regional_variant=regional_variant,
+                # Phase 4.5: Annotation traceability
+                provenance=provenance,
+                annotation_influenced=provenance.has_annotation_influence if provenance else False,
             )
 
             # Log 4-question framework validation
@@ -616,6 +710,12 @@ class HeaderGenerator:
                 if not profile.answers_why_you:
                     missing.append("Why you?")
                 self._logger.warning(f"Profile missing answers to: {', '.join(missing)}")
+
+            # Phase 4.5: Log annotation influence
+            if profile.annotation_influenced:
+                self._logger.info(
+                    f"✓ Profile influenced by {provenance.total_annotations_used} annotations"
+                )
 
         except Exception as e:
             self._logger.warning(f"LLM profile generation failed: {e}. Using fallback.")
@@ -923,6 +1023,7 @@ def generate_header(
     candidate_data: Dict,
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
     lax_mode: bool = True,
+    annotation_context: Optional[HeaderGenerationContext] = None,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -934,6 +1035,8 @@ def generate_header(
         skill_whitelist: Master-CV skill whitelist to prevent hallucinations (GAP-001).
                         If not provided, skills may be hallucinated.
         lax_mode: If True, generate 30% more skills for manual pruning.
+        annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities,
+                           reframes, and ATS requirements.
 
     Returns:
         HeaderOutput with all header sections
@@ -941,5 +1044,6 @@ def generate_header(
     generator = HeaderGenerator(
         skill_whitelist=skill_whitelist,
         lax_mode=lax_mode,
+        annotation_context=annotation_context,
     )
     return generator.generate(stitched_cv, extracted_jd, candidate_data)
