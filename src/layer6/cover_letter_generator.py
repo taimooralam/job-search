@@ -208,32 +208,78 @@ PERSONA 2: Skeptical Hiring Manager
 
 Your output must satisfy BOTH personas.
 
-CRITICAL RULES:
-1. Every achievement claimed MUST come from the provided STAR records or master CV
-2. Every metric MUST be from the source materials - NEVER invent numbers
-3. NEVER use generic phrases: "excited to apply", "perfect fit", "dream job", "strong background", "team player"
-4. Company signals MUST be referenced (funding, growth, product launches)
-5. At least 2 pain points MUST be explicitly addressed with matching achievements
+## CRITICAL RULES
 
-STRUCTURE (Flexible 2-4 paragraphs based on content):
+1. **STAR Citation Required**: Every achievement MUST cite the employer by name.
+   - CORRECT: "At TechCorp, I reduced latency by 85%"
+   - WRONG: "In my previous role, I achieved improvements"
 
-1. **Hook**: Specific interest + pain point + company signal (NOT "I am excited")
-   - Lead with their problem, not your interest
-   - Reference a specific company signal (recent funding, expansion, product launch)
+2. **Metrics from Source Only**: Every number MUST come from STAR records.
+   - NEVER invent metrics - use exactly what's provided
+   - Format: Include specific numbers (85%, 16x, $2M ARR)
 
-2. **Proof** (1-2 paragraphs): 2-3 achievements with metrics
-   - Format: "At [STAR Company], I [action] resulting in [metric]"
-   - Each achievement addresses a specific pain point
-   - Metrics must come from STAR records
+3. **Pain Point Mapping**: Address AT LEAST 2 pain points with specific solutions.
+   - Map each pain point to a STAR achievement
+   - Show how your experience solves THEIR problem
 
-3. **Close**: Confidence + CTA
-   - Brief 90-day vision OR clear value statement
-   - "I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+4. **Company Signal Reference**: Mention at least one company signal.
+   - Examples: Series B funding, product launch, expansion, acquisition
 
-ANTI-HALLUCINATION CHECK:
-- All company names must come from STAR records
-- All metrics must come from STAR records
-- All claims must be verifiable from provided context
+5. **ZERO TOLERANCE for Generic Phrases** - These will cause rejection:
+   - "I am excited to apply"
+   - "dream job"
+   - "perfect fit for this role" / "perfect fit for your team"
+   - "strong background"
+   - "team player"
+   - "hit the ground running"
+   - "add value to your team"
+   - "ideal candidate"
+   - "passionate about"
+   - "thrilled to apply"
+   - "great opportunity" / "exciting opportunity"
+
+## STRUCTURE (2-4 paragraphs, 180-420 words)
+
+**Paragraph 1 - Hook**: Company signal + pain point connection
+- Lead with THEIR situation, not your interest
+- Reference specific company development (funding, launch, growth)
+- Connect to a pain point they face
+
+**Paragraph 2-3 - Proof**: STAR achievements with metrics
+- Format: "At [Company Name], I [action] resulting in [specific metric]"
+- Each paragraph addresses 1-2 pain points
+- ALL metrics from STAR records only
+
+**Final Paragraph - Close**: Applied statement + Calendly
+- Brief confidence statement (optional)
+- MUST include: "I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+
+## FEW-SHOT EXAMPLES
+
+### Example 1: Strong Hook (Company Signal + Pain Point)
+BAD: "I am excited to apply for the Backend Engineer role at your company."
+GOOD: "Your Series B funding signals ambitious scaling plans requiring enterprise-grade API performance - exactly the challenge I solved at TechCorp."
+
+### Example 2: STAR Achievement Citation
+BAD: "I have extensive experience improving API performance at previous companies."
+GOOD: "At TechCorp, I reduced API p99 latency from 800ms to 120ms (85% improvement), recovering $2M ARR through Redis caching and query optimization."
+
+### Example 3: Pain Point Mapping
+BAD: "I believe I can help with your technical challenges."
+GOOD: "This directly addresses your stated pain point: API latency causing customer churn. At DataCo, I solved identical issues, cutting response times by 16x."
+
+### Example 4: Close with CTA
+BAD: "I look forward to hearing from you."
+GOOD: "I have applied for this role. Calendly: https://calendly.com/taimooralam/15min"
+
+## ANTI-HALLUCINATION CHECKLIST
+Before outputting, verify:
+[ ] All company names appear in STAR records
+[ ] All metrics match STAR records exactly
+[ ] At least 2 pain points are addressed
+[ ] A company signal is referenced
+[ ] No phrases from the banned list appear
+[ ] "applied" statement and Calendly link present
 """
 
 USER_PROMPT_TEMPLATE = """Write a hyper-personalized cover letter for this opportunity.
