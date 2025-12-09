@@ -88,10 +88,23 @@ class AnnotationManager {
      */
     async loadAnnotations() {
         try {
-            const response = await fetch(`/api/jobs/${this.jobId}/jd-annotations`);
-            if (!response.ok) throw new Error('Failed to load annotations');
+            // Fetch annotations and raw job data in parallel
+            const [annotationsRes, jobRes] = await Promise.all([
+                fetch(`/api/jobs/${this.jobId}/jd-annotations`),
+                fetch(`/api/jobs/${this.jobId}`)
+            ]);
 
-            const data = await response.json();
+            // Get raw JD from job data
+            let rawJd = null;
+            if (jobRes.ok) {
+                const jobData = await jobRes.json();
+                const job = jobData.job || jobData;
+                rawJd = job.extracted_jd || job.description || job.job_description || null;
+            }
+
+            if (!annotationsRes.ok) throw new Error('Failed to load annotations');
+
+            const data = await annotationsRes.json();
             if (data.success && data.annotations) {
                 this.annotations = data.annotations.annotations || [];
                 this.processedJdHtml = data.annotations.processed_jd_html;
@@ -100,12 +113,18 @@ class AnnotationManager {
                 // Render processed JD if available
                 if (this.processedJdHtml) {
                     this.renderProcessedJd();
+                } else if (rawJd) {
+                    // No processed JD yet - show raw JD with preserved whitespace
+                    this.showRawJd(rawJd);
                 } else {
-                    // No processed JD yet - show empty state with prompt to click "Process JD"
+                    // No JD at all - show empty state
                     this.showEmptyState();
                 }
+            } else if (rawJd) {
+                // No annotations data but have raw JD - show it
+                this.showRawJd(rawJd);
             } else {
-                // No annotations data - show empty state
+                // No annotations data and no raw JD - show empty state
                 this.showEmptyState();
             }
 
@@ -115,6 +134,40 @@ class AnnotationManager {
             this.updateSaveIndicator('error');
             // Show empty state on error too
             this.showEmptyState();
+        }
+    }
+
+    /**
+     * Show raw JD with preserved whitespace formatting
+     */
+    showRawJd(rawJd) {
+        const loadingEl = document.getElementById('jd-loading');
+        const emptyEl = document.getElementById('jd-empty');
+        const contentEl = document.getElementById('jd-processed-content');
+
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        if (contentEl) {
+            // Convert plain text to HTML with preserved whitespace
+            // - Escape HTML entities
+            // - Convert newlines to <br> or use <pre> style
+            // - Preserve multiple spaces
+            const escapedJd = rawJd
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+
+            contentEl.innerHTML = `
+                <div class="raw-jd-content p-4 text-sm text-gray-700 leading-relaxed" style="white-space: pre-wrap; word-wrap: break-word;">
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-xs">
+                        <strong>Tip:</strong> Click "Process JD" above to parse sections and enable text selection for annotations.
+                    </div>
+                    ${escapedJd}
+                </div>
+            `;
+            contentEl.classList.remove('hidden');
         }
     }
 
