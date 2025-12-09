@@ -1,0 +1,243 @@
+{# Interview Prep Panel - Phase 7 #}
+{# Collapsible section with predicted questions and STAR answer links #}
+{# Pattern follows existing collapsible sections in job_detail.html #}
+
+{% if job.jd_annotations and job.jd_annotations.annotations %}
+<div class="mb-6" id="interview-prep-section">
+    <details class="group" {% if job.interview_prep %}open{% endif %}>
+        <summary class="cursor-pointer list-none">
+            <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-orange-600 dark:text-orange-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Interview Prep</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if job.interview_prep %}
+                    <span class="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-400 rounded-full">
+                        {{ job.interview_prep.predicted_questions | length }} Questions
+                    </span>
+                    {% set practiced = job.interview_prep.predicted_questions | selectattr('practice_status', 'equalto', 'confident') | list | length %}
+                    {% if practiced > 0 %}
+                    <span class="px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 rounded-full">
+                        {{ practiced }} Confident
+                    </span>
+                    {% endif %}
+                    {% else %}
+                    <button onclick="event.stopPropagation(); generateInterviewPrep('{{ job._id }}')"
+                            class="px-3 py-1 text-xs font-medium text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/40 hover:bg-orange-200 dark:hover:bg-orange-900/60 rounded border border-orange-300 dark:border-orange-700 transition"
+                            id="generate-prep-btn">
+                        <svg class="inline-block h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Generate Questions
+                    </button>
+                    {% endif %}
+                    <svg class="h-4 w-4 text-gray-400 transform group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </div>
+        </summary>
+
+        <div class="mt-3 space-y-4" id="interview-prep-content">
+            {% if job.interview_prep %}
+
+            {# Gap Summary #}
+            {% if job.interview_prep.gap_summary and job.interview_prep.gap_summary != "No significant skill gaps identified." %}
+            <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <h4 class="text-xs font-semibold text-red-700 dark:text-red-400 uppercase mb-1 flex items-center">
+                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Gaps to Address
+                </h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ job.interview_prep.gap_summary }}</p>
+            </div>
+            {% endif %}
+
+            {# Concerns Summary #}
+            {% if job.interview_prep.concerns_summary and job.interview_prep.concerns_summary != "No significant concerns flagged for discussion." %}
+            <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <h4 class="text-xs font-semibold text-yellow-700 dark:text-yellow-400 uppercase mb-1 flex items-center">
+                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Concerns to Address
+                </h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ job.interview_prep.concerns_summary }}</p>
+            </div>
+            {% endif %}
+
+            {# Company Context #}
+            {% if job.interview_prep.company_context %}
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 class="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase mb-1 flex items-center">
+                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Company Context
+                </h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300">{{ job.interview_prep.company_context }}</p>
+            </div>
+            {% endif %}
+
+            {# Predicted Questions #}
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase flex items-center">
+                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Predicted Questions
+                    </h4>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Click to expand answer guidance</span>
+                </div>
+
+                {% for question in job.interview_prep.predicted_questions %}
+                <div class="question-card border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                     data-question-id="{{ question.question_id }}">
+                    <details class="group">
+                        <summary class="cursor-pointer p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1 pr-3">
+                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                        {# Question Type Badge #}
+                                        <span class="px-2 py-0.5 text-xs font-medium rounded
+                                            {% if question.question_type == 'gap_probe' %}bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400
+                                            {% elif question.question_type == 'concern_probe' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400
+                                            {% elif question.question_type == 'behavioral' %}bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400
+                                            {% elif question.question_type == 'technical' %}bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400
+                                            {% elif question.question_type == 'situational' %}bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-400
+                                            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                            {{ question.question_type | default('general') | replace('_', ' ') | title }}
+                                        </span>
+                                        {# Difficulty Badge #}
+                                        <span class="px-2 py-0.5 text-xs font-medium rounded
+                                            {% if question.difficulty == 'hard' %}bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400
+                                            {% elif question.difficulty == 'medium' %}bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-400
+                                            {% else %}bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400{% endif %}">
+                                            {{ question.difficulty | default('medium') | title }}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ question.question }}</p>
+                                </div>
+                                {# Practice Status #}
+                                <div class="flex items-center flex-shrink-0">
+                                    <select class="practice-status-select text-xs border border-gray-300 dark:border-gray-600 rounded p-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                            onclick="event.stopPropagation()"
+                                            onchange="updateQuestionStatus('{{ job._id }}', '{{ question.question_id }}', this.value)">
+                                        <option value="not_started" {% if question.practice_status == 'not_started' or not question.practice_status %}selected{% endif %}>Not Started</option>
+                                        <option value="practiced" {% if question.practice_status == 'practiced' %}selected{% endif %}>Practiced</option>
+                                        <option value="confident" {% if question.practice_status == 'confident' %}selected{% endif %}>Confident</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </summary>
+
+                        <div class="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                            {# Answer Approach #}
+                            {% if question.suggested_answer_approach %}
+                            <div class="mb-3">
+                                <h5 class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                    </svg>
+                                    Suggested Approach
+                                </h5>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">{{ question.suggested_answer_approach }}</p>
+                            </div>
+                            {% endif %}
+
+                            {# Sample Answer Outline #}
+                            {% if question.sample_answer_outline %}
+                            <div class="mb-3">
+                                <h5 class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    Answer Outline
+                                </h5>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ question.sample_answer_outline }}</p>
+                            </div>
+                            {% endif %}
+
+                            {# Relevant STARs #}
+                            {% if question.relevant_star_ids and question.relevant_star_ids | length > 0 %}
+                            <div class="mb-3">
+                                <h5 class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                    </svg>
+                                    Relevant STAR Stories
+                                </h5>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for star_id in question.relevant_star_ids %}
+                                    <span class="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-400 rounded cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-900/60 transition"
+                                          title="STAR story reference">
+                                        {{ star_id }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {# User Notes #}
+                            <div>
+                                <h5 class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center">
+                                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Your Notes
+                                </h5>
+                                <textarea class="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded resize-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          rows="3"
+                                          placeholder="Add your own answer notes..."
+                                          onblur="saveQuestionNotes('{{ job._id }}', '{{ question.question_id }}', this.value)">{{ question.user_notes or '' }}</textarea>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Regenerate Button #}
+            <div class="mt-4 flex justify-between items-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                    Generated: {{ job.interview_prep.generated_at[:10] if job.interview_prep.generated_at else 'Unknown' }}
+                    {% if job.interview_prep.generated_by %}
+                    ({{ job.interview_prep.generated_by }})
+                    {% endif %}
+                </span>
+                <button onclick="generateInterviewPrep('{{ job._id }}')"
+                        class="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded border border-gray-300 dark:border-gray-600 transition"
+                        id="regenerate-prep-btn">
+                    <svg class="inline-block h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Regenerate
+                </button>
+            </div>
+
+            {% else %}
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm mb-2">No interview prep generated yet.</p>
+                <p class="text-xs mb-4">Click "Generate Questions" to predict interview questions based on your gap annotations.</p>
+                <button onclick="generateInterviewPrep('{{ job._id }}')"
+                        class="px-4 py-2 text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 rounded transition"
+                        id="generate-prep-btn-empty">
+                    <svg class="inline-block h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Generate Interview Questions
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </details>
+</div>
+{% endif %}
