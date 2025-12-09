@@ -794,6 +794,16 @@ function openAnnotationPanel(jobId) {
         return;
     }
 
+    // Read jobId from panel data attribute if not provided
+    if (!jobId) {
+        jobId = panel.dataset.jobId;
+    }
+
+    if (!jobId) {
+        console.error('No jobId provided and none found in panel data attribute');
+        return;
+    }
+
     // Initialize manager if needed
     if (!annotationManager || annotationManager.jobId !== jobId) {
         annotationManager = new AnnotationManager(jobId);
