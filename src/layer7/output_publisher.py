@@ -322,6 +322,8 @@ class OutputPublisher:
             # Add CV text and path for frontend display and persistence
             if state.get('cv_text'):
                 update_data['cv_text'] = state['cv_text']
+            else:
+                self.logger.warning("[MongoDB] cv_text is missing from state - CV will not display in frontend")
 
             if state.get('cv_path'):
                 update_data['cv_path'] = state['cv_path']
@@ -364,6 +366,8 @@ class OutputPublisher:
             if extracted_jd:
                 self.logger.info(f"Persisting extracted_jd: role_category={extracted_jd.get('role_category', 'N/A')}")
                 update_data['extracted_jd'] = extracted_jd
+            else:
+                self.logger.warning("[MongoDB] extracted_jd is missing from state - JD analysis will not display")
 
             # Add Drive/Sheets references
             if state.get('drive_folder_url'):
