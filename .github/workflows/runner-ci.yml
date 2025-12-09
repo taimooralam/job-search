@@ -45,14 +45,18 @@ jobs:
         test-group:
           - name: layer1-3
             paths: tests/unit/test_layer1*.py tests/unit/test_layer3*.py
-          - name: layer4-5
-            paths: tests/unit/test_layer4*.py tests/unit/test_layer5*.py
+          - name: layer4
+            paths: tests/unit/test_layer4*.py
+          - name: layer5
+            paths: tests/unit/test_layer5*.py
           - name: layer6
             paths: tests/unit/test_layer6*.py
-          - name: other
-            paths: tests/unit/test_*.py --ignore=tests/unit/test_layer1*.py --ignore=tests/unit/test_layer3*.py --ignore=tests/unit/test_layer4*.py --ignore=tests/unit/test_layer5*.py --ignore=tests/unit/test_layer6*.py --ignore=tests/unit/test_layer7*.py
           - name: layer7
             paths: tests/unit/test_layer7*.py
+          - name: analytics
+            paths: tests/unit/test_analytics*.py tests/unit/test_annotation_types*.py
+          - name: other
+            paths: tests/unit/test_*.py --ignore=tests/unit/test_layer1*.py --ignore=tests/unit/test_layer3*.py --ignore=tests/unit/test_layer4*.py --ignore=tests/unit/test_layer5*.py --ignore=tests/unit/test_layer6*.py --ignore=tests/unit/test_layer7*.py --ignore=tests/unit/test_analytics*.py --ignore=tests/unit/test_annotation_types*.py
 
     steps:
       - uses: actions/checkout@v4
