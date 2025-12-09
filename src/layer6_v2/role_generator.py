@@ -296,9 +296,12 @@ class RoleGenerator:
         role: RoleData,
         extracted_jd: ExtractedJD,
         target_bullet_count: Optional[int] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> Optional[RoleBullets]:
         """
         Generate bullets by selecting from pre-written variants.
+
+        Phase 4: Supports JD annotations for boost calculation and keyword injection.
 
         This method uses the VariantSelector to choose optimal achievement
         variants based on JD requirements. It's faster and more deterministic
@@ -309,6 +312,7 @@ class RoleGenerator:
             role: Role data with enhanced_data containing variants
             extracted_jd: Structured JD intelligence from Layer 1.4
             target_bullet_count: Target number of bullets (defaults to role's achievement count)
+            jd_annotations: Optional JDAnnotations for boost calculation
 
         Returns:
             RoleBullets with selected variants, or None if role has no variants
@@ -335,16 +339,22 @@ class RoleGenerator:
         if target_bullet_count is None:
             target_bullet_count = min(len(role.enhanced_data.achievements), 6)
 
-        # Select variants using the VariantSelector
+        # Select variants using the VariantSelector (Phase 4: with annotations)
         selector = VariantSelector()
         selection_result = selector.select_variants(
             role=role.enhanced_data,
             extracted_jd=jd_context,
             target_count=target_bullet_count,
+            jd_annotations=jd_annotations,
         )
 
         self._logger.info(f"Selected {selection_result.selection_count} variants")
         self._logger.info(f"Keyword coverage: {selection_result.keyword_coverage:.1%}")
+
+        # Phase 4: Log annotation influence
+        annotation_count = sum(1 for v in selection_result.selected_variants if v.annotation_influenced)
+        if annotation_count > 0:
+            self._logger.info(f"📌 {annotation_count} variants influenced by annotations")
 
         # Convert selected variants to GeneratedBullet format
         generated_bullets = []
@@ -358,7 +368,7 @@ class RoleGenerator:
             # Extract any metrics from the variant text (simple pattern matching)
             source_metric = self._extract_metric(selected.text)
 
-            # Create GeneratedBullet with traceability
+            # Create GeneratedBullet with traceability (Phase 4: annotation fields)
             bullet = GeneratedBullet(
                 text=selected.text,
                 source_text=source_text,
@@ -369,6 +379,12 @@ class RoleGenerator:
                 situation=None,
                 action=None,
                 result=None,
+                # Phase 4: Annotation traceability
+                annotation_influenced=selected.annotation_influenced,
+                annotation_ids=selected.annotation_ids,
+                reframe_applied=selected.reframe_applied,
+                annotation_keywords_used=selected.annotation_keywords_used,
+                annotation_boost=selected.score.annotation_boost,
             )
             generated_bullets.append(bullet)
 
@@ -826,15 +842,19 @@ def generate_all_roles_from_variants(
     generator: Optional[RoleGenerator] = None,
     bullet_counts: Optional[Dict[str, int]] = None,
     fallback_to_llm: bool = True,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> List[RoleBullets]:
     """
     Generate bullets for all roles using variant selection.
+
+    Phase 4: Supports JD annotations for boost calculation and keyword injection.
 
     This is the recommended production method for CV generation:
     - Uses pre-written, interview-defensible variant text
     - Zero hallucination risk (all text from source)
     - Fast and deterministic (no LLM calls for variant selection)
     - Falls back to LLM generation if role has no variants
+    - Applies annotation boost to prioritize relevant variants (Phase 4)
 
     Args:
         roles: List of roles from CV loader (should have enhanced_data)
@@ -842,6 +862,7 @@ def generate_all_roles_from_variants(
         generator: RoleGenerator instance (created if not provided)
         bullet_counts: Optional dict mapping role_id to target bullet count
         fallback_to_llm: If True, use LLM for roles without variants (default: True)
+        jd_annotations: Optional JDAnnotations for boost calculation (Phase 4)
 
     Returns:
         List of RoleBullets, one per role
@@ -882,19 +903,23 @@ def generate_all_roles_from_variants(
 
         try:
             if role.has_variants:
-                # Use variant selection
+                # Use variant selection (Phase 4: with annotations)
                 role_bullets = generator.generate_from_variants(
                     role=role,
                     extracted_jd=extracted_jd,
                     target_bullet_count=target_count,
+                    jd_annotations=jd_annotations,
                 )
 
                 if role_bullets and role_bullets.bullet_count > 0:
                     results.append(role_bullets)
                     variant_count += 1
+                    # Phase 4: Log annotation influence
+                    ann_count = sum(1 for b in role_bullets.bullets if b.annotation_influenced)
+                    ann_info = f" [📌 {ann_count} boosted]" if ann_count > 0 else ""
                     logger.info(
                         f"  ✓ Selected {role_bullets.bullet_count} variants "
-                        f"({role_bullets.word_count} words)"
+                        f"({role_bullets.word_count} words){ann_info}"
                     )
                     continue
 

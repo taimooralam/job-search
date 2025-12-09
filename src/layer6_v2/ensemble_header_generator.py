@@ -48,6 +48,7 @@ from src.layer6_v2.types import (
     ValidationResult,
     ValidationFlags,
     EnsembleMetadata,
+    HeaderGenerationContext,
 )
 from src.layer6_v2.prompts.header_generation import (
     METRIC_PERSONA_SYSTEM_PROMPT,
@@ -108,6 +109,7 @@ class EnsembleHeaderGenerator:
         tier_config: TierConfig,
         skill_whitelist: Optional[Dict[str, List[str]]] = None,
         temperature: float = 0.3,
+        annotation_context: Optional[HeaderGenerationContext] = None,
     ):
         """
         Initialize the ensemble header generator.
@@ -116,20 +118,30 @@ class EnsembleHeaderGenerator:
             tier_config: Tier configuration with model assignments
             skill_whitelist: Master-CV skills for grounding validation
             temperature: LLM temperature for generation
+            annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
         """
         self._logger = get_logger(__name__)
         self.tier_config = tier_config
         self._skill_whitelist = skill_whitelist or {}
         self.temperature = temperature
 
+        # Phase 4.5: Store annotation context
+        self._annotation_context = annotation_context
+        if annotation_context and annotation_context.has_annotations:
+            self._logger.info(
+                f"Using annotation context: {len(annotation_context.priorities)} priorities, "
+                f"{len(annotation_context.must_have_priorities)} must-haves"
+            )
+
         # Create LLMs for generation and synthesis
         self._generation_llm = self._create_llm(tier_config.cv_model)
         self._synthesis_llm = self._create_llm(CLAUDE_STANDARD)  # Always use cheaper model
 
-        # Fallback generator for Bronze/Skip tiers
+        # Fallback generator for Bronze/Skip tiers (pass annotation context)
         self._fallback_generator = HeaderGenerator(
             model=tier_config.cv_model,
             skill_whitelist=skill_whitelist,
+            annotation_context=annotation_context,
         )
 
         self._logger.info(
@@ -569,6 +581,7 @@ def generate_ensemble_header(
     fit_score: Optional[int] = None,
     tier_override: Optional[str] = None,
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
+    annotation_context: Optional[HeaderGenerationContext] = None,
 ) -> HeaderOutput:
     """
     Convenience function for ensemble header generation.
@@ -580,6 +593,7 @@ def generate_ensemble_header(
         fit_score: Job fit score (0-100) for tier determination
         tier_override: Override tier ("GOLD", "SILVER", "BRONZE", "SKIP")
         skill_whitelist: Master-CV skills for grounding
+        annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
 
     Returns:
         HeaderOutput with profile, skills, and ensemble metadata
@@ -596,6 +610,7 @@ def generate_ensemble_header(
     generator = EnsembleHeaderGenerator(
         tier_config=tier_config,
         skill_whitelist=skill_whitelist,
+        annotation_context=annotation_context,
     )
 
     return generator.generate(stitched_cv, extracted_jd, candidate_data)

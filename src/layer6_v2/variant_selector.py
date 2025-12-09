@@ -8,6 +8,9 @@ weighted scoring algorithm that considers:
 - Role category match (20%)
 - Achievement keywords (10%)
 
+Phase 4 Enhancement: Integrates JD annotation boost to prioritize variants
+that contain keywords from annotations and applies reframe guidance.
+
 This replaces LLM-based bullet generation with deterministic selection
 from pre-written, interview-defensible variants.
 
@@ -17,15 +20,17 @@ Usage:
         role=enhanced_role,
         extracted_jd=jd_data,
         target_count=5,
+        jd_annotations=annotations,  # Phase 4
     )
 """
 
 import re
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Any
 
 from src.common.logger import get_logger
+from src.common.annotation_boost import AnnotationBoostCalculator, BoostResult
 from src.layer6_v2.variant_parser import (
     Achievement,
     AchievementVariant,
@@ -77,6 +82,7 @@ class VariantScore:
     Detailed scoring breakdown for a single variant.
 
     Tracks individual score components for debugging and transparency.
+    Phase 4: Includes annotation boost tracking.
     """
 
     achievement_id: str
@@ -93,15 +99,23 @@ class VariantScore:
     matched_keywords: List[str] = field(default_factory=list)
     matched_pain_point: str = ""
 
+    # Phase 4: Annotation boost tracking
+    annotation_boost: float = 1.0
+    annotation_keywords_matched: List[str] = field(default_factory=list)
+    annotation_ids: List[str] = field(default_factory=list)
+    reframe_notes: List[str] = field(default_factory=list)
+
     @property
     def total_score(self) -> float:
-        """Calculate weighted total score."""
-        return (
+        """Calculate weighted total score with annotation boost."""
+        base_score = (
             self.keyword_score * WEIGHT_KEYWORD_OVERLAP +
             self.pain_point_score * WEIGHT_PAIN_POINT +
             self.role_category_score * WEIGHT_ROLE_CATEGORY +
             self.achievement_keyword_score * WEIGHT_ACHIEVEMENT_KEYWORDS
         )
+        # Phase 4: Apply annotation boost multiplier
+        return base_score * self.annotation_boost
 
     @property
     def word_count(self) -> int:
@@ -121,6 +135,11 @@ class VariantScore:
             "matched_keywords": self.matched_keywords,
             "matched_pain_point": self.matched_pain_point,
             "word_count": self.word_count,
+            # Phase 4: Annotation tracking
+            "annotation_boost": round(self.annotation_boost, 3),
+            "annotation_keywords_matched": self.annotation_keywords_matched,
+            "annotation_ids": self.annotation_ids,
+            "reframe_notes": self.reframe_notes,
         }
 
 
@@ -130,6 +149,7 @@ class SelectedVariant:
     A variant that has been selected for inclusion in the CV.
 
     Includes the variant text, score, and traceability information.
+    Phase 4: Includes annotation influence metadata.
     """
 
     achievement_id: str
@@ -141,6 +161,12 @@ class SelectedVariant:
     # Traceability
     core_fact: str  # Original fact for interview prep
     keywords: List[str]  # Achievement keywords
+
+    # Phase 4: Annotation traceability
+    annotation_influenced: bool = False
+    annotation_ids: List[str] = field(default_factory=list)
+    annotation_keywords_used: List[str] = field(default_factory=list)
+    reframe_applied: Optional[str] = None
 
     @property
     def total_score(self) -> float:
@@ -158,6 +184,11 @@ class SelectedVariant:
             "score_breakdown": self.score.to_dict(),
             "core_fact": self.core_fact,
             "keywords": self.keywords,
+            # Phase 4: Annotation traceability
+            "annotation_influenced": self.annotation_influenced,
+            "annotation_ids": self.annotation_ids,
+            "annotation_keywords_used": self.annotation_keywords_used,
+            "reframe_applied": self.reframe_applied,
         }
 
 
@@ -274,23 +305,40 @@ class VariantSelector:
         extracted_jd: Dict,
         target_count: int = 5,
         min_score: float = 0.1,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> SelectionResult:
         """
         Select optimal variants for a role based on JD requirements.
+
+        Phase 4 Enhancement: Integrates annotation boost and keywords.
 
         Args:
             role: Enhanced role data with achievements and variants
             extracted_jd: Extracted JD data with keywords, pain points, etc.
             target_count: Target number of bullets to select
             min_score: Minimum score threshold for inclusion
+            jd_annotations: Optional JDAnnotations for boost calculation
 
         Returns:
             SelectionResult with selected variants and metadata
         """
         self._logger.debug(f"Selecting variants for {role.metadata.company}")
 
+        # Phase 4: Create annotation calculator
+        annotation_calculator = AnnotationBoostCalculator(jd_annotations) if jd_annotations else None
+
         # Extract JD data
         jd_keywords = self._extract_jd_keywords(extracted_jd)
+
+        # Phase 4: Inject annotation keywords into JD keywords
+        if annotation_calculator and annotation_calculator.has_annotations():
+            annotation_keywords = annotation_calculator.get_annotation_keywords_with_variants()
+            jd_keywords = jd_keywords | annotation_keywords
+            stats = annotation_calculator.get_stats()
+            self._logger.info(
+                f"📌 Annotation boost ACTIVE: {stats['total_keywords']} keywords injected"
+            )
+
         pain_points = extracted_jd.get("implied_pain_points", [])
         role_category = extracted_jd.get("role_category", "default")
 
@@ -305,6 +353,7 @@ class VariantSelector:
                     jd_keywords=jd_keywords,
                     pain_points=pain_points,
                     role_category=role_category,
+                    annotation_calculator=annotation_calculator,
                 )
                 all_scores.append((achievement, variant, score))
 
@@ -324,6 +373,10 @@ class VariantSelector:
             if score.total_score < min_score:
                 continue
 
+            # Phase 4: Determine if annotation influenced this selection
+            annotation_influenced = score.annotation_boost != 1.0
+            reframe_applied = score.reframe_notes[0] if score.reframe_notes else None
+
             # Add to selection
             selected.append(SelectedVariant(
                 achievement_id=achievement.id,
@@ -333,6 +386,11 @@ class VariantSelector:
                 score=score,
                 core_fact=achievement.core_fact,
                 keywords=achievement.keywords,
+                # Phase 4: Annotation traceability
+                annotation_influenced=annotation_influenced,
+                annotation_ids=score.annotation_ids,
+                annotation_keywords_used=score.annotation_keywords_matched,
+                reframe_applied=reframe_applied,
             ))
             selected_achievement_ids.add(achievement.id)
 
@@ -357,6 +415,13 @@ class VariantSelector:
             jd_keywords_missing=missing,
         )
 
+        # Phase 4: Log annotation influence
+        annotation_count = sum(1 for v in selected if v.annotation_influenced)
+        if annotation_count > 0:
+            self._logger.info(
+                f"📌 {annotation_count}/{len(selected)} variants influenced by annotations"
+            )
+
         self._logger.info(
             f"Selected {result.selection_count}/{target_count} variants for {role.metadata.company} "
             f"(avg score: {result.average_score:.2f}, keyword coverage: {result.keyword_coverage:.0%})"
@@ -371,9 +436,12 @@ class VariantSelector:
         jd_keywords: Set[str],
         pain_points: List[str],
         role_category: str,
+        annotation_calculator: Optional[AnnotationBoostCalculator] = None,
     ) -> VariantScore:
         """
         Score a single variant against JD requirements.
+
+        Phase 4 Enhancement: Applies annotation boost to variant score.
 
         Args:
             achievement: The parent achievement
@@ -381,6 +449,7 @@ class VariantSelector:
             jd_keywords: Set of JD keywords (lowercase)
             pain_points: List of JD pain points
             role_category: JD role category
+            annotation_calculator: Optional calculator for annotation boost
 
         Returns:
             VariantScore with detailed breakdown
@@ -429,6 +498,14 @@ class VariantSelector:
         achievement_match = achievement_keywords & jd_keywords
         if achievement_keywords:
             score.achievement_keyword_score = len(achievement_match) / len(achievement_keywords)
+
+        # Phase 4: Apply annotation boost
+        if annotation_calculator and annotation_calculator.has_annotations():
+            boost_result = annotation_calculator.get_boost_for_text(variant.text)
+            score.annotation_boost = boost_result.boost
+            score.annotation_keywords_matched = boost_result.matched_keywords
+            score.annotation_ids = boost_result.contributing_annotations
+            score.reframe_notes = boost_result.reframe_notes
 
         return score
 
@@ -483,9 +560,12 @@ class VariantSelector:
         role: EnhancedRoleData,
         extracted_jd: Dict,
         target_count: int = 5,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> SelectionResult:
         """
         Select variants using the role's selection guide if available.
+
+        Phase 4: Supports JD annotations for boost calculation.
 
         The selection guide maps JD emphasis areas to recommended achievements.
         This is used as a hint to prioritize certain achievements.
@@ -494,12 +574,13 @@ class VariantSelector:
             role: Enhanced role data with achievements and selection guide
             extracted_jd: Extracted JD data
             target_count: Target number of bullets
+            jd_annotations: Optional JDAnnotations for boost calculation
 
         Returns:
             SelectionResult with selected variants
         """
         if not role.selection_guide:
-            return self.select_variants(role, extracted_jd, target_count)
+            return self.select_variants(role, extracted_jd, target_count, jd_annotations=jd_annotations)
 
         # Get role category and check selection guide
         role_category = extracted_jd.get("role_category", "")
@@ -507,7 +588,7 @@ class VariantSelector:
 
         if not recommended_ids:
             # Fall back to standard selection
-            return self.select_variants(role, extracted_jd, target_count)
+            return self.select_variants(role, extracted_jd, target_count, jd_annotations=jd_annotations)
 
         self._logger.debug(
             f"Using selection guide for {role_category}: {recommended_ids}"
@@ -528,8 +609,8 @@ class VariantSelector:
         original_order = role.achievements
         role.achievements = prioritized_achievements + other_achievements
 
-        # Run standard selection
-        result = self.select_variants(role, extracted_jd, target_count)
+        # Run standard selection (Phase 4: with annotations)
+        result = self.select_variants(role, extracted_jd, target_count, jd_annotations=jd_annotations)
 
         # Restore original order
         role.achievements = original_order
@@ -545,34 +626,42 @@ def select_variants_for_role(
     role: EnhancedRoleData,
     extracted_jd: Dict,
     target_count: int = 5,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> SelectionResult:
     """
     Convenience function to select variants for a single role.
+
+    Phase 4: Supports JD annotations for boost calculation.
 
     Args:
         role: Enhanced role data
         extracted_jd: Extracted JD data
         target_count: Target number of bullets
+        jd_annotations: Optional JDAnnotations for boost calculation
 
     Returns:
         SelectionResult with selected variants
     """
     selector = VariantSelector()
-    return selector.select_variants(role, extracted_jd, target_count)
+    return selector.select_variants(role, extracted_jd, target_count, jd_annotations=jd_annotations)
 
 
 def select_variants_for_all_roles(
     roles: Dict[str, EnhancedRoleData],
     extracted_jd: Dict,
     bullet_counts: Optional[Dict[str, int]] = None,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, SelectionResult]:
     """
     Select variants for all roles.
+
+    Phase 4: Supports JD annotations for boost calculation.
 
     Args:
         roles: Dictionary of role_id -> EnhancedRoleData
         extracted_jd: Extracted JD data
         bullet_counts: Optional per-role bullet counts (default 5 each)
+        jd_annotations: Optional JDAnnotations for boost calculation
 
     Returns:
         Dictionary of role_id -> SelectionResult
@@ -599,7 +688,7 @@ def select_variants_for_all_roles(
             count = 4  # Default
 
         results[role_id] = selector.select_with_selection_guide(
-            role, extracted_jd, count
+            role, extracted_jd, count, jd_annotations=jd_annotations
         )
 
     return results
