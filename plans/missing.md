@@ -1598,6 +1598,11 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 - `tests/unit/test_layer6_markdown_cv_generator.py`: Changed `cleanup_test_output` fixture to use `tmp_path` and `os.chdir()` for test isolation
 - Removed manual cleanup code that caused race conditions
 
+**Verification** (2025-12-09):
+- Test mocking confirmed working with comprehensive `mock_llm_providers` fixture (lines 22-41 of test_layer6_markdown_cv_generator.py)
+- Patches `create_tracked_cv_llm` factory for reliable offline testing
+- Unit test suite passes: 1095 tests passing, 35 skipped
+
 ---
 
 ### GAP-036: Cost Tracking Per Pipeline Run
@@ -1614,6 +1619,27 @@ MAX_CONCURRENCY=5  # Increase for batch processing day
 - `src/common/token_tracker.py`: Comprehensive `TokenTracker` class with per-provider cost estimates
 - `UsageSummary` with `by_provider` dict containing input/output tokens and costs
 - Global tracker accessed via `get_global_tracker()`
+
+---
+
+### Configuration: MongoDB URI Environment Variable Fallback Chain
+**Status**: ✅ VERIFIED (2025-12-09) | **Impact**: Backward-compatible MongoDB configuration
+
+**Implementation** (Already in codebase):
+1. **Primary**: `MONGODB_URI` environment variable (standard MongoDB URI format)
+2. **Fallback**: `MONGO_URI` (legacy variable name for backward compatibility)
+3. **Default**: `mongodb://localhost:27017` (local development)
+
+**Locations**:
+- `runner_service/app.py:301` - Main MongoDB connection with error handling
+- `runner_service/app.py:987-990` - CV PDF generation with sensible defaults
+- `runner_service/persistence.py:40` - Pipeline state persistence with graceful skip if not configured
+
+**Verification** (2025-12-09):
+- Backward-compatible fallback chain confirmed in code
+- Allows flexible deployment across environments (local, VPS, Atlas)
+- Production uses `MONGODB_URI`; development can use local default
+- No configuration gaps identified
 
 ---
 
