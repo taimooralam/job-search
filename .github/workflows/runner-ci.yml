@@ -102,7 +102,9 @@ jobs:
       matrix:
         service-group:
           - name: runner-api
-            paths: tests/runner/test_runner_api.py tests/runner/test_executor.py
+            paths: tests/runner/test_runner_api.py
+          - name: executor
+            paths: tests/runner/test_executor.py
           - name: pdf-service
             paths: tests/pdf_service/
           - name: pdf-integration
