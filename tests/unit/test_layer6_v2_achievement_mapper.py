@@ -155,7 +155,8 @@ class TestAchievementMapper:
         achievement = "Scaled platform to handle 10x traffic growth"
         pain_point = "Need to scale platform to handle traffic growth"
 
-        score, matched = mapper._calculate_keyword_overlap(achievement, pain_point)
+        # Phase 5: Now returns 3 values (score, matched_keywords, annotation_keywords)
+        score, matched, annotation_kw = mapper._calculate_keyword_overlap(achievement, pain_point)
 
         assert score > 0.1  # Should have some overlap
         assert len(matched) >= 2  # Should have multiple matching keywords
@@ -165,7 +166,8 @@ class TestAchievementMapper:
         achievement = "Mentored junior engineers on code review practices"
         pain_point = "Need to scale platform infrastructure"
 
-        score, matched = mapper._calculate_keyword_overlap(achievement, pain_point)
+        # Phase 5: Now returns 3 values (score, matched_keywords, annotation_keywords)
+        score, matched, annotation_kw = mapper._calculate_keyword_overlap(achievement, pain_point)
 
         assert score < 0.2  # Should have low overlap
 
