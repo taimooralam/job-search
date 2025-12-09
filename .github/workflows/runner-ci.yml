@@ -94,9 +94,20 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
-  # Service-specific tests run in parallel with unit tests
+  # Service-specific tests run in parallel with matrix
   test-services:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service-group:
+          - name: runner-api
+            paths: tests/runner/test_runner_api.py tests/runner/test_executor.py
+          - name: pdf-service
+            paths: tests/pdf_service/
+          - name: pdf-integration
+            paths: tests/runner/test_pdf_integration.py
+
     steps:
       - uses: actions/checkout@v4
 
@@ -122,13 +133,9 @@ jobs:
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
 
-      - name: Run runner & PDF service tests
+      - name: Run service tests (${{ matrix.service-group.name }})
         run: |
-          python -m pytest \
-            tests/runner/test_executor.py \
-            tests/runner/test_runner_api.py \
-            tests/runner/test_pdf_integration.py \
-            tests/pdf_service/ \
+          python -m pytest ${{ matrix.service-group.paths }} \
             --tb=short \
             -n auto \
             -q \
