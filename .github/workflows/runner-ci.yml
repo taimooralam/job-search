@@ -105,10 +105,31 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
-  # Service-specific tests - single job runs all tests in parallel with pytest-xdist
-  # This avoids ~2min setup overhead per matrix job
+  # Service-specific tests run in parallel with matrix
   test-services:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service-group:
+          # Split runner-api tests for parallel execution (~5min -> ~1.5min each)
+          - name: runner-api-auth
+            paths: tests/runner/test_runner_api.py -k "auth or requires"
+          - name: runner-api-job
+            paths: tests/runner/test_runner_api.py -k "run_job or bulk_run or missing_job or empty_bulk"
+          - name: runner-api-status
+            paths: tests/runner/test_runner_api.py -k "status or logs or artifact"
+          - name: runner-api-other
+            paths: tests/runner/test_runner_api.py -k "health or concurrency or firecrawl"
+          - name: executor
+            paths: tests/runner/test_executor.py
+          # NOTE: runner-integration requires MongoDB service - run locally only
+          # - name: runner-integration
+          #   paths: tests/runner/test_integration.py
+          - name: pdf-service
+            paths: tests/pdf_service/
+          - name: pdf-integration
+            paths: tests/runner/test_pdf_integration.py
 
     steps:
       - uses: actions/checkout@v4
@@ -135,13 +156,9 @@ jobs:
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
 
-      - name: Run all service tests (parallel with pytest-xdist)
+      - name: Run service tests (${{ matrix.service-group.name }})
         run: |
-          python -m pytest \
-            tests/runner/test_runner_api.py \
-            tests/runner/test_executor.py \
-            tests/pdf_service/ \
-            tests/runner/test_pdf_integration.py \
+          python -m pytest ${{ matrix.service-group.paths }} \
             --tb=short \
             -n auto \
             -q \
