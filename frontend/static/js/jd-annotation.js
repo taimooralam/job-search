@@ -100,14 +100,35 @@ class AnnotationManager {
                 // Render processed JD if available
                 if (this.processedJdHtml) {
                     this.renderProcessedJd();
+                } else {
+                    // No processed JD yet - show empty state with prompt to click "Process JD"
+                    this.showEmptyState();
                 }
+            } else {
+                // No annotations data - show empty state
+                this.showEmptyState();
             }
 
             this.updateSaveIndicator('saved');
         } catch (error) {
             console.error('Error loading annotations:', error);
             this.updateSaveIndicator('error');
+            // Show empty state on error too
+            this.showEmptyState();
         }
+    }
+
+    /**
+     * Show empty state (hides loading, shows empty message)
+     */
+    showEmptyState() {
+        const loadingEl = document.getElementById('jd-loading');
+        const emptyEl = document.getElementById('jd-empty');
+        const contentEl = document.getElementById('jd-processed-content');
+
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (contentEl) contentEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
     }
 
     /**
