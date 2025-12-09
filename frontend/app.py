@@ -207,6 +207,16 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
             result[key] = str(value)
         else:
             result[key] = value
+
+    # Normalize description field (Issue 1 Fix)
+    # MongoDB may store as description, job_description, or jobDescription
+    if not result.get("description"):
+        result["description"] = (
+            job.get("job_description") or
+            job.get("jobDescription") or
+            ""
+        )
+
     return result
 
 
@@ -3085,6 +3095,18 @@ def get_cv_editor_state(job_id: str):
         # Note: We don't persist the migrated state on GET to avoid unnecessary writes
         # Migration is cheap and happens on-demand
         # Persistence happens when user explicitly saves via PUT endpoint
+
+    # If still no state but cv_path exists, try to load from disk (Issue 3 Fix)
+    if not editor_state and job.get("cv_path"):
+        try:
+            from pathlib import Path
+            cv_path = Path(job.get("cv_path"))
+            if cv_path.exists():
+                cv_text = cv_path.read_text(encoding="utf-8")
+                editor_state = migrate_cv_text_to_editor_state(cv_text)
+                app.logger.info(f"CV recovered from disk: {cv_path}")
+        except Exception as e:
+            app.logger.warning(f"Failed to recover CV from disk: {e}")
 
     # If still no state, return default empty state (Phase 3 defaults)
     if not editor_state:
