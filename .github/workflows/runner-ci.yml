@@ -30,10 +30,69 @@ env:
   REGISTRY: ghcr.io
   RUNNER_IMAGE_NAME: ${{ github.repository }}/runner
   PDF_IMAGE_NAME: ${{ github.repository }}/pdf-service
+  # Optimization: Use uv for faster pip installs
+  UV_SYSTEM_PYTHON: 1
 
 jobs:
-  # Unit tests with parallel execution (GAP-063)
-  test:
+  # Unit tests split into parallel jobs for faster execution
+  test-unit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Split tests into groups that run in parallel
+        test-group:
+          - name: layer1-3
+            paths: tests/unit/test_layer1*.py tests/unit/test_layer2*.py tests/unit/test_layer3*.py
+          - name: layer4-5
+            paths: tests/unit/test_layer4*.py tests/unit/test_layer5*.py
+          - name: layer6
+            paths: tests/unit/test_layer6*.py
+          - name: other
+            paths: tests/unit/test_*.py --ignore=tests/unit/test_layer1*.py --ignore=tests/unit/test_layer2*.py --ignore=tests/unit/test_layer3*.py --ignore=tests/unit/test_layer4*.py --ignore=tests/unit/test_layer5*.py --ignore=tests/unit/test_layer6*.py
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Cache pip packages (saves ~30-60s)
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Use uv for 10-100x faster installs
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies (using uv)
+        run: |
+          uv pip install -r requirements.txt
+          uv pip install pytest pytest-asyncio pytest-xdist httpx
+          uv pip install -e .
+
+      - name: Run unit tests (${{ matrix.test-group.name }})
+        run: |
+          python -m pytest ${{ matrix.test-group.paths }} \
+            --tb=short \
+            -n auto \
+            -q \
+            --no-header
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          RUNNER_API_SECRET: test-secret
+          ENVIRONMENT: development
+          MONGODB_URI: mongodb://localhost:27017/test
+
+  # Service-specific tests run in parallel with unit tests
+  test-services:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,26 +101,35 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-xdist httpx
-          pip install -e .  # Install package in editable mode for module imports
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Run unit tests (parallel execution)
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies (using uv)
         run: |
-          # Run unit tests for runner, PDF service, and all unit tests
-          # Using pytest-xdist for parallel execution (-n auto)
-          # This reduces CI time by 60-80%
+          uv pip install -r requirements.txt
+          uv pip install pytest pytest-asyncio pytest-xdist httpx
+          uv pip install -e .
+
+      - name: Run runner & PDF service tests
+        run: |
           python -m pytest \
             tests/runner/test_executor.py \
             tests/runner/test_runner_api.py \
             tests/runner/test_pdf_integration.py \
             tests/pdf_service/ \
-            tests/unit/ \
-            -v --tb=short -n auto
+            --tb=short \
+            -n auto \
+            -q \
+            --no-header
         env:
           PYTHONPATH: ${{ github.workspace }}
           RUNNER_API_SECRET: test-secret
@@ -69,7 +137,7 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017/test
 
   build:
-    needs: test
+    needs: [test-unit, test-services]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     permissions:
