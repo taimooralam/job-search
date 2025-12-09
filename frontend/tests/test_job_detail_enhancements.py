@@ -276,47 +276,46 @@ class TestExtractedJDFieldsDisplay:
 
 
 class TestCollapsibleJobDescription:
-    """Tests for the collapsible job description feature."""
+    """Tests for the collapsible job description feature using HTML details element."""
 
-    def test_job_description_preview_renders(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should render job description preview (first 200 chars)."""
+    def test_job_description_details_element_renders(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should render job description in a details/summary element."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
         assert response.status_code == 200
-        # Should have preview div
-        assert b'job-description-preview' in response.data
-        # Should have ellipsis for long descriptions
-        assert b'...' in response.data or b'Click to expand' in response.data
+        # Should have details element for collapsible section
+        assert b'<details' in response.data
+        assert b'<summary' in response.data
+        # Should show job description label
+        assert b'Full Job Description' in response.data
 
-    def test_job_description_toggle_elements_present(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should have toggle button and chevron icon."""
+    def test_job_description_summary_is_clickable(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should have cursor-pointer styling on summary for clickability."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
         assert response.status_code == 200
-        # Should have toggle function
-        assert b'toggleJobDescription' in response.data
-        # Should have chevron icon
-        assert b'job-description-chevron' in response.data
+        # Should have cursor-pointer class on summary
+        assert b'cursor-pointer' in response.data
 
-    def test_job_description_full_content_present(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should include full job description in hidden div."""
+    def test_job_description_content_present(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should include the full job description content."""
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
         assert response.status_code == 200
-        # Should have full description div
-        assert b'job-description-full' in response.data
+        # The description content should be present (sample has 'A' * 300)
+        assert b'AAA' in response.data
 
-    def test_short_description_no_ellipsis(self, client, mock_db, sample_job_without_extracted_jd):
-        """Should not show ellipsis for short descriptions."""
+    def test_short_description_renders(self, client, mock_db, sample_job_without_extracted_jd):
+        """Should render short descriptions correctly."""
         job_id = sample_job_without_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_without_extracted_jd
 
@@ -353,11 +352,11 @@ class TestCollapsibleJobDescription:
         response = client.get(f'/job/{str(job_id)}')
 
         assert response.status_code == 200
-        # Should not have description toggle elements
+        # Page should render successfully
         data = response.data.decode('utf-8')
-        # May not have description section at all
-        # Just verify page renders successfully
         assert 'Engineer' in data
+        # Should NOT have Full Job Description section when no description
+        assert 'Full Job Description' not in data
 
 
 class TestIframeViewer:
@@ -585,8 +584,12 @@ class TestJavaScriptFunctions:
         assert 'iframe-loading' in data
         assert 'iframe-error' in data
 
-    def test_toggle_job_description_onclick_present(self, client, mock_db, sample_job_with_extracted_jd):
-        """Should have onclick handler for toggling job description."""
+    def test_job_description_collapsible_uses_details_element(self, client, mock_db, sample_job_with_extracted_jd):
+        """Should use HTML details/summary elements for collapsible job description.
+
+        Note: Uses native HTML5 details element instead of JavaScript toggle,
+        which provides better accessibility and works without JS.
+        """
         job_id = sample_job_with_extracted_jd["_id"]
         mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
 
@@ -594,8 +597,11 @@ class TestJavaScriptFunctions:
 
         assert response.status_code == 200
         data = response.data.decode('utf-8')
-        # Should have onclick referencing toggleJobDescription
-        assert 'toggleJobDescription' in data
+        # Should use native HTML details element for collapsible sections
+        assert '<details' in data
+        assert '<summary' in data
+        # Chevron icon should rotate on open (group-open:rotate-90)
+        assert 'group-open:rotate-90' in data
 
 
 class TestAccessibility:
