@@ -1,7 +1,7 @@
 # Next Steps - Immediate Priorities
 
-**Last Updated**: 2025-11-28
-**Current Focus**: Phase 5 Features (WYSIWYG Page Breaks, 8-10 hours)
+**Last Updated**: 2025-12-09
+**Current Focus**: Job Detail Page Fixes (4 issues resolved), Phase 5 Features (WYSIWYG Page Breaks, 8-10 hours)
 
 > **Documentation Structure Note**: All agent-specific plans and reports are now organized in:
 > - Plans: `plans/agents/{agent-name}/`
@@ -13,14 +13,12 @@
 
 ## Current Blockers (Priority Order)
 
-1. **CRITICAL - Export PDF Button Not Working on Job Detail Page** (Persists 2025-11-29)
-   - Impact: Users can't export PDF from detail page (core feature broken)
-   - Status: **NOT FIXED** - Previously marked complete but user confirms still broken
-   - Workaround: Use Export PDF button in CV editor side panel (works correctly)
-   - Effort: 1-3 hours (depends on root cause)
-   - Plan: See `plans/missing.md` section "New Requirements #1"
-   - Action: Investigate using browser DevTools (Network, Console), compare with working editor button
-   - Timeline: Fix immediately
+1. **RESOLVED (2025-12-09) - Job Detail Page Fixes**
+   - Issue 1: Job Description Button Not Visible - FIXED (field normalization in serialize_job)
+   - Issue 2: Progress Bar Goes Backwards - FIXED (monotonic tracking with highestLayerReached)
+   - Issue 3: CV Not Displayed After Pipeline - FIXED (disk fallback in get_cv_editor_state)
+   - Issue 4: JD Annotation Editor Not Visible - FIXED (jobId passed to openAnnotationPanel)
+   - See `plans/missing.md` "Today's Fixes (2025-12-09)" section for implementation details
 
 2. **CRITICAL - Anthropic API credits low**
    - Impact: CV generator may fail in production

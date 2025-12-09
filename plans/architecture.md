@@ -530,9 +530,9 @@ class OutreachPackage(TypedDict):
 
 ---
 
-### Job Detail Page
+### Job Detail Page (Enhanced - 2025-12-09)
 - Main content: Cover letter, pain points, contacts
-- Pipeline progress: Horizontal layout with progress line (NEW - 2025-12-08)
+- Pipeline progress: Horizontal layout with progress line with monotonic tracking (2025-12-09 enhanced: `highestLayerReached` prevents backward movement)
 - Interview prep: Predicted questions with difficulty levels and prep guides (NEW - 2025-12-09)
 - Outcome tracker: Status timeline and conversion statistics (NEW - 2025-12-09)
 - Side panel: CV editor (TipTap, Phase 1-5 complete)
@@ -543,6 +543,18 @@ class OutreachPackage(TypedDict):
   - Purple badge: "Agency" for recruitment agencies
   - Blue badge: "Direct" for direct employers
   - Helps users quickly identify agency vs direct roles
+- **Field Normalization Pattern** (NEW - 2025-12-09):
+  - `serialize_job()` normalizes both `job_description` and `jobDescription` to `description` field
+  - Handles database field name variations across different data sources
+  - Ensures UI consistently displays job description button and content
+- **CV Display Fallback** (NEW - 2025-12-09):
+  - Checks `cv_editor_state` first, falls back to disk-based `cv_text` if needed
+  - `output_publisher.py` logs warnings when cv_text is missing for debugging
+  - Handles edge cases where pipeline completes but CV text not persisted immediately
+- **JD Annotation Panel** (NEW - 2025-12-09):
+  - Button in `job_detail.html` passes `jobId` data attribute to `openAnnotationPanel()`
+  - `jd-annotation.js` reads `jobId` from data attribute as fallback mechanism
+  - Ensures panel initialization even if ID passed through alternate routes
 
 **Intelligence Summary Section** (NEW - 2025-12-08):
 - Collapsible section with comprehensive job analysis
