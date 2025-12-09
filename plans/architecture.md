@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-08 | **Status**: 7 layers + frontend complete, Anti-hallucination filtering enhanced, Pipeline UI horizontal
+**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Phase 6 Outreach Annotation Integration complete
 
 ---
 
@@ -142,6 +142,40 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
   - Language/tone adjustments
 - Character limits and validation rules
 - Pre-applied messaging patterns
+
+**JD Annotation System Integration - Phase 6** (NEW - 2025-12-09):
+
+**People Mapper Annotation Context** (`src/layer5/people_mapper.py`):
+- `_format_annotation_context()` helper method extracts JD annotation data
+- Formats for outreach prompt injection:
+  - Must-have requirements (high-priority skills for opening message)
+  - Reframe guidance (positioning strategies per contact type)
+  - Keywords (ATS-optimized language from annotations)
+  - Concerns identified (red flags to address proactively)
+  - STAR evidence (linked achievements to reference in outreach)
+- Enables annotation-aware contact discovery and messaging
+
+**Cover Letter Concern Mitigation** (`src/layer6/cover_letter_generator.py`):
+- New `_format_concern_mitigation_section()` method
+- Proactively addresses red flags with positive framing:
+  - One mitigation paragraph per major concern
+  - Max 2 concerns per cover letter (avoid overexplaining)
+  - Examples: on-call rotation → proven incident response track record
+  - Ties to STAR stories for credibility
+- Integrated into cover letter prompt for all concern annotations
+
+**LinkedIn Headline Optimizer** (`src/layer6/linkedin_optimizer.py`) - NEW FILE:
+- Generates algorithm-aware LinkedIn headline variants from JD annotations
+- Algorithm considers:
+  - Keyword prominence (must-have skills, core strengths)
+  - LinkedIn search weights (title keywords ranked higher)
+  - Character limits (120 char LinkedIn maximum)
+- Output: 3-5 headline patterns for A/B testing
+- Example:
+  - Input: "Kubernetes [core_strength], AWS [must_have], Python [relevant]"
+  - Output 1: "Principal Engineer | Kubernetes | AWS | Python"
+  - Output 2: "Cloud Platform Architect | AWS | Kubernetes Specialist"
+- Used for job-specific LinkedIn profile optimization before outreach
 
 **CV Styling & Display** (Updated - 2025-12-08):
 
