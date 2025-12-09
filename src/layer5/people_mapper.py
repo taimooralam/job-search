@@ -10,6 +10,11 @@ Phase 7 Enhancements:
 - JSON-only output with Pydantic validation
 - Role-based fallback for missing names
 - OutreachPackage generation with constraints
+
+Phase 6 Enhancement (JD Annotation System):
+- Annotation context for personalized outreach
+- Reframe guidance integration for gap/concern handling
+- Must-have requirements emphasis in outreach
 """
 
 import json
@@ -27,6 +32,7 @@ from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
+from src.common.annotation_types import JDAnnotation, ConcernAnnotation
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -418,7 +424,15 @@ Every message MUST reference that the candidate has already applied using one of
 - NO EMOJIS in any message
 - NO GENERIC PLACEHOLDERS like "[Company]", "[Date]"
 - Use actual contact name or role-based addressee (e.g., "VP Engineering at Stripe")
-- Be direct, technical, and metric-driven"""
+- Be direct, technical, and metric-driven
+
+**PHASE 6 ANNOTATION GUIDANCE (when provided):**
+When "ANNOTATION CONTEXT" section is included in the prompt:
+- Apply REFRAME GUIDANCE to position experience using JD-aligned terminology
+- Prioritize MUST-HAVE requirements in your messaging
+- Include ANNOTATION KEYWORDS for relevance signaling
+- Address CONCERNS proactively with mitigation framing (but keep message positive)
+- Use linked STAR metrics as evidence for claims"""
 
 USER_PROMPT_OUTREACH_TEMPLATE = """Generate personalized outreach for this contact:
 
@@ -443,7 +457,7 @@ Company Context:
 === CANDIDATE EVIDENCE (Master CV or curated achievements) ===
 {selected_stars_summary}
 
-=== YOUR TASK ===
+{annotation_context}=== YOUR TASK ===
 Generate outreach TAILORED to {contact_type} contact type:
 1. Use "already applied" framing in all messages
 2. Reference at least one concrete metric from candidate's experience
@@ -1148,6 +1162,135 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
 
         return "\n\n".join(summaries)
 
+    def _format_annotation_context(
+        self,
+        annotations: Optional[List[JDAnnotation]] = None,
+        concerns: Optional[List[ConcernAnnotation]] = None,
+    ) -> str:
+        """
+        Format JD annotations and concerns for outreach prompt injection.
+
+        Phase 6: Annotation context enables personalized outreach by providing:
+        - Must-have requirements for emphasis
+        - Reframe guidance for positioning experience
+        - Keywords for relevance signaling
+        - Concern mitigation strategies
+
+        Args:
+            annotations: List of JDAnnotation from job state
+            concerns: List of ConcernAnnotation from job state
+
+        Returns:
+            Formatted annotation context string for prompt injection,
+            or empty string if no annotations/concerns available
+        """
+        if not annotations and not concerns:
+            return ""
+
+        sections = []
+
+        # === Must-Have Requirements ===
+        if annotations:
+            must_haves = [
+                a for a in annotations
+                if a.get("requirement_type") == "must_have"
+                and a.get("is_active", True)
+            ]
+            if must_haves:
+                must_have_lines = []
+                for a in must_haves[:5]:  # Top 5 for prompt length
+                    text = a.get("target", {}).get("text", "")
+                    skill = a.get("matching_skill", "")
+                    if text:
+                        line = f"- {text}"
+                        if skill:
+                            line += f" → Match: {skill}"
+                        must_have_lines.append(line)
+                if must_have_lines:
+                    sections.append(
+                        "**MUST-HAVE REQUIREMENTS (emphasize in outreach):**\n"
+                        + "\n".join(must_have_lines)
+                    )
+
+        # === Reframe Guidance ===
+        if annotations:
+            reframes = [
+                a for a in annotations
+                if a.get("has_reframe") and a.get("reframe_note")
+                and a.get("is_active", True)
+            ]
+            if reframes:
+                reframe_lines = []
+                for a in reframes[:4]:  # Top 4 reframes
+                    reframe_note = a.get("reframe_note", "")
+                    reframe_from = a.get("reframe_from", "")
+                    reframe_to = a.get("reframe_to", "")
+                    if reframe_note:
+                        if reframe_from and reframe_to:
+                            reframe_lines.append(f"- \"{reframe_from}\" → \"{reframe_to}\": {reframe_note}")
+                        else:
+                            reframe_lines.append(f"- {reframe_note}")
+                if reframe_lines:
+                    sections.append(
+                        "**REFRAME GUIDANCE (use this positioning):**\n"
+                        + "\n".join(reframe_lines)
+                    )
+
+        # === Annotation Keywords ===
+        if annotations:
+            all_keywords = []
+            for a in annotations:
+                if a.get("is_active", True):
+                    all_keywords.extend(a.get("suggested_keywords", []))
+                    all_keywords.extend(a.get("ats_variants", []))
+            # Deduplicate while preserving order
+            seen = set()
+            unique_keywords = []
+            for kw in all_keywords:
+                if kw.lower() not in seen:
+                    seen.add(kw.lower())
+                    unique_keywords.append(kw)
+            if unique_keywords:
+                sections.append(
+                    f"**ANNOTATION KEYWORDS (include in messaging):** {', '.join(unique_keywords[:12])}"
+                )
+
+        # === Concern Mitigation ===
+        if concerns:
+            active_concerns = [
+                c for c in concerns
+                if c.get("severity") in ("concern", "preference")  # Not blockers
+            ]
+            if active_concerns:
+                concern_lines = []
+                for c in active_concerns[:3]:  # Top 3 concerns
+                    concern_text = c.get("concern", "")
+                    mitigation = c.get("mitigation_strategy", "")
+                    if concern_text and mitigation:
+                        concern_lines.append(f"- {concern_text}: {mitigation}")
+                if concern_lines:
+                    sections.append(
+                        "**CONCERNS TO ADDRESS (use positive framing):**\n"
+                        + "\n".join(concern_lines)
+                    )
+
+        # === STAR Evidence Links ===
+        if annotations:
+            star_evidence = []
+            for a in annotations:
+                if a.get("is_active", True) and a.get("evidence_summary"):
+                    star_evidence.append(f"- {a.get('evidence_summary')}")
+            if star_evidence:
+                sections.append(
+                    "**LINKED EVIDENCE (cite in outreach):**\n"
+                    + "\n".join(star_evidence[:3])
+                )
+
+        if not sections:
+            return ""
+
+        return "=== ANNOTATION CONTEXT ===\n" + "\n\n".join(sections) + "\n\n"
+
     def _generate_fallback_cover_letters(self, state: JobState, reason: str) -> List[str]:
         """
         Create three fallback cover letters when no contacts are discoverable.
@@ -1554,7 +1697,15 @@ Return the three letters separated by \"---\" lines.
         # Format contact signals
         signals_text = ", ".join(contact.get("recent_signals", [])) if contact.get("recent_signals") else "None"
 
-        # Build prompt with contact_type
+        # Phase 6: Format annotation context for personalized outreach
+        # Extract annotations and concerns from the jd_annotations dict structure
+        jd_annotations_data = state.get("jd_annotations") or {}
+        annotation_context = self._format_annotation_context(
+            annotations=jd_annotations_data.get("annotations") if isinstance(jd_annotations_data, dict) else None,
+            concerns=jd_annotations_data.get("concerns") if isinstance(jd_annotations_data, dict) else None,
+        )
+
+        # Build prompt with contact_type and annotation context
         messages = [
             SystemMessage(content=SYSTEM_PROMPT_OUTREACH),
             HumanMessage(content=USER_PROMPT_OUTREACH_TEMPLATE.format(
@@ -1570,7 +1721,8 @@ Return the three letters separated by \"---\" lines.
                 selected_stars_summary=self._format_stars_summary(
                     state.get("selected_stars", []),
                     state.get("candidate_profile", "")
-                )
+                ),
+                annotation_context=annotation_context,
             ))
         ]
 
