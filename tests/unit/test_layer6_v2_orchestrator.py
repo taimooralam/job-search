@@ -417,6 +417,7 @@ class TestFullPipelineMocked:
     @patch.object(CVGeneratorV2, '_get_master_cv_text')
     @patch.object(CVGeneratorV2, '_save_cv_to_disk')
     @patch('src.layer6_v2.orchestrator.grade_cv')
+    @patch('src.layer6_v2.orchestrator.generate_ensemble_header')
     @patch('src.layer6_v2.orchestrator.generate_header')
     @patch('src.layer6_v2.orchestrator.stitch_all_roles')
     @patch('src.layer6_v2.orchestrator.run_qa_on_all_roles')
@@ -427,6 +428,7 @@ class TestFullPipelineMocked:
         mock_qa,
         mock_stitch,
         mock_header,
+        mock_ensemble_header,
         mock_grade,
         mock_save,
         mock_master_cv,
@@ -445,6 +447,7 @@ class TestFullPipelineMocked:
         mock_qa.return_value = ([], [])  # Returns tuple of (qa_results, ats_results)
         mock_stitch.return_value = sample_stitched_cv
         mock_header.return_value = sample_header_output
+        mock_ensemble_header.return_value = sample_header_output  # For Gold/Silver tiers
         mock_grade.return_value = sample_grade_result
         mock_save.return_value = "outputs/test_corp/cv_engineering_manager.md"
         mock_master_cv.return_value = "Master CV text"

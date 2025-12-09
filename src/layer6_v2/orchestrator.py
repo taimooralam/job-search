@@ -63,6 +63,15 @@ from src.layer6_v2.role_generator import (
 from src.layer6_v2.role_qa import RoleQA, run_qa_on_all_roles
 from src.layer6_v2.stitcher import CVStitcher, stitch_all_roles
 from src.layer6_v2.header_generator import HeaderGenerator, generate_header
+from src.layer6_v2.ensemble_header_generator import (
+    EnsembleHeaderGenerator,
+    generate_ensemble_header,
+)
+from src.common.tiering import (
+    ProcessingTier,
+    get_tier_config,
+    get_tier_from_fit_score,
+)
 from src.layer6_v2.grader import CVGrader, grade_cv
 from src.layer6_v2.improver import CVImprover, improve_cv
 from src.layer6_v2.types import (
@@ -187,29 +196,55 @@ class CVGeneratorV2:
             )
             self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
 
-            # Phase 5: Generate header and skills
+            # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
             # GAP-001 FIX: Pass skill whitelist to prevent hallucinated skills
             skill_whitelist = self.cv_loader.get_skill_whitelist()
             self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
-            header_output = generate_header(
-                stitched_cv,
-                extracted_jd,
-                {
-                    "name": candidate_data.name,
-                    "email": candidate_data.email,
-                    "phone": candidate_data.phone,
-                    "linkedin": candidate_data.linkedin,
-                    "location": candidate_data.location,
-                    "education": [
-                        candidate_data.education_masters,
-                        candidate_data.education_bachelors,
-                    ] if candidate_data.education_bachelors else [candidate_data.education_masters],
-                    "certifications": candidate_data.certifications,
-                    "languages": candidate_data.languages,
-                },
-                skill_whitelist=skill_whitelist,
-            )
+
+            # Prepare candidate data dict
+            candidate_dict = {
+                "name": candidate_data.name,
+                "email": candidate_data.email,
+                "phone": candidate_data.phone,
+                "linkedin": candidate_data.linkedin,
+                "location": candidate_data.location,
+                "education_masters": candidate_data.education_masters,
+                "education_bachelors": candidate_data.education_bachelors,
+                "certifications": candidate_data.certifications,
+                "languages": candidate_data.languages,
+            }
+
+            # Determine tier based on fit score
+            fit_score = state.get("fit_score")
+            tier = get_tier_from_fit_score(fit_score)
+            self._logger.info(f"  Processing tier: {tier.value} (fit_score={fit_score})")
+
+            # Use ensemble generator for Gold/Silver tiers, single-shot for Bronze/Skip
+            if tier in [ProcessingTier.GOLD, ProcessingTier.SILVER]:
+                self._logger.info(f"  Using ensemble generation ({tier.value} tier)")
+                header_output = generate_ensemble_header(
+                    stitched_cv,
+                    extracted_jd,
+                    candidate_dict,
+                    fit_score=fit_score,
+                    skill_whitelist=skill_whitelist,
+                )
+                # Log ensemble metadata
+                if header_output.ensemble_metadata:
+                    meta = header_output.ensemble_metadata
+                    self._logger.info(f"  Ensemble: {meta.passes_executed} passes, personas={meta.personas_used}")
+                    if meta.validation_flags and meta.validation_flags.has_flags:
+                        self._logger.warning(f"  Validation flags: {meta.validation_flags.total_flags} items flagged")
+            else:
+                self._logger.info(f"  Using single-shot generation ({tier.value} tier)")
+                header_output = generate_header(
+                    stitched_cv,
+                    extracted_jd,
+                    candidate_dict,
+                    skill_whitelist=skill_whitelist,
+                )
+
             self._logger.info(f"  Profile: {header_output.profile.word_count} words")
             self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")
 
@@ -495,6 +530,12 @@ class CVGeneratorV2:
             for cert in candidate.certifications:
                 lines.append(f"• {cert}")
         lines.append("")
+
+        # Languages section (if available)
+        if candidate.languages:
+            lines.append("**LANGUAGES**")
+            lines.append(", ".join(candidate.languages))
+            lines.append("")
 
         return "\n".join(lines)
 

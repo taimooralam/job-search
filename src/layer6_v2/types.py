@@ -1014,6 +1014,102 @@ class ValidationResult:
         }
 
 
+# ===== ENSEMBLE GENERATION TYPES (Tiered Multi-Pass) =====
+
+
+@dataclass
+class ValidationFlags:
+    """
+    Flags for content that may need human review (flag & keep approach).
+
+    Instead of removing ungrounded content, we flag it for review
+    while preserving the content in the output.
+    """
+
+    ungrounded_metrics: List[str] = field(default_factory=list)
+    """Metrics mentioned that don't appear in source bullets."""
+
+    ungrounded_skills: List[str] = field(default_factory=list)
+    """Skills/keywords not in the whitelist or experience."""
+
+    flagged_claims: List[str] = field(default_factory=list)
+    """Narrative claims that may need verification."""
+
+    @property
+    def has_flags(self) -> bool:
+        """Check if any content has been flagged."""
+        return bool(
+            self.ungrounded_metrics
+            or self.ungrounded_skills
+            or self.flagged_claims
+        )
+
+    @property
+    def total_flags(self) -> int:
+        """Total number of flagged items."""
+        return (
+            len(self.ungrounded_metrics)
+            + len(self.ungrounded_skills)
+            + len(self.flagged_claims)
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "ungrounded_metrics": self.ungrounded_metrics,
+            "ungrounded_skills": self.ungrounded_skills,
+            "flagged_claims": self.flagged_claims,
+            "has_flags": self.has_flags,
+            "total_flags": self.total_flags,
+        }
+
+
+@dataclass
+class EnsembleMetadata:
+    """
+    Metadata tracking the ensemble generation process.
+
+    Records which tier was used, how many passes were executed,
+    and validation flags for human review.
+    """
+
+    tier_used: str = ""
+    """Processing tier: 'GOLD', 'SILVER', 'BRONZE', or 'SKIP'."""
+
+    passes_executed: int = 1
+    """Number of persona passes executed (1-3)."""
+
+    personas_used: List[str] = field(default_factory=list)
+    """List of personas used: 'metric', 'narrative', 'keyword'."""
+
+    synthesis_model: str = ""
+    """Model used for synthesis step (if any)."""
+
+    synthesis_applied: bool = False
+    """Whether synthesis was applied to combine outputs."""
+
+    validation_flags: Optional[ValidationFlags] = None
+    """Flags for content needing review (Gold tier only)."""
+
+    generation_time_ms: int = 0
+    """Total generation time in milliseconds."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "tier_used": self.tier_used,
+            "passes_executed": self.passes_executed,
+            "personas_used": self.personas_used,
+            "synthesis_model": self.synthesis_model,
+            "synthesis_applied": self.synthesis_applied,
+            "validation_flags": (
+                self.validation_flags.to_dict()
+                if self.validation_flags else None
+            ),
+            "generation_time_ms": self.generation_time_ms,
+        }
+
+
 @dataclass
 class HeaderOutput:
     """
@@ -1030,6 +1126,7 @@ class HeaderOutput:
     certifications: List[str] = field(default_factory=list)  # Professional certifications
     languages: List[str] = field(default_factory=list)       # Language proficiencies
     validation_result: Optional[ValidationResult] = None
+    ensemble_metadata: Optional[EnsembleMetadata] = None     # Tier/ensemble tracking
 
     @property
     def total_skills_count(self) -> int:
@@ -1057,6 +1154,10 @@ class HeaderOutput:
             "validation_result": (
                 self.validation_result.to_dict()
                 if self.validation_result else None
+            ),
+            "ensemble_metadata": (
+                self.ensemble_metadata.to_dict()
+                if self.ensemble_metadata else None
             ),
         }
 
