@@ -350,6 +350,56 @@ class VariantParser:
 
         return enhanced_role
 
+    def parse_content(self, content: str, role_id: str = "unknown") -> EnhancedRoleData:
+        """
+        Parse role content from a string (e.g., from MongoDB).
+
+        This is the same as parse_role_file but accepts content directly
+        instead of reading from a file path.
+
+        Args:
+            content: Markdown content string
+            role_id: Optional role identifier for logging/metadata
+
+        Returns:
+            EnhancedRoleData with all parsed information
+
+        Raises:
+            ValueError: If content format is invalid
+        """
+        self._logger.debug(f"Parsing role content: {role_id}")
+
+        # Check if this is an enhanced format file
+        if not self._is_enhanced_format(content):
+            self._logger.warning(
+                f"Role content {role_id} is not in enhanced format. "
+                "Falling back to legacy parsing."
+            )
+            return self._parse_legacy_format(content, role_id)
+
+        # Parse enhanced format
+        metadata = self._parse_metadata(content, role_id)
+        achievements = self._parse_achievements(content)
+        hard_skills, soft_skills = self._parse_skills(content)
+        selection_guide = self._parse_selection_guide(content)
+
+        enhanced_role = EnhancedRoleData(
+            id=role_id,
+            metadata=metadata,
+            achievements=achievements,
+            hard_skills=hard_skills,
+            soft_skills=soft_skills,
+            selection_guide=selection_guide,
+            raw_content=content,
+        )
+
+        self._logger.info(
+            f"Parsed {role_id}: {enhanced_role.achievement_count} achievements, "
+            f"{enhanced_role.total_variants} total variants"
+        )
+
+        return enhanced_role
+
     def _is_enhanced_format(self, content: str) -> bool:
         """Check if content uses the enhanced variant format."""
         # Look for the characteristic pattern of enhanced format
