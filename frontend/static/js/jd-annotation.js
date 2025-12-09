@@ -138,7 +138,7 @@ class AnnotationManager {
     }
 
     /**
-     * Show raw JD with preserved whitespace formatting
+     * Show raw JD with preserved whitespace formatting - ready for annotation
      */
     showRawJd(rawJd) {
         const loadingEl = document.getElementById('jd-loading');
@@ -150,21 +150,19 @@ class AnnotationManager {
 
         if (contentEl) {
             // Convert plain text to HTML with preserved whitespace
-            // - Escape HTML entities
-            // - Convert newlines to <br> or use <pre> style
-            // - Preserve multiple spaces
+            // Use CSS white-space: pre-wrap to preserve formatting without <br> tags
+            // This ensures clean text selection for annotations
             const escapedJd = rawJd
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\n/g, '<br>');
+                .replace(/>/g, '&gt;');
 
             contentEl.innerHTML = `
-                <div class="raw-jd-content p-4 text-sm text-gray-700 leading-relaxed" style="white-space: pre-wrap; word-wrap: break-word;">
-                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-xs">
-                        <strong>Tip:</strong> Click "Process JD" above to parse sections and enable text selection for annotations.
+                <div class="raw-jd-content p-4 text-sm text-gray-700 leading-relaxed select-text cursor-text" style="white-space: pre-wrap; word-wrap: break-word;">
+                    <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs select-none">
+                        <strong>Ready to annotate!</strong> Select any text below to add annotations. Use the quick-add buttons above or click "Process JD" for AI-assisted section parsing.
                     </div>
-                    ${escapedJd}
+                    <div class="jd-text-content">${escapedJd}</div>
                 </div>
             `;
             contentEl.classList.remove('hidden');
