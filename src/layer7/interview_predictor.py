@@ -43,6 +43,58 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# QUESTION QUALITY VALIDATION
+# =============================================================================
+
+
+def validate_question_quality(question: InterviewQuestion) -> List[str]:
+    """
+    Post-generation quality check for interview questions.
+
+    Validates:
+    1. Question length (20-300 chars)
+    2. Not yes/no format (must be open-ended)
+    3. Answer approach is substantive (>=50 chars)
+    4. Difficulty level is valid (easy/medium/hard)
+
+    Args:
+        question: InterviewQuestion to validate (TypedDict or dict-like)
+
+    Returns:
+        List of error messages (empty list = valid question)
+    """
+    errors = []
+
+    # Get question text, handling both TypedDict and dict access patterns
+    question_text = question.get("question", "") if isinstance(question, dict) else question["question"]
+    approach = question.get("suggested_answer_approach", "") if isinstance(question, dict) else question["suggested_answer_approach"]
+    difficulty = question.get("difficulty", "") if isinstance(question, dict) else question["difficulty"]
+
+    # Check 1: Question length (avoid too short/long)
+    if len(question_text) < 20:
+        errors.append(f"Question too short: {len(question_text)} chars (min 20)")
+    if len(question_text) > 300:
+        errors.append(f"Question too long: {len(question_text)} chars (max 300)")
+
+    # Check 2: Not yes/no format (must be open-ended)
+    yes_no_starters = ["do you", "have you", "can you", "will you", "are you", "did you"]
+    if any(question_text.lower().startswith(s) for s in yes_no_starters):
+        errors.append("Yes/no question format - rephrase as open-ended")
+
+    # Check 3: Approach guidance is substantive (min 50 chars)
+    if len(approach) < 50:
+        errors.append(
+            f"Answer approach too brief: {len(approach)} chars (min 50)"
+        )
+
+    # Check 4: Difficulty is valid
+    if difficulty not in ["easy", "medium", "hard"]:
+        errors.append(f"Invalid difficulty: {difficulty}")
+
+    return errors
+
+
+# =============================================================================
 # QUESTION TYPES
 # =============================================================================
 
@@ -116,12 +168,71 @@ Analyze the provided gaps (skills/experience the candidate lacks) and concerns (
 - medium: Requires thoughtful preparation and examples
 - hard: Complex questions requiring nuanced answers or addressing weaknesses
 
+## QUESTION QUALITY EXAMPLES
+
+### GOOD Gap Probe Question:
+GAP: "5+ years Kubernetes experience required" (candidate has 2 years Docker)
+QUESTION: "Can you walk me through your experience with Kubernetes and container orchestration at scale?"
+WHY GOOD:
+- Acknowledges the gap area directly
+- Gives candidate opportunity to demonstrate depth with related experience
+- Opens door for transferable skills discussion
+ANSWER APPROACH: "Focus on Docker expertise and explain transferable concepts like service discovery, load balancing, and health checks. Acknowledge you'd ramp up on K8s-specific features quickly."
+
+### BAD Gap Probe Question:
+GAP: "5+ years Kubernetes experience required"
+QUESTION: "Do you have 5 years of Kubernetes experience?"
+WHY BAD:
+- Yes/no format reveals gap without redemption opportunity
+- No opportunity to demonstrate related capability
+- Closes rather than opens conversation
+
+### GOOD Concern Probe Question:
+CONCERN: "On-call rotation every 2 weeks - candidate expressed work-life balance concerns"
+QUESTION: "How do you manage work-life balance when dealing with on-call responsibilities and incident response?"
+WHY GOOD:
+- Positive framing (how do you manage)
+- Shows awareness of the operational reality
+- Tests candidate's coping strategies without judgment
+ANSWER APPROACH: "Be honest about expectations while showing you understand the importance of operational reliability. Reference your past on-call experience if available."
+
+### BAD Concern Probe Question:
+CONCERN: "Candidate's last role was at a much smaller company"
+QUESTION: "Aren't you concerned about working at a larger company?"
+WHY BAD:
+- Negative framing puts candidate on defensive
+- No opportunity to showcase adaptability
+- Assumes the concern is shared by candidate
+
+### GOOD Concern Probe with Positive Framing:
+CONCERN: "Company is early-stage startup (high risk)"
+QUESTION: "What excites you about working at an early-stage startup given the inherent risks?"
+WHY GOOD:
+- Positive framing (excites you)
+- Acknowledges the reality without judgment
+- Lets candidate demonstrate startup awareness and enthusiasm
+ANSWER APPROACH: "Highlight your past startup experience and emphasize what you learned from building systems from scratch. Show you understand the risk/reward tradeoff."
+
+## QUESTION DISTRIBUTION REQUIREMENTS
+Ensure balanced coverage with this distribution:
+- Generate 2-3 gap_probe questions (one per major gap provided)
+- Generate 2-3 concern_probe questions (one per flagged concern)
+- Include at least 1-2 behavioral questions (STAR format for practice)
+- Include 1-2 technical or situational questions as appropriate for the role
+- Total: 8-12 questions
+
+## SOURCE ATTRIBUTION REQUIREMENTS
+For each question, clearly identify:
+- For gap_probe: Which specific gap this question addresses (source_gap)
+- For concern_probe: Which specific concern this question addresses (source_concern)
+- Questions must be traceable to the provided gaps/concerns
+
 ## Output Requirements
 For each question provide:
-1. The question text (clear, professional phrasing)
+1. The question text (clear, professional phrasing - NOT yes/no format)
 2. Question type (from types above)
 3. Difficulty level (easy/medium/hard)
-4. Suggested answer approach (2-3 sentences on how to prepare)
+4. Suggested answer approach (2-3 sentences on how to prepare - must be substantive, min 50 chars)
 5. Sample answer outline (optional, brief bullet points if helpful)
 6. Relevant STAR IDs (from the candidate's STAR stories list, if applicable)
 
@@ -129,7 +240,9 @@ Generate questions that:
 - Cover the most significant gaps first
 - Address concerns marked for interview discussion
 - Include a mix of difficulty levels
-- Are realistic for the role and seniority level"""
+- Are realistic for the role and seniority level
+- Use open-ended phrasing (how, what, tell me about, walk me through, describe)
+- Avoid yes/no format questions (do you, have you, can you, are you, did you)"""
 
 QUESTION_GENERATION_USER_PROMPT = """## Job Details
 - Role: {role_title}
