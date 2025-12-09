@@ -6,17 +6,23 @@ Generates hyper-personalized cover letters with validation gates for:
 - JD-specific content
 - Anti-boilerplate checks
 - Structural requirements (3-4 paragraphs, 220-380 words)
+
+Phase 6 Enhancement (JD Annotation System):
+- Concern mitigation paragraphs from ConcernAnnotation
+- Proactively addresses red flags with positive framing
+- Max 2 concerns addressed in cover letter (don't overexplain)
 """
 
 import logging
 import re
-from typing import List
+from typing import List, Optional, Dict, Any
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
+from src.common.annotation_types import ConcernAnnotation
 
 
 # ===== HELPER FUNCTIONS =====
@@ -261,7 +267,7 @@ Company: {company}
 Score: {fit_score}/100
 {fit_rationale}
 
-=== PLANNING PHASE (Do this first, but don't include in output) ===
+{concern_mitigation_section}=== PLANNING PHASE (Do this first, but don't include in output) ===
 
 STEP 1: PAIN POINT TO STAR MAPPING
 For each pain point, identify which STAR achievement addresses it:
@@ -279,6 +285,12 @@ Based on content depth, choose paragraph count:
 - 2 paragraphs: Limited STARs, simple role
 - 3 paragraphs: Standard coverage
 - 4 paragraphs: Rich STARs, complex role
+
+STEP 4: CONCERN MITIGATION (if concerns provided above)
+If concerns are listed, decide which 1-2 to address:
+- Select concerns with provided mitigation strategies
+- Frame positively (what you CAN do, not what you can't)
+- Integrate naturally into Proof paragraph - don't create separate "concern" paragraph
 
 === WRITING PHASE ===
 
@@ -728,6 +740,56 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
         return "\n\n".join(formatted)
 
+    def _format_concern_mitigation_section(
+        self,
+        concerns: Optional[List[ConcernAnnotation]] = None,
+    ) -> str:
+        """
+        Format concern annotations for cover letter prompt injection.
+
+        Phase 6: Proactively addresses red flags with positive framing.
+        Filters to addressable concerns (not blockers) with mitigation strategies.
+
+        Args:
+            concerns: List of ConcernAnnotation from job state
+
+        Returns:
+            Formatted concern mitigation section for prompt injection,
+            or empty string if no addressable concerns available
+        """
+        if not concerns:
+            return ""
+
+        # Filter to addressable concerns (not blockers) with mitigation strategies
+        addressable = [
+            c for c in concerns
+            if c.get("severity") in ("concern", "preference")
+            and c.get("mitigation_strategy")
+        ]
+
+        if not addressable:
+            return ""
+
+        # Limit to top 2 concerns (don't overexplain in cover letter)
+        top_concerns = addressable[:2]
+
+        lines = ["=== CONCERNS TO ADDRESS (Phase 6: Proactive Red Flag Handling) ==="]
+        lines.append("Address 1-2 of these concerns with POSITIVE framing:")
+        lines.append("")
+
+        for i, concern in enumerate(top_concerns, 1):
+            concern_text = concern.get("concern", "")
+            mitigation = concern.get("mitigation_strategy", "")
+            lines.append(f"{i}. CONCERN: {concern_text}")
+            lines.append(f"   MITIGATION: {mitigation}")
+            lines.append("")
+
+        lines.append("IMPORTANT: Use positive framing - focus on what you CAN do,")
+        lines.append("not what you can't. Integrate naturally into proof paragraphs.")
+        lines.append("")
+
+        return "\n".join(lines)
+
     def _generate_with_retry(self, state: JobState, attempt: int = 1) -> str:
         """
         Generate cover letter with LLM, with validation and retry logic.
@@ -744,6 +806,12 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         """
         # Build prompt
         candidate_profile = self._candidate_profile_snippet(state.get("candidate_profile", ""))
+
+        # Phase 6: Extract concerns from jd_annotations for mitigation
+        jd_annotations_data = state.get("jd_annotations") or {}
+        concerns = jd_annotations_data.get("concerns") if isinstance(jd_annotations_data, dict) else None
+        concern_mitigation_section = self._format_concern_mitigation_section(concerns)
+
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(
@@ -758,7 +826,8 @@ KEY METRICS: {star.get('metrics', 'N/A')}
                     candidate_profile=candidate_profile,
                     selected_stars=self._format_selected_stars(state.get("selected_stars") or []),
                     fit_score=state.get("fit_score") or "N/A",
-                    fit_rationale=state.get("fit_rationale") or "No fit analysis available."
+                    fit_rationale=state.get("fit_rationale") or "No fit analysis available.",
+                    concern_mitigation_section=concern_mitigation_section,
                 )
             )
         ]
