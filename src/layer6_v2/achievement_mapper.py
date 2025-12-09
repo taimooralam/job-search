@@ -9,14 +9,22 @@ This is a pre-processing step that runs before role generation to:
 2. Provide explicit guidance to the LLM
 3. Ensure no pain points are missed
 4. Improve traceability of generated bullets
+
+Phase 5 Enhancement (JD Annotation System):
+- Annotation keywords can boost matching scores
+- Keywords from annotations get priority in matching
+- Annotated pain points receive higher match scores
 """
 
 import re
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 from src.common.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.common.annotation_boost import AnnotationBoostCalculator
 
 
 @dataclass
@@ -32,6 +40,11 @@ class AchievementPainPointMatch:
     confidence: float  # 0-1 score
     reason: str  # Why they match (e.g., "keyword overlap", "semantic similarity")
     matched_keywords: List[str] = field(default_factory=list)
+
+    # Phase 5: Annotation traceability
+    annotation_influenced: bool = False
+    annotation_keywords_matched: List[str] = field(default_factory=list)
+    annotation_boost_applied: float = 1.0
 
     @property
     def confidence_level(self) -> str:
@@ -52,6 +65,10 @@ class AchievementPainPointMatch:
             "confidence_level": self.confidence_level,
             "reason": self.reason,
             "matched_keywords": self.matched_keywords,
+            # Phase 5: Annotation traceability
+            "annotation_influenced": self.annotation_influenced,
+            "annotation_keywords_matched": self.annotation_keywords_matched,
+            "annotation_boost_applied": self.annotation_boost_applied,
         }
 
 
@@ -120,6 +137,7 @@ class AchievementMapper:
         self,
         match_threshold: float = 0.25,
         high_confidence_threshold: float = 0.6,
+        annotation_calculator: Optional["AnnotationBoostCalculator"] = None,
     ):
         """
         Initialize the mapper.
@@ -127,10 +145,20 @@ class AchievementMapper:
         Args:
             match_threshold: Minimum score to consider a match (default 0.25)
             high_confidence_threshold: Score for "high confidence" (default 0.6)
+            annotation_calculator: Optional AnnotationBoostCalculator for annotation-aware scoring
         """
         self.match_threshold = match_threshold
         self.high_confidence_threshold = high_confidence_threshold
+        self._annotation_calculator = annotation_calculator
         self._logger = get_logger(__name__)
+
+        # Extract annotation keywords for boosting
+        self._annotation_keywords: Set[str] = set()
+        if annotation_calculator and annotation_calculator.has_annotations():
+            self._annotation_keywords = annotation_calculator.get_annotation_keywords()
+            self._logger.info(
+                f"AchievementMapper initialized with {len(self._annotation_keywords)} annotation keywords"
+            )
 
     def _normalize_text(self, text: str) -> str:
         """Normalize text for comparison."""
@@ -174,18 +202,18 @@ class AchievementMapper:
 
     def _calculate_keyword_overlap(
         self, text1: str, text2: str
-    ) -> Tuple[float, Set[str]]:
+    ) -> Tuple[float, Set[str], Set[str]]:
         """
         Calculate keyword overlap between two texts.
 
         Returns:
-            Tuple of (overlap_score, matched_keywords)
+            Tuple of (overlap_score, matched_keywords, annotation_keywords_matched)
         """
         kw1 = self._extract_keywords(text1)
         kw2 = self._extract_keywords(text2)
 
         if not kw1 or not kw2:
-            return 0.0, set()
+            return 0.0, set(), set()
 
         overlap = kw1 & kw2
 
@@ -193,11 +221,16 @@ class AchievementMapper:
         technical_overlap = overlap & self.TECHNICAL_KEYWORDS
         weighted_overlap = len(overlap) + len(technical_overlap) * 0.5
 
+        # Phase 5: Weight annotation keywords even higher
+        annotation_overlap = overlap & self._annotation_keywords
+        if annotation_overlap:
+            weighted_overlap += len(annotation_overlap) * 1.0  # Significant boost for annotation matches
+
         # Jaccard-like score
         union_size = len(kw1 | kw2)
         score = weighted_overlap / union_size if union_size > 0 else 0.0
 
-        return min(score, 1.0), overlap
+        return min(score, 1.0), overlap, annotation_overlap
 
     def _calculate_string_similarity(self, text1: str, text2: str) -> float:
         """Calculate string similarity using SequenceMatcher."""
@@ -207,15 +240,15 @@ class AchievementMapper:
 
     def _score_match(
         self, achievement: str, pain_point: str
-    ) -> Tuple[float, str, List[str]]:
+    ) -> Tuple[float, str, List[str], List[str], float]:
         """
         Score how well an achievement matches a pain point.
 
         Returns:
-            Tuple of (score, reason, matched_keywords)
+            Tuple of (score, reason, matched_keywords, annotation_keywords_matched, annotation_boost)
         """
         # Calculate keyword overlap
-        kw_score, matched_kw = self._calculate_keyword_overlap(achievement, pain_point)
+        kw_score, matched_kw, annotation_kw = self._calculate_keyword_overlap(achievement, pain_point)
 
         # Calculate string similarity
         string_sim = self._calculate_string_similarity(achievement, pain_point)
@@ -223,15 +256,25 @@ class AchievementMapper:
         # Combined score (keyword overlap weighted higher)
         combined = (kw_score * 0.7) + (string_sim * 0.3)
 
+        # Phase 5: Apply annotation boost from calculator if available
+        annotation_boost = 1.0
+        if self._annotation_calculator and pain_point:
+            boost_result = self._annotation_calculator.get_boost_for_text(pain_point)
+            annotation_boost = boost_result.boost
+            if annotation_boost > 1.0:
+                combined = min(combined * annotation_boost, 1.0)
+
         # Determine reason
-        if kw_score > 0.4:
+        if annotation_kw and kw_score > 0.3:
+            reason = f"annotation keyword match ({', '.join(list(annotation_kw)[:3])})"
+        elif kw_score > 0.4:
             reason = f"keyword overlap ({', '.join(list(matched_kw)[:3])})"
         elif string_sim > 0.5:
             reason = "semantic similarity"
         else:
             reason = "partial match"
 
-        return combined, reason, list(matched_kw)
+        return combined, reason, list(matched_kw), list(annotation_kw), annotation_boost
 
     def map_achievement(
         self, achievement: str, pain_points: List[str]
@@ -254,7 +297,9 @@ class AchievementMapper:
 
         matches = []
         for pain_point in pain_points:
-            score, reason, matched_kw = self._score_match(achievement, pain_point)
+            score, reason, matched_kw, annotation_kw, annotation_boost = self._score_match(
+                achievement, pain_point
+            )
 
             if score >= self.match_threshold:
                 matches.append(
@@ -264,6 +309,10 @@ class AchievementMapper:
                         confidence=score,
                         reason=reason,
                         matched_keywords=matched_kw,
+                        # Phase 5: Annotation traceability
+                        annotation_influenced=bool(annotation_kw) or annotation_boost > 1.0,
+                        annotation_keywords_matched=annotation_kw,
+                        annotation_boost_applied=annotation_boost,
                     )
                 )
 
@@ -402,6 +451,7 @@ def map_achievements_to_pain_points(
     achievements: List[str],
     pain_points: List[str],
     match_threshold: float = 0.25,
+    annotation_calculator: Optional["AnnotationBoostCalculator"] = None,
 ) -> Tuple[List[AchievementMapping], str]:
     """
     Convenience function to map achievements to pain points.
@@ -410,11 +460,15 @@ def map_achievements_to_pain_points(
         achievements: List of achievement texts from the CV
         pain_points: List of JD pain points
         match_threshold: Minimum score to consider a match
+        annotation_calculator: Optional AnnotationBoostCalculator for annotation-aware scoring
 
     Returns:
         Tuple of (mappings, formatted_prompt_section)
     """
-    mapper = AchievementMapper(match_threshold=match_threshold)
+    mapper = AchievementMapper(
+        match_threshold=match_threshold,
+        annotation_calculator=annotation_calculator,
+    )
     mappings = mapper.map_all_achievements(achievements, pain_points)
     prompt_section = mapper.format_for_prompt(mappings, pain_points)
 

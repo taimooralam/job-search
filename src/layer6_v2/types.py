@@ -26,6 +26,7 @@ class GeneratedBullet:
     - Metrics and keywords used (for verification)
     - Pain points addressed (for JD alignment)
     - STAR components for structure validation (GAP-005)
+    - Annotation influence for CV personalization (Phase 4)
     """
 
     text: str                          # Generated bullet text (20-35 words, STAR format)
@@ -38,6 +39,12 @@ class GeneratedBullet:
     action: Optional[str] = None       # What was done including skills/technologies
     result: Optional[str] = None       # Quantified outcome achieved
     word_count: int = 0                # Word count of generated text
+    # Annotation traceability (Phase 4)
+    annotation_influenced: bool = False         # Whether annotations affected selection
+    annotation_ids: List[str] = field(default_factory=list)  # IDs of influencing annotations
+    reframe_applied: Optional[str] = None       # Reframe note that was applied
+    annotation_keywords_used: List[str] = field(default_factory=list)  # Keywords from annotations
+    annotation_boost: float = 1.0               # Final boost multiplier applied
 
     def __post_init__(self):
         """Calculate word count if not provided."""
@@ -61,6 +68,12 @@ class GeneratedBullet:
             "action": self.action,
             "result": self.result,
             "word_count": self.word_count,
+            # Annotation traceability (Phase 4)
+            "annotation_influenced": self.annotation_influenced,
+            "annotation_ids": self.annotation_ids,
+            "reframe_applied": self.reframe_applied,
+            "annotation_keywords_used": self.annotation_keywords_used,
+            "annotation_boost": self.annotation_boost,
         }
 
 
@@ -577,23 +590,29 @@ class SkillScore:
     Score for an individual skill based on JD alignment and evidence.
 
     Used to rank skills within a section for selection.
+
+    Phase 4.5: Added annotation_boost to prioritize annotated skills.
     """
 
     skill: str                         # The skill being scored
     jd_match_score: float              # 1.0 if in JD keywords, else 0.0
     evidence_score: float              # Based on evidence frequency (0-1)
     recency_score: float               # Based on how recently used (0-1)
+    annotation_boost: float = 1.0      # Phase 4.5: Annotation-based boost (1.0 = no boost, 3.0+ = core_strength)
     total_score: float = 0.0           # Weighted total score
 
     def __post_init__(self):
         """Calculate total score if not provided."""
         if self.total_score == 0.0:
-            # Weights: 40% JD match, 30% evidence, 30% recency
-            self.total_score = (
+            # Base weights: 40% JD match, 30% evidence, 30% recency
+            base_score = (
                 0.4 * self.jd_match_score +
                 0.3 * self.evidence_score +
                 0.3 * self.recency_score
             )
+            # Phase 4.5: Apply annotation boost as multiplier
+            # This ensures annotated skills (especially must-haves) rank higher
+            self.total_score = base_score * self.annotation_boost
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -602,6 +621,7 @@ class SkillScore:
             "jd_match_score": self.jd_match_score,
             "evidence_score": self.evidence_score,
             "recency_score": self.recency_score,
+            "annotation_boost": self.annotation_boost,
             "total_score": self.total_score,
         }
 
@@ -715,6 +735,11 @@ class ProfileOutput:
     # Legacy field for backward compatibility
     _legacy_text: str = ""
 
+    # Annotation traceability (Phase 4.5)
+    # Note: HeaderProvenance is defined later in this file
+    provenance: Optional[Any] = None           # HeaderProvenance for annotation tracing
+    annotation_influenced: bool = False        # Whether annotations affected generation
+
     def __post_init__(self):
         """Calculate word count and ensure backward compatibility."""
         # Calculate word count from narrative (primary content)
@@ -774,6 +799,9 @@ class ProfileOutput:
             "answers_proof": self.answers_proof,
             "answers_why_you": self.answers_why_you,
             "all_four_questions_answered": self.all_four_questions_answered,
+            # Phase 4.5 annotation traceability
+            "provenance": self.provenance.to_dict() if self.provenance else None,
+            "annotation_influenced": self.annotation_influenced,
         }
 
     @classmethod
@@ -1229,6 +1257,259 @@ class HeaderOutput:
             lines.append(", ".join(self.languages))
 
         return "\n".join(lines)
+
+
+# ===== PHASE 4.5: ANNOTATION-DRIVEN HEADER TYPES =====
+
+# Import annotation types for type hints
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.common.annotation_types import SkillRelevance, RequirementType
+
+
+@dataclass
+class ATSRequirement:
+    """
+    ATS requirements for a keyword in the generated header/summary/skills.
+
+    Based on research from cv-guide.plan.md and ats-guide.md:
+    - Greenhouse ranks resumes with more keyword mentions higher
+    - Target 2-4 repetitions of key terms across header/summary/skills
+    - Always include both acronym AND full form (ATS don't recognize abbreviations)
+    """
+
+    min_occurrences: int = 2                   # Target: appear at least 2x
+    max_occurrences: int = 4                   # Avoid keyword stuffing
+    variants: List[str] = field(default_factory=list)  # e.g., ["Kubernetes", "K8s", "k8s"]
+    preferred_sections: List[str] = field(default_factory=list)  # ["skills", "summary"]
+    exact_phrase: bool = False                 # Must use exact JD phrasing
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "min_occurrences": self.min_occurrences,
+            "max_occurrences": self.max_occurrences,
+            "variants": self.variants,
+            "preferred_sections": self.preferred_sections,
+            "exact_phrase": self.exact_phrase,
+        }
+
+
+@dataclass
+class AnnotationPriority:
+    """
+    A single priority extracted from JD annotations for header/summary/skills generation.
+
+    This represents one "thing the recruiter cares about" ranked by importance.
+    Used to guide what appears in the critical 6-7 second scan zone (header/summary).
+
+    Ranking formula (from plan):
+    priority_score = (
+        RELEVANCE_WEIGHT[relevance] * 0.4 +      # core_strength=5, extremely_relevant=4, ...
+        REQUIREMENT_WEIGHT[requirement_type] * 0.3 +  # must_have=5, nice_to_have=3, ...
+        (6 - user_priority) * 0.2 +              # User priority 1-5 inverted (1 is highest)
+        has_star_evidence * 0.1                  # +1 if STAR linked
+    )
+    """
+
+    rank: int                                  # 1 = highest priority
+    jd_text: str                               # Original JD requirement text
+    matching_skill: Optional[str] = None       # Candidate skill that matches (if any)
+    relevance: str = "relevant"                # SkillRelevance: core_strength → gap
+    requirement_type: str = "neutral"          # RequirementType: must_have → neutral
+    reframe_note: Optional[str] = None         # Reframe guidance (e.g., "Frame as 'platform modernization'")
+    reframe_from: Optional[str] = None         # Original skill/experience to reframe
+    reframe_to: Optional[str] = None           # Target framing for JD alignment
+    ats_variants: List[str] = field(default_factory=list)  # Keyword variants ["K8s", "Kubernetes"]
+    star_snippets: List[str] = field(default_factory=list)  # One-line metric statements from linked STARs
+    annotation_ids: List[str] = field(default_factory=list)  # Source annotation IDs for traceability
+    priority_score: float = 0.0                # Calculated priority score
+
+    @property
+    def has_star_evidence(self) -> bool:
+        """Check if this priority has linked STAR evidence."""
+        return len(self.star_snippets) > 0
+
+    @property
+    def has_reframe(self) -> bool:
+        """Check if this priority has reframe guidance."""
+        return self.reframe_note is not None
+
+    @property
+    def is_gap(self) -> bool:
+        """Check if this is a gap (candidate doesn't have the skill)."""
+        return self.relevance == "gap"
+
+    @property
+    def is_must_have(self) -> bool:
+        """Check if this is a must-have requirement."""
+        return self.requirement_type == "must_have"
+
+    @property
+    def is_core_strength(self) -> bool:
+        """Check if this matches a core strength."""
+        return self.relevance == "core_strength"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "rank": self.rank,
+            "jd_text": self.jd_text,
+            "matching_skill": self.matching_skill,
+            "relevance": self.relevance,
+            "requirement_type": self.requirement_type,
+            "reframe_note": self.reframe_note,
+            "reframe_from": self.reframe_from,
+            "reframe_to": self.reframe_to,
+            "ats_variants": self.ats_variants,
+            "star_snippets": self.star_snippets,
+            "annotation_ids": self.annotation_ids,
+            "priority_score": self.priority_score,
+            "has_star_evidence": self.has_star_evidence,
+            "has_reframe": self.has_reframe,
+            "is_gap": self.is_gap,
+            "is_must_have": self.is_must_have,
+            "is_core_strength": self.is_core_strength,
+        }
+
+
+@dataclass
+class HeaderGenerationContext:
+    """
+    Context passed to header generation with annotation data.
+
+    This bridges the JD annotation system with the header/summary/skills generators.
+    Contains prioritized requirements, reframes, ATS targets, and gap handling.
+
+    Used by:
+    - HeaderGenerator to emphasize must-have skills in headline/tagline
+    - ProfileOutput generation to include STAR proof and apply reframes
+    - TaxonomyBasedSkillsGenerator to prioritize annotated skills
+    """
+
+    priorities: List[AnnotationPriority] = field(default_factory=list)  # Ranked priority list
+    gap_mitigation: Optional[str] = None       # Pre-generated gap mitigation clause
+    gap_mitigation_annotation_id: Optional[str] = None  # Which gap annotation was used
+    reframe_map: Dict[str, str] = field(default_factory=dict)  # skill → reframe_note
+    ats_requirements: Dict[str, ATSRequirement] = field(default_factory=dict)  # skill → ATS config
+    keyword_coverage_target: Dict[str, int] = field(default_factory=dict)  # keyword → target count
+
+    @property
+    def must_have_priorities(self) -> List[AnnotationPriority]:
+        """Get only must-have priorities."""
+        return [p for p in self.priorities if p.is_must_have]
+
+    @property
+    def core_strength_priorities(self) -> List[AnnotationPriority]:
+        """Get only core strength priorities."""
+        return [p for p in self.priorities if p.is_core_strength]
+
+    @property
+    def gap_priorities(self) -> List[AnnotationPriority]:
+        """Get only gap priorities."""
+        return [p for p in self.priorities if p.is_gap]
+
+    @property
+    def top_keywords(self) -> List[str]:
+        """Get top keywords from priorities (for tagline/headline)."""
+        keywords = []
+        for p in self.priorities[:5]:  # Top 5 priorities
+            if p.matching_skill:
+                keywords.append(p.matching_skill)
+            elif p.ats_variants:
+                keywords.append(p.ats_variants[0])
+        return keywords
+
+    @property
+    def has_annotations(self) -> bool:
+        """Check if any annotation data is present."""
+        return len(self.priorities) > 0
+
+    def get_reframe(self, skill: str) -> Optional[str]:
+        """Get reframe note for a skill if available."""
+        return self.reframe_map.get(skill)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "priorities": [p.to_dict() for p in self.priorities],
+            "gap_mitigation": self.gap_mitigation,
+            "gap_mitigation_annotation_id": self.gap_mitigation_annotation_id,
+            "reframe_map": self.reframe_map,
+            "ats_requirements": {k: v.to_dict() for k, v in self.ats_requirements.items()},
+            "keyword_coverage_target": self.keyword_coverage_target,
+            "has_annotations": self.has_annotations,
+            "must_have_count": len(self.must_have_priorities),
+            "gap_count": len(self.gap_priorities),
+        }
+
+
+@dataclass
+class HeaderProvenance:
+    """
+    Traceability for header generation - tracks which annotations influenced what.
+
+    This enables:
+    1. Debugging: Why did this keyword appear in the headline?
+    2. Optimization: Which annotations correlate with successful applications?
+    3. Audit: Full trace from JD annotation → CV content
+    """
+
+    title_source: str = ""                     # "jd_mapping" | "candidate_metadata" | "annotation_match"
+    title_annotation_id: Optional[str] = None  # Annotation that influenced title selection
+    tagline_keywords: List[str] = field(default_factory=list)  # Keywords used in tagline
+    tagline_annotation_ids: List[str] = field(default_factory=list)  # Annotations that influenced tagline
+
+    summary_annotation_ids: List[str] = field(default_factory=list)  # Annotations that influenced summary
+    summary_star_ids: List[str] = field(default_factory=list)  # STARs used for proof lines
+    reframes_applied: List[str] = field(default_factory=list)  # Reframe annotation IDs applied
+    gap_mitigation_annotation_id: Optional[str] = None  # Gap annotation used for mitigation
+
+    skills_annotation_ids: List[str] = field(default_factory=list)  # Annotations that influenced skill selection
+    skills_prioritized: List[str] = field(default_factory=list)  # Skills that were prioritized by annotations
+
+    # ATS tracking
+    keyword_coverage_achieved: Dict[str, int] = field(default_factory=dict)  # keyword → actual count
+    ats_validation_passed: bool = True
+    ats_validation_warnings: List[str] = field(default_factory=list)
+
+    @property
+    def total_annotations_used(self) -> int:
+        """Total number of unique annotations that influenced generation."""
+        all_ids = set()
+        all_ids.update(self.tagline_annotation_ids)
+        all_ids.update(self.summary_annotation_ids)
+        all_ids.update(self.skills_annotation_ids)
+        if self.title_annotation_id:
+            all_ids.add(self.title_annotation_id)
+        if self.gap_mitigation_annotation_id:
+            all_ids.add(self.gap_mitigation_annotation_id)
+        return len(all_ids)
+
+    @property
+    def has_annotation_influence(self) -> bool:
+        """Check if annotations influenced the generation."""
+        return self.total_annotations_used > 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "title_source": self.title_source,
+            "title_annotation_id": self.title_annotation_id,
+            "tagline_keywords": self.tagline_keywords,
+            "tagline_annotation_ids": self.tagline_annotation_ids,
+            "summary_annotation_ids": self.summary_annotation_ids,
+            "summary_star_ids": self.summary_star_ids,
+            "reframes_applied": self.reframes_applied,
+            "gap_mitigation_annotation_id": self.gap_mitigation_annotation_id,
+            "skills_annotation_ids": self.skills_annotation_ids,
+            "skills_prioritized": self.skills_prioritized,
+            "keyword_coverage_achieved": self.keyword_coverage_achieved,
+            "ats_validation_passed": self.ats_validation_passed,
+            "ats_validation_warnings": self.ats_validation_warnings,
+            "total_annotations_used": self.total_annotations_used,
+            "has_annotation_influence": self.has_annotation_influence,
+        }
 
 
 # ===== PHASE 6: GRADER + IMPROVER TYPES =====

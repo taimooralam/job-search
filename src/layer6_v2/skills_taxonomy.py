@@ -32,6 +32,7 @@ from src.layer6_v2.types import (
     SkillScore,
     SkillEvidence,
     SkillsSection,
+    HeaderGenerationContext,
 )
 
 
@@ -47,13 +48,15 @@ class SkillsTaxonomy:
     with JD signals to determine which sections are most relevant.
     """
 
-    def __init__(self, taxonomy_path: Optional[Path] = None):
+    def __init__(self, taxonomy_path: Optional[Path] = None, taxonomy_data: Optional[Dict] = None):
         """
         Initialize the taxonomy loader.
 
         Args:
             taxonomy_path: Path to the taxonomy JSON file.
                           Defaults to data/master-cv/role_skills_taxonomy.json
+            taxonomy_data: Pre-loaded taxonomy data (from MongoDB).
+                          If provided, file loading is skipped.
         """
         self._logger = get_logger(__name__)
         self._taxonomy_path = taxonomy_path or DEFAULT_TAXONOMY_PATH
@@ -61,7 +64,32 @@ class SkillsTaxonomy:
         self._skill_aliases: Dict[str, List[str]] = {}
         self._default_role: str = "engineering_manager"
 
-        self._load_taxonomy()
+        if taxonomy_data:
+            # Use pre-loaded data (e.g., from MongoDB)
+            self._taxonomy_data = taxonomy_data
+            self._skill_aliases = taxonomy_data.get("skill_aliases", {})
+            self._default_role = taxonomy_data.get("default_fallback_role", "engineering_manager")
+            self._logger.info(
+                f"Loaded skills taxonomy from dict: {len(self._taxonomy_data.get('target_roles', {}))} roles"
+            )
+        else:
+            self._load_taxonomy()
+
+    @classmethod
+    def from_dict(cls, taxonomy_data: Dict) -> "SkillsTaxonomy":
+        """
+        Create a SkillsTaxonomy from pre-loaded dictionary data.
+
+        This factory method enables loading taxonomy from MongoDB
+        without needing a file path.
+
+        Args:
+            taxonomy_data: Taxonomy data dictionary (same structure as JSON file)
+
+        Returns:
+            SkillsTaxonomy instance initialized from the data
+        """
+        return cls(taxonomy_data=taxonomy_data)
 
     def _load_taxonomy(self) -> None:
         """Load the taxonomy from the JSON file."""
@@ -202,6 +230,7 @@ class TaxonomyBasedSkillsGenerator:
         taxonomy: SkillsTaxonomy,
         skill_whitelist: Dict[str, List[str]],
         lax_mode: bool = True,
+        annotation_context: Optional[HeaderGenerationContext] = None,
     ):
         """
         Initialize the taxonomy-based generator.
@@ -210,11 +239,26 @@ class TaxonomyBasedSkillsGenerator:
             taxonomy: SkillsTaxonomy instance for loading role taxonomies
             skill_whitelist: Candidate's skill whitelist (hard_skills, soft_skills)
             lax_mode: If True, generate more skills than target for pruning
+            annotation_context: Phase 4.5 - HeaderGenerationContext with annotation
+                               priorities for skill scoring boost
         """
         self._logger = get_logger(__name__)
         self._taxonomy = taxonomy
         self._skill_whitelist = skill_whitelist
         self._lax_mode = lax_mode
+
+        # Phase 4.5: Store annotation context for skill scoring
+        self._annotation_context = annotation_context
+        self._annotation_skills: Set[str] = set()
+        self._annotation_must_haves: Set[str] = set()
+        self._annotation_boosts: Dict[str, float] = {}
+
+        if annotation_context and annotation_context.has_annotations:
+            self._build_annotation_skill_index(annotation_context)
+            self._logger.info(
+                f"Using annotation context: {len(self._annotation_skills)} annotated skills, "
+                f"{len(self._annotation_must_haves)} must-haves"
+            )
 
         # Build normalized whitelist for fast lookup
         self._whitelist_lower: Set[str] = set()
@@ -227,6 +271,44 @@ class TaxonomyBasedSkillsGenerator:
             f"TaxonomyBasedSkillsGenerator initialized: "
             f"{len(self._whitelist_lower)} whitelisted skills, lax_mode={lax_mode}"
         )
+
+    def _build_annotation_skill_index(self, context: HeaderGenerationContext) -> None:
+        """
+        Build an index of annotated skills for fast lookup.
+
+        Creates sets and boost maps for:
+        - All annotated skills
+        - Must-have skills (highest priority)
+        - Boost values per skill
+
+        Phase 4.5: Annotation-aware skill scoring.
+        """
+        from src.common.annotation_types import RELEVANCE_MULTIPLIERS, REQUIREMENT_MULTIPLIERS
+
+        for priority in context.priorities:
+            # Index matching skill
+            if priority.matching_skill:
+                skill_lower = priority.matching_skill.lower()
+                self._annotation_skills.add(skill_lower)
+
+                # Track must-haves separately
+                if priority.is_must_have:
+                    self._annotation_must_haves.add(skill_lower)
+
+                # Calculate and store boost
+                relevance_boost = RELEVANCE_MULTIPLIERS.get(priority.relevance, 1.0)
+                requirement_boost = REQUIREMENT_MULTIPLIERS.get(priority.requirement_type, 1.0)
+                boost = relevance_boost * requirement_boost
+                # Keep the highest boost for this skill
+                if skill_lower not in self._annotation_boosts or boost > self._annotation_boosts[skill_lower]:
+                    self._annotation_boosts[skill_lower] = boost
+
+            # Also index ATS variants
+            for variant in priority.ats_variants:
+                variant_lower = variant.lower()
+                self._annotation_skills.add(variant_lower)
+                if priority.is_must_have:
+                    self._annotation_must_haves.add(variant_lower)
 
     def generate_sections(
         self,
@@ -405,15 +487,19 @@ class TaxonomyBasedSkillsGenerator:
             evidence_score = min(1.0, len(evidence.evidence_bullets) / 5)  # Cap at 5 bullets
             recency_score = 0.7  # Default recency (could be enhanced with actual recency data)
 
+            # Phase 4.5: Calculate annotation boost
+            annotation_boost = self._get_annotation_boost(skill)
+
             skill_score = SkillScore(
                 skill=skill,
                 jd_match_score=jd_match,
                 evidence_score=evidence_score,
                 recency_score=recency_score,
+                annotation_boost=annotation_boost,
             )
 
-            # Mark as JD keyword
-            evidence.is_jd_keyword = jd_match > 0
+            # Mark as JD keyword or annotated skill
+            evidence.is_jd_keyword = jd_match > 0 or annotation_boost > 1.0
 
             skill_scores.append((skill, skill_score, evidence))
 
@@ -437,6 +523,41 @@ class TaxonomyBasedSkillsGenerator:
             category=taxonomy_section.name,
             skills=skills_with_evidence,
         )
+
+    def _get_annotation_boost(self, skill: str) -> float:
+        """
+        Get the annotation boost for a skill.
+
+        Phase 4.5: Returns the boost multiplier from annotation context.
+        Higher boosts for must_have + core_strength combinations.
+
+        Args:
+            skill: The skill to check
+
+        Returns:
+            Boost multiplier (1.0 = no boost, >1.0 = boosted)
+        """
+        if not self._annotation_context or not self._annotation_context.has_annotations:
+            return 1.0
+
+        skill_lower = skill.lower()
+
+        # Check direct match
+        if skill_lower in self._annotation_boosts:
+            return self._annotation_boosts[skill_lower]
+
+        # Check aliases
+        aliases = self._taxonomy.get_skill_aliases(skill)
+        for alias in aliases:
+            alias_lower = alias.lower()
+            if alias_lower in self._annotation_boosts:
+                return self._annotation_boosts[alias_lower]
+
+        # Check if skill is in the annotated set (but without specific boost)
+        if skill_lower in self._annotation_skills:
+            return 1.5  # Default boost for annotated skills
+
+        return 1.0
 
     def _skill_in_whitelist(self, skill: str) -> bool:
         """
@@ -691,6 +812,7 @@ def create_taxonomy_generator(
     skill_whitelist: Dict[str, List[str]],
     taxonomy_path: Optional[Path] = None,
     lax_mode: bool = True,
+    annotation_context: Optional[HeaderGenerationContext] = None,
 ) -> TaxonomyBasedSkillsGenerator:
     """
     Factory function to create a TaxonomyBasedSkillsGenerator.
@@ -699,6 +821,7 @@ def create_taxonomy_generator(
         skill_whitelist: Candidate's skill whitelist
         taxonomy_path: Optional path to taxonomy file
         lax_mode: If True, generate more skills for pruning
+        annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
 
     Returns:
         Configured TaxonomyBasedSkillsGenerator
@@ -708,4 +831,5 @@ def create_taxonomy_generator(
         taxonomy=taxonomy,
         skill_whitelist=skill_whitelist,
         lax_mode=lax_mode,
+        annotation_context=annotation_context,
     )

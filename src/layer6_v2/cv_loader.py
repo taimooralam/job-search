@@ -16,11 +16,16 @@ Enhanced Format Support (2024-12):
 - Supports variant-based achievement structure
 - Each achievement can have multiple variants (Technical, Architecture, Impact, etc.)
 - Uses VariantParser for enhanced format, falls back to simple bullets
+
+MongoDB Integration (Phase 5 - JD Annotation System):
+- Optional MongoDB storage via MasterCVStore
+- Automatic file fallback for local development
+- Real-time sync: changes in MongoDB immediately available to runner
 """
 
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from src.common.logger import get_logger
 
@@ -31,6 +36,9 @@ from src.layer6_v2.variant_parser import (
     Achievement,
     AchievementVariant,
 )
+
+if TYPE_CHECKING:
+    from src.common.master_cv_store import MasterCVStore
 
 
 @dataclass
@@ -192,7 +200,13 @@ class CVLoader:
 
     DEFAULT_DATA_PATH = Path("data/master-cv")
 
-    def __init__(self, data_path: Optional[Path] = None, use_enhanced: bool = True):
+    def __init__(
+        self,
+        data_path: Optional[Path] = None,
+        use_enhanced: bool = True,
+        use_mongodb: bool = False,
+        mongo_store: Optional["MasterCVStore"] = None,
+    ):
         """
         Initialize the CV loader.
 
@@ -200,6 +214,8 @@ class CVLoader:
             data_path: Path to master-cv data directory.
                        Defaults to data/master-cv/
             use_enhanced: Whether to parse enhanced variant format (default True)
+            use_mongodb: Whether to try MongoDB first (default False for backward compat)
+            mongo_store: Optional pre-configured MasterCVStore instance
         """
         self.data_path = data_path or self.DEFAULT_DATA_PATH
         self.metadata_path = self.data_path / "role_metadata.json"
@@ -210,20 +226,197 @@ class CVLoader:
         self._variant_parser = VariantParser() if use_enhanced else None
         self._logger = get_logger(__name__)
 
+        # MongoDB integration (Phase 5)
+        self._use_mongodb = use_mongodb
+        self._mongo_store: Optional["MasterCVStore"] = mongo_store
+        self._loaded_from_mongodb = False
+
+        if use_mongodb and mongo_store is None:
+            try:
+                from src.common.master_cv_store import MasterCVStore
+                self._mongo_store = MasterCVStore(use_mongodb=True, data_dir=self.data_path)
+                self._logger.info("CVLoader initialized with MongoDB support")
+            except Exception as e:
+                self._logger.warning(f"MongoDB unavailable for CVLoader, using files: {e}")
+                self._use_mongodb = False
+
     def load(self) -> CandidateData:
         """
-        Load all CV data from pre-split files.
+        Load all CV data from MongoDB or pre-split files.
+
+        MongoDB is tried first if use_mongodb=True. Falls back to file-based
+        loading if MongoDB is unavailable or data not found.
+
+        Returns:
+            CandidateData with all roles populated
+
+        Raises:
+            FileNotFoundError: If metadata or role files missing (and MongoDB unavailable)
+            ValueError: If metadata is malformed
+        """
+        if self._candidate is not None:
+            return self._candidate
+
+        # Try MongoDB first if enabled
+        if self._use_mongodb and self._mongo_store:
+            try:
+                candidate = self._load_from_mongodb()
+                if candidate:
+                    self._candidate = candidate
+                    self._loaded_from_mongodb = True
+                    self._logger.info(
+                        f"Loaded {len(self._candidate.roles)} roles from MongoDB"
+                    )
+                    return self._candidate
+            except Exception as e:
+                self._logger.warning(f"MongoDB load failed, falling back to files: {e}")
+
+        # Fall back to file-based loading
+        return self._load_from_files()
+
+    def _load_from_mongodb(self) -> Optional[CandidateData]:
+        """
+        Load CV data from MongoDB via MasterCVStore.
+
+        Returns:
+            CandidateData if successful, None if data not found
+        """
+        if not self._mongo_store:
+            return None
+
+        metadata = self._mongo_store.get_metadata()
+        if not metadata:
+            self._logger.debug("No metadata found in MongoDB")
+            return None
+
+        # Build candidate data from MongoDB metadata
+        candidate_meta = metadata.get("candidate", {})
+        if not candidate_meta:
+            self._logger.warning("MongoDB metadata missing 'candidate' field")
+            return None
+
+        candidate = CandidateData(
+            name=candidate_meta.get("name", ""),
+            title_base=candidate_meta.get("title_base", ""),
+            email=candidate_meta.get("contact", {}).get("email", ""),
+            phone=candidate_meta.get("contact", {}).get("phone", ""),
+            linkedin=candidate_meta.get("contact", {}).get("linkedin", ""),
+            location=candidate_meta.get("contact", {}).get("location", ""),
+            languages=candidate_meta.get("languages", []),
+            education_masters=candidate_meta.get("education", {}).get("masters", ""),
+            education_bachelors=candidate_meta.get("education", {}).get("bachelors", ""),
+            certifications=candidate_meta.get("certifications", []),
+            years_experience=candidate_meta.get("years_experience", 0),
+            roles=[],
+        )
+
+        # Load each role
+        for role_meta in metadata.get("roles", []):
+            role = self._load_role_from_mongodb_or_file(role_meta)
+            if role:
+                candidate.roles.append(role)
+
+        return candidate
+
+    def _load_role_from_mongodb_or_file(self, role_meta: Dict[str, Any]) -> Optional[RoleData]:
+        """
+        Load a role, trying MongoDB first then falling back to file.
+
+        Args:
+            role_meta: Role metadata from the metadata document
+
+        Returns:
+            RoleData or None if not found
+        """
+        role_id = role_meta.get("id", "")
+
+        # Try MongoDB first
+        if self._mongo_store:
+            role_doc = self._mongo_store.get_role(role_id)
+            if role_doc and role_doc.get("markdown_content"):
+                return self._build_role_from_content(
+                    role_meta,
+                    role_doc["markdown_content"],
+                    source="mongodb"
+                )
+
+        # Fall back to file
+        return self._load_role(role_meta)
+
+    def _build_role_from_content(
+        self,
+        role_meta: Dict[str, Any],
+        content: str,
+        source: str = "file"
+    ) -> RoleData:
+        """
+        Build RoleData from content string (shared by file and MongoDB paths).
+
+        Args:
+            role_meta: Role metadata
+            content: Markdown content
+            source: Source identifier for logging
+
+        Returns:
+            Populated RoleData
+        """
+        # Try to parse as enhanced format first
+        enhanced_data = None
+        role_id = role_meta["id"]
+        if self._use_enhanced and self._variant_parser:
+            try:
+                # Parse from content string rather than file
+                enhanced_data = self._variant_parser.parse_content(content, role_id=role_id)
+                # Cache for later use
+                if self._enhanced_roles is None:
+                    self._enhanced_roles = {}
+                self._enhanced_roles[role_id] = enhanced_data
+            except Exception as e:
+                self._logger.warning(
+                    f"Failed to parse enhanced format for {role_id} ({source}): {e}"
+                )
+                enhanced_data = None
+
+        # Parse achievements - use enhanced data if available
+        if enhanced_data and enhanced_data.achievements:
+            achievements = [a.core_fact for a in enhanced_data.achievements]
+            hard_skills = enhanced_data.hard_skills
+            soft_skills = enhanced_data.soft_skills
+        else:
+            achievements = self._parse_achievements(content)
+            hard_skills, soft_skills = self._parse_skills(content)
+
+        return RoleData(
+            id=role_meta["id"],
+            company=role_meta["company"],
+            title=role_meta["title"],
+            location=role_meta.get("location", ""),
+            period=role_meta["period"],
+            start_year=role_meta["start_year"],
+            end_year=role_meta["end_year"],
+            is_current=role_meta["is_current"],
+            duration_years=role_meta["duration_years"],
+            industry=role_meta["industry"],
+            team_size=role_meta["team_size"],
+            primary_competencies=role_meta["primary_competencies"],
+            keywords=role_meta["keywords"],
+            achievements=achievements,
+            hard_skills=hard_skills,
+            soft_skills=soft_skills,
+            raw_content=content,
+            enhanced_data=enhanced_data,
+        )
+
+    def _load_from_files(self) -> CandidateData:
+        """
+        Load CV data from local files (original file-based implementation).
 
         Returns:
             CandidateData with all roles populated
 
         Raises:
             FileNotFoundError: If metadata or role files missing
-            ValueError: If metadata is malformed
         """
-        if self._candidate is not None:
-            return self._candidate
-
         # Load metadata
         if not self.metadata_path.exists():
             raise FileNotFoundError(
@@ -256,7 +449,7 @@ class CVLoader:
             role = self._load_role(role_meta)
             self._candidate.roles.append(role)
 
-        self._logger.info(f"Loaded {len(self._candidate.roles)} roles from master CV")
+        self._logger.info(f"Loaded {len(self._candidate.roles)} roles from files")
         return self._candidate
 
     def _load_role(self, role_meta: Dict[str, Any]) -> RoleData:
@@ -601,12 +794,26 @@ class CVLoader:
                 print(f"    Keywords: {len(enhanced.all_keywords)}")
 
     # =========================================================================
+    # DATA SOURCE PROPERTIES
+    # =========================================================================
+
+    @property
+    def loaded_from_mongodb(self) -> bool:
+        """Check if data was loaded from MongoDB (vs files)."""
+        return self._loaded_from_mongodb
+
+    @property
+    def is_mongodb_enabled(self) -> bool:
+        """Check if MongoDB mode is enabled."""
+        return self._use_mongodb
+
+    # =========================================================================
     # SKILLS TAXONOMY METHODS
     # =========================================================================
 
     def load_skills_taxonomy(self) -> "SkillsTaxonomy":
         """
-        Load the role-based skills taxonomy.
+        Load the role-based skills taxonomy from MongoDB or file.
 
         The taxonomy defines pre-curated skill sections for each target role.
         This replaces the LLM-generated category approach.
@@ -615,10 +822,18 @@ class CVLoader:
             SkillsTaxonomy instance for generating skills sections
 
         Raises:
-            FileNotFoundError: If taxonomy file doesn't exist
+            FileNotFoundError: If taxonomy file doesn't exist (and MongoDB unavailable)
         """
         from src.layer6_v2.skills_taxonomy import SkillsTaxonomy
 
+        # Try MongoDB first if enabled
+        if self._use_mongodb and self._mongo_store:
+            taxonomy_data = self._mongo_store.get_taxonomy()
+            if taxonomy_data:
+                self._logger.debug("Loading skills taxonomy from MongoDB")
+                return SkillsTaxonomy.from_dict(taxonomy_data)
+
+        # Fall back to file
         taxonomy_path = self.data_path / "role_skills_taxonomy.json"
         return SkillsTaxonomy(taxonomy_path)
 
