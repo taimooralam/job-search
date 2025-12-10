@@ -33,8 +33,19 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
 
 ## Pipeline Layers (10 Nodes Total)
 
-### Layer 1.4: JD Extractor (Completed 2025-11-30)
-- Extracts structured job data: role, category, keywords
+### Layer 1.4: JD Processor (Completed 2025-11-30, Enhanced 2025-12-10)
+- **JD Processor**: Structures raw JD text into semantic sections using LLM-based parsing
+  - Input: Raw job description (blob text with escape characters, no formatting)
+  - Processing: LLM-based "HR document analyst" parses section boundaries
+  - Default model: `google/gemini-flash-1.5-8b` (cheap OpenRouter, 8B parameters)
+  - Fallback: `gpt-4o-mini` (OpenAI) if OpenRouter key unavailable
+  - Removed regex fallback - LLM always used (no fallback to regex patterns)
+  - Input limit: 12,000 characters (increased from 8,000)
+  - Output: HTML structure with `<section>` tags for annotation UI
+  - System prompt: Expert "HR document analyst with 20 years experience"
+  - Handles: Compressed JD text where headers merge with content, bullet points inline, line breaks stripped
+
+- **JD Extractor**: Extracts structured job data: role, category, keywords
 - Input: Job description | Output: Structured JD analysis
 - Used by: CV Gen V2 for role-aware tailoring
 
