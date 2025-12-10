@@ -197,20 +197,42 @@ class StructureJDService(OperationService):
         logger.info(f"[{run_id[:16]}] Starting structure-jd for job {job_id}")
 
         with self.timed_execution() as timer:
+            # Track per-layer status for detailed logging
+            layer_status = {}
+
             try:
                 # 1. Fetch job
+                logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._get_job(job_id)
                 if not job:
+                    layer_status["fetch_job"] = {
+                        "status": "failed",
+                        "message": f"Job not found: {job_id}"
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
                         duration_ms=timer.duration_ms,
                     )
+                layer_status["fetch_job"] = {
+                    "status": "success",
+                    "message": f"Found job: {job.get('title', 'Unknown')}"
+                }
 
                 # 2. Extract JD text
+                logger.info(f"[{run_id[:16]}] Extracting JD text")
                 try:
                     jd_text = self._get_jd_text(job)
+                    layer_status["extract_text"] = {
+                        "status": "success",
+                        "length": len(jd_text),
+                        "message": f"Extracted {len(jd_text)} characters"
+                    }
                 except ValueError as e:
+                    layer_status["extract_text"] = {
+                        "status": "failed",
+                        "message": str(e)
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error=str(e),
@@ -225,6 +247,7 @@ class StructureJDService(OperationService):
                 )
 
                 # 4. Process JD
+                logger.info(f"[{run_id[:16]}] Processing JD with {'LLM' if use_llm else 'rules'}")
                 if use_llm:
                     processed = await process_jd(jd_text, use_llm=True, model=model)
                 else:
@@ -232,10 +255,29 @@ class StructureJDService(OperationService):
 
                 # 5. Convert to dict
                 result_data = processed_jd_to_dict(processed)
+                section_count = len(result_data.get("sections", []))
+                section_types = result_data.get("section_ids", [])
+                layer_status["jd_processor"] = {
+                    "status": "success",
+                    "sections": section_count,
+                    "section_types": section_types,
+                    "message": f"Parsed {section_count} sections: {', '.join(section_types[:3])}{'...' if len(section_types) > 3 else ''}"
+                }
+                logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections")
 
                 # 6. Persist result
+                logger.info(f"[{run_id[:16]}] Persisting results to database")
                 persisted = self._persist_result(job_id, result_data)
-                if not persisted:
+                if persisted:
+                    layer_status["persist"] = {
+                        "status": "success",
+                        "message": "Saved to database"
+                    }
+                else:
+                    layer_status["persist"] = {
+                        "status": "warning",
+                        "message": "Processing succeeded but persistence failed"
+                    }
                     logger.warning(
                         f"[{run_id[:16]}] Failed to persist result, but processing succeeded"
                     )
@@ -253,14 +295,15 @@ class StructureJDService(OperationService):
                     output_tokens = len(str(result_data.get("sections", []))) // 4
                     cost_usd = self.estimate_cost(tier, input_tokens, output_tokens)
 
-                # 8. Build response data
+                # 8. Build response data with layer_status
                 response_data = {
                     "processed_jd": result_data,
-                    "section_count": len(result_data.get("sections", [])),
-                    "section_types": result_data.get("section_ids", []),
+                    "section_count": section_count,
+                    "section_types": section_types,
                     "content_hash": result_data.get("content_hash"),
                     "used_llm": use_llm,
                     "persisted": persisted,
+                    "layer_status": layer_status,
                 }
 
                 logger.info(
