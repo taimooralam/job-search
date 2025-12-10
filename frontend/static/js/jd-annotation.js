@@ -57,6 +57,8 @@ class AnnotationManager {
             selectedRange: null,
             relevance: null,
             requirement: null,
+            passion: 'neutral',      // Default to neutral passion
+            identity: 'peripheral',  // Default to peripheral identity
             starIds: [],
             reframeNote: '',
             keywords: ''
@@ -562,6 +564,42 @@ class AnnotationManager {
     }
 
     /**
+     * Set passion level in popover
+     */
+    setPopoverPassion(passion) {
+        this.popoverState.passion = passion;
+
+        // Update button states
+        document.querySelectorAll('.passion-btn').forEach(btn => {
+            if (btn.dataset.passion === passion) {
+                btn.classList.add('ring-2', 'ring-indigo-500');
+            } else {
+                btn.classList.remove('ring-2', 'ring-indigo-500');
+            }
+        });
+
+        this.updatePopoverSaveButton();
+    }
+
+    /**
+     * Set identity level in popover
+     */
+    setPopoverIdentity(identity) {
+        this.popoverState.identity = identity;
+
+        // Update button states
+        document.querySelectorAll('.identity-btn').forEach(btn => {
+            if (btn.dataset.identity === identity) {
+                btn.classList.add('ring-2', 'ring-indigo-500');
+            } else {
+                btn.classList.remove('ring-2', 'ring-indigo-500');
+            }
+        });
+
+        this.updatePopoverSaveButton();
+    }
+
+    /**
      * Update selected STAR stories in popover
      */
     updatePopoverStars() {
@@ -599,6 +637,8 @@ class AnnotationManager {
                     ...this.annotations[index],
                     relevance: this.popoverState.relevance,
                     requirement_type: this.popoverState.requirement || 'neutral',
+                    passion: this.popoverState.passion || 'neutral',
+                    identity: this.popoverState.identity || 'peripheral',
                     star_ids: this.popoverState.starIds,
                     reframe_note: reframeEl?.value || '',
                     strategic_note: strategicEl?.value || '',
@@ -620,6 +660,8 @@ class AnnotationManager {
                 annotation_type: 'skill_match',
                 relevance: this.popoverState.relevance,
                 requirement_type: this.popoverState.requirement || 'neutral',
+                passion: this.popoverState.passion || 'neutral',
+                identity: this.popoverState.identity || 'peripheral',
                 star_ids: this.popoverState.starIds,
                 reframe_note: reframeEl?.value || '',
                 strategic_note: strategicEl?.value || '',
@@ -1290,6 +1332,24 @@ function setPopoverRelevance(relevance) {
 function setPopoverRequirement(requirement) {
     if (annotationManager) {
         annotationManager.setPopoverRequirement(requirement);
+    }
+}
+
+/**
+ * Set passion level in popover
+ */
+function setPopoverPassion(passion) {
+    if (annotationManager) {
+        annotationManager.setPopoverPassion(passion);
+    }
+}
+
+/**
+ * Set identity level in popover
+ */
+function setPopoverIdentity(identity) {
+    if (annotationManager) {
+        annotationManager.setPopoverIdentity(identity);
     }
 }
 
