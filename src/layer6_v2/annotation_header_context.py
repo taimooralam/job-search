@@ -236,6 +236,8 @@ class AnnotationHeaderContextBuilder:
             jd_text = target.get("text", "")
             relevance = ann.get("relevance", "relevant")
             requirement_type = ann.get("requirement_type", "neutral")
+            passion = ann.get("passion", "neutral")
+            identity = ann.get("identity", "peripheral")
             user_priority = ann.get("priority", 3)
             matching_skill = ann.get("matching_skill")
             reframe_note = ann.get("reframe_note")
@@ -262,6 +264,8 @@ class AnnotationHeaderContextBuilder:
                 matching_skill=matching_skill,
                 relevance=relevance,
                 requirement_type=requirement_type,
+                passion=passion,
+                identity=identity,
                 reframe_note=reframe_note,
                 reframe_from=reframe_from,
                 reframe_to=reframe_to,
@@ -518,6 +522,11 @@ def format_priorities_for_prompt(
     Creates a structured list of must-haves and key requirements
     for the header/summary generation prompt.
 
+    Enhanced with passion and identity dimensions:
+    - Identity items go in headlines/introductions
+    - Passion items show authentic enthusiasm
+    - Avoid items should be de-emphasized
+
     Args:
         context: The HeaderGenerationContext
         max_items: Maximum items to include
@@ -530,20 +539,41 @@ def format_priorities_for_prompt(
 
     lines = ["## JD Priority Requirements (from annotations)\n"]
 
-    # Must-haves first
+    # Identity items first - these define WHO the candidate IS
+    identity_items = context.identity_priorities[:3]
+    if identity_items:
+        lines.append("### CORE IDENTITY (use in headline and opening statement):")
+        lines.append("These define who the candidate IS professionally:")
+        for p in identity_items:
+            skill_text = p.matching_skill or p.jd_text[:50]
+            lines.append(f"- ⭐ {skill_text}")
+        lines.append("")
+
+    # Must-haves
     must_haves = context.must_have_priorities[:3]
     if must_haves:
         lines.append("### MUST-HAVE (emphasize in headline/tagline):")
         for p in must_haves:
             skill_text = p.matching_skill or p.jd_text[:50]
             proof = f" → Proof: {p.star_snippets[0]}" if p.star_snippets else ""
-            lines.append(f"- {skill_text}{proof}")
+            passion_marker = " 🔥" if p.is_passion else ""
+            lines.append(f"- {skill_text}{proof}{passion_marker}")
+        lines.append("")
+
+    # Passion items - show authentic enthusiasm
+    passion_items = [p for p in context.passion_priorities[:3] if p not in must_haves]
+    if passion_items:
+        lines.append("### PASSION AREAS (emphasize to show authentic enthusiasm):")
+        lines.append("Candidate is genuinely excited about these - highlight to sound authentic:")
+        for p in passion_items:
+            skill_text = p.matching_skill or p.jd_text[:50]
+            lines.append(f"- 🔥 {skill_text}")
         lines.append("")
 
     # Core strengths
     core_strengths = [
         p for p in context.core_strength_priorities[:3]
-        if p not in must_haves
+        if p not in must_haves and p not in identity_items
     ]
     if core_strengths:
         lines.append("### CORE STRENGTHS (highlight in summary):")
@@ -563,6 +593,26 @@ def format_priorities_for_prompt(
     if context.gap_mitigation:
         lines.append("### GAP MITIGATION (include once in summary):")
         lines.append(f"- {context.gap_mitigation}")
+        lines.append("")
+
+    # Avoid items - these should NOT be prominent
+    avoid_items = context.avoid_priorities[:2]
+    if avoid_items:
+        lines.append("### AVOID/DE-EMPHASIZE (do NOT highlight these):")
+        lines.append("Candidate can do these but doesn't want them prominent:")
+        for p in avoid_items:
+            skill_text = p.matching_skill or p.jd_text[:50]
+            lines.append(f"- 🚫 {skill_text}")
+        lines.append("")
+
+    # Not-identity items - avoid in introductions
+    not_identity_items = context.not_identity_priorities[:2]
+    if not_identity_items:
+        lines.append("### NOT IDENTITY (avoid in headlines/intros):")
+        lines.append("Do NOT use these to introduce the candidate:")
+        for p in not_identity_items:
+            skill_text = p.matching_skill or p.jd_text[:50]
+            lines.append(f"- ✗ {skill_text}")
         lines.append("")
 
     return "\n".join(lines)

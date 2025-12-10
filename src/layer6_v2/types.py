@@ -1310,6 +1310,10 @@ class AnnotationPriority:
         (6 - user_priority) * 0.2 +              # User priority 1-5 inverted (1 is highest)
         has_star_evidence * 0.1                  # +1 if STAR linked
     )
+
+    Enhanced with passion and identity dimensions:
+    - passion: How excited the candidate is about this aspect (love_it → avoid)
+    - identity: How strongly this defines professional identity (core_identity → not_identity)
     """
 
     rank: int                                  # 1 = highest priority
@@ -1317,6 +1321,8 @@ class AnnotationPriority:
     matching_skill: Optional[str] = None       # Candidate skill that matches (if any)
     relevance: str = "relevant"                # SkillRelevance: core_strength → gap
     requirement_type: str = "neutral"          # RequirementType: must_have → neutral
+    passion: str = "neutral"                   # PassionLevel: love_it → avoid (enthusiasm)
+    identity: str = "peripheral"               # IdentityLevel: core_identity → not_identity
     reframe_note: Optional[str] = None         # Reframe guidance (e.g., "Frame as 'platform modernization'")
     reframe_from: Optional[str] = None         # Original skill/experience to reframe
     reframe_to: Optional[str] = None           # Target framing for JD alignment
@@ -1350,6 +1356,26 @@ class AnnotationPriority:
         """Check if this matches a core strength."""
         return self.relevance == "core_strength"
 
+    @property
+    def is_passion(self) -> bool:
+        """Check if candidate is passionate about this (love_it or enjoy)."""
+        return self.passion in ("love_it", "enjoy")
+
+    @property
+    def is_avoid(self) -> bool:
+        """Check if candidate wants to avoid this."""
+        return self.passion == "avoid"
+
+    @property
+    def is_core_identity(self) -> bool:
+        """Check if this is core to professional identity."""
+        return self.identity == "core_identity"
+
+    @property
+    def is_not_identity(self) -> bool:
+        """Check if candidate explicitly doesn't identify with this."""
+        return self.identity == "not_identity"
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
@@ -1358,6 +1384,8 @@ class AnnotationPriority:
             "matching_skill": self.matching_skill,
             "relevance": self.relevance,
             "requirement_type": self.requirement_type,
+            "passion": self.passion,
+            "identity": self.identity,
             "reframe_note": self.reframe_note,
             "reframe_from": self.reframe_from,
             "reframe_to": self.reframe_to,
@@ -1370,6 +1398,10 @@ class AnnotationPriority:
             "is_gap": self.is_gap,
             "is_must_have": self.is_must_have,
             "is_core_strength": self.is_core_strength,
+            "is_passion": self.is_passion,
+            "is_avoid": self.is_avoid,
+            "is_core_identity": self.is_core_identity,
+            "is_not_identity": self.is_not_identity,
         }
 
 
@@ -1381,10 +1413,16 @@ class HeaderGenerationContext:
     This bridges the JD annotation system with the header/summary/skills generators.
     Contains prioritized requirements, reframes, ATS targets, and gap handling.
 
+    Enhanced with passion and identity dimensions:
+    - passion_priorities: Items candidate is excited about (use in cover letter hooks)
+    - identity_priorities: Items that define professional identity (use in headlines)
+    - avoid_priorities: Items to de-emphasize (don't highlight in CV)
+
     Used by:
     - HeaderGenerator to emphasize must-have skills in headline/tagline
     - ProfileOutput generation to include STAR proof and apply reframes
     - TaxonomyBasedSkillsGenerator to prioritize annotated skills
+    - Cover letter generator to show authentic enthusiasm
     """
 
     priorities: List[AnnotationPriority] = field(default_factory=list)  # Ranked priority list
@@ -1410,10 +1448,70 @@ class HeaderGenerationContext:
         return [p for p in self.priorities if p.is_gap]
 
     @property
+    def passion_priorities(self) -> List[AnnotationPriority]:
+        """Get priorities candidate is passionate about (love_it or enjoy).
+
+        Use these in cover letter hooks and to show authentic enthusiasm.
+        """
+        return [p for p in self.priorities if p.is_passion]
+
+    @property
+    def avoid_priorities(self) -> List[AnnotationPriority]:
+        """Get priorities candidate wants to avoid.
+
+        De-emphasize these in CV/cover letter - don't highlight even if relevant.
+        """
+        return [p for p in self.priorities if p.is_avoid]
+
+    @property
+    def identity_priorities(self) -> List[AnnotationPriority]:
+        """Get priorities that are core to professional identity.
+
+        Use these in headlines, taglines, and opening statements.
+        """
+        return [p for p in self.priorities if p.is_core_identity]
+
+    @property
+    def not_identity_priorities(self) -> List[AnnotationPriority]:
+        """Get priorities candidate explicitly doesn't identify with.
+
+        Avoid using these in introductions even if technically relevant.
+        """
+        return [p for p in self.priorities if p.is_not_identity]
+
+    @property
     def top_keywords(self) -> List[str]:
         """Get top keywords from priorities (for tagline/headline)."""
         keywords = []
         for p in self.priorities[:5]:  # Top 5 priorities
+            if p.matching_skill:
+                keywords.append(p.matching_skill)
+            elif p.ats_variants:
+                keywords.append(p.ats_variants[0])
+        return keywords
+
+    @property
+    def identity_keywords(self) -> List[str]:
+        """Get keywords from core identity priorities (for headline/intro).
+
+        These are the terms that define who the candidate IS.
+        """
+        keywords = []
+        for p in self.identity_priorities[:3]:  # Top 3 identity items
+            if p.matching_skill:
+                keywords.append(p.matching_skill)
+            elif p.ats_variants:
+                keywords.append(p.ats_variants[0])
+        return keywords
+
+    @property
+    def passion_keywords(self) -> List[str]:
+        """Get keywords from passion priorities (for cover letter hooks).
+
+        These show authentic enthusiasm and interest.
+        """
+        keywords = []
+        for p in self.passion_priorities[:3]:  # Top 3 passion items
             if p.matching_skill:
                 keywords.append(p.matching_skill)
             elif p.ats_variants:
@@ -1441,6 +1539,9 @@ class HeaderGenerationContext:
             "has_annotations": self.has_annotations,
             "must_have_count": len(self.must_have_priorities),
             "gap_count": len(self.gap_priorities),
+            "passion_count": len(self.passion_priorities),
+            "identity_count": len(self.identity_priorities),
+            "avoid_count": len(self.avoid_priorities),
         }
 
 
