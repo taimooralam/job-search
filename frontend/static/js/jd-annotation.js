@@ -61,7 +61,12 @@ class AnnotationManager {
             identity: 'peripheral',  // Default to peripheral identity
             starIds: [],
             reframeNote: '',
-            keywords: ''
+            keywords: '',
+            // Track explicit user selections (vs defaults)
+            hasExplicitRelevance: false,
+            hasExplicitRequirement: false,
+            hasExplicitPassion: false,
+            hasExplicitIdentity: false
         };
         // Persona synthesis state
         this.personaState = {
@@ -370,9 +375,16 @@ class AnnotationManager {
         // Reset popover state
         this.popoverState.relevance = null;
         this.popoverState.requirement = null;
+        this.popoverState.passion = 'neutral';
+        this.popoverState.identity = 'peripheral';
         this.popoverState.starIds = [];
         this.popoverState.reframeNote = '';
         this.popoverState.keywords = '';
+        // Reset explicit selection flags
+        this.popoverState.hasExplicitRelevance = false;
+        this.popoverState.hasExplicitRequirement = false;
+        this.popoverState.hasExplicitPassion = false;
+        this.popoverState.hasExplicitIdentity = false;
 
         // Show popover
         this.showAnnotationPopover(rect, selectedText);
@@ -550,6 +562,7 @@ class AnnotationManager {
      */
     setPopoverRelevance(relevance) {
         this.popoverState.relevance = relevance;
+        this.popoverState.hasExplicitRelevance = true;
 
         // Update button states
         document.querySelectorAll('.relevance-btn').forEach(btn => {
@@ -568,6 +581,7 @@ class AnnotationManager {
      */
     setPopoverRequirement(requirement) {
         this.popoverState.requirement = requirement;
+        this.popoverState.hasExplicitRequirement = true;
 
         // Update button states
         document.querySelectorAll('.requirement-btn').forEach(btn => {
@@ -586,6 +600,7 @@ class AnnotationManager {
      */
     setPopoverPassion(passion) {
         this.popoverState.passion = passion;
+        this.popoverState.hasExplicitPassion = true;
 
         // Update button states
         document.querySelectorAll('.passion-btn').forEach(btn => {
@@ -604,6 +619,7 @@ class AnnotationManager {
      */
     setPopoverIdentity(identity) {
         this.popoverState.identity = identity;
+        this.popoverState.hasExplicitIdentity = true;
 
         // Update button states
         document.querySelectorAll('.identity-btn').forEach(btn => {
@@ -628,12 +644,22 @@ class AnnotationManager {
 
     /**
      * Update save button enabled state
+     *
+     * Uses OR logic: enable when ANY dimension has been explicitly selected.
+     * The dimensions are mutually independent - user can annotate based on
+     * relevance only, passion only, identity only, or any combination.
      */
     updatePopoverSaveButton() {
         const saveBtn = document.getElementById('popover-save-btn');
         if (saveBtn) {
-            // Enable if relevance is selected (requirement defaults to neutral)
-            saveBtn.disabled = !this.popoverState.relevance;
+            // Enable if ANY dimension has been explicitly selected (OR logic)
+            const hasAnyExplicitSelection =
+                this.popoverState.hasExplicitRelevance ||
+                this.popoverState.hasExplicitRequirement ||
+                this.popoverState.hasExplicitPassion ||
+                this.popoverState.hasExplicitIdentity;
+
+            saveBtn.disabled = !hasAnyExplicitSelection;
         }
     }
 
@@ -773,17 +799,39 @@ class AnnotationManager {
 
         return this.annotations.filter(ann => {
             switch (this.currentFilter) {
+                // Relevance/Match Strength filters
                 case 'core_strength':
                 case 'extremely_relevant':
                 case 'relevant':
                 case 'tangential':
                 case 'gap':
                     return ann.relevance === this.currentFilter;
+
+                // Requirement Type filters
                 case 'must_have':
                 case 'nice_to_have':
                     return ann.requirement_type === this.currentFilter;
+
+                // Passion Level filters
+                case 'love_it':
+                case 'enjoy':
+                case 'neutral_passion':
+                case 'tolerate':
+                case 'avoid':
+                    return ann.passion === this.currentFilter;
+
+                // Identity Level filters
+                case 'core_identity':
+                case 'strong_identity':
+                case 'developing':
+                case 'peripheral':
+                case 'not_identity':
+                    return ann.identity === this.currentFilter;
+
+                // Status filter
                 case 'active':
                     return ann.is_active;
+
                 default:
                     return true;
             }
@@ -1150,12 +1198,22 @@ class AnnotationManager {
     // ============================================================================
 
     /**
-     * Check if there are any identity annotations (core_identity, strong_identity, developing)
+     * Check if there are any annotations relevant for persona synthesis.
+     * Includes: identity (core_identity, strong_identity, developing),
+     *           passion (love_it, enjoy),
+     *           strength (core_strength, extremely_relevant)
      */
     checkIdentityAnnotations() {
         const identityLevels = ['core_identity', 'strong_identity', 'developing'];
+        const passionLevels = ['love_it', 'enjoy'];
+        const strengthLevels = ['core_strength', 'extremely_relevant'];
+
         this.personaState.hasIdentityAnnotations = this.annotations.some(
-            a => a.is_active && identityLevels.includes(a.identity)
+            a => a.is_active && (
+                identityLevels.includes(a.identity) ||
+                passionLevels.includes(a.passion) ||
+                strengthLevels.includes(a.relevance)
+            )
         );
     }
 
@@ -1176,6 +1234,9 @@ class AnnotationManager {
         this.renderPersonaPanel();
 
         try {
+            // First, ensure annotations are saved to MongoDB so the API has latest data
+            await this.saveAnnotations();
+
             const response = await fetch(`/api/jobs/${this.jobId}/synthesize-persona`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
@@ -1187,14 +1248,35 @@ class AnnotationManager {
                 this.personaState.statement = data.persona;
                 this.personaState.isUserEdited = false;
                 console.log('Synthesized persona:', data.persona);
+
+                // Auto-save the synthesized persona to MongoDB
+                await this.savePersonaToDb(data.persona, false);
             } else {
-                console.warn('Persona synthesis returned no result:', data.message);
+                console.warn('Persona synthesis returned no result:', data.message || data.error);
             }
         } catch (error) {
             console.error('Error synthesizing persona:', error);
         } finally {
             this.personaState.isLoading = false;
             this.renderPersonaPanel();
+        }
+    }
+
+    /**
+     * Save persona to database (without triggering UI updates)
+     */
+    async savePersonaToDb(persona, isEdited) {
+        try {
+            await fetch(`/api/jobs/${this.jobId}/save-persona`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    persona: persona,
+                    is_edited: isEdited
+                })
+            });
+        } catch (error) {
+            console.error('Error saving persona to DB:', error);
         }
     }
 
