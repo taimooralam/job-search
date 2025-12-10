@@ -1,0 +1,189 @@
+<!-- Candidate Info Tab -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Left Column: Basic Info & Contact -->
+    <div class="space-y-6">
+        <!-- Basic Information -->
+        <div class="panel p-5">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
+                <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Basic Information
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Full Name</label>
+                    <input type="text"
+                           id="candidate-name"
+                           class="form-input w-full"
+                           placeholder="Your full name"
+                           onchange="masterCVEditor.updateCandidateField('name', this.value)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Professional Title</label>
+                    <input type="text"
+                           id="candidate-title"
+                           class="form-input w-full"
+                           placeholder="e.g., Engineering Leader / Software Architect"
+                           onchange="masterCVEditor.updateCandidateField('title_base', this.value)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Years of Experience</label>
+                    <input type="number"
+                           id="candidate-years"
+                           class="form-input w-32"
+                           min="0"
+                           max="50"
+                           onchange="masterCVEditor.updateCandidateField('years_experience', parseInt(this.value))">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="panel p-5">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
+                <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Contact Information
+            </h3>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Email</label>
+                        <input type="email"
+                               id="candidate-email"
+                               class="form-input w-full"
+                               placeholder="email@example.com"
+                               onchange="masterCVEditor.updateCandidateField('contact.email', this.value)">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Phone</label>
+                        <input type="tel"
+                               id="candidate-phone"
+                               class="form-input w-full"
+                               placeholder="+49 123 456 7890"
+                               onchange="masterCVEditor.updateCandidateField('contact.phone', this.value)">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">LinkedIn</label>
+                    <input type="text"
+                           id="candidate-linkedin"
+                           class="form-input w-full"
+                           placeholder="linkedin.com/in/yourprofile"
+                           onchange="masterCVEditor.updateCandidateField('contact.linkedin', this.value)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Location / Availability</label>
+                    <input type="text"
+                           id="candidate-location"
+                           class="form-input w-full"
+                           placeholder="e.g., Munich, Germany | Open to relocation"
+                           onchange="masterCVEditor.updateCandidateField('contact.location', this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Education, Languages, Certifications -->
+    <div class="space-y-6">
+        <!-- Education -->
+        <div class="panel p-5">
+            <h3 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">
+                <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+                </svg>
+                Education
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Master's Degree</label>
+                    <input type="text"
+                           id="candidate-masters"
+                           class="form-input w-full"
+                           placeholder="M.Sc. Computer Science - University Name"
+                           onchange="masterCVEditor.updateCandidateField('education.masters', this.value)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Bachelor's Degree</label>
+                    <input type="text"
+                           id="candidate-bachelors"
+                           class="form-input w-full"
+                           placeholder="B.Sc. Software Engineering - University Name"
+                           onchange="masterCVEditor.updateCandidateField('education.bachelors', this.value)">
+                </div>
+            </div>
+        </div>
+
+        <!-- Languages -->
+        <div class="panel p-5">
+            <h3 class="text-lg font-semibold mb-4 flex items-center justify-between" style="color: var(--text-primary);">
+                <span>
+                    <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                    </svg>
+                    Languages
+                </span>
+                <button onclick="masterCVEditor.showAddLanguageModal()"
+                        class="btn btn-ghost btn-xs flex items-center gap-1"
+                        title="Add language">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add
+                </button>
+            </h3>
+            <div id="languages-container" class="flex flex-wrap gap-2">
+                <!-- Languages chips will be rendered here by JS -->
+                <div class="text-sm italic" style="color: var(--text-tertiary);">Loading languages...</div>
+            </div>
+        </div>
+
+        <!-- Certifications -->
+        <div class="panel p-5">
+            <h3 class="text-lg font-semibold mb-4 flex items-center justify-between" style="color: var(--text-primary);">
+                <span>
+                    <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                    </svg>
+                    Certifications
+                </span>
+                <button onclick="masterCVEditor.showAddCertificationModal()"
+                        class="btn btn-ghost btn-xs flex items-center gap-1"
+                        title="Add certification">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add
+                </button>
+            </h3>
+            <div id="certifications-container" class="flex flex-wrap gap-2">
+                <!-- Certification chips will be rendered here by JS -->
+                <div class="text-sm italic" style="color: var(--text-tertiary);">Loading certifications...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Language/Certification Modal (inline, appears when adding) -->
+<div id="add-item-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="masterCVEditor.closeAddItemModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full pointer-events-auto" style="background-color: var(--bg-card);">
+            <div class="p-5">
+                <h4 id="add-item-title" class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Add Item</h4>
+                <input type="text"
+                       id="add-item-input"
+                       class="form-input w-full mb-4"
+                       placeholder="Enter value..."
+                       onkeydown="if(event.key === 'Enter') masterCVEditor.confirmAddItem()">
+                <div class="flex justify-end gap-3">
+                    <button onclick="masterCVEditor.closeAddItemModal()" class="btn btn-ghost">Cancel</button>
+                    <button onclick="masterCVEditor.confirmAddItem()" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

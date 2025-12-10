@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Master CV Editor{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/master-cv-editor.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Caution Banner -->
+    <div class="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg">
+        <div class="flex items-start">
+            <svg class="h-5 w-5 text-amber-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-sm text-amber-700 dark:text-amber-300">
+                <strong>Use with caution:</strong> Changes to your Master CV affect all future job applications.
+                Use the <span class="font-medium">History</span> button to view version history and rollback if needed.
+            </p>
+        </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Master CV Editor</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">Manage your candidate profile, work experience, and skills taxonomy</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Save Indicator -->
+            <div id="master-cv-save-indicator" class="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg" style="background-color: var(--bg-hover);">
+                <span id="save-status-icon" class="w-2 h-2 rounded-full bg-gray-400"></span>
+                <span id="save-status-text" style="color: var(--text-secondary);">Loading...</span>
+            </div>
+            <!-- History Button -->
+            <button onclick="masterCVEditor.openVersionHistory()"
+                    class="btn btn-ghost btn-sm flex items-center gap-2"
+                    title="View version history">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="hidden sm:inline">History</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b mb-6" style="border-color: var(--border-default);">
+        <nav class="-mb-px flex space-x-6 sm:space-x-8 overflow-x-auto" role="tablist">
+            <button data-tab="candidate"
+                    onclick="masterCVEditor.switchTab('candidate')"
+                    class="master-cv-tab active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="tab-candidate">
+                <svg class="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                Candidate Info
+            </button>
+            <button data-tab="roles"
+                    onclick="masterCVEditor.switchTab('roles')"
+                    class="master-cv-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="tab-roles">
+                <svg class="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Work Experience
+                <span id="roles-count" class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full" style="background-color: var(--bg-hover);">-</span>
+            </button>
+            <button data-tab="taxonomy"
+                    onclick="masterCVEditor.switchTab('taxonomy')"
+                    class="master-cv-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="tab-taxonomy">
+                <svg class="w-4 h-4 inline-block mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+                Skills Taxonomy
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="tab-candidate" class="master-cv-tab-content" role="tabpanel" aria-labelledby="tab-candidate">
+        {% include "partials/master_cv/_candidate_tab.html" %}
+    </div>
+    <div id="tab-roles" class="master-cv-tab-content hidden" role="tabpanel" aria-labelledby="tab-roles">
+        {% include "partials/master_cv/_roles_tab.html" %}
+    </div>
+    <div id="tab-taxonomy" class="master-cv-tab-content hidden" role="tabpanel" aria-labelledby="tab-taxonomy">
+        {% include "partials/master_cv/_taxonomy_tab.html" %}
+    </div>
+</div>
+
+<!-- Modals -->
+{% include "partials/master_cv/_version_history_modal.html" %}
+{% include "partials/master_cv/_delete_confirm_modal.html" %}
+
+<script src="{{ url_for('static', filename='js/master-cv-editor.js') }}"></script>
+{% endblock %}

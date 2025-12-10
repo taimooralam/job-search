@@ -1892,6 +1892,13 @@ def application_stats_partial():
     )
 
 
+@app.route("/master-cv")
+@login_required
+def master_cv_editor():
+    """Render the Master CV editor page."""
+    return render_template("master_cv.html")
+
+
 @app.route("/job/<job_id>")
 @login_required
 def job_detail(job_id: str):
