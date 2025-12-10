@@ -132,7 +132,7 @@ class TestCVGenerationServiceGetModel:
     def test_get_model_quality_tier(self, service):
         """QUALITY tier should return claude-sonnet for complex tasks."""
         model = service.get_model(ModelTier.QUALITY)
-        assert model == "claude-sonnet-4-20250514"
+        assert model == "claude-opus-4-5-20251101"
 
 
 class TestCVGenerationServiceFetchJob:
@@ -466,7 +466,7 @@ class TestCVGenerationServiceExecute:
                 tier=ModelTier.QUALITY,
             )
 
-        assert result.model_used == "claude-sonnet-4-20250514"
+        assert result.model_used == "claude-opus-4-5-20251101"
 
     @pytest.mark.asyncio
     async def test_execute_includes_cost_estimate(
@@ -632,7 +632,7 @@ class TestCVGenerationServiceIntegration:
         assert result.success is True
         assert result.operation == "generate-cv"
         assert result.run_id.startswith("op_generate-cv_")
-        assert result.model_used == "claude-sonnet-4-20250514"
+        assert result.model_used == "claude-opus-4-5-20251101"
         assert result.cost_usd > 0
         assert result.duration_ms >= 0
         assert result.error is None
