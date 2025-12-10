@@ -600,6 +600,78 @@ class CompanyResearcher:
 
         return domains_text, outcomes_text
 
+    def _extract_annotation_research_focus(self, state: JobState) -> Optional[str]:
+        """
+        Extract annotation-guided research focus areas.
+
+        Phase 4: When JD annotations exist, extract focus areas to guide
+        company signal extraction toward what matters to the candidate.
+
+        Args:
+            state: JobState which may contain jd_annotations
+
+        Returns:
+            Formatted focus text or None if no annotations
+        """
+        jd_annotations = state.get("jd_annotations")
+        if not jd_annotations:
+            return None
+
+        annotations = jd_annotations.get("annotations", [])
+        if not annotations:
+            return None
+
+        # Extract focus areas from annotations
+        technical_focus = []
+        culture_focus = []
+        identity_focus = []
+
+        for ann in annotations:
+            # Only process active annotations
+            if not ann.get("is_active", False):
+                continue
+
+            target = ann.get("target", {})
+            target_text = target.get("text", "")[:60]
+            matching_skill = ann.get("matching_skill", "")
+            requirement_type = ann.get("requirement_type")
+            passion = ann.get("passion")
+            identity = ann.get("identity")
+
+            # Technical focus: must_have requirements
+            if requirement_type == "must_have":
+                keywords = ann.get("suggested_keywords", [])
+                if keywords:
+                    technical_focus.extend(keywords[:2])
+                elif matching_skill:
+                    technical_focus.append(matching_skill)
+
+            # Culture/passion focus: areas candidate loves
+            if passion == "love_it":
+                culture_focus.append(matching_skill or target_text)
+
+            # Identity focus: core professional identity
+            if identity == "core_identity":
+                identity_focus.append(matching_skill or target_text)
+
+        # If no focus areas extracted, return None
+        if not any([technical_focus, culture_focus, identity_focus]):
+            return None
+
+        # Build focus text
+        parts = []
+        if technical_focus:
+            unique_tech = list(dict.fromkeys(technical_focus))[:5]
+            parts.append(f"Technical areas: {', '.join(unique_tech)}")
+        if culture_focus:
+            unique_culture = list(dict.fromkeys(culture_focus))[:3]
+            parts.append(f"Culture/passion areas: {', '.join(unique_culture)}")
+        if identity_focus:
+            unique_identity = list(dict.fromkeys(identity_focus))[:2]
+            parts.append(f"Identity alignment: {', '.join(unique_identity)}")
+
+        return " | ".join(parts)
+
     def _get_cache_key(self, company_name: str) -> str:
         """Generate cache key from company name (normalized)."""
         # Normalize: lowercase, remove extra whitespace
@@ -947,7 +1019,8 @@ class CompanyResearcher:
         company: str,
         scraped_data: Dict[str, Dict[str, str]],
         star_domains: Optional[str] = None,
-        star_outcomes: Optional[str] = None
+        star_outcomes: Optional[str] = None,
+        annotation_focus: Optional[str] = None
     ) -> CompanyResearchOutput:
         """
         Extract company signals from scraped content using LLM (Phase 5.2 enhanced).
@@ -957,12 +1030,14 @@ class CompanyResearcher:
         - Quality assessment per source
         - Few-shot examples
         - STAR-aware when candidate context available
+        - Phase 4: Annotation-aware when JD annotations available
 
         Args:
             company: Company name
             scraped_data: Dict of {source_name: {"url": str, "content": str, "quality": str}}
             star_domains: Optional candidate domain areas from selected STARs
             star_outcomes: Optional candidate outcome types from selected STARs
+            annotation_focus: Optional focus areas from JD annotations
 
         Returns:
             CompanyResearchOutput with validated signals and reasoning block
@@ -979,6 +1054,17 @@ class CompanyResearcher:
             )
 
         scraped_content = "\n".join(content_sections)
+
+        # Phase 4: Add annotation focus context if available
+        if annotation_focus:
+            annotation_section = (
+                f"\n\n=== CANDIDATE ANNOTATION FOCUS (Phase 4) ===\n"
+                f"Research signals should prioritize these areas based on candidate annotations:\n"
+                f"{annotation_focus}\n"
+                f"Look for company signals that align with these focus areas.\n"
+            )
+            scraped_content = annotation_section + scraped_content
+            self.logger.info(f"Annotation focus injected into research prompt")
 
         # Phase 5: Use STAR-aware prompt if candidate context available
         if star_domains and star_outcomes:
@@ -1174,6 +1260,11 @@ Output JSON only:
         if star_domains:
             self.logger.info(f"STAR context available: {len(star_domains.split(', '))} domain(s)")
 
+        # Phase 4: Extract annotation research focus if available
+        annotation_focus = self._extract_annotation_research_focus(state)
+        if annotation_focus:
+            self.logger.info(f"Annotation focus available: {annotation_focus[:80]}...")
+
         # Step 1: Check cache first
         try:
             cached_data = self._check_cache(company)
@@ -1195,12 +1286,13 @@ Output JSON only:
 
             self.logger.info(f"Scraped {len(scraped_data)} source(s)")
 
-            # Step 2: Extract signals via LLM (Phase 5.1 + STAR-aware)
+            # Step 2: Extract signals via LLM (Phase 5.1 + STAR-aware + Annotation-aware)
             self.logger.info("Extracting company signals via LLM")
             company_research_output = self._analyze_company_signals(
                 company, scraped_data,
                 star_domains=star_domains,
-                star_outcomes=star_outcomes
+                star_outcomes=star_outcomes,
+                annotation_focus=annotation_focus
             )
 
             self.logger.info(f"Extracted {len(company_research_output.signals)} signal(s)")
