@@ -87,6 +87,19 @@ class GenerateCVRequest(BaseModel):
     )
 
 
+class FullExtractionRequest(BaseModel):
+    """Request body for full JD extraction (Layer 1.4 + 2 + 4)."""
+
+    tier: str = Field(
+        default="balanced",
+        description="Model tier: 'fast', 'balanced', or 'quality'",
+    )
+    use_llm: bool = Field(
+        default=True,
+        description="Whether to use LLM for processing",
+    )
+
+
 class OperationResponse(BaseModel):
     """Standard response for operation endpoints."""
 
@@ -486,6 +499,85 @@ async def generate_cv(
             model_used=result.model_used,
             duration_ms=result.duration_ms,
             error=result.error,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"{operation} failed: {e}")
+        run_id = _generate_run_id(operation)
+        return OperationResponse(
+            success=False,
+            data={},
+            cost_usd=0.0,
+            run_id=run_id,
+            error=str(e),
+        )
+
+
+@router.post(
+    "/{job_id}/full-extraction",
+    response_model=OperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Run full JD extraction",
+    description="Run complete extraction pipeline: Layer 1.4 (JD structuring) + Layer 2 (pain points) + Layer 4 (fit scoring)",
+)
+async def full_extraction(
+    job_id: str,
+    request: FullExtractionRequest,
+) -> OperationResponse:
+    """
+    Run full JD extraction (Layer 1.4 + Layer 2 + Layer 4).
+
+    This is the expanded "Structure JD" button that runs all extraction layers
+    and combines results into a single badge showing:
+    - Section count (Layer 1.4)
+    - Pain point count (Layer 2)
+    - Fit score and category (Layer 4)
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+        request: Full extraction request parameters
+
+    Returns:
+        OperationResponse with combined extraction data
+    """
+    from src.services.full_extraction_service import FullExtractionService
+
+    operation = "full-extraction"
+
+    logger.info(f"Starting {operation} for job {job_id}")
+
+    try:
+        # Validate inputs
+        _validate_job_exists(job_id)
+        tier = _validate_tier(request.tier)
+
+        logger.info(
+            f"Executing {operation}: tier={tier.value}, use_llm={request.use_llm}"
+        )
+
+        # Execute via service
+        service = FullExtractionService()
+        result = await service.execute(
+            job_id=job_id,
+            tier=tier,
+            use_llm=request.use_llm,
+        )
+
+        logger.info(
+            f"[{result.run_id[:16]}] Completed {operation}: "
+            f"success={result.success}, cost=${result.cost_usd:.4f}"
+        )
+
+        return OperationResponse(
+            success=result.success,
+            data=result.data,
+            cost_usd=result.cost_usd,
+            run_id=result.run_id,
+            error=result.error,
+            model_used=result.model_used,
+            duration_ms=result.duration_ms,
         )
 
     except HTTPException:
