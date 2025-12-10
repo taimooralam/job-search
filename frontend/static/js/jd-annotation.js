@@ -94,12 +94,19 @@ class AnnotationManager {
                 fetch(`/api/jobs/${this.jobId}`)
             ]);
 
-            // Get raw JD from job data
+            // Get raw JD from job data (must be a string, not an object)
             let rawJd = null;
             if (jobRes.ok) {
                 const jobData = await jobRes.json();
                 const job = jobData.job || jobData;
-                rawJd = job.extracted_jd || job.description || job.job_description || null;
+                // extracted_jd is often a structured object, so check type
+                // Prefer description or job_description which are raw text strings
+                const candidates = [job.description, job.job_description];
+                // Only use extracted_jd if it's a string (not structured object)
+                if (typeof job.extracted_jd === 'string') {
+                    candidates.unshift(job.extracted_jd);
+                }
+                rawJd = candidates.find(c => typeof c === 'string' && c.trim()) || null;
             }
 
             if (!annotationsRes.ok) throw new Error('Failed to load annotations');
@@ -147,6 +154,13 @@ class AnnotationManager {
 
         if (loadingEl) loadingEl.classList.add('hidden');
         if (emptyEl) emptyEl.classList.add('hidden');
+
+        // Safety check: ensure rawJd is a string
+        if (typeof rawJd !== 'string') {
+            console.error('showRawJd called with non-string:', typeof rawJd);
+            this.showEmptyState();
+            return;
+        }
 
         if (contentEl) {
             // Convert plain text to HTML with preserved whitespace
