@@ -1,0 +1,442 @@
+"""
+Company Research Service (Phase 4).
+
+Provides button-triggered company and role research as an independent operation.
+Wraps the existing Layer 3 (Company Researcher) and Layer 3.5 (Role Researcher)
+logic with OperationService patterns.
+
+Usage:
+    service = CompanyResearchService()
+    result = await service.execute(job_id, tier, force_refresh=False)
+"""
+
+import logging
+import os
+from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
+
+from bson import ObjectId
+from pymongo import MongoClient
+
+from src.common.model_tiers import (
+    ModelTier,
+    get_model_for_operation,
+    get_tier_cost_estimate,
+)
+from src.common.state import JobState, CompanyResearch, RoleResearch
+from src.layer3.company_researcher import CompanyResearcher
+from src.layer3.role_researcher import RoleResearcher
+from src.services.operation_base import OperationResult, OperationService
+
+logger = logging.getLogger(__name__)
+
+# Cache TTL in days
+COMPANY_CACHE_TTL_DAYS = 7
+
+
+class CompanyResearchService(OperationService):
+    """
+    Service for company and role research operations.
+
+    Wraps Layer 3 (Company Researcher) and Layer 3.5 (Role Researcher)
+    as a button-triggered operation with cost tracking and caching.
+    """
+
+    operation_name: str = "research-company"
+
+    def __init__(self):
+        """Initialize the service with MongoDB client."""
+        self._mongo_client: Optional[MongoClient] = None
+        self._company_researcher: Optional[CompanyResearcher] = None
+        self._role_researcher: Optional[RoleResearcher] = None
+
+    @property
+    def mongo_client(self) -> MongoClient:
+        """Lazy-initialize MongoDB client."""
+        if self._mongo_client is None:
+            mongo_uri = (
+                os.getenv("MONGODB_URI")
+                or os.getenv("MONGO_URI")
+                or "mongodb://localhost:27017"
+            )
+            self._mongo_client = MongoClient(mongo_uri)
+        return self._mongo_client
+
+    @property
+    def company_researcher(self) -> CompanyResearcher:
+        """Lazy-initialize Company Researcher."""
+        if self._company_researcher is None:
+            self._company_researcher = CompanyResearcher()
+        return self._company_researcher
+
+    @property
+    def role_researcher(self) -> RoleResearcher:
+        """Lazy-initialize Role Researcher."""
+        if self._role_researcher is None:
+            self._role_researcher = RoleResearcher()
+        return self._role_researcher
+
+    def _get_db(self):
+        """Get database instance."""
+        db_name = os.getenv("MONGO_DB_NAME", "jobs")
+        return self.mongo_client[db_name]
+
+    def _get_jobs_collection(self):
+        """Get jobs collection."""
+        return self._get_db()["level-2"]
+
+    def _get_cache_collection(self):
+        """Get company cache collection."""
+        return self.mongo_client["jobs"]["company_cache"]
+
+    def _fetch_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch job document from MongoDB.
+
+        Args:
+            job_id: MongoDB ObjectId as string
+
+        Returns:
+            Job document or None if not found
+        """
+        try:
+            object_id = ObjectId(job_id)
+            job = self._get_jobs_collection().find_one({"_id": object_id})
+            return job
+        except Exception as e:
+            logger.error(f"Failed to fetch job {job_id}: {e}")
+            return None
+
+    def _check_cache(
+        self, company_name: str, force_refresh: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Check company cache for existing research.
+
+        Args:
+            company_name: Company name to look up
+            force_refresh: If True, skip cache lookup
+
+        Returns:
+            Cached research data or None if not found/expired
+        """
+        if force_refresh:
+            logger.info(f"Force refresh requested, skipping cache for {company_name}")
+            return None
+
+        cache_key = company_name.lower().strip()
+        cache_collection = self._get_cache_collection()
+
+        cached = cache_collection.find_one({"company_key": cache_key})
+
+        if cached:
+            # Check if cache is still valid (within TTL)
+            cached_at = cached.get("cached_at")
+            if cached_at:
+                expiry = cached_at + timedelta(days=COMPANY_CACHE_TTL_DAYS)
+                if datetime.utcnow() < expiry:
+                    logger.info(f"Cache HIT for {company_name}")
+                    return cached
+                else:
+                    logger.info(f"Cache EXPIRED for {company_name}")
+                    return None
+
+        logger.info(f"Cache MISS for {company_name}")
+        return None
+
+    def _build_job_state(self, job: Dict[str, Any]) -> JobState:
+        """
+        Build JobState from MongoDB job document.
+
+        Args:
+            job: Job document from MongoDB
+
+        Returns:
+            JobState TypedDict for research processing
+        """
+        # Extract job description from various possible fields
+        jd_text = (
+            job.get("jd_text")
+            or job.get("description")
+            or job.get("job_description")
+            or ""
+        )
+
+        # Build minimal JobState for research
+        state: JobState = {
+            "job_id": str(job["_id"]),
+            "title": job.get("title", ""),
+            "company": job.get("company", ""),
+            "job_description": jd_text,
+            "job_url": job.get("url") or job.get("job_url", ""),
+            "source": job.get("source", ""),
+            "candidate_profile": "",  # Not needed for research
+            # Optional fields from existing state
+            "extracted_jd": job.get("extracted_jd"),
+            "selected_stars": job.get("selected_stars"),
+            "company_research": job.get("company_research"),
+            "role_research": job.get("role_research"),
+            "errors": job.get("errors", []),
+            # Initialize remaining fields as None
+            "scraped_job_posting": None,
+            "jd_annotations": None,
+            "improvement_suggestions": None,
+            "interview_prep": None,
+            "pain_points": job.get("pain_points"),
+            "strategic_needs": job.get("strategic_needs"),
+            "risks_if_unfilled": job.get("risks_if_unfilled"),
+            "success_metrics": job.get("success_metrics"),
+            "star_to_pain_mapping": job.get("star_to_pain_mapping"),
+            "all_stars": None,
+            "company_summary": job.get("company_summary"),
+            "company_url": job.get("company_url"),
+            "application_form_fields": None,
+            "fit_score": job.get("fit_score"),
+            "fit_rationale": job.get("fit_rationale"),
+            "fit_category": job.get("fit_category"),
+            "tier": job.get("tier"),
+            "primary_contacts": None,
+            "secondary_contacts": None,
+            "people": None,
+            "outreach_packages": None,
+            "fallback_cover_letters": None,
+            "cover_letter": None,
+            "cv_path": None,
+            "cv_text": None,
+            "cv_reasoning": None,
+            "dossier_path": None,
+            "drive_folder_url": None,
+            "sheet_row_id": None,
+            "run_id": None,
+            "created_at": None,
+            "status": "processing",
+            "trace_url": None,
+            "token_usage": None,
+            "total_tokens": None,
+            "total_cost_usd": None,
+            "processing_tier": None,
+            "tier_config": None,
+            "pipeline_runs": None,
+            "debug_mode": None,
+        }
+
+        return state
+
+    def _persist_research(
+        self,
+        job_id: str,
+        company_research: Optional[CompanyResearch],
+        role_research: Optional[RoleResearch],
+        scraped_job_posting: Optional[str] = None,
+    ) -> bool:
+        """
+        Persist research results back to MongoDB.
+
+        Args:
+            job_id: MongoDB ObjectId as string
+            company_research: Company research result
+            role_research: Role research result
+            scraped_job_posting: Optional scraped job posting markdown
+
+        Returns:
+            True if persisted successfully
+        """
+        try:
+            object_id = ObjectId(job_id)
+            update_doc: Dict[str, Any] = {
+                "updatedAt": datetime.utcnow(),
+            }
+
+            if company_research:
+                update_doc["company_research"] = company_research
+                # Also set legacy fields for backward compatibility
+                update_doc["company_summary"] = company_research.get("summary")
+                update_doc["company_url"] = company_research.get("url")
+
+            if role_research:
+                update_doc["role_research"] = role_research
+
+            if scraped_job_posting:
+                update_doc["scraped_job_posting"] = scraped_job_posting
+
+            result = self._get_jobs_collection().update_one(
+                {"_id": object_id},
+                {"$set": update_doc}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"Persisted research for job {job_id}")
+                return True
+            else:
+                logger.warning(f"No changes persisted for job {job_id}")
+                return True  # Document found but no changes needed
+
+        except Exception as e:
+            logger.error(f"Failed to persist research for job {job_id}: {e}")
+            return False
+
+    async def execute(
+        self,
+        job_id: str,
+        tier: ModelTier,
+        force_refresh: bool = False,
+        **kwargs,
+    ) -> OperationResult:
+        """
+        Execute company and role research for a job.
+
+        Args:
+            job_id: MongoDB ObjectId of the job
+            tier: Model tier for quality/cost selection
+            force_refresh: If True, skip cache and re-research
+            **kwargs: Additional parameters (unused)
+
+        Returns:
+            OperationResult with research data and cost info
+        """
+        run_id = self.create_run_id()
+        model = self.get_model(tier)
+
+        logger.info(
+            f"[{run_id[:16]}] Starting company research for job {job_id} "
+            f"(tier={tier.value}, model={model}, force_refresh={force_refresh})"
+        )
+
+        with self.timed_execution() as timer:
+            try:
+                # Fetch job from MongoDB
+                job = self._fetch_job(job_id)
+                if not job:
+                    return self.create_error_result(
+                        run_id=run_id,
+                        error=f"Job not found: {job_id}",
+                        duration_ms=timer.duration_ms,
+                    )
+
+                company_name = job.get("company", "")
+                if not company_name:
+                    return self.create_error_result(
+                        run_id=run_id,
+                        error="Job has no company name",
+                        duration_ms=timer.duration_ms,
+                    )
+
+                # Check cache (unless force_refresh)
+                cached = self._check_cache(company_name, force_refresh)
+                if cached and not force_refresh:
+                    # Return cached data
+                    cached_research = cached.get("company_research", {})
+                    logger.info(f"[{run_id[:16]}] Returning cached research for {company_name}")
+
+                    return self.create_success_result(
+                        run_id=run_id,
+                        data={
+                            "company_research": cached_research,
+                            "role_research": None,  # Role research not cached separately
+                            "from_cache": True,
+                            "company": company_name,
+                        },
+                        cost_usd=0.0,  # No cost for cached data
+                        duration_ms=timer.duration_ms,
+                        model_used=model,
+                    )
+
+                # Build JobState for research
+                state = self._build_job_state(job)
+
+                # Run Company Research (Layer 3)
+                logger.info(f"[{run_id[:16]}] Running company research for {company_name}")
+                company_result = self.company_researcher.research_company(state)
+
+                company_research = company_result.get("company_research")
+                scraped_job_posting = company_result.get("scraped_job_posting")
+
+                # Update state with company research for role research
+                if company_research:
+                    state["company_research"] = company_research
+
+                # Run Role Research (Layer 3.5) if company research succeeded
+                role_research = None
+                if company_research:
+                    # Skip role research for recruitment agencies
+                    company_type = company_research.get("company_type", "employer")
+                    if company_type != "recruitment_agency":
+                        logger.info(f"[{run_id[:16]}] Running role research")
+                        role_result = self.role_researcher.research_role(state)
+                        role_research = role_result.get("role_research")
+                    else:
+                        logger.info(f"[{run_id[:16]}] Skipping role research (recruitment agency)")
+
+                # Persist results to MongoDB
+                self._persist_research(
+                    job_id=job_id,
+                    company_research=company_research,
+                    role_research=role_research,
+                    scraped_job_posting=scraped_job_posting,
+                )
+
+                # Estimate cost (rough estimate based on typical token usage)
+                # Company research: ~3000 input, ~2000 output
+                # Role research: ~2000 input, ~1000 output
+                estimated_input_tokens = 5000
+                estimated_output_tokens = 3000
+                cost_usd = self.estimate_cost(tier, estimated_input_tokens, estimated_output_tokens)
+
+                # Collect any errors from the research process
+                errors = company_result.get("errors", [])
+                if role_research is None and company_research:
+                    # Role research might have failed
+                    pass  # Errors would be in role_result if we had it
+
+                # Build response data
+                response_data = {
+                    "company_research": company_research,
+                    "role_research": role_research,
+                    "from_cache": False,
+                    "company": company_name,
+                }
+
+                # Add summary stats
+                if company_research:
+                    response_data["signals_count"] = len(company_research.get("signals", []))
+                    response_data["company_type"] = company_research.get("company_type", "unknown")
+
+                if role_research:
+                    response_data["business_impact_count"] = len(role_research.get("business_impact", []))
+
+                logger.info(
+                    f"[{run_id[:16]}] Completed company research: "
+                    f"signals={response_data.get('signals_count', 0)}, "
+                    f"company_type={response_data.get('company_type', 'unknown')}"
+                )
+
+                # Persist operation run for tracking
+                result = self.create_success_result(
+                    run_id=run_id,
+                    data=response_data,
+                    cost_usd=cost_usd,
+                    duration_ms=timer.duration_ms,
+                    input_tokens=estimated_input_tokens,
+                    output_tokens=estimated_output_tokens,
+                    model_used=model,
+                )
+
+                self.persist_run(result, job_id, tier)
+
+                return result
+
+            except Exception as e:
+                logger.exception(f"[{run_id[:16]}] Company research failed: {e}")
+                error_result = self.create_error_result(
+                    run_id=run_id,
+                    error=str(e),
+                    duration_ms=timer.duration_ms,
+                )
+                self.persist_run(error_result, job_id, tier)
+                return error_result
+
+    def close(self):
+        """Clean up MongoDB connection."""
+        if self._mongo_client:
+            self._mongo_client.close()
+            self._mongo_client = None
