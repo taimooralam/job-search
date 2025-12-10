@@ -89,70 +89,143 @@
    Annotation Highlight Classes
    ============================================================================ */
 
-/* Core Strength - Green */
-.annotation-highlight-core_strength {
-    background-color: rgba(34, 197, 94, 0.25);
-    border-bottom: 2px solid #22c55e;
+/* Base highlight styles */
+.annotation-highlight {
+    position: relative;
+    padding: 1px 2px;
+    border-radius: 2px;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Tooltip on hover - shows relevance label */
+.annotation-highlight:hover::after {
+    content: attr(data-relevance-label);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: #1f2937;
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.15s ease forwards;
+    animation-delay: 0.3s;
+}
+
+.annotation-highlight:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #1f2937;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.15s ease forwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Core Strength - Green (3.0x boost) */
+.annotation-highlight-core_strength {
+    background-color: rgba(34, 197, 94, 0.35);
+    border-bottom: 2px solid #22c55e;
+    box-shadow: inset 0 -1px 0 rgba(34, 197, 94, 0.3);
 }
 
 .annotation-highlight-core_strength:hover {
-    background-color: rgba(34, 197, 94, 0.4);
+    background-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
 }
 
-/* Extremely Relevant - Emerald */
+/* Extremely Relevant - Emerald (2.0x boost) */
 .annotation-highlight-extremely_relevant {
-    background-color: rgba(16, 185, 129, 0.25);
+    background-color: rgba(16, 185, 129, 0.35);
     border-bottom: 2px solid #10b981;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    box-shadow: inset 0 -1px 0 rgba(16, 185, 129, 0.3);
 }
 
 .annotation-highlight-extremely_relevant:hover {
-    background-color: rgba(16, 185, 129, 0.4);
+    background-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-/* Relevant - Yellow */
+/* Relevant - Yellow (1.5x boost) */
 .annotation-highlight-relevant {
-    background-color: rgba(234, 179, 8, 0.25);
+    background-color: rgba(234, 179, 8, 0.35);
     border-bottom: 2px solid #eab308;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    box-shadow: inset 0 -1px 0 rgba(234, 179, 8, 0.3);
 }
 
 .annotation-highlight-relevant:hover {
-    background-color: rgba(234, 179, 8, 0.4);
+    background-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
 }
 
-/* Tangential - Orange */
+/* Tangential - Orange (1.0x boost) */
 .annotation-highlight-tangential {
-    background-color: rgba(249, 115, 22, 0.25);
+    background-color: rgba(249, 115, 22, 0.35);
     border-bottom: 2px solid #f97316;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    box-shadow: inset 0 -1px 0 rgba(249, 115, 22, 0.3);
 }
 
 .annotation-highlight-tangential:hover {
-    background-color: rgba(249, 115, 22, 0.4);
+    background-color: rgba(249, 115, 22, 0.5);
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
 }
 
-/* Gap - Red */
+/* Gap - Red (0.3x penalty) */
 .annotation-highlight-gap {
-    background-color: rgba(239, 68, 68, 0.25);
+    background-color: rgba(239, 68, 68, 0.35);
     border-bottom: 2px solid #ef4444;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
+    box-shadow: inset 0 -1px 0 rgba(239, 68, 68, 0.3);
 }
 
 .annotation-highlight-gap:hover {
-    background-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 /* Inactive annotations */
 .annotation-highlight-inactive {
     opacity: 0.4;
     border-bottom-style: dashed;
+}
+
+/* Pulse animation when annotation is selected/clicked */
+@keyframes highlightPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 2px transparent;
+    }
+    25%, 75% {
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.3);
+    }
+}
+
+.annotation-highlight-pulse {
+    animation: highlightPulse 0.75s ease-in-out 2;
 }
 
 /* ============================================================================
