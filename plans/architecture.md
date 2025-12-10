@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), Full Extraction Service implemented with JD Extractor integration and annotation heatmap UI, 1521 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Independent operations with tiered models, PDF export fixed
+**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, 1521+ total tests passing
 
 ---
 
@@ -201,6 +201,98 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
   - Output 1: "Principal Engineer | Kubernetes | AWS | Python"
   - Output 2: "Cloud Platform Architect | AWS | Kubernetes Specialist"
 - Used for job-specific LinkedIn profile optimization before outreach
+
+**JD Annotation System Enhancements - Passion & Identity Dimensions** (NEW - 2025-12-10):
+
+**New Annotation Dimensions**:
+- **Passion Level** (`passion_level`): 5-level scale capturing candidate enthusiasm
+  - `love_it`: Excited about this role/company
+  - `enjoy`: Positive interest and enjoyment
+  - `neutral`: No strong feeling either way
+  - `tolerate`: Willing but not enthusiastic
+  - `avoid`: Would rather not pursue this
+- **Identity Level** (`identity_level`): 5-level scale capturing professional identity alignment
+  - `core_identity`: Central to who they are as a professional
+  - `strong_identity`: Strong professional identity match
+  - `developing`: Developing this aspect of identity
+  - `peripheral`: Minor part of professional identity
+  - `not_identity`: Not part of professional self-image
+
+**Layer 2 Pain Point Miner - Annotation-Aware** (`src/layer2/pain_point_miner.py`):
+- Extracts annotation context from JD annotations:
+  - `must_have_keywords`: Critical skills identified
+  - `gap_areas`: Areas where candidate lacks experience
+  - `reframe_notes`: Positioning guidance for weaknesses
+  - `core_strength_areas`: Areas of demonstrated expertise
+- Passes annotation priorities to LLM prompt injection
+- Post-processes generated pain points to:
+  - Boost must-have skills (prioritize in pain point narrative)
+  - Deprioritize gaps (acknowledge but reframe positively)
+  - Highlight core strengths in context of pain points
+- Result: Pain point narratives aligned with candidate strengths and priorities
+
+**Layer 4 Fit Scorer - Annotation-Aware Scoring** (`src/layer4/annotation_fit_signal.py`):
+- New `AnnotationFitSignal` class enabling hybrid scoring approach
+- Scoring blends two signals (70% LLM, 30% annotation):
+  - **LLM Score (0-100)**: Job requirements vs CV match (existing logic)
+  - **Annotation Signal (0-100)**: Manual annotation coverage and match percentage
+  - **Weighted Score**: `0.7 * llm_score + 0.3 * annotation_signal`
+- Detects disqualifiers from annotations:
+  - Must-have skills with gaps → red flag
+  - Passion_level = "avoid" → disqualifier
+  - Identity mismatch → warning
+- Returns `annotation_analysis` in output with:
+  - `annotation_coverage`: Percentage of JD covered by annotations
+  - `confidence_level`: High/Medium/Low based on annotation depth
+  - `disqualifiers`: Array of identified deal-breakers
+  - `strengths`: Array of strong alignment areas
+- Enables data-driven decision making on which jobs to pursue
+
+**Boost Calculator Enhanced** (`src/common/annotation_boost.py`):
+- Extended boost calculation to include passion and identity dimensions
+- New methods for candidate preference extraction:
+  - `get_passions()`: Returns passion_level = love_it/enjoy
+  - `get_avoid_areas()`: Returns passion_level = avoid
+  - `get_identity_core()`: Returns core + strong identity areas
+  - `get_identity_not_me()`: Returns peripheral + not_identity areas
+- Boost multipliers applied during pain point post-processing:
+  - Core identity areas: 1.5x boost (emphasize in narrative)
+  - Must-have skills: 1.3x boost (prioritize in pain points)
+  - Avoid areas: 0.7x boost (de-emphasize, suggest reframing)
+- Stats now include passion and identity dimension counts:
+  - Total passion_level selections by category
+  - Total identity_level selections by category
+  - Alignment scoring for job fit
+
+**Header Context Enhanced** (`src/layer6_v2/types.py`):
+- `AnnotationPriority` TypedDict now includes:
+  - `passion_priorities`: List of love_it + enjoy items
+  - `avoid_priorities`: List of avoid items
+  - `identity_priorities`: List of core + strong identity items
+  - `identity_keywords`: Keywords extracted from identity annotations
+  - `passion_keywords`: Keywords extracted from passion annotations
+- `HeaderGenerationContext` extended with passion/identity fields:
+  - Profile generation uses passion/identity to shape narrative tone
+  - Skill selection prioritizes core identity skills
+  - Concerns addressing uses identity alignment for reframing
+- `format_priorities_for_prompt()` method now includes:
+  - "Professional Identity Alignment" section in prompt
+  - "Passion Areas" section highlighting enthusiasm areas
+  - "Areas to Reframe" section for developing skills
+- Result: CV headers and profiles reflect candidate's authentic professional identity and enthusiasm
+
+**UI Updated - Annotation Popover Enhancements** (`frontend/templates/partials/job_detail/_annotation_popover.html`, `frontend/static/js/jd-annotation.js`):
+- New button groups in annotation popover:
+  - **Passion Level selector**: 5-button group (love_it, enjoy, neutral, tolerate, avoid)
+  - **Identity Level selector**: 5-button group (core_identity, strong_identity, developing, peripheral, not_identity)
+- Visual design:
+  - Color-coded buttons (green for positive passion, red for avoid)
+  - Visual feedback on current selection
+  - Hover tooltips explaining each level
+- Event handlers:
+  - `setPopoverPassion(level)`: Updates annotation with passion_level
+  - `setPopoverIdentity(level)`: Updates annotation with identity_level
+- Real-time annotation storage and aggregation
 
 **CV Styling & Display** (Updated - 2025-12-08):
 
@@ -866,6 +958,201 @@ Pipeline (Markdown) ──► MongoDB cv_text
 - Progress indicator during execution
 - Results displayed inline on detail page with annotation heatmap
 - Shows match % and must-have gaps in "Opportunity & Fit Analysis" section
+
+---
+
+## E2E Annotation Integration (Complete - 11 Phases, 2025-12-10)
+
+### Overview
+
+Complete end-to-end integration of 5-dimensional annotation system across all 7 pipeline layers, enabling hyper-personalized CV generation, cover letters, and outreach based on candidate preferences (passion, identity, expertise), job requirements (must-haves, gaps, reframe), and strategic fit.
+
+### 5-Dimensional Annotation System
+
+**Dimensions** (stored per annotation):
+1. **Relevance** (0-5): How critical is this to job success
+2. **Requirement Type** (must_have|nice_to_have|gap|concern): Job requirement classification
+3. **Passion Level** (love_it|enjoy|neutral|tolerate|avoid): Candidate enthusiasm for role/company
+4. **Identity Level** (core_identity|strong_identity|developing|peripheral|not_identity): Professional identity alignment
+5. **Annotation Type** (skill|responsibility|qualification|concern|reframe): What's being annotated
+
+### Implementation Phases (11 Phases Complete)
+
+**Phase 1: Layer 4 Fit Signal** (Completed 2025-12-10)
+- File: `src/layer4/annotation_fit_signal.py` (NEW)
+- Hybrid fit scoring: 70% LLM score + 30% annotation signal
+- Detects disqualifiers from annotations (must_have gaps, passion=avoid)
+- Returns `annotation_analysis` with coverage, confidence, disqualifiers, strengths
+
+**Phase 2: Layer 2 Pain Point Miner - Annotation-Aware** (Completed 2025-12-10)
+- File: `src/layer2/pain_point_miner.py` (ENHANCED)
+- Extracts annotation context: must_have_keywords, gap_areas, core_strength_areas, reframe_notes
+- Passes annotation priorities to LLM prompt injection
+- Post-processes pain points with boost multipliers
+
+**Phase 3: Cover Letter - Passion & Identity Integration** (Completed 2025-12-10)
+- File: `src/layer6/cover_letter_generator.py` (ENHANCED)
+- Added `_format_passion_identity_section()` for authentic enthusiasm hooks
+- Passion dimension drives content (love_it areas emphasized, avoid areas de-emphasized)
+- Identity dimension shapes positioning and tone
+- Header context includes passion_priorities, avoid_priorities, identity_priorities
+
+**Phase 4: Company Research - Annotation-Aware** (Completed 2025-12-10)
+- File: `src/services/company_research_service.py` (ENHANCED)
+- Added `_extract_annotation_research_focus()` for targeted research guidance
+- Annotation context injected into FireCrawl queries and LLM analysis
+- Research focuses on passion annotations (love_it) for culture priorities
+- Must-have priorities inform technical research areas
+
+**Phase 5: Interview Predictor - Annotation-Driven** (Completed 2025-12-10)
+- File: `src/layer7/interview_predictor.py` (ENHANCED)
+- Added passion_probe and identity_probe question types
+- Gap + must_have annotations predict weakness questions
+- Reframe notes populate preparation_note field
+- Core strength annotations predict deep-dive behavioral questions
+
+**Phase 6: ATS Validation** (Completed 2025-12-10)
+- File: `src/layer6_v2/orchestrator.py` + `src/layer6_v2/types.py` (ENHANCED)
+- Added `ATSValidationResult` type
+- Added `_validate_ats_coverage()` method for post-generation validation
+- Keyword occurrence counts validated against min/max requirements
+- ATS readiness score recalculated after generation
+
+**Phase 7: Outreach - Annotation-Aware** (Completed 2025-12-10)
+- File: `src/layer6/outreach_generator.py` (ENHANCED)
+- Added `_format_annotation_context()` with passion/identity/avoid sections
+- Passion dimension drives genuine connection hooks in opener
+- Identity dimension guides professional positioning
+- Must-have priorities emphasized in value proposition
+
+**Phase 8: People Mapper - Annotation-Guided** (Completed 2025-12-10)
+- File: `src/layer5/people_mapper.py` (ENHANCED)
+- Added `_build_annotation_enhanced_queries()` for SEO keyword queries
+- Pain point keywords incorporated into contact searches
+- Must-have annotations prioritize contact discovery
+- Technical skill keywords refine LinkedIn search queries
+
+**Phase 9: Reframe Traceability** (Completed 2025-12-10)
+- File: `src/layer6_v2/orchestrator.py` (ENHANCED)
+- Added `_validate_reframe_application()` method
+- Reframe→bullet mapping tracked and logged
+- Warnings generated for unimplemented reframe guidance
+
+**Phase 10: Section Coverage Enforcement** (Completed 2025-12-10)
+- Files: `frontend/static/js/jd-annotation.js` + `frontend/templates/partials/job_detail/_annotation_popover.html` (ENHANCED)
+- Added `validateCoverage()` function for per-section tracking
+- Coverage warnings display uncovered sections
+- Validation prevents save with incomplete coverage
+- Coverage targets: 5 responsibilities, 5 qualifications, 4 technical skills, 2 nice-to-haves
+
+**Phase 11: Review Workflow** (Completed 2025-12-10)
+- Files: `frontend/static/js/jd-annotation.js` + templates (ENHANCED)
+- Review queue UI for pipeline-generated suggestions
+- Approve/reject buttons with optional notes
+- Status filters (draft, approved, rejected, needs_review)
+- Bulk approve/reject functionality
+- Review history tracking with timestamps
+
+### Annotation Data Flow
+
+```
+JD Annotation Panel
+     ↓
+┌─────────────────────────────────────────────────────────┐
+│ 5D Annotation Storage (MongoDB)                         │
+├─────────────────────────────────────────────────────────┤
+│ - 2 dimensions (relevance, requirement_type)  [UI]      │
+│ - 2 dimensions (passion_level, identity_level) [UI]     │
+│ - 1 dimension (annotation_type)               [Backend] │
+│ - status (draft|approved|rejected|needs_review)         │
+│ - created_by (human|pipeline_suggestion|preset)         │
+└─────────────────────────────────────────────────────────┘
+     ↓
+┌─────────────────────────────────────────────────────────┐
+│ Pipeline Layers - Annotation Integration Points         │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│ Layer 2 (Pain Points)                                   │
+│ ├─ Input: must_have_keywords, core_strengths          │
+│ └─ Output: Boosted pain point narrative                 │
+│                                                          │
+│ Layer 3 (Company Research)                              │
+│ ├─ Input: passion_level, must_have_priorities          │
+│ └─ Output: Targeted research focus                      │
+│                                                          │
+│ Layer 4 (Fit Scoring)                                   │
+│ ├─ Input: All 5 dimensions                             │
+│ └─ Output: Hybrid score + disqualifier flags           │
+│                                                          │
+│ Layer 5 (People Mapper)                                 │
+│ ├─ Input: pain_point keywords, core_strengths         │
+│ └─ Output: Refined SEO queries for contacts            │
+│                                                          │
+│ Layer 6 (CV/Cover Letter/Outreach)                     │
+│ ├─ Input: passion_level, identity_level, must_haves   │
+│ ├─ CV: Dynamic categories, passion-aligned skills     │
+│ ├─ Cover Letter: Authentic enthusiasm + positioning   │
+│ └─ Outreach: Identity-based messaging                 │
+│                                                          │
+│ Layer 7 (Interview Predictor)                           │
+│ ├─ Input: gaps, reframe_notes, core_strengths         │
+│ └─ Output: Weakness + strength questions               │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+     ↓
+┌─────────────────────────────────────────────────────────┐
+│ Output Artifacts                                        │
+├─────────────────────────────────────────────────────────┤
+│ - CV: JD-aligned, passion-reflected skills & profile   │
+│ - Cover Letter: Authentic enthusiasm + identity fit    │
+│ - Outreach: Personalized to candidate preferences      │
+│ - Interview Prep: Targeted weakness + strength Q&A     │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Boost Formula
+
+```python
+# Boost multipliers applied during pain point post-processing:
+core_identity_areas:     1.5x  # Emphasize in narrative
+strong_identity_areas:   1.2x  # Secondary emphasis
+must_have_skills:        1.3x  # Prioritize in pain points
+passion_love_it:         1.4x  # High enthusiasm boost
+passion_enjoy:           1.1x  # Mild boost
+passion_avoid:           0.7x  # De-emphasize/reframe
+gap_areas:               0.8x  # Acknowledge but reframe
+
+Final Score = base_pain_point_relevance * multiplier
+```
+
+### Files Modified (11 Phases)
+
+**Backend** (9 files):
+- `src/layer2/pain_point_miner.py` - Phase 2: Annotation context extraction
+- `src/layer4/annotation_fit_signal.py` - Phase 1: NEW file, hybrid scoring
+- `src/layer6/cover_letter_generator.py` - Phase 3: Passion/identity sections
+- `src/services/company_research_service.py` - Phase 4: Research guidance
+- `src/layer7/interview_predictor.py` - Phase 5: Probe question types
+- `src/layer6_v2/types.py` - Phases 3,6: Extended context types
+- `src/layer6_v2/orchestrator.py` - Phases 6,9: Validation methods
+- `src/layer6/outreach_generator.py` - Phase 7: Annotation context
+- `src/layer5/people_mapper.py` - Phase 8: Enhanced queries
+
+**Frontend** (2 files):
+- `frontend/static/js/jd-annotation.js` - Phases 10,11: Coverage validation, review workflow
+- `frontend/templates/partials/job_detail/_annotation_popover.html` - Phase 10: Coverage warnings
+
+**Type Enhancements** (`src/common/annotation_boost.py`):
+- New methods: `get_passions()`, `get_avoid_areas()`, `get_identity_core()`, `get_identity_not_me()`
+- Extended stats with passion and identity dimension counts
+- Boost multiplier application across all layers
+
+### Test Coverage
+
+Total tests added: 89 tests across all 11 phases
+- Unit tests for each phase's core functionality
+- Integration tests validating annotation→output mapping
+- Edge case handling for missing/conflicting annotations
 
 ---
 
