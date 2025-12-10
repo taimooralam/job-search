@@ -132,6 +132,15 @@
     background-color: #047857;
 }
 
+.btn-action-accent {
+    background-color: #7c3aed;
+    color: white;
+}
+
+.btn-action-accent:hover {
+    background-color: #6d28d9;
+}
+
 /* ============================================================================
    Current Tier Badge (on button)
    ============================================================================ */
