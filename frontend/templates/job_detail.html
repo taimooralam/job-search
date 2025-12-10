@@ -1006,7 +1006,7 @@
             {% endif %}
 
             <!-- Opportunity/Fit Analysis -->
-            {% if (job.fit_score is defined and job.fit_score is not none) or (job.fit_rationale is defined and job.fit_rationale) %}
+            {% if (job.fit_score is defined and job.fit_score is not none) or (job.fit_rationale is defined and job.fit_rationale) or (job.annotation_signals is defined and job.annotation_signals) %}
             <div class="mb-6">
                 <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
                     <svg class="inline-block h-4 w-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1015,6 +1015,7 @@
                     Opportunity & Fit Analysis
                 </h2>
                 <div class="p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+                    {# Fit Score Row #}
                     {% if job.fit_score is defined and job.fit_score is not none %}
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-sm font-medium text-gray-700">Fit Score:</span>
@@ -1028,6 +1029,81 @@
                         </span>
                     </div>
                     {% endif %}
+
+                    {# Annotation-Based Match Heatmap #}
+                    {% if job.annotation_signals is defined and job.annotation_signals and job.annotation_signals.annotation_score is defined %}
+                    <div class="mb-3 p-3 bg-white/50 rounded-lg border border-gray-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500 uppercase">Your Annotations</span>
+                            <span class="text-xs text-gray-400">Human-validated match</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            {# Match Heatmap Bar #}
+                            <div class="flex-1">
+                                <div class="flex gap-1 h-6">
+                                    {% set good = job.annotation_signals.good_match_count|default(0) %}
+                                    {% set partial = job.annotation_signals.partial_match_count|default(0) %}
+                                    {% set gaps = job.annotation_signals.gap_count|default(0) %}
+                                    {% set total = good + partial + gaps %}
+                                    {% if total > 0 %}
+                                        {% if good > 0 %}
+                                        <div class="bg-green-400 rounded-l flex items-center justify-center text-xs text-white font-medium"
+                                             style="width: {{ (good / total * 100)|round }}%"
+                                             title="{{ good }} strong match{{ 'es' if good > 1 else '' }}">
+                                            {{ good }}
+                                        </div>
+                                        {% endif %}
+                                        {% if partial > 0 %}
+                                        <div class="bg-yellow-400 flex items-center justify-center text-xs text-gray-800 font-medium"
+                                             style="width: {{ (partial / total * 100)|round }}%"
+                                             title="{{ partial }} partial match{{ 'es' if partial > 1 else '' }}">
+                                            {{ partial }}
+                                        </div>
+                                        {% endif %}
+                                        {% if gaps > 0 %}
+                                        <div class="bg-red-400 rounded-r flex items-center justify-center text-xs text-white font-medium"
+                                             style="width: {{ (gaps / total * 100)|round }}%"
+                                             title="{{ gaps }} gap{{ 's' if gaps > 1 else '' }}">
+                                            {{ gaps }}
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="bg-gray-200 rounded flex-1 flex items-center justify-center text-xs text-gray-500">
+                                            No annotations yet
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                    <span>Strong</span>
+                                    <span>Partial</span>
+                                    <span>Gaps</span>
+                                </div>
+                            </div>
+                            {# Annotation Score Badge #}
+                            <div class="text-center">
+                                <div class="text-2xl font-bold
+                                    {% if job.annotation_signals.annotation_score >= 70 %}text-green-600
+                                    {% elif job.annotation_signals.annotation_score >= 50 %}text-blue-600
+                                    {% elif job.annotation_signals.annotation_score >= 30 %}text-yellow-600
+                                    {% else %}text-red-600{% endif %}">
+                                    {{ job.annotation_signals.annotation_score }}
+                                </div>
+                                <div class="text-xs text-gray-500">Match %</div>
+                            </div>
+                        </div>
+                        {# Must-Have Gaps Warning #}
+                        {% if job.annotation_signals.must_have_gaps is defined and job.annotation_signals.must_have_gaps|length > 0 %}
+                        <div class="mt-2 p-2 bg-red-50 rounded border border-red-200">
+                            <span class="text-xs font-medium text-red-700">⚠️ {{ job.annotation_signals.must_have_gaps|length }} must-have gap{{ 's' if job.annotation_signals.must_have_gaps|length > 1 else '' }}:</span>
+                            <span class="text-xs text-red-600">
+                                {% for gap in job.annotation_signals.must_have_gaps[:3] %}{{ gap.text }}{% if not loop.last %}, {% endif %}{% endfor %}{% if job.annotation_signals.must_have_gaps|length > 3 %}...{% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {# Fit Rationale #}
                     {% if job.fit_rationale is defined and job.fit_rationale %}
                     <div class="text-sm text-gray-700 leading-relaxed">
                         {{ job.fit_rationale }}
