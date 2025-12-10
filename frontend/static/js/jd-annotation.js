@@ -174,7 +174,7 @@ class AnnotationManager {
             contentEl.innerHTML = `
                 <div class="raw-jd-content p-4 text-sm text-gray-700 leading-relaxed select-text cursor-text" style="white-space: pre-wrap; word-wrap: break-word;">
                     <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-xs select-none">
-                        <strong>Ready to annotate!</strong> Select any text below to add annotations. Use the quick-add buttons above or click "Process JD" for AI-assisted section parsing.
+                        <strong>Ready to annotate!</strong> Select any text below to add annotations. Use the quick-add buttons above or click "Structure JD" to organize into sections.
                     </div>
                     <div class="jd-text-content">${escapedJd}</div>
                 </div>
@@ -1043,7 +1043,7 @@ async function processJDForAnnotation() {
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
                 </svg>
-                <span class="hidden sm:inline">Process JD</span>
+                <span class="hidden sm:inline">Structure JD</span>
             `;
         }
     }
