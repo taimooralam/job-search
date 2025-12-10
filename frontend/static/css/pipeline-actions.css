@@ -1,0 +1,609 @@
+/**
+ * Pipeline Actions - Button and Tier Dropdown Styles
+ *
+ * Provides styling for:
+ * - Split buttons with tier dropdown
+ * - Tier option list with cost indicators
+ * - Loading states and animations
+ * - Responsive layout
+ * - Consistent with Tailwind-based theme
+ */
+
+/* ============================================================================
+   CSS Custom Properties (Theme Variables)
+   ============================================================================ */
+
+:root {
+    --pipeline-btn-radius: 0.5rem;
+    --pipeline-dropdown-width: 16rem;
+    --pipeline-transition-fast: 0.15s ease;
+    --pipeline-transition-normal: 0.3s ease;
+
+    /* Tier colors */
+    --tier-fast-bg: #dcfce7;
+    --tier-fast-text: #166534;
+    --tier-fast-icon-bg: #dcfce7;
+    --tier-fast-icon-text: #16a34a;
+
+    --tier-balanced-bg: #dbeafe;
+    --tier-balanced-text: #1e40af;
+    --tier-balanced-icon-bg: #dbeafe;
+    --tier-balanced-icon-text: #2563eb;
+
+    --tier-quality-bg: #f3e8ff;
+    --tier-quality-text: #6b21a8;
+    --tier-quality-icon-bg: #f3e8ff;
+    --tier-quality-icon-text: #9333ea;
+}
+
+/* Dark mode overrides */
+.dark {
+    --tier-fast-bg: rgba(22, 163, 74, 0.2);
+    --tier-fast-text: #86efac;
+    --tier-fast-icon-bg: rgba(22, 163, 74, 0.3);
+    --tier-fast-icon-text: #4ade80;
+
+    --tier-balanced-bg: rgba(37, 99, 235, 0.2);
+    --tier-balanced-text: #93c5fd;
+    --tier-balanced-icon-bg: rgba(37, 99, 235, 0.3);
+    --tier-balanced-icon-text: #60a5fa;
+
+    --tier-quality-bg: rgba(147, 51, 234, 0.2);
+    --tier-quality-text: #d8b4fe;
+    --tier-quality-icon-bg: rgba(147, 51, 234, 0.3);
+    --tier-quality-icon-text: #c084fc;
+}
+
+/* ============================================================================
+   Split Button Group
+   ============================================================================ */
+
+.btn-action-group {
+    display: inline-flex;
+    border-radius: var(--pipeline-btn-radius);
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.btn-action-group:focus-within {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
+.btn-action-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color var(--pipeline-transition-fast);
+}
+
+.btn-action-dropdown {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--pipeline-transition-fast);
+}
+
+.btn-action-dropdown svg {
+    width: 1rem;
+    height: 1rem;
+    transition: transform var(--pipeline-transition-fast);
+}
+
+.btn-action-dropdown[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+/* Button color variants */
+.btn-action-primary {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.btn-action-primary:hover {
+    background-color: #4338ca;
+}
+
+.btn-action-secondary {
+    background-color: #6b7280;
+    color: white;
+}
+
+.btn-action-secondary:hover {
+    background-color: #4b5563;
+}
+
+.btn-action-success {
+    background-color: #059669;
+    color: white;
+}
+
+.btn-action-success:hover {
+    background-color: #047857;
+}
+
+/* ============================================================================
+   Current Tier Badge (on button)
+   ============================================================================ */
+
+.tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.tier-badge.fast {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tier-badge.balanced {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tier-badge.quality {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================================================================
+   Tier Dropdown Menu
+   ============================================================================ */
+
+.tier-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    width: var(--pipeline-dropdown-width);
+    border-radius: var(--pipeline-btn-radius);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-gray-200, #e5e7eb);
+    background-color: white;
+    z-index: 100;
+    animation: tierDropdownFadeIn var(--pipeline-transition-fast);
+    overflow: hidden;
+}
+
+@keyframes tierDropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dark .tier-dropdown-menu {
+    background-color: var(--color-gray-800, #1f2937);
+    border-color: var(--color-gray-700, #374151);
+}
+
+.tier-dropdown-header {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500, #6b7280);
+    border-bottom: 1px solid var(--color-gray-200, #e5e7eb);
+    background-color: var(--color-gray-50, #f9fafb);
+}
+
+.dark .tier-dropdown-header {
+    color: var(--color-gray-400, #9ca3af);
+    border-bottom-color: var(--color-gray-700, #374151);
+    background-color: var(--color-gray-900, #111827);
+}
+
+/* ============================================================================
+   Tier Options
+   ============================================================================ */
+
+.tier-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    transition: background-color var(--pipeline-transition-fast);
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+.tier-option:hover {
+    background-color: var(--color-gray-50, #f9fafb);
+}
+
+.dark .tier-option:hover {
+    background-color: var(--color-gray-700, #374151);
+}
+
+.tier-option.selected {
+    background-color: var(--color-indigo-50, #eef2ff);
+}
+
+.dark .tier-option.selected {
+    background-color: rgba(99, 102, 241, 0.2);
+}
+
+.tier-option:focus {
+    outline: none;
+    background-color: var(--color-indigo-50, #eef2ff);
+}
+
+.dark .tier-option:focus {
+    background-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Tier Icon */
+.tier-option-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+}
+
+.tier-option-icon.fast {
+    background-color: var(--tier-fast-icon-bg);
+    color: var(--tier-fast-icon-text);
+}
+
+.tier-option-icon.balanced {
+    background-color: var(--tier-balanced-icon-bg);
+    color: var(--tier-balanced-icon-text);
+}
+
+.tier-option-icon.quality {
+    background-color: var(--tier-quality-icon-bg);
+    color: var(--tier-quality-icon-text);
+}
+
+/* Tier Content */
+.tier-option-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.tier-option-name {
+    font-weight: 500;
+    color: var(--color-gray-900, #111827);
+    font-size: 0.875rem;
+}
+
+.dark .tier-option-name {
+    color: var(--color-gray-100, #f3f4f6);
+}
+
+.tier-option-model {
+    font-size: 0.75rem;
+    color: var(--color-gray-500, #6b7280);
+    margin-top: 0.125rem;
+}
+
+.dark .tier-option-model {
+    color: var(--color-gray-400, #9ca3af);
+}
+
+/* Tier Cost Badge */
+.tier-option-cost {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: nowrap;
+}
+
+.tier-option-cost.fast {
+    background-color: var(--tier-fast-bg);
+    color: var(--tier-fast-text);
+}
+
+.tier-option-cost.balanced {
+    background-color: var(--tier-balanced-bg);
+    color: var(--tier-balanced-text);
+}
+
+.tier-option-cost.quality {
+    background-color: var(--tier-quality-bg);
+    color: var(--tier-quality-text);
+}
+
+/* Selection Check */
+.tier-option-check {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--color-indigo-500, #6366f1);
+    flex-shrink: 0;
+}
+
+/* ============================================================================
+   Loading State
+   ============================================================================ */
+
+.btn-action-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn-action-loading .btn-action-main,
+.btn-action-loading .btn-action-dropdown {
+    cursor: not-allowed;
+}
+
+.btn-action-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Loading spinner inside button */
+.btn-action-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action-spinner svg {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   Disabled State
+   ============================================================================ */
+
+.btn-action-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.btn-action-disabled .btn-action-main,
+.btn-action-disabled .btn-action-dropdown {
+    cursor: not-allowed;
+}
+
+/* ============================================================================
+   Success/Error States
+   ============================================================================ */
+
+.btn-action-success-state {
+    background-color: #059669 !important;
+}
+
+.btn-action-error-state {
+    background-color: #dc2626 !important;
+}
+
+/* Pulse animation for success */
+@keyframes successPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); }
+}
+
+.btn-action-success-pulse {
+    animation: successPulse 0.6s ease-out;
+}
+
+/* ============================================================================
+   Pipeline Actions Container (Responsive Grid)
+   ============================================================================ */
+
+.pipeline-actions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+/* Individual action wrapper */
+.pipeline-action-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+@media (max-width: 640px) {
+    .pipeline-actions-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .pipeline-actions-container .btn-action-group {
+        width: 100%;
+    }
+
+    .pipeline-actions-container .btn-action-main {
+        flex: 1;
+        justify-content: center;
+        padding: 0.625rem 0.5rem;
+        font-size: 0.8125rem;
+    }
+
+    .tier-dropdown-menu {
+        width: calc(100vw - 2rem);
+        max-width: var(--pipeline-dropdown-width);
+        left: 0;
+        right: auto;
+    }
+}
+
+/* ============================================================================
+   Cost Display (Total/Accumulated)
+   ============================================================================ */
+
+.cost-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--color-gray-500, #6b7280);
+    padding: 0.25rem 0.5rem;
+    background-color: var(--color-gray-100, #f3f4f6);
+    border-radius: 0.375rem;
+}
+
+.dark .cost-display {
+    color: var(--color-gray-400, #9ca3af);
+    background-color: var(--color-gray-800, #1f2937);
+}
+
+.cost-display-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.cost-display-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-weight: 600;
+}
+
+.cost-display-label {
+    font-size: 0.6875rem;
+    color: var(--color-gray-400, #9ca3af);
+}
+
+/* Cost tooltip */
+.cost-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid var(--color-gray-200, #e5e7eb);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 50;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--pipeline-transition-fast), visibility var(--pipeline-transition-fast);
+}
+
+.dark .cost-tooltip {
+    background: var(--color-gray-800, #1f2937);
+    border-color: var(--color-gray-700, #374151);
+}
+
+.cost-display:hover .cost-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.cost-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: white;
+}
+
+.dark .cost-tooltip::after {
+    border-top-color: var(--color-gray-800, #1f2937);
+}
+
+/* ============================================================================
+   Action Status Indicators
+   ============================================================================ */
+
+.action-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+}
+
+.action-status-pending {
+    background-color: var(--color-gray-100, #f3f4f6);
+    color: var(--color-gray-600, #4b5563);
+}
+
+.action-status-running {
+    background-color: var(--tier-balanced-bg);
+    color: var(--tier-balanced-text);
+}
+
+.action-status-complete {
+    background-color: var(--tier-fast-bg);
+    color: var(--tier-fast-text);
+}
+
+.action-status-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+    .pipeline-actions-container,
+    .btn-action-group,
+    .tier-dropdown-menu {
+        display: none !important;
+    }
+}
+
+/* ============================================================================
+   Accessibility - Reduced Motion
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-action-loading::after,
+    .btn-action-spinner svg,
+    .tier-dropdown-menu {
+        animation: none;
+    }
+
+    .btn-action-dropdown svg,
+    .tier-option {
+        transition: none;
+    }
+}
