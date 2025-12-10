@@ -38,6 +38,7 @@ from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
 from .config import settings, validate_config_on_startup
+from .routes import operations_router
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +66,9 @@ if settings.cors_origins_list:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Include modular route handlers
+app.include_router(operations_router)
 
 
 @dataclass
