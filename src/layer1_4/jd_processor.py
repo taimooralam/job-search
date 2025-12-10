@@ -316,72 +316,130 @@ def parse_jd_sections_rule_based(jd_text: str) -> List[JDSection]:
 # LLM-BASED SECTION PARSING
 # =============================================================================
 
-JD_STRUCTURE_SYSTEM_PROMPT = """You are a job description parser. Your task is to identify and structure the sections of a job description.
+JD_STRUCTURE_SYSTEM_PROMPT = """You are an expert HR document analyst and recruiter with 20 years of experience parsing thousands of job descriptions from every major job board (LinkedIn, Indeed, Glassdoor, company career pages). You have a deep understanding of how job descriptions are structured, even when the formatting is completely destroyed.
 
-For each section, extract:
-1. section_type: One of: responsibilities, qualifications, nice_to_have, technical_skills, benefits, about_company, about_role, requirements, experience, education, other
-2. header: The original header text from the JD
-3. items: List of individual items/bullet points in that section
+YOUR EXPERTISE:
+- You can identify section boundaries even when headers run directly into content without spaces
+- You recognize semantic shifts that indicate new sections (e.g., shifting from "what you'll do" to "what you need")
+- You understand common JD patterns across industries and seniority levels
+- You can split run-on paragraphs into individual, actionable bullet points
 
-Return a JSON object with a "sections" array. Each section should have:
-- section_type (string)
-- header (string)
-- items (array of strings)
+THE PROBLEM:
+Job descriptions are often scraped from websites and arrive as compressed text blobs where:
+- Section headers merge with content: "ABOUT THE ROLEThe company is revolutionizing..."
+- Bullet points become inline: "...experiences. • Lead teams • Design systems • Build products..."
+- Line breaks are stripped: Everything runs together in one paragraph
+- Multiple sections collapse: "...customer service.What You Will Be DoingLead a cross-functional team..."
 
-IMPORTANT:
-- Preserve the exact text from the JD (do not paraphrase)
-- Keep items as they appear (bullet points, requirements, etc.)
-- If content doesn't fit a specific type, use "other"
-- Maintain the order sections appear in the JD"""
+YOUR TASK:
+Parse the text into structured sections, reconstructing the original document's logical organization.
 
-JD_STRUCTURE_USER_TEMPLATE = """Parse this job description into structured sections:
+SECTION CATEGORIES (use exactly these values):
+- about_company: Company background, who we are, mission, culture, values, what makes us unique
+- about_role: Role overview, position summary, opportunity description, team context
+- responsibilities: What the person will do, daily duties, key activities, deliverables
+- qualifications: Required skills, must-have requirements, minimum qualifications
+- nice_to_have: Preferred/desired qualifications, bonus skills, "plus" points
+- technical_skills: Specific technologies, tools, programming languages, platforms
+- experience: Years of experience requirements, background expectations
+- education: Degree requirements, certifications, academic qualifications
+- benefits: Compensation, perks, what the company offers employees
+- other: Any content that doesn't fit the above categories
 
----
+OUTPUT FORMAT:
+Return a JSON object with a "sections" array. Each section has:
+- section_type: One of the categories above (lowercase with underscores)
+- header: A clear, professional header (create one if not explicit in text)
+- items: Array of individual points (split compound sentences, one idea per item)
+
+CRITICAL RULES:
+1. SPLIT run-on content into individual items - each item should be ONE requirement/responsibility
+2. PRESERVE exact wording from the JD when extracting items (don't paraphrase)
+3. CREATE clear headers if the original text has inline/missing headers
+4. IDENTIFY semantic boundaries even without formatting cues
+5. Return ONLY valid JSON - no markdown, no explanations, no code blocks
+
+EXAMPLE INPUT:
+"ABOUT THE ROLEWe are building the future of AI.What You Will Be Doing * Lead teams * Ship products * Mentor engineersRequirementsBachelor's degree in CS5+ years experiencePython, GoNice to HaveML experience"
+
+EXAMPLE OUTPUT:
+{
+  "sections": [
+    {"section_type": "about_role", "header": "About the Role", "items": ["We are building the future of AI"]},
+    {"section_type": "responsibilities", "header": "What You Will Be Doing", "items": ["Lead teams", "Ship products", "Mentor engineers"]},
+    {"section_type": "qualifications", "header": "Requirements", "items": ["Bachelor's degree in CS", "5+ years experience"]},
+    {"section_type": "technical_skills", "header": "Technical Skills", "items": ["Python", "Go"]},
+    {"section_type": "nice_to_have", "header": "Nice to Have", "items": ["ML experience"]}
+  ]
+}"""
+
+JD_STRUCTURE_USER_TEMPLATE = """Parse this job description into structured sections. The text may be compressed without proper formatting - use your understanding to identify section boundaries:
+
 {jd_text}
----
 
-Return JSON with sections array. Each section needs: section_type, header, items."""
+Return ONLY valid JSON with a "sections" array."""
 
 
 async def parse_jd_sections_with_llm(
     jd_text: str,
-    model: str = "gpt-4o-mini",
+    model: str = "google/gemini-flash-1.5-8b",  # Cheap, fast OpenRouter model
 ) -> List[JDSection]:
     """
-    Parse JD into sections using LLM for better accuracy.
+    Parse JD into sections using LLM.
+
+    Always uses LLM for intelligent parsing of compressed/blob JD text.
+    No regex fallback - the LLM is the primary and only parser.
 
     Args:
-        jd_text: Raw job description text
-        model: LLM model to use
+        jd_text: Raw job description text (may be compressed without formatting)
+        model: LLM model to use (defaults to cheap OpenRouter model)
 
     Returns:
         List of parsed sections
     """
+    from langchain_openai import ChatOpenAI
+
+    # Use OpenRouter for cheap, fast processing
+    openrouter_api_key = Config.OPENROUTER_API_KEY
+    if not openrouter_api_key:
+        # Fall back to OpenAI if no OpenRouter key
+        logger.info("No OpenRouter API key, using OpenAI for JD structuring")
+        openrouter_api_key = Config.OPENAI_API_KEY
+        model = Config.CHEAP_MODEL  # gpt-4o-mini
+        base_url = None
+    else:
+        base_url = "https://openrouter.ai/api/v1"
+
     try:
-        config = Config()
-        llm = create_tracked_llm(
-            provider="openai",
+        llm = ChatOpenAI(
             model=model,
             temperature=0.1,
-            run_id="jd_processor",
+            api_key=openrouter_api_key,
+            base_url=base_url,
+            model_kwargs={"response_format": {"type": "json_object"}} if "gpt" in model else {},
         )
 
         messages = [
             SystemMessage(content=JD_STRUCTURE_SYSTEM_PROMPT),
-            HumanMessage(content=JD_STRUCTURE_USER_TEMPLATE.format(jd_text=jd_text[:8000])),
+            HumanMessage(content=JD_STRUCTURE_USER_TEMPLATE.format(jd_text=jd_text[:12000])),
         ]
 
+        logger.info(f"Parsing JD with LLM: {model} ({len(jd_text)} chars)")
         response = await llm.ainvoke(messages)
         content = response.content
 
         # Parse JSON from response
         json_match = re.search(r'\{[\s\S]*\}', content)
         if not json_match:
-            logger.warning("No JSON found in LLM response, falling back to rule-based")
-            return parse_jd_sections_rule_based(jd_text)
+            logger.error(f"No JSON found in LLM response: {content[:200]}...")
+            raise ValueError("LLM did not return valid JSON")
 
         data = json.loads(json_match.group())
         sections_data = data.get("sections", [])
+
+        if not sections_data:
+            logger.error("LLM returned empty sections array")
+            raise ValueError("LLM returned no sections")
 
         sections = []
         char_offset = 0
@@ -395,35 +453,51 @@ async def parse_jd_sections_with_llm(
 
             header = section_data.get("header", "")
             items = section_data.get("items", [])
-            content = '\n'.join(f"• {item}" for item in items)
+
+            # Ensure items is a list of strings
+            if not isinstance(items, list):
+                items = [str(items)] if items else []
+            items = [str(item) for item in items if item]
+
+            section_content = '\n'.join(f"• {item}" for item in items)
 
             # Calculate approximate character offsets
-            # (exact offsets would require more complex text matching)
             header_pos = jd_text.lower().find(header.lower()[:30]) if header else -1
             if header_pos >= 0:
                 char_start = header_pos
             else:
                 char_start = char_offset
 
-            content_len = len(header) + len(content) + 10
+            content_len = len(header) + len(section_content) + 10
             char_end = char_start + content_len
             char_offset = char_end
 
             sections.append(JDSection(
                 section_type=section_type,
                 header=header,
-                content=content,
+                content=section_content,
                 items=items,
                 char_start=char_start,
                 char_end=min(char_end, len(jd_text)),
                 index=i,
             ))
 
-        return sections if sections else parse_jd_sections_rule_based(jd_text)
+        logger.info(f"LLM parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
+        return sections
 
     except Exception as e:
-        logger.warning(f"LLM parsing failed: {e}, falling back to rule-based")
-        return parse_jd_sections_rule_based(jd_text)
+        logger.error(f"LLM parsing failed: {e}")
+        # Return a single "other" section with the raw text as a last resort
+        # This ensures the UI always has something to display
+        return [JDSection(
+            section_type=JDSectionType.OTHER,
+            header="Job Description",
+            content=jd_text,
+            items=[jd_text],  # Single item with full text
+            char_start=0,
+            char_end=len(jd_text),
+            index=0,
+        )]
 
 
 # =============================================================================
@@ -560,25 +634,25 @@ def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
 
 async def process_jd(
     jd_text: str,
-    use_llm: bool = True,
-    model: str = "gpt-4o-mini",
+    use_llm: bool = True,  # Kept for backward compatibility, but always uses LLM
+    model: str = "google/gemini-flash-1.5-8b",  # Cheap OpenRouter model
 ) -> ProcessedJD:
     """
-    Process a job description into structured format (async with optional LLM).
+    Process a job description into structured format using LLM.
+
+    Always uses LLM for intelligent parsing of compressed/blob JD text.
+    The use_llm parameter is kept for backward compatibility but is ignored.
 
     Args:
-        jd_text: Raw job description text
-        use_llm: Whether to use LLM for better parsing accuracy
-        model: LLM model to use if use_llm=True
+        jd_text: Raw job description text (may be compressed without formatting)
+        use_llm: Deprecated - always uses LLM
+        model: LLM model to use (defaults to cheap OpenRouter model)
 
     Returns:
         ProcessedJD with sections and HTML
     """
-    # Parse sections
-    if use_llm:
-        sections = await parse_jd_sections_with_llm(jd_text, model)
-    else:
-        sections = parse_jd_sections_rule_based(jd_text)
+    # Always use LLM for intelligent parsing
+    sections = await parse_jd_sections_with_llm(jd_text, model)
 
     # Generate HTML
     html = generate_processed_html(sections)
