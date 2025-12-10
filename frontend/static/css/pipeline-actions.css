@@ -178,7 +178,7 @@
 
 .tier-dropdown-menu {
     position: absolute;
-    right: 0;
+    left: 0;
     top: 100%;
     margin-top: 0.5rem;
     width: var(--pipeline-dropdown-width);
@@ -189,6 +189,8 @@
     z-index: 100;
     animation: tierDropdownFadeIn var(--pipeline-transition-fast);
     overflow: hidden;
+    /* Ensure dropdown stays within viewport */
+    max-width: calc(100vw - 2rem);
 }
 
 @keyframes tierDropdownFadeIn {
