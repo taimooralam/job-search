@@ -313,7 +313,7 @@ Company: {company}
 Score: {fit_score}/100
 {fit_rationale}
 
-{concern_mitigation_section}=== PLANNING PHASE (Do this first, but don't include in output) ===
+{passion_identity_section}{concern_mitigation_section}=== PLANNING PHASE (Do this first, but don't include in output) ===
 
 STEP 1: PAIN POINT TO STAR MAPPING
 For each pain point, identify which STAR achievement addresses it:
@@ -836,6 +836,96 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
         return "\n".join(lines)
 
+    def _format_passion_identity_section(
+        self,
+        jd_annotations: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Format passion/identity annotations for cover letter authenticity.
+
+        Phase 4: Uses passion (love_it, avoid) and identity (core_identity, not_identity)
+        to guide tone and emphasis in cover letter generation.
+
+        Args:
+            jd_annotations: JDAnnotations dict from job state (or None)
+
+        Returns:
+            Formatted passion/identity section for prompt injection,
+            or empty string if no relevant annotations available
+        """
+        if not jd_annotations:
+            return ""
+
+        annotations = jd_annotations.get("annotations", [])
+        if not annotations:
+            return ""
+
+        # Extract passion and identity areas
+        passion_love_it = []
+        passion_avoid = []
+        identity_core = []
+        identity_not_me = []
+
+        for ann in annotations:
+            # Only process active annotations
+            if not ann.get("is_active", False):
+                continue
+
+            target = ann.get("target", {})
+            target_text = target.get("text", "")[:80]  # Limit length
+            matching_skill = ann.get("matching_skill", "")
+
+            passion = ann.get("passion")
+            identity = ann.get("identity")
+
+            if passion == "love_it":
+                passion_love_it.append(matching_skill or target_text)
+            elif passion == "avoid":
+                passion_avoid.append(target_text)
+
+            if identity == "core_identity":
+                identity_core.append(matching_skill or target_text)
+            elif identity == "not_identity":
+                identity_not_me.append(target_text)
+
+        # If no passion/identity data, return empty
+        if not any([passion_love_it, passion_avoid, identity_core, identity_not_me]):
+            return ""
+
+        lines = ["=== PASSION & IDENTITY CONTEXT (Phase 4: Authentic Voice) ==="]
+
+        if passion_love_it:
+            lines.append("")
+            lines.append("GENUINE ENTHUSIASM - Use these as authentic hooks:")
+            for area in passion_love_it[:3]:  # Limit to top 3
+                lines.append(f"  • {area}")
+            lines.append("  → Show real excitement about these areas in your letter")
+
+        if identity_core:
+            lines.append("")
+            lines.append("PROFESSIONAL IDENTITY - Frame letter around who you ARE:")
+            for area in identity_core[:2]:  # Limit to top 2
+                lines.append(f"  • {area}")
+            lines.append("  → Position yourself naturally as this professional identity")
+
+        if passion_avoid:
+            lines.append("")
+            lines.append("DE-EMPHASIZE - Don't highlight these (candidate lacks enthusiasm):")
+            for area in passion_avoid[:2]:  # Limit to top 2
+                lines.append(f"  • {area}")
+            lines.append("  → Don't volunteer expertise in these areas")
+
+        if identity_not_me:
+            lines.append("")
+            lines.append("AVOID POSITIONING - Don't frame identity around these:")
+            for area in identity_not_me[:2]:  # Limit to top 2
+                lines.append(f"  • {area}")
+            lines.append("  → This doesn't match how the candidate sees themselves")
+
+        lines.append("")
+
+        return "\n".join(lines)
+
     def _generate_with_retry(self, state: JobState, attempt: int = 1) -> str:
         """
         Generate cover letter with LLM, with validation and retry logic.
@@ -858,6 +948,9 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         concerns = jd_annotations_data.get("concerns") if isinstance(jd_annotations_data, dict) else None
         concern_mitigation_section = self._format_concern_mitigation_section(concerns)
 
+        # Phase 4: Extract passion/identity context for authentic voice
+        passion_identity_section = self._format_passion_identity_section(jd_annotations_data)
+
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
             HumanMessage(
@@ -873,6 +966,7 @@ KEY METRICS: {star.get('metrics', 'N/A')}
                     selected_stars=self._format_selected_stars(state.get("selected_stars") or []),
                     fit_score=state.get("fit_score") or "N/A",
                     fit_rationale=state.get("fit_rationale") or "No fit analysis available.",
+                    passion_identity_section=passion_identity_section,
                     concern_mitigation_section=concern_mitigation_section,
                 )
             )
