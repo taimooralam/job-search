@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-10 (Pipeline Overhaul Complete: Phases 1-5 implemented with 17 atomic commits)
+**Last Updated**: 2025-12-10 (Session 2: Full Extraction Service, JD Extractor Integration, Annotation Heatmap UI, Proxy Routes)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -21,7 +21,40 @@
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 
-### Today's Fixes (2025-12-10)
+### Today's Fixes (2025-12-10) Session 2
+
+**JD Extractor Integration - Full Extraction Service Enhancement**:
+- **Schema Alignment Fix**: `JDExtractor` now outputs structured intelligence (role_category, responsibilities, keywords, etc.) matching expected output format
+- **Layer Consolidation**: Renamed `_run_layer_1_4()` to `_run_jd_processor()` for clarity, added new `_run_jd_extractor()` method
+- **Dual Output Storage**: Service now persists both `processed_jd` (HTML sections for annotation UI) and `extracted_jd` (structured intelligence for template display)
+- **Per-Layer Status Tracking**: Added `layer_status` dict for detailed pipeline logging and layer-specific error reporting
+- **Annotation Aggregation**: New `_aggregate_annotations()` method computes weighted fit scores from manual annotations
+- **Files Changed**: `src/services/full_extraction_service.py`
+- **Impact**: Extract JD button now properly displays structured intelligence from JD Extractor, fixes schema mismatch bugs
+
+**PDF Export Module Import Fix**:
+- **Issue**: `src/api/pdf_export.py` import error when running from frontend context
+- **Fix**: Changed to `TYPE_CHECKING` conditional import pattern for `JobState`
+- **Files Changed**: `src/api/pdf_export.py`
+- **Impact**: Dossier export functionality restored, no module import errors
+
+**Annotation Insights Heatmap UI Enhancement**:
+- **Visual Heatmap**: "Opportunity & Fit Analysis" section now shows colored bar (green/yellow/red) proportional to manual annotation match counts
+- **Match Score Display**: Shows "Match X%" derived from annotation counts
+- **Gap Warnings**: Displays must-have gaps alert when present
+- **Files Changed**: `frontend/templates/job_detail.html`
+- **Impact**: Users get visual feedback on how well their annotations match the JD
+
+**Research/CV Button Proxy Routes**:
+- **Routes Added**: `/api/jobs/<job_id>/research-company` and `/api/jobs/<job_id>/generate-cv` proxy endpoints
+- **Implementation**: Forward requests to VPS runner service with Bearer token authentication
+- **Error Handling**: Proper error propagation and status codes
+- **Files Changed**: `frontend/app.py`
+- **Impact**: Research and Generate CV buttons now functional from job detail page
+
+---
+
+### Today's Fixes (2025-12-10) Session 1
 
 **Master CV Editor Page Implemented (Full-Page Tab-Based Editor)**:
 - **Frontend Page** (`frontend/templates/master_cv.html`): Main editor page with 3-tab navigation
