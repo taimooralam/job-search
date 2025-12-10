@@ -1613,6 +1613,53 @@ class HeaderProvenance:
         }
 
 
+# ===== PHASE 6: ATS VALIDATION TYPES =====
+
+@dataclass
+class ATSValidationResult:
+    """
+    Post-generation ATS keyword validation result for the full CV.
+
+    Phase 6 (GAP-089): Validates that must-have and nice-to-have keywords
+    from JD annotations appear with appropriate frequency in the final CV.
+
+    Based on ATS guide research:
+    - Greenhouse ranks resumes with more keyword mentions higher
+    - Target 2-4 repetitions of key terms
+    - Avoid keyword stuffing (max 5-6 mentions)
+    """
+
+    passed: bool = True                                # Overall pass/fail
+    violations: List[str] = field(default_factory=list)  # e.g., "Kubernetes: 1/2 (too few)"
+    ats_score: int = 100                               # 0-100 score
+    keyword_coverage: Dict[str, int] = field(default_factory=dict)  # keyword → actual count
+    keywords_met: List[str] = field(default_factory=list)    # Keywords meeting requirements
+    keywords_under: List[str] = field(default_factory=list)  # Keywords below minimum
+    keywords_over: List[str] = field(default_factory=list)   # Keywords above maximum
+    total_keywords_checked: int = 0
+
+    @property
+    def coverage_ratio(self) -> float:
+        """Ratio of keywords meeting requirements."""
+        if self.total_keywords_checked == 0:
+            return 1.0
+        return len(self.keywords_met) / self.total_keywords_checked
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "passed": self.passed,
+            "violations": self.violations,
+            "ats_score": self.ats_score,
+            "keyword_coverage": self.keyword_coverage,
+            "keywords_met": self.keywords_met,
+            "keywords_under": self.keywords_under,
+            "keywords_over": self.keywords_over,
+            "total_keywords_checked": self.total_keywords_checked,
+            "coverage_ratio": self.coverage_ratio,
+        }
+
+
 # ===== PHASE 6: GRADER + IMPROVER TYPES =====
 
 @dataclass

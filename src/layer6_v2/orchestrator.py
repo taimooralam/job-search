@@ -82,6 +82,7 @@ from src.layer6_v2.types import (
     ImprovementResult,
     FinalCV,
     HeaderGenerationContext,
+    ATSValidationResult,
 )
 from src.layer6_v2.annotation_header_context import build_header_context
 
@@ -285,6 +286,21 @@ class CVGeneratorV2:
                 header_output, stitched_cv, candidate_data, job_location, extracted_jd
             )
 
+            # Phase 5.5 (GAP-089): ATS keyword validation
+            self._logger.info("Phase 5.5: ATS keyword validation...")
+            ats_validation = self._validate_ats_coverage(
+                cv_text=cv_text,
+                jd_annotations=jd_annotations,
+                extracted_jd=extracted_jd,
+            )
+
+            # Phase 5.6 (GAP-092): Reframe traceability validation
+            self._logger.info("Phase 5.6: Reframe traceability validation...")
+            reframe_validation = self._validate_reframe_application(
+                cv_text=cv_text,
+                jd_annotations=jd_annotations,
+            )
+
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
             master_cv_text = self._get_master_cv_text()
@@ -321,6 +337,10 @@ class CVGeneratorV2:
                 # Extended fields for debugging/analysis
                 "cv_grade_result": grade_result.to_dict() if hasattr(grade_result, 'to_dict') else None,
                 "cv_improvement_result": improvement_result.to_dict() if improvement_result and hasattr(improvement_result, 'to_dict') else None,
+                # Phase 6 (GAP-089): ATS validation result
+                "ats_validation": ats_validation.to_dict() if ats_validation else None,
+                # Phase 9 (GAP-092): Reframe traceability result
+                "reframe_validation": reframe_validation,
             }
 
         except Exception as e:
@@ -646,6 +666,192 @@ class CVGeneratorV2:
         lines.append(f"• Skills sections: {len(header.skills_sections)}")
 
         return "\n".join(lines)
+
+    def _validate_reframe_application(
+        self,
+        cv_text: str,
+        jd_annotations: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Phase 9 (GAP-092): Validate that reframe guidance was applied in CV.
+
+        Checks if reframe_from was transformed to reframe_to or if
+        reframe_note guidance appears to have been followed.
+
+        Args:
+            cv_text: The assembled CV text
+            jd_annotations: JD annotations with reframe guidance
+
+        Returns:
+            Dict with applied/not_applied reframe analysis
+        """
+        if not jd_annotations:
+            return {"applied": [], "not_applied": [], "total": 0, "success_rate": 1.0}
+
+        annotations = jd_annotations.get("annotations", [])
+        if not annotations:
+            return {"applied": [], "not_applied": [], "total": 0, "success_rate": 1.0}
+
+        cv_text_lower = cv_text.lower()
+
+        applied = []
+        not_applied = []
+
+        for ann in annotations:
+            if not ann.get("is_active", True):
+                continue
+
+            # Check for explicit reframe
+            reframe_from = ann.get("reframe_from")
+            reframe_to = ann.get("reframe_to")
+            reframe_note = ann.get("reframe_note")
+
+            if reframe_from and reframe_to:
+                # Check if reframe_to appears (original skill was reframed)
+                if reframe_to.lower() in cv_text_lower:
+                    applied.append(f"{reframe_from} → {reframe_to}")
+                    self._logger.info(f"  ✓ Reframe applied: '{reframe_from}' → '{reframe_to}'")
+                elif reframe_from.lower() in cv_text_lower:
+                    # Original term appears but not the reframed version
+                    not_applied.append(f"{reframe_from}: reframe to '{reframe_to[:30]}...' not applied")
+                # If neither appears, don't count it (may not be relevant to this CV)
+
+            elif reframe_note:
+                # Check if any keyword from the reframe note appears
+                # This is a softer check - just looking for evidence of guidance being followed
+                skill = ann.get("matching_skill") or ""
+                if skill and skill.lower() in cv_text_lower:
+                    # Skill appears, consider it potentially reframed
+                    applied.append(f"{skill}: note='{reframe_note[:30]}...'")
+
+        total = len(applied) + len(not_applied)
+        success_rate = len(applied) / total if total > 0 else 1.0
+
+        self._logger.info(f"  Phase 9 Reframe Validation: {len(applied)}/{total} reframes applied")
+
+        return {
+            "applied": applied,
+            "not_applied": not_applied,
+            "total": total,
+            "success_rate": success_rate,
+        }
+
+    def _validate_ats_coverage(
+        self,
+        cv_text: str,
+        jd_annotations: Optional[Dict[str, Any]] = None,
+        extracted_jd: Optional[Dict[str, Any]] = None,
+    ) -> ATSValidationResult:
+        """
+        Phase 6 (GAP-089): Validate ATS keyword coverage in generated CV.
+
+        Checks that must-have and nice-to-have keywords from JD annotations
+        appear with appropriate frequency (min 2, max 5) in the final CV.
+
+        Args:
+            cv_text: The assembled CV text to validate
+            jd_annotations: JD annotations with keyword requirements
+            extracted_jd: Extracted JD with top_keywords
+
+        Returns:
+            ATSValidationResult with coverage metrics and violations
+        """
+        import re
+
+        cv_text_lower = cv_text.lower()
+
+        violations = []
+        keyword_coverage: Dict[str, int] = {}
+        keywords_met = []
+        keywords_under = []
+        keywords_over = []
+
+        # Build ATS requirements from annotations (if available)
+        ats_requirements: Dict[str, Dict[str, Any]] = {}
+
+        if jd_annotations:
+            annotations = jd_annotations.get("annotations", [])
+            for ann in annotations:
+                if not ann.get("is_active", True):
+                    continue
+
+                # Get keyword from annotation
+                keyword = ann.get("matching_skill") or ann.get("suggested_keywords", [""])[0]
+                if not keyword:
+                    # Fall back to target text
+                    target = ann.get("target", {})
+                    keyword = target.get("text", "")[:30]
+
+                if not keyword:
+                    continue
+
+                # Set requirements based on requirement_type
+                req_type = ann.get("requirement_type", "neutral")
+                if req_type == "must_have":
+                    ats_requirements[keyword] = {"min": 2, "max": 5, "variants": ann.get("suggested_keywords", [])}
+                elif req_type == "nice_to_have":
+                    ats_requirements[keyword] = {"min": 1, "max": 4, "variants": ann.get("suggested_keywords", [])}
+
+        # Also include top_keywords from extracted_jd (if not already covered)
+        if extracted_jd:
+            for keyword in extracted_jd.get("top_keywords", [])[:10]:
+                if keyword and keyword not in ats_requirements:
+                    ats_requirements[keyword] = {"min": 1, "max": 5, "variants": []}
+
+        # If no annotations or keywords, return passing result
+        if not ats_requirements:
+            self._logger.info("  Phase 6: No ATS requirements to validate (no annotations)")
+            return ATSValidationResult(
+                passed=True,
+                ats_score=100,
+                total_keywords_checked=0,
+            )
+
+        # Check each keyword
+        for keyword, req in ats_requirements.items():
+            # Count keyword occurrences (case-insensitive)
+            count = len(re.findall(rf'\b{re.escape(keyword.lower())}\b', cv_text_lower))
+
+            # Also count variants
+            for variant in req.get("variants", []):
+                if variant and variant.lower() != keyword.lower():
+                    count += len(re.findall(rf'\b{re.escape(variant.lower())}\b', cv_text_lower))
+
+            keyword_coverage[keyword] = count
+            min_req = req.get("min", 1)
+            max_req = req.get("max", 5)
+
+            if count < min_req:
+                violations.append(f"{keyword}: {count}/{min_req} (too few)")
+                keywords_under.append(keyword)
+            elif count > max_req:
+                violations.append(f"{keyword}: {count}/{max_req} (too many)")
+                keywords_over.append(keyword)
+            else:
+                keywords_met.append(keyword)
+
+        # Calculate ATS score
+        total_checked = len(ats_requirements)
+        # Score: start at 100, deduct 10 points per violation (max deduction 100)
+        ats_score = max(0, 100 - (len(violations) * 10))
+
+        passed = len(violations) == 0
+
+        self._logger.info(f"  Phase 6 ATS Validation: {len(keywords_met)}/{total_checked} keywords met")
+        if violations:
+            for v in violations[:3]:  # Log first 3 violations
+                self._logger.warning(f"    ⚠ {v}")
+
+        return ATSValidationResult(
+            passed=passed,
+            violations=violations,
+            ats_score=ats_score,
+            keyword_coverage=keyword_coverage,
+            keywords_met=keywords_met,
+            keywords_under=keywords_under,
+            keywords_over=keywords_over,
+            total_keywords_checked=total_checked,
+        )
 
 
 def cv_generator_v2_node(state: JobState) -> Dict[str, Any]:
