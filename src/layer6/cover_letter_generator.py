@@ -23,6 +23,7 @@ from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.annotation_types import ConcernAnnotation
+from src.common.persona_builder import get_persona_guidance
 
 
 # ===== HELPER FUNCTIONS =====
@@ -846,6 +847,9 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         Phase 4: Uses passion (love_it, avoid) and identity (core_identity, not_identity)
         to guide tone and emphasis in cover letter generation.
 
+        Phase 5: Injects synthesized persona statement at the beginning when available.
+        The persona provides a coherent narrative frame for the entire cover letter.
+
         Args:
             jd_annotations: JDAnnotations dict from job state (or None)
 
@@ -856,8 +860,23 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         if not jd_annotations:
             return ""
 
+        lines = []
+
+        # Phase 5: Inject synthesized persona at the beginning
+        # The persona provides the central theme for the cover letter
+        persona_guidance = get_persona_guidance(jd_annotations)
+        if persona_guidance:
+            lines.append("=== SYNTHESIZED PERSONA (Frame entire letter around this) ===")
+            lines.append("")
+            lines.append(persona_guidance)
+            lines.append("")
+            lines.append("IMPORTANT: Frame the entire letter from this professional identity.")
+            lines.append("The opening should naturally incorporate this positioning.")
+            lines.append("Use 'As a [persona]...' or similar natural framing in the hook.")
+            lines.append("")
+
         annotations = jd_annotations.get("annotations", [])
-        if not annotations:
+        if not annotations and not persona_guidance:
             return ""
 
         # Extract passion and identity areas
@@ -888,11 +907,11 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             elif identity == "not_identity":
                 identity_not_me.append(target_text)
 
-        # If no passion/identity data, return empty
+        # If no passion/identity data and no persona, return what we have
         if not any([passion_love_it, passion_avoid, identity_core, identity_not_me]):
-            return ""
+            return "\n".join(lines) if lines else ""
 
-        lines = ["=== PASSION & IDENTITY CONTEXT (Phase 4: Authentic Voice) ==="]
+        lines.append("=== PASSION & IDENTITY CONTEXT (Phase 4: Authentic Voice) ===")
 
         if passion_love_it:
             lines.append("")
