@@ -71,8 +71,9 @@ function showToast(message, type = 'success', duration = 4000) {
  * @param {string} action - Action name (e.g., 'full-extraction')
  * @param {Object} layerStatus - Per-layer status from backend
  * @param {Object} data - Full response data
+ * @param {boolean} isPending - If true, show as "in progress" with spinning icons
  */
-function showPipelineLogPanel(action, layerStatus, data) {
+function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
     // Remove existing panel if any
     const existingPanel = document.getElementById('pipeline-log-panel');
     if (existingPanel) existingPanel.remove();
@@ -110,20 +111,31 @@ function showPipelineLogPanel(action, layerStatus, data) {
     const layers = layerConfigs[action] || [];
 
     // Build layer status HTML
-    const layerStatusHtml = layers.map(layer => {
+    const layerStatusHtml = layers.map((layer, index) => {
         const status = layerStatus?.[layer.key];
         const statusType = status?.status;
         let statusIcon = '⏳'; // pending/not started
-        if (statusType === 'success') statusIcon = '✅';
-        else if (statusType === 'failed') statusIcon = '❌';
-        else if (statusType === 'warning') statusIcon = '⚠️';
-        else if (statusType === 'skipped') statusIcon = '⏭️';
-        else if (status) statusIcon = '❌'; // fallback for unknown status
-        const message = status?.message || layer.desc;
+
+        if (isPending) {
+            // Show first layer as "in progress" with spinning animation, rest as pending
+            if (index === 0) {
+                // Use inline SVG spinner for better animation
+                statusIcon = '<svg class="w-4 h-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            } else {
+                statusIcon = '⏳';
+            }
+        } else {
+            if (statusType === 'success') statusIcon = '✅';
+            else if (statusType === 'failed') statusIcon = '❌';
+            else if (statusType === 'warning') statusIcon = '⚠️';
+            else if (statusType === 'skipped') statusIcon = '⏭️';
+            else if (status) statusIcon = '❌'; // fallback for unknown status
+        }
+        const message = isPending && index === 0 ? 'Processing...' : (status?.message || layer.desc);
 
         return `
             <div class="flex items-start gap-2 py-1">
-                <span class="text-base">${statusIcon}</span>
+                <span class="text-base flex items-center">${statusIcon}</span>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-gray-700">${layer.label}</div>
                     <div class="text-xs text-gray-500 truncate">${message}</div>
@@ -132,9 +144,9 @@ function showPipelineLogPanel(action, layerStatus, data) {
         `;
     }).join('');
 
-    // Build summary stats based on action type
+    // Build summary stats based on action type (skip if pending)
     let summaryHtml = '';
-    if (data) {
+    if (data && !isPending) {
         const stats = [];
 
         // Full extraction stats
@@ -188,21 +200,23 @@ function showPipelineLogPanel(action, layerStatus, data) {
             ${summaryHtml}
         </div>
         <div class="bg-gray-50 px-4 py-2 text-xs text-gray-500 text-center">
-            Refreshing page in a moment...
+            ${isPending ? 'Processing... please wait' : 'Refreshing page in a moment...'}
         </div>
     `;
 
     document.body.appendChild(panel);
 
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (panel.parentElement) {
-            panel.style.opacity = '0';
-            panel.style.transform = 'translateY(1rem)';
-            panel.style.transition = 'all 0.3s ease';
-            setTimeout(() => panel.remove(), 300);
-        }
-    }, 5000);
+    // Auto-remove after 5 seconds (only if not pending)
+    if (!isPending) {
+        setTimeout(() => {
+            if (panel.parentElement) {
+                panel.style.opacity = '0';
+                panel.style.transform = 'translateY(1rem)';
+                panel.style.transition = 'all 0.3s ease';
+                setTimeout(() => panel.remove(), 300);
+            }
+        }, 5000);
+    }
 }
 
 // Expose globally

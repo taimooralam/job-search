@@ -215,6 +215,9 @@ document.addEventListener('alpine:init', () => {
             const tierInfo = this.getTierInfo(tier);
             showToast(`Starting ${actionLabel} (${tierInfo.label})...`, 'info');
 
+            // Show pipeline log panel immediately with pending states
+            this.showLayerStatusPanel(action, {}, {}, true);  // true = isPending
+
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -322,19 +325,26 @@ document.addEventListener('alpine:init', () => {
          * @param {string} action - Action name
          * @param {Object} layerStatus - Per-layer status from backend
          * @param {Object} data - Full response data
+         * @param {boolean} isPending - If true, show as "in progress" with spinning icons
          */
-        showLayerStatusPanel(action, layerStatus, data) {
+        showLayerStatusPanel(action, layerStatus, data, isPending = false) {
             // Use the global showPipelineLogPanel if available
             if (typeof window.showPipelineLogPanel === 'function') {
-                window.showPipelineLogPanel(action, layerStatus, data);
+                window.showPipelineLogPanel(action, layerStatus, data, isPending);
             } else {
                 // Fallback to simple toast
                 const actionLabel = PIPELINE_CONFIG.labels[action] || action;
-                showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                if (isPending) {
+                    showToast(`${actionLabel} in progress...`, 'info');
+                } else {
+                    showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                }
             }
 
             // Also log to console for debugging
-            console.log(`${action} Results:`, { layerStatus, data });
+            if (!isPending) {
+                console.log(`${action} Results:`, { layerStatus, data });
+            }
         }
     });
 
