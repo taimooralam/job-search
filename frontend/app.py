@@ -3873,11 +3873,13 @@ def process_job_description(job_id: str):
     Process a job description for annotation (structure into HTML sections).
 
     Request Body (optional):
-        use_llm: boolean - whether to use LLM for enhanced processing
+        use_llm: boolean - whether to use LLM for enhanced processing (default: True)
 
     Returns:
         JSON with processed JD structure
     """
+    import asyncio
+
     db = get_db()
     collection = db["level-2"]
 
@@ -3897,13 +3899,25 @@ def process_job_description(job_id: str):
         return jsonify({"error": "No job description text found"}), 400
 
     data = request.get_json() or {}
-    use_llm = data.get("use_llm", False)
+    use_llm = data.get("use_llm", True)  # Default to LLM for better results
 
     try:
-        # Try to use the full implementation first
+        # Try to use the full implementation with LLM
         try:
-            from src.layer1_4 import process_jd_sync, processed_jd_to_dict
-            processed = process_jd_sync(jd_text, use_llm=use_llm)
+            from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
+
+            if use_llm:
+                # Use async LLM-powered processing
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    processed = loop.run_until_complete(process_jd(jd_text, use_llm=True))
+                finally:
+                    loop.close()
+            else:
+                # Use sync rule-based processing
+                processed = process_jd_sync(jd_text, use_llm=False)
+
             result = processed_jd_to_dict(processed)
         except ImportError as ie:
             # Fallback to lightweight implementation (for Vercel deployment)
