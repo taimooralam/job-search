@@ -1,0 +1,131 @@
+<!-- Skills Taxonomy Tab -->
+<div class="space-y-6">
+    <!-- Target Role Selector -->
+    <div class="panel p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+                    <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Target Role Configuration
+                </h3>
+                <p class="text-sm mt-1" style="color: var(--text-tertiary);">Configure skills sections for each target role category</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <label class="text-sm font-medium" style="color: var(--text-secondary);">Select Role:</label>
+                <select id="taxonomy-role-selector"
+                        class="form-select"
+                        onchange="masterCVEditor.selectTaxonomyRole(this.value)">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Sections Accordion -->
+    <div id="taxonomy-sections-container" class="space-y-4">
+        <!-- Sections will be rendered here by JS -->
+        <div class="panel p-8 text-center">
+            <svg class="w-12 h-12 mx-auto mb-3" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            <p class="text-sm" style="color: var(--text-tertiary);">Loading taxonomy...</p>
+        </div>
+    </div>
+
+    <!-- Skill Aliases Section -->
+    <div class="panel p-5">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-semibold" style="color: var(--text-primary);">
+                    <svg class="w-5 h-5 inline-block mr-2 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    Skill Aliases
+                </h3>
+                <p class="text-sm mt-1" style="color: var(--text-tertiary);">Map common variations to canonical skill names for ATS matching</p>
+            </div>
+            <button onclick="masterCVEditor.showAddAliasModal()"
+                    class="btn btn-ghost btn-sm flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Alias
+            </button>
+        </div>
+
+        <div id="skill-aliases-container" class="space-y-3 max-h-[400px] overflow-y-auto">
+            <!-- Alias rows will be rendered here by JS -->
+            <div class="text-sm italic p-3" style="color: var(--text-tertiary);">Loading aliases...</div>
+        </div>
+    </div>
+
+    <!-- Default Fallback Role -->
+    <div class="panel p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="font-semibold" style="color: var(--text-primary);">Default Fallback Role</h3>
+                <p class="text-sm mt-1" style="color: var(--text-tertiary);">Used when job role cannot be classified</p>
+            </div>
+            <select id="default-fallback-role"
+                    class="form-select"
+                    onchange="masterCVEditor.updateDefaultFallbackRole(this.value)">
+                <!-- Options populated by JS -->
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Add Skill to Section Modal -->
+<div id="add-taxonomy-skill-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="masterCVEditor.closeAddTaxonomySkillModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full pointer-events-auto" style="background-color: var(--bg-card);">
+            <div class="p-5">
+                <h4 id="add-taxonomy-skill-title" class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Add Skill</h4>
+                <input type="text"
+                       id="add-taxonomy-skill-input"
+                       class="form-input w-full mb-4"
+                       placeholder="Skill name..."
+                       onkeydown="if(event.key === 'Enter') masterCVEditor.confirmAddTaxonomySkill()">
+                <div class="flex justify-end gap-3">
+                    <button onclick="masterCVEditor.closeAddTaxonomySkillModal()" class="btn btn-ghost">Cancel</button>
+                    <button onclick="masterCVEditor.confirmAddTaxonomySkill()" class="btn btn-primary">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Alias Modal -->
+<div id="add-alias-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="masterCVEditor.closeAddAliasModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full pointer-events-auto" style="background-color: var(--bg-card);">
+            <div class="p-5">
+                <h4 class="text-lg font-semibold mb-4" style="color: var(--text-primary);">Add Skill Alias</h4>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Canonical Name</label>
+                        <input type="text"
+                               id="new-alias-canonical"
+                               class="form-input w-full"
+                               placeholder="e.g., kubernetes">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1.5" style="color: var(--text-secondary);">Alias Variations (comma-separated)</label>
+                        <input type="text"
+                               id="new-alias-variations"
+                               class="form-input w-full"
+                               placeholder="e.g., K8s, k8s, Kubernetes, container orchestration">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button onclick="masterCVEditor.closeAddAliasModal()" class="btn btn-ghost">Cancel</button>
+                    <button onclick="masterCVEditor.confirmAddAlias()" class="btn btn-primary">Add Alias</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
