@@ -65,6 +65,7 @@ OPERATION_TASK_TYPES: Dict[str, str] = {
     "generate-cv": "complex",
     "generate-linkedin": "complex",
     "generate-email": "complex",
+    "generate-outreach": "complex",
     "validate": "simple",
 }
 
