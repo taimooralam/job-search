@@ -774,6 +774,77 @@ class PeopleMapper:
             self.logger.warning(f"LinkedIn search failed: {e}")
             return []
 
+    def _build_annotation_enhanced_queries(
+        self,
+        company: str,
+        title: str,
+        jd_annotations: Optional[Dict[str, Any]] = None,
+    ) -> List[str]:
+        """
+        Phase 8 (GAP-086): Build enhanced SEO queries using annotation keywords.
+
+        Uses must_have keywords from JD annotations to find contacts with
+        relevant technical expertise.
+
+        Args:
+            company: Company name
+            title: Job title
+            jd_annotations: JD annotations dict with annotations list
+
+        Returns:
+            List of enhanced query strings for FireCrawl search
+        """
+        if not jd_annotations:
+            return []
+
+        annotations = jd_annotations.get("annotations", [])
+        if not annotations:
+            return []
+
+        # Extract must_have keywords
+        keywords = []
+        for ann in annotations:
+            if ann.get("requirement_type") == "must_have" and ann.get("is_active", True):
+                # Get keyword from matching_skill or suggested_keywords
+                skill = ann.get("matching_skill")
+                if skill:
+                    keywords.append(skill)
+                else:
+                    suggested = ann.get("suggested_keywords", [])
+                    if suggested:
+                        keywords.append(suggested[0])
+
+        if not keywords:
+            return []
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_keywords = []
+        for kw in keywords:
+            if kw.lower() not in seen:
+                seen.add(kw.lower())
+                unique_keywords.append(kw)
+
+        queries = []
+
+        # Build queries with top 3 keywords
+        top_keywords = unique_keywords[:3]
+        if top_keywords:
+            # Query 1: LinkedIn engineers with these skills
+            keyword_or = " OR ".join(f'"{kw}"' for kw in top_keywords)
+            queries.append(
+                f'site:linkedin.com/in "{company}" ({keyword_or}) engineer'
+            )
+
+            # Query 2: Technical leadership with these skills
+            if len(top_keywords) >= 2:
+                queries.append(
+                    f'site:linkedin.com/in "{company}" ({top_keywords[0]} OR {top_keywords[1]}) "tech lead" OR "engineering manager"'
+                )
+
+        self.logger.info(f"[Phase 8] Built {len(queries)} annotation-enhanced queries using keywords: {top_keywords}")
+        return queries
+
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=5))
     def _search_hiring_manager(self, company: str, title: str) -> List[Dict[str, str]]:
         """
@@ -1086,6 +1157,32 @@ class PeopleMapper:
             raw_content_parts.append(f"[SOURCE: Crunchbase Team]\n{crunchbase_content}\n")
             self.logger.info(f"Searched Crunchbase team ({len(crunchbase_content)} chars)")
 
+        # Source 5 (Phase 8 - GAP-086): Annotation-enhanced queries
+        jd_annotations = state.get("jd_annotations")
+        if jd_annotations:
+            enhanced_queries = self._build_annotation_enhanced_queries(company, title, jd_annotations)
+            if enhanced_queries:
+                self.logger.info(f"[Phase 8] Running {len(enhanced_queries)} annotation-enhanced queries")
+                for query in enhanced_queries:
+                    try:
+                        self.logger.info(f"[FireCrawl] Annotation query: {query[:80]}...")
+                        search_response = self._firecrawl_search(query, limit=5)
+                        results = _extract_search_results(search_response)
+                        self.logger.info(f"[FireCrawl] Got {len(results)} results from annotation query")
+
+                        for result in results:
+                            contact = self._extract_contact_from_search_result(result, company)
+                            if contact:
+                                all_contacts.append(contact)
+                                self.logger.info(f"[Phase 8] Found: {contact['name']} - {contact['role']}")
+                    except Exception as e:
+                        self.logger.warning(f"Annotation query failed: {e}")
+                        continue
+
+                if all_contacts:
+                    contact_strs = [f"- {c['name']} ({c['role']}) - {c['linkedin_url']}" for c in all_contacts[-5:]]
+                    raw_content_parts.append(f"[SOURCE: Annotation-Enhanced Search]\n" + "\n".join(contact_strs) + "\n")
+
         # Deduplicate contacts
         if all_contacts:
             all_contacts = self._deduplicate_contacts(all_contacts)
@@ -1285,6 +1382,62 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
                     "**LINKED EVIDENCE (cite in outreach):**\n"
                     + "\n".join(star_evidence[:3])
                 )
+
+        # === Phase 7 (GAP-091): Passion Areas for Genuine Enthusiasm ===
+        if annotations:
+            passion_items = [
+                a for a in annotations
+                if a.get("passion") == "love_it" and a.get("is_active", True)
+            ]
+            if passion_items:
+                passion_lines = []
+                for a in passion_items[:3]:  # Top 3 passion areas
+                    text = a.get("target", {}).get("text", "")[:50]
+                    skill = a.get("matching_skill", "")
+                    passion_lines.append(f"- {skill or text}")
+                if passion_lines:
+                    sections.append(
+                        "**PASSION AREAS (show authentic enthusiasm):**\n"
+                        + "\n".join(passion_lines)
+                        + "\nUse these naturally to demonstrate genuine interest"
+                    )
+
+        # === Phase 7 (GAP-091): Identity Areas for Positioning ===
+        if annotations:
+            identity_items = [
+                a for a in annotations
+                if a.get("identity") == "core_identity" and a.get("is_active", True)
+            ]
+            if identity_items:
+                identity_lines = []
+                for a in identity_items[:2]:  # Top 2 identity areas
+                    text = a.get("target", {}).get("text", "")[:50]
+                    skill = a.get("matching_skill", "")
+                    identity_lines.append(f"- {skill or text}")
+                if identity_lines:
+                    sections.append(
+                        "**PROFESSIONAL IDENTITY (frame opening around):**\n"
+                        + "\n".join(identity_lines)
+                        + "\nOpen with 'As a [identity]...' positioning"
+                    )
+
+        # === Phase 7 (GAP-091): Avoid Areas for Tone Adjustment ===
+        if annotations:
+            avoid_items = [
+                a for a in annotations
+                if a.get("passion") == "avoid" and a.get("is_active", True)
+            ]
+            if avoid_items:
+                avoid_lines = []
+                for a in avoid_items[:2]:  # Track top 2 avoid areas
+                    text = a.get("target", {}).get("text", "")[:40]
+                    avoid_lines.append(f"- {text}")
+                if avoid_lines:
+                    sections.append(
+                        "**DE-EMPHASIZE (do NOT highlight in outreach):**\n"
+                        + "\n".join(avoid_lines)
+                        + "\nAvoid emphasizing these even if technically relevant"
+                    )
 
         if not sections:
             return ""
