@@ -33,6 +33,7 @@ from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
 from src.common.annotation_types import JDAnnotation, ConcernAnnotation
+from src.common.persona_builder import get_persona_guidance
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -1263,6 +1264,7 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
         self,
         annotations: Optional[List[JDAnnotation]] = None,
         concerns: Optional[List[ConcernAnnotation]] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Format JD annotations and concerns for outreach prompt injection.
@@ -1273,18 +1275,32 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
         - Keywords for relevance signaling
         - Concern mitigation strategies
 
+        Phase 5: Injects synthesized persona at the beginning when available.
+        The persona provides a coherent narrative frame for the outreach message.
+
         Args:
             annotations: List of JDAnnotation from job state
             concerns: List of ConcernAnnotation from job state
+            jd_annotations: Full jd_annotations dict for persona access
 
         Returns:
             Formatted annotation context string for prompt injection,
             or empty string if no annotations/concerns available
         """
-        if not annotations and not concerns:
-            return ""
-
         sections = []
+
+        # Phase 5: Inject synthesized persona at the beginning
+        # The persona provides the central theme for outreach messaging
+        persona_guidance = get_persona_guidance(jd_annotations)
+        if persona_guidance:
+            sections.append(
+                f"**{persona_guidance}**\n"
+                "Open the message with this positioning.\n"
+                "Use 'As a [persona]...' or similar natural framing."
+            )
+
+        if not annotations and not concerns and not persona_guidance:
+            return ""
 
         # === Must-Have Requirements ===
         if annotations:
@@ -1852,10 +1868,12 @@ Return the three letters separated by \"---\" lines.
 
         # Phase 6: Format annotation context for personalized outreach
         # Extract annotations and concerns from the jd_annotations dict structure
+        # Phase 5: Also pass full jd_annotations for persona access
         jd_annotations_data = state.get("jd_annotations") or {}
         annotation_context = self._format_annotation_context(
             annotations=jd_annotations_data.get("annotations") if isinstance(jd_annotations_data, dict) else None,
             concerns=jd_annotations_data.get("concerns") if isinstance(jd_annotations_data, dict) else None,
+            jd_annotations=jd_annotations_data if isinstance(jd_annotations_data, dict) else None,
         )
 
         # Build prompt with contact_type and annotation context
