@@ -433,6 +433,70 @@
                             </div>
                         </div>
 
+                        {# Full Extraction Button (Layer 1.4 + Layer 2 + Layer 4) #}
+                        <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}' })"
+                             class="pipeline-action-wrapper">
+                            <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
+                                <button @click="execute()"
+                                        class="btn-action-main btn-action-accent"
+                                        :disabled="loading"
+                                        title="Full JD extraction: structure + pain points + fit score (Alt+2)">
+                                    <template x-if="loading">
+                                        <span class="btn-action-spinner">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </span>
+                                    </template>
+                                    <template x-if="!loading">
+                                        <span x-text="label">Extract JD</span>
+                                    </template>
+                                    <span class="tier-badge" :class="tier" x-text="tierIcon"></span>
+                                </button>
+                                <button @click="open = !open"
+                                        class="btn-action-dropdown btn-action-accent"
+                                        :aria-expanded="open"
+                                        :disabled="loading"
+                                        title="Select processing tier">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            {# Tier dropdown menu #}
+                            <div x-show="open"
+                                 x-cloak
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="opacity-0 transform scale-95"
+                                 x-transition:enter-end="opacity-100 transform scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="opacity-100 transform scale-100"
+                                 x-transition:leave-end="opacity-0 transform scale-95"
+                                 @click.away="open = false"
+                                 @keydown="handleKeydown($event)"
+                                 class="tier-dropdown-menu">
+                                <div class="tier-dropdown-header">Select Tier</div>
+                                <template x-for="t in allTiers" :key="t">
+                                    <button @click="setTier(t)"
+                                            class="tier-option"
+                                            :class="{ 'selected': isTierSelected(t) }">
+                                        <span class="tier-option-icon" :class="t" x-text="getTierIcon(t)"></span>
+                                        <div class="tier-option-content">
+                                            <div class="tier-option-name" x-text="getTierLabel(t)"></div>
+                                            <div class="tier-option-model" x-text="getTierModel(t)"></div>
+                                        </div>
+                                        <span class="tier-option-cost" :class="t" x-text="getTierCost(t)"></span>
+                                        <template x-if="isTierSelected(t)">
+                                            <svg class="tier-option-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </template>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
                         {# Research Company Button #}
                         <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}' })"
                              class="pipeline-action-wrapper">
@@ -440,7 +504,7 @@
                                 <button @click="execute()"
                                         class="btn-action-main btn-action-secondary"
                                         :disabled="loading"
-                                        title="Research company and role (Alt+2)">
+                                        title="Research company and role (Alt+3)">
                                     <template x-if="loading">
                                         <span class="btn-action-spinner">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -504,7 +568,7 @@
                                 <button @click="execute()"
                                         class="btn-action-main btn-action-success"
                                         :disabled="loading"
-                                        title="Generate tailored CV (Alt+3)">
+                                        title="Generate tailored CV (Alt+4)">
                                     <template x-if="loading">
                                         <span class="btn-action-spinner">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -578,9 +642,11 @@
                         <span class="font-medium">Keyboard shortcuts:</span>
                         <span class="ml-1">Alt+1 Structure</span>
                         <span class="mx-1">|</span>
-                        <span>Alt+2 Research</span>
+                        <span>Alt+2 Extract</span>
                         <span class="mx-1">|</span>
-                        <span>Alt+3 Generate CV</span>
+                        <span>Alt+3 Research</span>
+                        <span class="mx-1">|</span>
+                        <span>Alt+4 Generate CV</span>
                     </div>
                 </div>
             </div>

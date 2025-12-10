@@ -9,7 +9,8 @@
  * - HTMX integration for partial page updates
  *
  * Actions supported:
- * - structure-jd: Structure/parse job description
+ * - structure-jd: Structure/parse job description (Layer 1.4 only)
+ * - full-extraction: Full extraction (Layer 1.4 + Layer 2 + Layer 4)
  * - research-company: Research company and role
  * - generate-cv: Generate tailored CV
  */
@@ -22,6 +23,7 @@ const PIPELINE_CONFIG = {
     // Default tiers per action
     defaultTiers: {
         'structure-jd': 'balanced',
+        'full-extraction': 'balanced',
         'research-company': 'balanced',
         'generate-cv': 'quality'
     },
@@ -29,6 +31,11 @@ const PIPELINE_CONFIG = {
     // Model mappings per tier per action
     models: {
         'structure-jd': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o-mini',
+            quality: 'gpt-4o'
+        },
+        'full-extraction': {
             fast: 'gpt-4o-mini',
             balanced: 'gpt-4o-mini',
             quality: 'gpt-4o'
@@ -55,6 +62,7 @@ const PIPELINE_CONFIG = {
     // API endpoints (relative to /api/jobs/{jobId}/)
     endpoints: {
         'structure-jd': '/api/jobs/{jobId}/process-jd',
+        'full-extraction': '/api/jobs/{jobId}/full-extraction',
         'research-company': '/api/jobs/{jobId}/research-company',
         'generate-cv': '/api/jobs/{jobId}/generate-cv'
     },
@@ -62,6 +70,7 @@ const PIPELINE_CONFIG = {
     // Display labels
     labels: {
         'structure-jd': 'Structure JD',
+        'full-extraction': 'Extract JD',
         'research-company': 'Research',
         'generate-cv': 'Generate CV'
     },
@@ -99,6 +108,7 @@ document.addEventListener('alpine:init', () => {
         // Loading states per action
         loading: {
             'structure-jd': false,
+            'full-extraction': false,
             'research-company': false,
             'generate-cv': false
         },
@@ -106,6 +116,7 @@ document.addEventListener('alpine:init', () => {
         // Last execution results per action
         lastResults: {
             'structure-jd': null,
+            'full-extraction': null,
             'research-company': null,
             'generate-cv': null
         },
@@ -113,6 +124,7 @@ document.addEventListener('alpine:init', () => {
         // Accumulated costs for current session
         sessionCosts: {
             'structure-jd': 0,
+            'full-extraction': 0,
             'research-company': 0,
             'generate-cv': 0
         },
@@ -265,6 +277,7 @@ document.addEventListener('alpine:init', () => {
             // Use HTMX to refresh specific sections based on action
             const refreshTargets = {
                 'structure-jd': ['#jd-structured-content', '#jd-viewer-content'],
+                'full-extraction': ['#jd-structured-content', '#jd-viewer-content', '#pain-points-section', '#fit-score-section'],
                 'research-company': ['#company-research-section', '#research-panel'],
                 'generate-cv': ['#cv-preview-section', '#cv-editor-content']
             };
@@ -453,7 +466,7 @@ window.tieredActionButton = tieredActionButton;
    ============================================================================ */
 
 /**
- * Structure job description
+ * Structure job description (Layer 1.4 only)
  * @param {string} jobId - MongoDB job ID
  * @param {Object} options - Options including tier
  */
@@ -470,6 +483,28 @@ async function structureJD(jobId, options = {}) {
         return await response.json();
     } catch (error) {
         console.error('Structure JD failed:', error);
+        throw error;
+    }
+}
+
+/**
+ * Full JD extraction (Layer 1.4 + Layer 2 + Layer 4)
+ * @param {string} jobId - MongoDB job ID
+ * @param {Object} options - Options including tier
+ */
+async function fullExtraction(jobId, options = {}) {
+    const tier = options.tier || localStorage.getItem('pipeline_tier_full-extraction') || 'balanced';
+    const model = PIPELINE_CONFIG.models['full-extraction']?.[tier] || 'gpt-4o-mini';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/full-extraction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tier, model, ...options })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Full extraction failed:', error);
         throw error;
     }
 }
@@ -520,6 +555,7 @@ async function generateCV(jobId, options = {}) {
 
 // Export direct functions for non-Alpine usage
 window.structureJD = structureJD;
+window.fullExtraction = fullExtraction;
 window.researchCompany = researchCompany;
 window.generateCV = generateCV;
 
@@ -598,9 +634,10 @@ document.addEventListener('click', (event) => {
 
 // Handle keyboard shortcuts for pipeline actions
 document.addEventListener('keydown', (event) => {
-    // Alt+1: Structure JD
-    // Alt+2: Research Company
-    // Alt+3: Generate CV
+    // Alt+1: Structure JD (Layer 1.4 only)
+    // Alt+2: Full Extraction (Layer 1.4 + 2 + 4)
+    // Alt+3: Research Company
+    // Alt+4: Generate CV
     if (event.altKey && !event.ctrlKey && !event.metaKey) {
         const jobId = document.querySelector('[data-job-id]')?.dataset.jobId;
         if (!jobId) return;
@@ -615,9 +652,13 @@ document.addEventListener('keydown', (event) => {
                 break;
             case '2':
                 event.preventDefault();
-                store.execute('research-company', jobId);
+                store.execute('full-extraction', jobId);
                 break;
             case '3':
+                event.preventDefault();
+                store.execute('research-company', jobId);
+                break;
+            case '4':
                 event.preventDefault();
                 store.execute('generate-cv', jobId);
                 break;

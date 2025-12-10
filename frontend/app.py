@@ -790,7 +790,7 @@ def import_linkedin_job():
 
     # Proxy to VPS runner service (no timeout limits, stable IP)
     runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
-    runner_token = os.getenv("RUNNER_TOKEN", "")
+    runner_token = os.getenv("RUNNER_API_SECRET", "")
 
     try:
         logger.info(f"Proxying LinkedIn import to runner: {job_id_or_url}")
@@ -2248,6 +2248,10 @@ def export_dossier_pdf(job_id: str):
     # Add src to path for pdf_export import
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    # Get MongoDB collection
+    db = get_db()
+    collection = db["level-2"]
 
     try:
         # 1. Fetch job state from MongoDB
@@ -3841,7 +3845,7 @@ def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
         content = section["content"]
         items = section["items"]
 
-        html_parts.append(f'<section data-section-type="{section_type}" data-char-start="{section["char_start"]}" data-char-end="{section["char_end"]}">')
+        html_parts.append(f'<section class="jd-section jd-section-{section_type}" data-section-type="{section_type}" data-char-start="{section["char_start"]}" data-char-end="{section["char_end"]}">')
         html_parts.append(f'<h3 class="jd-section-header">{header}</h3>')
 
         if items:
@@ -3948,6 +3952,180 @@ def process_job_description(job_id: str):
     except Exception as e:
         logger.error(f"Failed to process JD for job {job_id}: {e}")
         return jsonify({"error": f"Failed to process JD: {str(e)}"}), 500
+
+
+# =============================================================================
+# Pipeline Operations - Proxy to Runner Service
+# =============================================================================
+
+# Configuration for runner service proxy
+RUNNER_URL = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+RUNNER_API_SECRET = os.getenv("RUNNER_API_SECRET", "")
+OPERATIONS_REQUEST_TIMEOUT = 120  # seconds - longer timeout for AI operations
+
+
+def get_runner_headers():
+    """Get headers for runner API requests including Bearer token."""
+    return {
+        "Authorization": f"Bearer {RUNNER_API_SECRET}",
+        "Content-Type": "application/json",
+    }
+
+
+@app.route("/api/jobs/<job_id>/research-company", methods=["POST"])
+@login_required
+def research_company(job_id: str):
+    """
+    Proxy company research request to the runner service.
+
+    Triggers CompanyResearchService on the VPS runner.
+
+    Request Body:
+        tier: Model tier ('fast', 'balanced', 'quality')
+        force_refresh: Boolean - force refresh even if cached (default: False)
+
+    Returns:
+        JSON with company research data
+    """
+    try:
+        data = request.get_json() or {}
+
+        # Forward request to runner service
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/research-company",
+            json=data,
+            headers=get_runner_headers(),
+            timeout=OPERATIONS_REQUEST_TIMEOUT,
+        )
+
+        # Return runner's response with original status code
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Runner service timeout during company research for job {job_id}")
+        return jsonify({
+            "success": False,
+            "error": "Research operation timed out. The runner service is taking too long."
+        }), 504
+
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Cannot connect to runner service for company research")
+        return jsonify({
+            "success": False,
+            "error": "Cannot connect to research service. Please try again later."
+        }), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error proxying company research: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
+
+
+@app.route("/api/jobs/<job_id>/generate-cv", methods=["POST"])
+@login_required
+def generate_cv(job_id: str):
+    """
+    Proxy CV generation request to the runner service.
+
+    Triggers CVGenerationService on the VPS runner.
+
+    Request Body:
+        tier: Model tier ('fast', 'balanced', 'quality')
+        use_annotations: Boolean - use JD annotations in generation (default: True)
+
+    Returns:
+        JSON with generated CV data
+    """
+    try:
+        data = request.get_json() or {}
+
+        # Forward request to runner service
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/generate-cv",
+            json=data,
+            headers=get_runner_headers(),
+            timeout=OPERATIONS_REQUEST_TIMEOUT,
+        )
+
+        # Return runner's response with original status code
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Runner service timeout during CV generation for job {job_id}")
+        return jsonify({
+            "success": False,
+            "error": "CV generation timed out. The runner service is taking too long."
+        }), 504
+
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Cannot connect to runner service for CV generation")
+        return jsonify({
+            "success": False,
+            "error": "Cannot connect to CV generation service. Please try again later."
+        }), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error proxying CV generation: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
+
+
+@app.route("/api/jobs/<job_id>/full-extraction", methods=["POST"])
+@login_required
+def full_extraction(job_id: str):
+    """
+    Proxy full extraction request to the runner service.
+
+    Runs complete extraction pipeline:
+    - Layer 1.4: JD structuring
+    - Layer 2: Pain point mining
+    - Layer 4: Fit scoring
+
+    Request Body:
+        tier: Model tier ('fast', 'balanced', 'quality')
+        use_llm: Boolean - use LLM for processing (default: True)
+
+    Returns:
+        JSON with combined extraction data and badge info
+    """
+    try:
+        data = request.get_json() or {}
+
+        # Forward request to runner service
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/full-extraction",
+            json=data,
+            headers=get_runner_headers(),
+            timeout=OPERATIONS_REQUEST_TIMEOUT * 2,  # Longer timeout for 3 layers
+        )
+
+        # Return runner's response with original status code
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Runner service timeout during full extraction for job {job_id}")
+        return jsonify({
+            "success": False,
+            "error": "Full extraction timed out. The runner service is taking too long."
+        }), 504
+
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Cannot connect to runner service for full extraction")
+        return jsonify({
+            "success": False,
+            "error": "Cannot connect to extraction service. Please try again later."
+        }), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error proxying full extraction: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
 
 
 @app.route("/api/jobs/<job_id>/generate-suggestions", methods=["POST"])
