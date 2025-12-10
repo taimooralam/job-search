@@ -166,17 +166,17 @@ class TestSynthesizedPersona:
 class TestPersonaBuilderExtraction:
     """Tests for PersonaBuilder annotation extraction methods."""
 
-    def test_extract_identity_annotations_no_annotations(self, builder):
+    def test_extract_persona_annotations_no_annotations(self, builder):
         """Test extraction with no annotations returns empty groups."""
         jd_annotations = {"annotations": []}
 
-        grouped = builder._extract_identity_annotations(jd_annotations)
+        grouped = builder._extract_persona_annotations(jd_annotations)
 
         assert grouped["core_identity"] == []
         assert grouped["strong_identity"] == []
         assert grouped["developing"] == []
 
-    def test_extract_identity_annotations_groups_by_strength(
+    def test_extract_persona_annotations_groups_by_strength(
         self,
         builder,
         sample_core_identity_annotation,
@@ -192,32 +192,32 @@ class TestPersonaBuilderExtraction:
             ]
         }
 
-        grouped = builder._extract_identity_annotations(jd_annotations)
+        grouped = builder._extract_persona_annotations(jd_annotations)
 
         assert len(grouped["core_identity"]) == 1
         assert len(grouped["strong_identity"]) == 1
         assert len(grouped["developing"]) == 1
         assert grouped["core_identity"][0]["matching_skill"] == "Solutions Architect"
 
-    def test_extract_identity_annotations_ignores_inactive(
+    def test_extract_persona_annotations_ignores_inactive(
         self, builder, sample_inactive_annotation
     ):
         """Test extraction ignores inactive annotations."""
         jd_annotations = {"annotations": [sample_inactive_annotation]}
 
-        grouped = builder._extract_identity_annotations(jd_annotations)
+        grouped = builder._extract_persona_annotations(jd_annotations)
 
         assert grouped["core_identity"] == []
         assert grouped["strong_identity"] == []
         assert grouped["developing"] == []
 
-    def test_extract_identity_annotations_ignores_not_identity(
+    def test_extract_persona_annotations_ignores_not_identity(
         self, builder, sample_not_identity_annotation
     ):
         """Test extraction ignores not_identity and peripheral annotations."""
         jd_annotations = {"annotations": [sample_not_identity_annotation]}
 
-        grouped = builder._extract_identity_annotations(jd_annotations)
+        grouped = builder._extract_persona_annotations(jd_annotations)
 
         # not_identity is not in the grouped dict keys
         assert grouped["core_identity"] == []
@@ -265,17 +265,21 @@ class TestPersonaBuilderTextExtraction:
 
 
 class TestPersonaBuilderContextBuilding:
-    """Tests for PersonaBuilder identity context building."""
+    """Tests for PersonaBuilder persona context building."""
 
-    def test_build_identity_context_empty(self, builder):
+    def test_build_persona_context_empty(self, builder):
         """Test building context with no annotations."""
-        grouped = {"core_identity": [], "strong_identity": [], "developing": []}
+        grouped = {
+            "core_identity": [], "strong_identity": [], "developing": [],
+            "love_it": [], "enjoy": [],
+            "core_strength": [], "extremely_relevant": []
+        }
 
-        result = builder._build_identity_context(grouped)
+        result = builder._build_persona_context(grouped)
 
         assert result == ""
 
-    def test_build_identity_context_with_core_only(
+    def test_build_persona_context_with_core_only(
         self, builder, sample_core_identity_annotation
     ):
         """Test building context with only core identity."""
@@ -283,13 +287,15 @@ class TestPersonaBuilderContextBuilding:
             "core_identity": [sample_core_identity_annotation],
             "strong_identity": [],
             "developing": [],
+            "love_it": [], "enjoy": [],
+            "core_strength": [], "extremely_relevant": []
         }
 
-        result = builder._build_identity_context(grouped)
+        result = builder._build_persona_context(grouped)
 
-        assert "Primary (core identity): Solutions Architect" in result
+        assert "Core identity: Solutions Architect" in result
 
-    def test_build_identity_context_with_all_levels(
+    def test_build_persona_context_with_all_levels(
         self,
         builder,
         sample_core_identity_annotation,
@@ -301,12 +307,14 @@ class TestPersonaBuilderContextBuilding:
             "core_identity": [sample_core_identity_annotation],
             "strong_identity": [sample_strong_identity_annotation],
             "developing": [sample_developing_annotation],
+            "love_it": [], "enjoy": [],
+            "core_strength": [], "extremely_relevant": []
         }
 
-        result = builder._build_identity_context(grouped)
+        result = builder._build_persona_context(grouped)
 
-        assert "Primary (core identity): Solutions Architect" in result
-        assert "Secondary (strong identity): Team Leadership" in result
+        assert "Core identity: Solutions Architect" in result
+        assert "Strong identity: Team Leadership" in result
         assert "Developing: Cloud Migration" in result
 
 

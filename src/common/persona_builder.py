@@ -32,6 +32,12 @@ logger = logging.getLogger(__name__)
 # Identity levels in order of strength (strongest first)
 IDENTITY_STRENGTH_ORDER = ["core_identity", "strong_identity", "developing"]
 
+# Passion levels that indicate genuine interest (for persona)
+PASSION_LEVELS = ["love_it", "enjoy"]
+
+# Relevance levels that indicate core strengths
+STRENGTH_LEVELS = ["core_strength", "extremely_relevant"]
+
 
 @dataclass
 class SynthesizedPersona:
@@ -78,21 +84,23 @@ class PersonaBuilder:
     """
 
     SYSTEM_PROMPT = """You are a professional branding expert who crafts compelling
-professional identity statements. You excel at distilling multiple professional
-qualities into a single, memorable positioning statement."""
+professional identity statements. You excel at distilling identity, passions, and
+strengths into a single, memorable positioning statement that captures someone's
+professional essence."""
 
-    SYNTHESIS_PROMPT = """Given these professional identity markers for a job candidate:
+    SYNTHESIS_PROMPT = """Given these professional attributes for a job candidate:
 
-{identity_context}
+{persona_context}
 
-Write a single sentence (15-25 words) that positions this professional.
+Write a single sentence (20-35 words) that positions this professional.
 
 Rules:
 - Start with "A" or "An"
-- Focus on WHO they are professionally, not a list of skills
-- Make it sound natural and compelling, not like a bulleted list
-- Capture their unique professional essence
-- If developing skills are mentioned, frame them as growth areas
+- Weave together their identity, passions, and strengths naturally
+- Focus on WHO they are and WHAT drives them, not just skills
+- Make it sound authentic and compelling, not like a list
+- If they love something, let that passion shine through
+- If developing skills are mentioned, frame them as growth direction
 
 Return ONLY the persona sentence, nothing else. No quotes around it."""
 
@@ -105,24 +113,35 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         """
         self.layer = layer
 
-    def _extract_identity_annotations(
+    def _extract_persona_annotations(
         self, jd_annotations: Dict[str, Any]
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Extract and group identity annotations by strength level.
+        Extract and group annotations relevant to persona synthesis.
+
+        Extracts three dimensions:
+        1. Identity annotations (core_identity, strong_identity, developing)
+        2. Passion annotations (love_it, enjoy)
+        3. Strength annotations (core_strength, extremely_relevant)
 
         Args:
             jd_annotations: Full jd_annotations dict from job document
 
         Returns:
-            Dict with keys: core_identity, strong_identity, developing
-            Each value is a list of matching annotations
+            Dict with keys for each dimension
         """
         annotations = jd_annotations.get("annotations", [])
         grouped: Dict[str, List[Dict[str, Any]]] = {
+            # Identity dimension
             "core_identity": [],
             "strong_identity": [],
             "developing": [],
+            # Passion dimension
+            "love_it": [],
+            "enjoy": [],
+            # Strength dimension
+            "core_strength": [],
+            "extremely_relevant": [],
         }
 
         for ann in annotations:
@@ -130,9 +149,20 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
             if not ann.get("is_active", False):
                 continue
 
+            # Check identity
             identity = ann.get("identity")
             if identity in grouped:
                 grouped[identity].append(ann)
+
+            # Check passion
+            passion = ann.get("passion")
+            if passion in grouped:
+                grouped[passion].append(ann)
+
+            # Check relevance/strength
+            relevance = ann.get("relevance")
+            if relevance in grouped:
+                grouped[relevance].append(ann)
 
         return grouped
 
@@ -159,37 +189,84 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
             text = text[:47] + "..."
         return text
 
-    def _build_identity_context(
+    def _build_persona_context(
         self, grouped: Dict[str, List[Dict[str, Any]]]
     ) -> str:
         """
-        Build the identity context string for the LLM prompt.
+        Build the full persona context string for the LLM prompt.
+
+        Includes identity, passion, and strength dimensions.
 
         Args:
-            grouped: Grouped identity annotations
+            grouped: Grouped persona annotations
 
         Returns:
             Formatted context string for prompt
         """
         lines = []
 
-        # Primary (core identity)
+        # === IDENTITY DIMENSION ===
+        identity_lines = []
+
+        # Core identity (WHO they are)
         core = grouped.get("core_identity", [])
         if core:
             core_texts = [self._get_identity_text(a) for a in core[:3]]
-            lines.append(f"- Primary (core identity): {', '.join(core_texts)}")
+            identity_lines.append(f"  • Core identity: {', '.join(core_texts)}")
 
-        # Secondary (strong identity)
+        # Strong identity
         strong = grouped.get("strong_identity", [])
         if strong:
             strong_texts = [self._get_identity_text(a) for a in strong[:3]]
-            lines.append(f"- Secondary (strong identity): {', '.join(strong_texts)}")
+            identity_lines.append(f"  • Strong identity: {', '.join(strong_texts)}")
 
-        # Developing
+        # Developing identity
         developing = grouped.get("developing", [])
         if developing:
             dev_texts = [self._get_identity_text(a) for a in developing[:2]]
-            lines.append(f"- Developing: {', '.join(dev_texts)}")
+            identity_lines.append(f"  • Developing: {', '.join(dev_texts)}")
+
+        if identity_lines:
+            lines.append("PROFESSIONAL IDENTITY (who they are):")
+            lines.extend(identity_lines)
+
+        # === PASSION DIMENSION ===
+        passion_lines = []
+
+        # Things they love
+        love = grouped.get("love_it", [])
+        if love:
+            love_texts = [self._get_identity_text(a) for a in love[:3]]
+            passion_lines.append(f"  • Loves: {', '.join(love_texts)}")
+
+        # Things they enjoy
+        enjoy = grouped.get("enjoy", [])
+        if enjoy:
+            enjoy_texts = [self._get_identity_text(a) for a in enjoy[:3]]
+            passion_lines.append(f"  • Enjoys: {', '.join(enjoy_texts)}")
+
+        if passion_lines:
+            lines.append("\nPASSIONS (what energizes them):")
+            lines.extend(passion_lines)
+
+        # === STRENGTH DIMENSION ===
+        strength_lines = []
+
+        # Core strengths
+        core_str = grouped.get("core_strength", [])
+        if core_str:
+            str_texts = [self._get_identity_text(a) for a in core_str[:3]]
+            strength_lines.append(f"  • Core strengths: {', '.join(str_texts)}")
+
+        # Strong skills
+        ext_rel = grouped.get("extremely_relevant", [])
+        if ext_rel:
+            ext_texts = [self._get_identity_text(a) for a in ext_rel[:3]]
+            strength_lines.append(f"  • Strong skills: {', '.join(ext_texts)}")
+
+        if strength_lines:
+            lines.append("\nCORE STRENGTHS (what they excel at):")
+            lines.extend(strength_lines)
 
         return "\n".join(lines)
 
@@ -213,45 +290,55 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
                     ids.append(str(ann_id))
         return ids
 
-    def has_identity_annotations(self, jd_annotations: Dict[str, Any]) -> bool:
+    def has_persona_annotations(self, jd_annotations: Dict[str, Any]) -> bool:
         """
-        Check if there are any active identity annotations.
+        Check if there are any annotations relevant for persona synthesis.
+
+        Checks for identity, passion, or strength annotations.
 
         Args:
             jd_annotations: Full jd_annotations dict
 
         Returns:
-            True if at least one identity annotation exists
+            True if at least one relevant annotation exists
         """
-        grouped = self._extract_identity_annotations(jd_annotations)
+        grouped = self._extract_persona_annotations(jd_annotations)
         return any(len(anns) > 0 for anns in grouped.values())
+
+    # Alias for backward compatibility
+    def has_identity_annotations(self, jd_annotations: Dict[str, Any]) -> bool:
+        """Alias for has_persona_annotations for backward compatibility."""
+        return self.has_persona_annotations(jd_annotations)
 
     async def synthesize(
         self, jd_annotations: Dict[str, Any]
     ) -> Optional[SynthesizedPersona]:
         """
-        Synthesize persona from identity annotations using LLM.
+        Synthesize persona from identity, passion, and strength annotations using LLM.
 
         Args:
             jd_annotations: Full jd_annotations dict from job document
 
         Returns:
-            SynthesizedPersona if identity annotations exist, else None
+            SynthesizedPersona if relevant annotations exist, else None
         """
-        # Extract and group identity annotations
-        grouped = self._extract_identity_annotations(jd_annotations)
+        # Extract and group all persona-relevant annotations
+        grouped = self._extract_persona_annotations(jd_annotations)
 
-        # Check if we have any identities to work with
+        # Check if we have any annotations to work with
         total_annotations = sum(len(anns) for anns in grouped.values())
         if total_annotations == 0:
-            logger.debug("No identity annotations found, skipping persona synthesis")
+            logger.debug("No persona-relevant annotations found, skipping synthesis")
             return None
 
         # Build context for prompt
-        identity_context = self._build_identity_context(grouped)
+        persona_context = self._build_persona_context(grouped)
 
         logger.info(
-            f"Synthesizing persona from {total_annotations} identity annotations"
+            f"Synthesizing persona from {total_annotations} annotations "
+            f"(identity: {len(grouped.get('core_identity', [])) + len(grouped.get('strong_identity', []))}, "
+            f"passion: {len(grouped.get('love_it', [])) + len(grouped.get('enjoy', []))}, "
+            f"strength: {len(grouped.get('core_strength', [])) + len(grouped.get('extremely_relevant', []))})"
         )
 
         try:
@@ -259,7 +346,7 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
             llm = create_tracked_cheap_llm(layer=self.layer)
 
             # Build prompt
-            user_prompt = self.SYNTHESIS_PROMPT.format(identity_context=identity_context)
+            user_prompt = self.SYNTHESIS_PROMPT.format(persona_context=persona_context)
 
             # Call LLM
             messages = [
@@ -277,22 +364,18 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
             if persona_statement.startswith("'") and persona_statement.endswith("'"):
                 persona_statement = persona_statement[1:-1]
 
-            # Determine primary identity
-            core = grouped.get("core_identity", [])
+            # Determine primary identity (from identity or passion or strength)
             primary_identity = ""
-            if core:
-                primary_identity = self._get_identity_text(core[0])
-            elif grouped.get("strong_identity"):
-                primary_identity = self._get_identity_text(
-                    grouped["strong_identity"][0]
-                )
-            elif grouped.get("developing"):
-                primary_identity = self._get_identity_text(grouped["developing"][0])
+            for key in ["core_identity", "love_it", "core_strength",
+                        "strong_identity", "enjoy", "extremely_relevant"]:
+                if grouped.get(key):
+                    primary_identity = self._get_identity_text(grouped[key][0])
+                    break
 
-            # Gather secondary identities
+            # Gather secondary identities from all dimensions
             secondary = []
-            for level in ["strong_identity", "developing"]:
-                for ann in grouped.get(level, []):
+            for key in ["strong_identity", "developing", "enjoy", "extremely_relevant"]:
+                for ann in grouped.get(key, []):
                     text = self._get_identity_text(ann)
                     if text and text != primary_identity:
                         secondary.append(text)
