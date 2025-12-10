@@ -48,7 +48,7 @@ const PIPELINE_CONFIG = {
         'generate-cv': {
             fast: 'claude-haiku',
             balanced: 'claude-sonnet',
-            quality: 'claude-sonnet'
+            quality: 'claude-opus-4.5'  // Opus 4.5 for highest quality CV generation
         }
     },
 
@@ -56,7 +56,7 @@ const PIPELINE_CONFIG = {
     costs: {
         fast: 0.02,
         balanced: 0.05,
-        quality: 0.15
+        quality: 0.50  // Higher due to Opus 4.5
     },
 
     // API endpoints (relative to /api/jobs/{jobId}/)

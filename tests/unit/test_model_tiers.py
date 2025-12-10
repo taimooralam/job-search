@@ -94,7 +94,7 @@ class TestTierConfigs:
         """Quality tier should use Claude Sonnet for complex, gpt-4o for analytical."""
         config = TIER_CONFIGS[ModelTier.QUALITY]
 
-        assert config.complex_model == "claude-sonnet-4-20250514"
+        assert config.complex_model == "claude-opus-4-5-20251101"
         assert config.analytical_model == "gpt-4o"
         assert config.simple_model == "gpt-4o-mini"
 
@@ -185,7 +185,7 @@ class TestGetModelForOperation:
         assert get_model_for_operation(ModelTier.BALANCED, "generate-cv") == "gpt-4o"
         assert (
             get_model_for_operation(ModelTier.QUALITY, "generate-cv")
-            == "claude-sonnet-4-20250514"
+            == "claude-opus-4-5-20251101"
         )
 
     def test_returns_analytical_model_for_research(self):
@@ -293,8 +293,8 @@ class TestGetTierCostEstimate:
         # Fast should be around $0.001-$0.005
         assert 0.0001 < fast_cost < 0.01
 
-        # Quality should be around $0.03-$0.05
-        assert 0.01 < quality_cost < 0.10
+        # Quality (Opus 4.5) should be around $0.15-$0.25
+        assert 0.10 < quality_cost < 0.30
 
 
 class TestGetTierFromString:
@@ -402,7 +402,7 @@ class TestModelTierIntegration:
         assert tier == ModelTier.QUALITY
 
         model = get_model_for_operation(tier, "generate-cv")
-        assert model == "claude-sonnet-4-20250514"
+        assert model == "claude-opus-4-5-20251101"
 
     def test_display_info_matches_actual_tiers(self):
         """Display info should accurately represent actual tier configurations."""
