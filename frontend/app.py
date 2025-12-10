@@ -3737,6 +3737,134 @@ def update_jd_annotations(job_id: str):
     })
 
 
+@app.route("/api/jobs/<job_id>/synthesize-persona", methods=["POST"])
+@login_required
+def synthesize_persona(job_id: str):
+    """
+    Synthesize persona from identity annotations using LLM.
+
+    Extracts identity annotations (core_identity, strong_identity, developing)
+    and synthesizes them into a coherent persona statement.
+
+    Returns:
+        JSON with synthesized persona for preview/edit
+    """
+    import asyncio
+
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    jd_annotations = job.get("jd_annotations", {})
+
+    try:
+        from src.common.persona_builder import PersonaBuilder
+
+        builder = PersonaBuilder()
+
+        # Check if there are identity annotations
+        if not builder.has_identity_annotations(jd_annotations):
+            return jsonify({
+                "success": True,
+                "persona": None,
+                "message": "No identity annotations found"
+            })
+
+        # Run async synthesis
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            persona = loop.run_until_complete(builder.synthesize(jd_annotations))
+        finally:
+            loop.close()
+
+        if not persona:
+            return jsonify({
+                "success": True,
+                "persona": None,
+                "message": "Failed to synthesize persona"
+            })
+
+        return jsonify({
+            "success": True,
+            "persona": persona.persona_statement,
+            "primary": persona.primary_identity,
+            "secondary": persona.secondary_identities,
+            "source_annotations": persona.source_annotations
+        })
+
+    except ImportError:
+        return jsonify({
+            "error": "PersonaBuilder not available",
+            "persona": None
+        }), 500
+    except Exception as e:
+        return jsonify({
+            "error": f"Synthesis failed: {str(e)}",
+            "persona": None
+        }), 500
+
+
+@app.route("/api/jobs/<job_id>/save-persona", methods=["POST"])
+@login_required
+def save_persona(job_id: str):
+    """
+    Save user-edited persona to jd_annotations.
+
+    Request Body:
+        persona: string - the persona statement
+        is_edited: boolean - whether user edited the synthesized persona
+
+    Returns:
+        JSON with success status
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    data = request.get_json()
+    if not data or not data.get("persona"):
+        return jsonify({"error": "No persona provided"}), 400
+
+    persona_statement = data.get("persona", "").strip()
+    is_edited = data.get("is_edited", False)
+
+    # Save to jd_annotations.synthesized_persona
+    result = collection.update_one(
+        {"_id": object_id},
+        {
+            "$set": {
+                "jd_annotations.synthesized_persona": {
+                    "persona_statement": persona_statement,
+                    "is_user_edited": is_edited,
+                    "updated_at": datetime.utcnow().isoformat()
+                },
+                "updatedAt": datetime.utcnow()
+            }
+        }
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Job not found"}), 404
+
+    return jsonify({
+        "success": True,
+        "message": "Persona saved successfully"
+    })
+
+
 def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
     """
     Lightweight JD processor for Vercel deployment.
@@ -3766,6 +3894,46 @@ def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
                 if re.search(pattern, header_lower):
                     return section_type
         return "other"
+
+    def normalize_section_headers(text: str) -> str:
+        """Pre-normalize text to insert newlines before section headers.
+
+        Handles monolithic JD text where section headers run inline with content.
+        Common patterns from LinkedIn, Indeed, etc. job postings.
+        """
+        # Common ALL CAPS section headers - insert newline before them
+        caps_headers = [
+            r'ABOUT THE ROLE', r'ABOUT THE POSITION', r'ABOUT US', r'ABOUT THE COMPANY',
+            r'WHAT YOU WILL BE DOING', r'WHAT YOU\'LL DO', r'WHAT YOU\'LL BE DOING',
+            r'RESPONSIBILITIES', r'KEY RESPONSIBILITIES', r'YOUR RESPONSIBILITIES',
+            r'REQUIREMENTS', r'QUALIFICATIONS', r'WHAT YOU BRING', r'WHAT YOU\'LL BRING',
+            r'WHAT WE\'RE LOOKING FOR', r'WHO YOU ARE', r'YOUR BACKGROUND',
+            r'NICE TO HAVE', r'PREFERRED QUALIFICATIONS', r'BONUS POINTS',
+            r'TECHNICAL SKILLS', r'SKILLS', r'TECH STACK',
+            r'BENEFITS', r'PERKS', r'WHAT WE OFFER', r'COMPENSATION',
+            r'THE OPPORTUNITY', r'THE ROLE', r'POSITION OVERVIEW',
+            r'EXPERIENCE', r'EDUCATION',
+        ]
+        # Build pattern to match any of the caps headers mid-line
+        caps_pattern = '|'.join(caps_headers)
+        # Insert newline before caps headers that appear after non-newline content
+        text = re.sub(rf'([^\n])({caps_pattern})', r'\1\n\n\2', text, flags=re.IGNORECASE)
+
+        # Also handle Title Case headers like "What You Will Be Doing" after punctuation
+        title_case_headers = [
+            r'What You Will Be Doing', r'What You\'ll Do', r'What You\'ll Be Doing',
+            r'About The Role', r'About The Position', r'About Us',
+            r'Key Responsibilities', r'Your Responsibilities',
+            r'Requirements', r'Qualifications', r'What We\'re Looking For',
+            r'Nice To Have', r'Preferred Qualifications',
+            r'Technical Skills', r'Benefits', r'Perks',
+            r'What You Bring', r'Who You Are',
+        ]
+        title_pattern = '|'.join(title_case_headers)
+        # Insert newline before title case headers that appear mid-line after punctuation
+        text = re.sub(rf'([\.\!\?])\s*({title_pattern})', r'\1\n\n\2', text)
+
+        return text
 
     def normalize_bullets(text: str) -> str:
         """Pre-normalize content to split inline bullets onto separate lines."""
@@ -3797,6 +3965,10 @@ def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
 
     # Parse sections
     sections = []
+
+    # Pre-process: normalize section headers (insert newlines before inline headers)
+    jd_text = normalize_section_headers(jd_text)
+
     # Enhanced header pattern - supports:
     # - Title case: "What You'll Do"
     # - ALL CAPS: "RESPONSIBILITIES"
