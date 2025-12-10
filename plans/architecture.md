@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, 1521+ total tests passing
+**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, 1554+ total tests passing
 
 ---
 
@@ -1153,6 +1153,276 @@ Total tests added: 89 tests across all 11 phases
 - Unit tests for each phase's core functionality
 - Integration tests validating annotation→output mapping
 - Edge case handling for missing/conflicting annotations
+
+---
+
+## Identity-Based Persona Generation System (NEW - 2025-12-10)
+
+### Overview
+
+Transform candidate's identity annotations (core_identity, strong_identity, developing) into coherent, synthesized persona statements that are automatically injected into CVs, cover letters, and outreach messages. Enables hyper-personalized applications while maintaining grounding in actual professional identity claims.
+
+### Example
+
+```
+Identity Annotations:
+- core_identity: Cloud architecture, team leadership, distributed systems
+- strong_identity: DevOps culture, mentoring, system design
+- developing: AI/ML integration, incident response
+
+Generated Persona:
+"Solutions architect who leads engineering teams through complex cloud
+transformations, specializing in distributed systems and fostering DevOps culture"
+
+Injected into CV Profile:
+"As a solutions architect who leads engineering teams through complex cloud
+transformations, I bring expertise in designing resilient distributed systems
+while fostering DevOps culture and mentoring high-performing teams."
+
+Injected into Cover Letter:
+"As a solutions architect who leads engineering teams through complex cloud
+transformations, I'm excited about [Company] because [passion-driven reason]..."
+
+Injected into Outreach:
+"As a solutions architect specializing in cloud transformations, I'm reaching
+out because [specific role fit]..."
+```
+
+### Architecture
+
+**Core Module** (`src/common/persona_builder.py` - NEW):
+
+```python
+@dataclass
+class SynthesizedPersona:
+    """Synthesized persona statement"""
+    persona_statement: str  # "Solutions architect who..."
+    source_annotations: Dict[str, List[str]]  # Tracing which annotations generated this
+    confidence: float  # 0-1 confidence score
+    created_at: datetime
+
+class PersonaBuilder:
+    """Synthesize identity annotations into coherent persona statements"""
+
+    async def synthesize_from_annotations(
+        self,
+        annotations: List[JDAnnotation],
+        candidate_profile: str,
+        job_context: str
+    ) -> SynthesizedPersona:
+        """
+        1. Extract identity annotations (core, strong, developing)
+        2. Filter by relevance and strength
+        3. LLM synthesis into coherent statement
+        4. Validation (length, coherence, grounding)
+        5. Return synthesized persona with source tracing
+        """
+
+    def get_persona_guidance(self) -> str:
+        """Format synthesized persona for prompt injection"""
+```
+
+### Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ JD Annotation Panel                                         │
+├─────────────────────────────────────────────────────────────┤
+│ Identity Annotations (core/strong/developing)               │
+│ + Passion Annotations (love_it/enjoy)                       │
+│ + Skill Annotations (must_have/core_strength)               │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│ PersonaBuilder.synthesize_from_annotations()                │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Extract: core_identity + strong_identity                │
+│ 2. Merge: De-duplicate, weight by strength                 │
+│ 3. Filter: Remove noise, prioritize by frequency            │
+│ 4. LLM: "Synthesize into one coherent professional persona" │
+│ 5. Validate: Length (10-20 words), coherence, grounding     │
+│ 6. Store: MongoDB jd_annotations.synthesized_persona        │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│ UI Preview & Edit Panel                                     │
+├─────────────────────────────────────────────────────────────┤
+│ - Display synthesized persona                              │
+│ - Allow user refinement/editing                            │
+│ - Save/discard buttons                                     │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Pipeline Injection Points                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Layer 6 Header Generator                                    │
+│ ├─ CV Profile: Central theme of persona                    │
+│ └─ Example: "As a [persona], I bring..."                  │
+│                                                              │
+│ Layer 6 Cover Letter                                       │
+│ ├─ Opening: "As a [persona]..."                            │
+│ └─ Passion section framing                                 │
+│                                                              │
+│ Layer 5 People Mapper                                      │
+│ ├─ Outreach: Lead with persona positioning                │
+│ └─ Contact messaging: Professional identity first          │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### API Endpoints
+
+**Frontend Routes** (`frontend/app.py`):
+
+```python
+POST /api/jobs/<job_id>/synthesize-persona
+# Input:
+{
+    "tier": "balanced"  # optional, for LLM model selection
+}
+
+# Output:
+{
+    "status": "success",
+    "persona": {
+        "persona_statement": "Solutions architect who...",
+        "source_annotations": {...},
+        "confidence": 0.92,
+        "created_at": "2025-12-10T..."
+    },
+    "elapsed_seconds": 2.5
+}
+
+POST /api/jobs/<job_id>/save-persona
+# Input:
+{
+    "persona_statement": "User-edited persona statement",
+    "notes": "Optional notes about the persona"
+}
+
+# Output:
+{
+    "status": "success",
+    "saved_at": "2025-12-10T..."
+}
+```
+
+### Frontend UI Components
+
+**Persona Panel** (`frontend/static/js/jd-annotation.js`):
+
+- **Synthesis Button**: "Generate from Identity" → calls `/api/jobs/<id>/synthesize-persona`
+- **Preview Display**: Read-only markdown rendering of persona
+- **Edit Mode**: Textarea with user refinement capability
+- **Save/Cancel**: Buttons to persist or discard changes
+- **Status Indicators**: Loading spinner, success/error messages
+- **Source Tracing**: Shows which annotations contributed to persona
+
+### Files Created
+
+1. **`src/common/persona_builder.py`** (NEW):
+   - `SynthesizedPersona` dataclass
+   - `PersonaBuilder` class with synthesis logic
+   - Validation, caching, tracing methods
+   - ~220 lines
+
+2. **`tests/unit/test_persona_builder.py`** (NEW):
+   - 33 unit tests covering:
+     - Synthesis from single/multiple annotations
+     - Validation rules (length, coherence, grounding)
+     - Edge cases (empty annotations, conflicts, duplicates)
+     - Caching behavior
+     - Model tier selection
+
+### Files Modified
+
+1. **`frontend/app.py`**:
+   - `POST /api/jobs/<id>/synthesize-persona` endpoint
+   - `POST /api/jobs/<id>/save-persona` endpoint
+   - MongoDB persistence logic
+
+2. **`frontend/static/js/jd-annotation.js`**:
+   - `personaState` variable tracking persona UI state
+   - `synthesizePersona()` - API call and state update
+   - `savePersona()` - Persist to MongoDB
+   - `renderPersonaPanel()` - UI rendering method
+   - `editPersona()` / `cancelPersonaEdit()` - State management
+
+3. **`frontend/templates/partials/job_detail/_jd_annotation_panel.html`**:
+   - Persona panel container with section structure
+
+4. **`src/layer6_v2/header_generator.py`**:
+   - `get_persona_guidance()` call in profile section generation
+   - Injects persona as central narrative theme
+   - Example injection: `"As a {persona}, I bring {skills}..."`
+
+5. **`src/layer6_v2/ensemble_header_generator.py`**:
+   - Passes `jd_annotations` to header generators
+   - Enables persona access in CV generation
+
+6. **`src/layer6_v2/orchestrator.py`**:
+   - Passes `jd_annotations` through generation pipeline
+
+7. **`src/layer6/cover_letter_generator.py`**:
+   - Injects persona at start of passion/identity section
+   - Example: `"As a [persona], I'm drawn to this role because..."`
+
+8. **`src/layer5/people_mapper.py`**:
+   - Injects persona in contact outreach context
+   - Professional positioning for message openers
+
+### Test Coverage
+
+**`test_persona_builder.py`** (33 tests):
+
+1. **Synthesis Tests** (8 tests):
+   - Single identity annotation synthesis
+   - Multiple annotations merging
+   - Passion annotation integration
+   - Skill annotation context
+   - Empty annotation handling
+   - Duplicate identity handling
+
+2. **Validation Tests** (7 tests):
+   - Length validation (10-20 words)
+   - Coherence validation (no nonsense words)
+   - Grounding validation (matches source annotations)
+   - Professional language validation
+   - Uniqueness validation
+
+3. **Edge Cases** (10 tests):
+   - All identity levels same (core/strong/developing)
+   - Conflicting passion levels
+   - Missing candidate profile
+   - Very long identity lists (100+ annotations)
+   - Non-English characters
+   - Special characters and punctuation
+
+4. **Integration Tests** (8 tests):
+   - Persona → CV injection
+   - Persona → Cover letter injection
+   - Persona → Outreach injection
+   - User edit persistence
+   - Model tier selection
+   - Caching behavior
+
+### Impact
+
+- **Candidate Experience**: CVs and outreach now reflect authentic professional persona derived from candidate preferences
+- **Authenticity**: Persona grounded in actual identity claims (no hallucinations)
+- **Personalization**: Each job gets customized persona-driven narrative
+- **Consistency**: Same persona flows through all application materials
+- **Flexibility**: Users can refine generated persona before use
+
+### Backward Compatibility
+
+- When no identity annotations exist: System maintains status quo behavior (no persona injection)
+- Persona field optional in jd_annotations schema
+- Graceful degradation in all layers if persona missing
 
 ---
 

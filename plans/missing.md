@@ -42,6 +42,7 @@
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
+- **Identity-Based Persona Generation** (2025-12-10): Transform identity annotations into coherent persona statements injected into CV, cover letter, and outreach
 
 ### Today's Fixes (2025-12-10) Session 2
 
@@ -105,6 +106,46 @@
   - `frontend/templates/partials/job_detail/_annotation_popover.html` - UI enhancements
   - `frontend/static/js/jd-annotation.js` - Handler methods
 - **Impact**: Annotation system now captures full candidate preference spectrum (passion levels) and professional identity alignment, enabling more nuanced job matching and personalized outreach
+
+**Identity-Based Persona Generation System** (NEW FEATURE - 2025-12-10):
+- **Purpose**: Transform identity annotations into coherent persona statements for hyper-personalized CVs, cover letters, and outreach
+- **Core Module** (`src/common/persona_builder.py` - NEW):
+  - `SynthesizedPersona` dataclass for storing persona data
+  - `PersonaBuilder` class with LLM synthesis method: `synthesize_from_annotations()`
+  - `get_persona_guidance()` convenience function for prompt injection
+  - 33 unit tests covering synthesis, validation, and edge cases
+- **Data Flow**:
+  - Extract identity annotations (core_identity, strong_identity, developing)
+  - LLM synthesizes coherent persona statement (e.g., "Solutions architect who leads engineering teams through complex cloud transformations")
+  - UI preview with optional user editing
+  - Save to MongoDB `jd_annotations.synthesized_persona`
+  - Inject persona into CV, cover letter, and outreach
+- **API Endpoints** (`frontend/app.py`):
+  - `POST /api/jobs/<id>/synthesize-persona` - Generate persona from identity annotations
+  - `POST /api/jobs/<id>/save-persona` - Save user-edited persona
+- **UI Components** (`frontend/static/js/jd-annotation.js`):
+  - Persona panel with synthesis button
+  - Live preview with markdown formatting
+  - Edit textarea for user refinement
+  - Save/cancel buttons with status feedback
+- **Pipeline Integration**:
+  - Layer 6 (Header Generator): Injects persona into CV profile section for central theme
+  - Layer 6 (Cover Letter): Frames passion/identity section with "As a [persona]..." opening
+  - Layer 5 (People Mapper): Positions persona in outreach message opener
+  - Layer 6 (Ensemble): Passes jd_annotations to header generators for persona access
+- **Files Created**:
+  - `src/common/persona_builder.py` - PersonaBuilder module (NEW)
+  - `tests/unit/test_persona_builder.py` - Comprehensive test suite (NEW)
+- **Files Modified**:
+  - `frontend/app.py` - Added synthesis and save endpoints
+  - `frontend/static/js/jd-annotation.js` - Added UI component and state management
+  - `frontend/templates/partials/job_detail/_jd_annotation_panel.html` - Added persona panel container
+  - `src/layer6_v2/header_generator.py` - Injects persona into CV profile
+  - `src/layer6_v2/ensemble_header_generator.py` - Passes jd_annotations
+  - `src/layer6_v2/orchestrator.py` - Passes jd_annotations to generators
+  - `src/layer6/cover_letter_generator.py` - Injects persona at start of passion section
+  - `src/layer5/people_mapper.py` - Injects persona in outreach context
+- **Impact**: CVs and outreach now reflect authentic professional persona derived from candidate's identity annotations, enabling deeper personal connection while maintaining grounding in actual professional identity claims
 
 ---
 
