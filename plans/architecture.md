@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-09 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), 1321 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal
+**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), Full Extraction Service implemented (Layer 1.4+2+4 combined), 1521 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Independent operations with tiered models
 
 ---
 
@@ -623,7 +623,69 @@ Pipeline (Markdown) ──► MongoDB cv_text
 
 ---
 
-## Pipeline Overhaul - Independent Operations (Phase 1-3 Complete - 2025-12-10)
+## Full Extraction Service (NEW - 2025-12-10)
+
+**Purpose**: Single combined operation running Layers 1.4 + 2 + 4 (JD Structuring + Pain Point Mining + Fit Scoring) without full 7-layer pipeline
+
+**File**: `src/services/full_extraction_service.py`
+
+**API Endpoint**: `POST /api/operations/full-extraction`
+
+**Input**:
+```json
+{
+  "job_id": "string",
+  "tier": "fast|balanced|quality"
+}
+```
+
+**Output**:
+```json
+{
+  "status": "success|failed",
+  "structured_jd": {
+    "title": "string",
+    "category": "string",
+    "key_requirements": ["string"],
+    "keywords": ["string"]
+  },
+  "pain_points": ["string"],
+  "fit_score": {
+    "score": "int (0-100)",
+    "rationale": "string"
+  },
+  "cost_usd": "float",
+  "elapsed_seconds": "float"
+}
+```
+
+**Execution Flow**:
+1. Fetch job from MongoDB
+2. Run Layer 1.4: JD Structuring (structure_jd_service.py)
+3. Run Layer 2: Pain Point Mining (pain_point_miner.py)
+4. Run Layer 4: Fit Scoring (opportunity_mapper.py)
+5. Persist results to MongoDB
+6. Return aggregated output
+
+**Cost Optimization**:
+- Fast tier: Haiku + Haiku + Haiku (~$0.03 total)
+- Balanced tier: Sonnet + Sonnet + Sonnet (~$0.15 total)
+- Quality tier: Opus + Opus + Opus (~$0.45 total)
+
+**Use Cases**:
+- Quick job analysis before detailed research
+- Cost-effective way to get pain points and fit score
+- Alternative to full 7-layer pipeline when only basic analysis needed
+
+**UI Integration**:
+- Purple "Extract JD" button (btn-action-accent) in job detail page
+- Tier selector for cost/quality trade-off
+- Progress indicator during execution
+- Results displayed inline on detail page
+
+---
+
+## Pipeline Overhaul - Independent Operations (Phase 1-5 Complete - 2025-12-10)
 
 ### Overview
 
