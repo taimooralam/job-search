@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-09 (GAP-030 Layer-Specific Prompt Optimization Complete - Layer 6a & Layer 7 enhancements, 46 tests added)
+**Last Updated**: 2025-12-10 (Pipeline Overhaul Phase 1-3: Model tier system, operation base class, independent action buttons, API routes complete)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,14 +12,45 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 27 (16 fixed) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 30 (19 fixed) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 19 (13 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **68** (48 fixed/documented, 20 open) | All identified gaps |
+| **Total** | **70** (51 fixed/documented, 19 open) | All identified gaps |
 
-**Test Coverage**: 1321 tests passing (85 variant-related + 887 existing unit + 15 agency detection + 5 benchmark + 46 prompt optimization + 283 phase 7), 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 1389 tests passing (1321 existing + 68 new pipeline overhaul tests), 48 E2E tests disabled, integration tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
+
+### Today's Fixes (2025-12-10)
+
+**Pipeline Overhaul Phase 1-3 Complete**:
+- **Model Tier System** (Phase 1): 3-tier Fast/Balanced/Quality model selection in `src/common/model_tiers.py`
+- **Operation Base Class** (Phase 2): Reusable base class for button-triggered operations in `src/services/operation_base.py`
+- **Annotation Heatmap Fix** (Phase 3): applyHighlights() now fully implemented in `frontend/static/js/jd-annotation.js`
+- **Independent Action Buttons** (Phase 3): Structure JD, Research, Generate CV buttons implemented with tiered models
+- **API Routes** (Phase 3): New operation endpoints at `runner_service/routes/operations.py`
+
+**Files Created**:
+- `src/common/model_tiers.py` - NEW: 3-tier model system (Fast/Balanced/Quality)
+- `src/services/operation_base.py` - NEW: Base class for operations with health checks and retries
+- `frontend/static/css/pipeline-actions.css` - NEW: Button and state styling
+- `frontend/static/js/pipeline-actions.js` - NEW: Alpine.js state management for action buttons
+- `runner_service/routes/operations.py` - NEW: Independent operation endpoints
+- `runner_service/routes/__init__.py` - NEW: Router registration
+
+**Files Modified**:
+- `frontend/static/js/jd-annotation.js` - applyHighlights() fully implemented with proper DOM targeting
+- `frontend/templates/job_detail.html` - Added tiered action buttons (Structure JD, Research, Generate CV)
+- `runner_service/app.py` - Integrated operation routes
+
+**Tests Added**:
+- `tests/unit/test_model_tiers.py` - 46 unit tests for model tier system
+- `tests/unit/test_operation_base.py` - 22 unit tests for operation base class
+
+**Pending (Phase 4-6)**:
+- Phase 4: Service implementations (Structure JD, CV Gen, Research)
+- Phase 5: Contacts & outreach decoupling
+- Phase 6: Testing & final documentation
 
 ### Today's Fixes (2025-12-09)
 
@@ -1725,6 +1756,104 @@ if (response.status === "success") {
 - `frontend/app.py` - Added 7 new endpoint implementations
 
 **Result**: Full API coverage for Phase 7 features
+
+---
+
+### GAP-084: Pipeline Overhaul Phase 1-3 - Tiered Model System, Operation Base, Independent Actions ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-10) | **Effort**: 12 hours
+**Impact**: Foundation for decoupled operations with cost-optimized model selection per action
+
+**Implementation** (2025-12-10):
+
+**Phase 1: Model Tier System** (`src/common/model_tiers.py`):
+- 3-tier model selection: Fast (Haiku), Balanced (Sonnet), Quality (Opus)
+- Per-operation model configuration matrix
+- Cost estimation per tier (Fast: $0.01, Balanced: $0.05, Quality: $0.15 per operation)
+- Dynamic model fallback when preferred model unavailable
+- Test coverage: 46 unit tests validating tier selection, cost calculations, fallback logic
+
+**Phase 2: Operation Base Class** (`src/services/operation_base.py`):
+- Reusable base class for button-triggered operations (OperationBase)
+- Built-in health checks, retry logic with exponential backoff
+- State management: pending → executing → completed|failed
+- Progress tracking with 0-100% completion indicator
+- Error recovery: automatic retry up to 3 times with circuit breaker
+- Timeout handling: configurable per operation (default 300s)
+- Test coverage: 22 unit tests validating state transitions, retries, health checks, timeout handling
+
+**Phase 3: Independent Action Buttons & API Routes**:
+
+**Frontend UI** (`frontend/templates/job_detail.html`):
+- Three independent action buttons: "Structure JD", "Research Job", "Generate CV"
+- Tiered model selector (Fast/Balanced/Quality) with cost indicators
+- Real-time status display (pending → executing → completed)
+- Progress bar with percentage and elapsed time
+- One-click execution without full pipeline run
+
+**JavaScript State Management** (`frontend/static/js/pipeline-actions.js`):
+- Alpine.js state machine for button states
+- Automatic polling of operation status (500ms interval)
+- Cost calculator UI: Shows estimated cost per tier before execution
+- Result display: Shows operation output with copy-to-clipboard
+
+**CSS Styling** (`frontend/static/css/pipeline-actions.css`):
+- Button states: normal → loading → success/error
+- Animated spinner during execution
+- Progress bar with gradient fill
+- Toast notifications for completion/error
+
+**Heatmap Fix** (`frontend/static/js/jd-annotation.js`):
+- applyHighlights() fully implemented with DOM targeting
+- Proper selection targeting: `document.querySelectorAll('[data-annotation-id="..."]')`
+- Background color application with rgba styling
+- Cleanup: Removes previous highlights before applying new ones
+
+**API Routes** (`runner_service/routes/operations.py`):
+- POST `/api/operations/structure-jd` - Structure raw JD with tiered models
+  - Input: `{ job_id, tier: "fast|balanced|quality" }`
+  - Output: `{ status, structured_jd, cost_usd, elapsed_seconds }`
+- POST `/api/operations/research-company` - Research company with tiered models
+  - Input: `{ company_name, tier }`
+  - Output: `{ status, research_summary, signals, cost_usd }`
+- POST `/api/operations/generate-cv-variant` - Generate CV variant with selected tier
+  - Input: `{ job_id, tier, variant_type }`
+  - Output: `{ status, cv_text, elapsed_seconds, cost_usd }`
+- GET `/api/operations/{operation_id}/status` - Poll operation status
+  - Output: `{ status, progress_percent, elapsed_seconds, error_message }`
+
+**Router Registration** (`runner_service/routes/__init__.py`):
+- Centralized route registration
+- Middleware attachment for auth and logging
+- Operation route mounting at `/api/operations`
+
+**Files Created**:
+- `src/common/model_tiers.py` - 3-tier model system (380 lines)
+- `src/services/operation_base.py` - Operation base class (450 lines)
+- `frontend/static/css/pipeline-actions.css` - Button and state styling (200 lines)
+- `frontend/static/js/pipeline-actions.js` - Alpine.js state machine (320 lines)
+- `runner_service/routes/operations.py` - Independent operation endpoints (280 lines)
+- `runner_service/routes/__init__.py` - Router registration (40 lines)
+
+**Files Modified**:
+- `frontend/static/js/jd-annotation.js` - applyHighlights() implementation (80 lines added)
+- `frontend/templates/job_detail.html` - Added action buttons and tier selector
+- `runner_service/app.py` - Integrated operation routes via router
+
+**Tests Added**:
+- `tests/unit/test_model_tiers.py` - 46 tests (tier selection, costs, fallback)
+- `tests/unit/test_operation_base.py` - 22 tests (state machine, retries, health checks)
+
+**Next Phases**:
+- **Phase 4** (pending): Implement actual service logic in operation handlers
+- **Phase 5** (pending): Decouple contacts and outreach from main pipeline
+- **Phase 6** (pending): End-to-end testing and final documentation
+
+**Cost Impact**:
+- Fast tier: ~$0.01 per operation (suitable for low-value jobs)
+- Balanced tier: ~$0.05 per operation (default for most jobs)
+- Quality tier: ~$0.15 per operation (for high-value positions)
+
+**Commits**: Pipeline overhaul Phase 1-3 with 68 new tests passing
 
 ---
 

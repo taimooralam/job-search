@@ -623,6 +623,212 @@ Pipeline (Markdown) ──► MongoDB cv_text
 
 ---
 
+## Pipeline Overhaul - Independent Operations (Phase 1-3 Complete - 2025-12-10)
+
+### Overview
+
+Foundation for decoupled, cost-optimized operations that can be triggered independently of the main pipeline. Users can now:
+- Structure raw JD without full pipeline
+- Research companies/roles independently
+- Generate CV variants for specific jobs
+- Select operation quality tier (Fast/Balanced/Quality) with visible cost impact
+
+### Architecture: Tiered Model System (Phase 1)
+
+**File**: `src/common/model_tiers.py` (380 lines, 46 unit tests)
+
+```python
+# 3-tier model selection
+class ModelTier(Enum):
+    FAST = "fast"          # Haiku: fastest, cheapest
+    BALANCED = "balanced"  # Sonnet: optimal cost/quality
+    QUALITY = "quality"    # Opus: best output, highest cost
+
+# Per-operation model matrix
+TIER_MODEL_CONFIG = {
+    "structure_jd": {
+        "fast": "claude-haiku",
+        "balanced": "gpt-4o-mini",
+        "quality": "gpt-4o"
+    },
+    "research_company": {...},
+    "generate_cv": {...}
+}
+
+# Cost calculation
+cost_estimates = {
+    "fast": 0.01,
+    "balanced": 0.05,
+    "quality": 0.15
+}
+```
+
+**Features**:
+- Dynamic model selection per operation
+- Automatic fallback (e.g., if Opus unavailable → Sonnet)
+- Cost estimation before execution
+- Per-tier token tracking
+
+### Operation Base Class (Phase 2)
+
+**File**: `src/services/operation_base.py` (450 lines, 22 unit tests)
+
+```python
+class OperationBase:
+    """Reusable base for button-triggered operations"""
+
+    async def execute(self) -> OperationResult:
+        # State: pending → executing → completed|failed
+        # Retry logic: up to 3 attempts with exponential backoff
+        # Health check: validates dependencies before execution
+        # Timeout: 300s default, configurable per operation
+        # Progress: 0-100% completion indicator
+
+    async def check_health(self) -> HealthStatus:
+        # Service availability check (MongoDB, LLM, etc.)
+        # Returns: healthy|degraded|unavailable
+
+    async def cancel(self) -> bool:
+        # Graceful cancellation during execution
+```
+
+**State Machine**:
+```
+        ┌─────────────┐
+        │   PENDING   │
+        └──────┬──────┘
+               │ start()
+        ┌──────▼──────────┐
+        │   EXECUTING     │ ◄──┐
+        └──────┬──────────┘    │ retry_count < 3
+               │               │
+        ┌──────▼──────┐────────┘
+        │  SUCCESS    │
+        └─────────────┘  OR  ┌─────────┐
+                               │ FAILED  │
+                               └─────────┘
+```
+
+### Independent Action Buttons (Phase 3)
+
+**Frontend Components**:
+
+1. **HTML** (`frontend/templates/job_detail.html`):
+   - Three buttons: "Structure JD", "Research Job", "Generate CV"
+   - Tier selector dropdown (Fast/Balanced/Quality)
+   - Cost display (Auto-calculated before execution)
+   - Status indicator (Pending → Executing → Completed)
+   - Progress bar with elapsed time
+
+2. **JavaScript State Machine** (`frontend/static/js/pipeline-actions.js`):
+   - Alpine.js for reactive state management
+   - Operation status polling (500ms interval)
+   - Cost calculator UI
+   - Result display with copy-to-clipboard
+
+3. **Styling** (`frontend/static/css/pipeline-actions.css`):
+   - Button states with animated spinners
+   - Progress bar with gradient
+   - Toast notifications for completion/error
+
+### API Routes (Phase 3)
+
+**File**: `runner_service/routes/operations.py`
+
+**POST /api/operations/structure-jd**
+- Input: `{ job_id: string, tier: "fast|balanced|quality" }`
+- Output: `{ status: string, structured_jd: object, cost_usd: float, elapsed_seconds: float }`
+- Purpose: Parse raw JD into structured format without full pipeline
+
+**POST /api/operations/research-company**
+- Input: `{ company_name: string, tier: "fast|balanced|quality" }`
+- Output: `{ status: string, research_summary: string, signals: object, cost_usd: float }`
+- Purpose: Quick company research independent of job processing
+
+**POST /api/operations/generate-cv-variant**
+- Input: `{ job_id: string, tier: "fast|balanced|quality", variant_type: string }`
+- Output: `{ status: string, cv_text: string, elapsed_seconds: float, cost_usd: float }`
+- Purpose: Generate CV variant without running full pipeline
+
+**GET /api/operations/{operation_id}/status**
+- Output: `{ status: string, progress_percent: int, elapsed_seconds: float, error_message: string }`
+- Purpose: Poll operation status during execution
+
+### Integration Points
+
+**Router Registration** (`runner_service/routes/__init__.py`):
+```python
+from runner_service.routes.operations import operations_router
+
+app.include_router(operations_router, prefix="/api/operations")
+```
+
+**Health Checks**:
+- Each operation validates dependencies before execution
+- MongoDB connectivity check
+- LLM provider availability check
+- Rate limiting verification
+
+### Annotation Heatmap Fix (Phase 3)
+
+**File**: `frontend/static/js/jd-annotation.js`
+
+**applyHighlights() Implementation**:
+```javascript
+function applyHighlights(annotations) {
+    // Clear previous highlights
+    document.querySelectorAll('[data-annotation-id]').forEach(el => {
+        el.style.backgroundColor = '';
+    });
+
+    // Apply new highlights
+    annotations.forEach(({ id, color }) => {
+        document.querySelectorAll(`[data-annotation-id="${id}"]`)
+            .forEach(el => {
+                el.style.backgroundColor = color;
+            });
+    });
+}
+```
+
+### Pending Work (Phase 4-6)
+
+**Phase 4: Service Implementations**
+- Actual service logic for structure-jd, research, cv-gen
+- Database persistence for operation results
+- Webhook integration for async completions
+
+**Phase 5: Contacts & Outreach Decoupling**
+- Separate API endpoint for contact discovery
+- Independent outreach message generation
+- Scheduling support for bulk outreach
+
+**Phase 6: E2E Testing & Documentation**
+- Integration tests for all operation endpoints
+- API documentation updates
+- User guide for tiered operations
+
+### Files Summary
+
+**Created** (6 files, 1320 lines):
+- `src/common/model_tiers.py` (380 lines)
+- `src/services/operation_base.py` (450 lines)
+- `frontend/static/css/pipeline-actions.css` (200 lines)
+- `frontend/static/js/pipeline-actions.js` (320 lines)
+- `runner_service/routes/operations.py` (280 lines)
+- `runner_service/routes/__init__.py` (40 lines)
+
+**Modified** (3 files):
+- `frontend/static/js/jd-annotation.js` (+80 lines)
+- `frontend/templates/job_detail.html`
+- `runner_service/app.py`
+
+**Tests Added** (2 files, 68 tests):
+- `tests/unit/test_model_tiers.py` (46 tests)
+- `tests/unit/test_operation_base.py` (22 tests)
+
+---
+
 ## Anti-Hallucination Pattern (NEW - 2025-12-08)
 
 ### Architecture: Three-Layer Validation System
