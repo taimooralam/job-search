@@ -49,11 +49,11 @@ TIER_CONFIGS: Dict[ModelTier, TierModelConfig] = {
     ),
     ModelTier.QUALITY: TierModelConfig(
         tier=ModelTier.QUALITY,
-        complex_model="claude-sonnet-4-20250514",
+        complex_model="claude-opus-4-5-20251101",  # Opus 4.5 for highest quality CV generation
         analytical_model="gpt-4o",
         simple_model="gpt-4o-mini",
-        cost_per_1k_input=0.003,
-        cost_per_1k_output=0.015,
+        cost_per_1k_input=0.015,  # Opus 4.5 pricing
+        cost_per_1k_output=0.075,
     ),
 }
 
@@ -155,8 +155,8 @@ def get_tier_display_info() -> list:
         {
             "value": "quality",
             "label": "Quality",
-            "description": "Best quality - Claude Sonnet for complex, gpt-4o for analytical",
+            "description": "Best quality - Claude Opus 4.5 for complex, gpt-4o for analytical",
             "icon": "star",
-            "badge": "~$0.15/op",
+            "badge": "~$0.50/op",
         },
     ]
