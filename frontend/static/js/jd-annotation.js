@@ -63,6 +63,14 @@ class AnnotationManager {
             reframeNote: '',
             keywords: ''
         };
+        // Persona synthesis state
+        this.personaState = {
+            statement: null,
+            isLoading: false,
+            isEditing: false,
+            hasIdentityAnnotations: false,
+            isUserEdited: false
+        };
     }
 
     /**
@@ -118,6 +126,16 @@ class AnnotationManager {
                 this.annotations = data.annotations.annotations || [];
                 this.processedJdHtml = data.annotations.processed_jd_html;
                 this.settings = data.annotations.settings || this.settings;
+
+                // Load stored persona if available
+                const storedPersona = data.annotations.synthesized_persona;
+                if (storedPersona && storedPersona.persona_statement) {
+                    this.personaState.statement = storedPersona.persona_statement;
+                    this.personaState.isUserEdited = storedPersona.is_user_edited || false;
+                }
+
+                // Check for identity annotations
+                this.checkIdentityAnnotations();
 
                 // Render processed JD if available
                 if (this.processedJdHtml) {
@@ -1122,6 +1140,222 @@ class AnnotationManager {
 
         // Phase 11: Update review queue if container exists
         this.renderReviewQueue();
+
+        // Update persona panel
+        this.renderPersonaPanel();
+    }
+
+    // ============================================================================
+    // Persona Methods
+    // ============================================================================
+
+    /**
+     * Check if there are any identity annotations (core_identity, strong_identity, developing)
+     */
+    checkIdentityAnnotations() {
+        const identityLevels = ['core_identity', 'strong_identity', 'developing'];
+        this.personaState.hasIdentityAnnotations = this.annotations.some(
+            a => a.is_active && identityLevels.includes(a.identity)
+        );
+    }
+
+    /**
+     * Synthesize persona from identity annotations using LLM
+     */
+    async synthesizePersona() {
+        if (this.personaState.isLoading) return;
+
+        // Check for identity annotations first
+        this.checkIdentityAnnotations();
+        if (!this.personaState.hasIdentityAnnotations) {
+            console.log('No identity annotations found, skipping synthesis');
+            return;
+        }
+
+        this.personaState.isLoading = true;
+        this.renderPersonaPanel();
+
+        try {
+            const response = await fetch(`/api/jobs/${this.jobId}/synthesize-persona`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.persona) {
+                this.personaState.statement = data.persona;
+                this.personaState.isUserEdited = false;
+                console.log('Synthesized persona:', data.persona);
+            } else {
+                console.warn('Persona synthesis returned no result:', data.message);
+            }
+        } catch (error) {
+            console.error('Error synthesizing persona:', error);
+        } finally {
+            this.personaState.isLoading = false;
+            this.renderPersonaPanel();
+        }
+    }
+
+    /**
+     * Save persona (after user edit)
+     */
+    async savePersona() {
+        const statement = this.personaState.statement?.trim();
+        if (!statement) return;
+
+        try {
+            const response = await fetch(`/api/jobs/${this.jobId}/save-persona`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    persona: statement,
+                    is_edited: true
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.personaState.isEditing = false;
+                this.personaState.isUserEdited = true;
+                console.log('Persona saved successfully');
+            }
+        } catch (error) {
+            console.error('Error saving persona:', error);
+        }
+
+        this.renderPersonaPanel();
+    }
+
+    /**
+     * Enter persona edit mode
+     */
+    startEditingPersona() {
+        this.personaState.isEditing = true;
+        this.renderPersonaPanel();
+    }
+
+    /**
+     * Cancel persona edit mode
+     */
+    cancelEditingPersona() {
+        this.personaState.isEditing = false;
+        this.renderPersonaPanel();
+    }
+
+    /**
+     * Update persona statement (called from textarea input)
+     */
+    updatePersonaText(text) {
+        this.personaState.statement = text;
+    }
+
+    /**
+     * Render the persona panel UI
+     */
+    renderPersonaPanel() {
+        const container = document.getElementById('persona-panel-container');
+        if (!container) return;
+
+        // Check for identity annotations
+        this.checkIdentityAnnotations();
+
+        // Hide if no identity annotations
+        if (!this.personaState.hasIdentityAnnotations) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const { statement, isLoading, isEditing, isUserEdited } = this.personaState;
+
+        // Loading state
+        if (isLoading) {
+            container.innerHTML = `
+                <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 class="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Synthesizing Persona...
+                    </h4>
+                    <p class="text-sm text-indigo-700">Analyzing identity annotations to create your professional positioning...</p>
+                </div>
+            `;
+            return;
+        }
+
+        // No persona yet - show generate button
+        if (!statement) {
+            container.innerHTML = `
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 class="font-semibold text-gray-700 mb-2">Professional Persona</h4>
+                    <p class="text-sm text-gray-600 mb-3">
+                        You have identity annotations. Generate a synthesized persona to use in CV, cover letter, and outreach.
+                    </p>
+                    <button onclick="annotationManager.synthesizePersona()"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
+                        Generate Persona
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Edit mode
+        if (isEditing) {
+            container.innerHTML = `
+                <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 class="font-semibold text-indigo-900 mb-2">Edit Persona</h4>
+                    <textarea id="persona-edit-textarea"
+                              class="w-full p-3 border border-indigo-300 rounded-md text-sm"
+                              rows="3"
+                              oninput="annotationManager.updatePersonaText(this.value)"
+                    >${statement}</textarea>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="annotationManager.savePersona()"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
+                            Save
+                        </button>
+                        <button onclick="annotationManager.cancelEditingPersona()"
+                                class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Display mode
+        const editedBadge = isUserEdited
+            ? '<span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2">edited</span>'
+            : '';
+
+        container.innerHTML = `
+            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-indigo-900 flex items-center">
+                        Synthesized Persona ${editedBadge}
+                    </h4>
+                    <div class="flex gap-2">
+                        <button onclick="annotationManager.startEditingPersona()"
+                                class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+                            Edit
+                        </button>
+                        <button onclick="annotationManager.synthesizePersona()"
+                                class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
+                            Regenerate
+                        </button>
+                    </div>
+                </div>
+                <p class="text-indigo-800 italic">"${statement}"</p>
+                <p class="text-xs text-indigo-600 mt-2">
+                    This persona will be used to frame your CV profile, cover letter opening, and outreach messages.
+                </p>
+            </div>
+        `;
     }
 
     /**
