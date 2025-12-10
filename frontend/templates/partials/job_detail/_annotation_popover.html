@@ -116,6 +116,19 @@
                   placeholder="e.g., 'While I haven't used X directly, my experience with Y demonstrates similar...'"></textarea>
     </div>
 
+    {# Strategic Note for LLM #}
+    <div class="mb-3" id="popover-strategic-container">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
+            Strategic Note
+            <span class="text-gray-400 font-normal">(LLM guidance for all layers)</span>
+        </label>
+        <textarea id="popover-strategic-note"
+                  class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  rows="2"
+                  placeholder="e.g., 'Emphasize Linux passion throughout CV and cover letter'"></textarea>
+        <p class="text-xs text-gray-400 mt-1">This note will influence CV generation, cover letters, and outreach messaging.</p>
+    </div>
+
     {# Keywords #}
     <div class="mb-4">
         <label class="block text-xs font-medium text-gray-500 uppercase mb-1">

@@ -312,14 +312,19 @@ class AnnotationManager {
             }
         });
 
-        // Click outside popover to close
-        document.addEventListener('click', (e) => {
+        // Click outside popover to close - use mousedown for better UX
+        document.addEventListener('mousedown', (e) => {
             const popover = document.getElementById('annotation-popover');
-            const jdViewer = document.getElementById('jd-processed-content');
-            if (popover && !popover.classList.contains('hidden') &&
-                !popover.contains(e.target) && !jdViewer?.contains(e.target)) {
-                hideAnnotationPopover();
-            }
+            if (!popover || popover.classList.contains('hidden')) return;
+
+            // If clicking inside the popover, don't close
+            if (popover.contains(e.target)) return;
+
+            // If clicking on an annotation highlight, let the click handler manage it
+            if (e.target.closest('.annotation-highlight')) return;
+
+            // Close popover for any other click
+            hideAnnotationPopover();
         });
     }
 
@@ -356,36 +361,135 @@ class AnnotationManager {
     /**
      * Show annotation popover at position
      */
-    showAnnotationPopover(rect, selectedText) {
+    showAnnotationPopover(rect, selectedText, editingAnnotation = null) {
         const popover = document.getElementById('annotation-popover');
         if (!popover) return;
+
+        // Store editing state
+        this.editingAnnotationId = editingAnnotation?.id || null;
+
+        // Update header text based on mode
+        const titleEl = document.getElementById('popover-title');
+        if (titleEl) {
+            titleEl.textContent = editingAnnotation ? 'Edit Annotation' : 'Create Annotation';
+        }
+
+        // Update save button text
+        const saveBtn = document.getElementById('popover-save-btn');
+        if (saveBtn) {
+            saveBtn.textContent = editingAnnotation ? 'Update Annotation' : 'Add Annotation';
+        }
 
         // Update selected text display
         const textEl = document.getElementById('popover-selected-text');
         if (textEl) textEl.textContent = selectedText;
 
-        // Reset form state
+        // Reset form state first
         this.resetPopoverForm();
 
-        // Position popover
-        const popoverWidth = 320;
-        const popoverHeight = popover.offsetHeight || 400;
+        // If editing, populate with existing values
+        if (editingAnnotation) {
+            this.populatePopoverWithAnnotation(editingAnnotation);
+        }
 
+        // Position popover - account for panel boundaries
+        const panel = document.getElementById('jd-annotation-panel');
+        const panelRect = panel ? panel.getBoundingClientRect() : { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
+
+        const popoverWidth = 320;
+        // Force layout to get accurate height
+        popover.style.visibility = 'hidden';
+        popover.classList.remove('hidden');
+        const popoverHeight = popover.offsetHeight || 500;
+        popover.classList.add('hidden');
+        popover.style.visibility = '';
+
+        // Calculate position relative to viewport
         let left = rect.left + (rect.width / 2) - (popoverWidth / 2);
         let top = rect.bottom + 10;
 
-        // Keep within viewport
-        if (left < 10) left = 10;
-        if (left + popoverWidth > window.innerWidth - 10) {
-            left = window.innerWidth - popoverWidth - 10;
+        // Keep within panel bounds (prefer inside panel if open)
+        const padding = 10;
+        const rightBound = panel ? panelRect.right : window.innerWidth;
+        const leftBound = panel ? panelRect.left : 0;
+
+        // Constrain horizontally
+        if (left < leftBound + padding) {
+            left = leftBound + padding;
         }
-        if (top + popoverHeight > window.innerHeight - 10) {
-            top = rect.top - popoverHeight - 10;
+        if (left + popoverWidth > rightBound - padding) {
+            left = rightBound - popoverWidth - padding;
         }
+
+        // Constrain vertically - prefer below, fall back to above
+        if (top + popoverHeight > window.innerHeight - padding) {
+            // Try positioning above the selection
+            const aboveTop = rect.top - popoverHeight - 10;
+            if (aboveTop > padding) {
+                top = aboveTop;
+            } else {
+                // Center vertically if neither above nor below works
+                top = Math.max(padding, (window.innerHeight - popoverHeight) / 2);
+            }
+        }
+
+        // Final safety clamp
+        top = Math.max(padding, Math.min(top, window.innerHeight - popoverHeight - padding));
+        left = Math.max(padding, Math.min(left, window.innerWidth - popoverWidth - padding));
 
         popover.style.left = `${left}px`;
         popover.style.top = `${top}px`;
         popover.classList.remove('hidden');
+    }
+
+    /**
+     * Populate popover with existing annotation data for editing
+     */
+    populatePopoverWithAnnotation(annotation) {
+        // Set relevance
+        if (annotation.relevance) {
+            this.setPopoverRelevance(annotation.relevance);
+        }
+
+        // Set requirement type
+        if (annotation.requirement_type) {
+            this.setPopoverRequirement(annotation.requirement_type);
+        }
+
+        // Set STAR stories
+        if (annotation.star_ids && annotation.star_ids.length > 0) {
+            annotation.star_ids.forEach(starId => {
+                const checkbox = document.querySelector(`.star-checkbox[value="${starId}"]`);
+                if (checkbox) checkbox.checked = true;
+            });
+            this.popoverState.starIds = annotation.star_ids;
+        }
+
+        // Set reframe note
+        const reframeEl = document.getElementById('popover-reframe-note');
+        if (reframeEl && annotation.reframe_note) {
+            reframeEl.value = annotation.reframe_note;
+        }
+
+        // Set strategic note
+        const strategicEl = document.getElementById('popover-strategic-note');
+        if (strategicEl && annotation.strategic_note) {
+            strategicEl.value = annotation.strategic_note;
+        }
+
+        // Set keywords
+        const keywordsEl = document.getElementById('popover-keywords');
+        if (keywordsEl && annotation.suggested_keywords) {
+            keywordsEl.value = annotation.suggested_keywords.join(', ');
+        }
+
+        // Store state
+        this.popoverState.selectedText = annotation.target?.text || '';
+        this.popoverState.relevance = annotation.relevance;
+        this.popoverState.requirement = annotation.requirement_type;
+        this.popoverState.reframeNote = annotation.reframe_note || '';
+        this.popoverState.strategicNote = annotation.strategic_note || '';
+        this.popoverState.keywords = annotation.suggested_keywords?.join(', ') || '';
     }
 
     /**
@@ -408,8 +512,13 @@ class AnnotationManager {
         // Clear inputs
         const reframeEl = document.getElementById('popover-reframe-note');
         const keywordsEl = document.getElementById('popover-keywords');
+        const strategicEl = document.getElementById('popover-strategic-note');
         if (reframeEl) reframeEl.value = '';
         if (keywordsEl) keywordsEl.value = '';
+        if (strategicEl) strategicEl.value = '';
+
+        // Reset editing state
+        this.editingAnnotationId = null;
 
         // Disable save button
         const saveBtn = document.getElementById('popover-save-btn');
@@ -473,35 +582,59 @@ class AnnotationManager {
     }
 
     /**
-     * Create annotation from popover state
+     * Create or update annotation from popover state
      */
     createAnnotationFromPopover() {
         const reframeEl = document.getElementById('popover-reframe-note');
         const keywordsEl = document.getElementById('popover-keywords');
+        const strategicEl = document.getElementById('popover-strategic-note');
 
-        const annotation = {
-            id: this.generateId(),
-            target: {
-                text: this.popoverState.selectedText,
-                section: this.getSelectedSection(),
-                char_start: 0, // Would need more complex DOM tracking
-                char_end: this.popoverState.selectedText.length
-            },
-            annotation_type: 'skill_match',
-            relevance: this.popoverState.relevance,
-            requirement_type: this.popoverState.requirement || 'neutral',
-            star_ids: this.popoverState.starIds,
-            reframe_note: reframeEl?.value || '',
-            suggested_keywords: keywordsEl?.value.split(',').map(k => k.trim()).filter(k => k) || [],
-            is_active: true,
-            priority: 3,
-            source: 'manual',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        };
+        const isEditing = !!this.editingAnnotationId;
 
-        // Add to annotations
-        this.annotations.push(annotation);
+        if (isEditing) {
+            // Update existing annotation
+            const index = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
+            if (index !== -1) {
+                this.annotations[index] = {
+                    ...this.annotations[index],
+                    relevance: this.popoverState.relevance,
+                    requirement_type: this.popoverState.requirement || 'neutral',
+                    star_ids: this.popoverState.starIds,
+                    reframe_note: reframeEl?.value || '',
+                    strategic_note: strategicEl?.value || '',
+                    suggested_keywords: keywordsEl?.value.split(',').map(k => k.trim()).filter(k => k) || [],
+                    updated_at: new Date().toISOString()
+                };
+                console.log('Updated annotation:', this.annotations[index]);
+            }
+        } else {
+            // Create new annotation
+            const annotation = {
+                id: this.generateId(),
+                target: {
+                    text: this.popoverState.selectedText,
+                    section: this.getSelectedSection(),
+                    char_start: 0, // Would need more complex DOM tracking
+                    char_end: this.popoverState.selectedText.length
+                },
+                annotation_type: 'skill_match',
+                relevance: this.popoverState.relevance,
+                requirement_type: this.popoverState.requirement || 'neutral',
+                star_ids: this.popoverState.starIds,
+                reframe_note: reframeEl?.value || '',
+                strategic_note: strategicEl?.value || '',
+                suggested_keywords: keywordsEl?.value.split(',').map(k => k.trim()).filter(k => k) || [],
+                is_active: true,
+                priority: 3,
+                source: 'manual',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // Add to annotations
+            this.annotations.push(annotation);
+            console.log('Created annotation:', annotation);
+        }
 
         // Re-render
         this.renderAnnotations();
@@ -511,10 +644,9 @@ class AnnotationManager {
         // Schedule save
         this.scheduleSave();
 
-        // Hide popover
+        // Hide popover and reset editing state
+        this.editingAnnotationId = null;
         hideAnnotationPopover();
-
-        console.log('Created annotation:', annotation);
     }
 
     /**
@@ -826,9 +958,12 @@ class AnnotationManager {
                 highlight.dataset.relevance = relevance;
                 highlight.dataset.relevanceLabel = this.getRelevanceLabel(relevance);
                 highlight.textContent = matchText;
+                highlight.style.cursor = 'pointer';
                 highlight.onclick = (e) => {
                     e.stopPropagation();
-                    this.scrollToAnnotation(annotationId);
+                    e.preventDefault();
+                    // Open popover for editing this annotation
+                    this.editAnnotationFromHighlight(annotationId, highlight);
                 };
                 fragment.appendChild(highlight);
 
@@ -856,6 +991,29 @@ class AnnotationManager {
             'gap': 'Gap (0.3x)'
         };
         return labels[relevance] || relevance;
+    }
+
+    /**
+     * Edit annotation from highlight click
+     */
+    editAnnotationFromHighlight(annotationId, highlightEl) {
+        if (!annotationId) return;
+
+        // Find the annotation data
+        const annotation = this.annotations.find(a => a.id === annotationId);
+        if (!annotation) {
+            console.warn('Annotation not found:', annotationId);
+            return;
+        }
+
+        // Get position from highlight element
+        const rect = highlightEl.getBoundingClientRect();
+
+        // Show popover in edit mode
+        this.showAnnotationPopover(rect, annotation.target?.text || '', annotation);
+
+        // Also highlight in the list
+        this.scrollToAnnotation(annotationId);
     }
 
     /**
