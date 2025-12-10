@@ -206,11 +206,18 @@ class AnnotationContext:
     - Which pain points to prioritize (must-have keywords)
     - Which areas to emphasize (core strengths)
     - Which areas need reframing (gaps with reframe notes)
+    - Passion areas for authentic emphasis (Phase 4)
+    - Identity areas for professional positioning (Phase 4)
     """
     must_have_keywords: List[str]    # Keywords from must_have requirement annotations
     gap_areas: List[str]             # Text from gap annotations (may need different framing)
     reframe_notes: List[str]         # Reframe guidance for gaps
     core_strength_areas: List[str]   # Areas where candidate is strong
+    # Phase 4: Passion and Identity dimensions
+    passion_love_it_areas: List[str]   # Areas candidate is genuinely excited about
+    passion_avoid_areas: List[str]     # Areas candidate prefers not to do
+    identity_core_areas: List[str]     # How candidate sees their professional identity
+    identity_not_me_areas: List[str]   # Areas that don't match candidate's identity
 
 
 def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict[str, List[str]]:
@@ -221,13 +228,19 @@ def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict
         jd_annotations: JDAnnotations dict from job state (or None)
 
     Returns:
-        Dict with must_have_keywords, gap_areas, reframe_notes, core_strength_areas
+        Dict with must_have_keywords, gap_areas, reframe_notes, core_strength_areas,
+        passion_love_it_areas, passion_avoid_areas, identity_core_areas, identity_not_me_areas
     """
     empty_context = {
         "must_have_keywords": [],
         "gap_areas": [],
         "reframe_notes": [],
         "core_strength_areas": [],
+        # Phase 4: Passion and Identity dimensions
+        "passion_love_it_areas": [],
+        "passion_avoid_areas": [],
+        "identity_core_areas": [],
+        "identity_not_me_areas": [],
     }
 
     if not jd_annotations:
@@ -241,6 +254,11 @@ def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict
     gap_areas: List[str] = []
     reframe_notes: List[str] = []
     core_strength_areas: List[str] = []
+    # Phase 4: Passion and Identity lists
+    passion_love_it_areas: List[str] = []
+    passion_avoid_areas: List[str] = []
+    identity_core_areas: List[str] = []
+    identity_not_me_areas: List[str] = []
 
     for ann in annotations:
         # Only process active annotations
@@ -249,6 +267,8 @@ def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict
 
         relevance = ann.get("relevance")
         requirement_type = ann.get("requirement_type")
+        passion = ann.get("passion")
+        identity = ann.get("identity")
         target = ann.get("target", {})
         target_text = target.get("text", "")
 
@@ -290,11 +310,40 @@ def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict
                 if keyword and keyword not in core_strength_areas:
                     core_strength_areas.append(keyword)
 
+        # Phase 4: Extract passion areas
+        if passion == "love_it":
+            # Areas candidate is genuinely excited about
+            passion_text = ann.get("matching_skill") or target_text
+            if passion_text and passion_text not in passion_love_it_areas:
+                passion_love_it_areas.append(passion_text)
+        elif passion == "avoid":
+            # Areas candidate prefers not to do
+            avoid_text = target_text
+            if avoid_text and avoid_text not in passion_avoid_areas:
+                passion_avoid_areas.append(avoid_text)
+
+        # Phase 4: Extract identity areas
+        if identity == "core_identity":
+            # How candidate sees their professional identity
+            identity_text = ann.get("matching_skill") or target_text
+            if identity_text and identity_text not in identity_core_areas:
+                identity_core_areas.append(identity_text)
+        elif identity == "not_identity":
+            # Areas that don't match candidate's identity
+            not_me_text = target_text
+            if not_me_text and not_me_text not in identity_not_me_areas:
+                identity_not_me_areas.append(not_me_text)
+
     return {
         "must_have_keywords": must_have_keywords,
         "gap_areas": gap_areas,
         "reframe_notes": reframe_notes,
         "core_strength_areas": core_strength_areas,
+        # Phase 4: Passion and Identity dimensions
+        "passion_love_it_areas": passion_love_it_areas,
+        "passion_avoid_areas": passion_avoid_areas,
+        "identity_core_areas": identity_core_areas,
+        "identity_not_me_areas": identity_not_me_areas,
     }
 
 
@@ -315,9 +364,16 @@ def build_annotation_aware_prompt(annotation_context: Dict[str, List[str]]) -> s
     gaps = annotation_context.get("gap_areas", [])
     reframes = annotation_context.get("reframe_notes", [])
     strengths = annotation_context.get("core_strength_areas", [])
+    # Phase 4: Passion and Identity dimensions
+    passion_love_it = annotation_context.get("passion_love_it_areas", [])
+    passion_avoid = annotation_context.get("passion_avoid_areas", [])
+    identity_core = annotation_context.get("identity_core_areas", [])
+    identity_not_me = annotation_context.get("identity_not_me_areas", [])
 
     # If no annotation context, return empty string
-    if not any([must_have, gaps, reframes, strengths]):
+    all_contexts = [must_have, gaps, reframes, strengths,
+                    passion_love_it, passion_avoid, identity_core, identity_not_me]
+    if not any(all_contexts):
         return ""
 
     sections = []
@@ -339,11 +395,45 @@ def build_annotation_aware_prompt(annotation_context: Dict[str, List[str]]) -> s
             sections.append(f"- {strength}")
         sections.append("")
 
+    # Phase 4: Passion areas - authentic enthusiasm indicators
+    if passion_love_it:
+        sections.append("### PASSION AREAS (candidate genuinely excited about)")
+        sections.append("Pain points in these areas should get PRIORITY BOOST (+5):")
+        sections.append("The candidate has authentic enthusiasm here - these are conversation hooks.")
+        for area in passion_love_it:
+            sections.append(f"- {area}")
+        sections.append("")
+
+    # Phase 4: Identity areas - professional self-image
+    if identity_core:
+        sections.append("### CORE IDENTITY AREAS (who the candidate IS)")
+        sections.append("Pain points matching this identity should get BOOST (+3):")
+        sections.append("Frame these as natural fits for who the candidate fundamentally is.")
+        for area in identity_core:
+            sections.append(f"- {area}")
+        sections.append("")
+
     if gaps:
         sections.append("### GAP AREAS (deprioritize or reframe)")
         sections.append("These are skill gaps - pain points here should be DEPRIORITIZED or reframed:")
         for gap in gaps:
             sections.append(f"- {gap}")
+        sections.append("")
+
+    # Phase 4: Avoid areas - de-emphasize
+    if passion_avoid:
+        sections.append("### AVOID AREAS (candidate prefers not to do)")
+        sections.append("De-prioritize pain points in these areas - candidate lacks enthusiasm here:")
+        for area in passion_avoid:
+            sections.append(f"- {area}")
+        sections.append("")
+
+    # Phase 4: Not-identity areas - poor fit
+    if identity_not_me:
+        sections.append("### NOT-IDENTITY AREAS (not who the candidate is)")
+        sections.append("Pain points in these areas are poor fits - deprioritize significantly:")
+        for area in identity_not_me:
+            sections.append(f"- {area}")
         sections.append("")
 
     if reframes:
@@ -360,17 +450,36 @@ def rank_pain_points_with_annotations(
     pain_points: List[Dict[str, Any]],
     must_have_keywords: List[str],
     gap_keywords: List[str],
+    passion_love_it_keywords: Optional[List[str]] = None,
+    passion_avoid_keywords: Optional[List[str]] = None,
+    identity_core_keywords: Optional[List[str]] = None,
+    identity_not_me_keywords: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Re-rank pain points based on annotation priorities.
 
     Pain points matching must-have keywords get boosted.
     Pain points matching gap keywords get deprioritized.
+    Phase 4: Pain points matching passion/identity get additional adjustments.
+
+    Scoring:
+    - Must-have match: +10
+    - Gap match: -5
+    - Passion love_it match: +5 (authentic enthusiasm)
+    - Passion avoid match: -3 (lack of enthusiasm)
+    - Identity core match: +3 (professional identity alignment)
+    - Identity not_me match: -4 (identity mismatch)
+    - High confidence: +3
+    - Low confidence: -2
 
     Args:
         pain_points: List of pain point dicts with 'text' field
         must_have_keywords: Keywords from must_have annotations
         gap_keywords: Keywords from gap annotations
+        passion_love_it_keywords: Keywords from passion=love_it annotations
+        passion_avoid_keywords: Keywords from passion=avoid annotations
+        identity_core_keywords: Keywords from identity=core_identity annotations
+        identity_not_me_keywords: Keywords from identity=not_identity annotations
 
     Returns:
         Re-ranked list of pain points
@@ -378,13 +487,30 @@ def rank_pain_points_with_annotations(
     if not pain_points:
         return []
 
-    if not must_have_keywords and not gap_keywords:
+    # Initialize empty lists for optional parameters
+    passion_love_it_keywords = passion_love_it_keywords or []
+    passion_avoid_keywords = passion_avoid_keywords or []
+    identity_core_keywords = identity_core_keywords or []
+    identity_not_me_keywords = identity_not_me_keywords or []
+
+    # Check if any ranking criteria exist
+    has_criteria = any([
+        must_have_keywords, gap_keywords,
+        passion_love_it_keywords, passion_avoid_keywords,
+        identity_core_keywords, identity_not_me_keywords
+    ])
+    if not has_criteria:
         return pain_points
 
     # Score each pain point
     scored = []
     must_have_lower = [kw.lower() for kw in must_have_keywords]
     gap_lower = [kw.lower() for kw in gap_keywords]
+    # Phase 4: Passion and Identity keywords
+    passion_love_lower = [kw.lower() for kw in passion_love_it_keywords]
+    passion_avoid_lower = [kw.lower() for kw in passion_avoid_keywords]
+    identity_core_lower = [kw.lower() for kw in identity_core_keywords]
+    identity_not_me_lower = [kw.lower() for kw in identity_not_me_keywords]
 
     for pp in pain_points:
         text = pp.get("text", "").lower()
@@ -399,6 +525,22 @@ def rank_pain_points_with_annotations(
         for kw in gap_lower:
             if kw in text:
                 score -= 5
+
+        # Phase 4: Passion boosts/penalties
+        for kw in passion_love_lower:
+            if kw in text:
+                score += 5  # Authentic enthusiasm bonus
+        for kw in passion_avoid_lower:
+            if kw in text:
+                score -= 3  # Lack of enthusiasm penalty
+
+        # Phase 4: Identity boosts/penalties
+        for kw in identity_core_lower:
+            if kw in text:
+                score += 3  # Identity alignment bonus
+        for kw in identity_not_me_lower:
+            if kw in text:
+                score -= 4  # Identity mismatch penalty
 
         # Confidence bonus
         confidence = pp.get("confidence", "medium")
@@ -935,6 +1077,15 @@ class PainPointMiner:
                     logger.info(f"  Gap areas: {len(annotation_context['gap_areas'])}")
                 if annotation_context["reframe_notes"]:
                     logger.info(f"  Reframe notes: {len(annotation_context['reframe_notes'])}")
+                # Phase 4: Log passion/identity context
+                if annotation_context["passion_love_it_areas"]:
+                    logger.info(f"  Passion (love_it): {annotation_context['passion_love_it_areas']}")
+                if annotation_context["passion_avoid_areas"]:
+                    logger.info(f"  Passion (avoid): {len(annotation_context['passion_avoid_areas'])} areas")
+                if annotation_context["identity_core_areas"]:
+                    logger.info(f"  Identity (core): {annotation_context['identity_core_areas']}")
+                if annotation_context["identity_not_me_areas"]:
+                    logger.info(f"  Identity (not_me): {len(annotation_context['identity_not_me_areas'])} areas")
             else:
                 logger.info("No annotation context available - using standard extraction")
 
@@ -989,11 +1140,16 @@ class PainPointMiner:
                     for item in analysis.pain_points
                 ]
 
-                # Rank pain points based on annotations
+                # Rank pain points based on annotations (including Phase 4 passion/identity)
                 ranked_pain_points = rank_pain_points_with_annotations(
                     pain_points_for_ranking,
                     must_have_keywords=annotation_context.get("must_have_keywords", []),
                     gap_keywords=gap_keywords,
+                    # Phase 4: Passion and Identity dimensions
+                    passion_love_it_keywords=annotation_context.get("passion_love_it_areas", []),
+                    passion_avoid_keywords=annotation_context.get("passion_avoid_areas", []),
+                    identity_core_keywords=annotation_context.get("identity_core_areas", []),
+                    identity_not_me_keywords=annotation_context.get("identity_not_me_areas", []),
                 )
 
                 # Log ranking changes if any

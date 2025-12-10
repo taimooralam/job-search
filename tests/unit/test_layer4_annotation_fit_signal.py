@@ -442,11 +442,14 @@ class TestFitScoreBlending:
         from src.layer4.annotation_fit_signal import blend_fit_scores
 
         llm_score = 70
+        # Add more positive annotations including passion/identity for stronger signal
         positive_annotations = {
             "annotations": [
-                {"id": "1", "relevance": "core_strength", "is_active": True},
-                {"id": "2", "relevance": "core_strength", "is_active": True},
-                {"id": "3", "relevance": "extremely_relevant", "is_active": True},
+                {"id": "1", "relevance": "core_strength", "is_active": True, "passion": "love_it"},
+                {"id": "2", "relevance": "core_strength", "is_active": True, "identity": "core_identity"},
+                {"id": "3", "relevance": "extremely_relevant", "is_active": True, "passion": "love_it"},
+                {"id": "4", "relevance": "core_strength", "is_active": True},
+                {"id": "5", "relevance": "core_strength", "is_active": True},
             ]
         }
 
