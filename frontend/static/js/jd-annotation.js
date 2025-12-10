@@ -120,6 +120,8 @@ class AnnotationManager {
                 // Render processed JD if available
                 if (this.processedJdHtml) {
                     this.renderProcessedJd();
+                    // JD already structured - show LLM re-structure option
+                    showLlmOption();
                 } else if (rawJd) {
                     // No processed JD yet - show raw JD with preserved whitespace
                     this.showRawJd(rawJd);
@@ -894,6 +896,9 @@ function openAnnotationPanel(jobId) {
     if (!annotationManager || annotationManager.jobId !== jobId) {
         annotationManager = new AnnotationManager(jobId);
         annotationManager.init();
+        // Reset the LLM button state for new job
+        jdStructuredWithRules = false;
+        resetStructureButton();
     }
 
     // Show panel
@@ -902,6 +907,43 @@ function openAnnotationPanel(jobId) {
 
     // Focus trap
     panel.focus();
+}
+
+/**
+ * Reset the Structure JD button to initial state
+ */
+function resetStructureButton() {
+    const btn = document.getElementById('process-jd-btn');
+    if (btn) {
+        btn.innerHTML = `
+            <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+            </svg>
+            <span class="hidden sm:inline">Structure JD</span>
+        `;
+        btn.title = 'Structure JD into sections for easier annotation';
+        btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+        btn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+    }
+}
+
+/**
+ * Update button to show LLM option (called when JD is already structured)
+ */
+function showLlmOption() {
+    jdStructuredWithRules = true;
+    const btn = document.getElementById('process-jd-btn');
+    if (btn) {
+        btn.innerHTML = `
+            <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            <span class="hidden sm:inline">Re-structure with AI</span>
+        `;
+        btn.title = 'Not satisfied? Re-process using AI for better section detection';
+        btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+        btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+    }
 }
 
 /**
@@ -1007,23 +1049,30 @@ function toggleAnnotationView(view) {
     }
 }
 
+// Track whether rule-based structuring has been done (to offer LLM option)
+let jdStructuredWithRules = false;
+
 /**
- * Process JD for annotation
+ * Process JD for annotation (rule-based first, then LLM option)
  */
 async function processJDForAnnotation() {
     if (!annotationManager) return;
 
     const btn = document.getElementById('process-jd-btn');
+    const useLlm = jdStructuredWithRules; // Use LLM if already structured with rules
+
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="animate-spin">⏳</span> Processing...';
+        btn.innerHTML = useLlm
+            ? '<span class="animate-spin">⏳</span> AI Processing...'
+            : '<span class="animate-spin">⏳</span> Structuring...';
     }
 
     try {
         const response = await fetch(`/api/jobs/${annotationManager.jobId}/process-jd`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ use_llm: false })
+            body: JSON.stringify({ use_llm: useLlm })
         });
 
         if (!response.ok) throw new Error('Failed to process JD');
@@ -1032,19 +1081,38 @@ async function processJDForAnnotation() {
         if (data.success && data.processed_jd) {
             annotationManager.processedJdHtml = data.processed_jd.html;
             annotationManager.renderProcessedJd();
+
+            // After successful rule-based structuring, offer LLM option
+            if (!useLlm) {
+                jdStructuredWithRules = true;
+            }
         }
     } catch (error) {
         console.error('Error processing JD:', error);
-        alert('Failed to process job description');
+        alert(useLlm ? 'Failed to process with AI' : 'Failed to structure job description');
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = `
-                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
-                </svg>
-                <span class="hidden sm:inline">Structure JD</span>
-            `;
+            // Show different button based on current state
+            if (jdStructuredWithRules) {
+                // After rule-based structuring, offer LLM option
+                btn.innerHTML = `
+                    <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                    <span class="hidden sm:inline">Re-structure with AI</span>
+                `;
+                btn.title = 'Not satisfied? Re-process using AI for better section detection';
+                btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+            } else {
+                btn.innerHTML = `
+                    <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                    </svg>
+                    <span class="hidden sm:inline">Structure JD</span>
+                `;
+            }
         }
     }
 }
