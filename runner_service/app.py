@@ -38,7 +38,7 @@ from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
 from .config import settings, validate_config_on_startup
-from .routes import operations_router
+from .routes import operations_router, contacts_router
 
 # Configure logging
 logging.basicConfig(
@@ -69,6 +69,7 @@ if settings.cors_origins_list:
 
 # Include modular route handlers
 app.include_router(operations_router)
+app.include_router(contacts_router)
 
 
 @dataclass

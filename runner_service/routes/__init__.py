@@ -6,5 +6,6 @@ Each module handles a specific area of functionality.
 """
 
 from .operations import router as operations_router
+from .contacts import router as contacts_router
 
-__all__ = ["operations_router"]
+__all__ = ["operations_router", "contacts_router"]
