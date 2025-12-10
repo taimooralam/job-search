@@ -1403,9 +1403,13 @@ async function generateSuggestions() {
 
         const data = await response.json();
         if (data.success) {
-            // TODO: Show suggestions modal
+            // TODO: Show suggestions modal with proper UI
             console.log('Generated suggestions:', data.suggestions);
-            alert(`Generated suggestions: ${data.gap_count} gaps identified`);
+            if (data.gap_count === 0) {
+                alert('No gaps found. Add annotations with relevance "Gap" to identify skills you need to address.');
+            } else {
+                alert(`Generated suggestions: ${data.gap_count} gap${data.gap_count > 1 ? 's' : ''} identified.\n\nCheck the console for details.`);
+            }
         }
     } catch (error) {
         console.error('Error generating suggestions:', error);
