@@ -177,9 +177,10 @@ class CompanyResearchService(OperationService):
             "company_research": job.get("company_research"),
             "role_research": job.get("role_research"),
             "errors": job.get("errors", []),
-            # Initialize remaining fields as None
+            # Initialize remaining fields - include jd_annotations if available
             "scraped_job_posting": None,
-            "jd_annotations": None,
+            # Phase 4: Pass jd_annotations for annotation-guided research
+            "jd_annotations": job.get("jd_annotations"),
             "improvement_suggestions": None,
             "interview_prep": None,
             "pain_points": job.get("pain_points"),
