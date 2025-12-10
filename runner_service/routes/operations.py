@@ -285,48 +285,48 @@ async def structure_jd(
     Returns:
         OperationResponse with structured JD data
     """
-    operation = "structure-jd"
-    run_id = _generate_run_id(operation)
+    from src.services.structure_jd_service import StructureJDService
 
-    logger.info(f"[{run_id[:16]}] Starting {operation} for job {job_id}")
+    operation = "structure-jd"
+
+    logger.info(f"Starting {operation} for job {job_id}")
 
     try:
-        # Validate inputs
-        job = _validate_job_exists(job_id)
+        # Validate inputs first (fast fail for bad inputs)
+        _validate_job_exists(job_id)  # Raises HTTPException if not found
         tier = _validate_tier(request.tier)
-        model = get_model_for_operation(tier, operation)
 
         logger.info(
-            f"[{run_id[:16]}] Using tier={tier.value}, model={model}, use_llm={request.use_llm}"
+            f"Executing {operation}: tier={tier.value}, use_llm={request.use_llm}"
         )
 
-        # Phase 4: Actual implementation
-        # For now, return stubbed success response
-        estimated_cost = _estimate_operation_cost(tier, operation)
+        # Execute via service
+        service = StructureJDService()
+        result = await service.execute(
+            job_id=job_id,
+            tier=tier,
+            use_llm=request.use_llm,
+        )
 
-        # Stub data - Phase 4 will replace with actual extraction
-        stub_data = {
-            "status": "stubbed",
-            "message": "Phase 4 will implement actual JD structuring",
-            "job_title": job.get("title", "Unknown"),
-            "company": job.get("company", "Unknown"),
-            "has_jd_text": bool(job.get("jd_text") or job.get("description")),
-        }
-
-        logger.info(f"[{run_id[:16]}] Completed {operation} (stubbed)")
+        logger.info(
+            f"[{result.run_id[:16]}] Completed {operation}: "
+            f"success={result.success}, cost=${result.cost_usd:.4f}"
+        )
 
         return OperationResponse(
-            success=True,
-            data=stub_data,
-            cost_usd=estimated_cost,
-            run_id=run_id,
-            model_used=model,
-            duration_ms=100,  # Stubbed duration
+            success=result.success,
+            data=result.data,
+            cost_usd=result.cost_usd,
+            run_id=result.run_id,
+            error=result.error,
+            model_used=result.model_used,
+            duration_ms=result.duration_ms,
         )
 
     except HTTPException:
         raise
     except Exception as e:
+        run_id = _generate_run_id(operation)
         logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
         return OperationResponse(
             success=False,
@@ -353,10 +353,9 @@ async def research_company(
 
     Gathers intelligence including:
     - Company overview and recent news
-    - Tech stack and engineering culture
-    - Role-specific requirements and expectations
-    - Key people and team structure
-    - Interview process insights
+    - Business signals (funding, acquisitions, leadership changes)
+    - Role-specific requirements and business impact
+    - "Why now" timing analysis based on company signals
 
     Args:
         job_id: MongoDB ObjectId of the job
@@ -365,47 +364,51 @@ async def research_company(
     Returns:
         OperationResponse with research data
     """
-    operation = "research-company"
-    run_id = _generate_run_id(operation)
+    from src.services.company_research_service import CompanyResearchService
 
-    logger.info(f"[{run_id[:16]}] Starting {operation} for job {job_id}")
+    operation = "research-company"
+
+    logger.info(f"Starting {operation} for job {job_id}")
 
     try:
-        # Validate inputs
-        job = _validate_job_exists(job_id)
+        # Validate inputs first (fast fail for bad inputs)
+        _validate_job_exists(job_id)  # Raises HTTPException if not found
         tier = _validate_tier(request.tier)
-        model = get_model_for_operation(tier, operation)
 
         logger.info(
-            f"[{run_id[:16]}] Using tier={tier.value}, model={model}, force_refresh={request.force_refresh}"
+            f"Executing {operation}: tier={tier.value}, force_refresh={request.force_refresh}"
         )
 
-        # Phase 4: Actual implementation
-        estimated_cost = _estimate_operation_cost(tier, operation)
+        # Execute via service
+        service = CompanyResearchService()
+        try:
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                force_refresh=request.force_refresh,
+            )
+        finally:
+            service.close()
 
-        # Stub data - Phase 4 will replace with actual research
-        stub_data = {
-            "status": "stubbed",
-            "message": "Phase 4 will implement actual company research",
-            "company": job.get("company", "Unknown"),
-            "has_existing_research": bool(job.get("company_research")),
-            "force_refresh": request.force_refresh,
-        }
-
-        logger.info(f"[{run_id[:16]}] Completed {operation} (stubbed)")
+        logger.info(
+            f"[{result.run_id[:16]}] Completed {operation}: "
+            f"success={result.success}, cost=${result.cost_usd:.4f}"
+        )
 
         return OperationResponse(
-            success=True,
-            data=stub_data,
-            cost_usd=estimated_cost,
-            run_id=run_id,
-            model_used=model,
-            duration_ms=150,  # Stubbed duration
+            success=result.success,
+            data=result.data,
+            cost_usd=result.cost_usd,
+            run_id=result.run_id,
+            error=result.error,
+            model_used=result.model_used,
+            duration_ms=result.duration_ms,
         )
 
     except HTTPException:
         raise
     except Exception as e:
+        run_id = _generate_run_id(operation)
         logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
         return OperationResponse(
             success=False,
@@ -445,48 +448,51 @@ async def generate_cv(
         OperationResponse with generated CV data
     """
     operation = "generate-cv"
-    run_id = _generate_run_id(operation)
 
-    logger.info(f"[{run_id[:16]}] Starting {operation} for job {job_id}")
+    logger.info(f"Starting {operation} for job {job_id}")
 
     try:
         # Validate inputs
-        job = _validate_job_exists(job_id)
+        _validate_job_exists(job_id)
         tier = _validate_tier(request.tier)
-        model = get_model_for_operation(tier, operation)
 
         logger.info(
-            f"[{run_id[:16]}] Using tier={tier.value}, model={model}, use_annotations={request.use_annotations}"
+            f"Using tier={tier.value}, use_annotations={request.use_annotations}"
         )
 
-        # Phase 4: Actual implementation
-        estimated_cost = _estimate_operation_cost(tier, operation)
+        # Phase 4: Use CVGenerationService for actual implementation
+        from src.services.cv_generation_service import CVGenerationService
 
-        # Stub data - Phase 4 will replace with actual CV generation
-        stub_data = {
-            "status": "stubbed",
-            "message": "Phase 4 will implement actual CV generation",
-            "job_title": job.get("title", "Unknown"),
-            "company": job.get("company", "Unknown"),
-            "has_annotations": bool(job.get("jd_annotations")),
-            "use_annotations": request.use_annotations,
-        }
+        service = CVGenerationService()
+        result = await service.execute(
+            job_id=job_id,
+            tier=tier,
+            use_annotations=request.use_annotations,
+        )
 
-        logger.info(f"[{run_id[:16]}] Completed {operation} (stubbed)")
+        # Persist the operation run for tracking
+        service.persist_run(result, job_id, tier)
+
+        logger.info(
+            f"[{result.run_id[:16]}] Completed {operation}, "
+            f"success={result.success}, duration={result.duration_ms}ms"
+        )
 
         return OperationResponse(
-            success=True,
-            data=stub_data,
-            cost_usd=estimated_cost,
-            run_id=run_id,
-            model_used=model,
-            duration_ms=500,  # Stubbed duration
+            success=result.success,
+            data=result.data,
+            cost_usd=result.cost_usd,
+            run_id=result.run_id,
+            model_used=result.model_used,
+            duration_ms=result.duration_ms,
+            error=result.error,
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+        logger.exception(f"{operation} failed: {e}")
+        run_id = _generate_run_id(operation)
         return OperationResponse(
             success=False,
             data={},
