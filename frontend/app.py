@@ -3726,6 +3726,146 @@ def update_jd_annotations(job_id: str):
     })
 
 
+def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
+    """
+    Lightweight JD processor for Vercel deployment.
+
+    Parses JD into sections using rule-based pattern matching without
+    heavy dependencies (LangChain, etc.). Used as fallback when
+    src.layer1_4 import fails.
+    """
+    import re
+    import hashlib
+
+    # Section header patterns
+    SECTION_PATTERNS = {
+        "responsibilities": [r"responsibilities", r"what you['']?ll do", r"your role", r"key responsibilities"],
+        "qualifications": [r"qualifications", r"requirements", r"what we['']?re looking for", r"who you are"],
+        "nice_to_have": [r"nice to have", r"preferred", r"bonus", r"plus"],
+        "technical_skills": [r"technical skills", r"tech stack", r"technologies", r"skills"],
+        "benefits": [r"benefits", r"perks", r"what we offer", r"compensation"],
+        "about_company": [r"about us", r"about the company", r"who we are"],
+        "about_role": [r"about the role", r"the opportunity", r"overview"],
+    }
+
+    def detect_section_type(header: str) -> str:
+        header_lower = header.lower()
+        for section_type, patterns in SECTION_PATTERNS.items():
+            for pattern in patterns:
+                if re.search(pattern, header_lower):
+                    return section_type
+        return "other"
+
+    def split_into_items(content: str) -> list:
+        items = []
+        bullet_pattern = r'^[\s]*[-*•◦▪]\s*(.+)$'
+        bullet_matches = re.findall(bullet_pattern, content, re.MULTILINE)
+        if bullet_matches:
+            items = [m.strip() for m in bullet_matches if m.strip()]
+        else:
+            number_pattern = r'^[\s]*\d+[\.)]\s*(.+)$'
+            number_matches = re.findall(number_pattern, content, re.MULTILINE)
+            if number_matches:
+                items = [m.strip() for m in number_matches if m.strip()]
+            else:
+                lines = content.strip().split('\n')
+                items = [line.strip() for line in lines if line.strip() and len(line.strip()) > 10]
+        return items
+
+    # Parse sections
+    sections = []
+    header_pattern = r'^[\s]*(?:#{1,3}\s*)?([A-Z][A-Za-z\s&/\'-]+)[\s]*[:：]?\s*$'
+    lines = jd_text.split('\n')
+    current_section = None
+    current_content = []
+    current_start = 0
+
+    for i, line in enumerate(lines):
+        char_offset = sum(len(l) + 1 for l in lines[:i])
+        header_match = re.match(header_pattern, line.strip())
+        is_header = header_match and len(line.strip()) < 60
+
+        if is_header:
+            if current_section and current_content:
+                content = '\n'.join(current_content)
+                sections.append({
+                    "section_type": detect_section_type(current_section),
+                    "header": current_section,
+                    "content": content,
+                    "items": split_into_items(content),
+                    "char_start": current_start,
+                    "char_end": char_offset,
+                    "index": len(sections),
+                })
+            current_section = header_match.group(1).strip()
+            current_content = []
+            current_start = char_offset
+        elif current_section:
+            current_content.append(line)
+        elif line.strip():
+            if not current_section:
+                current_section = "About the Role"
+                current_start = 0
+            current_content.append(line)
+
+    # Save last section
+    if current_section and current_content:
+        content = '\n'.join(current_content)
+        sections.append({
+            "section_type": detect_section_type(current_section),
+            "header": current_section,
+            "content": content,
+            "items": split_into_items(content),
+            "char_start": current_start,
+            "char_end": len(jd_text),
+            "index": len(sections),
+        })
+
+    # Fallback: single section if no headers found
+    if not sections:
+        sections.append({
+            "section_type": "other",
+            "header": "Job Description",
+            "content": jd_text,
+            "items": split_into_items(jd_text),
+            "char_start": 0,
+            "char_end": len(jd_text),
+            "index": 0,
+        })
+
+    # Generate HTML
+    html_parts = ['<div class="jd-processed">']
+    for section in sections:
+        section_type = section["section_type"]
+        header = section["header"]
+        content = section["content"]
+        items = section["items"]
+
+        html_parts.append(f'<section data-section-type="{section_type}" data-char-start="{section["char_start"]}" data-char-end="{section["char_end"]}">')
+        html_parts.append(f'<h3 class="jd-section-header">{header}</h3>')
+
+        if items:
+            html_parts.append('<ul class="jd-section-items">')
+            for item in items:
+                html_parts.append(f'<li class="jd-item">{item}</li>')
+            html_parts.append('</ul>')
+        else:
+            for para in content.split('\n\n'):
+                if para.strip():
+                    html_parts.append(f'<p class="jd-paragraph">{para.strip()}</p>')
+
+        html_parts.append('</section>')
+    html_parts.append('</div>')
+
+    return {
+        "raw_text": jd_text,
+        "html": '\n'.join(html_parts),
+        "section_ids": [s["section_type"] for s in sections],
+        "content_hash": hashlib.md5(jd_text.encode()).hexdigest(),
+        "sections": sections,
+    }
+
+
 @app.route("/api/jobs/<job_id>/process-jd", methods=["POST"])
 @login_required
 def process_job_description(job_id: str):
@@ -3738,8 +3878,6 @@ def process_job_description(job_id: str):
     Returns:
         JSON with processed JD structure
     """
-    from src.layer1_4 import process_jd_sync, processed_jd_to_dict
-
     db = get_db()
     collection = db["level-2"]
 
@@ -3762,9 +3900,15 @@ def process_job_description(job_id: str):
     use_llm = data.get("use_llm", False)
 
     try:
-        # Process the JD
-        processed = process_jd_sync(jd_text, use_llm=use_llm)
-        result = processed_jd_to_dict(processed)
+        # Try to use the full implementation first
+        try:
+            from src.layer1_4 import process_jd_sync, processed_jd_to_dict
+            processed = process_jd_sync(jd_text, use_llm=use_llm)
+            result = processed_jd_to_dict(processed)
+        except ImportError as ie:
+            # Fallback to lightweight implementation (for Vercel deployment)
+            logger.warning(f"Using lightweight JD processor (import failed: {ie})")
+            result = _process_jd_lightweight(jd_text)
 
         # Store processed JD in annotations
         existing_annotations = job.get("jd_annotations", {})
