@@ -303,18 +303,34 @@ class CompanyResearchService(OperationService):
         )
 
         with self.timed_execution() as timer:
+            # Track per-layer status for detailed logging
+            layer_status = {}
+
             try:
                 # Fetch job from MongoDB
+                logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._fetch_job(job_id)
                 if not job:
+                    layer_status["fetch_job"] = {
+                        "status": "failed",
+                        "message": f"Job not found: {job_id}"
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
                         duration_ms=timer.duration_ms,
                     )
+                layer_status["fetch_job"] = {
+                    "status": "success",
+                    "message": f"Found job: {job.get('title', 'Unknown')}"
+                }
 
                 company_name = job.get("company", "")
                 if not company_name:
+                    layer_status["validate"] = {
+                        "status": "failed",
+                        "message": "Job has no company name"
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error="Job has no company name",
@@ -327,6 +343,10 @@ class CompanyResearchService(OperationService):
                     # Return cached data
                     cached_research = cached.get("company_research", {})
                     logger.info(f"[{run_id[:16]}] Returning cached research for {company_name}")
+                    layer_status["cache_check"] = {
+                        "status": "success",
+                        "message": f"Cache hit for {company_name}"
+                    }
 
                     return self.create_success_result(
                         run_id=run_id,
@@ -335,11 +355,16 @@ class CompanyResearchService(OperationService):
                             "role_research": None,  # Role research not cached separately
                             "from_cache": True,
                             "company": company_name,
+                            "layer_status": layer_status,
                         },
                         cost_usd=0.0,  # No cost for cached data
                         duration_ms=timer.duration_ms,
                         model_used=model,
                     )
+                layer_status["cache_check"] = {
+                    "status": "success",
+                    "message": "Cache miss - running fresh research"
+                }
 
                 # Build JobState for research
                 state = self._build_job_state(job)
@@ -351,9 +376,22 @@ class CompanyResearchService(OperationService):
                 company_research = company_result.get("company_research")
                 scraped_job_posting = company_result.get("scraped_job_posting")
 
-                # Update state with company research for role research
                 if company_research:
+                    signals_count = len(company_research.get("signals", []))
+                    company_type = company_research.get("company_type", "unknown")
+                    layer_status["company_research"] = {
+                        "status": "success",
+                        "signals": signals_count,
+                        "company_type": company_type,
+                        "message": f"Found {signals_count} signals, type: {company_type}"
+                    }
                     state["company_research"] = company_research
+                else:
+                    layer_status["company_research"] = {
+                        "status": "failed",
+                        "message": "Company research failed"
+                    }
+                logger.info(f"[{run_id[:16]}] Company research complete: {layer_status['company_research']['message']}")
 
                 # Run Role Research (Layer 3.5) if company research succeeded
                 role_research = None
@@ -364,16 +402,42 @@ class CompanyResearchService(OperationService):
                         logger.info(f"[{run_id[:16]}] Running role research")
                         role_result = self.role_researcher.research_role(state)
                         role_research = role_result.get("role_research")
+                        if role_research:
+                            business_impact_count = len(role_research.get("business_impact", []))
+                            layer_status["role_research"] = {
+                                "status": "success",
+                                "business_impacts": business_impact_count,
+                                "message": f"Found {business_impact_count} business impacts"
+                            }
+                        else:
+                            layer_status["role_research"] = {
+                                "status": "failed",
+                                "message": "Role research failed"
+                            }
                     else:
+                        layer_status["role_research"] = {
+                            "status": "skipped",
+                            "message": "Skipped for recruitment agency"
+                        }
                         logger.info(f"[{run_id[:16]}] Skipping role research (recruitment agency)")
+                else:
+                    layer_status["role_research"] = {
+                        "status": "skipped",
+                        "message": "Skipped - company research failed"
+                    }
 
                 # Persist results to MongoDB
-                self._persist_research(
+                logger.info(f"[{run_id[:16]}] Persisting results to database")
+                persisted = self._persist_research(
                     job_id=job_id,
                     company_research=company_research,
                     role_research=role_research,
                     scraped_job_posting=scraped_job_posting,
                 )
+                layer_status["persist"] = {
+                    "status": "success" if persisted else "warning",
+                    "message": "Saved to database" if persisted else "Persistence failed"
+                }
 
                 # Estimate cost (rough estimate based on typical token usage)
                 # Company research: ~3000 input, ~2000 output
@@ -388,12 +452,13 @@ class CompanyResearchService(OperationService):
                     # Role research might have failed
                     pass  # Errors would be in role_result if we had it
 
-                # Build response data
+                # Build response data with layer_status
                 response_data = {
                     "company_research": company_research,
                     "role_research": role_research,
                     "from_cache": False,
                     "company": company_name,
+                    "layer_status": layer_status,
                 }
 
                 # Add summary stats

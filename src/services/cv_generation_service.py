@@ -104,32 +104,66 @@ class CVGenerationService(OperationService):
         )
 
         with self.timed_execution() as timer:
+            # Track per-layer status for detailed logging
+            layer_status = {}
+
             try:
                 # Step 1: Fetch job from MongoDB
+                logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._fetch_job(job_id)
                 if job is None:
+                    layer_status["fetch_job"] = {
+                        "status": "failed",
+                        "message": f"Job not found: {job_id}"
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
                         duration_ms=timer.duration_ms,
                     )
+                layer_status["fetch_job"] = {
+                    "status": "success",
+                    "message": f"Found job: {job.get('title', 'Unknown')}"
+                }
 
                 # Step 2: Validate job has required data
+                logger.info(f"[{run_id[:16]}] Validating job data")
                 validation_error = self._validate_job_data(job)
                 if validation_error:
+                    layer_status["validate"] = {
+                        "status": "failed",
+                        "message": validation_error
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error=validation_error,
                         duration_ms=timer.duration_ms,
                     )
+                layer_status["validate"] = {
+                    "status": "success",
+                    "message": "Job data validated"
+                }
 
                 # Step 3: Build state for CV generator
+                logger.info(f"[{run_id[:16]}] Building CV generation state")
                 state = self._build_state(job, use_annotations)
+                layer_status["build_state"] = {
+                    "status": "success",
+                    "has_annotations": bool(state.get("jd_annotations")),
+                    "has_stars": bool(state.get("all_stars")),
+                    "message": f"State built with {'annotations' if state.get('jd_annotations') else 'no annotations'}"
+                }
 
                 # Step 4: Generate CV
+                logger.info(f"[{run_id[:16]}] Generating CV with model {model}")
                 cv_result = self._generate_cv(state, model)
 
                 if cv_result.get("errors"):
+                    layer_status["cv_generator"] = {
+                        "status": "failed",
+                        "errors": cv_result["errors"],
+                        "message": f"Generation failed: {cv_result['errors'][0]}"
+                    }
                     return self.create_error_result(
                         run_id=run_id,
                         error="; ".join(cv_result["errors"]),
@@ -138,10 +172,23 @@ class CVGenerationService(OperationService):
 
                 # Step 5: Build cv_editor_state from generated CV
                 cv_text = cv_result.get("cv_text", "")
+                word_count = len(cv_text.split()) if cv_text else 0
                 cv_editor_state = self._build_cv_editor_state(cv_text)
+                layer_status["cv_generator"] = {
+                    "status": "success",
+                    "word_count": word_count,
+                    "has_reasoning": bool(cv_result.get("cv_reasoning")),
+                    "message": f"Generated {word_count} word CV"
+                }
+                logger.info(f"[{run_id[:16]}] CV generated: {word_count} words")
 
                 # Step 6: Persist to MongoDB
-                self._persist_cv_result(job_id, cv_text, cv_editor_state, cv_result)
+                logger.info(f"[{run_id[:16]}] Persisting CV to database")
+                persisted = self._persist_cv_result(job_id, cv_text, cv_editor_state, cv_result)
+                layer_status["persist"] = {
+                    "status": "success" if persisted else "warning",
+                    "message": "Saved to database" if persisted else "Persistence failed"
+                }
 
                 # Step 7: Calculate cost estimate
                 # Estimate tokens based on typical CV generation
@@ -162,7 +209,8 @@ class CVGenerationService(OperationService):
                         "cv_path": cv_result.get("cv_path"),
                         "cv_reasoning": cv_result.get("cv_reasoning"),
                         "grade_result": cv_result.get("cv_grade_result"),
-                        "word_count": len(cv_text.split()) if cv_text else 0,
+                        "word_count": word_count,
+                        "layer_status": layer_status,
                     },
                     cost_usd=cost,
                     duration_ms=timer.duration_ms,
