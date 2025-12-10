@@ -23,24 +23,42 @@
 
 ### Today's Fixes (2025-12-10)
 
-**Pipeline Overhaul Phase 1-3 Complete**:
-- **Model Tier System** (Phase 1): 3-tier Fast/Balanced/Quality model selection in `src/common/model_tiers.py`
-- **Operation Base Class** (Phase 2): Reusable base class for button-triggered operations in `src/services/operation_base.py`
-- **Annotation Heatmap Fix** (Phase 3): applyHighlights() now fully implemented in `frontend/static/js/jd-annotation.js`
-- **Independent Action Buttons** (Phase 3): Structure JD, Research, Generate CV buttons implemented with tiered models
-- **API Routes** (Phase 3): New operation endpoints at `runner_service/routes/operations.py`
+**Full Extraction Service Implemented (Layer 1.4 + Layer 2 + Layer 4 Combined)**:
+- **Full Extraction Service** (`src/services/full_extraction_service.py`): NEW service combining JD structuring (Layer 1.4), pain point mining (Layer 2), and fit scoring (Layer 4)
+  - Single operation that runs all three layers in sequence
+  - Returns: structured JD, pain points, fit score in one call
+  - Enables cost-optimized analysis without running full 7-layer pipeline
+  - 25 lines POST endpoint for `full-extraction` in `runner_service/routes/operations.py`
 
-**Files Created**:
-- `src/common/model_tiers.py` - NEW: 3-tier model system (Fast/Balanced/Quality)
-- `src/services/operation_base.py` - NEW: Base class for operations with health checks and retries
-- `frontend/static/css/pipeline-actions.css` - NEW: Button and state styling
-- `frontend/static/js/pipeline-actions.js` - NEW: Alpine.js state management for action buttons
-- `runner_service/routes/operations.py` - NEW: Independent operation endpoints
-- `runner_service/routes/__init__.py` - NEW: Router registration
+- **Structure JD Service Reverted** (`src/services/structure_jd_service.py`): Now runs ONLY Layer 1.4 (JD formatting)
+  - Triggered from JD Annotator panel's "Structure JD" button
+  - Separate from full extraction for granular control
+
+- **UI Enhancements**:
+  - Added purple "Extract JD" button (btn-action-accent) for full extraction in `frontend/templates/job_detail.html`
+  - Updated keyboard shortcuts: Alt+1 (Structure), Alt+2 (Extract), Alt+3 (Research), Alt+4 (Generate CV)
+  - Added btn-action-accent CSS styling in `frontend/static/css/pipeline-actions.css`
+  - Full extraction support in Alpine.js store in `frontend/static/js/pipeline-actions.js`
+
+- **Bug Fixes**:
+  - Fixed LinkedIn import environment variable mismatch in `frontend/app.py` line 793: Changed `RUNNER_TOKEN` to `RUNNER_API_SECRET` to match `.env.example`
+
+**Files Created** (Pipeline Overhaul Phase 1-3):
+- `src/common/model_tiers.py` - 3-tier model system (Fast/Balanced/Quality)
+- `src/services/operation_base.py` - Base class for operations with health checks and retries
+- `src/services/full_extraction_service.py` - Full JD extraction + pain mining + fit scoring
+- `frontend/static/css/pipeline-actions.css` - Button and state styling
+- `frontend/static/js/pipeline-actions.js` - Alpine.js state management for action buttons
+- `runner_service/routes/operations.py` - Independent operation endpoints
+- `runner_service/routes/__init__.py` - Router registration
 
 **Files Modified**:
+- `src/services/structure_jd_service.py` - Reverted to Layer 1.4 only (JD formatting)
 - `frontend/static/js/jd-annotation.js` - applyHighlights() fully implemented with proper DOM targeting
-- `frontend/templates/job_detail.html` - Added tiered action buttons (Structure JD, Research, Generate CV)
+- `frontend/templates/job_detail.html` - Added full-extraction button and tier selector
+- `frontend/static/js/pipeline-actions.js` - Added full-extraction API function and store tracking
+- `frontend/static/css/pipeline-actions.css` - Added btn-action-accent styling
+- `frontend/app.py` - Added proxy route for full-extraction, fixed RUNNER_TOKEN bug
 - `runner_service/app.py` - Integrated operation routes
 
 **Tests Added**:
