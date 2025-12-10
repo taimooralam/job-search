@@ -44,6 +44,28 @@
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 - **Identity-Based Persona Generation** (2025-12-10): Transform identity annotations into coherent persona statements injected into CV, cover letter, and outreach
 
+### Today's Fixes (2025-12-10) Session 3
+
+**LLM-Based JD Processor - Intelligent Parsing Enhancement**:
+- **Problem Solved**: Original JD text from job boards arrives as compressed blob with escape characters stripped, section headers run directly into content (e.g., "ABOUT THE ROLEThe company is...")
+- **Solution**: Switched to LLM-based parsing with "HR document analyst" expert system prompt
+- **Model Selection**:
+  - Default: `google/gemini-flash-1.5-8b` (cheap OpenRouter model, 8B parameters, fast)
+  - Fallback: `gpt-4o-mini` (OpenAI) if OpenRouter API key not available
+  - Removed regex-based fallback completely - LLM is now the only parser
+- **Enhancements** (`src/layer1_4/jd_processor.py`):
+  - Updated system prompt with expert "HR document analyst with 20 years experience" persona
+  - Increased input limit from 8,000 to 12,000 characters for longer JDs
+  - Removed `use_llm` parameter deprecation - always uses LLM (parameter kept for backward compatibility)
+  - System prompt guides LLM to identify semantic section boundaries even in unformatted text
+  - Handles: Headers merged with content, bullet points inline, line breaks stripped, multiple sections collapsed
+- **Section Categories Supported**: about_company, about_role, responsibilities, qualifications, nice_to_have, technical_skills, experience, education, benefits, other
+- **Frontend Fallback** (`frontend/app.py`):
+  - Lightweight regex-based `normalize_section_headers()` fallback kept for Vercel deployments where LangChain imports fail
+  - Ensures annotation UI has structured content even if backend LLM unavailable
+- **Files Changed**: `src/layer1_4/jd_processor.py`, `frontend/app.py`
+- **Impact**: JD sections now correctly parsed from compressed/blob JD text, enabling accurate annotation and better downstream layer intelligence
+
 ### Today's Fixes (2025-12-10) Session 2
 
 **JD Extractor Integration - Full Extraction Service Enhancement**:
