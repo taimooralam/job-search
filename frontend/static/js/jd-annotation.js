@@ -127,6 +127,11 @@ class AnnotationManager {
                     // No JD at all - show empty state
                     this.showEmptyState();
                 }
+
+                // Apply highlights after content is rendered
+                if (this.annotations.length > 0) {
+                    this.applyHighlights();
+                }
             } else if (rawJd) {
                 // No annotations data but have raw JD - show it
                 this.showRawJd(rawJd);
@@ -695,19 +700,187 @@ class AnnotationManager {
     }
 
     /**
-     * Select annotation (scroll to and highlight)
+     * Select annotation (scroll to and highlight in JD viewer)
      */
     selectAnnotation(annotationId) {
-        // TODO: Scroll to highlighted text in JD viewer
         console.log('Selected annotation:', annotationId);
+
+        // Find the highlight in the JD content
+        const highlight = document.querySelector(`.annotation-highlight[data-annotation-id="${annotationId}"]`);
+        if (highlight) {
+            // Add temporary pulse animation
+            highlight.classList.add('annotation-highlight-pulse');
+            setTimeout(() => {
+                highlight.classList.remove('annotation-highlight-pulse');
+            }, 1500);
+
+            // Scroll into view
+            highlight.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        // Also highlight in the annotation list
+        const annotationItem = document.querySelector(`.annotation-item[data-annotation-id="${annotationId}"]`);
+        if (annotationItem) {
+            document.querySelectorAll('.annotation-item.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            annotationItem.classList.add('selected');
+        }
     }
 
     /**
-     * Apply highlights to JD content
+     * Apply highlights to JD content based on active annotations
      */
     applyHighlights() {
-        // TODO: Apply CSS highlight classes to annotated text
-        // This requires tracking character offsets in the processed HTML
+        const contentEl = document.getElementById('jd-processed-content');
+        if (!contentEl) {
+            console.warn('applyHighlights: Content element not found');
+            return;
+        }
+
+        // Clear existing highlights first
+        this.clearHighlights(contentEl);
+
+        // Get active annotations only
+        const activeAnnotations = this.annotations.filter(a => a.is_active !== false);
+        if (!activeAnnotations.length) {
+            console.log('applyHighlights: No active annotations to highlight');
+            return;
+        }
+
+        // Apply highlights for each annotation
+        let highlightCount = 0;
+        activeAnnotations.forEach(annotation => {
+            const targetText = annotation.target?.text;
+            const relevance = annotation.relevance || 'relevant';
+
+            if (targetText && targetText.length > 0) {
+                const found = this.highlightTextInElement(contentEl, targetText, relevance, annotation.id);
+                if (found) highlightCount++;
+            }
+        });
+
+        console.log(`applyHighlights: Applied ${highlightCount}/${activeAnnotations.length} highlights`);
+    }
+
+    /**
+     * Clear all existing highlights from content
+     */
+    clearHighlights(container) {
+        const highlights = container.querySelectorAll('.annotation-highlight');
+        highlights.forEach(highlight => {
+            const textNode = document.createTextNode(highlight.textContent);
+            highlight.parentNode.replaceChild(textNode, highlight);
+        });
+        // Normalize to merge adjacent text nodes
+        container.normalize();
+    }
+
+    /**
+     * Highlight text within an element using TreeWalker
+     */
+    highlightTextInElement(container, searchText, relevance, annotationId) {
+        if (!searchText || searchText.length < 2) return false;
+
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: (node) => {
+                    // Skip nodes inside existing highlights or info boxes
+                    if (node.parentElement.closest('.annotation-highlight, .raw-jd-content > div:first-child')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+
+        let node;
+        let found = false;
+
+        while ((node = walker.nextNode()) && !found) {
+            const text = node.textContent;
+            const index = text.indexOf(searchText);
+
+            if (index !== -1) {
+                // Split the text node and wrap the matched portion
+                const beforeText = text.substring(0, index);
+                const matchText = text.substring(index, index + searchText.length);
+                const afterText = text.substring(index + searchText.length);
+
+                const parent = node.parentNode;
+                const fragment = document.createDocumentFragment();
+
+                if (beforeText) {
+                    fragment.appendChild(document.createTextNode(beforeText));
+                }
+
+                // Create highlight span
+                const highlight = document.createElement('span');
+                highlight.className = `annotation-highlight annotation-highlight-${relevance}`;
+                highlight.dataset.annotationId = annotationId || '';
+                highlight.dataset.relevance = relevance;
+                highlight.dataset.relevanceLabel = this.getRelevanceLabel(relevance);
+                highlight.textContent = matchText;
+                highlight.onclick = (e) => {
+                    e.stopPropagation();
+                    this.scrollToAnnotation(annotationId);
+                };
+                fragment.appendChild(highlight);
+
+                if (afterText) {
+                    fragment.appendChild(document.createTextNode(afterText));
+                }
+
+                parent.replaceChild(fragment, node);
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    /**
+     * Get human-readable label for relevance level
+     */
+    getRelevanceLabel(relevance) {
+        const labels = {
+            'core_strength': 'Core (3.0x)',
+            'extremely_relevant': 'Strong (2.0x)',
+            'relevant': 'Medium (1.5x)',
+            'tangential': 'Weak (1.0x)',
+            'gap': 'Gap (0.3x)'
+        };
+        return labels[relevance] || relevance;
+    }
+
+    /**
+     * Scroll to annotation in the list and highlight it
+     */
+    scrollToAnnotation(annotationId) {
+        if (!annotationId) return;
+
+        // Find the annotation item in the list
+        const annotationItem = document.querySelector(`.annotation-item[data-annotation-id="${annotationId}"]`);
+        if (annotationItem) {
+            // Remove previous selection
+            document.querySelectorAll('.annotation-item.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Add selection to current item
+            annotationItem.classList.add('selected');
+
+            // Scroll into view smoothly
+            annotationItem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
     }
 
     /**
