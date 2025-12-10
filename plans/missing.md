@@ -66,6 +66,16 @@
 - **Files Changed**: `src/layer1_4/jd_processor.py`, `frontend/app.py`
 - **Impact**: JD sections now correctly parsed from compressed/blob JD text, enabling accurate annotation and better downstream layer intelligence
 
+**CV Generation - ATS Variants List Index Safety Check**:
+- **Bug**: CV generation failed with "list index out of range" error when accessing `p.ats_variants[0]` in `HeaderGenerationContext` properties
+- **Root Cause**: Three properties (`top_keywords`, `identity_keywords`, `passion_keywords`) in `src/layer6_v2/types.py` accessed the first element of `ats_variants` list without validating the list was non-empty
+- **Fix Applied**: Added defensive checks `and len(p.ats_variants) > 0` before accessing `[0]` index in:
+  - `HeaderGenerationContext.top_keywords` property
+  - `HeaderGenerationContext.identity_keywords` property
+  - `HeaderGenerationContext.passion_keywords` property
+- **Files Changed**: `src/layer6_v2/types.py`
+- **Impact**: CV generation no longer crashes when persona has empty ATS variants list; gracefully handles edge cases with empty variant lists
+
 ### Today's Fixes (2025-12-10) Session 2
 
 **JD Extractor Integration - Full Extraction Service Enhancement**:
