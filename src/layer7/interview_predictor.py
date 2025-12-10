@@ -104,6 +104,9 @@ QUESTION_TYPES = {
     "behavioral": "Behavioral question (STAR format expected)",
     "technical": "Technical deep-dive question",
     "situational": "Hypothetical situation question",
+    # Phase 5: Passion and Identity question types
+    "passion_probe": "Question about genuine interest/enthusiasm in an area",
+    "identity_probe": "Question about professional identity and alignment",
 }
 
 DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
@@ -119,7 +122,7 @@ class PredictedQuestion(BaseModel):
 
     question: str = Field(description="The interview question text")
     question_type: str = Field(
-        description="Question type: gap_probe, concern_probe, behavioral, technical, situational"
+        description="Question type: gap_probe, concern_probe, behavioral, technical, situational, passion_probe, identity_probe"
     )
     difficulty: str = Field(description="Difficulty level: easy, medium, hard")
     suggested_answer_approach: str = Field(
@@ -162,6 +165,8 @@ Analyze the provided gaps (skills/experience the candidate lacks) and concerns (
 - behavioral: Standard "Tell me about a time..." questions
 - technical: Deep-dive technical questions
 - situational: "What would you do if..." hypothetical scenarios
+- passion_probe: Questions testing genuine enthusiasm/interest (Phase 5)
+- identity_probe: Questions about professional identity alignment (Phase 5)
 
 ## Difficulty Levels
 - easy: Straightforward questions with obvious preparation path
@@ -257,13 +262,14 @@ QUESTION_GENERATION_USER_PROMPT = """## Job Details
 
 ## Available STAR Stories for Answer Preparation
 {stars_text}
-
+{passion_identity_section}
 ## Instructions
 Generate 8-12 interview questions that:
 1. Probe the identified gaps
 2. Address the listed concerns
 3. Are appropriate for a {seniority_level} level role
 4. Include a mix of easy, medium, and hard questions
+5. If passion/identity areas are provided, include 1-2 passion_probe or identity_probe questions
 
 Focus on questions the candidate can prepare for productively."""
 
@@ -321,7 +327,14 @@ class InterviewPredictor:
         gaps = [a for a in annotations if a.get("relevance") == "gap"]
         interview_concerns = [c for c in concerns if c.get("discuss_in_interview", False)]
 
+        # Phase 5: Extract passion and identity areas for probing questions
+        passion_items = [a for a in annotations if a.get("passion") == "love_it" and a.get("is_active")]
+        avoid_items = [a for a in annotations if a.get("passion") == "avoid" and a.get("is_active")]
+        identity_items = [a for a in annotations if a.get("identity") == "core_identity" and a.get("is_active")]
+
         logger.info(f"Found {len(gaps)} gaps and {len(interview_concerns)} concerns to address")
+        if passion_items or avoid_items or identity_items:
+            logger.info(f"Phase 5: Found {len(passion_items)} passion areas, {len(avoid_items)} avoid areas, {len(identity_items)} identity areas")
 
         # Get available STARs for linking
         all_stars = state.get("all_stars") or state.get("selected_stars") or []
@@ -336,6 +349,10 @@ class InterviewPredictor:
             seniority_level=self._get_seniority_level(state),
             star_ids=star_ids,
             max_questions=max_questions,
+            # Phase 5: Passion and identity areas
+            passion_items=passion_items,
+            avoid_items=avoid_items,
+            identity_items=identity_items,
         )
 
         # Build summaries
@@ -366,12 +383,23 @@ class InterviewPredictor:
         seniority_level: str,
         star_ids: List[str],
         max_questions: int,
+        # Phase 5: Passion and identity areas
+        passion_items: Optional[List[JDAnnotation]] = None,
+        avoid_items: Optional[List[JDAnnotation]] = None,
+        identity_items: Optional[List[JDAnnotation]] = None,
     ) -> List[InterviewQuestion]:
         """Generate questions via LLM."""
         # Format gaps text
         gaps_text = self._format_gaps_for_prompt(gaps)
         concerns_text = self._format_concerns_for_prompt(concerns)
         stars_text = self._format_stars_for_prompt(star_ids)
+
+        # Phase 5: Format passion/identity context
+        passion_identity_text = self._format_passion_identity_for_prompt(
+            passion_items or [],
+            avoid_items or [],
+            identity_items or []
+        )
 
         # Handle empty inputs
         if not gaps_text and not concerns_text:
@@ -396,6 +424,7 @@ class InterviewPredictor:
                 gaps_text=gaps_text,
                 concerns_text=concerns_text,
                 stars_text=stars_text,
+                passion_identity_section=("\n" + passion_identity_text + "\n") if passion_identity_text else "",
             )
         )
 
@@ -478,6 +507,60 @@ class InterviewPredictor:
             return "No STAR stories available."
 
         return "Available STAR story IDs: " + ", ".join(star_ids[:20])  # Limit to avoid token bloat
+
+    def _format_passion_identity_for_prompt(
+        self,
+        passion_items: List[JDAnnotation],
+        avoid_items: List[JDAnnotation],
+        identity_items: List[JDAnnotation],
+    ) -> str:
+        """
+        Format passion/identity areas for inclusion in prompt.
+
+        Phase 5: Generates guidance for passion_probe and identity_probe questions.
+
+        Args:
+            passion_items: Annotations marked as passion="love_it"
+            avoid_items: Annotations marked as passion="avoid"
+            identity_items: Annotations marked as identity="core_identity"
+
+        Returns:
+            Formatted text for prompt, or empty string if no items
+        """
+        if not passion_items and not avoid_items and not identity_items:
+            return ""
+
+        lines = ["=== PASSION & IDENTITY CONTEXT (Phase 5) ==="]
+
+        if passion_items:
+            lines.append("\nPASSION AREAS (candidate genuinely excited about):")
+            lines.append("Generate 1-2 passion_probe questions to let candidate demonstrate enthusiasm:")
+            for p in passion_items[:3]:  # Limit to top 3
+                target = p.get("target", {})
+                text = target.get("text", "")[:60]
+                skill = p.get("matching_skill", "")
+                lines.append(f"  - {skill or text}")
+
+        if avoid_items:
+            lines.append("\nAVOID AREAS (candidate lacks enthusiasm):")
+            lines.append("Be prepared to probe why these required areas are marked as 'avoid':")
+            for a in avoid_items[:2]:  # Limit to 2
+                target = a.get("target", {})
+                text = target.get("text", "")[:60]
+                lines.append(f"  - {text}")
+            lines.append("  Strategy: Ask how candidate would approach these despite lower interest")
+
+        if identity_items:
+            lines.append("\nIDENTITY AREAS (core professional identity):")
+            lines.append("Generate 1-2 identity_probe questions about career trajectory:")
+            for i in identity_items[:2]:  # Limit to top 2
+                target = i.get("target", {})
+                text = target.get("text", "")[:60]
+                skill = i.get("matching_skill", "")
+                lines.append(f"  - {skill or text}")
+            lines.append("  Frame: 'How does your background as [X] apply here?'")
+
+        return "\n".join(lines)
 
     def _get_source_annotation_ids(
         self, gaps: List[JDAnnotation], concerns: List[ConcernAnnotation]
