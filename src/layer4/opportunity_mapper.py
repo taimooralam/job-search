@@ -8,6 +8,13 @@ Phase 6 Enhancements:
 - Validates STAR citations and quantified metrics in rationale
 - Derives fit_category from fit_score per ROADMAP rubric
 - Detects and rejects generic boilerplate rationales
+
+Annotation Signal Integration:
+- Incorporates JD annotation signals to blend human judgment with LLM scoring
+- Core strength and extremely relevant annotations boost fit signal
+- Gap annotations reduce fit signal
+- Disqualifier requirement types flag potential issues
+- Default blend: 70% LLM score, 30% annotation signal
 """
 
 import logging
@@ -21,6 +28,11 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.layer4.annotation_fit_signal import (
+    AnnotationFitSignal,
+    blend_fit_scores,
+    get_annotation_analysis,
+)
 
 
 # ===== PROMPT DESIGN =====
@@ -503,12 +515,36 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             state: Current JobState with job details, pain points, company/role research, STARs
 
         Returns:
-            Dict with fit_score, fit_rationale, and fit_category keys
+            Dict with fit_score, fit_rationale, fit_category, and annotation_analysis keys
         """
         try:
             self.logger.info(f"Analyzing fit for: {state['title']} at {state['company']}")
 
-            score, rationale, category = self._analyze_fit(state)
+            # Get LLM-based fit score
+            llm_score, rationale, _ = self._analyze_fit(state)
+
+            # Get annotation analysis and blend with LLM score
+            jd_annotations = state.get("jd_annotations")
+            annotation_analysis = get_annotation_analysis(jd_annotations, llm_score=llm_score)
+
+            # Blend annotation signal with LLM score
+            final_score = blend_fit_scores(llm_score, jd_annotations)
+
+            # Log annotation blending details
+            if annotation_analysis.get("has_annotations"):
+                self.logger.info(
+                    f"Annotation signal: {annotation_analysis['fit_signal']:.2f} "
+                    f"(core={annotation_analysis['core_strength_count']}, "
+                    f"gaps={annotation_analysis['gap_count']})"
+                )
+                self.logger.info(f"LLM score: {llm_score}, Blended score: {final_score}")
+                if annotation_analysis.get("has_disqualifier"):
+                    self.logger.warning(f"DISQUALIFIER detected: {annotation_analysis.get('disqualifier_warning')}")
+            else:
+                self.logger.info("No annotations - using LLM score directly")
+
+            # Derive category from final (blended) score
+            category = self._derive_fit_category(final_score)
 
             # Add agency note to rationale if this is a recruitment agency
             company_research = state.get("company_research") or {}
@@ -522,14 +558,15 @@ KEY METRICS: {star.get('metrics', 'N/A')}
                 rationale = rationale + agency_note
                 self.logger.info("Added recruitment agency note to fit rationale")
 
-            self.logger.info(f"Generated fit score: {score}/100 ({category})")
+            self.logger.info(f"Final fit score: {final_score}/100 ({category})")
             self.logger.info(f"Generated rationale ({len(rationale)} chars)")
             self.logger.info("Rationale validation: see any quality warnings above")
 
             return {
-                "fit_score": score,
+                "fit_score": final_score,
                 "fit_rationale": rationale,
-                "fit_category": category
+                "fit_category": category,
+                "annotation_analysis": annotation_analysis,
             }
 
         except Exception as e:
@@ -537,10 +574,15 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             error_msg = f"Layer 4 (Opportunity Mapper) failed: {str(e)}"
             self.logger.error(error_msg)
 
+            # Still return annotation analysis for transparency
+            jd_annotations = state.get("jd_annotations")
+            annotation_analysis = get_annotation_analysis(jd_annotations)
+
             return {
                 "fit_score": None,
                 "fit_rationale": None,
                 "fit_category": None,
+                "annotation_analysis": annotation_analysis,
                 "errors": state.get("errors", []) + [error_msg]
             }
 
@@ -555,13 +597,13 @@ def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
         state: Current job processing state
 
     Returns:
-        Dictionary with updates to merge into state
+        Dictionary with updates to merge into state including annotation_analysis
     """
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer4")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
     logger.info("="*60)
-    logger.info("LAYER 4: Opportunity Mapper (Phase 6)")
+    logger.info("LAYER 4: Opportunity Mapper (Phase 6 + Annotation Signal)")
     logger.info("="*60)
 
     with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
@@ -573,10 +615,30 @@ def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
             ctx.add_metadata("fit_score", updates["fit_score"])
             ctx.add_metadata("fit_category", updates.get("fit_category"))
 
+        # Add annotation analysis metadata
+        annotation_analysis = updates.get("annotation_analysis", {})
+        if annotation_analysis.get("has_annotations"):
+            ctx.add_metadata("annotation_signal", annotation_analysis.get("fit_signal"))
+            ctx.add_metadata("llm_score", annotation_analysis.get("llm_score"))
+            ctx.add_metadata("core_strength_count", annotation_analysis.get("core_strength_count"))
+            ctx.add_metadata("gap_count", annotation_analysis.get("gap_count"))
+            ctx.add_metadata("has_disqualifier", annotation_analysis.get("has_disqualifier"))
+
         # Log results (text logging)
         if updates.get("fit_score") is not None:
             logger.info(f"Fit Score: {updates['fit_score']}/100")
             logger.info(f"Fit Category: {updates.get('fit_category', 'N/A').upper()}")
+
+            # Log annotation analysis
+            if annotation_analysis.get("has_annotations"):
+                logger.info(f"Annotation Signal: {annotation_analysis.get('fit_signal', 0):.2f}")
+                logger.info(f"  - Core Strengths: {annotation_analysis.get('core_strength_count', 0)}")
+                logger.info(f"  - Extremely Relevant: {annotation_analysis.get('extremely_relevant_count', 0)}")
+                logger.info(f"  - Gaps: {annotation_analysis.get('gap_count', 0)}")
+                if annotation_analysis.get("has_disqualifier"):
+                    logger.warning(f"  - DISQUALIFIER: {annotation_analysis.get('disqualifier_warning')}")
+                logger.info(f"LLM Score: {annotation_analysis.get('llm_score')} -> Blended: {updates['fit_score']}")
+
             logger.info("Fit Rationale:")
             logger.info(f"  {updates['fit_rationale']}")
         else:
