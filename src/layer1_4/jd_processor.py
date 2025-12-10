@@ -25,6 +25,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
 from src.common.logger import get_logger
+from src.common.tiering import STANDARD_MODEL
 
 logger = get_logger(__name__)
 
@@ -382,7 +383,7 @@ Return ONLY valid JSON with a "sections" array."""
 
 async def parse_jd_sections_with_llm(
     jd_text: str,
-    model: str = "google/gemini-flash-1.5-8b",  # Cheap, fast OpenRouter model
+    model: str = None,  # Uses tier system STANDARD_MODEL by default
 ) -> List[JDSection]:
     """
     Parse JD into sections using LLM.
@@ -390,31 +391,33 @@ async def parse_jd_sections_with_llm(
     Always uses LLM for intelligent parsing of compressed/blob JD text.
     No regex fallback - the LLM is the primary and only parser.
 
+    Uses gpt-4o-mini from the tier system by default - a good balance of
+    quality and cost for document structuring tasks.
+
     Args:
         jd_text: Raw job description text (may be compressed without formatting)
-        model: LLM model to use (defaults to cheap OpenRouter model)
+        model: LLM model to use (defaults to tier system's STANDARD_MODEL)
 
     Returns:
         List of parsed sections
     """
     from langchain_openai import ChatOpenAI
 
-    # Use OpenRouter for cheap, fast processing
-    openrouter_api_key = Config.OPENROUTER_API_KEY
-    if not openrouter_api_key:
-        # Fall back to OpenAI if no OpenRouter key
-        logger.info("No OpenRouter API key, using OpenAI for JD structuring")
-        openrouter_api_key = Config.OPENAI_API_KEY
-        model = Config.CHEAP_MODEL  # gpt-4o-mini
-        base_url = None
-    else:
-        base_url = "https://openrouter.ai/api/v1"
+    # Default to tier system's standard model (gpt-4o-mini)
+    # This is slightly more expensive than gemini-flash but has better
+    # JSON handling and more reliable section parsing
+    if model is None:
+        model = STANDARD_MODEL  # gpt-4o-mini from tier system
+
+    # Use OpenAI API directly for standard models
+    api_key = Config.OPENAI_API_KEY
+    base_url = None
 
     try:
         llm = ChatOpenAI(
             model=model,
             temperature=0.1,
-            api_key=openrouter_api_key,
+            api_key=api_key,
             base_url=base_url,
             model_kwargs={"response_format": {"type": "json_object"}} if "gpt" in model else {},
         )
@@ -635,7 +638,7 @@ def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
 async def process_jd(
     jd_text: str,
     use_llm: bool = True,  # Kept for backward compatibility, but always uses LLM
-    model: str = "google/gemini-flash-1.5-8b",  # Cheap OpenRouter model
+    model: str = None,  # Defaults to tier system's STANDARD_MODEL
 ) -> ProcessedJD:
     """
     Process a job description into structured format using LLM.
@@ -643,10 +646,13 @@ async def process_jd(
     Always uses LLM for intelligent parsing of compressed/blob JD text.
     The use_llm parameter is kept for backward compatibility but is ignored.
 
+    Uses gpt-4o-mini (STANDARD_MODEL from tier system) by default, providing
+    a good balance of quality and cost for JD structuring.
+
     Args:
         jd_text: Raw job description text (may be compressed without formatting)
         use_llm: Deprecated - always uses LLM
-        model: LLM model to use (defaults to cheap OpenRouter model)
+        model: LLM model to use (defaults to tier system's STANDARD_MODEL)
 
     Returns:
         ProcessedJD with sections and HTML
