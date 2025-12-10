@@ -24,6 +24,7 @@ from pymongo import MongoClient
 from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.common.state import JobState
 from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
+from src.layer1_4.jd_extractor import JDExtractor
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -89,11 +90,11 @@ class FullExtractionService(OperationService):
 
         return jd_text
 
-    def _run_layer_1_4(self, jd_text: str, model: str, use_llm: bool) -> Dict[str, Any]:
+    def _run_jd_processor(self, jd_text: str, model: str, use_llm: bool) -> Dict[str, Any]:
         """
-        Run Layer 1.4: JD Structuring.
+        Run JD Processor: Parse JD into HTML sections for annotation.
 
-        Returns processed JD dict with sections.
+        Returns processed JD dict with html, sections, section_ids.
         """
         import asyncio
 
@@ -117,6 +118,26 @@ class FullExtractionService(OperationService):
 
         return processed_jd_to_dict(processed)
 
+    def _run_jd_extractor(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
+        """
+        Run JD Extractor: Extract structured intelligence from JD.
+
+        Returns extracted JD dict with role_category, responsibilities,
+        qualifications, top_keywords, competency_weights, etc.
+        """
+        state: JobState = {
+            "job_id": str(job.get("_id", "")),
+            "title": job.get("title", ""),
+            "company": job.get("company", ""),
+            "job_description": jd_text,
+        }
+
+        extractor = JDExtractor()
+        result = extractor.extract(state)
+
+        # Return the extracted_jd or None if extraction failed
+        return result.get("extracted_jd")
+
     def _run_layer_2(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
         """
         Run Layer 2: Pain Point Mining.
@@ -135,6 +156,99 @@ class FullExtractionService(OperationService):
         miner = PainPointMiner(use_enhanced_format=False)
         return miner.extract_pain_points(state)
 
+    def _aggregate_annotations(self, job: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Aggregate annotation signals into a fit summary.
+
+        Returns dict with:
+            - annotation_score: weighted score 0-100 based on annotations
+            - good_match_count: annotations marked as core_strength or extremely_relevant
+            - partial_match_count: annotations marked as relevant or tangential
+            - gap_count: annotations marked as gap
+            - strategic_notes: list of strategic notes from annotations
+            - must_have_gaps: list of gaps on must-have requirements
+        """
+        jd_annotations = job.get("jd_annotations", {})
+        annotations = jd_annotations.get("annotations", [])
+
+        if not annotations:
+            return {
+                "annotation_score": None,
+                "good_match_count": 0,
+                "partial_match_count": 0,
+                "gap_count": 0,
+                "strategic_notes": [],
+                "must_have_gaps": [],
+                "annotation_summary": "No annotations available"
+            }
+
+        # Multipliers aligned with jd-annotation.js
+        RELEVANCE_MULTIPLIERS = {
+            "core_strength": 3.0,
+            "extremely_relevant": 2.0,
+            "relevant": 1.0,
+            "tangential": 0.7,
+            "gap": 0.3
+        }
+
+        good_match_count = 0
+        partial_match_count = 0
+        gap_count = 0
+        strategic_notes = []
+        must_have_gaps = []
+        total_weight = 0
+        weighted_sum = 0
+
+        for ann in annotations:
+            relevance = ann.get("relevance", "relevant")
+            requirement = ann.get("requirement_type", "neutral")
+            multiplier = RELEVANCE_MULTIPLIERS.get(relevance, 1.0)
+
+            # Count by category
+            if relevance in ("core_strength", "extremely_relevant"):
+                good_match_count += 1
+            elif relevance in ("relevant", "tangential"):
+                partial_match_count += 1
+            elif relevance == "gap":
+                gap_count += 1
+                if requirement == "must_have":
+                    must_have_gaps.append({
+                        "text": ann.get("target", {}).get("text", ""),
+                        "reframe_note": ann.get("reframe_note", "")
+                    })
+
+            # Collect strategic notes
+            if ann.get("strategic_note"):
+                strategic_notes.append(ann["strategic_note"])
+
+            # Weight calculation - must-haves count more
+            weight = 2.0 if requirement == "must_have" else 1.0
+            total_weight += weight
+            weighted_sum += multiplier * weight * 33.33  # Scale to 0-100
+
+        # Calculate annotation-based fit score
+        annotation_score = int(weighted_sum / total_weight) if total_weight > 0 else None
+
+        # Build summary
+        total = good_match_count + partial_match_count + gap_count
+        summary_parts = []
+        if good_match_count > 0:
+            summary_parts.append(f"{good_match_count} strong matches")
+        if partial_match_count > 0:
+            summary_parts.append(f"{partial_match_count} partial matches")
+        if gap_count > 0:
+            summary_parts.append(f"{gap_count} gaps")
+
+        return {
+            "annotation_score": annotation_score,
+            "good_match_count": good_match_count,
+            "partial_match_count": partial_match_count,
+            "gap_count": gap_count,
+            "strategic_notes": strategic_notes,
+            "must_have_gaps": must_have_gaps,
+            "annotation_summary": ", ".join(summary_parts) if summary_parts else "No annotations"
+        }
+
     def _run_layer_4(
         self, job: Dict[str, Any], jd_text: str, pain_points_data: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -144,6 +258,9 @@ class FullExtractionService(OperationService):
         Returns dict with fit_score, fit_rationale, fit_category.
         """
         from src.layer4.opportunity_mapper import OpportunityMapper
+
+        # Aggregate annotation signals for fit scoring
+        annotation_signals = self._aggregate_annotations(job)
 
         state: JobState = {
             "job_id": str(job.get("_id", "")),
@@ -162,15 +279,23 @@ class FullExtractionService(OperationService):
             "candidate_profile": job.get("candidate_profile", ""),
             "selected_stars": job.get("selected_stars", []),
             "all_stars": job.get("all_stars", []),
+            # Include annotation signals for fit scoring
+            "annotation_signals": annotation_signals,
         }
 
         mapper = OpportunityMapper()
-        return mapper.map_opportunity(state)
+        result = mapper.map_opportunity(state)
+
+        # Add annotation summary to result
+        result["annotation_signals"] = annotation_signals
+
+        return result
 
     def _persist_results(
         self,
         job_id: str,
         processed_jd: Dict[str, Any],
+        extracted_jd: Optional[Dict[str, Any]],
         pain_points_data: Dict[str, Any],
         fit_data: Dict[str, Any],
     ) -> bool:
@@ -179,7 +304,8 @@ class FullExtractionService(OperationService):
 
         Args:
             job_id: MongoDB ObjectId as string
-            processed_jd: Layer 1.4 results
+            processed_jd: JD Processor results (html, sections for annotation UI)
+            extracted_jd: JD Extractor results (role_category, responsibilities, etc.)
             pain_points_data: Layer 2 results
             fit_data: Layer 4 results
 
@@ -201,7 +327,7 @@ class FullExtractionService(OperationService):
             job = collection.find_one({"_id": object_id}, {"jd_annotations": 1})
             existing_annotations = job.get("jd_annotations", {}) if job else {}
 
-            # Update with processed JD
+            # Update with processed JD (for annotation UI)
             existing_annotations["processed_jd_html"] = processed_jd.get("html")
             existing_annotations["processed_jd_sections"] = processed_jd.get("sections")
             existing_annotations["content_hash"] = processed_jd.get("content_hash")
@@ -212,7 +338,10 @@ class FullExtractionService(OperationService):
             # Build update document
             update_doc = {
                 "jd_annotations": existing_annotations,
-                "extracted_jd": processed_jd,
+                # Store extracted_jd (role_category, responsibilities, etc.) for template
+                "extracted_jd": extracted_jd,
+                # Store processed_jd separately for annotation system
+                "processed_jd": processed_jd,
                 # Layer 2 results
                 "pain_points": pain_points_data.get("pain_points", []),
                 "strategic_needs": pain_points_data.get("strategic_needs", []),
@@ -222,6 +351,8 @@ class FullExtractionService(OperationService):
                 "fit_score": fit_data.get("fit_score"),
                 "fit_rationale": fit_data.get("fit_rationale"),
                 "fit_category": fit_data.get("fit_category"),
+                # Annotation signals (for UI heatmap)
+                "annotation_signals": fit_data.get("annotation_signals"),
                 # Metadata
                 "full_extraction_completed_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
@@ -291,45 +422,100 @@ class FullExtractionService(OperationService):
                     f"use_llm={use_llm}, jd_length={len(jd_text)}"
                 )
 
-                # 4. Run Layer 1.4: JD Structuring
-                logger.info(f"[{run_id[:16]}] Running Layer 1.4: JD Structuring")
-                processed_jd = self._run_layer_1_4(jd_text, model, use_llm)
+                # Track per-layer status for detailed logging
+                layer_status = {}
+
+                # 4a. Run JD Processor: Parse into HTML sections
+                logger.info(f"[{run_id[:16]}] Running JD Processor: Parsing into sections")
+                processed_jd = self._run_jd_processor(jd_text, model, use_llm)
                 section_count = len(processed_jd.get("sections", []))
-                logger.info(f"[{run_id[:16]}] Layer 1.4 complete: {section_count} sections")
+                layer_status["jd_processor"] = {
+                    "status": "success",
+                    "sections": section_count,
+                    "message": f"Parsed {section_count} sections"
+                }
+                logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections")
+
+                # 4b. Run JD Extractor: Extract structured intelligence
+                logger.info(f"[{run_id[:16]}] Running JD Extractor: Extracting role info")
+                extracted_jd = self._run_jd_extractor(job, jd_text)
+                if extracted_jd:
+                    role_category = extracted_jd.get("role_category", "unknown")
+                    keywords_count = len(extracted_jd.get("top_keywords", []))
+                    layer_status["jd_extractor"] = {
+                        "status": "success",
+                        "role_category": role_category,
+                        "keywords": keywords_count,
+                        "message": f"Extracted role: {role_category}, {keywords_count} keywords"
+                    }
+                    logger.info(f"[{run_id[:16]}] JD Extractor complete: role={role_category}, {keywords_count} keywords")
+                else:
+                    layer_status["jd_extractor"] = {
+                        "status": "failed",
+                        "message": "JD extraction failed - using fallback"
+                    }
+                    logger.warning(f"[{run_id[:16]}] JD Extractor failed - continuing without extracted data")
 
                 # 5. Run Layer 2: Pain Point Mining
                 logger.info(f"[{run_id[:16]}] Running Layer 2: Pain Point Mining")
                 pain_points_data = self._run_layer_2(job, jd_text)
                 pain_count = len(pain_points_data.get("pain_points", []))
+                layer_status["layer_2"] = {
+                    "status": "success",
+                    "pain_points": pain_count,
+                    "strategic_needs": len(pain_points_data.get("strategic_needs", [])),
+                    "message": f"Found {pain_count} pain points"
+                }
                 logger.info(f"[{run_id[:16]}] Layer 2 complete: {pain_count} pain points")
 
-                # 6. Run Layer 4: Fit Scoring
+                # 6. Run Layer 4: Fit Scoring (with annotation signals)
                 logger.info(f"[{run_id[:16]}] Running Layer 4: Fit Scoring")
                 fit_data = self._run_layer_4(job, jd_text, pain_points_data)
                 fit_score = fit_data.get("fit_score")
                 fit_category = fit_data.get("fit_category")
+                annotation_signals = fit_data.get("annotation_signals", {})
+                layer_status["layer_4"] = {
+                    "status": "success",
+                    "fit_score": fit_score,
+                    "fit_category": fit_category,
+                    "annotation_score": annotation_signals.get("annotation_score"),
+                    "annotation_summary": annotation_signals.get("annotation_summary"),
+                    "message": f"Fit score: {fit_score} ({fit_category})"
+                }
                 logger.info(f"[{run_id[:16]}] Layer 4 complete: score={fit_score}, category={fit_category}")
+                if annotation_signals.get("annotation_score"):
+                    logger.info(f"[{run_id[:16]}] Annotation score: {annotation_signals['annotation_score']}, "
+                               f"summary: {annotation_signals['annotation_summary']}")
 
-                # 7. Persist results
-                persisted = self._persist_results(job_id, processed_jd, pain_points_data, fit_data)
+                # 7. Persist results (pass both processed_jd and extracted_jd)
+                persisted = self._persist_results(
+                    job_id, processed_jd, extracted_jd, pain_points_data, fit_data
+                )
                 if not persisted:
                     logger.warning(f"[{run_id[:16]}] Failed to persist results")
 
-                # 8. Estimate cost (rough - 3 LLM calls)
-                input_tokens = len(jd_text) // 4 * 3 + 1500  # 3x JD + prompts
-                output_tokens = 2000  # Approximate
+                # 8. Estimate cost (rough - 4 LLM calls now)
+                input_tokens = len(jd_text) // 4 * 4 + 2000  # 4x JD + prompts
+                output_tokens = 3000  # Approximate
                 cost_usd = self.estimate_cost(tier, input_tokens, output_tokens)
 
-                # 9. Build combined response
+                # 9. Build combined response with layer status
                 response_data = {
                     "processed_jd": processed_jd,
+                    "extracted_jd": extracted_jd,
                     "section_count": section_count,
                     "pain_points_count": pain_count,
                     "strategic_needs_count": len(pain_points_data.get("strategic_needs", [])),
                     "fit_score": fit_score,
                     "fit_category": fit_category,
                     "fit_rationale": fit_data.get("fit_rationale"),
-                    "layers_completed": ["1.4", "2", "4"],
+                    # Include annotation-based signals
+                    "annotation_signals": annotation_signals,
+                    "annotation_score": annotation_signals.get("annotation_score"),
+                    "good_match_count": annotation_signals.get("good_match_count", 0),
+                    "gap_count": annotation_signals.get("gap_count", 0),
+                    "layers_completed": ["1.4-processor", "1.4-extractor", "2", "4"],
+                    "layer_status": layer_status,
                     "persisted": persisted,
                 }
 
