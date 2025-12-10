@@ -240,7 +240,12 @@ document.addEventListener('alpine:init', () => {
                     // Update session costs
                     this.sessionCosts[action] += result.cost_usd || this.getCost(tier);
 
-                    showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                    // Show detailed layer status panel for all actions that return layer_status
+                    if (result.data?.layer_status) {
+                        this.showLayerStatusPanel(action, result.data.layer_status, result.data);
+                    } else {
+                        showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                    }
 
                     // Dispatch custom event for other components
                     document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
@@ -250,7 +255,7 @@ document.addEventListener('alpine:init', () => {
                     // Reload page after short delay to show updated data
                     setTimeout(() => {
                         window.location.reload();
-                    }, 1000);
+                    }, 3000);  // Longer delay to read layer status panel
                 } else {
                     showToast(result.error || `${actionLabel} failed`, 'error');
                 }
@@ -310,6 +315,26 @@ document.addEventListener('alpine:init', () => {
             Object.keys(this.sessionCosts).forEach(key => {
                 this.sessionCosts[key] = 0;
             });
+        },
+
+        /**
+         * Show detailed layer status panel for pipeline actions
+         * @param {string} action - Action name
+         * @param {Object} layerStatus - Per-layer status from backend
+         * @param {Object} data - Full response data
+         */
+        showLayerStatusPanel(action, layerStatus, data) {
+            // Use the global showPipelineLogPanel if available
+            if (typeof window.showPipelineLogPanel === 'function') {
+                window.showPipelineLogPanel(action, layerStatus, data);
+            } else {
+                // Fallback to simple toast
+                const actionLabel = PIPELINE_CONFIG.labels[action] || action;
+                showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+            }
+
+            // Also log to console for debugging
+            console.log(`${action} Results:`, { layerStatus, data });
         }
     });
 
