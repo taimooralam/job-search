@@ -77,7 +77,7 @@ function showPipelineLogPanel(action, layerStatus, data) {
     const existingPanel = document.getElementById('pipeline-log-panel');
     if (existingPanel) existingPanel.remove();
 
-    // Define layer info based on action
+    // Define layer info based on action (keys match backend layer_status)
     const layerConfigs = {
         'full-extraction': [
             { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' },
@@ -86,14 +86,24 @@ function showPipelineLogPanel(action, layerStatus, data) {
             { key: 'layer_4', label: 'Fit Scoring', desc: 'Calculate fit score' }
         ],
         'structure-jd': [
-            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' }
+            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
+            { key: 'extract_text', label: 'Extract Text', desc: 'Extract JD text' },
+            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' },
+            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
         ],
         'research-company': [
-            { key: 'company_research', label: 'Company Research', desc: 'Research company' },
-            { key: 'role_research', label: 'Role Research', desc: 'Research role context' }
+            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
+            { key: 'cache_check', label: 'Cache Check', desc: 'Check for cached research' },
+            { key: 'company_research', label: 'Company Research', desc: 'Research company signals' },
+            { key: 'role_research', label: 'Role Research', desc: 'Research role context' },
+            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
         ],
         'generate-cv': [
-            { key: 'cv_generation', label: 'CV Generation', desc: 'Generate tailored CV' }
+            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
+            { key: 'validate', label: 'Validate', desc: 'Validate job data' },
+            { key: 'build_state', label: 'Build State', desc: 'Prepare CV generation state' },
+            { key: 'cv_generator', label: 'Generate CV', desc: 'Generate tailored CV' },
+            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
         ]
     };
 
@@ -102,8 +112,13 @@ function showPipelineLogPanel(action, layerStatus, data) {
     // Build layer status HTML
     const layerStatusHtml = layers.map(layer => {
         const status = layerStatus?.[layer.key];
-        const isSuccess = status?.status === 'success';
-        const statusIcon = isSuccess ? '✅' : (status ? '❌' : '⏳');
+        const statusType = status?.status;
+        let statusIcon = '⏳'; // pending/not started
+        if (statusType === 'success') statusIcon = '✅';
+        else if (statusType === 'failed') statusIcon = '❌';
+        else if (statusType === 'warning') statusIcon = '⚠️';
+        else if (statusType === 'skipped') statusIcon = '⏭️';
+        else if (status) statusIcon = '❌'; // fallback for unknown status
         const message = status?.message || layer.desc;
 
         return `
@@ -117,16 +132,30 @@ function showPipelineLogPanel(action, layerStatus, data) {
         `;
     }).join('');
 
-    // Build summary stats
+    // Build summary stats based on action type
     let summaryHtml = '';
     if (data) {
         const stats = [];
+
+        // Full extraction stats
         if (data.section_count) stats.push(`📄 ${data.section_count} sections`);
         if (data.pain_points_count) stats.push(`🎯 ${data.pain_points_count} pain points`);
         if (data.fit_score !== undefined) stats.push(`📊 Fit: ${data.fit_score}%`);
         if (data.annotation_score !== undefined && data.annotation_score !== null) {
             stats.push(`👤 Match: ${data.annotation_score}%`);
         }
+
+        // Research stats
+        if (data.signals_count) stats.push(`📡 ${data.signals_count} signals`);
+        if (data.company_type) stats.push(`🏢 ${data.company_type}`);
+        if (data.business_impact_count) stats.push(`💼 ${data.business_impact_count} impacts`);
+        if (data.from_cache) stats.push(`⚡ From cache`);
+
+        // CV generation stats
+        if (data.word_count) stats.push(`📝 ${data.word_count} words`);
+        if (layerStatus?.cv_generator?.has_reasoning) stats.push(`💡 With reasoning`);
+        if (layerStatus?.build_state?.has_annotations) stats.push(`🏷️ With annotations`);
+
         if (stats.length > 0) {
             summaryHtml = `
                 <div class="mt-3 pt-3 border-t border-gray-200">
