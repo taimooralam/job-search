@@ -42,6 +42,28 @@ Every profile MUST answer these 4 questions hiring managers unconsciously evalua
    → What makes you uniquely valuable vs other candidates?
    → Example: "Combines deep hands-on technical expertise with proven executive presence"
 
+=== CRITICAL: ANTI-HALLUCINATION RULES ===
+
+THESE RULES ARE MANDATORY - VIOLATION WILL INVALIDATE THE CV:
+
+1. ONLY use technologies, tools, and platforms that appear in the PROVIDED EXPERIENCE BULLETS
+2. ONLY use metrics and numbers that appear EXACTLY in the source material
+3. NEVER invent technologies to match the JD - if you don't have experience with it, DON'T CLAIM IT
+4. If the JD asks for "Kafka" but the candidate only has "RabbitMQ", do NOT add Kafka
+5. If the JD asks for "ClickHouse" but it's not in the bullets, do NOT add ClickHouse
+6. When in doubt about a technology, OMIT IT rather than risk hallucination
+
+EXAMPLES OF HALLUCINATION TO AVOID:
+✗ "expertise in Kafka and Flink" (if not in bullets)
+✗ "ClickHouse data schemas" (if not in bullets)
+✗ "achieved 99.99% uptime" (if metric not in bullets)
+✗ Adding any skill/technology just because the JD mentions it
+
+CORRECT APPROACH:
+✓ Only mention technologies explicitly listed in the experience bullets
+✓ Use exact metrics from bullets (e.g., "reduced MTTR by 60%" only if that metric exists)
+✓ Focus on what the candidate ACTUALLY did, not what the JD wants
+
 === THE 60/30/10 FORMULA ===
 
 Structure your 100-150 word narrative following this ratio:
