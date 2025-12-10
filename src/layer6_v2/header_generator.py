@@ -29,6 +29,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.logger import get_logger
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
+from src.common.persona_builder import get_persona_guidance
 from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
 from src.layer6_v2.types import (
     StitchedCV,
@@ -144,6 +145,7 @@ class HeaderGenerator:
         skill_whitelist: Optional[Dict[str, List[str]]] = None,
         lax_mode: bool = True,
         annotation_context: Optional[HeaderGenerationContext] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize the header generator.
@@ -157,10 +159,19 @@ class HeaderGenerator:
             lax_mode: If True (default), generate 30% more skills for manual pruning.
             annotation_context: Phase 4.5 - HeaderGenerationContext with annotation
                                priorities, reframes, and ATS requirements.
+            jd_annotations: Raw jd_annotations dict containing synthesized_persona
+                           for persona-framed profile generation.
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self.lax_mode = lax_mode
+
+        # Store jd_annotations for persona access
+        self._jd_annotations = jd_annotations
+        if jd_annotations:
+            persona_guidance = get_persona_guidance(jd_annotations)
+            if persona_guidance:
+                self._logger.info("Persona available for profile framing")
 
         # Phase 4.5: Store annotation context for header generation
         self._annotation_context = annotation_context
@@ -636,6 +647,18 @@ class HeaderGenerator:
         if self._annotation_context and self._annotation_context.gap_mitigation:
             user_prompt = user_prompt + f"\n\nGAP MITIGATION (include once): {self._annotation_context.gap_mitigation}"
 
+        # Inject persona guidance if synthesized persona is available
+        # This provides a coherent narrative frame for the profile
+        persona_guidance = get_persona_guidance(self._jd_annotations)
+        if persona_guidance:
+            user_prompt = (
+                user_prompt + f"\n\n{persona_guidance}\n"
+                "This persona should be the central theme of the profile. "
+                "The headline and opening of the narrative should embody this professional identity. "
+                "Avoid sounding like a list of qualifications - frame everything through this persona."
+            )
+            self._logger.debug(f"Injected persona guidance: {persona_guidance[:50]}...")
+
         # Call LLM with structured output
         structured_llm = self.llm.with_structured_output(ProfileResponse)
         response = structured_llm.invoke([
@@ -1024,6 +1047,7 @@ def generate_header(
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
     lax_mode: bool = True,
     annotation_context: Optional[HeaderGenerationContext] = None,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -1037,6 +1061,8 @@ def generate_header(
         lax_mode: If True, generate 30% more skills for manual pruning.
         annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities,
                            reframes, and ATS requirements.
+        jd_annotations: Raw jd_annotations dict containing synthesized_persona for
+                       persona-framed profile generation.
 
     Returns:
         HeaderOutput with all header sections
@@ -1045,5 +1071,6 @@ def generate_header(
         skill_whitelist=skill_whitelist,
         lax_mode=lax_mode,
         annotation_context=annotation_context,
+        jd_annotations=jd_annotations,
     )
     return generator.generate(stitched_cv, extracted_jd, candidate_data)

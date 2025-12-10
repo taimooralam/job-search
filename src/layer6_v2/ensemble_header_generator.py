@@ -110,6 +110,7 @@ class EnsembleHeaderGenerator:
         skill_whitelist: Optional[Dict[str, List[str]]] = None,
         temperature: float = 0.3,
         annotation_context: Optional[HeaderGenerationContext] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize the ensemble header generator.
@@ -119,11 +120,16 @@ class EnsembleHeaderGenerator:
             skill_whitelist: Master-CV skills for grounding validation
             temperature: LLM temperature for generation
             annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
+            jd_annotations: Raw jd_annotations dict containing synthesized_persona
+                           for persona-framed profile generation.
         """
         self._logger = get_logger(__name__)
         self.tier_config = tier_config
         self._skill_whitelist = skill_whitelist or {}
         self.temperature = temperature
+
+        # Store jd_annotations for persona access
+        self._jd_annotations = jd_annotations
 
         # Phase 4.5: Store annotation context
         self._annotation_context = annotation_context
@@ -137,11 +143,12 @@ class EnsembleHeaderGenerator:
         self._generation_llm = self._create_llm(tier_config.cv_model)
         self._synthesis_llm = self._create_llm(CLAUDE_STANDARD)  # Always use cheaper model
 
-        # Fallback generator for Bronze/Skip tiers (pass annotation context)
+        # Fallback generator for Bronze/Skip tiers (pass annotation context and persona)
         self._fallback_generator = HeaderGenerator(
             model=tier_config.cv_model,
             skill_whitelist=skill_whitelist,
             annotation_context=annotation_context,
+            jd_annotations=jd_annotations,
         )
 
         self._logger.info(
@@ -582,6 +589,7 @@ def generate_ensemble_header(
     tier_override: Optional[str] = None,
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
     annotation_context: Optional[HeaderGenerationContext] = None,
+    jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> HeaderOutput:
     """
     Convenience function for ensemble header generation.
@@ -594,6 +602,8 @@ def generate_ensemble_header(
         tier_override: Override tier ("GOLD", "SILVER", "BRONZE", "SKIP")
         skill_whitelist: Master-CV skills for grounding
         annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
+        jd_annotations: Raw jd_annotations dict containing synthesized_persona for
+                       persona-framed profile generation.
 
     Returns:
         HeaderOutput with profile, skills, and ensemble metadata
@@ -611,6 +621,7 @@ def generate_ensemble_header(
         tier_config=tier_config,
         skill_whitelist=skill_whitelist,
         annotation_context=annotation_context,
+        jd_annotations=jd_annotations,
     )
 
     return generator.generate(stitched_cv, extracted_jd, candidate_data)

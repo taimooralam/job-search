@@ -251,6 +251,7 @@ class CVGeneratorV2:
                     fit_score=fit_score,
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
+                    jd_annotations=jd_annotations,  # Persona framing
                 )
                 # Log ensemble metadata
                 if header_output.ensemble_metadata:
@@ -266,6 +267,7 @@ class CVGeneratorV2:
                     candidate_dict,
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
+                    jd_annotations=jd_annotations,  # Persona framing
                 )
 
             # Phase 4.5: Log annotation influence
