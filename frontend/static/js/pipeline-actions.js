@@ -240,15 +240,17 @@ document.addEventListener('alpine:init', () => {
                     // Update session costs
                     this.sessionCosts[action] += result.cost_usd || this.getCost(tier);
 
-                    showToast(`${actionLabel} completed successfully`, 'success');
-
-                    // Trigger HTMX refresh of relevant sections
-                    this.triggerRefresh(action, jobId);
+                    showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
 
                     // Dispatch custom event for other components
                     document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
                         detail: { action, jobId, result }
                     }));
+
+                    // Reload page after short delay to show updated data
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     showToast(result.error || `${actionLabel} failed`, 'error');
                 }
