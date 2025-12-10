@@ -3931,9 +3931,15 @@ def process_job_description(job_id: str):
     use_llm = data.get("use_llm", True)  # Default to LLM for better results
 
     try:
+        # Track layer status for pipeline log panel
+        layer_status = {}
+
         # Try to use the full implementation with LLM
         try:
             from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
+
+            layer_status["fetch_job"] = {"status": "success", "message": f"Loaded job: {job.get('title', 'Unknown')[:40]}"}
+            layer_status["extract_text"] = {"status": "success", "message": f"Extracted {len(jd_text)} characters"}
 
             if use_llm:
                 # Use async LLM-powered processing
@@ -3948,10 +3954,23 @@ def process_job_description(job_id: str):
                 processed = process_jd_sync(jd_text, use_llm=False)
 
             result = processed_jd_to_dict(processed)
+            section_count = len(result.get("sections", []))
+            section_types = result.get("section_ids", [])
+            layer_status["jd_processor"] = {
+                "status": "success",
+                "sections": section_count,
+                "message": f"Parsed {section_count} sections: {', '.join(section_types[:3])}{'...' if len(section_types) > 3 else ''}"
+            }
         except ImportError as ie:
             # Fallback to lightweight implementation (for Vercel deployment)
             logger.warning(f"Using lightweight JD processor (import failed: {ie})")
             result = _process_jd_lightweight(jd_text)
+            section_count = len(result.get("sections", []))
+            layer_status["jd_processor"] = {
+                "status": "success",
+                "sections": section_count,
+                "message": f"Parsed {section_count} sections (lightweight)"
+            }
 
         # Store processed JD in annotations
         existing_annotations = job.get("jd_annotations", {})
@@ -3967,11 +3986,17 @@ def process_job_description(job_id: str):
                 }
             }
         )
+        layer_status["persist"] = {"status": "success", "message": "Saved to database"}
 
+        # Return in format expected by showPipelineLogPanel: result.data.layer_status
         return jsonify({
             "success": True,
-            "processed_jd": result,
-            "section_count": len(result.get("sections", []))
+            "data": {
+                "processed_jd": result,
+                "section_count": section_count,
+                "section_types": result.get("section_ids", []),
+                "layer_status": layer_status
+            }
         })
 
     except Exception as e:
