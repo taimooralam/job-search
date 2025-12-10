@@ -695,6 +695,9 @@ class CompanyResearcher:
             # Phase 5.1: Check for new structured company_research
             if 'company_research' in cached:
                 company_research = cached['company_research']
+                # Ensure company_type is present (backward compat for old cached data)
+                if 'company_type' not in company_research:
+                    company_research['company_type'] = cached.get('company_type', 'employer')
                 return {
                     'company_research': company_research,
                     # Populate legacy fields for backward compatibility
@@ -716,7 +719,8 @@ class CompanyResearcher:
         company_name: str,
         company_research: Optional[CompanyResearchOutput] = None,
         summary: Optional[str] = None,
-        url: Optional[str] = None
+        url: Optional[str] = None,
+        company_type: str = "employer"
     ):
         """
         Store company research in MongoDB cache with TTL (Phase 5.1 enhanced).
@@ -726,18 +730,22 @@ class CompanyResearcher:
             company_research: CompanyResearchOutput (Phase 5.1 format)
             summary: Legacy format (backward compatibility)
             url: Legacy format (backward compatibility)
+            company_type: Classification - 'employer' or 'recruitment_agency'
         """
         cache_key = self._get_cache_key(company_name)
 
         cache_doc = {
             "company_key": cache_key,
             "company_name": company_name,
-            "cached_at": datetime.utcnow()
+            "cached_at": datetime.utcnow(),
+            "company_type": company_type  # Store company classification
         }
 
         # Phase 5.1: Store structured company_research if provided
         if company_research:
-            cache_doc["company_research"] = company_research.model_dump()
+            research_dict = company_research.model_dump()
+            research_dict["company_type"] = company_type  # Include in company_research dict
+            cache_doc["company_research"] = research_dict
             # Also store legacy fields for backward compatibility
             cache_doc["company_summary"] = company_research.summary
             cache_doc["company_url"] = company_research.url
@@ -1307,7 +1315,8 @@ Output JSON only:
 
             # Step 3: Store in cache (Phase 5.1 format)
             try:
-                self._store_cache(company, company_research=company_research_output)
+                # Pass company_type="employer" since agencies return early before this point
+                self._store_cache(company, company_research=company_research_output, company_type="employer")
                 self.logger.info(f"[Cache] ✓ Stored research for {company}")
             except Exception as e:
                 self.logger.error(f"[Cache] ✗ Failed to cache results (future lookups will re-scrape): {e}")
@@ -1356,7 +1365,8 @@ Output JSON only:
 
                 # Store in cache (legacy format)
                 try:
-                    self._store_cache(company, summary=company_summary, url=company_url)
+                    # Legacy path is only reached for employers (agencies return early)
+                    self._store_cache(company, summary=company_summary, url=company_url, company_type="employer")
                     self.logger.info(f"[Cache] ✓ Stored legacy research for {company}")
                 except Exception as cache_error:
                     self.logger.error(f"[Cache] ✗ Failed to cache legacy results: {cache_error}")
