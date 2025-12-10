@@ -23,7 +23,7 @@ const layerOrder = ['intake', 'pain_points', 'company_research', 'role_research'
 // Toast Notifications
 // ============================================================================
 
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', duration = 4000) {
     const toast = document.createElement('div');
 
     // Map type to toast class
@@ -43,9 +43,12 @@ function showToast(message, type = 'success') {
         </svg>`
     };
 
+    // Support multi-line messages by converting newlines to <br>
+    const formattedMessage = message.replace(/\n/g, '<br>');
+
     toast.innerHTML = `
         ${icons[type] || icons.success}
-        <span class="text-sm font-medium text-gray-900">${message}</span>
+        <span class="text-sm font-medium text-gray-900" style="white-space: pre-line;">${formattedMessage}</span>
         <button onclick="this.parentElement.remove()" class="ml-auto text-gray-400 hover:text-gray-600 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -55,13 +58,126 @@ function showToast(message, type = 'success') {
 
     document.body.appendChild(toast);
 
-    // Auto-dismiss after 4 seconds
+    // Auto-dismiss after specified duration
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateX(2rem)';
         setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    }, duration);
 }
+
+/**
+ * Show detailed pipeline log panel with layer status
+ * @param {string} action - Action name (e.g., 'full-extraction')
+ * @param {Object} layerStatus - Per-layer status from backend
+ * @param {Object} data - Full response data
+ */
+function showPipelineLogPanel(action, layerStatus, data) {
+    // Remove existing panel if any
+    const existingPanel = document.getElementById('pipeline-log-panel');
+    if (existingPanel) existingPanel.remove();
+
+    // Define layer info based on action
+    const layerConfigs = {
+        'full-extraction': [
+            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' },
+            { key: 'jd_extractor', label: 'JD Extractor', desc: 'Extract role info' },
+            { key: 'layer_2', label: 'Pain Points', desc: 'Mine pain points' },
+            { key: 'layer_4', label: 'Fit Scoring', desc: 'Calculate fit score' }
+        ],
+        'structure-jd': [
+            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' }
+        ],
+        'research-company': [
+            { key: 'company_research', label: 'Company Research', desc: 'Research company' },
+            { key: 'role_research', label: 'Role Research', desc: 'Research role context' }
+        ],
+        'generate-cv': [
+            { key: 'cv_generation', label: 'CV Generation', desc: 'Generate tailored CV' }
+        ]
+    };
+
+    const layers = layerConfigs[action] || [];
+
+    // Build layer status HTML
+    const layerStatusHtml = layers.map(layer => {
+        const status = layerStatus?.[layer.key];
+        const isSuccess = status?.status === 'success';
+        const statusIcon = isSuccess ? '✅' : (status ? '❌' : '⏳');
+        const message = status?.message || layer.desc;
+
+        return `
+            <div class="flex items-start gap-2 py-1">
+                <span class="text-base">${statusIcon}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-700">${layer.label}</div>
+                    <div class="text-xs text-gray-500 truncate">${message}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Build summary stats
+    let summaryHtml = '';
+    if (data) {
+        const stats = [];
+        if (data.section_count) stats.push(`📄 ${data.section_count} sections`);
+        if (data.pain_points_count) stats.push(`🎯 ${data.pain_points_count} pain points`);
+        if (data.fit_score !== undefined) stats.push(`📊 Fit: ${data.fit_score}%`);
+        if (data.annotation_score !== undefined && data.annotation_score !== null) {
+            stats.push(`👤 Match: ${data.annotation_score}%`);
+        }
+        if (stats.length > 0) {
+            summaryHtml = `
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                    <div class="text-xs font-medium text-gray-500 uppercase mb-2">Results</div>
+                    <div class="flex flex-wrap gap-2">
+                        ${stats.map(s => `<span class="text-xs bg-gray-100 px-2 py-1 rounded">${s}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Create panel
+    const panel = document.createElement('div');
+    panel.id = 'pipeline-log-panel';
+    panel.className = 'fixed bottom-4 right-4 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden';
+    panel.innerHTML = `
+        <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 flex items-center justify-between">
+            <span class="text-white font-medium text-sm">Pipeline Log</span>
+            <button onclick="this.closest('#pipeline-log-panel').remove()" class="text-white/80 hover:text-white">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="p-4 max-h-80 overflow-y-auto">
+            <div class="space-y-1">
+                ${layerStatusHtml || '<div class="text-sm text-gray-500">No layer data available</div>'}
+            </div>
+            ${summaryHtml}
+        </div>
+        <div class="bg-gray-50 px-4 py-2 text-xs text-gray-500 text-center">
+            Refreshing page in a moment...
+        </div>
+    `;
+
+    document.body.appendChild(panel);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (panel.parentElement) {
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateY(1rem)';
+            panel.style.transition = 'all 0.3s ease';
+            setTimeout(() => panel.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Expose globally
+window.showPipelineLogPanel = showPipelineLogPanel;
 
 // ============================================================================
 // Field Updates
