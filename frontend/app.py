@@ -3767,9 +3767,21 @@ def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
                     return section_type
         return "other"
 
+    def normalize_bullets(text: str) -> str:
+        """Pre-normalize content to split inline bullets onto separate lines."""
+        # Insert newline before mid-line bullet characters
+        # Handles: "...experiences. • Empower..." → "...experiences.\n• Empower..."
+        text = re.sub(r'(?<=[\.\!\?])\s*([•◦▪▸►·])\s*', r'\n\1 ', text)
+        text = re.sub(r'(?<=[\.\!\?])\s*([-*])\s+(?=[A-Z])', r'\n\1 ', text)
+        # Split on sentence-ending punctuation followed by capital letter (paragraph break)
+        text = re.sub(r'(?<=[\.\!\?])\s+(?=[A-Z][a-z])', r'\n', text)
+        return text
+
     def split_into_items(content: str) -> list:
         items = []
-        bullet_pattern = r'^[\s]*[-*•◦▪]\s*(.+)$'
+        # Normalize bullets first
+        content = normalize_bullets(content)
+        bullet_pattern = r'^[\s]*[-*•◦▪▸►·]\s*(.+)$'
         bullet_matches = re.findall(bullet_pattern, content, re.MULTILINE)
         if bullet_matches:
             items = [m.strip() for m in bullet_matches if m.strip()]
@@ -3785,7 +3797,13 @@ def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
 
     # Parse sections
     sections = []
-    header_pattern = r'^[\s]*(?:#{1,3}\s*)?([A-Z][A-Za-z\s&/\'-]+)[\s]*[:：]?\s*$'
+    # Enhanced header pattern - supports:
+    # - Title case: "What You'll Do"
+    # - ALL CAPS: "RESPONSIBILITIES"
+    # - Numbered: "1. Responsibilities"
+    # - Markdown headers: "## Qualifications"
+    # - Bold markers: "**What We're Looking For**"
+    header_pattern = r"^[\s]*(?:\*{1,2})?(?:#{1,6}\s*)?(?:\d+[\.\)]\s*)?([A-Za-z][A-Za-z\s&/'\u2019\-]+)(?:\*{1,2})?[\s]*[:：]?\s*$"
     lines = jd_text.split('\n')
     current_section = None
     current_content = []

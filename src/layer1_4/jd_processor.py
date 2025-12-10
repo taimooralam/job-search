@@ -235,8 +235,14 @@ def parse_jd_sections_rule_based(jd_text: str) -> List[JDSection]:
     """
     sections = []
 
-    # Common section header patterns
-    header_pattern = r'^[\s]*(?:#{1,3}\s*)?([A-Z][A-Za-z\s&/\'-]+)[\s]*[:：]?\s*$'
+    # Common section header patterns - supports multiple formats:
+    # - Title case: "What You'll Do"
+    # - ALL CAPS: "RESPONSIBILITIES"
+    # - Numbered: "1. Responsibilities"
+    # - Markdown headers: "## Qualifications"
+    # - Headers with colon: "Requirements:"
+    # - Bold markers: "**What We're Looking For**"
+    header_pattern = r"^[\s]*(?:\*{1,2})?(?:#{1,6}\s*)?(?:\d+[\.\)]\s*)?([A-Za-z][A-Za-z\s&/'\u2019\-]+)(?:\*{1,2})?[\s]*[:：]?\s*$"
 
     lines = jd_text.split('\n')
     current_section = None
