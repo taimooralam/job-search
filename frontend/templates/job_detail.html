@@ -1031,7 +1031,7 @@
                     {% endif %}
 
                     {# Annotation-Based Match Heatmap #}
-                    {% if job.annotation_signals is defined and job.annotation_signals and job.annotation_signals.annotation_score is defined %}
+                    {% if job.annotation_signals is defined and job.annotation_signals and job.annotation_signals.annotation_score is not none %}
                     <div class="mb-3 p-3 bg-white/50 rounded-lg border border-gray-200">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-medium text-gray-500 uppercase">Your Annotations</span>
