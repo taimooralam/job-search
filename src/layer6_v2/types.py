@@ -1486,7 +1486,7 @@ class HeaderGenerationContext:
         for p in self.priorities[:5]:  # Top 5 priorities
             if p.matching_skill:
                 keywords.append(p.matching_skill)
-            elif p.ats_variants:
+            elif p.ats_variants and len(p.ats_variants) > 0:
                 keywords.append(p.ats_variants[0])
         return keywords
 
@@ -1500,7 +1500,7 @@ class HeaderGenerationContext:
         for p in self.identity_priorities[:3]:  # Top 3 identity items
             if p.matching_skill:
                 keywords.append(p.matching_skill)
-            elif p.ats_variants:
+            elif p.ats_variants and len(p.ats_variants) > 0:
                 keywords.append(p.ats_variants[0])
         return keywords
 
@@ -1514,7 +1514,7 @@ class HeaderGenerationContext:
         for p in self.passion_priorities[:3]:  # Top 3 passion items
             if p.matching_skill:
                 keywords.append(p.matching_skill)
-            elif p.ats_variants:
+            elif p.ats_variants and len(p.ats_variants) > 0:
                 keywords.append(p.ats_variants[0])
         return keywords
 
