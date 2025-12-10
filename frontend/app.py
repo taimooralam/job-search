@@ -2270,7 +2270,7 @@ def export_dossier_pdf(job_id: str):
         job_doc["_id"] = str(job_doc["_id"])
 
         # 2. Generate PDF using DossierPDFExporter
-        from src.api.pdf_export import DossierPDFExporter
+        from pdf_export import DossierPDFExporter
 
         # Get PDF service URL from runner proxy
         runner_url = os.getenv("RUNNER_URL", "http://localhost:8000")
