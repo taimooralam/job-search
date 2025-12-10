@@ -64,6 +64,24 @@ ConcernSeverity = Literal[
     "preference"          # Minor preference mismatch
 ]
 
+# Passion level (candidate enthusiasm for this aspect of the role)
+PassionLevel = Literal[
+    "love_it",            # Genuinely excited about this - highlight prominently (1.5x boost)
+    "enjoy",              # Would enjoy doing this regularly (1.2x boost)
+    "neutral",            # Neither excited nor dreading (1.0x - no boost)
+    "tolerate",           # Can do it but would rather not (0.8x - slight penalty)
+    "avoid"               # Would strongly prefer not to do this (0.5x - significant penalty)
+]
+
+# Identity level (how strongly this defines who you are professionally)
+IdentityLevel = Literal[
+    "core_identity",      # This IS who I am - use in introductions/headlines (2.0x boost)
+    "strong_identity",    # Significant part of professional identity (1.5x boost)
+    "developing",         # Growing into this identity (1.2x boost)
+    "peripheral",         # Not central to identity but have experience (1.0x - no boost)
+    "not_identity"        # Explicitly NOT how I want to be seen (0.3x penalty)
+]
+
 # Conflict resolution strategy
 ConflictResolution = Literal[
     "max_boost",          # Use highest boost when multiple annotations overlap
@@ -113,6 +131,8 @@ class JDAnnotation(TypedDict):
     # === Skill Match Attributes ===
     relevance: Optional[SkillRelevance]     # 5-level strength
     requirement_type: Optional[RequirementType]  # must_have/nice_to_have/disqualifier/neutral
+    passion: Optional[str]                  # PassionLevel - candidate enthusiasm for this aspect
+    identity: Optional[str]                 # IdentityLevel - how strongly this defines professional identity
     matching_skill: Optional[str]           # Which candidate skill matches
 
     # === Reframe Attributes (standalone OR on skill_match) ===
@@ -486,6 +506,24 @@ REQUIREMENT_MULTIPLIERS: Dict[str, float] = {
     "neutral": 1.0,
 }
 
+# Passion level multipliers
+PASSION_MULTIPLIERS: Dict[str, float] = {
+    "love_it": 1.5,       # Highlight prominently - shows authentic enthusiasm
+    "enjoy": 1.2,         # Boost slightly - enjoyable aspects
+    "neutral": 1.0,       # No modification
+    "tolerate": 0.8,      # Slight penalty - can do but don't want to emphasize
+    "avoid": 0.5,         # Significant penalty - de-emphasize in applications
+}
+
+# Identity level multipliers
+IDENTITY_MULTIPLIERS: Dict[str, float] = {
+    "core_identity": 2.0,     # Use prominently in headlines/introductions
+    "strong_identity": 1.5,   # Significant part of identity - emphasize
+    "developing": 1.2,        # Growing into this - mention with growth framing
+    "peripheral": 1.0,        # Not central - include if relevant
+    "not_identity": 0.3,      # Explicitly NOT how to be seen - avoid in intros
+}
+
 # Priority multipliers
 PRIORITY_MULTIPLIERS: Dict[int, float] = {
     1: 1.5,
@@ -511,4 +549,22 @@ RELEVANCE_COLORS: Dict[str, Dict[str, str]] = {
     "relevant": {"bg": "bg-blue-500/20", "border": "border-blue-500", "badge": "badge-blue", "hex": "#3b82f6"},
     "tangential": {"bg": "bg-yellow-500/20", "border": "border-yellow-500", "badge": "badge-yellow", "hex": "#eab308"},
     "gap": {"bg": "bg-red-500/20", "border": "border-red-500", "badge": "badge-red", "hex": "#ef4444"},
+}
+
+# Passion level colors (for UI) - using purple/pink spectrum to differentiate from relevance
+PASSION_COLORS: Dict[str, Dict[str, str]] = {
+    "love_it": {"bg": "bg-pink-500/20", "border": "border-pink-500", "badge": "badge-pink", "hex": "#ec4899", "emoji": "🔥"},
+    "enjoy": {"bg": "bg-purple-500/20", "border": "border-purple-500", "badge": "badge-purple", "hex": "#a855f7", "emoji": "😊"},
+    "neutral": {"bg": "bg-gray-500/20", "border": "border-gray-500", "badge": "badge-gray", "hex": "#6b7280", "emoji": "😐"},
+    "tolerate": {"bg": "bg-slate-500/20", "border": "border-slate-500", "badge": "badge-slate", "hex": "#64748b", "emoji": "😕"},
+    "avoid": {"bg": "bg-stone-500/20", "border": "border-stone-500", "badge": "badge-stone", "hex": "#78716c", "emoji": "🚫"},
+}
+
+# Identity level colors (for UI) - using indigo/cyan spectrum for professional identity
+IDENTITY_COLORS: Dict[str, Dict[str, str]] = {
+    "core_identity": {"bg": "bg-indigo-500/20", "border": "border-indigo-500", "badge": "badge-indigo", "hex": "#6366f1", "emoji": "⭐"},
+    "strong_identity": {"bg": "bg-violet-500/20", "border": "border-violet-500", "badge": "badge-violet", "hex": "#8b5cf6", "emoji": "💪"},
+    "developing": {"bg": "bg-cyan-500/20", "border": "border-cyan-500", "badge": "badge-cyan", "hex": "#06b6d4", "emoji": "🌱"},
+    "peripheral": {"bg": "bg-gray-500/20", "border": "border-gray-500", "badge": "badge-gray", "hex": "#6b7280", "emoji": "○"},
+    "not_identity": {"bg": "bg-zinc-500/20", "border": "border-zinc-500", "badge": "badge-zinc", "hex": "#71717a", "emoji": "✗"},
 }
