@@ -35,6 +35,24 @@ RELEVANCE_SIGNAL_WEIGHTS = {
     "gap": -0.5,                # Missing skill - negative signal
 }
 
+# Phase 4: Passion signal weights - authentic enthusiasm indicators
+PASSION_SIGNAL_WEIGHTS = {
+    "love_it": 0.3,    # Genuine excitement - positive engagement signal
+    "enjoy": 0.15,     # Positive but not passionate
+    "neutral": 0.0,    # No signal
+    "tolerate": -0.1,  # Reluctant acceptance - mild negative
+    "avoid": -0.2,     # Strong preference against - negative signal
+}
+
+# Phase 4: Identity signal weights - professional self-image alignment
+IDENTITY_SIGNAL_WEIGHTS = {
+    "core_identity": 0.4,    # This IS who they are - strong positive
+    "strong_identity": 0.25, # Strong part of identity
+    "developing": 0.15,      # Growth area - mild positive
+    "peripheral": 0.0,       # Not relevant to identity
+    "not_identity": -0.3,    # Explicitly NOT who they are - negative
+}
+
 # Default blend weights: 70% LLM score, 30% annotation signal
 DEFAULT_LLM_WEIGHT = 0.7
 DEFAULT_ANNOTATION_WEIGHT = 0.3
@@ -47,6 +65,8 @@ class AnnotationFitSignal:
 
     Analyzes annotations to produce:
     - fit_signal: A 0-1 score based on annotation relevance distribution
+    - passion_signal: Enthusiasm/engagement signal from passion annotations
+    - identity_signal: Professional identity alignment signal
     - Counts of different annotation types
     - Disqualifier detection
 
@@ -54,6 +74,7 @@ class AnnotationFitSignal:
     - Start at 0.5 (neutral)
     - Each positive annotation increases signal (weighted by relevance)
     - Each gap annotation decreases signal
+    - Passion and identity signals add additional adjustments
     - Result is clamped to [0, 1]
     """
 
@@ -68,6 +89,20 @@ class AnnotationFitSignal:
     disqualifier_details: List[str] = field(default_factory=list, init=False)
     has_annotations: bool = field(default=False, init=False)
     total_active_annotations: int = field(default=0, init=False)
+
+    # Phase 4: Passion dimension counters
+    passion_love_it_count: int = field(default=0, init=False)
+    passion_enjoy_count: int = field(default=0, init=False)
+    passion_tolerate_count: int = field(default=0, init=False)
+    passion_avoid_count: int = field(default=0, init=False)
+    passion_signal: float = field(default=0.0, init=False)
+
+    # Phase 4: Identity dimension counters
+    identity_core_count: int = field(default=0, init=False)
+    identity_strong_count: int = field(default=0, init=False)
+    identity_developing_count: int = field(default=0, init=False)
+    identity_not_me_count: int = field(default=0, init=False)
+    identity_signal: float = field(default=0.0, init=False)
 
     def __init__(self, jd_annotations: Optional[Dict[str, Any]] = None):
         """
@@ -86,6 +121,20 @@ class AnnotationFitSignal:
         self.disqualifier_details = []
         self.has_annotations = False
         self.total_active_annotations = 0
+
+        # Phase 4: Initialize passion counters
+        self.passion_love_it_count = 0
+        self.passion_enjoy_count = 0
+        self.passion_tolerate_count = 0
+        self.passion_avoid_count = 0
+        self.passion_signal = 0.0
+
+        # Phase 4: Initialize identity counters
+        self.identity_core_count = 0
+        self.identity_strong_count = 0
+        self.identity_developing_count = 0
+        self.identity_not_me_count = 0
+        self.identity_signal = 0.0
 
         if jd_annotations:
             self._process_annotations(jd_annotations)
@@ -133,6 +182,28 @@ class AnnotationFitSignal:
                 text = target.get("text", "Unknown requirement")
                 self.disqualifier_details.append(text)
 
+            # Phase 4: Count by passion level
+            passion = ann.get("passion")
+            if passion == "love_it":
+                self.passion_love_it_count += 1
+            elif passion == "enjoy":
+                self.passion_enjoy_count += 1
+            elif passion == "tolerate":
+                self.passion_tolerate_count += 1
+            elif passion == "avoid":
+                self.passion_avoid_count += 1
+
+            # Phase 4: Count by identity level
+            identity = ann.get("identity")
+            if identity == "core_identity":
+                self.identity_core_count += 1
+            elif identity == "strong_identity":
+                self.identity_strong_count += 1
+            elif identity == "developing":
+                self.identity_developing_count += 1
+            elif identity == "not_identity":
+                self.identity_not_me_count += 1
+
         # Calculate fit signal from counts
         self._calculate_fit_signal()
 
@@ -143,18 +214,22 @@ class AnnotationFitSignal:
         Formula:
         - Start at 0.5 (neutral)
         - Add/subtract based on weighted annotation counts
+        - Include passion and identity signals
         - Normalize and clamp to [0, 1]
 
         This uses a sigmoid-like approach where:
         - Many positive annotations approach 1.0
         - Many gap annotations approach 0.0
         - Mixed annotations stay around 0.5
+        - Passion/identity signals provide additional adjustment
         """
         if not self.has_annotations:
             self.fit_signal = 0.5
+            self.passion_signal = 0.0
+            self.identity_signal = 0.0
             return
 
-        # Calculate weighted sum of signals
+        # Calculate weighted sum of relevance signals
         positive_signal = (
             self.core_strength_count * RELEVANCE_SIGNAL_WEIGHTS["core_strength"] +
             self.extremely_relevant_count * RELEVANCE_SIGNAL_WEIGHTS["extremely_relevant"] +
@@ -166,8 +241,24 @@ class AnnotationFitSignal:
             self.gap_count * RELEVANCE_SIGNAL_WEIGHTS["gap"]
         )
 
-        # Net signal (can be positive or negative)
-        net_signal = positive_signal - negative_signal
+        # Phase 4: Calculate passion signal (enthusiasm/engagement indicator)
+        self.passion_signal = (
+            self.passion_love_it_count * PASSION_SIGNAL_WEIGHTS["love_it"] +
+            self.passion_enjoy_count * PASSION_SIGNAL_WEIGHTS["enjoy"] +
+            self.passion_tolerate_count * PASSION_SIGNAL_WEIGHTS["tolerate"] +
+            self.passion_avoid_count * PASSION_SIGNAL_WEIGHTS["avoid"]
+        )
+
+        # Phase 4: Calculate identity signal (professional self-image alignment)
+        self.identity_signal = (
+            self.identity_core_count * IDENTITY_SIGNAL_WEIGHTS["core_identity"] +
+            self.identity_strong_count * IDENTITY_SIGNAL_WEIGHTS["strong_identity"] +
+            self.identity_developing_count * IDENTITY_SIGNAL_WEIGHTS["developing"] +
+            self.identity_not_me_count * IDENTITY_SIGNAL_WEIGHTS["not_identity"]
+        )
+
+        # Net signal includes relevance + passion + identity
+        net_signal = positive_signal - negative_signal + self.passion_signal + self.identity_signal
 
         # Normalize using sigmoid-like function
         # This ensures signal stays bounded and doesn't explode with many annotations
@@ -193,7 +284,7 @@ class AnnotationFitSignal:
         Return the complete annotation analysis as a dictionary.
 
         Returns:
-            Dict with all annotation signal components
+            Dict with all annotation signal components including passion/identity
         """
         result = {
             "fit_signal": round(self.fit_signal, 4),
@@ -205,6 +296,18 @@ class AnnotationFitSignal:
             "has_disqualifier": self.has_disqualifier,
             "has_annotations": self.has_annotations,
             "total_active_annotations": self.total_active_annotations,
+            # Phase 4: Passion dimension
+            "passion_signal": round(self.passion_signal, 4),
+            "passion_love_it_count": self.passion_love_it_count,
+            "passion_enjoy_count": self.passion_enjoy_count,
+            "passion_tolerate_count": self.passion_tolerate_count,
+            "passion_avoid_count": self.passion_avoid_count,
+            # Phase 4: Identity dimension
+            "identity_signal": round(self.identity_signal, 4),
+            "identity_core_count": self.identity_core_count,
+            "identity_strong_count": self.identity_strong_count,
+            "identity_developing_count": self.identity_developing_count,
+            "identity_not_me_count": self.identity_not_me_count,
         }
 
         # Add disqualifier warning if present
@@ -215,6 +318,18 @@ class AnnotationFitSignal:
             )
             if len(self.disqualifier_details) > 3:
                 result["disqualifier_warning"] += f" and {len(self.disqualifier_details) - 3} more"
+
+        # Phase 4: Add enthusiasm/identity warnings if extreme
+        if self.passion_avoid_count >= 3:
+            result["enthusiasm_warning"] = (
+                f"Low enthusiasm detected: {self.passion_avoid_count} requirements marked as 'avoid'. "
+                "Consider if this role aligns with candidate's interests."
+            )
+        if self.identity_not_me_count >= 3:
+            result["identity_warning"] = (
+                f"Identity mismatch detected: {self.identity_not_me_count} requirements marked as 'not me'. "
+                "Role may not align with candidate's professional self-image."
+            )
 
         return result
 
