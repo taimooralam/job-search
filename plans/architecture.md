@@ -467,6 +467,137 @@ class OutreachPackage(TypedDict):
 
 ## Frontend Architecture
 
+### Master CV Editor Page (NEW - 2025-12-10)
+
+**Purpose**: Full-page dedicated editor for managing the Master CV stored in MongoDB
+
+**Route**: `GET /master-cv` → `frontend/templates/master_cv.html`
+
+**Data Flow**:
+```
+MongoDB (master_cv_metadata, master_cv_taxonomy, master_cv_roles)
+           │
+           ▼
+/api/master-cv/* endpoints
+           │
+           ▼
+master_cv.html (tab template)
+           │
+           ├─ _candidate_tab.html (form inputs)
+           ├─ _roles_tab.html (two-panel editor with TipTap)
+           └─ _taxonomy_tab.html (accordion skill editor)
+           │
+           ▼
+master-cv-editor.js (MasterCVEditor class, 1100 lines)
+           │
+           ├─ Auto-save (3s debounce)
+           ├─ Version history (with rollback)
+           ├─ TipTap rich text (achievements)
+           ├─ Chip editing (arrays: languages, certifications, skills)
+           └─ Delete confirmation (2s safety delay)
+           │
+           ▼
+master-cv-editor.css (editor styles)
+```
+
+**Tab Structure**:
+
+1. **Candidate Info Tab** (`_candidate_tab.html`):
+   - Personal details (name, email, phone)
+   - Location (country, city)
+   - Availability (notice period, start date)
+   - Professional summary
+   - Languages (chip-based array editing)
+   - Certifications (chip-based array editing)
+   - Auto-save to `master_cv_metadata` collection
+
+2. **Work Experience Tab** (`_roles_tab.html`):
+   - Two-panel layout:
+     - Left: List of roles with add/delete buttons
+     - Right: Selected role editor
+   - For each role:
+     - Title, company, dates (duration auto-calculated)
+     - Achievements editor with TipTap rich text
+     - Keywords (chip-based array)
+     - Reorder achievements with drag-drop
+   - Auto-save to `master_cv_roles` collection
+
+3. **Skills Taxonomy Tab** (`_taxonomy_tab.html`):
+   - Accordion-based category editor
+   - For each category:
+     - Category name (editable)
+     - Skills (chip-based array)
+     - Reorder skills with drag-drop
+   - Add new skill categories
+   - Delete categories
+   - Auto-save to `master_cv_taxonomy` collection
+
+**Key Features** (`master-cv-editor.js`):
+
+- **MasterCVEditor Class** (main orchestrator):
+  - Constructor: Initialize editor state from MongoDB data
+  - `loadData()` - Fetch from MongoDB via API
+  - `saveData()` - Debounced save (3s delay)
+  - `initTabs()` - Tab switching logic
+  - `showVersionHistory()` - Modal with history + rollback
+  - `confirmDelete()` - 2s safety delay before delete
+
+- **Auto-Save Mechanism**:
+  - Debounce timer resets on every change
+  - Visual indicator: "Saving..." → "Saved" with timestamp
+  - Retry logic: Exponential backoff (500ms → 2s max)
+  - Error handling: Toast notifications
+
+- **TipTap Integration** (for role achievements):
+  - Extensions: Bold, Italic, Underline, Lists, Code blocks
+  - Toolbar: Format buttons, clear formatting
+  - Placeholder: "Enter achievement..."
+  - Auto-save on change
+
+- **Chip-Based Array Editing**:
+  - Input field + "Add" button
+  - Tags displayed as removable chips
+  - Drag-drop reordering (Sortable.js or Alpine.js x-for)
+  - Keyboard support: Enter to add, Backspace to delete last
+
+- **Version History**:
+  - Modal showing 10 most recent versions
+  - Timestamp, user action (created/edited/deleted)
+  - Rollback button: Restore to previous version
+  - Queries `master_cv_metadata.history` array from MongoDB
+
+- **Delete Confirmation**:
+  - Modal overlay with 2-second countdown
+  - Prevents accidental deletion
+  - Shows what will be deleted
+  - After countdown: Delete button becomes active
+
+**Styling** (`master-cv-editor.css`):
+
+- Tab navigation: Active state with underline/color
+- Two-panel layout: `display: flex` with responsive breakpoint
+- Chip styling: `background: #e5e7eb`, `border-radius: 999px`, removable with ×
+- Form inputs: Consistent with job detail page (Tailwind classes)
+- Rich text editor: Border highlight on focus
+- Modals: Overlay with centered content, semi-transparent background
+- Warning banner: Yellow/amber background with icon ("Use with caution")
+- Save indicator: Green checkmark with timestamp
+
+**API Endpoints Used** (no new backend routes):
+- `GET /api/master-cv/metadata` - Fetch candidate info
+- `PUT /api/master-cv/metadata` - Save candidate info
+- `GET /api/master-cv/roles` - Fetch work experience
+- `PUT /api/master-cv/roles` - Save roles
+- `GET /api/master-cv/taxonomy` - Fetch skill taxonomy
+- `PUT /api/master-cv/taxonomy` - Save taxonomy
+
+**Navigation** (`base.html`):
+- "Master CV" button added to main nav menu
+- Links to `/master-cv` page
+- Only visible to logged-in users (same guard as job detail page)
+
+---
+
 ### Pipeline Progress UI (NEW - 2025-12-08)
 
 **Horizontal Layout with Progress Line**:

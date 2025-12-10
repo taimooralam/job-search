@@ -23,6 +23,55 @@
 
 ### Today's Fixes (2025-12-10)
 
+**Master CV Editor Page Implemented (Full-Page Tab-Based Editor)**:
+- **Frontend Page** (`frontend/templates/master_cv.html`): Main editor page with 3-tab navigation
+  - Tab 1: Candidate Info (personal details, location, availability)
+  - Tab 2: Work Experience (role editor with TipTap rich text for achievements)
+  - Tab 3: Skills Taxonomy (accordion-based skill categories editor)
+- **Partial Templates** (7 files):
+  - `frontend/templates/partials/master_cv/_candidate_tab.html` - Candidate info form with auto-save
+  - `frontend/templates/partials/master_cv/_roles_tab.html` - Two-panel role editor (list + editor)
+  - `frontend/templates/partials/master_cv/_taxonomy_tab.html` - Accordion taxonomy editor with chips
+  - `frontend/templates/partials/master_cv/_version_history_modal.html` - Version history with rollback
+  - `frontend/templates/partials/master_cv/_delete_confirm_modal.html` - Delete confirmation dialog
+- **Editor JavaScript** (`frontend/static/js/master-cv-editor.js` - 1100 lines):
+  - MasterCVEditor class with full state management
+  - 3-second debounced auto-save with visual save indicator
+  - TipTap rich-text editor integration for role achievements
+  - Chip-based array editing (languages, certifications, keywords, skills)
+  - Version history with rollback capability
+  - Delete confirmation with 2-second safety delay
+  - Keyboard shortcuts (Ctrl+S to save, Escape to cancel)
+  - Error handling and retry logic
+- **Editor Styles** (`frontend/static/css/master-cv-editor.css`):
+  - Tab navigation styling with active state indicators
+  - Two-panel layout for role editor (responsive)
+  - Chip styles for array data (tags, languages, skills)
+  - Form controls and input validation visual feedback
+  - Modal and version history list styling
+  - "Use with caution" warning banner styling
+- **Frontend Routes** (`frontend/app.py`):
+  - Added `GET /master-cv` route returning master_cv.html template
+  - Loads MongoDB data via existing API endpoints: `/api/master-cv/*`
+- **UI Integration** (`frontend/templates/base.html`):
+  - Added "Master CV" button to main navigation menu
+  - Links to `/master-cv` page
+- **Data Source**: All data from MongoDB collections:
+  - `master_cv_metadata` (candidate info, status)
+  - `master_cv_taxonomy` (skill categories, taxonomy)
+  - `master_cv_roles` (work experience, achievements)
+- **API Integration**: Uses existing endpoints `/api/master-cv/*` (no new backend routes needed)
+- **Features**:
+  - Auto-save with visual feedback (3-second debounce)
+  - Version history with timestamps and rollback
+  - Rich text editing for role achievements (TipTap)
+  - Chip-based editing for arrays (languages, certifications, keywords, skills)
+  - Delete confirmation with safety delay (2 seconds)
+  - "Use with caution" warning banner
+  - Keyboard shortcuts for power users
+  - Error recovery with retry logic
+  - No page reload needed (AJAX-based)
+
 **Full Extraction Service Implemented (Layer 1.4 + Layer 2 + Layer 4 Combined)**:
 - **Full Extraction Service** (`src/services/full_extraction_service.py`): NEW service combining JD structuring (Layer 1.4), pain point mining (Layer 2), and fit scoring (Layer 4)
   - Single operation that runs all three layers in sequence
