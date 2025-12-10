@@ -667,7 +667,7 @@ class TestOperationServiceIntegration:
         assert result.success is True
         assert result.operation == "generate-cv"
         assert "cv_text" in result.data
-        assert result.model_used == "claude-sonnet-4-20250514"
+        assert result.model_used == "claude-opus-4-5-20251101"
         assert result.cost_usd > 0
         assert result.duration_ms >= 10
         assert result.input_tokens == 3000
