@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-10 (Session 2: Full Extraction Service, JD Extractor Integration, Annotation Heatmap UI, Proxy Routes)
+**Last Updated**: 2025-12-10 (Session 3: E2E Annotation Integration Complete - All 11 Phases Done, GAP-085 to GAP-094 Marked Complete)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -11,12 +11,34 @@
 | Priority | Count | Description |
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 18 (16 fixed) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 30 (19 fixed) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 19 (13 fixed) | Backlog - nice-to-have improvements |
-| **Total** | **70** (51 fixed/documented, 19 open) | All identified gaps |
+| **P1 (HIGH)** | 19 (17 fixed, 0 open) | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 36 (30 fixed, 0 open) | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 23 (17 fixed, 0 open) | Backlog - nice-to-have improvements |
+| **Total** | **81** (67 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+### Today's Session (2025-12-10 Session 3): Annotation System Analysis
+
+**New Report Created**: `reports/annotation-system-analysis-2025-12-10.md` (~2100 lines)
+- Full technical deep-dive on annotation data model and pipeline flow
+- 5-dimension annotation system analysis (relevance, requirement_type, passion, identity, annotation_type)
+- Layer-by-layer integration audit identifying utilization gaps
+- Boost formula documentation with all multipliers
+
+**E2E Annotation Integration Complete** (GAP-085 to GAP-094 - All DONE 2025-12-10):
+| GAP ID | Title | Priority | Status | Completed |
+|--------|-------|----------|--------|-----------|
+| GAP-085 | Company/Role Research Not Annotation-Aware | P2 | ✅ COMPLETE | Phase 4 |
+| GAP-086 | People Mapper Not Annotation-Aware | P3 | ✅ COMPLETE | Phase 8 |
+| GAP-087 | Interview/Outcome Not Using Annotations | P2 | ✅ COMPLETE | Phase 5 |
+| GAP-088 | Cover Letter Passion/Identity Not Used | P1 | ✅ COMPLETE | Phase 3 |
+| GAP-089 | ATS Keyword Coverage Not Validated | P2 | ✅ COMPLETE | Phase 6 |
+| GAP-090 | STAR Selector Annotation Boost Disabled | P2 | ✅ COMPLETE | Phase 2 |
+| GAP-091 | Outreach Not Annotation-Aware | P2 | ✅ COMPLETE | Phase 7 |
+| GAP-092 | Reframe Application Not Traced | P3 | ✅ COMPLETE | Phase 9 |
+| GAP-093 | Section Coverage Not Enforced | P3 | ✅ COMPLETE | Phase 10 |
+| GAP-094 | Review Workflow Not Implemented | P3 | ✅ COMPLETE | Phase 11 |
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -51,6 +73,38 @@
 - **Error Handling**: Proper error propagation and status codes
 - **Files Changed**: `frontend/app.py`
 - **Impact**: Research and Generate CV buttons now functional from job detail page
+
+**Annotation System Enhancements - Passion & Identity Dimensions**:
+- **New Annotation Dimensions**:
+  - `passion_level`: 5-level scale (love_it, enjoy, neutral, tolerate, avoid) - captures candidate enthusiasm for role/company
+  - `identity_level`: 5-level scale (core_identity, strong_identity, developing, peripheral, not_identity) - captures professional identity alignment
+- **Layer 2 Pain Point Miner - Annotation-Aware** (`src/layer2/pain_point_miner.py`):
+  - Extracts annotation context: must_have_keywords, gap_areas, reframe_notes, core_strength_areas
+  - Passes annotation priorities to LLM prompt for pain point generation
+  - Post-processes pain points to boost must-haves and deprioritize gaps
+- **Layer 4 Fit Scorer - Uses Annotation Signal** (`src/layer4/annotation_fit_signal.py`):
+  - New `AnnotationFitSignal` class blending LLM score with annotation signal (70% LLM, 30% annotation)
+  - Detects and flags disqualifiers from annotations
+  - Returns `annotation_analysis` in output with confidence levels
+- **Boost Calculator Enhanced** (`src/common/annotation_boost.py`):
+  - Added passion and identity multipliers for enhanced scoring
+  - New methods: `get_passions()`, `get_avoid_areas()`, `get_identity_core()`, `get_identity_not_me()`
+  - Stats now include passion and identity dimension counts
+- **Header Context Enhanced** (`src/layer6_v2/types.py`):
+  - `AnnotationPriority` and `HeaderGenerationContext` now include passion/identity fields
+  - New properties: `passion_priorities`, `avoid_priorities`, `identity_priorities`, `identity_keywords`, `passion_keywords`
+  - `format_priorities_for_prompt()` now includes passion/identity sections in prompt injection
+- **UI Updated** (`frontend/templates/partials/job_detail/_annotation_popover.html`, `frontend/static/js/jd-annotation.js`):
+  - Passion and identity button groups in annotation popover for comprehensive candidate preferences
+  - Handlers for setPopoverPassion and setPopoverIdentity actions
+- **Files Changed/Created**:
+  - `src/layer2/pain_point_miner.py` - Added annotation context extraction
+  - `src/layer4/annotation_fit_signal.py` - NEW file with annotation-aware fit scoring
+  - `src/common/annotation_boost.py` - Enhanced with passion/identity methods
+  - `src/layer6_v2/types.py` - Extended context types
+  - `frontend/templates/partials/job_detail/_annotation_popover.html` - UI enhancements
+  - `frontend/static/js/jd-annotation.js` - Handler methods
+- **Impact**: Annotation system now captures full candidate preference spectrum (passion levels) and professional identity alignment, enabling more nuanced job matching and personalized outreach
 
 ---
 
@@ -1967,6 +2021,212 @@ if (response.status === "success") {
 - Quality tier: ~$0.15 per operation (for high-value positions)
 
 **Commits**: Pipeline overhaul Phase 1-3 with 68 new tests passing
+
+---
+
+### GAP-085: Layer 3/3.5 - Company/Role Research Not Annotation-Aware
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 8 hours
+**Impact**: Company research now integrates annotation guidance for targeted research
+
+**Implementation Complete** (Phase 4):
+- `src/services/company_research_service.py` now accepts and uses `jd_annotations` parameter
+- Research is now guided by must-have priorities and passion areas
+- Annotation context (must_have_keywords, gap_areas, core_strength_areas) passed to FireCrawl queries and LLM analysis
+- Company research focused on passion annotations (love_it) for culture research priorities
+- Must-have priorities inform technical research areas
+- Identity annotations guide which company values to emphasize
+
+**Implementation Details**:
+- Added `_extract_annotation_research_focus()` method to extract research priorities from annotations
+- Annotation context injected into company research prompts
+- Research outputs enriched with annotation-aligned insights
+
+---
+
+### GAP-086: Layer 5 - People Mapper Not Annotation-Aware
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 6 hours
+**Impact**: Contact discovery now uses annotation-derived focus for targeted discovery
+
+**Implementation Complete** (Phase 8):
+- `src/layer5/people_mapper.py` now accepts and uses `jd_annotations` parameter
+- SEO queries now incorporate pain point keywords for focused searches
+- Must-have annotations now prioritize which contacts to find
+- Technical skill keywords guide search query refinement
+- Annotation context injected into contact discovery prompts
+
+**Implementation Details**:
+- Added `_build_annotation_enhanced_queries()` method for SEO keyword query building
+- Annotation priorities (must_have_keywords, core_strengths) used in contact filtering
+- Technical focus areas extracted from annotations to refine LinkedIn searches
+
+---
+
+### GAP-087: Layer 7 - Interview/Outcome Not Using Annotations
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 12 hours
+**Impact**: Interview prediction now uses annotations for targeted question generation, outcome tracking links to predictions
+
+**Implementation Complete** (Phase 5):
+- `src/layer7/interview_predictor.py` now actively uses `jd_annotations` parameter
+- `src/layer7/outcome_tracker.py` now links outcomes to annotation predictions
+- Gap annotations used to predict "Tell me about your experience with X" weakness questions
+- Reframe notes now populate preparation_note field in question prep materials
+- Core strength annotations now predict deep-dive behavioral and impact questions
+- Outcomes track which annotation predictions proved accurate
+
+**Implementation Details**:
+- Added passion_probe and identity_probe question types in interview_predictor.py
+- Gap analysis drives question generation for areas where candidate may have weaknesses
+- Reframe guidance injected into prep materials for answering sensitive questions
+- Outcome tracker correlates application status with annotation-driven predictions
+
+---
+
+### GAP-088: Cover Letter - Passion/Identity Dimensions Not Used
+**Priority**: P1 HIGH | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 8 hours
+**Impact**: Cover letters now authentic enthusiasm hooks and proper professional positioning using passion/identity data
+
+**Implementation Complete** (Phase 3):
+- `src/layer6/cover_letter_generator.py` now uses passion and identity dimensions
+- Passion dimension (love_it, enjoy, avoid) now drives content generation
+- Identity dimension (core_identity, not_identity) now shapes positioning and tone
+- Cover letters include authentic enthusiasm hooks based on passion annotations
+- Topics tagged with `passion=avoid` are de-emphasized or excluded
+- Positioning aligns with `identity=core_identity` for authentic professional narrative
+- Introductions avoid areas marked as `identity=not_identity`
+
+**Implementation Details**:
+- Added `_format_passion_identity_section()` method for authentic enthusiasm hooks
+- Passion/identity priorities injected into cover letter prompt
+- Content generation uses identity context to shape tone and positioning
+- Multi-dimensional annotation context passed through header generation context
+
+---
+
+### GAP-089: ATS Keyword Coverage Not Validated Post-Generation
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 4 hours
+**Impact**: ATS requirements are now validated post-generation with detailed coverage reports
+
+**Implementation Complete** (Phase 6):
+- `annotation_header_context.py` builds `ats_requirements` dict with min/max occurrences
+- CV is generated with keywords injected
+- Post-generation validation now validates that targets were met
+- `ats_variants` fully propagated and utilized
+- Post-generation keyword count validation enabled
+- Warnings generated if min_occurrences not met
+- Warnings generated if max_occurrences exceeded
+- ATS readiness score recalculated after generation
+
+**Implementation Details**:
+- Added `ATSValidationResult` type in `src/layer6_v2/types.py`
+- Added `_validate_ats_coverage()` method in orchestrator for post-generation validation
+- ATS validation reports included in generation output
+- Keyword occurrence counts tracked and reported per category
+
+---
+
+### GAP-090: STAR Selector Annotation Boost Disabled
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 2 hours
+**Impact**: STAR selection now uses annotation boost for optimal STAR prioritization
+
+**Implementation Complete** (Phase 2):
+- `src/layer2_5/star_selector.py` now has `enabled: True` in config
+- Annotation boost code fully operational and applied to STAR selection
+- Infrastructure concerns resolved through proper dependency management
+
+**Implementation Details**:
+- STAR records linked via `star_ids` now properly prioritized
+- Annotation boost multiplier applied to STAR selection scoring
+- Core strength STARs elevated in ranking based on identity annotations
+- Passion-annotated STARs boosted with enthusiasm markers
+
+---
+
+### GAP-091: Outreach Generation Not Annotation-Aware
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 12 hours
+**Impact**: Connection requests and InMails now use annotation-derived personalization for authentic engagement
+
+**Implementation Complete** (Phase 7):
+- `src/layer6c/outreach_generator.py` now actively uses `jd_annotations` parameter
+- Templates now dynamic with annotation-derived substitution
+- Passion-based hooks provide authentic enthusiasm in opening messages
+- Identity-based positioning for compelling value proposition
+- Passion dimension now drives genuine connection hooks in opener
+- Identity dimension now guides professional positioning and framing
+- Must-have priorities emphasized in value proposition section
+- Core strengths highlighted prominently in outreach narrative
+
+**Implementation Details**:
+- Added `_format_annotation_context()` method to extract and format annotation priorities
+- Extended with passion/identity/avoid sections in outreach formatting
+- Must-have requirements highlighted in opening message
+- Identity alignment emphasized in professional positioning statement
+- Concern mitigation integrated into outreach messaging
+
+---
+
+### GAP-092: Reframe Application Not Traced
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 4 hours
+**Impact**: Full traceability for reframe guidance application across generated content
+
+**Implementation Complete** (Phase 9):
+- `GeneratedBullet` with `reframe_applied` field fully validated
+- Reframe map built and passed through generators with tracking
+- Post-generation validation confirms reframes were applied
+- Detailed logging of which reframes influenced which bullets
+- Traceability in output showing reframe→bullet mapping
+- Warnings generated if reframe note exists but wasn't applied
+
+**Implementation Details**:
+- Added `_validate_reframe_application()` method in orchestrator
+- Bullet generation logs reframe application events
+- Output includes reframe traceability metadata
+- Warnings generated for unimplemented reframe guidance
+
+---
+
+### GAP-093: Section Coverage Not Enforced
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 3 hours
+**Impact**: JD section coverage is now enforced with visual indicators and validation
+
+**Implementation Complete** (Phase 10):
+- `AnnotationSettings` with `require_full_section_coverage` boolean fully operational
+- `section_coverage` dict now properly populated and tracked
+- UI indicators show section coverage status in real-time
+- Validation prevents save with incomplete coverage (when setting enabled)
+- Per-section annotation count tracking operational
+- Visual indicators show uncovered sections with progress bars
+- Warnings displayed when saving with incomplete coverage
+- Coverage targets enforced: 5 responsibilities, 5 qualifications, 4 technical skills, 2 nice-to-haves
+
+**Implementation Details**:
+- Added `validateCoverage()` function in jd-annotation.js
+- Coverage warnings displayed in annotation panel
+- Per-section progress tracking with visual feedback
+- Save validation checks coverage requirements
+
+---
+
+### GAP-094: Annotation Review Workflow Not Implemented
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-10) | **Effort**: 16 hours
+**Impact**: Annotation review workflow fully implemented with status transitions and bulk operations
+
+**Implementation Complete** (Phase 11):
+- `JDAnnotation` with `status` field (draft, approved, rejected, needs_review) fully operational
+- `created_by` tracking (human, pipeline_suggestion, preset) active
+- UI review queue for pipeline-generated suggestions fully implemented
+- Status transition workflow enforced with validation
+- Review queue interface shows pending suggestions
+- Approve/reject buttons with notes functional
+- Status filters available in annotation list
+- Bulk approve/reject functionality operational
+- Review history tracking with timestamps and user attribution
+
+**Implementation Details**:
+- Added review queue UI in annotation panel
+- Approve/reject buttons with optional note fields
+- Status filters for dashboard and bulk operations
+- Bulk operation handlers for approve/reject/discard
+- Review history stored with annotation changes
 
 ---
 
