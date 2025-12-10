@@ -13,6 +13,7 @@ Phase 5 Update: Enhanced prompts with persona, chain-of-thought reasoning,
 
 import json
 import re
+from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -24,6 +25,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.annotation_types import JDAnnotation, JDAnnotations
 
 
 # ===== DOMAIN DETECTION =====
@@ -191,6 +193,226 @@ Will work closely with engineering and design teams.""",
         }
     }
 }
+
+
+# ===== ANNOTATION CONTEXT EXTRACTION =====
+
+@dataclass
+class AnnotationContext:
+    """
+    Extracted annotation context for pain point mining.
+
+    Contains priority signals from JD annotations to guide:
+    - Which pain points to prioritize (must-have keywords)
+    - Which areas to emphasize (core strengths)
+    - Which areas need reframing (gaps with reframe notes)
+    """
+    must_have_keywords: List[str]    # Keywords from must_have requirement annotations
+    gap_areas: List[str]             # Text from gap annotations (may need different framing)
+    reframe_notes: List[str]         # Reframe guidance for gaps
+    core_strength_areas: List[str]   # Areas where candidate is strong
+
+
+def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict[str, List[str]]:
+    """
+    Extract annotation priority context from JD annotations.
+
+    Args:
+        jd_annotations: JDAnnotations dict from job state (or None)
+
+    Returns:
+        Dict with must_have_keywords, gap_areas, reframe_notes, core_strength_areas
+    """
+    empty_context = {
+        "must_have_keywords": [],
+        "gap_areas": [],
+        "reframe_notes": [],
+        "core_strength_areas": [],
+    }
+
+    if not jd_annotations:
+        return empty_context
+
+    annotations = jd_annotations.get("annotations", [])
+    if not annotations:
+        return empty_context
+
+    must_have_keywords: List[str] = []
+    gap_areas: List[str] = []
+    reframe_notes: List[str] = []
+    core_strength_areas: List[str] = []
+
+    for ann in annotations:
+        # Only process active annotations
+        if not ann.get("is_active", False):
+            continue
+
+        relevance = ann.get("relevance")
+        requirement_type = ann.get("requirement_type")
+        target = ann.get("target", {})
+        target_text = target.get("text", "")
+
+        # Extract must-have keywords
+        if requirement_type == "must_have":
+            # Add suggested keywords
+            for keyword in ann.get("suggested_keywords", []):
+                if keyword and keyword not in must_have_keywords:
+                    must_have_keywords.append(keyword)
+            # Add matching skill if present
+            matching_skill = ann.get("matching_skill")
+            if matching_skill and matching_skill not in must_have_keywords:
+                must_have_keywords.append(matching_skill)
+
+        # Extract gap areas
+        if relevance == "gap":
+            gap_text = target_text
+            # Include reframe context if available
+            reframe_note = ann.get("reframe_note")
+            if reframe_note:
+                gap_text = f"{target_text} - {reframe_note}"
+            if gap_text and gap_text not in gap_areas:
+                gap_areas.append(gap_text)
+
+        # Extract reframe notes (can be on gaps or standalone)
+        if ann.get("has_reframe") and ann.get("reframe_note"):
+            reframe_note = ann["reframe_note"]
+            if reframe_note not in reframe_notes:
+                reframe_notes.append(reframe_note)
+
+        # Extract core strength areas
+        if relevance == "core_strength":
+            # Use matching skill or target text
+            strength_text = ann.get("matching_skill") or target_text
+            if strength_text and strength_text not in core_strength_areas:
+                core_strength_areas.append(strength_text)
+            # Also add keywords as they indicate strength areas
+            for keyword in ann.get("suggested_keywords", []):
+                if keyword and keyword not in core_strength_areas:
+                    core_strength_areas.append(keyword)
+
+    return {
+        "must_have_keywords": must_have_keywords,
+        "gap_areas": gap_areas,
+        "reframe_notes": reframe_notes,
+        "core_strength_areas": core_strength_areas,
+    }
+
+
+def build_annotation_aware_prompt(annotation_context: Dict[str, List[str]]) -> str:
+    """
+    Build a prompt section that incorporates annotation priorities.
+
+    This prompt section is appended to the main pain point mining prompt
+    to guide the LLM toward prioritizing annotated areas.
+
+    Args:
+        annotation_context: Dict from extract_annotation_context()
+
+    Returns:
+        Formatted prompt string to append to user prompt
+    """
+    must_have = annotation_context.get("must_have_keywords", [])
+    gaps = annotation_context.get("gap_areas", [])
+    reframes = annotation_context.get("reframe_notes", [])
+    strengths = annotation_context.get("core_strength_areas", [])
+
+    # If no annotation context, return empty string
+    if not any([must_have, gaps, reframes, strengths]):
+        return ""
+
+    sections = []
+
+    sections.append("\n---\n## ANNOTATION PRIORITIES (from human review)")
+    sections.append("Use these priorities to guide your pain point analysis:\n")
+
+    if must_have:
+        sections.append("### MUST-HAVE PRIORITY KEYWORDS")
+        sections.append("Pain points related to these keywords should be ranked HIGHER:")
+        for kw in must_have:
+            sections.append(f"- {kw}")
+        sections.append("")
+
+    if strengths:
+        sections.append("### CORE STRENGTH AREAS")
+        sections.append("The candidate is strong in these areas - emphasize pain points here:")
+        for strength in strengths:
+            sections.append(f"- {strength}")
+        sections.append("")
+
+    if gaps:
+        sections.append("### GAP AREAS (deprioritize or reframe)")
+        sections.append("These are skill gaps - pain points here should be DEPRIORITIZED or reframed:")
+        for gap in gaps:
+            sections.append(f"- {gap}")
+        sections.append("")
+
+    if reframes:
+        sections.append("### REFRAMING GUIDANCE")
+        sections.append("Use this guidance when framing pain points in gap areas:")
+        for note in reframes:
+            sections.append(f"- {note}")
+        sections.append("")
+
+    return "\n".join(sections)
+
+
+def rank_pain_points_with_annotations(
+    pain_points: List[Dict[str, Any]],
+    must_have_keywords: List[str],
+    gap_keywords: List[str],
+) -> List[Dict[str, Any]]:
+    """
+    Re-rank pain points based on annotation priorities.
+
+    Pain points matching must-have keywords get boosted.
+    Pain points matching gap keywords get deprioritized.
+
+    Args:
+        pain_points: List of pain point dicts with 'text' field
+        must_have_keywords: Keywords from must_have annotations
+        gap_keywords: Keywords from gap annotations
+
+    Returns:
+        Re-ranked list of pain points
+    """
+    if not pain_points:
+        return []
+
+    if not must_have_keywords and not gap_keywords:
+        return pain_points
+
+    # Score each pain point
+    scored = []
+    must_have_lower = [kw.lower() for kw in must_have_keywords]
+    gap_lower = [kw.lower() for kw in gap_keywords]
+
+    for pp in pain_points:
+        text = pp.get("text", "").lower()
+        score = 0
+
+        # Boost for must-have matches
+        for kw in must_have_lower:
+            if kw in text:
+                score += 10
+
+        # Penalty for gap matches
+        for kw in gap_lower:
+            if kw in text:
+                score -= 5
+
+        # Confidence bonus
+        confidence = pp.get("confidence", "medium")
+        if confidence == "high":
+            score += 3
+        elif confidence == "low":
+            score -= 2
+
+        scored.append((score, pp))
+
+    # Sort by score descending
+    scored.sort(key=lambda x: x[0], reverse=True)
+
+    return [pp for _, pp in scored]
 
 
 # ===== SCHEMA VALIDATION =====
@@ -482,23 +704,43 @@ class PainPointMiner:
         title: str,
         company: str,
         job_description: str,
-        domain: JobDomain
+        domain: JobDomain,
+        annotation_context: Optional[Dict[str, List[str]]] = None,
     ) -> str:
-        """Call LLM with enhanced prompts."""
+        """
+        Call LLM with enhanced prompts.
+
+        Args:
+            title: Job title
+            company: Company name
+            job_description: Full job description text
+            domain: Detected job domain for few-shot examples
+            annotation_context: Optional annotation context for priority guidance
+
+        Returns:
+            LLM response content
+        """
         example_jd, example_output = self._get_domain_example(domain)
+
+        # Build base user prompt
+        user_prompt = ENHANCED_USER_TEMPLATE.format(
+            title=title,
+            company=company,
+            domain=domain.value,
+            job_description=job_description,
+            example_jd=example_jd,
+            example_output=example_output
+        )
+
+        # Append annotation context if provided
+        if annotation_context:
+            annotation_prompt = build_annotation_aware_prompt(annotation_context)
+            if annotation_prompt:
+                user_prompt = user_prompt + annotation_prompt
 
         messages = [
             SystemMessage(content=ENHANCED_SYSTEM_PROMPT),
-            HumanMessage(
-                content=ENHANCED_USER_TEMPLATE.format(
-                    title=title,
-                    company=company,
-                    domain=domain.value,
-                    job_description=job_description,
-                    example_jd=example_jd,
-                    example_output=example_output
-                )
-            )
+            HumanMessage(content=user_prompt)
         ]
 
         response = self.llm.invoke(messages)
@@ -658,8 +900,14 @@ class PainPointMiner:
         """
         Extract pain points with enhanced analysis.
 
+        Incorporates JD annotation priorities when available to:
+        - Prioritize pain points related to must-have requirements
+        - Emphasize areas marked as core strengths
+        - Deprioritize or reframe areas marked as gaps
+
         Args:
-            state: Current JobState with job_description, title, company
+            state: Current JobState with job_description, title, company,
+                   and optionally jd_annotations
 
         Returns:
             Dict with pain_points, strategic_needs, risks_if_unfilled, success_metrics
@@ -672,12 +920,31 @@ class PainPointMiner:
             domain = detect_domain(state["title"], state["job_description"])
             logger.info(f"Detected job domain: {domain.value}")
 
-            # Call LLM with enhanced prompts
+            # Extract annotation context if annotations exist
+            jd_annotations = state.get("jd_annotations")
+            annotation_context = extract_annotation_context(jd_annotations)
+
+            # Log annotation context if present
+            if any(annotation_context.values()):
+                logger.info("Annotation context detected:")
+                if annotation_context["must_have_keywords"]:
+                    logger.info(f"  Must-have keywords: {annotation_context['must_have_keywords']}")
+                if annotation_context["core_strength_areas"]:
+                    logger.info(f"  Core strengths: {annotation_context['core_strength_areas']}")
+                if annotation_context["gap_areas"]:
+                    logger.info(f"  Gap areas: {len(annotation_context['gap_areas'])}")
+                if annotation_context["reframe_notes"]:
+                    logger.info(f"  Reframe notes: {len(annotation_context['reframe_notes'])}")
+            else:
+                logger.info("No annotation context available - using standard extraction")
+
+            # Call LLM with enhanced prompts (including annotation context)
             llm_response = self._call_llm(
                 title=state["title"],
                 company=state["company"],
                 job_description=state["job_description"],
-                domain=domain
+                domain=domain,
+                annotation_context=annotation_context if any(annotation_context.values()) else None,
             )
 
             # Extract reasoning for logging
@@ -706,6 +973,44 @@ class PainPointMiner:
 
             if analysis.why_now:
                 logger.info(f"Why now: {analysis.why_now}")
+
+            # Apply annotation-based ranking if context exists
+            if any(annotation_context.values()):
+                # Extract gap keywords for ranking
+                gap_keywords = []
+                for gap in annotation_context.get("gap_areas", []):
+                    # Extract the first word/phrase before any " - " separator
+                    gap_text = gap.split(" - ")[0].strip()
+                    gap_keywords.append(gap_text)
+
+                # Convert pain points to rankable format
+                pain_points_for_ranking = [
+                    {"text": item.text, "evidence": item.evidence, "confidence": item.confidence.value}
+                    for item in analysis.pain_points
+                ]
+
+                # Rank pain points based on annotations
+                ranked_pain_points = rank_pain_points_with_annotations(
+                    pain_points_for_ranking,
+                    must_have_keywords=annotation_context.get("must_have_keywords", []),
+                    gap_keywords=gap_keywords,
+                )
+
+                # Log ranking changes if any
+                original_order = [p.text[:50] for p in analysis.pain_points]
+                new_order = [p["text"][:50] for p in ranked_pain_points]
+                if original_order != new_order:
+                    logger.info("Pain points re-ranked based on annotations")
+
+                # Update analysis with ranked pain points
+                analysis.pain_points = [
+                    AnalysisItem(
+                        text=pp["text"],
+                        evidence=pp["evidence"],
+                        confidence=ConfidenceLevel(pp["confidence"])
+                    )
+                    for pp in ranked_pain_points
+                ]
 
             # Return in requested format
             if self.use_enhanced_format:

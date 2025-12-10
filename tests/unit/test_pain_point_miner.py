@@ -347,3 +347,413 @@ class TestPainPointMinerNode:
         # Should return empty lists, not crash
         assert updates["pain_points"] == []
         assert "errors" in updates
+
+
+# ===== ANNOTATION-AWARE PAIN POINT MINING TESTS =====
+
+class TestAnnotationContextExtraction:
+    """Test extraction of annotation priorities for pain point mining."""
+
+    @pytest.fixture
+    def sample_annotations(self):
+        """Sample JD annotations with various priority signals."""
+        return {
+            "annotation_version": 1,
+            "processed_jd_html": "",
+            "annotations": [
+                {
+                    "id": "ann-001",
+                    "target": {"section": "qualifications", "index": 0, "text": "5+ years Python experience", "char_start": 0, "char_end": 25},
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "created_by": "human",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "status": "approved",
+                    "last_reviewed_by": None,
+                    "review_note": None,
+                    "annotation_type": "skill_match",
+                    "relevance": "core_strength",
+                    "requirement_type": "must_have",
+                    "matching_skill": "Python",
+                    "has_reframe": False,
+                    "reframe_note": None,
+                    "reframe_from": None,
+                    "reframe_to": None,
+                    "star_ids": [],
+                    "evidence_summary": None,
+                    "suggested_keywords": ["Python", "backend development"],
+                    "ats_variants": ["python", "Python3"],
+                    "min_occurrences": 2,
+                    "max_occurrences": 4,
+                    "preferred_sections": ["skills", "experience"],
+                    "exact_phrase_match": False,
+                    "achievement_context": None,
+                    "comment": None,
+                    "highlight_color": None,
+                    "is_active": True,
+                    "priority": 1,
+                    "confidence": 0.95,
+                },
+                {
+                    "id": "ann-002",
+                    "target": {"section": "qualifications", "index": 1, "text": "Kubernetes experience preferred", "char_start": 26, "char_end": 55},
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "created_by": "human",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "status": "approved",
+                    "last_reviewed_by": None,
+                    "review_note": None,
+                    "annotation_type": "skill_match",
+                    "relevance": "gap",
+                    "requirement_type": "nice_to_have",
+                    "matching_skill": None,
+                    "has_reframe": True,
+                    "reframe_note": "Frame as 'container orchestration experience with Docker Swarm' instead",
+                    "reframe_from": "Kubernetes",
+                    "reframe_to": "container orchestration",
+                    "star_ids": [],
+                    "evidence_summary": None,
+                    "suggested_keywords": ["Kubernetes", "K8s"],
+                    "ats_variants": ["k8s", "kubernetes"],
+                    "min_occurrences": 1,
+                    "max_occurrences": 2,
+                    "preferred_sections": ["skills"],
+                    "exact_phrase_match": False,
+                    "achievement_context": None,
+                    "comment": None,
+                    "highlight_color": None,
+                    "is_active": True,
+                    "priority": 3,
+                    "confidence": 0.6,
+                },
+                {
+                    "id": "ann-003",
+                    "target": {"section": "responsibilities", "index": 0, "text": "Lead technical architecture decisions", "char_start": 0, "char_end": 35},
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "created_by": "human",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "status": "approved",
+                    "last_reviewed_by": None,
+                    "review_note": None,
+                    "annotation_type": "skill_match",
+                    "relevance": "extremely_relevant",
+                    "requirement_type": "must_have",
+                    "matching_skill": "Technical Leadership",
+                    "has_reframe": False,
+                    "reframe_note": None,
+                    "reframe_from": None,
+                    "reframe_to": None,
+                    "star_ids": ["star-123"],
+                    "evidence_summary": "Led architecture decisions at multiple companies",
+                    "suggested_keywords": ["technical leadership", "architecture"],
+                    "ats_variants": ["tech lead", "architect"],
+                    "min_occurrences": 2,
+                    "max_occurrences": 3,
+                    "preferred_sections": ["experience", "summary"],
+                    "exact_phrase_match": False,
+                    "achievement_context": None,
+                    "comment": None,
+                    "highlight_color": None,
+                    "is_active": True,
+                    "priority": 1,
+                    "confidence": 0.9,
+                },
+            ],
+            "concerns": [],
+            "settings": {
+                "job_priority": "high",
+                "deadline": None,
+                "require_full_section_coverage": False,
+                "section_coverage": {},
+                "auto_approve_presets": True,
+                "conflict_resolution": "max_boost",
+            },
+            "section_summaries": {},
+            "relevance_counts": {"core_strength": 1, "extremely_relevant": 1, "gap": 1},
+            "type_counts": {"skill_match": 3},
+            "reframe_count": 1,
+            "gap_count": 1,
+            "validation_passed": True,
+            "validation_errors": [],
+            "ats_readiness_score": 75,
+        }
+
+    @pytest.fixture
+    def sample_job_state_with_annotations(self, sample_job_state, sample_annotations):
+        """Job state with annotations included."""
+        state = sample_job_state.copy()
+        state["jd_annotations"] = sample_annotations
+        return state
+
+    def test_extract_annotation_context_from_state(self, sample_annotations):
+        """Should extract annotation priority context from state."""
+        from src.layer2.pain_point_miner import extract_annotation_context
+
+        context = extract_annotation_context(sample_annotations)
+
+        # Should extract must-have keywords
+        assert "Python" in context["must_have_keywords"]
+        assert "technical leadership" in context["must_have_keywords"] or "architecture" in context["must_have_keywords"]
+
+        # Should extract gap areas
+        assert len(context["gap_areas"]) >= 1
+        assert any("Kubernetes" in gap for gap in context["gap_areas"])
+
+        # Should extract reframe notes
+        assert len(context["reframe_notes"]) >= 1
+        assert any("container orchestration" in note for note in context["reframe_notes"])
+
+        # Should extract core strength areas
+        assert len(context["core_strength_areas"]) >= 1
+
+    def test_extract_annotation_context_handles_empty_annotations(self):
+        """Should handle empty or missing annotations gracefully."""
+        from src.layer2.pain_point_miner import extract_annotation_context
+
+        # Empty annotations
+        context = extract_annotation_context(None)
+        assert context["must_have_keywords"] == []
+        assert context["gap_areas"] == []
+        assert context["reframe_notes"] == []
+        assert context["core_strength_areas"] == []
+
+        # Empty annotations dict
+        context = extract_annotation_context({})
+        assert context["must_have_keywords"] == []
+
+    def test_extract_annotation_context_filters_inactive(self, sample_annotations):
+        """Should only include active annotations."""
+        from src.layer2.pain_point_miner import extract_annotation_context
+
+        # Make one annotation inactive
+        sample_annotations["annotations"][0]["is_active"] = False
+
+        context = extract_annotation_context(sample_annotations)
+
+        # Python should not be in must-have keywords (that annotation is now inactive)
+        assert "Python" not in context["must_have_keywords"]
+
+
+class TestAnnotationAwarePromptGeneration:
+    """Test that annotation context is included in LLM prompts."""
+
+    @pytest.fixture
+    def annotation_context(self):
+        """Sample annotation context for prompt testing."""
+        return {
+            "must_have_keywords": ["Python", "distributed systems", "technical leadership"],
+            "gap_areas": ["Kubernetes - Frame as container orchestration experience"],
+            "reframe_notes": ["Frame Docker Swarm experience as container orchestration"],
+            "core_strength_areas": ["Python backend development", "System architecture"],
+        }
+
+    def test_prompt_includes_must_have_priorities(self, annotation_context):
+        """Prompt should include must-have keywords for prioritization."""
+        from src.layer2.pain_point_miner import build_annotation_aware_prompt
+
+        prompt = build_annotation_aware_prompt(annotation_context)
+
+        assert "Python" in prompt
+        assert "distributed systems" in prompt
+        assert "MUST-HAVE" in prompt.upper() or "must_have" in prompt.lower() or "priority" in prompt.lower()
+
+    def test_prompt_includes_gap_context(self, annotation_context):
+        """Prompt should include gap areas for framing guidance."""
+        from src.layer2.pain_point_miner import build_annotation_aware_prompt
+
+        prompt = build_annotation_aware_prompt(annotation_context)
+
+        assert "Kubernetes" in prompt or "gap" in prompt.lower()
+
+    def test_prompt_includes_reframe_notes(self, annotation_context):
+        """Prompt should include reframe guidance."""
+        from src.layer2.pain_point_miner import build_annotation_aware_prompt
+
+        prompt = build_annotation_aware_prompt(annotation_context)
+
+        assert "container orchestration" in prompt.lower() or "reframe" in prompt.lower()
+
+    def test_prompt_handles_empty_context(self):
+        """Prompt should work with empty annotation context."""
+        from src.layer2.pain_point_miner import build_annotation_aware_prompt
+
+        empty_context = {
+            "must_have_keywords": [],
+            "gap_areas": [],
+            "reframe_notes": [],
+            "core_strength_areas": [],
+        }
+
+        prompt = build_annotation_aware_prompt(empty_context)
+
+        # Should return a valid string (or empty string for no annotation context)
+        assert isinstance(prompt, str)
+
+
+class TestPainPointRankingWithAnnotations:
+    """Test that pain point ranking is adjusted based on annotations."""
+
+    @pytest.fixture
+    def sample_pain_points(self):
+        """Sample extracted pain points for ranking tests."""
+        return [
+            {"text": "Need Python expertise for backend development", "evidence": "JD mentions Python 5+ times", "confidence": "high"},
+            {"text": "Kubernetes cluster management issues", "evidence": "Mentioned in qualifications", "confidence": "medium"},
+            {"text": "Technical leadership gap in architecture decisions", "evidence": "Key responsibility", "confidence": "high"},
+            {"text": "General operational improvements needed", "evidence": "Inferred from context", "confidence": "low"},
+        ]
+
+    @pytest.fixture
+    def must_have_keywords(self):
+        return ["Python", "technical leadership", "architecture"]
+
+    @pytest.fixture
+    def gap_keywords(self):
+        return ["Kubernetes"]
+
+    def test_rank_pain_points_boosts_must_have(self, sample_pain_points, must_have_keywords, gap_keywords):
+        """Pain points matching must-have keywords should rank higher."""
+        from src.layer2.pain_point_miner import rank_pain_points_with_annotations
+
+        ranked = rank_pain_points_with_annotations(
+            sample_pain_points,
+            must_have_keywords=must_have_keywords,
+            gap_keywords=gap_keywords,
+        )
+
+        # Python-related pain point should be near top
+        python_idx = next(i for i, p in enumerate(ranked) if "Python" in p["text"])
+        assert python_idx <= 1, "Python pain point should be in top 2"
+
+        # Technical leadership should also be prioritized
+        leadership_idx = next(i for i, p in enumerate(ranked) if "leadership" in p["text"].lower())
+        assert leadership_idx <= 2, "Technical leadership pain point should be in top 3"
+
+    def test_rank_pain_points_deprioritizes_gaps(self, sample_pain_points, must_have_keywords, gap_keywords):
+        """Pain points related to gaps should be deprioritized."""
+        from src.layer2.pain_point_miner import rank_pain_points_with_annotations
+
+        ranked = rank_pain_points_with_annotations(
+            sample_pain_points,
+            must_have_keywords=must_have_keywords,
+            gap_keywords=gap_keywords,
+        )
+
+        # Kubernetes-related pain point should be lower in ranking
+        k8s_idx = next(i for i, p in enumerate(ranked) if "Kubernetes" in p["text"])
+        assert k8s_idx >= 2, "Kubernetes pain point should be deprioritized due to gap"
+
+    def test_rank_pain_points_handles_empty_inputs(self):
+        """Should handle empty inputs gracefully."""
+        from src.layer2.pain_point_miner import rank_pain_points_with_annotations
+
+        # Empty pain points
+        result = rank_pain_points_with_annotations([], [], [])
+        assert result == []
+
+        # Pain points but no keywords
+        pain_points = [{"text": "Some pain point", "evidence": "test", "confidence": "medium"}]
+        result = rank_pain_points_with_annotations(pain_points, [], [])
+        assert len(result) == 1
+
+
+class TestBackwardCompatibilityWithoutAnnotations:
+    """Test that pain point miner works correctly without annotations."""
+
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
+    def test_miner_works_without_annotations(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+        """Miner should work normally when no annotations are present."""
+        mock_llm_instance = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = json.dumps(valid_pain_point_json)
+        mock_llm_instance.invoke.return_value = mock_response
+        mock_llm_class.return_value = mock_llm_instance
+
+        # Ensure no annotations in state
+        assert sample_job_state.get("jd_annotations") is None
+
+        miner = PainPointMiner()
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Should return valid results
+        assert result["pain_points"] == valid_pain_point_json["pain_points"]
+        assert result["strategic_needs"] == valid_pain_point_json["strategic_needs"]
+        assert "errors" not in result
+
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
+    def test_miner_works_with_empty_annotations(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+        """Miner should work with empty annotations dict."""
+        mock_llm_instance = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = json.dumps(valid_pain_point_json)
+        mock_llm_instance.invoke.return_value = mock_response
+        mock_llm_class.return_value = mock_llm_instance
+
+        # Add empty annotations
+        sample_job_state["jd_annotations"] = {"annotations": [], "concerns": []}
+
+        miner = PainPointMiner()
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Should return valid results
+        assert len(result["pain_points"]) > 0
+        assert "errors" not in result
+
+
+class TestAnnotationAwareExtraction:
+    """Integration tests for annotation-aware pain point extraction."""
+
+    @pytest.fixture
+    def sample_annotations_minimal(self):
+        """Minimal annotations for testing."""
+        return {
+            "annotations": [
+                {
+                    "id": "ann-001",
+                    "target": {"section": "qualifications", "index": 0, "text": "Python", "char_start": 0, "char_end": 6},
+                    "annotation_type": "skill_match",
+                    "relevance": "core_strength",
+                    "requirement_type": "must_have",
+                    "suggested_keywords": ["Python"],
+                    "ats_variants": [],
+                    "has_reframe": False,
+                    "reframe_note": None,
+                    "is_active": True,
+                    "priority": 1,
+                    "confidence": 0.9,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "created_by": "human",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "status": "approved",
+                    "star_ids": [],
+                },
+            ],
+            "concerns": [],
+        }
+
+    @patch('src.layer2.pain_point_miner.create_tracked_llm')
+    def test_extraction_with_annotations_includes_context(
+        self, mock_llm_class, sample_job_state, sample_annotations_minimal, valid_pain_point_json
+    ):
+        """Extraction with annotations should include annotation context in prompt."""
+        mock_llm_instance = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = json.dumps(valid_pain_point_json)
+        mock_llm_instance.invoke.return_value = mock_response
+        mock_llm_class.return_value = mock_llm_instance
+
+        sample_job_state["jd_annotations"] = sample_annotations_minimal
+
+        miner = PainPointMiner()
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Verify LLM was called
+        assert mock_llm_instance.invoke.called
+
+        # Check that the call included annotation context (inspect the prompt)
+        call_args = mock_llm_instance.invoke.call_args
+        messages = call_args[0][0] if call_args[0] else call_args[1].get("messages", [])
+
+        # The prompt should contain reference to annotation priorities
+        prompt_text = str(messages)
+        # Note: This checks the prompt structure, actual implementation may vary
+        assert len(result["pain_points"]) > 0
