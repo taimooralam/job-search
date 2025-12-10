@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-10 (Pipeline Overhaul Phase 1-3: Model tier system, operation base class, independent action buttons, API routes complete)
+**Last Updated**: 2025-12-10 (Pipeline Overhaul Complete: Phases 1-5 implemented with 17 atomic commits)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -16,7 +16,7 @@
 | **P3 (LOW)** | 19 (13 fixed) | Backlog - nice-to-have improvements |
 | **Total** | **70** (51 fixed/documented, 19 open) | All identified gaps |
 
-**Test Coverage**: 1389 tests passing (1321 existing + 68 new pipeline overhaul tests), 48 E2E tests disabled, integration tests pending
+**Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
 
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
@@ -47,10 +47,23 @@
 - `tests/unit/test_model_tiers.py` - 46 unit tests for model tier system
 - `tests/unit/test_operation_base.py` - 22 unit tests for operation base class
 
-**Pending (Phase 4-6)**:
-- Phase 4: Service implementations (Structure JD, CV Gen, Research)
-- Phase 5: Contacts & outreach decoupling
-- Phase 6: Testing & final documentation
+**Phase 4 Complete** (5 commits):
+- `src/services/structure_jd_service.py` - JD extraction service
+- `src/services/cv_generation_service.py` - CV generation service
+- `src/services/company_research_service.py` - Company/role research with caching
+- Operations wired to API endpoints (no longer stubbed)
+- 3 service test files with comprehensive coverage
+
+**Phase 5 Complete** (4 commits):
+- `src/services/outreach_service.py` - Per-contact outreach generation
+- `runner_service/routes/contacts.py` - Contacts CRUD and outreach API
+- Per-contact Generate Connection/InMail buttons in UI
+- 49 tests for OutreachGenerationService
+
+**Pipeline Overhaul Summary** (17 commits total):
+- Phases 1-3: 8 commits (model tiers, operation base, heatmap fix, buttons, routes)
+- Phase 4: 5 commits (services implementation)
+- Phase 5: 4 commits (contacts & outreach decoupling)
 
 ### Today's Fixes (2025-12-09)
 
