@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), Full Extraction Service implemented (Layer 1.4+2+4 combined), 1521 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Independent operations with tiered models
+**Last Updated**: 2025-12-10 | **Status**: 7 layers + frontend complete, Phase 7 Interview Prep & Analytics complete, GAP-030 Layer-Specific Prompt Optimization complete (46 tests), Full Extraction Service implemented with JD Extractor integration and annotation heatmap UI, 1521 total tests, Anti-hallucination filtering enhanced, Pipeline UI horizontal, Independent operations with tiered models, PDF export fixed
 
 ---
 
@@ -642,7 +642,7 @@ master-cv-editor.css (editor styles)
 - Conversion statistics (phone screen rate, offer rate, avg response time)
 
 **API Integration** (`frontend/app.py`):
-- 7 new endpoints for interview prep and outcome tracking:
+- 7 endpoints for interview prep and outcome tracking:
   1. `GET /api/jobs/<id>/interview-prep` - Fetch interview prep data
   2. `POST /api/jobs/<id>/interview-prep/predict` - Trigger question prediction
   3. `POST /api/jobs/<id>/interview-prep/mark-prepared` - Mark question as prepared
@@ -650,6 +650,9 @@ master-cv-editor.css (editor styles)
   5. `GET /api/jobs/<id>/outcome-history` - Fetch full outcome timeline
   6. `POST /api/jobs/<id>/outcome` - Log outcome status change
   7. `GET /api/jobs/<id>/outcome-stats` - Get conversion statistics
+- 2 new proxy routes (NEW - 2025-12-10):
+  8. `POST /api/jobs/<id>/research-company` - Proxy research request to VPS runner
+  9. `POST /api/jobs/<id>/generate-cv` - Proxy CV generation request to VPS runner
 
 **JavaScript Functions** (`frontend/static/js/interview-prep.js`):
 - `loadInterviewPrep()` - Fetch and display questions
@@ -687,15 +690,20 @@ master-cv-editor.css (editor styles)
   - `jd-annotation.js` reads `jobId` from data attribute as fallback mechanism
   - Ensures panel initialization even if ID passed through alternate routes
 
-**Intelligence Summary Section** (NEW - 2025-12-08):
+**Intelligence Summary Section** (ENHANCED - 2025-12-10):
 - Collapsible section with comprehensive job analysis
 - Four-part breakdown:
   1. **Pain Points**: 4 dimensions (technical, operational, strategic, cultural)
   2. **Company Signals**: Key insights from research
   3. **Strategic Needs**: How the role aligns with company direction
   4. **Risks**: Potential concerns identified during analysis
+- **Annotation Heatmap** (NEW - 2025-12-10):
+  - Colored bar (green/yellow/red) proportional to manual annotation match counts
+  - Shows "Match X%" score derived from aggregate annotations
+  - Displays must-have gaps warning when gaps present
+  - Aggregated from `_aggregate_annotations()` in full_extraction_service.py
 - Appears prominently after pipeline progress indicator
-- Provides context for outreach strategy
+- Provides context for outreach strategy and quick match assessment
 
 **Contact Cards with Type Badges** (NEW - 2025-12-08):
 - Color-coded badges identify contact role:
@@ -739,11 +747,12 @@ Pipeline (Markdown) ──► MongoDB cv_text
 - `PUT /api/jobs/<id>/cv-editor` - Save editor state
 - `POST /api/jobs/<id>/cv-editor/pdf` - Generate PDF (frontend proxy to runner)
 
-**PDF Generation** (Phase 6 - Separated Service):
+**PDF Generation** (Phase 6 - Separated Service, FIXED 2025-12-10):
 - Dedicated Docker container with Playwright/Chromium
 - Endpoints: `/health`, `/render-pdf`, `/cv-to-pdf`
 - HTML to PDF via Playwright with embedded fonts, margin validation (defense-in-depth)
 - Error handling: 400 (invalid state), 500 (rendering failed), 503 (service unavailable)
+- **Import Fix** (2025-12-10): Changed `pdf_export.py` to use `TYPE_CHECKING` conditional import for `JobState` to avoid circular import errors when module runs from frontend context
 
 **Enhanced Features** (2025-12-08):
 - Name displays in uppercase styling
@@ -754,11 +763,11 @@ Pipeline (Markdown) ──► MongoDB cv_text
 
 ---
 
-## Full Extraction Service (NEW - 2025-12-10)
+## Full Extraction Service (ENHANCED - 2025-12-10)
 
-**Purpose**: Single combined operation running Layers 1.4 + 2 + 4 (JD Structuring + Pain Point Mining + Fit Scoring) without full 7-layer pipeline
+**Purpose**: Single combined operation running Layers 1.4 + 2 + 4 (JD Processor + JD Extractor + Pain Point Mining + Fit Scoring) without full 7-layer pipeline
 
-**File**: `src/services/full_extraction_service.py`
+**File**: `src/services/full_extraction_service.py` (ENHANCED with JD Extractor)
 
 **API Endpoint**: `POST /api/operations/full-extraction`
 
@@ -777,42 +786,86 @@ Pipeline (Markdown) ──► MongoDB cv_text
   "structured_jd": {
     "title": "string",
     "category": "string",
+    "role_category": "string",
+    "responsibilities": ["string"],
     "key_requirements": ["string"],
-    "keywords": ["string"]
+    "keywords": ["string"],
+    "seniority_level": "string"
   },
   "pain_points": ["string"],
   "fit_score": {
     "score": "int (0-100)",
     "rationale": "string"
   },
+  "annotation_signals": {
+    "match_count": "int",
+    "match_percentage": "float",
+    "must_have_gaps": ["string"]
+  },
   "cost_usd": "float",
-  "elapsed_seconds": "float"
+  "elapsed_seconds": "float",
+  "layer_status": {
+    "jd_processor": "success|failed",
+    "jd_extractor": "success|failed",
+    "pain_miner": "success|failed",
+    "fit_scorer": "success|failed"
+  }
 }
 ```
 
-**Execution Flow**:
+**Execution Flow** (ENHANCED):
 1. Fetch job from MongoDB
-2. Run Layer 1.4: JD Structuring (structure_jd_service.py)
-3. Run Layer 2: Pain Point Mining (pain_point_miner.py)
-4. Run Layer 4: Fit Scoring (opportunity_mapper.py)
-5. Persist results to MongoDB
-6. Return aggregated output
+2. Run Layer 1.4: JD Processor (structure_jd_service.py) → `processed_jd` (HTML for annotation UI)
+3. Run Layer 1.5: JD Extractor (structure_jd_service.py) → `extracted_jd` (structured intelligence)
+4. Run Layer 2: Pain Point Mining (pain_point_miner.py)
+5. Run Layer 4: Fit Scoring (opportunity_mapper.py)
+6. Run Layer 4.5: Annotation Aggregation → compute weighted fit scores
+7. Persist all results to MongoDB (both processed and extracted JD)
+8. Return aggregated output with per-layer status
+
+**JD Extraction Layers** (NEW - 2025-12-10):
+- **Layer 1.4 (JD Processor)**: Parses raw JD into structured HTML sections
+  - Extracts qualifications, responsibilities, benefits
+  - Returns HTML format for annotation UI highlighting
+  - Output: `processed_jd`
+- **Layer 1.5 (JD Extractor)**: Extracts semantic intelligence from structured JD
+  - Analyzes role category, seniority, keywords, responsibilities
+  - Returns structured JSON for template display
+  - Output: `extracted_jd` with role_category, responsibilities, keywords, seniority_level
+
+**Dual Output Model** (NEW - 2025-12-10):
+- **`processed_jd`**: HTML sections (for annotation UI and highlighting)
+- **`extracted_jd`**: Structured intelligence (for CV template display and role research)
+- Both stored in MongoDB, enables flexible UI rendering
+
+**Per-Layer Status Tracking** (NEW - 2025-12-10):
+- Returns `layer_status` dict with success/failure for each layer
+- Enables granular error reporting and debugging
+- Helps identify which layer failed if full extraction fails
+
+**Annotation Signals Aggregation** (NEW - 2025-12-10):
+- Computes `match_percentage` from manual JD annotations
+- Identifies `must_have_gaps` (skills with gap count > threshold)
+- Weighted fit score calculation: (match_count / total_annotations) * 100
+- Used for annotation-based heatmap display
 
 **Cost Optimization**:
-- Fast tier: Haiku + Haiku + Haiku (~$0.03 total)
-- Balanced tier: Sonnet + Sonnet + Sonnet (~$0.15 total)
-- Quality tier: Opus + Opus + Opus (~$0.45 total)
+- Fast tier: Haiku + Haiku + Haiku + Haiku (~$0.04 total)
+- Balanced tier: Sonnet + Sonnet + Sonnet + Sonnet (~$0.20 total)
+- Quality tier: Opus + Opus + Opus + Opus (~$0.60 total)
 
 **Use Cases**:
 - Quick job analysis before detailed research
-- Cost-effective way to get pain points and fit score
+- Cost-effective way to get pain points, fit score, and structured intelligence
 - Alternative to full 7-layer pipeline when only basic analysis needed
+- JD annotation-aware processing for better match visualization
 
 **UI Integration**:
 - Purple "Extract JD" button (btn-action-accent) in job detail page
 - Tier selector for cost/quality trade-off
 - Progress indicator during execution
-- Results displayed inline on detail page
+- Results displayed inline on detail page with annotation heatmap
+- Shows match % and must-have gaps in "Opportunity & Fit Analysis" section
 
 ---
 
