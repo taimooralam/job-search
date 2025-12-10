@@ -26,6 +26,8 @@ from src.common.annotation_types import (
     JDAnnotations,
     RELEVANCE_MULTIPLIERS,
     REQUIREMENT_MULTIPLIERS,
+    PASSION_MULTIPLIERS,
+    IDENTITY_MULTIPLIERS,
     PRIORITY_MULTIPLIERS,
     TYPE_MODIFIERS,
 )
@@ -55,6 +57,11 @@ class AnnotationContext:
     all_ats_variants: Set[str]
     gap_annotations: List[JDAnnotation]
     core_strength_annotations: List[JDAnnotation]
+    # New: passion and identity indexes
+    passion_love_it_annotations: List[JDAnnotation] = field(default_factory=list)
+    passion_avoid_annotations: List[JDAnnotation] = field(default_factory=list)
+    identity_core_annotations: List[JDAnnotation] = field(default_factory=list)
+    identity_not_me_annotations: List[JDAnnotation] = field(default_factory=list)
 
 
 class AnnotationBoostCalculator:
@@ -92,6 +99,11 @@ class AnnotationBoostCalculator:
         all_ats_variants: Set[str] = set()
         gap_annotations: List[JDAnnotation] = []
         core_strength_annotations: List[JDAnnotation] = []
+        # New: passion and identity tracking
+        passion_love_it_annotations: List[JDAnnotation] = []
+        passion_avoid_annotations: List[JDAnnotation] = []
+        identity_core_annotations: List[JDAnnotation] = []
+        identity_not_me_annotations: List[JDAnnotation] = []
 
         if not jd_annotations:
             return AnnotationContext(
@@ -120,6 +132,20 @@ class AnnotationBoostCalculator:
             elif relevance == "core_strength":
                 core_strength_annotations.append(ann)
 
+            # Index by passion level
+            passion = ann.get("passion")
+            if passion == "love_it":
+                passion_love_it_annotations.append(ann)
+            elif passion == "avoid":
+                passion_avoid_annotations.append(ann)
+
+            # Index by identity level
+            identity = ann.get("identity")
+            if identity == "core_identity":
+                identity_core_annotations.append(ann)
+            elif identity == "not_identity":
+                identity_not_me_annotations.append(ann)
+
             # Index keywords
             for keyword in ann.get("suggested_keywords", []):
                 keyword_lower = keyword.lower()
@@ -146,13 +172,21 @@ class AnnotationBoostCalculator:
             all_ats_variants=all_ats_variants,
             gap_annotations=gap_annotations,
             core_strength_annotations=core_strength_annotations,
+            passion_love_it_annotations=passion_love_it_annotations,
+            passion_avoid_annotations=passion_avoid_annotations,
+            identity_core_annotations=identity_core_annotations,
+            identity_not_me_annotations=identity_not_me_annotations,
         )
 
     def calculate_boost(self, annotation: JDAnnotation) -> float:
         """
         Calculate the boost multiplier for a single annotation.
 
-        Formula: relevance_mult × requirement_mult × priority_mult × type_mod
+        Formula: relevance_mult × requirement_mult × passion_mult × identity_mult × priority_mult × type_mod
+
+        The new dimensions (passion and identity) provide:
+        - Passion: How excited the candidate is about this aspect (love_it=1.5x to avoid=0.5x)
+        - Identity: How strongly this defines professional identity (core_identity=2.0x to not_identity=0.3x)
 
         Args:
             annotation: The annotation to calculate boost for
@@ -163,6 +197,8 @@ class AnnotationBoostCalculator:
         # Get base multipliers with defaults
         relevance = annotation.get("relevance", "relevant")
         requirement = annotation.get("requirement_type", "neutral")
+        passion = annotation.get("passion", "neutral")
+        identity = annotation.get("identity", "peripheral")
         priority = annotation.get("priority", 3)
         ann_type = annotation.get("annotation_type", "skill_match")
 
@@ -172,10 +208,12 @@ class AnnotationBoostCalculator:
 
         relevance_mult = RELEVANCE_MULTIPLIERS.get(relevance, 1.0)
         requirement_mult = REQUIREMENT_MULTIPLIERS.get(requirement, 1.0)
+        passion_mult = PASSION_MULTIPLIERS.get(passion, 1.0)
+        identity_mult = IDENTITY_MULTIPLIERS.get(identity, 1.0)
         priority_mult = PRIORITY_MULTIPLIERS.get(priority, 1.0)
         type_mod = TYPE_MODIFIERS.get(ann_type, 1.0)
 
-        return relevance_mult * requirement_mult * priority_mult * type_mod
+        return relevance_mult * requirement_mult * passion_mult * identity_mult * priority_mult * type_mod
 
     def get_boost_for_star(self, star_id: str) -> BoostResult:
         """
@@ -390,6 +428,54 @@ class AnnotationBoostCalculator:
         """
         return self.context.core_strength_annotations
 
+    def get_passions(self) -> List[JDAnnotation]:
+        """
+        Get all annotations marked as 'love_it' passion.
+
+        Used to highlight areas of genuine enthusiasm in CV/cover letter.
+        These should be emphasized to show authentic interest.
+
+        Returns:
+            List of passion=love_it annotations
+        """
+        return self.context.passion_love_it_annotations
+
+    def get_avoid_areas(self) -> List[JDAnnotation]:
+        """
+        Get all annotations marked as 'avoid' passion.
+
+        Used to de-emphasize areas the candidate wants to avoid.
+        These should NOT be prominent in CV/cover letter.
+
+        Returns:
+            List of passion=avoid annotations
+        """
+        return self.context.passion_avoid_annotations
+
+    def get_identity_core(self) -> List[JDAnnotation]:
+        """
+        Get all annotations marked as 'core_identity'.
+
+        Used to build headline, tagline, and opening paragraph.
+        These define who the candidate IS professionally.
+
+        Returns:
+            List of identity=core_identity annotations
+        """
+        return self.context.identity_core_annotations
+
+    def get_identity_not_me(self) -> List[JDAnnotation]:
+        """
+        Get all annotations marked as 'not_identity'.
+
+        Used to AVOID in introductions and headlines.
+        Candidate explicitly does NOT want to be seen this way.
+
+        Returns:
+            List of identity=not_identity annotations
+        """
+        return self.context.identity_not_me_annotations
+
     def has_annotations(self) -> bool:
         """Check if there are any active annotations."""
         return len(self.context.active_annotations) > 0
@@ -400,6 +486,10 @@ class AnnotationBoostCalculator:
             "total_active": len(self.context.active_annotations),
             "core_strengths": len(self.context.core_strength_annotations),
             "gaps": len(self.context.gap_annotations),
+            "passions_love_it": len(self.context.passion_love_it_annotations),
+            "passions_avoid": len(self.context.passion_avoid_annotations),
+            "identity_core": len(self.context.identity_core_annotations),
+            "identity_not_me": len(self.context.identity_not_me_annotations),
             "total_keywords": len(self.context.all_keywords),
             "total_ats_variants": len(self.context.all_ats_variants),
             "stars_linked": len(self.context.star_id_to_annotations),
