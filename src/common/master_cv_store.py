@@ -120,7 +120,7 @@ class MasterCVStore:
 
     def _ensure_collections(self) -> None:
         """Create collections and indexes if they don't exist."""
-        if not self._db:
+        if self._db is None:
             return
 
         # Create indexes for version history collection
@@ -151,7 +151,7 @@ class MasterCVStore:
     @property
     def _metadata_collection(self) -> Collection:
         """Get the metadata collection."""
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("MongoDB not available")
         return self._db["master_cv_metadata"]
 
@@ -162,7 +162,7 @@ class MasterCVStore:
         Returns:
             Metadata dict or None if not found
         """
-        if self.use_mongodb and self._db:
+        if self.use_mongodb and self._db is not None:
             doc = self._metadata_collection.find_one({"_id": self.CANONICAL_ID})
             if doc:
                 doc.pop("_id", None)
@@ -282,7 +282,7 @@ class MasterCVStore:
     @property
     def _taxonomy_collection(self) -> Collection:
         """Get the taxonomy collection."""
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("MongoDB not available")
         return self._db["master_cv_taxonomy"]
 
@@ -293,7 +293,7 @@ class MasterCVStore:
         Returns:
             Taxonomy dict or None if not found
         """
-        if self.use_mongodb and self._db:
+        if self.use_mongodb and self._db is not None:
             doc = self._taxonomy_collection.find_one({"_id": self.CANONICAL_ID})
             if doc:
                 doc.pop("_id", None)
@@ -412,7 +412,7 @@ class MasterCVStore:
     @property
     def _roles_collection(self) -> Collection:
         """Get the roles collection."""
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("MongoDB not available")
         return self._db["master_cv_roles"]
 
@@ -426,7 +426,7 @@ class MasterCVStore:
         Returns:
             Role document or None if not found
         """
-        if self.use_mongodb and self._db:
+        if self.use_mongodb and self._db is not None:
             doc = self._roles_collection.find_one({"role_id": role_id})
             if doc:
                 doc.pop("_id", None)
@@ -454,7 +454,7 @@ class MasterCVStore:
         Returns:
             List of role documents
         """
-        if self.use_mongodb and self._db:
+        if self.use_mongodb and self._db is not None:
             docs = list(self._roles_collection.find({}))
             for doc in docs:
                 doc.pop("_id", None)
@@ -528,7 +528,7 @@ class MasterCVStore:
     @property
     def _history_collection(self) -> Collection:
         """Get the version history collection."""
-        if not self._db:
+        if self._db is None:
             raise RuntimeError("MongoDB not available")
         return self._db["master_cv_history"]
 
@@ -546,7 +546,7 @@ class MasterCVStore:
             doc_id: Document identifier
             document: Document to archive
         """
-        if not self._db:
+        if self._db is None:
             return
 
         # Remove MongoDB _id before storing in history
@@ -687,7 +687,7 @@ class MasterCVStore:
         if taxonomy:
             stats["taxonomy_version"] = taxonomy.get("version")
 
-        if self.is_connected() and self._db:
+        if self.is_connected() and self._db is not None:
             stats["history_entries"] = self._history_collection.count_documents({})
 
         return stats
