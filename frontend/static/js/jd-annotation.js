@@ -1119,6 +1119,9 @@ class AnnotationManager {
 
         // Update boost preview
         this.updateBoostPreview();
+
+        // Phase 11: Update review queue if container exists
+        this.renderReviewQueue();
     }
 
     /**
@@ -1154,6 +1157,222 @@ class AnnotationManager {
 
         if (barEl) barEl.style.width = `${coverage}%`;
         if (pctEl) pctEl.textContent = `${coverage}%`;
+
+        // Phase 10 (GAP-093): Update coverage warning display
+        const warningsEl = document.getElementById('coverage-warnings');
+        if (warningsEl) {
+            const warnings = this.validateCoverage();
+            if (warnings.length > 0) {
+                warningsEl.innerHTML = warnings.map(w =>
+                    `<div class="text-orange-600 text-sm">⚠ ${w}</div>`
+                ).join('');
+                warningsEl.classList.remove('hidden');
+            } else {
+                warningsEl.innerHTML = '';
+                warningsEl.classList.add('hidden');
+            }
+        }
+    }
+
+    /**
+     * Phase 10 (GAP-093): Validate section coverage before generation.
+     *
+     * Checks that all JD sections have adequate annotation coverage.
+     * Returns warnings for sections below target.
+     *
+     * @returns {string[]} Array of warning messages
+     */
+    validateCoverage() {
+        const sectionTargets = {
+            responsibilities: { target: 5, label: 'Responsibilities' },
+            qualifications: { target: 5, label: 'Qualifications' },
+            technical_skills: { target: 4, label: 'Technical Skills' },
+            nice_to_have: { target: 2, label: 'Nice to Have' }
+        };
+
+        // Count annotations per section
+        const sectionCounts = {};
+        this.annotations.forEach(ann => {
+            if (!ann.is_active) return;
+            const section = ann.target?.section || 'unknown';
+            sectionCounts[section] = (sectionCounts[section] || 0) + 1;
+        });
+
+        const warnings = [];
+        for (const [section, config] of Object.entries(sectionTargets)) {
+            const count = sectionCounts[section] || 0;
+            if (count < config.target) {
+                warnings.push(`${config.label}: ${count}/${config.target} annotations`);
+            }
+        }
+
+        return warnings;
+    }
+
+    // ============================================================================
+    // Phase 11 (GAP-094): Review Workflow
+    // ============================================================================
+
+    /**
+     * Get annotations pending review (draft or needs_review status).
+     *
+     * @returns {Array} Annotations needing review
+     */
+    getPendingReviewAnnotations() {
+        return this.annotations.filter(ann =>
+            ann.status === 'needs_review' ||
+            (ann.status === 'draft' && ann.created_by === 'pipeline_suggestion')
+        );
+    }
+
+    /**
+     * Approve an annotation (mark as human-reviewed).
+     *
+     * @param {string} annotationId - ID of annotation to approve
+     */
+    approveAnnotation(annotationId) {
+        const annotation = this.annotations.find(a => a.id === annotationId);
+        if (annotation) {
+            annotation.status = 'approved';
+            annotation.last_reviewed_by = 'human';
+            annotation.reviewed_at = new Date().toISOString();
+            console.log(`Annotation ${annotationId} approved`);
+            this.renderAnnotations();
+            this.scheduleSave();
+        }
+    }
+
+    /**
+     * Reject an annotation with optional note.
+     *
+     * @param {string} annotationId - ID of annotation to reject
+     * @param {string} note - Optional rejection note
+     */
+    rejectAnnotation(annotationId, note = '') {
+        const annotation = this.annotations.find(a => a.id === annotationId);
+        if (annotation) {
+            annotation.status = 'rejected';
+            annotation.is_active = false;
+            annotation.review_note = note;
+            annotation.last_reviewed_by = 'human';
+            annotation.reviewed_at = new Date().toISOString();
+            console.log(`Annotation ${annotationId} rejected${note ? ': ' + note : ''}`);
+            this.renderAnnotations();
+            this.applyHighlights();
+            this.updateStats();
+            this.scheduleSave();
+        }
+    }
+
+    /**
+     * Bulk approve all pending review annotations.
+     */
+    bulkApprove() {
+        const pending = this.getPendingReviewAnnotations();
+        pending.forEach(ann => {
+            ann.status = 'approved';
+            ann.last_reviewed_by = 'human';
+            ann.reviewed_at = new Date().toISOString();
+        });
+        console.log(`Bulk approved ${pending.length} annotations`);
+        this.renderAnnotations();
+        this.scheduleSave();
+    }
+
+    /**
+     * Bulk reject all pending review annotations.
+     *
+     * @param {string} note - Optional rejection note
+     */
+    bulkReject(note = '') {
+        const pending = this.getPendingReviewAnnotations();
+        pending.forEach(ann => {
+            ann.status = 'rejected';
+            ann.is_active = false;
+            ann.review_note = note;
+            ann.last_reviewed_by = 'human';
+            ann.reviewed_at = new Date().toISOString();
+        });
+        console.log(`Bulk rejected ${pending.length} annotations`);
+        this.renderAnnotations();
+        this.applyHighlights();
+        this.updateStats();
+        this.scheduleSave();
+    }
+
+    /**
+     * Filter annotations by status.
+     *
+     * @param {string} status - 'all', 'approved', 'pending', 'rejected'
+     * @returns {Array} Filtered annotations
+     */
+    filterByStatus(status) {
+        if (status === 'all') {
+            return this.annotations;
+        } else if (status === 'pending') {
+            return this.getPendingReviewAnnotations();
+        } else {
+            return this.annotations.filter(ann => ann.status === status);
+        }
+    }
+
+    /**
+     * Render review queue UI element (if container exists).
+     */
+    renderReviewQueue() {
+        const container = document.getElementById('review-queue-container');
+        if (!container) return;
+
+        const pending = this.getPendingReviewAnnotations();
+
+        if (pending.length === 0) {
+            container.innerHTML = `
+                <div class="text-gray-500 text-sm p-4">
+                    ✓ No annotations pending review
+                </div>
+            `;
+            return;
+        }
+
+        const cards = pending.map(ann => {
+            const text = ann.target?.text || 'Unknown text';
+            const truncated = text.length > 50 ? text.substring(0, 50) + '...' : text;
+            return `
+                <div class="border rounded p-3 mb-2 bg-yellow-50" data-ann-id="${ann.id}">
+                    <div class="text-sm font-medium">${truncated}</div>
+                    <div class="text-xs text-gray-600 mt-1">
+                        ${ann.relevance || 'unset'} | ${ann.requirement_type || 'unset'}
+                    </div>
+                    <div class="mt-2 flex gap-2">
+                        <button onclick="window.annotationManager?.approveAnnotation('${ann.id}')"
+                                class="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600">
+                            Approve
+                        </button>
+                        <button onclick="window.annotationManager?.rejectAnnotation('${ann.id}')"
+                                class="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600">
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="mb-2 text-sm font-semibold">
+                ${pending.length} annotations pending review
+            </div>
+            ${cards}
+            <div class="mt-3 flex gap-2">
+                <button onclick="window.annotationManager?.bulkApprove()"
+                        class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                    Approve All
+                </button>
+                <button onclick="window.annotationManager?.bulkReject()"
+                        class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+                    Reject All
+                </button>
+            </div>
+        `;
     }
 
     /**
