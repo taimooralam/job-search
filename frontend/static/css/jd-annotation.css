@@ -29,7 +29,8 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-#jd-viewer-content h2 {
+#jd-viewer-content h2,
+.jd-processed h2 {
     font-size: 1.125rem;
     font-weight: 600;
     color: #1f2937;
@@ -39,50 +40,110 @@
     border-bottom: 1px solid #e5e7eb;
 }
 
-#jd-viewer-content h3 {
+#jd-viewer-content h3,
+.jd-processed h3,
+.jd-section-header {
     font-size: 1rem;
     font-weight: 600;
-    color: #374151;
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
+    color: #4f46e5;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+}
+
+/* First section header should not have top margin */
+.jd-processed section:first-child .jd-section-header,
+.jd-processed > section:first-child h3 {
+    margin-top: 0;
 }
 
 #jd-viewer-content ul,
-#jd-viewer-content ol {
+#jd-viewer-content ol,
+.jd-processed ul,
+.jd-processed ol,
+.jd-section-items {
     margin-left: 1.5rem;
     margin-bottom: 1rem;
+    list-style-type: disc;
+    padding-left: 0.5rem;
 }
 
-#jd-viewer-content li {
-    margin-bottom: 0.5rem;
-    line-height: 1.5;
-}
-
-#jd-viewer-content p {
-    margin-bottom: 0.75rem;
+#jd-viewer-content li,
+.jd-processed li,
+.jd-item {
+    margin-bottom: 0.625rem;
     line-height: 1.6;
+    color: #374151;
+}
+
+#jd-viewer-content p,
+.jd-processed p,
+.jd-paragraph {
+    margin-bottom: 0.875rem;
+    line-height: 1.7;
+    color: #4b5563;
+}
+
+/* JD Processed Container */
+.jd-processed {
+    padding: 0.5rem 0;
 }
 
 /* JD Section styling */
-#jd-viewer-content .jd-section {
-    margin-bottom: 1.5rem;
-    padding: 0.75rem;
-    border-radius: 0.375rem;
-    background-color: #f9fafb;
+#jd-viewer-content .jd-section,
+.jd-processed section,
+.jd-section {
+    margin-bottom: 1.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    background-color: #fafbfc;
     border: 1px solid #e5e7eb;
+    border-left: 4px solid #6366f1;
 }
 
-#jd-viewer-content .jd-section:hover {
+#jd-viewer-content .jd-section:hover,
+.jd-processed section:hover,
+.jd-section:hover {
     background-color: #f3f4f6;
+    border-left-color: #4f46e5;
 }
 
-#jd-viewer-content .jd-section-header {
-    font-weight: 600;
-    color: #4f46e5;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
+/* Section type indicators via border color */
+.jd-processed section[data-section-type="responsibilities"],
+section[data-section-type="responsibilities"] {
+    border-left-color: #10b981; /* emerald */
+}
+
+.jd-processed section[data-section-type="qualifications"],
+.jd-processed section[data-section-type="requirements"],
+section[data-section-type="qualifications"],
+section[data-section-type="requirements"] {
+    border-left-color: #3b82f6; /* blue */
+}
+
+.jd-processed section[data-section-type="nice_to_have"],
+section[data-section-type="nice_to_have"] {
+    border-left-color: #8b5cf6; /* purple */
+}
+
+.jd-processed section[data-section-type="technical_skills"],
+section[data-section-type="technical_skills"] {
+    border-left-color: #f59e0b; /* amber */
+}
+
+.jd-processed section[data-section-type="benefits"],
+section[data-section-type="benefits"] {
+    border-left-color: #ec4899; /* pink */
+}
+
+.jd-processed section[data-section-type="about_company"],
+.jd-processed section[data-section-type="about_role"],
+section[data-section-type="about_company"],
+section[data-section-type="about_role"] {
+    border-left-color: #6366f1; /* indigo */
 }
 
 /* ============================================================================
