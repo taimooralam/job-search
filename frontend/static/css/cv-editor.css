@@ -429,3 +429,46 @@
         padding: 0.5rem;
     }
 }
+
+/* ==============================================================================
+   Hybrid Executive Summary Styles
+   ============================================================================== */
+
+/*
+ * Executive Summary component styling for the new hybrid format:
+ * - Headline: Bold title with years experience
+ * - Tagline: Persona-driven hook (15-25 words)
+ * - Key Achievements: 5-6 quantified bullet points
+ * - Core Competencies: Inline "Core: X | Y | Z" format
+ */
+
+/* Core competencies line styling - renders after bullet list */
+#cv-editor-content .ProseMirror p:has(> strong:first-child),
+#cv-display-area p:has(> strong:first-child),
+#cv-container p:has(> strong:first-child) {
+    /* Subtle visual distinction for Core: line */
+    margin-top: 0.5em;
+}
+
+/* Executive Summary headline (bold paragraph right after H2) */
+#cv-editor-content .ProseMirror h2 + p strong,
+#cv-display-area h2 + p strong,
+#cv-container h2 + p strong {
+    color: #1e293b; /* slate-800 for emphasis */
+}
+
+/* Key achievements bullet list styling */
+#cv-editor-content .ProseMirror h2 + p + p + ul,
+#cv-display-area h2 + p + p + ul,
+#cv-container h2 + p + p + ul {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+/* Ensure tagline paragraph has proper spacing */
+#cv-editor-content .ProseMirror h2 + p + p,
+#cv-display-area h2 + p + p,
+#cv-container h2 + p + p {
+    margin-top: 0.25em;
+    margin-bottom: 0.5em;
+}
