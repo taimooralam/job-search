@@ -538,3 +538,103 @@ class TestGradeLogging:
 
         # This should not raise
         generator._log_grade_result(sample_grade_result)
+
+
+# ===== TESTS: ATS Validation Edge Cases =====
+
+class TestATSValidationEdgeCases:
+    """Test edge cases in ATS validation to prevent IndexError.
+
+    BUG 7 ROOT CAUSE: When suggested_keywords exists but is empty [],
+    the code `ann.get("suggested_keywords", [""])[0]` raises IndexError
+    because .get() returns [] (not the default [""]). Fix: use
+    `(suggested[0] if suggested else "")` pattern.
+    """
+
+    def test_handles_empty_suggested_keywords(self):
+        """ATS validation handles annotation with empty suggested_keywords list.
+
+        This was the root cause of BUG 7: 'list index out of range' error.
+        """
+        generator = CVGeneratorV2()
+
+        # Annotation with empty suggested_keywords list - was causing IndexError
+        jd_annotations = {
+            "annotations": [
+                {
+                    "is_active": True,
+                    "matching_skill": None,  # No matching skill
+                    "suggested_keywords": [],  # Empty list - the bug trigger
+                    "target": {"text": "test requirement"},
+                    "requirement_type": "must_have"
+                }
+            ]
+        }
+
+        cv_text = "This is a test CV with test requirement in it."
+
+        # Should NOT raise IndexError
+        result = generator._validate_ats_coverage(
+            cv_text=cv_text,
+            jd_annotations=jd_annotations,
+            extracted_jd={}
+        )
+
+        # Validation should succeed (falls back to target text)
+        assert result is not None
+        assert result.total_keywords_checked >= 0
+
+    def test_handles_missing_suggested_keywords(self):
+        """ATS validation handles annotation without suggested_keywords key."""
+        generator = CVGeneratorV2()
+
+        jd_annotations = {
+            "annotations": [
+                {
+                    "is_active": True,
+                    "matching_skill": "Python",
+                    # suggested_keywords key is missing entirely
+                    "target": {"text": "Python experience"},
+                    "requirement_type": "must_have"
+                }
+            ]
+        }
+
+        cv_text = "This is a test CV with Python experience."
+
+        # Should NOT raise
+        result = generator._validate_ats_coverage(
+            cv_text=cv_text,
+            jd_annotations=jd_annotations,
+            extracted_jd={}
+        )
+
+        assert result is not None
+        assert "Python" in result.keyword_coverage
+
+    def test_handles_none_annotation_values(self):
+        """ATS validation handles annotation with None values gracefully."""
+        generator = CVGeneratorV2()
+
+        jd_annotations = {
+            "annotations": [
+                {
+                    "is_active": True,
+                    "matching_skill": None,
+                    "suggested_keywords": None,  # None instead of empty list
+                    "target": {"text": "leadership skills"},
+                    "requirement_type": "nice_to_have"
+                }
+            ]
+        }
+
+        cv_text = "This is a test CV demonstrating leadership skills."
+
+        # Should NOT raise
+        result = generator._validate_ats_coverage(
+            cv_text=cv_text,
+            jd_annotations=jd_annotations,
+            extracted_jd={}
+        )
+
+        assert result is not None
