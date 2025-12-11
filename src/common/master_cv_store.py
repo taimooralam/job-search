@@ -692,6 +692,56 @@ class MasterCVStore:
 
         return stats
 
+    def get_profile_for_suggestions(self) -> Dict[str, Any]:
+        """
+        Get candidate profile data formatted for strength suggestion service.
+
+        Extracts skills, roles, and summary from metadata and taxonomy
+        into a flat structure for LLM consumption.
+
+        Returns:
+            Dict with 'skills', 'roles', 'summary' keys
+        """
+        profile: Dict[str, Any] = {
+            "skills": [],
+            "roles": [],
+            "summary": "",
+        }
+
+        # Get metadata for roles/experience
+        metadata = self.get_metadata()
+        if metadata:
+            candidate = metadata.get("candidate", {})
+            profile["summary"] = candidate.get("summary", "")
+
+            # Extract role information
+            for role in metadata.get("roles", []):
+                role_info = {
+                    "title": role.get("title", ""),
+                    "company": role.get("company", ""),
+                    "keywords": role.get("keywords", []),
+                    "hard_skills": role.get("hard_skills", []),
+                    "soft_skills": role.get("soft_skills", []),
+                }
+                profile["roles"].append(role_info)
+
+                # Collect skills from roles
+                for skill in role.get("hard_skills", []):
+                    if skill not in profile["skills"]:
+                        profile["skills"].append(skill)
+
+        # Get taxonomy for additional skills
+        taxonomy = self.get_taxonomy()
+        if taxonomy:
+            target_roles = taxonomy.get("target_roles", {})
+            for role_category, role_data in target_roles.items():
+                for section in role_data.get("sections", []):
+                    for skill in section.get("skills", []):
+                        if skill not in profile["skills"]:
+                            profile["skills"].append(skill)
+
+        return profile
+
 
 # ==========================================================================
 # MODULE-LEVEL CONVENIENCE FUNCTIONS

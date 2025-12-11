@@ -26,6 +26,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
@@ -1088,3 +1089,169 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
         result=state.result,
         error=state.error,
     )
+
+
+# =============================================================================
+# Strength Suggestion Endpoint
+# =============================================================================
+
+
+class SuggestStrengthsRequest(BaseModel):
+    """Request body for strength suggestions."""
+
+    include_identity: bool = Field(
+        default=True,
+        description="Whether to suggest identity levels",
+    )
+    include_passion: bool = Field(
+        default=True,
+        description="Whether to suggest passion levels",
+    )
+    include_defaults: bool = Field(
+        default=True,
+        description="Whether to apply hardcoded defaults",
+    )
+    tier: str = Field(
+        default="balanced",
+        description="Model tier: 'fast', 'balanced', or 'quality'",
+    )
+
+
+class StrengthSuggestionItem(BaseModel):
+    """A single strength suggestion."""
+
+    target_text: str
+    target_section: Optional[str] = None
+    suggested_relevance: str
+    suggested_requirement: str
+    suggested_passion: Optional[str] = None
+    suggested_identity: Optional[str] = None
+    matching_skill: str
+    matching_role: Optional[str] = None
+    evidence_summary: Optional[str] = None
+    reframe_note: Optional[str] = None
+    suggested_keywords: List[str] = []
+    confidence: float
+    source: str
+
+
+class SuggestStrengthsResponse(BaseModel):
+    """Response for strength suggestions."""
+
+    success: bool
+    suggestions: List[StrengthSuggestionItem] = []
+    defaults_applied: int = 0
+    model_used: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.post(
+    "/{job_id}/suggest-strengths",
+    response_model=SuggestStrengthsResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Suggest annotation strengths",
+    description="Generate strength suggestions by analyzing JD against candidate profile",
+)
+async def suggest_strengths(
+    job_id: str,
+    request: SuggestStrengthsRequest,
+) -> SuggestStrengthsResponse:
+    """
+    Generate strength suggestions by analyzing JD against candidate profile.
+
+    This identifies skills/experience the candidate HAS that match the JD.
+    Suggestions include recommended relevance, passion, and identity levels.
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+        request: Strength suggestion parameters
+
+    Returns:
+        SuggestStrengthsResponse with list of suggestions
+    """
+    from src.common.master_cv_store import MasterCVStore
+    from src.services.strength_suggestion_service import StrengthSuggestionService
+
+    operation = "suggest-strengths"
+
+    logger.info(f"Starting {operation} for job {job_id}")
+
+    try:
+        # Validate job exists and get JD text
+        job = _validate_job_exists(job_id)
+
+        # Extract JD text
+        jd_text = job.get("job_description") or job.get("description", "")
+        if not jd_text:
+            extracted = job.get("extracted_jd", {})
+            jd_text = extracted.get("raw_text", "")
+
+        if not jd_text:
+            return SuggestStrengthsResponse(
+                success=False,
+                error="No job description found",
+            )
+
+        # Load candidate profile from MasterCVStore
+        cv_store = MasterCVStore()
+        candidate_profile = cv_store.get_profile_for_suggestions()
+
+        # Get existing annotations to avoid duplicates
+        jd_annotations = job.get("jd_annotations", {})
+        existing_annotations = jd_annotations.get("annotations", [])
+
+        # Select model based on tier
+        tier = _validate_tier(request.tier)
+        model_map = {
+            "fast": "anthropic/claude-3-haiku-20240307",
+            "balanced": "anthropic/claude-3-haiku-20240307",
+            "quality": "anthropic/claude-3-5-sonnet-latest",
+        }
+        model_name = model_map.get(request.tier, "anthropic/claude-3-haiku-20240307")
+
+        # Initialize LLM
+        import os
+
+        llm = ChatOpenAI(
+            model=model_name,
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            temperature=0.3,
+        )
+
+        # Generate suggestions
+        service = StrengthSuggestionService(llm=llm, model_name=model_name)
+        suggestions = service.suggest_strengths(
+            jd_text=jd_text,
+            candidate_profile=candidate_profile,
+            existing_annotations=existing_annotations,
+            include_identity=request.include_identity,
+            include_passion=request.include_passion,
+            include_defaults=request.include_defaults,
+        )
+
+        # Count hardcoded defaults
+        defaults_count = len(
+            [s for s in suggestions if s.get("source") == "hardcoded_default"]
+        )
+
+        logger.info(
+            f"Generated {len(suggestions)} strength suggestions for job {job_id} "
+            f"({defaults_count} from defaults)"
+        )
+
+        return SuggestStrengthsResponse(
+            success=True,
+            suggestions=[StrengthSuggestionItem(**s) for s in suggestions],
+            defaults_applied=defaults_count,
+            model_used=model_name,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"{operation} failed: {e}")
+        return SuggestStrengthsResponse(
+            success=False,
+            error=str(e),
+        )
