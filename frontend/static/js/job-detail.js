@@ -15,6 +15,41 @@
 // Expected: window.JOB_DETAIL_CONFIG = { jobId: '...' }
 const getJobId = () => window.JOB_DETAIL_CONFIG?.jobId || '';
 
+// ============================================================================
+// Sticky Header Component (Alpine.js)
+// ============================================================================
+
+/**
+ * Alpine.js component for the compact sticky header behavior.
+ * When user scrolls past a threshold, the full header fades out and
+ * a compact bar appears with job title, company, and score.
+ *
+ * Usage in template:
+ * <div class="job-detail-header-wrapper" x-data="stickyHeader()" x-init="init()">
+ */
+function stickyHeader() {
+    return {
+        scrolled: false,
+        threshold: 150, // pixels before switching to compact
+
+        init() {
+            this.checkScroll();
+            window.addEventListener('scroll', () => this.checkScroll(), { passive: true });
+        },
+
+        checkScroll() {
+            const shouldBeScrolled = window.scrollY > this.threshold;
+            if (shouldBeScrolled !== this.scrolled) {
+                this.scrolled = shouldBeScrolled;
+                this.$el.classList.toggle('scrolled', this.scrolled);
+            }
+        }
+    };
+}
+
+// Expose stickyHeader globally for Alpine.js
+window.stickyHeader = stickyHeader;
+
 // Track highest layer reached (monotonic progress)
 let highestLayerReached = 0;
 const layerOrder = ['intake', 'pain_points', 'company_research', 'role_research', 'fit_scoring', 'people_mapping', 'cv_outreach_generation'];
