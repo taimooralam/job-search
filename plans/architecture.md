@@ -714,8 +714,12 @@ sessionStorage restored on next page load → logs persist
 
 - `frontend/static/js/job-detail.js`:
   - Listen for `ui:refresh-job` event
-  - Call HTMX `/api/jobs/{job_id}` to refresh job detail partial
-  - Replaces page reload with partial refresh (preserves CLI state)
+  - Uses full page reload (`window.location.reload()`) with 2-second delay instead of HTMX partial swap
+  - CLI state preserved via sessionStorage (panel expanded/collapsed, runs, logs)
+  - **Design Decision**: Full reload chosen over HTMX swap due to script redeclaration errors. HTMX's `innerHTML` swap re-executes `<script>` tags, causing duplicate `const`/`let` declarations in global scope (e.g., `PIPELINE_CONFIG`, `CLI_STORAGE_KEY`, `highestLayerReached`). Full reload is acceptable because:
+    1. State persists via sessionStorage (cli-panel.js Alpine store restores on init)
+    2. 2-second delay allows users to see completion status in CLI panel before refresh
+    3. Avoids complexity of script-aware HTMX swapping or moving all scripts outside HTML
 
 - `frontend/templates/job_detail.html`:
   - Pass `jobTitle` to action buttons for CLI context
