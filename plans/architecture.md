@@ -969,6 +969,58 @@ master-cv-editor.css (editor styles)
 
 ---
 
+### Job Detail Page - 3-Column Responsive Dashboard Layout (NEW - 2025-12-11)
+
+**Overview**: Complete UI/UX overhaul from single-column narrow layout to responsive multi-column dashboard with CSS Grid.
+
+**Files Modified/Created**:
+1. **`frontend/static/css/job-detail.css`** (NEW - 577 lines)
+   - CSS Grid-based 3-column layout for desktop (≥1280px): Left sidebar (280px) + Main fluid + Right sidebar (320px)
+   - 2-column tablet layout (768-1279px): Left sidebar (240px) + Combined main content
+   - Single-column mobile layout (<768px) with reordered sections
+   - Sticky sidebars with custom scrollbar styling (`scrollbar-width: thin`)
+   - Compact sticky header appearing when user scrolls past 150px threshold
+
+2. **`frontend/templates/base.html`** (MODIFIED)
+   - Added CSS include: `<link rel="stylesheet" href="{{ url_for('static', filename='css/job-detail.css') }}">`
+
+3. **`frontend/static/js/job-detail.js`** (MODIFIED)
+   - Added `stickyHeader()` Alpine.js component for scroll-based header behavior
+   - Tracks scroll position and toggles compact header visibility at 150px threshold
+
+4. **`frontend/templates/job_detail.html`** (RESTRUCTURED)
+   - Reorganized into 3-column grid layout:
+     - **Left Sidebar**: Status & Actions, Quick Actions, Pipeline Actions, Application Tracking, Job Details
+     - **Main Content**: Extracted Job Requirements, Company & Role Research, Full JD
+     - **Right Sidebar**: Fit Analysis, Generated CV, Key Contacts, Notes & Remarks
+   - Added dual header system (full header + compact sticky header)
+   - Maintains all existing functionality while improving information hierarchy
+
+**Design Principles**:
+- CSS Grid (not Flexbox) for 2D layout control
+- CSS custom properties for theme consistency
+- Alpine.js for scroll-based header state management
+- Mobile-first responsive design with graceful breakpoint enhancement
+- Sticky sidebar positioning for quick access to key sections while scrolling
+
+**Responsive Behavior**:
+- **Desktop (≥1280px)**: Full 3-column layout, both sidebars visible and sticky
+- **Tablet (768-1279px)**: 2-column layout, left sidebar sticky, right sidebar merged into main
+- **Mobile (<768px)**: Single column, sections reordered for mobile-first experience
+
+**Accessibility**:
+- Maintained semantic HTML structure
+- Preserved all keyboard navigation
+- Color contrast ratios maintained (WCAG AA compliant)
+- Screen reader friendly with proper ARIA labels
+
+**Testing**:
+- All 1713 unit tests passing
+- HTML structure verified via Flask test client
+- CSS breakpoints verified programmatically
+
+---
+
 ### Job Detail Page (Enhanced - 2025-12-09)
 - Main content: Cover letter, pain points, contacts
 - Pipeline progress: Horizontal layout with progress line with monotonic tracking (2025-12-09 enhanced: `highestLayerReached` prevents backward movement)
