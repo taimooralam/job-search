@@ -880,13 +880,20 @@ class AnnotationManager {
      * Render single annotation item
      */
     renderAnnotationItem(annotation) {
-        const colors = RELEVANCE_COLORS[annotation.relevance] || RELEVANCE_COLORS.relevant;
+        const colors = RELEVANCE_COLORS[annotation.relevance] || { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-500' };
         const reqColors = REQUIREMENT_COLORS[annotation.requirement_type] || REQUIREMENT_COLORS.neutral;
 
         // Passion badge (only show for non-neutral)
         const passionBadge = this.getPassionBadge(annotation.passion);
         // Identity badge (only show for non-peripheral)
         const identityBadge = this.getIdentityBadge(annotation.identity);
+
+        // Relevance badge - only show if relevance is set (avoid showing "null")
+        const relevanceBadge = annotation.relevance
+            ? `<span class="px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}">
+                   ${this.formatRelevance(annotation.relevance)}
+               </span>`
+            : '';
 
         return `
             <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''}"
@@ -895,9 +902,7 @@ class AnnotationManager {
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center flex-wrap gap-1 mb-1">
-                            <span class="px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}">
-                                ${this.formatRelevance(annotation.relevance)}
-                            </span>
+                            ${relevanceBadge}
                             <span class="px-1.5 py-0.5 rounded text-xs font-medium ${reqColors.bg} ${reqColors.text}">
                                 ${this.formatRequirement(annotation.requirement_type)}
                             </span>
