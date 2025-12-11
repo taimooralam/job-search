@@ -26,4 +26,39 @@ BUG 1. [FIXED] When I launch Extract, Research, Generate CV button on the job de
 
 **Tests**: All 624 frontend tests pass. New tests added in `tests/frontend/test_sse_log_display.py`.
 
-BUG 2. When I launch the extract button, the extraction happens but the company research, role research and people research and mapper doesn't show up.
+BUG 2. [FIXED] When I launch the extract button, the extraction happens but the company research, role research and people research and mapper doesn't show up on the detail page after reload.
+
+**Root Cause Analysis**: This was NOT a bug but an intentional architectural design:
+- **Extract JD button** runs Layers 1.4, 2, 4 (JD structuring, pain points, fit score) - local processing only
+- **Research button** runs Layer 3, 3.5 (company + role research) - uses external FireCrawl APIs
+- **People research** (Layer 5) was NOT included in the Research button
+
+The separation exists for:
+1. **Cost control** - People research uses FireCrawl API credits
+2. **Caching** - Company data has 7-day TTL, can skip re-research
+3. **Failure isolation** - Each layer can fail independently
+
+**User Expectation vs Reality**: User expected Research to also discover contacts (people research). The original design separated this.
+
+**Fix Applied**:
+1. Modified `PeopleMapper.map_people()` to accept `skip_outreach: bool = False` parameter
+2. When `skip_outreach=True`, only contact discovery runs (no outreach message generation)
+3. Enhanced `CompanyResearchService.execute()` to also call Layer 5 with `skip_outreach=True`
+4. Updated `_persist_research()` to save `primary_contacts` and `secondary_contacts` to MongoDB
+5. Outreach message generation remains on-demand (to be triggered separately)
+
+**New Workflow**:
+| Button | Layers | What it does |
+|--------|--------|--------------|
+| Extract JD | 1.4, 2, 4 | JD structure, pain points, fit score |
+| Research | 3, 3.5, **5** | Company research, role research, **contact discovery** |
+| Generate CV | 6 | CV generation |
+| (Future) Outreach | - | Outreach messages on-demand |
+
+**Files Modified**:
+- `src/layer5/people_mapper.py` - Added `skip_outreach` parameter to `map_people()`
+- `src/services/company_research_service.py` - Added Layer 5 call and contact persistence
+- `tests/unit/test_layer5_people_mapper.py` - Added 4 new tests for skip_outreach
+- `tests/unit/test_company_research_service.py` - Added 5 new tests for people research integration
+
+**Tests**: All 1645 unit tests pass. New tests in `TestSkipOutreachParameter` and `TestCompanyResearchServicePeopleResearch` classes.
