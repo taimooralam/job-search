@@ -313,3 +313,48 @@ This simulated progress runs even if the POST fetch to start the operation is ha
 - `[full-extraction] SSE connection opened`
 
 If the POST hangs for 60s, you'll see an error toast: "Extract JD timed out. Runner service may be unavailable."
+
+BUG 10. [FIXED] Runner service streaming endpoints block and timeout
+
+**Problem**: POST requests to streaming endpoints (`/full-extraction/stream`, `/research-company/stream`, `/generate-cv/stream`) hang and never return `run_id`, causing frontend timeout.
+
+**Root Cause**: The `_validate_job_exists()` function uses **synchronous PyMongo** (`MongoClient.find_one()`) called from **async FastAPI endpoints**. This blocks the event loop:
+
+```python
+# BLOCKING - runs in the main async thread
+def _validate_job_exists(job_id: str) -> dict:
+    client = _get_db_client()  # Creates new MongoClient (slow)
+    db = client["jobs"]
+    job = db["level-2"].find_one({"_id": object_id})  # BLOCKS event loop!
+    ...
+
+async def full_extraction_stream(...):
+    _validate_job_exists(job_id)  # Called from async, but runs sync = BLOCKS
+    ...
+```
+
+When MongoDB is slow or the connection takes time, the entire FastAPI event loop blocks, preventing other requests from being processed.
+
+**Fix Applied**:
+1. Added `ThreadPoolExecutor` for running sync MongoDB operations in background threads
+2. Added MongoDB connection timeouts: 5s connect, 10s socket, 10s server selection
+3. Created `_validate_job_exists_async()` using `asyncio.run_in_executor()`
+4. Updated all 3 streaming endpoints to `await _validate_job_exists_async(job_id)`
+
+```python
+# Thread pool for MongoDB operations
+_db_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mongo_")
+
+async def _validate_job_exists_async(job_id: str) -> dict:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_db_executor, _validate_job_exists_sync, job_id)
+
+async def full_extraction_stream(...):
+    await _validate_job_exists_async(job_id)  # Non-blocking!
+    ...
+```
+
+**Files Modified**:
+- `runner_service/routes/operations.py` (lines 23-36, 175-253, 771, 851, 932)
+
+**Tests**: All 115 operation-related unit tests pass.
