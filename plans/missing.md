@@ -3044,6 +3044,9 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ## Completed (Dec 2025)
 
+### CLI Panel & Page Refresh
+- [x] Fix HTMX script redeclaration errors (2025-12-11): Changed `ui:refresh-job` handler to use full page reload instead of HTMX partial swap. CLI state preserved via sessionStorage. 2-second delay allows completion status visibility.
+
 ### Annotation System Enhancements
 - [x] Delete annotation from popover (2025-12-11): Added delete button to annotation popover for editing existing annotations, with visibility controls and confirmation handling
 
