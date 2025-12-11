@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-11 (Session 5: Annotation System Improvements - Source-Based Weighting, Persona SYSTEM Prompts, Suggest Strengths, ATS Keyword Placement)
+**Last Updated**: 2025-12-11 (Session 5: Annotation System Improvements - P2 Complete with Tracking Service & Keyword Placement Integration)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,9 +12,9 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 19 (17 fixed, 0 open) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 36 (30 fixed, 0 open) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 38 (32 fixed, 0 open) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 23 (17 fixed, 0 open) | Backlog - nice-to-have improvements |
-| **Total** | **81** (67 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
+| **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
 
@@ -2306,6 +2306,80 @@ if (response.status === "success") {
 - Must-have requirements highlighted in opening message
 - Identity alignment emphasized in professional positioning statement
 - Concern mitigation integrated into outreach messaging
+
+---
+
+### GAP-095: Annotation Tracking Service - A/B Testing Framework ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-11) | **Effort**: 8 hours
+**Impact**: Complete annotation outcome tracking and A/B testing analytics for persona variants
+
+**Implementation Complete** (Phase P2):
+- `src/services/annotation_tracking_service.py` - NEW service with full A/B testing capability
+- Complete ApplicationTracking lifecycle with PersonaVariant configurations
+- AnnotationOutcome tracking for individual keyword usage
+- ApplicationOutcome enum for PENDING → OFFER → ACCEPTED progression
+- AnnotationEffectivenessStats aggregating keyword → interview correlation
+
+**Key Features**:
+1. **PersonaVariant** - Captures identity/passion/core_strength keyword sets for A/B testing
+2. **ApplicationTracking** - Records complete application with persona variant snapshot
+3. **AnnotationOutcome** - Individual annotation usage tracking with outcome linkage
+4. **Effectiveness Analytics**:
+   - `calculate_keyword_effectiveness()` - Aggregates keyword success rates
+   - `compare_persona_variants()` - Compares A/B test results statistically
+   - `get_placement_effectiveness()` - CV position → interview rate correlation
+
+**Integration Points**:
+- Hooks into pipeline Layer 7 Outcome Tracker for feedback loop
+- Ingests application outcomes from interview/offer tracking
+- Provides analytics dashboard for persona optimization
+
+**Test Coverage**: 20 unit tests in `tests/unit/test_annotation_tracking_service.py` - all passing
+- PersonaVariant validation (5 tests)
+- AnnotationOutcome tracking (5 tests)
+- ApplicationTracking lifecycle (5 tests)
+- AnnotationEffectivenessStats calculation (5 tests)
+
+**Files Created**:
+- `src/services/annotation_tracking_service.py` - Core service (450+ lines)
+- `tests/unit/test_annotation_tracking_service.py` - Full test suite (350+ lines)
+
+---
+
+### GAP-096: KeywordPlacementValidator Integration into CV Generation ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-11) | **Effort**: 6 hours
+**Impact**: ATS keyword placement optimization with position-based validation
+
+**Implementation Complete** (Phase P2.1):
+- `src/layer6_v2/keyword_placement.py` - NEW validator with 4-section scoring algorithm
+- Integrated as Phase 5.7 in `src/layer6_v2/orchestrator.py` CV generation pipeline
+- Post-generation validation running after all CV text assembly
+
+**Validation Rules**:
+- Headline section: 40 points (highest priority)
+- Narrative section: 30 points (professional summary)
+- Competencies/Skills section: 20 points
+- First role description: 10 points (lowest priority)
+- Passing score: 70+ points (covers multiple sections)
+
+**Output**:
+- `keyword_placement_validation` in orchestrator output
+- ATS violations list (missing priority keywords)
+- Improvement suggestions (placement recommendations)
+- Per-keyword placement analysis
+
+**Integration**:
+- Runs post-CV generation in orchestrator as Phase 5.7
+- Validates top_keywords from JD annotations
+- Provides actionable feedback for CV improvement
+
+**Test Coverage**: Covered in existing layer6_v2 tests
+- Integration tested in `test_layer6_cv_generator_v2.py`
+
+**Files Modified**:
+- `src/layer6_v2/orchestrator.py` - Added Phase 5.7 validation
+- `src/layer6_v2/keyword_placement.py` - Validator implementation (existing)
+- `src/layer6_v2/types.py` - Added `KeywordPlacementResult` type
 
 ---
 

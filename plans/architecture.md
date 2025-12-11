@@ -492,6 +492,32 @@ Final CV: 100% pre-written, interview-defensible, no hallucinations
 - `test_annotation_types_phase7.py` - 25 type validation tests
 - Total: 118 new tests for Phase 7
 
+**Annotation Tracking Service** (NEW - 2025-12-11):
+- Module: `src/services/annotation_tracking_service.py`
+- Purpose: Track annotation usage outcomes and enable A/B testing of persona variants
+- Core Components:
+  - **PersonaVariant**: Captures identity/passion/core_strength keyword configurations for A/B testing
+  - **AnnotationOutcome**: Individual annotation usage tracking with outcome linkage
+  - **ApplicationTracking**: Complete application record with persona variant snapshot
+  - **AnnotationEffectivenessStats**: Aggregated analytics for keyword effectiveness
+- Key Methods:
+  - `create_tracking_record()` - Records application with persona variant snapshot
+  - `update_outcome()` - Updates outcome and propagates to annotations
+  - `calculate_keyword_effectiveness()` - Aggregates keyword → interview correlation
+  - `compare_persona_variants()` - Compares A/B test results statistically
+  - `get_placement_effectiveness()` - CV position → interview rate correlation
+- Integration Points:
+  - Hooks into Layer 7 Outcome Tracker for feedback loop
+  - Ingests application outcomes (PENDING → INTERVIEW → OFFER → ACCEPTED)
+  - Provides analytics dashboard data for persona optimization
+- Data Model:
+  - Persona variants snapshot at application time (immutable for fair A/B testing)
+  - Per-annotation usage tracking with outcome linkage
+  - Statistical aggregation with confidence intervals
+- Test Coverage:
+  - `test_annotation_tracking_service.py` - 20 unit tests (all passing)
+  - PersonaVariant validation, AnnotationOutcome tracking, ApplicationTracking lifecycle, effectiveness stats calculation
+
 ---
 
 ## Data Model
