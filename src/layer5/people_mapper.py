@@ -1999,14 +1999,19 @@ Return the three letters separated by \"---\" lines.
 
     # ===== MAIN MAPPER FUNCTION =====
 
-    def map_people(self, state: JobState) -> Dict[str, Any]:
+    def map_people(self, state: JobState, skip_outreach: bool = False) -> Dict[str, Any]:
         """
         Layer 5: People Mapper (Phase 7).
 
         1. Multi-source contact discovery via FireCrawl (skipped when DISABLE_FIRECRAWL_OUTREACH is true)
         2. LLM-based classification into primary/secondary
-        3. OutreachPackage generation for each contact
+        3. OutreachPackage generation for each contact (skipped if skip_outreach=True)
         4. Quality gates: 4-6 primary, 4-6 secondary (reduced for agencies: 2 primary, 0 secondary)
+
+        Args:
+            state: JobState with job/company context
+            skip_outreach: If True, skip outreach generation and return contacts only.
+                           Useful for Research button which only needs contact discovery.
 
         Returns:
             Dict with primary_contacts, secondary_contacts, outreach_packages
@@ -2014,6 +2019,8 @@ Return the three letters separated by \"---\" lines.
         self.logger.info("="*80)
         self.logger.info("LAYER 5: PEOPLE MAPPER (Phase 7)")
         self.logger.info("="*80)
+        if skip_outreach:
+            self.logger.info("skip_outreach=True: Will discover contacts but skip outreach message generation")
         if self.firecrawl_disabled:
             self.logger.info("FireCrawl outreach scraping disabled via Config.DISABLE_FIRECRAWL_OUTREACH (role-based contacts only)")
 
@@ -2097,6 +2104,17 @@ Return the three letters separated by \"---\" lines.
 
             self.logger.info(f"Generated {len(primary_contacts)} agency recruiter contacts")
 
+            # Skip outreach generation if requested (Research button flow)
+            if skip_outreach:
+                self.logger.info("skip_outreach=True: Returning contacts without outreach messages")
+                return {
+                    "primary_contacts": primary_contacts,
+                    "secondary_contacts": [],
+                    "people": primary_contacts,
+                    "outreach_packages": [],
+                    "fallback_cover_letters": []
+                }
+
             # Generate outreach for recruiters (no secondary contacts for agencies)
             enriched_primary = []
             for i, contact in enumerate(primary_contacts, 1):
@@ -2142,42 +2160,54 @@ Return the three letters separated by \"---\" lines.
                 self.logger.info(f"Generated {len(primary_contacts)} synthetic primary contacts")
                 self.logger.info(f"Generated {len(secondary_contacts)} synthetic secondary contacts")
 
+                # Apply contact limit (GAP-060)
+                limited_primary, limited_secondary = self._limit_contacts(
+                    primary_contacts, secondary_contacts
+                )
+
+                # Skip outreach generation if requested (Research button flow)
+                if skip_outreach:
+                    self.logger.info("skip_outreach=True: Returning synthetic contacts without outreach messages")
+                    return {
+                        "primary_contacts": limited_primary,
+                        "secondary_contacts": limited_secondary,
+                        "people": limited_primary + limited_secondary,
+                        "outreach_packages": [],
+                        "fallback_cover_letters": []
+                    }
+
                 # Also generate fallback cover letters for reference
                 fallback_letters = self._generate_fallback_cover_letters(state, fallback_reason)
 
                 # Generate outreach for synthetic contacts
                 self.logger.info("Generating personalized outreach for synthetic contacts")
-                all_contacts = primary_contacts + secondary_contacts
+                all_contacts = limited_primary + limited_secondary
                 enriched_primary = []
                 enriched_secondary = []
+                num_limited_primary = len(limited_primary)
 
                 for i, contact in enumerate(all_contacts, 1):
                     self.logger.info(f"Generating outreach {i}/{len(all_contacts)}: {contact['name']}")
                     try:
                         outreach = self._generate_outreach_package(contact, state)
                         enriched_contact = {**contact, **outreach}
-                        if i <= len(primary_contacts):
+                        if i <= num_limited_primary:
                             enriched_primary.append(enriched_contact)
                         else:
                             enriched_secondary.append(enriched_contact)
                     except Exception as e:
                         self.logger.warning(f"Failed to generate outreach: {e}")
-                        if i <= len(primary_contacts):
+                        if i <= num_limited_primary:
                             enriched_primary.append(contact)
                         else:
                             enriched_secondary.append(contact)
 
                 self.logger.info("Completed synthetic contact outreach generation")
 
-                # Apply contact limit (GAP-060)
-                limited_primary, limited_secondary = self._limit_contacts(
-                    enriched_primary, enriched_secondary
-                )
-
                 return {
-                    "primary_contacts": limited_primary,
-                    "secondary_contacts": limited_secondary,
-                    "people": limited_primary + limited_secondary,
+                    "primary_contacts": enriched_primary,
+                    "secondary_contacts": enriched_secondary,
+                    "people": enriched_primary + enriched_secondary,
                     "outreach_packages": [],  # Future: structured packages
                     "fallback_cover_letters": fallback_letters
                 }
@@ -2197,6 +2227,17 @@ Return the three letters separated by \"---\" lines.
             limited_primary, limited_secondary = self._limit_contacts(
                 primary_contacts, secondary_contacts
             )
+
+            # Skip outreach generation if requested (Research button flow)
+            if skip_outreach:
+                self.logger.info("skip_outreach=True: Returning classified contacts without outreach messages")
+                return {
+                    "primary_contacts": limited_primary,
+                    "secondary_contacts": limited_secondary,
+                    "people": limited_primary + limited_secondary,
+                    "outreach_packages": [],
+                    "fallback_cover_letters": []
+                }
 
             # Step 4: Generate outreach for limited contacts only
             self.logger.info("Generating personalized outreach")

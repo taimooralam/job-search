@@ -26,6 +26,7 @@ from src.common.model_tiers import (
 from src.common.state import JobState, CompanyResearch, RoleResearch
 from src.layer3.company_researcher import CompanyResearcher
 from src.layer3.role_researcher import RoleResearcher
+from src.layer5.people_mapper import PeopleMapper
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class CompanyResearchService(OperationService):
         self._mongo_client: Optional[MongoClient] = None
         self._company_researcher: Optional[CompanyResearcher] = None
         self._role_researcher: Optional[RoleResearcher] = None
+        self._people_mapper: Optional[PeopleMapper] = None
 
     @property
     def mongo_client(self) -> MongoClient:
@@ -75,6 +77,13 @@ class CompanyResearchService(OperationService):
         if self._role_researcher is None:
             self._role_researcher = RoleResearcher()
         return self._role_researcher
+
+    @property
+    def people_mapper(self) -> PeopleMapper:
+        """Lazy-initialize People Mapper."""
+        if self._people_mapper is None:
+            self._people_mapper = PeopleMapper()
+        return self._people_mapper
 
     def _get_db(self):
         """Get database instance."""
@@ -229,6 +238,8 @@ class CompanyResearchService(OperationService):
         company_research: Optional[CompanyResearch],
         role_research: Optional[RoleResearch],
         scraped_job_posting: Optional[str] = None,
+        primary_contacts: Optional[list] = None,
+        secondary_contacts: Optional[list] = None,
     ) -> bool:
         """
         Persist research results back to MongoDB.
@@ -238,6 +249,8 @@ class CompanyResearchService(OperationService):
             company_research: Company research result
             role_research: Role research result
             scraped_job_posting: Optional scraped job posting markdown
+            primary_contacts: Optional list of primary contacts from people research
+            secondary_contacts: Optional list of secondary contacts from people research
 
         Returns:
             True if persisted successfully
@@ -259,6 +272,12 @@ class CompanyResearchService(OperationService):
 
             if scraped_job_posting:
                 update_doc["scraped_job_posting"] = scraped_job_posting
+
+            # Persist people research contacts
+            if primary_contacts is not None:
+                update_doc["primary_contacts"] = primary_contacts
+            if secondary_contacts is not None:
+                update_doc["secondary_contacts"] = secondary_contacts
 
             result = self._get_jobs_collection().update_one(
                 {"_id": object_id},
@@ -410,6 +429,8 @@ class CompanyResearchService(OperationService):
                                 "business_impacts": business_impact_count,
                                 "message": f"Found {business_impact_count} business impacts"
                             }
+                            # Update state with role research for people mapper
+                            state["role_research"] = role_research
                         else:
                             layer_status["role_research"] = {
                                 "status": "failed",
@@ -427,6 +448,46 @@ class CompanyResearchService(OperationService):
                         "message": "Skipped - company research failed"
                     }
 
+                # Run People Research (Layer 5) with skip_outreach=True
+                # Contact discovery happens here; outreach generation is triggered separately
+                primary_contacts = None
+                secondary_contacts = None
+                if company_research:
+                    logger.info(f"[{run_id[:16]}] Running people research (contact discovery only)")
+                    try:
+                        people_result = self.people_mapper.map_people(state, skip_outreach=True)
+                        primary_contacts = people_result.get("primary_contacts", [])
+                        secondary_contacts = people_result.get("secondary_contacts", [])
+
+                        total_contacts = len(primary_contacts) + len(secondary_contacts)
+                        if total_contacts > 0:
+                            layer_status["people_research"] = {
+                                "status": "success",
+                                "primary_contacts": len(primary_contacts),
+                                "secondary_contacts": len(secondary_contacts),
+                                "message": f"Found {len(primary_contacts)} primary + {len(secondary_contacts)} secondary contacts"
+                            }
+                        else:
+                            layer_status["people_research"] = {
+                                "status": "warning",
+                                "primary_contacts": 0,
+                                "secondary_contacts": 0,
+                                "message": "No contacts discovered"
+                            }
+                        logger.info(f"[{run_id[:16]}] People research complete: {layer_status['people_research']['message']}")
+
+                    except Exception as e:
+                        logger.warning(f"[{run_id[:16]}] People research failed (non-fatal): {e}")
+                        layer_status["people_research"] = {
+                            "status": "failed",
+                            "message": f"People research failed: {str(e)}"
+                        }
+                else:
+                    layer_status["people_research"] = {
+                        "status": "skipped",
+                        "message": "Skipped - company research failed"
+                    }
+
                 # Persist results to MongoDB
                 logger.info(f"[{run_id[:16]}] Persisting results to database")
                 persisted = self._persist_research(
@@ -434,6 +495,8 @@ class CompanyResearchService(OperationService):
                     company_research=company_research,
                     role_research=role_research,
                     scraped_job_posting=scraped_job_posting,
+                    primary_contacts=primary_contacts,
+                    secondary_contacts=secondary_contacts,
                 )
                 layer_status["persist"] = {
                     "status": "success" if persisted else "warning",
@@ -443,8 +506,9 @@ class CompanyResearchService(OperationService):
                 # Estimate cost (rough estimate based on typical token usage)
                 # Company research: ~3000 input, ~2000 output
                 # Role research: ~2000 input, ~1000 output
-                estimated_input_tokens = 5000
-                estimated_output_tokens = 3000
+                # People research (contact discovery only, no outreach): ~2000 input, ~1500 output
+                estimated_input_tokens = 7000
+                estimated_output_tokens = 4500
                 cost_usd = self.estimate_cost(tier, estimated_input_tokens, estimated_output_tokens)
 
                 # Collect any errors from the research process
@@ -457,6 +521,8 @@ class CompanyResearchService(OperationService):
                 response_data = {
                     "company_research": company_research,
                     "role_research": role_research,
+                    "primary_contacts": primary_contacts,
+                    "secondary_contacts": secondary_contacts,
                     "from_cache": False,
                     "company": company_name,
                     "layer_status": layer_status,
@@ -470,10 +536,16 @@ class CompanyResearchService(OperationService):
                 if role_research:
                     response_data["business_impact_count"] = len(role_research.get("business_impact", []))
 
+                # Add contacts count
+                if primary_contacts or secondary_contacts:
+                    response_data["primary_contacts_count"] = len(primary_contacts) if primary_contacts else 0
+                    response_data["secondary_contacts_count"] = len(secondary_contacts) if secondary_contacts else 0
+
                 logger.info(
-                    f"[{run_id[:16]}] Completed company research: "
+                    f"[{run_id[:16]}] Completed research: "
                     f"signals={response_data.get('signals_count', 0)}, "
-                    f"company_type={response_data.get('company_type', 'unknown')}"
+                    f"company_type={response_data.get('company_type', 'unknown')}, "
+                    f"contacts={response_data.get('primary_contacts_count', 0)}+{response_data.get('secondary_contacts_count', 0)}"
                 )
 
                 # Persist operation run for tracking
