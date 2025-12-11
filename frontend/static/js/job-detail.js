@@ -73,42 +73,139 @@ function showToast(message, type = 'success', duration = 4000) {
  * @param {Object} data - Full response data
  * @param {boolean} isPending - If true, show as "in progress" with spinning icons
  */
+// Global state for simulated progress
+let pipelineProgressInterval = null;
+let currentProgressIndex = 0;
+
+// Define layer info based on action (keys match backend layer_status)
+const LAYER_CONFIGS = {
+    'full-extraction': [
+        { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections', duration: 2000 },
+        { key: 'jd_extractor', label: 'JD Extractor', desc: 'Extract role info', duration: 3000 },
+        { key: 'layer_2', label: 'Pain Points', desc: 'Mine pain points', duration: 4000 },
+        { key: 'layer_4', label: 'Fit Scoring', desc: 'Calculate fit score', duration: 2000 }
+    ],
+    'structure-jd': [
+        { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database', duration: 500 },
+        { key: 'extract_text', label: 'Extract Text', desc: 'Extract JD text', duration: 1000 },
+        { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections', duration: 3000 },
+        { key: 'persist', label: 'Save Results', desc: 'Persist to database', duration: 500 }
+    ],
+    'research-company': [
+        { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database', duration: 500 },
+        { key: 'cache_check', label: 'Cache Check', desc: 'Check for cached research', duration: 1000 },
+        { key: 'company_research', label: 'Company Research', desc: 'Research company signals', duration: 8000 },
+        { key: 'role_research', label: 'Role Research', desc: 'Research role context', duration: 6000 },
+        { key: 'persist', label: 'Save Results', desc: 'Persist to database', duration: 500 }
+    ],
+    'generate-cv': [
+        { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database', duration: 500 },
+        { key: 'validate', label: 'Validate', desc: 'Validate job data', duration: 1000 },
+        { key: 'build_state', label: 'Build State', desc: 'Prepare CV generation state', duration: 2000 },
+        { key: 'cv_generator', label: 'Generate CV', desc: 'Generate tailored CV', duration: 15000 },
+        { key: 'persist', label: 'Save Results', desc: 'Persist to database', duration: 500 }
+    ]
+};
+
+/**
+ * Start simulated progress animation for the pipeline log panel.
+ * This gives visual feedback while the actual API call is running.
+ */
+function startSimulatedProgress(action) {
+    const layers = LAYER_CONFIGS[action] || [];
+    if (layers.length === 0) return;
+
+    currentProgressIndex = 0;
+
+    // Clear any existing interval
+    if (pipelineProgressInterval) {
+        clearInterval(pipelineProgressInterval);
+    }
+
+    // Update the panel to show first layer in progress
+    updatePanelProgress(action, currentProgressIndex);
+
+    // Schedule progress through layers based on estimated durations
+    let totalDelay = 0;
+    layers.forEach((layer, index) => {
+        if (index === 0) return; // First layer already shown
+
+        totalDelay += layers[index - 1].duration;
+
+        setTimeout(() => {
+            // Only update if the panel is still in pending state
+            const panel = document.getElementById('pipeline-log-panel');
+            const statusFooter = panel?.querySelector('.bg-gray-50');
+            if (panel && statusFooter?.textContent.includes('Processing')) {
+                currentProgressIndex = index;
+                updatePanelProgress(action, index);
+            }
+        }, totalDelay);
+    });
+}
+
+/**
+ * Update the panel to show progress at a specific layer index.
+ */
+function updatePanelProgress(action, progressIndex) {
+    const layers = LAYER_CONFIGS[action] || [];
+    const panel = document.getElementById('pipeline-log-panel');
+    if (!panel) return;
+
+    const layerContainer = panel.querySelector('.space-y-1');
+    if (!layerContainer) return;
+
+    const spinnerSvg = '<svg class="w-4 h-4 animate-spin text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+    const layerStatusHtml = layers.map((layer, index) => {
+        let statusIcon = '⏳';
+        let message = layer.desc;
+
+        if (index < progressIndex) {
+            // Completed layers
+            statusIcon = '✅';
+            message = 'Complete';
+        } else if (index === progressIndex) {
+            // Current layer (in progress)
+            statusIcon = spinnerSvg;
+            message = 'Processing...';
+        }
+        // Future layers stay as pending (⏳)
+
+        return `
+            <div class="flex items-start gap-2 py-1" data-layer-key="${layer.key}">
+                <span class="text-base flex items-center">${statusIcon}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-700">${layer.label}</div>
+                    <div class="text-xs text-gray-500 truncate">${message}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    layerContainer.innerHTML = layerStatusHtml;
+}
+
+/**
+ * Stop the simulated progress (called when real results arrive).
+ */
+function stopSimulatedProgress() {
+    if (pipelineProgressInterval) {
+        clearInterval(pipelineProgressInterval);
+        pipelineProgressInterval = null;
+    }
+    currentProgressIndex = 0;
+}
+
 function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
     // Remove existing panel if any
     const existingPanel = document.getElementById('pipeline-log-panel');
     if (existingPanel) existingPanel.remove();
 
-    // Define layer info based on action (keys match backend layer_status)
-    const layerConfigs = {
-        'full-extraction': [
-            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' },
-            { key: 'jd_extractor', label: 'JD Extractor', desc: 'Extract role info' },
-            { key: 'layer_2', label: 'Pain Points', desc: 'Mine pain points' },
-            { key: 'layer_4', label: 'Fit Scoring', desc: 'Calculate fit score' }
-        ],
-        'structure-jd': [
-            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
-            { key: 'extract_text', label: 'Extract Text', desc: 'Extract JD text' },
-            { key: 'jd_processor', label: 'JD Processor', desc: 'Parse into sections' },
-            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
-        ],
-        'research-company': [
-            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
-            { key: 'cache_check', label: 'Cache Check', desc: 'Check for cached research' },
-            { key: 'company_research', label: 'Company Research', desc: 'Research company signals' },
-            { key: 'role_research', label: 'Role Research', desc: 'Research role context' },
-            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
-        ],
-        'generate-cv': [
-            { key: 'fetch_job', label: 'Fetch Job', desc: 'Load job from database' },
-            { key: 'validate', label: 'Validate', desc: 'Validate job data' },
-            { key: 'build_state', label: 'Build State', desc: 'Prepare CV generation state' },
-            { key: 'cv_generator', label: 'Generate CV', desc: 'Generate tailored CV' },
-            { key: 'persist', label: 'Save Results', desc: 'Persist to database' }
-        ]
-    };
+    // Stop any existing simulated progress
+    stopSimulatedProgress();
 
-    const layers = layerConfigs[action] || [];
+    const layers = LAYER_CONFIGS[action] || [];
 
     // Build layer status HTML
     const layerStatusHtml = layers.map((layer, index) => {
@@ -206,6 +303,11 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
 
     document.body.appendChild(panel);
 
+    // Start simulated progress animation if pending
+    if (isPending) {
+        startSimulatedProgress(action);
+    }
+
     // Auto-remove after 5 seconds (only if not pending)
     if (!isPending) {
         setTimeout(() => {
@@ -221,6 +323,8 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
 
 // Expose globally
 window.showPipelineLogPanel = showPipelineLogPanel;
+window.startSimulatedProgress = startSimulatedProgress;
+window.stopSimulatedProgress = stopSimulatedProgress;
 
 // ============================================================================
 // Field Updates
