@@ -2163,6 +2163,72 @@ async function pollOperationStatus(runId) {
 - Browser auto-reconnects EventSource with exponential backoff
 - Manual reconnect button if stream stalls
 
+### Progress Callback Integration (ENHANCED - 2025-12-11)
+
+**Problem Solved**: Operations were timing out because services didn't emit progress updates during long LLM processing (2-5 minutes), causing the SSE stream to appear idle.
+
+**Solution**: Added `progress_callback` parameter to all operation services for real-time intermediate progress emission.
+
+**Implementation Details**:
+
+**1. FullExtractionService** (`src/services/full_extraction_service.py`):
+```python
+def __init__(self, ..., progress_callback: callable = None):
+    self.progress_callback = progress_callback
+
+def execute(self, job_id: str, ...):
+    # Emit progress at each major step
+    emit_progress("jd_processor", "Processing JD...")
+    emit_progress("jd_extractor", "Extracting sections...")
+    emit_progress("pain_points", "Mining pain points...")
+    emit_progress("fit_scoring", "Scoring fit...")
+    emit_progress("save_results", "Persisting to MongoDB...")
+```
+
+**2. CompanyResearchService** (`src/services/company_research_service.py`):
+```python
+def execute(self, job_id: str, ...):
+    emit_progress("fetch_job", "Loading job details...")
+    emit_progress("cache_check", "Checking research cache...")
+    emit_progress("company_research", "Researching company...")
+    emit_progress("role_research", "Researching role...")
+    emit_progress("people_research", "Discovering contacts...")
+    emit_progress("save_results", "Saving research data...")
+```
+
+**3. CVGenerationService** (`src/services/cv_generation_service.py`):
+```python
+def execute(self, job_id: str, ...):
+    emit_progress("fetch_job", "Loading job...")
+    emit_progress("validate", "Validating job data...")
+    emit_progress("build_state", "Building generation state...")
+    emit_progress("cv_generator", "Generating CV...")
+    emit_progress("persist", "Saving to MongoDB...")
+```
+
+**4. Streaming Endpoint Integration** (`runner_service/routes/operations.py`):
+```python
+@app.post("/operations/{job_id}/full-extraction/stream")
+async def full_extraction_stream(job_id: str):
+    def layer_cb(layer: str, status: str, message: str):
+        # Callback invoked by service's emit_progress()
+        update_layer_status(run_id, layer, status)
+        # SSE emits to frontend
+
+    service = FullExtractionService(progress_callback=layer_cb)
+    await service.execute(job_id)  # Now emits continuously
+```
+
+**emit_progress Helper**:
+```python
+def emit_progress(layer: str, message: str):
+    """Helper function used by all services"""
+    if self.progress_callback:
+        self.progress_callback(layer, "processing", message)
+```
+
+**Result**: Services now emit progress every 10-30 seconds during long operations, keeping SSE stream alive and preventing frontend timeout.
+
 ### Performance Considerations
 
 **Memory Usage**:

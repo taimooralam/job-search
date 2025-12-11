@@ -219,7 +219,7 @@ keyword = ann.get("matching_skill") or (suggested[0] if suggested else "")
 
 All 14 orchestrator tests pass.
 
-BUG 8. [INVESTIGATING] Extract JD and Research operations timeout before completing
+BUG 8. [FIXED] Extract JD and Research operations timeout before completing
 
 **Problem**: When running Extract JD or Research operations, they timeout with "Runner service timeout" error:
 ```
@@ -229,22 +229,53 @@ research-company failed: Error: Runner service timeout
 
 Extract JD gets stuck at "Pain Points" → "Fit Scoring" step.
 Research gets stuck at "Save Results" step.
+SSE console logs don't appear during operation execution.
 
-**Investigation**:
-- Frontend timeout is set to `OPERATIONS_REQUEST_TIMEOUT = 120` seconds (2 minutes)
-- Streaming timeout is 300 seconds (5 minutes)
-- The operations themselves may be taking longer than expected due to:
-  1. Multiple LLM API calls (OpenRouter/Anthropic)
-  2. External API calls (FireCrawl for research)
-  3. Complex processing that exceeds timeout
+**Root Cause**: The SSE streaming architecture was working correctly, but the services were not emitting any progress updates **during** execution. The streaming endpoint in `operations.py` had `layer_cb` callbacks that only fired:
+1. **Before** calling `service.execute()` (immediately sent)
+2. **After** `service.execute()` completes (sent only after 2-5 minutes)
 
-**Possible Causes**:
-1. LLM response latency (especially for QUALITY tier models)
-2. FireCrawl API response latency
-3. MongoDB persistence operations being slow
-4. No intermediate progress signals causing frontend to think operation stalled
+The actual LLM calls and processing inside each service (2-5 minutes) had no intermediate progress signals. The SSE stream was idle during this time, making the frontend think the operation had stalled.
 
-**Next Steps**:
-- Check if operations complete successfully when run directly (bypassing frontend)
-- Consider increasing timeouts or adding heartbeat signals
-- Add more granular layer_status updates during service execution
+**Fix Applied**:
+Added `progress_callback` parameter to all three operation services and emit real-time progress updates at each step:
+
+1. **FullExtractionService** (`src/services/full_extraction_service.py`):
+   - Added `progress_callback: callable = None` parameter
+   - Added `emit_progress()` helper function
+   - Emits progress for: `jd_processor`, `jd_extractor`, `pain_points`, `fit_scoring`, `save_results`
+
+2. **CompanyResearchService** (`src/services/company_research_service.py`):
+   - Added `progress_callback: callable = None` parameter
+   - Added `emit_progress()` helper function
+   - Emits progress for: `fetch_job`, `cache_check`, `company_research`, `role_research`, `people_research`, `save_results`
+
+3. **CVGenerationService** (`src/services/cv_generation_service.py`):
+   - Added `progress_callback: callable = None` parameter
+   - Added `emit_progress()` helper function
+   - Emits progress for: `fetch_job`, `validate`, `build_state`, `cv_generator`, `persist`
+
+4. **Streaming endpoints** (`runner_service/routes/operations.py`):
+   - Updated `full_extraction_stream` to pass `layer_cb` as `progress_callback`
+   - Updated `research_company_stream` to pass `layer_cb` as `progress_callback`
+   - Updated `generate_cv_stream` to pass `layer_cb` as `progress_callback`
+   - Removed redundant manual `layer_cb` calls that were only happening before/after execute
+
+**Architecture Insight**: The callback pattern works as follows:
+```
+Frontend → POST /stream → Runner creates run_id, starts background task
+         → GET /logs (SSE) → Stream connected
+
+Background task:
+  service.execute(progress_callback=layer_cb)
+    └── emit_progress("jd_extractor", "processing", "Extracting JD...")
+        └── layer_cb() → update_layer_status() → SSE emits to frontend
+```
+
+**Files Modified**:
+- `src/services/full_extraction_service.py` (lines 83-89, 108-178)
+- `src/services/company_research_service.py` (lines 96-102, 125-230)
+- `src/services/cv_generation_service.py` (lines 83-89, 104-224)
+- `runner_service/routes/operations.py` (lines 742-773, 822-857, 920-951)
+
+**Tests**: All 115 service-related unit tests pass. All 1598 unit tests pass.

@@ -377,6 +377,7 @@ class FullExtractionService(OperationService):
         job_id: str,
         tier: ModelTier,
         use_llm: bool = True,
+        progress_callback: callable = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -386,11 +387,19 @@ class FullExtractionService(OperationService):
             job_id: MongoDB ObjectId of the job to process
             tier: Model tier for quality/cost selection
             use_llm: Whether to use LLM for processing (default True)
+            progress_callback: Optional callback(layer_key, status, message) for real-time updates
             **kwargs: Additional arguments (ignored)
 
         Returns:
             OperationResult with combined extraction data
         """
+        # Helper to call progress callback if provided
+        def emit_progress(layer_key: str, status: str, message: str):
+            if progress_callback:
+                try:
+                    progress_callback(layer_key, status, message)
+                except Exception as e:
+                    logger.warning(f"Progress callback failed: {e}")
         run_id = self.create_run_id()
         logger.info(f"[{run_id[:16]}] Starting full-extraction for job {job_id}")
 
@@ -426,6 +435,7 @@ class FullExtractionService(OperationService):
                 layer_status = {}
 
                 # 4a. Run JD Processor: Parse into HTML sections
+                emit_progress("jd_processor", "processing", "Parsing job description")
                 logger.info(f"[{run_id[:16]}] Running JD Processor: Parsing into sections")
                 processed_jd = self._run_jd_processor(jd_text, model, use_llm)
                 section_count = len(processed_jd.get("sections", []))
@@ -434,9 +444,11 @@ class FullExtractionService(OperationService):
                     "sections": section_count,
                     "message": f"Parsed {section_count} sections"
                 }
+                emit_progress("jd_processor", "success", f"Parsed {section_count} sections")
                 logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections")
 
                 # 4b. Run JD Extractor: Extract structured intelligence
+                emit_progress("jd_extractor", "processing", "Extracting role intelligence")
                 logger.info(f"[{run_id[:16]}] Running JD Extractor: Extracting role info")
                 extracted_jd = self._run_jd_extractor(job, jd_text)
                 if extracted_jd:
@@ -448,15 +460,18 @@ class FullExtractionService(OperationService):
                         "keywords": keywords_count,
                         "message": f"Extracted role: {role_category}, {keywords_count} keywords"
                     }
+                    emit_progress("jd_extractor", "success", f"Role: {role_category}, {keywords_count} keywords")
                     logger.info(f"[{run_id[:16]}] JD Extractor complete: role={role_category}, {keywords_count} keywords")
                 else:
                     layer_status["jd_extractor"] = {
                         "status": "failed",
                         "message": "JD extraction failed - using fallback"
                     }
+                    emit_progress("jd_extractor", "failed", "Using fallback")
                     logger.warning(f"[{run_id[:16]}] JD Extractor failed - continuing without extracted data")
 
                 # 5. Run Layer 2: Pain Point Mining
+                emit_progress("pain_points", "processing", "Mining pain points")
                 logger.info(f"[{run_id[:16]}] Running Layer 2: Pain Point Mining")
                 pain_points_data = self._run_layer_2(job, jd_text)
                 pain_count = len(pain_points_data.get("pain_points", []))
@@ -466,9 +481,11 @@ class FullExtractionService(OperationService):
                     "strategic_needs": len(pain_points_data.get("strategic_needs", [])),
                     "message": f"Found {pain_count} pain points"
                 }
+                emit_progress("pain_points", "success", f"Found {pain_count} pain points")
                 logger.info(f"[{run_id[:16]}] Layer 2 complete: {pain_count} pain points")
 
                 # 6. Run Layer 4: Fit Scoring (with annotation signals)
+                emit_progress("fit_scoring", "processing", "Calculating fit score")
                 logger.info(f"[{run_id[:16]}] Running Layer 4: Fit Scoring")
                 fit_data = self._run_layer_4(job, jd_text, pain_points_data)
                 fit_score = fit_data.get("fit_score")
@@ -482,16 +499,21 @@ class FullExtractionService(OperationService):
                     "annotation_summary": annotation_signals.get("annotation_summary"),
                     "message": f"Fit score: {fit_score} ({fit_category})"
                 }
+                emit_progress("fit_scoring", "success", f"Score: {fit_score} ({fit_category})")
                 logger.info(f"[{run_id[:16]}] Layer 4 complete: score={fit_score}, category={fit_category}")
                 if annotation_signals.get("annotation_score"):
                     logger.info(f"[{run_id[:16]}] Annotation score: {annotation_signals['annotation_score']}, "
                                f"summary: {annotation_signals['annotation_summary']}")
 
                 # 7. Persist results (pass both processed_jd and extracted_jd)
+                emit_progress("save_results", "processing", "Saving to database")
                 persisted = self._persist_results(
                     job_id, processed_jd, extracted_jd, pain_points_data, fit_data
                 )
-                if not persisted:
+                if persisted:
+                    emit_progress("save_results", "success", "Results saved")
+                else:
+                    emit_progress("save_results", "failed", "Persistence failed")
                     logger.warning(f"[{run_id[:16]}] Failed to persist results")
 
                 # 8. Estimate cost (rough - 4 LLM calls now)
