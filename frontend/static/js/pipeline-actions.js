@@ -244,12 +244,20 @@ document.addEventListener('alpine:init', () => {
             this.showLayerStatusPanel(action, {}, {}, true);
 
             try {
-                // Step 1: Start the operation and get run_id
+                // Step 1: Start the operation and get run_id (with timeout to prevent infinite hang)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+                console.log(`[${action}] Sending POST to ${streamEndpoint}`);
+
                 const startResponse = await fetch(streamEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tier, ...options })
+                    body: JSON.stringify({ tier, ...options }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!startResponse.ok) {
                     const errorData = await startResponse.json().catch(() => ({}));
@@ -268,10 +276,16 @@ document.addEventListener('alpine:init', () => {
                 // Step 2: Connect to SSE stream for real-time updates
                 return new Promise((resolve) => {
                     const logStreamUrl = `/api/runner/operations/${runId}/logs`;
+                    console.log(`[${action}] Creating EventSource for: ${logStreamUrl}`);
                     const eventSource = new EventSource(logStreamUrl);
 
                     let lastLayerStatus = {};
                     let finalResult = null;
+
+                    // Log when SSE connection opens
+                    eventSource.onopen = () => {
+                        console.log(`[${action}] SSE connection opened`);
+                    };
 
                     // Handle regular log messages
                     eventSource.onmessage = (event) => {
@@ -378,7 +392,21 @@ document.addEventListener('alpine:init', () => {
 
             } catch (error) {
                 console.error(`${action} failed:`, error);
-                showToast(`${actionLabel} failed: ${error.message}`, 'error');
+
+                // Stop simulated progress to prevent misleading UI
+                if (typeof window.stopSimulatedProgress === 'function') {
+                    window.stopSimulatedProgress();
+                }
+
+                // Remove the pipeline log panel on error
+                const existingPanel = document.getElementById('pipeline-log-panel');
+                if (existingPanel) existingPanel.remove();
+
+                // Show appropriate error message
+                const errorMessage = error.name === 'AbortError'
+                    ? `${actionLabel} timed out. Runner service may be unavailable.`
+                    : `${actionLabel} failed: ${error.message}`;
+                showToast(errorMessage, 'error');
 
                 this.loading[action] = false;
                 this.lastResults[action] = {
