@@ -198,13 +198,7 @@ function stopSimulatedProgress() {
 }
 
 function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
-    // Remove existing panel if any
     const existingPanel = document.getElementById('pipeline-log-panel');
-    if (existingPanel) existingPanel.remove();
-
-    // Stop any existing simulated progress
-    stopSimulatedProgress();
-
     const layers = LAYER_CONFIGS[action] || [];
 
     // Build layer status HTML
@@ -231,7 +225,7 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
         const message = isPending && index === 0 ? 'Processing...' : (status?.message || layer.desc);
 
         return `
-            <div class="flex items-start gap-2 py-1">
+            <div class="flex items-start gap-2 py-1" data-layer-key="${layer.key}">
                 <span class="text-base flex items-center">${statusIcon}</span>
                 <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-gray-700">${layer.label}</div>
@@ -267,7 +261,7 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
 
         if (stats.length > 0) {
             summaryHtml = `
-                <div class="mt-3 pt-3 border-t border-gray-200">
+                <div id="pipeline-summary-stats" class="mt-3 pt-3 border-t border-gray-200">
                     <div class="text-xs font-medium text-gray-500 uppercase mb-2">Results</div>
                     <div class="flex flex-wrap gap-2">
                         ${stats.map(s => `<span class="text-xs bg-gray-100 px-2 py-1 rounded">${s}</span>`).join('')}
@@ -276,6 +270,36 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
             `;
         }
     }
+
+    // If panel already exists, update only the layer status + summary sections (preserve logs!)
+    if (existingPanel) {
+        const layerContainer = existingPanel.querySelector('.space-y-1');
+        if (layerContainer) {
+            layerContainer.innerHTML = layerStatusHtml;
+        }
+        // Update or insert summary stats (after the layer container)
+        const existingSummary = existingPanel.querySelector('#pipeline-summary-stats');
+        if (summaryHtml) {
+            if (existingSummary) {
+                existingSummary.outerHTML = summaryHtml;
+            } else {
+                // Insert after layer container
+                const contentArea = existingPanel.querySelector('.p-4.max-h-80');
+                if (contentArea) {
+                    contentArea.insertAdjacentHTML('beforeend', summaryHtml);
+                }
+            }
+        }
+        // Update the footer status message
+        const footer = existingPanel.querySelector('.bg-gray-50');
+        if (footer) {
+            footer.innerHTML = isPending ? 'Processing... please wait' : 'Refreshing page in a moment...';
+        }
+        return; // Don't recreate the panel
+    }
+
+    // Stop any existing simulated progress (only when creating new panel)
+    stopSimulatedProgress();
 
     // Create panel
     const panel = document.createElement('div');
@@ -324,10 +348,8 @@ function showPipelineLogPanel(action, layerStatus, data, isPending = false) {
 
     document.body.appendChild(panel);
 
-    // Start simulated progress animation if pending
-    if (isPending) {
-        startSimulatedProgress(action);
-    }
+    // NOTE: Simulated progress removed - now using real SSE/polling data only
+    // The panel starts with first layer showing as "Processing..." via isPending logic
 
     // Auto-remove after 5 seconds (only if not pending)
     if (!isPending) {
@@ -408,8 +430,15 @@ function appendLogToPipelinePanel(logText) {
     logLine.textContent = formattedText;
     terminalContent.appendChild(logLine);
 
-    // Auto-scroll to bottom
+    // Auto-expand terminal on first log (so logs are visible immediately)
     const terminal = document.getElementById('pipeline-log-terminal');
+    if (terminal && terminal.classList.contains('hidden')) {
+        terminal.classList.remove('hidden');
+        const chevron = document.getElementById('pipeline-log-terminal-chevron');
+        if (chevron) chevron.classList.add('rotate-180');
+    }
+
+    // Auto-scroll to bottom
     if (terminal) {
         terminal.scrollTop = terminal.scrollHeight;
     }
@@ -418,8 +447,7 @@ function appendLogToPipelinePanel(logText) {
     const logCount = terminalContent.children.length;
     const label = document.getElementById('pipeline-log-terminal-label');
     if (label) {
-        const isHidden = terminal?.classList.contains('hidden');
-        label.textContent = isHidden ? `Show Logs (${logCount})` : `Hide Logs (${logCount})`;
+        label.textContent = `Hide Logs (${logCount})`;
     }
 }
 
@@ -2080,6 +2108,48 @@ document.addEventListener('DOMContentLoaded', () => {
     if (runId) {
         monitorPipeline(runId);
     }
+});
+
+// ============================================================================
+// UI Refresh Event Handler (for CLI Panel integration)
+// ============================================================================
+
+/**
+ * Handle UI refresh events dispatched by the CLI panel after pipeline completion.
+ * This replaces the old page reload behavior with targeted section refresh.
+ *
+ * For now, this triggers a full page reload as a fallback until proper
+ * partial endpoints are implemented in Phase 4.
+ *
+ * Event detail: { jobId: string, sections: string[] }
+ * Expected sections: 'jd-structured', 'jd-viewer', 'pain-points', 'fit-score',
+ *                    'action-buttons', 'company-research', 'role-research',
+ *                    'cv-preview', 'outcome-tracker'
+ */
+window.addEventListener('ui:refresh-job', (event) => {
+    const { jobId, sections } = event.detail;
+    const currentJobId = getJobId();
+
+    console.log('[UI Refresh] Received refresh event:', { jobId, sections, currentJobId });
+
+    // Only refresh if we're on the same job page
+    if (jobId !== currentJobId) {
+        console.log('[UI Refresh] Job ID mismatch, skipping refresh');
+        return;
+    }
+
+    // Note: We use full page reload instead of HTMX partial swap because:
+    // 1. The page contains inline scripts with global const/let declarations
+    // 2. HTMX innerHTML swap re-executes scripts, causing redeclaration errors
+    // 3. CLI panel state is preserved via sessionStorage across reload
+    //
+    // The 2-second delay allows users to see the completion status in CLI panel
+
+    showToast('Pipeline completed! Refreshing page...', 'success');
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
 });
 
 // ============================================================================
