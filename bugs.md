@@ -176,7 +176,7 @@ The section uses consistent dark mode support and styling matching the rest of t
 
 **Tests**: Template syntax validated via Jinja2. All 1682+ unit tests pass.
 
-BUG 7. [DIAGNOSTIC LOGGING ADDED] CV Generation fails with "list index out of range" error
+BUG 7. [FIXED] CV Generation fails with "list index out of range" error
 
 **Problem**: When clicking Generate CV, the process fails with:
 ```
@@ -184,26 +184,67 @@ BUG 7. [DIAGNOSTIC LOGGING ADDED] CV Generation fails with "list index out of ra
 ❌ cv_generator: CV Gen V2 error: list index out of range
 ```
 
-**Root Cause**: Unable to pinpoint exact line without full stack trace. Searched 15+ files in layer6_v2 and found 20+ instances of `[0]` indexing - all have proper guards. Probable causes:
-1. LangChain/Pydantic structured output parsing failure
-2. Empty list from data filtering edge case
-3. Malformed MongoDB data in `extracted_jd` or `jd_annotations`
+**Root Cause**: Found by architecture-debugger agent. The bug was in `orchestrator.py:885` where:
+```python
+keyword = ann.get("matching_skill") or ann.get("suggested_keywords", [""])[0]
+```
 
-**Investigation**:
-- All obvious index accesses in layer6_v2 have proper guards (len() checks, or fallbacks)
-- Error occurs after build_state succeeds, during cv_generator execution
-- Need full traceback to identify exact file/line/function
+**The Python .get() Trap**: When `suggested_keywords` key **exists** but contains an **empty list `[]`**, the `.get()` method returns `[]` (not the default `[""]`). Then accessing `[][0]` raises `IndexError: list index out of range`.
 
-**Diagnostic Fix Applied**:
-Added enhanced traceback logging to capture the full stack trace:
-1. Added `import traceback` and `traceback.format_exc()` to orchestrator.py
-2. Added `traceback` field to error response from orchestrator
-3. Added logger.error() call in cv_generation_service.py to log full traceback
-4. Added traceback to layer_status for debugging
+This is a subtle Python gotcha: `dict.get(key, default)` only uses `default` when the key is **missing** - not when the value is empty/falsy!
 
-**Next Steps**:
-When the user runs CV generation again on the failing job, the full traceback will be logged showing the exact line causing the error. Report back with that traceback for definitive fix.
+**Additional instances found**:
+1. `orchestrator.py:899` and `901` - Same pattern for `variants` field
+2. `annotation_tracking_service.py:420` - Same pattern for keyword extraction
+
+**Fix Applied**:
+Changed the pattern from:
+```python
+ann.get("suggested_keywords", [""])[0]  # BUG: fails if key exists but value is []
+```
+To:
+```python
+suggested = ann.get("suggested_keywords") or []  # Handle both missing AND empty
+keyword = ann.get("matching_skill") or (suggested[0] if suggested else "")
+```
 
 **Files Modified**:
-- `src/layer6_v2/orchestrator.py` (added traceback capture in except block)
-- `src/services/cv_generation_service.py` (added traceback logging and layer_status)
+- `src/layer6_v2/orchestrator.py` (lines 885-887, 897-903)
+- `src/services/annotation_tracking_service.py` (lines 420-422)
+
+**Tests**: Added 3 new test cases in `TestATSValidationEdgeCases`:
+1. `test_handles_empty_suggested_keywords` - Tests empty `[]` case (the bug trigger)
+2. `test_handles_missing_suggested_keywords` - Tests missing key case
+3. `test_handles_none_annotation_values` - Tests `None` value case
+
+All 14 orchestrator tests pass.
+
+BUG 8. [INVESTIGATING] Extract JD and Research operations timeout before completing
+
+**Problem**: When running Extract JD or Research operations, they timeout with "Runner service timeout" error:
+```
+full-extraction failed: Error: Runner service timeout
+research-company failed: Error: Runner service timeout
+```
+
+Extract JD gets stuck at "Pain Points" → "Fit Scoring" step.
+Research gets stuck at "Save Results" step.
+
+**Investigation**:
+- Frontend timeout is set to `OPERATIONS_REQUEST_TIMEOUT = 120` seconds (2 minutes)
+- Streaming timeout is 300 seconds (5 minutes)
+- The operations themselves may be taking longer than expected due to:
+  1. Multiple LLM API calls (OpenRouter/Anthropic)
+  2. External API calls (FireCrawl for research)
+  3. Complex processing that exceeds timeout
+
+**Possible Causes**:
+1. LLM response latency (especially for QUALITY tier models)
+2. FireCrawl API response latency
+3. MongoDB persistence operations being slow
+4. No intermediate progress signals causing frontend to think operation stalled
+
+**Next Steps**:
+- Check if operations complete successfully when run directly (bypassing frontend)
+- Consider increasing timeouts or adding heartbeat signals
+- Add more granular layer_status updates during service execution
