@@ -48,8 +48,26 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import and register blueprints
+# Try multiple import paths to handle different run contexts (from frontend/ or project root)
+runner_bp = None
+_import_error = None
+
 try:
     from runner import runner_bp
+except ImportError as e1:
+    try:
+        from frontend.runner import runner_bp
+    except ImportError as e2:
+        # Add frontend directory to path as last resort
+        frontend_dir = os.path.dirname(os.path.abspath(__file__))
+        if frontend_dir not in sys.path:
+            sys.path.insert(0, frontend_dir)
+        try:
+            from runner import runner_bp
+        except ImportError as e3:
+            _import_error = f"Tried: runner ({e1}), frontend.runner ({e2}), sys.path runner ({e3})"
+
+if runner_bp:
     print(f"✅ Imported runner blueprint")
     app.register_blueprint(runner_bp)
     print(f"✅ Registered runner blueprint with prefix: {runner_bp.url_prefix}")
@@ -59,10 +77,10 @@ try:
     print(f"✅ App now has {len(runner_routes)} runner routes")
     for route in runner_routes:
         print(f"   - {route}")
-except Exception as e:
-    print(f"❌ Error registering runner blueprint: {e}")
-    import traceback
-    traceback.print_exc()
+else:
+    print(f"❌ Could not import runner blueprint from any path")
+    if _import_error:
+        print(f"   Import errors: {_import_error}")
 
 # Session configuration
 flask_secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -3213,6 +3231,50 @@ def save_cv_editor_state(job_id: str):
     })
 
 
+def _is_section_header(line: str) -> bool:
+    """
+    Detect if a line is a CV section header (ALL CAPS section title).
+
+    Recognizes common CV section headers like:
+    - EXECUTIVE SUMMARY
+    - PROFESSIONAL SUMMARY
+    - SKILLS & EXPERTISE
+    - PROFESSIONAL EXPERIENCE
+    - EDUCATION
+    - CERTIFICATIONS
+    - LANGUAGES
+    - KEY ACHIEVEMENTS
+    """
+    # Known section headers (exact match or contains)
+    known_headers = {
+        "EXECUTIVE SUMMARY",
+        "PROFESSIONAL SUMMARY",
+        "SKILLS & EXPERTISE",
+        "PROFESSIONAL EXPERIENCE",
+        "EXPERIENCE",
+        "EDUCATION",
+        "CERTIFICATIONS",
+        "LANGUAGES",
+        "KEY ACHIEVEMENTS",
+        "CORE COMPETENCIES",
+        "TECHNICAL SKILLS",
+        "SUMMARY",
+    }
+
+    # Check exact match
+    if line in known_headers:
+        return True
+
+    # Check if line is ALL CAPS with letters, spaces, ampersands only
+    # and at least 4 characters long (to avoid false positives)
+    if len(line) >= 4:
+        stripped = line.replace(" ", "").replace("&", "")
+        if stripped.isalpha() and stripped.isupper():
+            return True
+
+    return False
+
+
 def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
     """
     Migrate markdown CV text to TipTap editor state.
@@ -3361,6 +3423,18 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
                 }
             else:
                 current_list["content"].append(list_item)
+
+        # Check for ALL CAPS section header (EXECUTIVE SUMMARY, SKILLS & EXPERTISE, etc.)
+        # Known CV section headers that should be rendered as H2
+        elif _is_section_header(line):
+            if current_list:
+                content.append(current_list)
+                current_list = None
+            content.append({
+                "type": "heading",
+                "attrs": {"level": 2},
+                "content": parse_inline_marks(line)
+            })
 
         # Regular paragraph
         else:
