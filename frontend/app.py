@@ -3741,79 +3741,59 @@ def update_jd_annotations(job_id: str):
 @login_required
 def synthesize_persona(job_id: str):
     """
-    Synthesize persona from identity annotations using LLM.
+    Proxy persona synthesis request to the VPS runner service.
 
-    Extracts identity annotations (core_identity, strong_identity, developing)
-    and synthesizes them into a coherent persona statement.
+    Triggers PersonaBuilder on the VPS runner which has LangChain available.
 
     Returns:
         JSON with synthesized persona for preview/edit
     """
-    import asyncio
-
-    db = get_db()
-    collection = db["level-2"]
+    import requests
 
     try:
-        object_id = ObjectId(job_id)
-    except Exception:
-        return jsonify({"error": "Invalid job ID format"}), 400
+        # Forward request to runner service
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/synthesize-persona",
+            headers=get_runner_headers(),
+            timeout=30,  # 30 second timeout for persona synthesis
+        )
 
-    job = collection.find_one({"_id": object_id})
-    if not job:
-        return jsonify({"error": "Job not found"}), 404
+        if response.status_code == 200:
+            # Extract data from runner's OperationResponse format
+            result = response.json()
+            data = result.get("data", {})
 
-    jd_annotations = job.get("jd_annotations", {})
-
-    try:
-        from src.common.persona_builder import PersonaBuilder
-
-        builder = PersonaBuilder()
-
-        # Check if there are identity annotations
-        if not builder.has_identity_annotations(jd_annotations):
             return jsonify({
-                "success": True,
-                "persona": None,
-                "message": "No identity annotations found"
+                "success": result.get("success", True),
+                "persona": data.get("persona"),
+                "primary": data.get("primary"),
+                "secondary": data.get("secondary"),
+                "source_annotations": data.get("source_annotations"),
+                "message": data.get("message"),
             })
+        else:
+            # Forward error response
+            return jsonify(response.json()), response.status_code
 
-        # Run async synthesis
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            persona = loop.run_until_complete(builder.synthesize(jd_annotations))
-        finally:
-            loop.close()
-
-        if not persona:
-            return jsonify({
-                "success": True,
-                "persona": None,
-                "message": "Failed to synthesize persona"
-            })
-
+    except requests.exceptions.Timeout:
+        logger.error(f"Persona synthesis timed out for job {job_id}")
         return jsonify({
-            "success": True,
-            "persona": persona.persona_statement,
-            "primary": persona.primary_identity,
-            "secondary": persona.secondary_identities,
-            "source_annotations": persona.source_annotations
-        })
+            "success": False,
+            "error": "Persona synthesis timed out. The runner service is taking too long."
+        }), 504
 
-    except ImportError:
-        # Expected on Vercel deployment - LangChain modules not available
-        # Return success with unavailable flag for graceful frontend handling
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Cannot connect to runner service for persona synthesis")
         return jsonify({
-            "success": True,
-            "persona": None,
-            "unavailable": True,
-            "message": "Persona synthesis requires VPS deployment (LangChain not available on Vercel)"
-        })
+            "success": False,
+            "error": "Cannot connect to persona synthesis service. Please try again later."
+        }), 503
+
     except Exception as e:
+        logger.exception(f"Error proxying persona synthesis for job {job_id}")
         return jsonify({
-            "error": f"Synthesis failed: {str(e)}",
-            "persona": None
+            "success": False,
+            "error": f"Synthesis failed: {str(e)}"
         }), 500
 
 
