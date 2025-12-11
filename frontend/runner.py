@@ -21,7 +21,8 @@ runner_bp = Blueprint("runner", __name__, url_prefix="/api/runner")
 # Configuration
 RUNNER_URL = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
 RUNNER_API_SECRET = os.getenv("RUNNER_API_SECRET", "")
-REQUEST_TIMEOUT = 30  # seconds
+REQUEST_TIMEOUT = 30  # seconds for quick operations
+STREAMING_KICKOFF_TIMEOUT = 60  # seconds for starting streaming operations (job validation + init)
 
 
 def get_headers():
@@ -310,13 +311,13 @@ def research_company_stream(job_id: str):
             f"{RUNNER_URL}/api/jobs/{job_id}/research-company/stream",
             json=data,
             headers=get_headers(),
-            timeout=REQUEST_TIMEOUT,
+            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
         )
 
         return jsonify(response.json()), response.status_code
 
     except requests.exceptions.Timeout:
-        return jsonify({"error": "Runner service timeout"}), 504
+        return jsonify({"error": "Runner service timeout starting research"}), 504
     except requests.exceptions.ConnectionError:
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
@@ -337,13 +338,13 @@ def generate_cv_stream(job_id: str):
             f"{RUNNER_URL}/api/jobs/{job_id}/generate-cv/stream",
             json=data,
             headers=get_headers(),
-            timeout=REQUEST_TIMEOUT,
+            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
         )
 
         return jsonify(response.json()), response.status_code
 
     except requests.exceptions.Timeout:
-        return jsonify({"error": "Runner service timeout"}), 504
+        return jsonify({"error": "Runner service timeout starting CV generation"}), 504
     except requests.exceptions.ConnectionError:
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
@@ -364,13 +365,13 @@ def full_extraction_stream(job_id: str):
             f"{RUNNER_URL}/api/jobs/{job_id}/full-extraction/stream",
             json=data,
             headers=get_headers(),
-            timeout=REQUEST_TIMEOUT,
+            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
         )
 
         return jsonify(response.json()), response.status_code
 
     except requests.exceptions.Timeout:
-        return jsonify({"error": "Runner service timeout"}), 504
+        return jsonify({"error": "Runner service timeout starting full-extraction"}), 504
     except requests.exceptions.ConnectionError:
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
