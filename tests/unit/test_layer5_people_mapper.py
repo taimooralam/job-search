@@ -940,3 +940,97 @@ class TestPeopleMapperQualityGates:
             assert why != "Relevant person"
             assert why != "Good contact"
             assert len(why) > 20  # Should be detailed
+
+
+# ===== TESTS: skip_outreach Parameter =====
+
+class TestSkipOutreachParameter:
+    """Test skip_outreach parameter for Research button integration."""
+
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)  # FireCrawl disabled = synthetic contacts
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_skip_outreach_returns_contacts_without_messages(self, mock_llm_class, sample_job_state):
+        """skip_outreach=True returns contacts without generating outreach messages."""
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
+        mapper = PeopleMapper()
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Should have contacts
+        assert len(result["primary_contacts"]) > 0
+        assert len(result["secondary_contacts"]) >= 0
+
+        # Should NOT have generated outreach messages (LLM invoke not called for outreach)
+        # LLM should not have been invoked at all for synthetic contacts with skip_outreach
+        assert not mock_llm.invoke.called
+
+        # Contacts should have basic info but no outreach fields
+        for contact in result["primary_contacts"]:
+            assert "name" in contact
+            assert "role" in contact
+            assert "why_relevant" in contact
+            # Outreach fields should NOT be populated
+            assert "linkedin_connection_message" not in contact or contact.get("linkedin_connection_message") == ""
+            assert "email_body" not in contact or contact.get("email_body") == ""
+
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_skip_outreach_false_generates_messages(self, mock_llm_class, sample_job_state):
+        """skip_outreach=False (default) generates outreach messages."""
+        mock_llm = MagicMock()
+        outreach_response = MagicMock()
+        outreach_response.content = json.dumps({
+            "linkedin_connection_message": "Test message.\nBest. Taimoor Alam",
+            "linkedin_inmail_subject": "Following up",
+            "linkedin_inmail": "Test InMail message.",
+            "email_subject": "Interest in Senior Engineer Role Today",  # 6 words
+            "email_body": " ".join(["test word"] * 100),  # 100 words (valid: 95-205)
+            "already_applied_frame": "adding_context"
+        })
+        mock_llm.invoke.return_value = outreach_response
+        mock_llm_class.return_value = mock_llm
+
+        mapper = PeopleMapper()
+        result = mapper.map_people(sample_job_state, skip_outreach=False)
+
+        # Should have generated outreach (LLM invoked)
+        assert mock_llm.invoke.called
+
+        # At least some contacts should have outreach
+        assert len(result["primary_contacts"]) > 0
+
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_skip_outreach_agency_contacts(self, mock_llm_class, sample_job_state):
+        """skip_outreach=True works for recruitment agency contacts."""
+        # Set up agency detection
+        sample_job_state["company_research"]["company_type"] = "recruitment_agency"
+
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
+        mapper = PeopleMapper()
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Should have agency contacts
+        assert len(result["primary_contacts"]) > 0
+        # Agency has no secondary contacts
+        assert len(result["secondary_contacts"]) == 0
+
+        # LLM should not have been invoked (no outreach generation)
+        assert not mock_llm.invoke.called
+
+    @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_skip_outreach_applies_contact_limits(self, mock_llm_class, sample_job_state):
+        """skip_outreach=True still applies GAP-060 contact limits."""
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
+        mapper = PeopleMapper()
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # GAP-060: Max 5 total contacts (3 primary + 2 secondary)
+        total_contacts = len(result["primary_contacts"]) + len(result["secondary_contacts"])
+        assert total_contacts <= 5
