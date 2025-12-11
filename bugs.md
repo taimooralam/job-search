@@ -279,3 +279,37 @@ Background task:
 - `runner_service/routes/operations.py` (lines 742-773, 822-857, 920-951)
 
 **Tests**: All 115 service-related unit tests pass. All 1598 unit tests pass.
+
+BUG 9. [FIXED] Simulated progress showing fake checkmarks while operation hangs
+
+**Problem**: When clicking Extract JD or other streaming operations:
+- Pipeline Log panel appears with checkmarks (JD Processor ✅, JD Extractor ✅, Pain Points ✅)
+- Fit Scoring shows "Processing..." indefinitely
+- Network tab shows NO SSE activity
+- No actual operation is happening - checkmarks are fake
+
+**Root Cause**: The frontend's `showPipelineLogPanel()` with `isPending=true` triggers `startSimulatedProgress()` which shows timed fake checkmarks independently of actual operation status:
+- JD Processor: completes after 2s
+- JD Extractor: completes after 5s (2s + 3s)
+- Pain Points: completes after 9s (2s + 3s + 4s)
+- Fit Scoring: starts at 9s, runs for 15s
+
+This simulated progress runs even if the POST fetch to start the operation is hanging or fails. Users see "progress" that isn't real.
+
+**Fix Applied**:
+1. Added 60-second `AbortController` timeout to the POST fetch in `pipeline-actions.js`
+2. On fetch error/timeout, call `stopSimulatedProgress()` to halt fake checkmarks
+3. Remove the pipeline log panel on error
+4. Show specific error message for timeout vs other failures
+5. Added console.log debug statements for SSE connection tracing
+
+**Files Modified**:
+- `frontend/static/js/pipeline-actions.js` (lines 246-260, 278-288, 393-419)
+
+**Testing Notes**: After deploying, open browser console to see SSE debug logs:
+- `[full-extraction] Sending POST to /api/runner/operations/{jobId}/full-extraction/stream`
+- `[full-extraction] Started with run_id: xxx`
+- `[full-extraction] Creating EventSource for: /api/runner/operations/{runId}/logs`
+- `[full-extraction] SSE connection opened`
+
+If the POST hangs for 60s, you'll see an error toast: "Extract JD timed out. Runner service may be unavailable."
