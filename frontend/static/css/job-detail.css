@@ -1,0 +1,576 @@
+/**
+ * Job Detail Page Layout
+ *
+ * Responsive 3-column dashboard layout that maximizes screen real estate
+ * on large displays while gracefully collapsing to mobile.
+ *
+ * Breakpoints:
+ * - Desktop (≥1280px): 3 columns - Left sidebar (280px) + Main (fluid) + Right sidebar (320px)
+ * - Tablet (768px-1279px): 2 columns - Left sidebar (240px) + Combined main content
+ * - Mobile (<768px): Single column with reordered sections
+ */
+
+/* ============================================================================
+   CSS Custom Properties (extending theme variables)
+   ============================================================================ */
+
+:root {
+  --job-detail-gap: 1.5rem;
+  --job-detail-sidebar-left: 280px;
+  --job-detail-sidebar-right: 320px;
+  --job-detail-max-width: 1600px;
+  --job-detail-header-height: 4rem;
+  --job-detail-compact-header-height: 3.5rem;
+}
+
+/* ============================================================================
+   Main Grid Layout
+   ============================================================================ */
+
+.job-detail-page {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--job-detail-gap);
+  max-width: 100%;
+  padding: 1rem;
+  padding-top: 0;
+  min-height: calc(100vh - 44px); /* Account for CLI panel */
+}
+
+/* Desktop: 3-column layout */
+@media (min-width: 1280px) {
+  .job-detail-page {
+    grid-template-columns: var(--job-detail-sidebar-left) 1fr var(--job-detail-sidebar-right);
+    max-width: var(--job-detail-max-width);
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    padding-top: 0;
+  }
+}
+
+/* Tablet: 2-column layout (left sidebar + combined main) */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .job-detail-page {
+    grid-template-columns: 240px 1fr;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    padding-top: 0;
+  }
+}
+
+/* ============================================================================
+   Grid Areas
+   ============================================================================ */
+
+/* Header spans full width on all breakpoints */
+.job-detail-header {
+  grid-column: 1 / -1;
+}
+
+/* Footer (danger zone) spans full width */
+.job-detail-footer {
+  grid-column: 1 / -1;
+}
+
+/* Column ordering */
+.job-detail-left-sidebar {
+  order: 1;
+}
+
+.job-detail-main {
+  order: 2;
+}
+
+.job-detail-right-sidebar {
+  order: 3;
+}
+
+/* Mobile: Reorder sections for better UX */
+@media (max-width: 767px) {
+  .job-detail-left-sidebar {
+    order: 2;
+  }
+
+  .job-detail-main {
+    order: 3;
+  }
+
+  .job-detail-right-sidebar {
+    order: 1; /* Fit score first on mobile */
+  }
+}
+
+/* Tablet: Hide right sidebar - content is duplicated in main area */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .job-detail-right-sidebar {
+    display: none;
+  }
+
+  /* Show tablet-specific combined sections */
+  .tablet-combined-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Desktop: Show right sidebar, hide tablet-combined sections */
+@media (min-width: 1280px) {
+  .tablet-combined-section {
+    display: none;
+  }
+}
+
+/* Mobile: Show right sidebar (reordered), hide tablet sections */
+@media (max-width: 767px) {
+  .tablet-combined-section {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   Sticky Sidebars (Desktop & Tablet)
+   ============================================================================ */
+
+@media (min-width: 768px) {
+  .job-detail-left-sidebar {
+    position: sticky;
+    top: var(--job-detail-compact-header-height);
+    align-self: start;
+    max-height: calc(100vh - var(--job-detail-compact-header-height) - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-border, #e5e7eb) transparent;
+  }
+
+  .job-detail-right-sidebar {
+    position: sticky;
+    top: var(--job-detail-compact-header-height);
+    align-self: start;
+    max-height: calc(100vh - var(--job-detail-compact-header-height) - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-border, #e5e7eb) transparent;
+  }
+
+  /* Custom scrollbar for WebKit browsers */
+  .job-detail-left-sidebar::-webkit-scrollbar,
+  .job-detail-right-sidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .job-detail-left-sidebar::-webkit-scrollbar-track,
+  .job-detail-right-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .job-detail-left-sidebar::-webkit-scrollbar-thumb,
+  .job-detail-right-sidebar::-webkit-scrollbar-thumb {
+    background: var(--theme-border, #e5e7eb);
+    border-radius: 2px;
+  }
+
+  .job-detail-left-sidebar::-webkit-scrollbar-thumb:hover,
+  .job-detail-right-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-text-secondary, #9ca3af);
+  }
+}
+
+/* ============================================================================
+   Compact Sticky Header
+   ============================================================================ */
+
+.job-detail-header-wrapper {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--theme-bg-primary, #ffffff);
+  padding-top: 1rem;
+}
+
+/* Full header (visible at top) */
+.job-detail-header-full {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Compact header (visible when scrolled) */
+.job-detail-header-compact {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--job-detail-compact-header-height);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  background: var(--theme-bg-primary, #ffffff);
+  border-bottom: 1px solid var(--theme-border, #e5e7eb);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 60;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* When scrolled - show compact header */
+.job-detail-header-wrapper.scrolled .job-detail-header-compact {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Compact header content */
+.job-detail-header-compact-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0; /* Allow truncation */
+  flex: 1;
+}
+
+.job-detail-header-compact-title {
+  font-weight: 600;
+  color: var(--theme-text-primary, #111827);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+
+.job-detail-header-compact-company {
+  color: var(--theme-text-secondary, #6b7280);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.job-detail-header-compact-score {
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Adjust main content when compact header is visible */
+.job-detail-header-wrapper.scrolled ~ .job-detail-left-sidebar,
+.job-detail-header-wrapper.scrolled ~ .job-detail-main,
+.job-detail-header-wrapper.scrolled ~ .job-detail-right-sidebar {
+  /* Content already accounts for sticky header via top offset */
+}
+
+/* ============================================================================
+   Card Component
+   ============================================================================ */
+
+.job-detail-card {
+  background: var(--theme-bg-secondary, #f9fafb);
+  border: 1px solid var(--theme-border, #e5e7eb);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.job-detail-card-highlight {
+  border-left: 4px solid var(--color-primary-500, #6366f1);
+}
+
+.job-detail-card-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--theme-text-secondary, #6b7280);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.job-detail-card-title svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  opacity: 0.7;
+}
+
+/* Sidebar card specifics - slightly tighter padding */
+.job-detail-left-sidebar .job-detail-card,
+.job-detail-right-sidebar .job-detail-card {
+  padding: 0.875rem;
+}
+
+/* ============================================================================
+   Section Spacing
+   ============================================================================ */
+
+.job-detail-left-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.job-detail-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.job-detail-right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ============================================================================
+   Mobile Optimizations
+   ============================================================================ */
+
+@media (max-width: 767px) {
+  .job-detail-page {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+
+  .job-detail-card {
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  /* Sticky pipeline actions on mobile */
+  .job-detail-pipeline-actions-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--theme-bg-primary, #ffffff);
+    padding: 0.75rem;
+    margin: -0.75rem -0.75rem 0.75rem -0.75rem;
+    border-bottom: 1px solid var(--theme-border, #e5e7eb);
+  }
+
+  /* Compact header always visible on mobile */
+  .job-detail-header-wrapper {
+    position: relative;
+    padding-top: 0.5rem;
+  }
+
+  .job-detail-header-compact {
+    display: none; /* Don't use compact header on mobile */
+  }
+
+  .job-detail-header-full {
+    /* Always visible on mobile */
+  }
+
+  /* Make header more compact on mobile */
+  .job-detail-header-full h1 {
+    font-size: 1.125rem;
+  }
+
+  /* Touch-friendly button sizes */
+  .job-detail-left-sidebar button,
+  .job-detail-left-sidebar a.btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ============================================================================
+   Back Link
+   ============================================================================ */
+
+.job-detail-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-primary-600, #4f46e5);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  transition: color 0.15s ease;
+}
+
+.job-detail-back-link:hover {
+  color: var(--color-primary-700, #4338ca);
+}
+
+.job-detail-back-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ============================================================================
+   Full Header Styling
+   ============================================================================ */
+
+.job-detail-header-full {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.job-detail-header-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.job-detail-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.job-detail-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.job-detail-header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .job-detail-header-title {
+    font-size: 1.5rem;
+  }
+}
+
+.job-detail-header-score {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.job-detail-header-company {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9375rem;
+  margin-top: 0.25rem;
+}
+
+.job-detail-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.job-detail-header-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.job-detail-header-actions {
+  flex-shrink: 0;
+}
+
+.job-detail-view-posting-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #ffffff;
+  color: #4f46e5;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.job-detail-view-posting-btn:hover {
+  background: #eef2ff;
+  transform: translateY(-1px);
+}
+
+.job-detail-view-posting-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ============================================================================
+   Danger Zone Footer
+   ============================================================================ */
+
+.job-detail-danger-zone {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 0.5rem;
+}
+
+.job-detail-danger-zone-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #991b1b;
+  margin-bottom: 0.75rem;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+.job-detail-divider {
+  height: 1px;
+  background: var(--theme-border, #e5e7eb);
+  margin: 0.75rem 0;
+}
+
+/* Hide on specific breakpoints */
+.hide-on-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-on-mobile {
+    display: block;
+  }
+
+  .hide-on-tablet-up {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hide-on-desktop {
+    display: none;
+  }
+
+  .show-on-desktop {
+    display: block;
+  }
+}
+
+/* ============================================================================
+   Animation & Transitions
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .job-detail-header-wrapper,
+  .job-detail-header-full,
+  .job-detail-header-compact,
+  .job-detail-card {
+    transition: none;
+  }
+}
