@@ -2028,6 +2028,324 @@ function deleteAnnotationFromPopover() {
 // Export to window for HTML onclick handlers
 window.deleteAnnotationFromPopover = deleteAnnotationFromPopover;
 
+// ============================================================================
+// Strength Suggestions Feature
+// ============================================================================
+
+/**
+ * Generate strength suggestions via LLM analysis
+ * This identifies skills the candidate HAS that match the JD.
+ */
+async function generateStrengthSuggestions() {
+    if (!annotationManager) {
+        console.error('Annotation manager not initialized');
+        return;
+    }
+
+    const btn = document.getElementById('suggest-strengths-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Analyzing...
+        `;
+    }
+
+    try {
+        const response = await fetch(
+            `/api/jobs/${annotationManager.jobId}/suggest-strengths`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    include_identity: true,
+                    include_passion: true,
+                    include_defaults: true,
+                    tier: 'balanced'
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.unavailable) {
+            showToast('Strength suggestion requires the runner service.', 'info');
+            return;
+        }
+
+        if (!data.success) {
+            showToast(data.error || 'Failed to generate suggestions', 'error');
+            return;
+        }
+
+        if (data.suggestions && data.suggestions.length > 0) {
+            showStrengthSuggestionsModal(data.suggestions);
+        } else {
+            showToast('No strength matches found. Your skills may already be annotated, or try manual annotation.', 'info');
+        }
+    } catch (error) {
+        console.error('Error generating strength suggestions:', error);
+        showToast('Failed to generate suggestions', 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Strengths
+            `;
+        }
+    }
+}
+
+/**
+ * Display strength suggestions in a modal for review and acceptance
+ */
+function showStrengthSuggestionsModal(suggestions) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('strength-suggestions-modal');
+    if (existingModal) existingModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'strength-suggestions-modal';
+    modal.className = 'fixed inset-0 z-50 overflow-y-auto';
+    modal.innerHTML = `
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeStrengthSuggestionsModal()"></div>
+
+            <div class="relative inline-block w-full max-w-3xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <span class="text-green-600">&#10003;</span> Strength Suggestions (${suggestions.length})
+                    </h3>
+                    <button onclick="closeStrengthSuggestionsModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="text-sm text-gray-600 mb-4">
+                    These are skills you have that match the job description. Accept to create annotations.
+                </p>
+
+                <div class="space-y-3 max-h-96 overflow-y-auto" id="suggestions-list">
+                    ${suggestions.map((s, i) => renderSuggestionCard(s, i)).join('')}
+                </div>
+
+                <div class="mt-6 flex justify-between items-center">
+                    <span class="text-sm text-gray-500" id="accepted-count">0 accepted</span>
+                    <div class="space-x-3">
+                        <button onclick="closeStrengthSuggestionsModal()"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                            Close
+                        </button>
+                        <button onclick="acceptAllStrengthSuggestions()"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
+                            Accept All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Store suggestions for later access
+    window._strengthSuggestions = suggestions;
+    window._acceptedSuggestions = new Set();
+}
+
+/**
+ * Render a single suggestion card
+ */
+function renderSuggestionCard(suggestion, index) {
+    const relevanceColors = {
+        'core_strength': 'bg-green-100 text-green-800',
+        'extremely_relevant': 'bg-teal-100 text-teal-800',
+        'relevant': 'bg-blue-100 text-blue-800',
+        'tangential': 'bg-yellow-100 text-yellow-800',
+    };
+
+    const relevanceColor = relevanceColors[suggestion.suggested_relevance] || 'bg-gray-100 text-gray-800';
+    const confidencePercent = Math.round(suggestion.confidence * 100);
+
+    return `
+        <div class="p-4 border rounded-lg hover:border-green-300 transition-colors" id="suggestion-card-${index}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 text-xs font-medium rounded ${relevanceColor}">
+                            ${(suggestion.suggested_relevance || '').replace('_', ' ')}
+                        </span>
+                        <span class="text-xs text-gray-500">${confidencePercent}% confidence</span>
+                        ${suggestion.source === 'hardcoded_default' ?
+                            '<span class="text-xs text-purple-600">Quick match</span>' :
+                            '<span class="text-xs text-blue-600">AI match</span>'}
+                    </div>
+                    <p class="text-sm text-gray-800 font-medium mb-1">${escapeHtmlForSuggestions(suggestion.matching_skill)}</p>
+                    <p class="text-xs text-gray-600 line-clamp-2">"${escapeHtmlForSuggestions(suggestion.target_text.substring(0, 150))}${suggestion.target_text.length > 150 ? '...' : ''}"</p>
+                    ${suggestion.suggested_keywords?.length > 0 ?
+                        `<div class="flex flex-wrap gap-1 mt-2">
+                            ${suggestion.suggested_keywords.slice(0, 4).map(kw =>
+                                `<span class="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">${escapeHtmlForSuggestions(kw)}</span>`
+                            ).join('')}
+                        </div>` : ''}
+                </div>
+                <div class="flex gap-2 ml-4">
+                    <button onclick="acceptStrengthSuggestion(${index})"
+                            class="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                            title="Accept">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                    <button onclick="skipStrengthSuggestion(${index})"
+                            class="p-2 text-gray-400 hover:bg-gray-50 rounded-md transition-colors"
+                            title="Skip">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Accept a single strength suggestion and create annotation
+ */
+function acceptStrengthSuggestion(index) {
+    const suggestion = window._strengthSuggestions[index];
+    if (!suggestion || !annotationManager) return;
+
+    // Create annotation from suggestion
+    const annotation = {
+        id: annotationManager.generateId(),
+        target: {
+            text: suggestion.target_text,
+            section: suggestion.target_section || 'unknown',
+            index: 0,
+            char_start: 0,
+            char_end: suggestion.target_text.length
+        },
+        annotation_type: 'skill_match',
+        relevance: suggestion.suggested_relevance,
+        requirement_type: suggestion.suggested_requirement || 'neutral',
+        passion: suggestion.suggested_passion || 'neutral',
+        identity: suggestion.suggested_identity || 'peripheral',
+        matching_skill: suggestion.matching_skill,
+        suggested_keywords: suggestion.suggested_keywords || [],
+        ats_variants: [],
+        reframe_note: suggestion.reframe_note || '',
+        has_reframe: !!suggestion.reframe_note,
+        star_ids: [],
+        evidence_summary: suggestion.evidence_summary || '',
+        is_active: true,
+        priority: 3,
+        confidence: suggestion.confidence,
+        created_by: 'pipeline_suggestion',
+        status: 'needs_review',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+
+    annotationManager.annotations.push(annotation);
+    window._acceptedSuggestions.add(index);
+
+    // Update UI
+    const card = document.getElementById(`suggestion-card-${index}`);
+    if (card) {
+        card.classList.add('bg-green-50', 'border-green-300');
+        const acceptBtn = card.querySelector('button[title="Accept"]');
+        if (acceptBtn) {
+            acceptBtn.disabled = true;
+            acceptBtn.classList.add('opacity-50');
+        }
+    }
+
+    // Update count
+    const countEl = document.getElementById('accepted-count');
+    if (countEl) {
+        countEl.textContent = `${window._acceptedSuggestions.size} accepted`;
+    }
+
+    showToast(`Added: ${suggestion.matching_skill}`, 'success');
+}
+
+/**
+ * Skip a suggestion (just hide the card)
+ */
+function skipStrengthSuggestion(index) {
+    const card = document.getElementById(`suggestion-card-${index}`);
+    if (card) {
+        card.style.display = 'none';
+    }
+}
+
+/**
+ * Accept all suggestions at once
+ */
+function acceptAllStrengthSuggestions() {
+    if (!window._strengthSuggestions) return;
+
+    window._strengthSuggestions.forEach((_, index) => {
+        if (!window._acceptedSuggestions.has(index)) {
+            acceptStrengthSuggestion(index);
+        }
+    });
+
+    // Close modal and save
+    closeStrengthSuggestionsModal();
+}
+
+/**
+ * Close the suggestions modal and save annotations
+ */
+function closeStrengthSuggestionsModal() {
+    const modal = document.getElementById('strength-suggestions-modal');
+    if (modal) {
+        modal.remove();
+    }
+
+    // Save and refresh if any suggestions were accepted
+    if (window._acceptedSuggestions && window._acceptedSuggestions.size > 0) {
+        annotationManager.renderAnnotations();
+        annotationManager.applyHighlights();
+        annotationManager.updateStats();
+        annotationManager.scheduleSave();
+        showToast(`${window._acceptedSuggestions.size} annotations added`, 'success');
+    }
+
+    // Cleanup
+    window._strengthSuggestions = null;
+    window._acceptedSuggestions = null;
+}
+
+/**
+ * Helper to escape HTML for suggestion rendering
+ */
+function escapeHtmlForSuggestions(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Export strength suggestion functions to window
+window.generateStrengthSuggestions = generateStrengthSuggestions;
+window.showStrengthSuggestionsModal = showStrengthSuggestionsModal;
+window.acceptStrengthSuggestion = acceptStrengthSuggestion;
+window.skipStrengthSuggestion = skipStrengthSuggestion;
+window.acceptAllStrengthSuggestions = acceptAllStrengthSuggestions;
+window.closeStrengthSuggestionsModal = closeStrengthSuggestionsModal;
+
 /**
  * Filter annotations
  */

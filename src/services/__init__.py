@@ -11,6 +11,10 @@ from src.services.outreach_service import (
     OutreachGenerationService,
     generate_outreach,
 )
+from src.services.strength_suggestion_service import (
+    StrengthSuggestionService,
+    StrengthSuggestion,
+)
 
 __all__ = [
     # Base classes
@@ -22,4 +26,6 @@ __all__ = [
     "structure_jd",
     "OutreachGenerationService",
     "generate_outreach",
+    "StrengthSuggestionService",
+    "StrengthSuggestion",
 ]
