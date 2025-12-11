@@ -196,29 +196,94 @@ class CVEditor {
 
     /**
      * Get default CV content structure
+     *
+     * Uses new Hybrid Executive Summary format:
+     * - Headline: "[EXACT TITLE] | [X]+ Years Technology Leadership"
+     * - Tagline: Persona-driven hook (15-25 words)
+     * - Key Achievements: 5-6 quantified bullets
+     * - Core Competencies: 6-8 ATS keywords
      */
     getDefaultContent() {
         return {
             type: 'doc',
             content: [
+                // Name
                 {
                     type: 'heading',
                     attrs: { level: 1 },
                     content: [{ type: 'text', text: 'TAIMOOR ALAM' }]
                 },
-                {
-                    type: 'heading',
-                    attrs: { level: 3 },
-                    content: [{ type: 'text', text: 'Job Title · Engineering Leader' }]
-                },
+                // Contact Info
                 {
                     type: 'paragraph',
-                    content: [{ type: 'text', text: 'your.email@example.com · +49 123 456 7890 · linkedin.com/in/yourprofile' }]
+                    content: [{ type: 'text', text: 'your.email@example.com | +49 123 456 7890 | linkedin.com/in/yourprofile | Munich, DE' }]
                 },
+                // Executive Summary Section
                 {
                     type: 'heading',
                     attrs: { level: 2 },
-                    content: [{ type: 'text', text: 'EXPERIENCE' }]
+                    content: [{ type: 'text', text: 'EXECUTIVE SUMMARY' }]
+                },
+                // Headline (title + years)
+                {
+                    type: 'paragraph',
+                    content: [
+                        { type: 'text', text: 'Engineering Leader', marks: [{ type: 'bold' }] },
+                        { type: 'text', text: ' | 12+ Years Technology Leadership' }
+                    ]
+                },
+                // Tagline (persona-driven hook)
+                {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Technology leader who thrives on building infrastructure that scales and teams that excel.' }]
+                },
+                // Key Achievements (bullet list)
+                {
+                    type: 'bulletList',
+                    content: [
+                        {
+                            type: 'listItem',
+                            content: [{
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: 'Scaled engineering organizations from 5 to 40+ engineers' }]
+                            }]
+                        },
+                        {
+                            type: 'listItem',
+                            content: [{
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: 'Reduced deployment time by 75%, MTTR by 60%' }]
+                            }]
+                        },
+                        {
+                            type: 'listItem',
+                            content: [{
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: 'Delivered $2M annual savings through cloud optimization' }]
+                            }]
+                        },
+                        {
+                            type: 'listItem',
+                            content: [{
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: 'Built culture that reduced attrition from 25% to 8%' }]
+                            }]
+                        }
+                    ]
+                },
+                // Core Competencies (inline format)
+                {
+                    type: 'paragraph',
+                    content: [
+                        { type: 'text', text: 'Core: ', marks: [{ type: 'bold' }] },
+                        { type: 'text', text: 'AWS | Kubernetes | Platform Engineering | Team Building | CI/CD | Microservices' }
+                    ]
+                },
+                // Experience Section
+                {
+                    type: 'heading',
+                    attrs: { level: 2 },
+                    content: [{ type: 'text', text: 'PROFESSIONAL EXPERIENCE' }]
                 },
                 {
                     type: 'bulletList',
