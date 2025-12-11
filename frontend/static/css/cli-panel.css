@@ -1,0 +1,467 @@
+/**
+ * CLI Panel Styles
+ * AWS/GCP Console-style persistent panel at bottom of page
+ *
+ * Uses CSS custom properties from base.html design system for theme support
+ */
+
+/* ============================================================================
+   Panel Container
+   ============================================================================ */
+
+.cli-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-fixed, 1030);
+    background-color: #1e293b; /* slate-800 */
+    border-top: 1px solid #334155; /* slate-700 */
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    transition: max-height 0.3s ease-out;
+    max-height: 44px; /* Collapsed height */
+    overflow: hidden;
+}
+
+.cli-panel--expanded {
+    max-height: 400px;
+}
+
+/* Ensure panel doesn't overlap with main content */
+body {
+    padding-bottom: 44px; /* Match collapsed panel height */
+}
+
+/* ============================================================================
+   Toggle Bar
+   ============================================================================ */
+
+.cli-toggle-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem; /* 10px 16px */
+    background-color: #1e293b; /* slate-800 */
+    border-bottom: 1px solid #334155; /* slate-700 */
+    cursor: pointer;
+    user-select: none;
+    height: 44px;
+    box-sizing: border-box;
+}
+
+.cli-toggle-bar:hover {
+    background-color: #334155; /* slate-700 */
+}
+
+.cli-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cli-toggle-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cli-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #94a3b8; /* slate-400 */
+}
+
+.cli-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #e2e8f0; /* slate-200 */
+}
+
+.cli-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    background-color: #475569; /* slate-600 */
+    color: #cbd5e1; /* slate-300 */
+    border-radius: 9999px;
+}
+
+.cli-running-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: #34d399; /* emerald-400 */
+    margin-left: 0.5rem;
+}
+
+.cli-running-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: #34d399; /* emerald-400 */
+    border-radius: 50%;
+    animation: cli-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cli-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.cli-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: #94a3b8; /* slate-400 */
+    transition: transform 0.2s ease;
+}
+
+.cli-chevron.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* ============================================================================
+   Expanded Content
+   ============================================================================ */
+
+.cli-content {
+    display: flex;
+    flex-direction: column;
+    height: calc(400px - 44px); /* Total height minus toggle bar */
+}
+
+/* ============================================================================
+   Tab Bar
+   ============================================================================ */
+
+.cli-tabs {
+    display: flex;
+    align-items: center;
+    background-color: #0f172a; /* slate-900 */
+    border-bottom: 1px solid #334155; /* slate-700 */
+    padding: 0 0.5rem;
+    min-height: 36px;
+}
+
+.cli-tabs-scroll {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    flex: 1;
+    gap: 0.25rem;
+}
+
+.cli-tabs-scroll::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.cli-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    color: #94a3b8; /* slate-400 */
+    background-color: transparent;
+    border: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.15s ease;
+    max-width: 180px;
+}
+
+.cli-tab:hover {
+    background-color: #1e293b; /* slate-800 */
+    color: #e2e8f0; /* slate-200 */
+}
+
+.cli-tab--active {
+    background-color: #1e293b; /* slate-800 */
+    color: #e2e8f0; /* slate-200 */
+    border-bottom: 2px solid #6366f1; /* indigo-500 */
+}
+
+.cli-tab-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    width: 1rem;
+}
+
+.cli-tab-status--running {
+    color: #60a5fa; /* blue-400 */
+}
+
+.cli-tab-status--success {
+    color: #34d399; /* emerald-400 */
+}
+
+.cli-tab-status--error {
+    color: #f87171; /* red-400 */
+}
+
+.cli-tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.cli-tab-close {
+    display: none;
+    padding: 0.125rem;
+    border: none;
+    background: transparent;
+    color: #64748b; /* slate-500 */
+    cursor: pointer;
+    border-radius: 0.25rem;
+}
+
+.cli-tab:hover .cli-tab-close {
+    display: block;
+}
+
+.cli-tab-close:hover {
+    background-color: #475569; /* slate-600 */
+    color: #e2e8f0; /* slate-200 */
+}
+
+.cli-tabs-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #334155; /* slate-700 */
+}
+
+.cli-action-btn {
+    padding: 0.375rem;
+    border: none;
+    background: transparent;
+    color: #64748b; /* slate-500 */
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.cli-action-btn:hover {
+    background-color: #334155; /* slate-700 */
+    color: #e2e8f0; /* slate-200 */
+}
+
+/* ============================================================================
+   Log Output Area
+   ============================================================================ */
+
+.cli-logs {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #0f172a; /* slate-900 */
+    padding: 0.75rem 1rem;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+/* Custom scrollbar for logs */
+.cli-logs::-webkit-scrollbar {
+    width: 8px;
+}
+
+.cli-logs::-webkit-scrollbar-track {
+    background: #1e293b; /* slate-800 */
+}
+
+.cli-logs::-webkit-scrollbar-thumb {
+    background: #475569; /* slate-600 */
+    border-radius: 4px;
+}
+
+.cli-logs::-webkit-scrollbar-thumb:hover {
+    background: #64748b; /* slate-500 */
+}
+
+.cli-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #64748b; /* slate-500 */
+    text-align: center;
+}
+
+.cli-log-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.cli-log-line {
+    display: flex;
+    color: #22d3ee; /* cyan-400 - default info color */
+    padding: 0.125rem 0;
+    word-break: break-word;
+}
+
+.cli-log-prefix {
+    color: #64748b; /* slate-500 */
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.cli-log--error {
+    color: #f87171; /* red-400 */
+}
+
+.cli-log--warning {
+    color: #fbbf24; /* amber-400 */
+}
+
+.cli-log--success {
+    color: #34d399; /* emerald-400 */
+}
+
+.cli-log--debug {
+    color: #64748b; /* slate-500 */
+}
+
+/* ============================================================================
+   Layer Status Footer
+   ============================================================================ */
+
+.cli-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background-color: #1e293b; /* slate-800 */
+    border-top: 1px solid #334155; /* slate-700 */
+    min-height: 36px;
+}
+
+.cli-layers {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.cli-layers-label {
+    font-size: 0.75rem;
+    color: #94a3b8; /* slate-400 */
+    font-weight: 500;
+}
+
+.cli-layer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.375rem;
+    background-color: #334155; /* slate-700 */
+    border-radius: 0.25rem;
+    color: #94a3b8; /* slate-400 */
+}
+
+.cli-layer--pending {
+    color: #64748b; /* slate-500 */
+}
+
+.cli-layer--running {
+    color: #60a5fa; /* blue-400 */
+    background-color: rgba(96, 165, 250, 0.15);
+}
+
+.cli-layer--complete {
+    color: #34d399; /* emerald-400 */
+    background-color: rgba(52, 211, 153, 0.15);
+}
+
+.cli-layer--error {
+    color: #f87171; /* red-400 */
+    background-color: rgba(248, 113, 113, 0.15);
+}
+
+.cli-layer-name {
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.cli-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cli-action-badge {
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.5rem;
+    background-color: #4f46e5; /* indigo-600 */
+    color: #e0e7ff; /* indigo-100 */
+    border-radius: 0.25rem;
+    text-transform: capitalize;
+}
+
+/* ============================================================================
+   Responsive
+   ============================================================================ */
+
+@media (max-width: 640px) {
+    .cli-panel--expanded {
+        max-height: 50vh; /* Use viewport height on mobile */
+    }
+
+    .cli-toggle-bar {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .cli-title {
+        font-size: 0.8125rem;
+    }
+
+    .cli-tab {
+        padding: 0.25rem 0.5rem;
+        max-width: 120px;
+    }
+
+    .cli-tab-title {
+        max-width: 80px;
+    }
+
+    .cli-logs {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .cli-footer {
+        flex-wrap: wrap;
+        gap: 0.375rem;
+    }
+
+    .cli-layers {
+        width: 100%;
+    }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .cli-panel,
+    .cli-chevron,
+    .cli-running-dot,
+    .cli-tab,
+    .cli-action-btn {
+        transition: none;
+    }
+
+    .cli-running-dot {
+        animation: none;
+    }
+}
+
+/* Hide panel contents when collapsed but keep toggle bar visible */
+[x-cloak] {
+    display: none !important;
+}
