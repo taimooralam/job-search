@@ -845,19 +845,26 @@ class AnnotationManager {
         const colors = RELEVANCE_COLORS[annotation.relevance] || RELEVANCE_COLORS.relevant;
         const reqColors = REQUIREMENT_COLORS[annotation.requirement_type] || REQUIREMENT_COLORS.neutral;
 
+        // Passion badge (only show for non-neutral)
+        const passionBadge = this.getPassionBadge(annotation.passion);
+        // Identity badge (only show for non-peripheral)
+        const identityBadge = this.getIdentityBadge(annotation.identity);
+
         return `
             <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''}"
                  data-annotation-id="${annotation.id}"
                  onclick="annotationManager.selectAnnotation('${annotation.id}')">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
+                        <div class="flex items-center flex-wrap gap-1 mb-1">
                             <span class="px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}">
                                 ${this.formatRelevance(annotation.relevance)}
                             </span>
                             <span class="px-1.5 py-0.5 rounded text-xs font-medium ${reqColors.bg} ${reqColors.text}">
                                 ${this.formatRequirement(annotation.requirement_type)}
                             </span>
+                            ${passionBadge}
+                            ${identityBadge}
                         </div>
                         <p class="text-sm text-gray-800 line-clamp-2">${annotation.target?.text || ''}</p>
                         ${annotation.reframe_note ? `<p class="text-xs text-gray-500 mt-1 italic line-clamp-1">${annotation.reframe_note}</p>` : ''}
@@ -881,6 +888,32 @@ class AnnotationManager {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Get passion badge HTML (only for notable passions)
+     */
+    getPassionBadge(passion) {
+        const badges = {
+            love_it: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-pink-100 text-pink-700" title="Love it">🔥</span>',
+            enjoy: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-600" title="Enjoy">💜</span>',
+            avoid: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-stone-100 text-stone-600" title="Avoid">🚫</span>',
+            tolerate: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-600" title="Tolerate">😐</span>'
+        };
+        return badges[passion] || '';
+    }
+
+    /**
+     * Get identity badge HTML (only for notable identities)
+     */
+    getIdentityBadge(identity) {
+        const badges = {
+            core_identity: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700" title="Core Identity">⭐</span>',
+            strong_identity: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-violet-50 text-violet-600" title="Strong Identity">💪</span>',
+            developing: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-sky-50 text-sky-600" title="Developing">📈</span>',
+            not_identity: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600" title="Not Me">✗</span>'
+        };
+        return badges[identity] || '';
     }
 
     /**
