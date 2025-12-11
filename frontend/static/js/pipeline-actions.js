@@ -238,10 +238,21 @@ document.addEventListener('alpine:init', () => {
             // Show starting toast
             const actionLabel = PIPELINE_CONFIG.labels[action] || action;
             const tierInfo = this.getTierInfo(tier);
-            showToast(`Starting ${actionLabel} (${tierInfo.label}) with real-time progress...`, 'info');
+            const jobTitle = options.jobTitle || 'Unknown Job';
+            showToast(`Starting ${actionLabel} (${tierInfo.label})...`, 'info');
 
-            // Show pipeline log panel immediately with pending states
-            this.showLayerStatusPanel(action, {}, {}, true);
+            // Generate a unique run ID for CLI tracking
+            const cliRunId = `run-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // Dispatch CLI start event (replaces old showLayerStatusPanel)
+            window.dispatchEvent(new CustomEvent('cli:start-run', {
+                detail: {
+                    runId: cliRunId,
+                    jobId,
+                    jobTitle,
+                    action: action.replace('-', '_')
+                }
+            }));
 
             try {
                 // Step 1: Start the operation and get run_id (with timeout to prevent infinite hang)
@@ -277,23 +288,38 @@ document.addEventListener('alpine:init', () => {
                 return new Promise((resolve) => {
                     const logStreamUrl = `/api/runner/operations/${runId}/logs`;
                     console.log(`[${action}] Creating EventSource for: ${logStreamUrl}`);
-                    const eventSource = new EventSource(logStreamUrl);
+
+                    let eventSource;
+                    try {
+                        eventSource = new EventSource(logStreamUrl);
+                        console.log(`[${action}] EventSource created, readyState: ${eventSource.readyState}`);
+                    } catch (e) {
+                        console.error(`[${action}] Failed to create EventSource:`, e);
+                        // Fall back to polling immediately
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId);
+                        return;
+                    }
 
                     let lastLayerStatus = {};
                     let finalResult = null;
 
                     // Log when SSE connection opens
                     eventSource.onopen = () => {
-                        console.log(`[${action}] SSE connection opened`);
+                        console.log(`[${action}] SSE connection opened, readyState: ${eventSource.readyState}`);
                     };
 
                     // Handle regular log messages
                     eventSource.onmessage = (event) => {
                         console.log(`[${action}] Log: ${event.data}`);
-                        // Append log to the pipeline log panel's terminal section
-                        if (typeof window.appendLogToPipelinePanel === 'function') {
-                            window.appendLogToPipelinePanel(event.data);
-                        }
+                        // Dispatch CLI log event
+                        const logType = window.cliDetectLogType ? window.cliDetectLogType(event.data) : 'info';
+                        window.dispatchEvent(new CustomEvent('cli:log', {
+                            detail: {
+                                runId: cliRunId,
+                                text: event.data,
+                                logType
+                            }
+                        }));
                     };
 
                     // Handle layer status updates
@@ -301,10 +327,13 @@ document.addEventListener('alpine:init', () => {
                         try {
                             lastLayerStatus = JSON.parse(event.data);
                             console.log(`[${action}] Layer status:`, lastLayerStatus);
-                            // Update the panel with real-time layer progress
-                            if (typeof window.showPipelineLogPanel === 'function') {
-                                window.showPipelineLogPanel(action, lastLayerStatus, {}, true);
-                            }
+                            // Dispatch CLI layer status event
+                            window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                                detail: {
+                                    runId: cliRunId,
+                                    layerStatus: lastLayerStatus
+                                }
+                            }));
                         } catch (e) {
                             console.error('Failed to parse layer_status:', e);
                         }
@@ -340,30 +369,41 @@ document.addEventListener('alpine:init', () => {
                             // Update session costs
                             this.sessionCosts[action] += finalResult.cost_usd || this.getCost(tier);
 
-                            // Show final layer status panel
-                            if (finalResult.data?.layer_status || Object.keys(lastLayerStatus).length > 0) {
-                                this.showLayerStatusPanel(
-                                    action,
-                                    finalResult.data?.layer_status || lastLayerStatus,
-                                    finalResult.data || {}
-                                );
-                            } else {
-                                showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
-                            }
+                            // Dispatch CLI complete event
+                            window.dispatchEvent(new CustomEvent('cli:complete', {
+                                detail: {
+                                    runId: cliRunId,
+                                    status: 'success',
+                                    result: finalResult
+                                }
+                            }));
 
-                            // Dispatch custom event
+                            // Dispatch UI refresh event (replaces page reload)
+                            window.dispatchEvent(new CustomEvent('ui:refresh-job', {
+                                detail: {
+                                    jobId,
+                                    sections: this._getRefreshSections(action)
+                                }
+                            }));
+
+                            // Dispatch custom event for other listeners
                             document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
                                 detail: { action, jobId, result: finalResult }
                             }));
-
-                            // Reload page after delay
-                            setTimeout(() => window.location.reload(), 3000);
 
                             resolve(finalResult);
                         } else {
                             // Failed
                             const errorMsg = finalResult?.error || 'Operation failed';
-                            showToast(`${actionLabel} failed: ${errorMsg}`, 'error');
+
+                            // Dispatch CLI complete with error
+                            window.dispatchEvent(new CustomEvent('cli:complete', {
+                                detail: {
+                                    runId: cliRunId,
+                                    status: 'error',
+                                    error: errorMsg
+                                }
+                            }));
 
                             this.lastResults[action] = {
                                 success: false,
@@ -381,7 +421,7 @@ document.addEventListener('alpine:init', () => {
                         eventSource.close();
 
                         // Fall back to polling for status
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId);
                     });
 
                     eventSource.onerror = (err) => {
@@ -421,10 +461,19 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Poll operation status (fallback when SSE fails)
+         * @param {string} action - Action name
+         * @param {string} jobId - Job ID
+         * @param {string} runId - Runner operation run ID
+         * @param {string} actionLabel - Display label for action
+         * @param {string} tier - Selected tier
+         * @param {Function} resolve - Promise resolve function
+         * @param {string} cliRunId - CLI panel run ID for event tracking
          */
-        async pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve) {
+        async pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId) {
             const maxAttempts = 120;  // 2 minutes max
             let attempts = 0;
+            let lastLogIndex = 0;  // Track which logs we've already displayed
+            let lastLayerStatus = {};
 
             const poll = async () => {
                 attempts++;
@@ -432,6 +481,34 @@ document.addEventListener('alpine:init', () => {
                 try {
                     const statusResponse = await fetch(`/api/runner/operations/${runId}/status`);
                     const statusData = await statusResponse.json();
+
+                    // Update CLI panel with layer status from polling
+                    if (statusData.layer_status && Object.keys(statusData.layer_status).length > 0) {
+                        lastLayerStatus = statusData.layer_status;
+                        // Dispatch CLI layer status event
+                        window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                            detail: {
+                                runId: cliRunId,
+                                layerStatus: lastLayerStatus
+                            }
+                        }));
+                    }
+
+                    // Display new logs from polling via CLI events
+                    if (statusData.logs && statusData.logs.length > lastLogIndex) {
+                        const newLogs = statusData.logs.slice(lastLogIndex);
+                        newLogs.forEach(log => {
+                            const logType = window.cliDetectLogType ? window.cliDetectLogType(log) : 'info';
+                            window.dispatchEvent(new CustomEvent('cli:log', {
+                                detail: {
+                                    runId: cliRunId,
+                                    text: log,
+                                    logType
+                                }
+                            }));
+                        });
+                        lastLogIndex = statusData.logs.length;
+                    }
 
                     if (statusData.status === 'completed') {
                         this.loading[action] = false;
@@ -446,8 +523,37 @@ document.addEventListener('alpine:init', () => {
 
                         if (result.success !== false) {
                             this.sessionCosts[action] += result.cost_usd || this.getCost(tier);
-                            showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
-                            setTimeout(() => window.location.reload(), 3000);
+
+                            // Dispatch CLI complete event
+                            window.dispatchEvent(new CustomEvent('cli:complete', {
+                                detail: {
+                                    runId: cliRunId,
+                                    status: 'success',
+                                    result: result
+                                }
+                            }));
+
+                            // Dispatch UI refresh event (replaces page reload)
+                            window.dispatchEvent(new CustomEvent('ui:refresh-job', {
+                                detail: {
+                                    jobId,
+                                    sections: this._getRefreshSections(action)
+                                }
+                            }));
+
+                            // Dispatch custom event for other listeners
+                            document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
+                                detail: { action, jobId, result }
+                            }));
+                        } else {
+                            // Success=false means it completed but had issues
+                            window.dispatchEvent(new CustomEvent('cli:complete', {
+                                detail: {
+                                    runId: cliRunId,
+                                    status: 'error',
+                                    error: result.error || 'Operation completed with errors'
+                                }
+                            }));
                         }
 
                         resolve(result);
@@ -457,7 +563,22 @@ document.addEventListener('alpine:init', () => {
                     if (statusData.status === 'failed') {
                         this.loading[action] = false;
                         const errorMsg = statusData.error || 'Operation failed';
-                        showToast(`${actionLabel} failed: ${errorMsg}`, 'error');
+
+                        // Dispatch CLI complete with error
+                        window.dispatchEvent(new CustomEvent('cli:complete', {
+                            detail: {
+                                runId: cliRunId,
+                                status: 'error',
+                                error: errorMsg
+                            }
+                        }));
+
+                        this.lastResults[action] = {
+                            success: false,
+                            timestamp: new Date().toISOString(),
+                            error: errorMsg
+                        };
+
                         resolve({ success: false, error: errorMsg });
                         return;
                     }
@@ -467,7 +588,16 @@ document.addEventListener('alpine:init', () => {
                         setTimeout(poll, 1000);
                     } else {
                         this.loading[action] = false;
-                        showToast(`${actionLabel} timed out`, 'error');
+
+                        // Dispatch CLI complete with timeout error
+                        window.dispatchEvent(new CustomEvent('cli:complete', {
+                            detail: {
+                                runId: cliRunId,
+                                status: 'error',
+                                error: 'Operation timed out'
+                            }
+                        }));
+
                         resolve({ success: false, error: 'Operation timed out' });
                     }
 
@@ -477,7 +607,16 @@ document.addEventListener('alpine:init', () => {
                         setTimeout(poll, 2000);
                     } else {
                         this.loading[action] = false;
-                        showToast(`${actionLabel} failed: ${error.message}`, 'error');
+
+                        // Dispatch CLI complete with error
+                        window.dispatchEvent(new CustomEvent('cli:complete', {
+                            detail: {
+                                runId: cliRunId,
+                                status: 'error',
+                                error: error.message
+                            }
+                        }));
+
                         resolve({ success: false, error: error.message });
                     }
                 }
@@ -488,6 +627,7 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Execute a pipeline action synchronously (original behavior)
+         * Used for non-streaming actions like structure-jd
          * @param {string} action - Action name (structure-jd, research-company, generate-cv)
          * @param {string} jobId - MongoDB job ID
          * @param {Object} options - Additional options
@@ -514,10 +654,30 @@ document.addEventListener('alpine:init', () => {
             // Show starting toast
             const actionLabel = PIPELINE_CONFIG.labels[action] || action;
             const tierInfo = this.getTierInfo(tier);
+            const jobTitle = options.jobTitle || 'Unknown Job';
             showToast(`Starting ${actionLabel} (${tierInfo.label})...`, 'info');
 
-            // Show pipeline log panel immediately with pending states
-            this.showLayerStatusPanel(action, {}, {}, true);  // true = isPending
+            // Generate a unique run ID for CLI tracking
+            const cliRunId = `run-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // Dispatch CLI start event
+            window.dispatchEvent(new CustomEvent('cli:start-run', {
+                detail: {
+                    runId: cliRunId,
+                    jobId,
+                    jobTitle,
+                    action: action.replace('-', '_')
+                }
+            }));
+
+            // Log starting message
+            window.dispatchEvent(new CustomEvent('cli:log', {
+                detail: {
+                    runId: cliRunId,
+                    text: `Starting ${actionLabel} with ${tierInfo.label} tier...`,
+                    logType: 'info'
+                }
+            }));
 
             try {
                 const response = await fetch(endpoint, {
@@ -544,30 +704,87 @@ document.addEventListener('alpine:init', () => {
                     // Update session costs
                     this.sessionCosts[action] += result.cost_usd || this.getCost(tier);
 
-                    // Show detailed layer status panel for all actions that return layer_status
+                    // Log success message
+                    window.dispatchEvent(new CustomEvent('cli:log', {
+                        detail: {
+                            runId: cliRunId,
+                            text: `${actionLabel} completed successfully`,
+                            logType: 'success'
+                        }
+                    }));
+
+                    // Update layer status if available
                     if (result.data?.layer_status) {
-                        this.showLayerStatusPanel(action, result.data.layer_status, result.data);
-                    } else {
-                        showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                        window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                            detail: {
+                                runId: cliRunId,
+                                layerStatus: result.data.layer_status
+                            }
+                        }));
                     }
+
+                    // Dispatch CLI complete event
+                    window.dispatchEvent(new CustomEvent('cli:complete', {
+                        detail: {
+                            runId: cliRunId,
+                            status: 'success',
+                            result: result
+                        }
+                    }));
+
+                    // Dispatch UI refresh event (replaces page reload)
+                    window.dispatchEvent(new CustomEvent('ui:refresh-job', {
+                        detail: {
+                            jobId,
+                            sections: this._getRefreshSections(action)
+                        }
+                    }));
 
                     // Dispatch custom event for other components
                     document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
                         detail: { action, jobId, result }
                     }));
-
-                    // Reload page after short delay to show updated data
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 3000);  // Longer delay to read layer status panel
                 } else {
-                    showToast(result.error || `${actionLabel} failed`, 'error');
+                    // Log error message
+                    window.dispatchEvent(new CustomEvent('cli:log', {
+                        detail: {
+                            runId: cliRunId,
+                            text: result.error || `${actionLabel} failed`,
+                            logType: 'error'
+                        }
+                    }));
+
+                    // Dispatch CLI complete with error
+                    window.dispatchEvent(new CustomEvent('cli:complete', {
+                        detail: {
+                            runId: cliRunId,
+                            status: 'error',
+                            error: result.error || `${actionLabel} failed`
+                        }
+                    }));
                 }
 
                 return result;
             } catch (error) {
                 console.error(`${action} failed:`, error);
-                showToast(`${actionLabel} failed: ${error.message}`, 'error');
+
+                // Log error message
+                window.dispatchEvent(new CustomEvent('cli:log', {
+                    detail: {
+                        runId: cliRunId,
+                        text: `${actionLabel} failed: ${error.message}`,
+                        logType: 'error'
+                    }
+                }));
+
+                // Dispatch CLI complete with error
+                window.dispatchEvent(new CustomEvent('cli:complete', {
+                    detail: {
+                        runId: cliRunId,
+                        status: 'error',
+                        error: error.message
+                    }
+                }));
 
                 this.lastResults[action] = {
                     success: false,
@@ -622,27 +839,31 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Get sections to refresh based on completed action
+         * @param {string} action - Completed action name
+         * @returns {string[]} Array of section names to refresh
+         */
+        _getRefreshSections(action) {
+            const sectionMap = {
+                'structure-jd': ['jd-structured', 'jd-viewer'],
+                'full-extraction': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'action-buttons'],
+                'research-company': ['company-research', 'role-research', 'action-buttons'],
+                'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker']
+            };
+            return sectionMap[action] || ['action-buttons'];
+        },
+
+        /**
          * Show detailed layer status panel for pipeline actions
+         * @deprecated Use CLI panel events instead
          * @param {string} action - Action name
          * @param {Object} layerStatus - Per-layer status from backend
          * @param {Object} data - Full response data
          * @param {boolean} isPending - If true, show as "in progress" with spinning icons
          */
         showLayerStatusPanel(action, layerStatus, data, isPending = false) {
-            // Use the global showPipelineLogPanel if available
-            if (typeof window.showPipelineLogPanel === 'function') {
-                window.showPipelineLogPanel(action, layerStatus, data, isPending);
-            } else {
-                // Fallback to simple toast
-                const actionLabel = PIPELINE_CONFIG.labels[action] || action;
-                if (isPending) {
-                    showToast(`${actionLabel} in progress...`, 'info');
-                } else {
-                    showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
-                }
-            }
-
-            // Also log to console for debugging
+            // Legacy method - now handled by CLI panel
+            const actionLabel = PIPELINE_CONFIG.labels[action] || action;
             if (!isPending) {
                 console.log(`${action} Results:`, { layerStatus, data });
             }
@@ -688,6 +909,7 @@ function tieredActionButton(config) {
     return {
         action: config.action,
         jobId: config.jobId,
+        jobTitle: config.jobTitle || 'Unknown Job',  // Job title for CLI panel display
         open: false,
         customLabel: config.label || null,
 
@@ -744,7 +966,7 @@ function tieredActionButton(config) {
 
         async execute() {
             if (this.loading) return;
-            await Alpine.store('pipeline').execute(this.action, this.jobId);
+            await Alpine.store('pipeline').execute(this.action, this.jobId, { jobTitle: this.jobTitle });
         },
 
         getTierIcon(tier) {
