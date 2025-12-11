@@ -33,7 +33,8 @@ from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 # Thread pool for running sync MongoDB operations without blocking the event loop
-_db_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mongo_")
+# Increased from 4 to 8 workers to handle concurrent streaming operations
+_db_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="mongo_")
 
 from src.common.model_tiers import (
     ModelTier,
@@ -171,34 +172,46 @@ class CostEstimateResponse(BaseModel):
 # Helper Functions
 # =============================================================================
 
+# Singleton MongoDB client for connection pooling
+# This avoids the 5-10 second connection overhead on each request
+_mongo_client: Optional[MongoClient] = None
 
-def _get_db_client() -> MongoClient:
+
+def _get_mongo_client() -> MongoClient:
     """
-    Get MongoDB client for job validation with proper timeouts.
+    Get singleton MongoDB client with connection pooling.
+
+    Creates client once and reuses it for all validation calls.
+    This avoids the 5-10 second connection overhead on each request.
 
     Returns:
-        MongoClient instance with connection timeouts configured
-
-    Raises:
-        HTTPException: If MongoDB is not configured
+        MongoClient instance with connection pooling configured
     """
-    mongo_uri = (
-        os.getenv("MONGODB_URI")
-        or os.getenv("MONGO_URI")
-        or "mongodb://localhost:27017"
-    )
-    # Add timeouts to prevent blocking: 5s connect, 10s socket, 10s server selection
-    return MongoClient(
-        mongo_uri,
-        connectTimeoutMS=5000,
-        socketTimeoutMS=10000,
-        serverSelectionTimeoutMS=10000,
-    )
+    global _mongo_client
+
+    if _mongo_client is None:
+        mongo_uri = (
+            os.getenv("MONGODB_URI")
+            or os.getenv("MONGO_URI")
+            or "mongodb://localhost:27017"
+        )
+        _mongo_client = MongoClient(
+            mongo_uri,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=10000,
+            serverSelectionTimeoutMS=10000,
+            maxPoolSize=10,  # Connection pool for concurrent requests
+            minPoolSize=1,   # Keep at least 1 connection warm
+        )
+
+    return _mongo_client
 
 
 def _validate_job_exists_sync(job_id: str) -> dict:
     """
     Synchronous validation that a job exists in MongoDB.
+
+    Uses singleton client for connection pooling.
 
     Args:
         job_id: MongoDB ObjectId as string
@@ -215,16 +228,15 @@ def _validate_job_exists_sync(job_id: str) -> dict:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
-    # Check job exists
-    client = _get_db_client()
-    try:
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        job = db["level-2"].find_one({"_id": object_id})
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-        return job
-    finally:
-        client.close()
+    # Check job exists using pooled client
+    client = _get_mongo_client()
+    db = client[os.getenv("MONGO_DB_NAME", "jobs")]
+    job = db["level-2"].find_one({"_id": object_id})
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return job
 
 
 async def _validate_job_exists_async(job_id: str) -> dict:
@@ -745,6 +757,7 @@ class OperationStatusResponse(BaseModel):
     layer_status: Dict[str, Any] = Field(default_factory=dict)
     result: Optional[Dict[str, Any]] = Field(default=None)
     error: Optional[str] = Field(default=None)
+    logs: List[str] = Field(default_factory=list, description="Accumulated log lines")
 
 
 @router.post(
@@ -764,19 +777,21 @@ async def research_company_stream(
 
     Returns immediately with run_id. Use the log_stream_url to connect
     to SSE and receive real-time progress updates.
+
+    NOTE: Job validation happens in the background task, not here.
+    This allows sub-second response times for the kickoff.
     """
     operation = "research-company"
 
-    # Validate inputs (async to avoid blocking event loop)
-    await _validate_job_exists_async(job_id)
+    # Validate tier synchronously (fast, no I/O)
     tier = _validate_tier(request.tier)
 
-    # Create operation run for streaming
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
     run_id = create_operation_run(job_id, operation)
     append_operation_log(run_id, f"Starting {operation} for job {job_id}")
     append_operation_log(run_id, f"Tier: {tier.value}, Force refresh: {request.force_refresh}")
 
-    # Define the background task
+    # Define the background task (validation happens HERE, not before response)
     async def execute_research():
         from src.services.company_research_service import CompanyResearchService
 
@@ -785,6 +800,16 @@ async def research_company_stream(
 
         try:
             update_operation_status(run_id, "running")
+
+            # Validate job exists IN THE BACKGROUND TASK
+            log_cb("🔍 Validating job exists...")
+            try:
+                await _validate_job_exists_async(job_id)
+                log_cb("✅ Job validated")
+            except HTTPException as e:
+                log_cb(f"❌ Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
 
             service = CompanyResearchService()
             try:
@@ -844,19 +869,21 @@ async def generate_cv_stream(
 
     Returns immediately with run_id. Use the log_stream_url to connect
     to SSE and receive real-time progress updates.
+
+    NOTE: Job validation happens in the background task, not here.
+    This allows sub-second response times for the kickoff.
     """
     operation = "generate-cv"
 
-    # Validate inputs (async to avoid blocking event loop)
-    await _validate_job_exists_async(job_id)
+    # Validate tier synchronously (fast, no I/O)
     tier = _validate_tier(request.tier)
 
-    # Create operation run for streaming
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
     run_id = create_operation_run(job_id, operation)
     append_operation_log(run_id, f"Starting {operation} for job {job_id}")
     append_operation_log(run_id, f"Tier: {tier.value}, Use annotations: {request.use_annotations}")
 
-    # Define the background task
+    # Define the background task (validation happens HERE, not before response)
     async def execute_cv_generation():
         from src.services.cv_generation_service import CVGenerationService
 
@@ -865,6 +892,16 @@ async def generate_cv_stream(
 
         try:
             update_operation_status(run_id, "running")
+
+            # Validate job exists IN THE BACKGROUND TASK
+            log_cb("🔍 Validating job exists...")
+            try:
+                await _validate_job_exists_async(job_id)
+                log_cb("✅ Job validated")
+            except HTTPException as e:
+                log_cb(f"❌ Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
 
             service = CVGenerationService()
 
@@ -925,19 +962,21 @@ async def full_extraction_stream(
 
     Returns immediately with run_id. Use the log_stream_url to connect
     to SSE and receive real-time progress updates.
+
+    NOTE: Job validation happens in the background task, not here.
+    This allows sub-second response times for the kickoff.
     """
     operation = "full-extraction"
 
-    # Validate inputs (async to avoid blocking event loop)
-    await _validate_job_exists_async(job_id)
+    # Validate tier synchronously (fast, no I/O)
     tier = _validate_tier(request.tier)
 
-    # Create operation run for streaming
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
     run_id = create_operation_run(job_id, operation)
     append_operation_log(run_id, f"Starting {operation} for job {job_id}")
     append_operation_log(run_id, f"Tier: {tier.value}, Use LLM: {request.use_llm}")
 
-    # Define the background task
+    # Define the background task (validation happens HERE, not before response)
     async def execute_extraction():
         from src.services.full_extraction_service import FullExtractionService
 
@@ -946,6 +985,16 @@ async def full_extraction_stream(
 
         try:
             update_operation_status(run_id, "running")
+
+            # Validate job exists IN THE BACKGROUND TASK
+            log_cb("🔍 Validating job exists...")
+            try:
+                await _validate_job_exists_async(job_id)
+                log_cb("✅ Job validated")
+            except HTTPException as e:
+                log_cb(f"❌ Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
 
             service = FullExtractionService()
 
@@ -1108,6 +1157,7 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
         layer_status=state.layer_status,
         result=state.result,
         error=state.error,
+        logs=state.logs,  # Include accumulated logs for polling fallback
     )
 
 
