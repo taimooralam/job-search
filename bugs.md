@@ -62,3 +62,24 @@ The separation exists for:
 - `tests/unit/test_company_research_service.py` - Added 5 new tests for people research integration
 
 **Tests**: All 1645 unit tests pass. New tests in `TestSkipOutreachParameter` and `TestCompanyResearchServicePeopleResearch` classes.
+
+BUG 3. [FIXED] QUICK ADD toolbar missing Passion and Identity dimensions
+
+**Problem**: The QUICK ADD toolbar in the JD Annotation panel only had Relevance (Core, Strong, Medium, Weak, Gap) and Requirement (Must-Have, Nice-to-Have) buttons. The Passion and Identity dimensions were only available in:
+- The full annotation popover (all 5 levels each)
+- The sidebar filter buttons (love_it, avoid, core_identity, not_identity)
+
+Users could not quickly annotate with Passion/Identity from the toolbar without opening the popover.
+
+**Root Cause**: The toolbar in `_jd_annotation_panel.html` was never updated to include the Passion and Identity quick-add buttons, even though the data model, popover, and sidebar filters all supported these dimensions.
+
+**Fix Applied**:
+1. Added two new button groups to the QUICK ADD toolbar:
+   - Passion: Love (love_it) and Avoid (avoid) - matching sidebar filters
+   - Identity: Core ID (core_identity) and Not Me (not_identity) - matching sidebar filters
+2. Added JavaScript handler functions `setQuickPassion()` and `setQuickIdentity()` in `jd-annotation.js`
+3. Styled buttons consistently with existing toolbar buttons (pink for love, stone for avoid, indigo for core_identity, zinc for not_identity)
+
+**Files Modified**:
+- `frontend/templates/partials/job_detail/_jd_annotation_panel.html` (lines 149-179, added button groups)
+- `frontend/static/js/jd-annotation.js` (lines 1959-1974, added handler functions)
