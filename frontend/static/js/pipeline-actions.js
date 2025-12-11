@@ -276,7 +276,10 @@ document.addEventListener('alpine:init', () => {
                     // Handle regular log messages
                     eventSource.onmessage = (event) => {
                         console.log(`[${action}] Log: ${event.data}`);
-                        // Could update a log display here if desired
+                        // Append log to the pipeline log panel's terminal section
+                        if (typeof window.appendLogToPipelinePanel === 'function') {
+                            window.appendLogToPipelinePanel(event.data);
+                        }
                     };
 
                     // Handle layer status updates
