@@ -370,7 +370,7 @@
                     </h3>
                     <div class="pipeline-actions-container">
                         {# Structure JD Button #}
-                        <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}' })"
+                        <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                              class="pipeline-action-wrapper">
                             <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                                 <button @click="execute()"
@@ -434,7 +434,7 @@
                         </div>
 
                         {# Full Extraction Button (Layer 1.4 + Layer 2 + Layer 4) #}
-                        <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}' })"
+                        <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                              class="pipeline-action-wrapper">
                             <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                                 <button @click="execute()"
@@ -498,7 +498,7 @@
                         </div>
 
                         {# Research Company Button #}
-                        <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}' })"
+                        <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                              class="pipeline-action-wrapper">
                             <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                                 <button @click="execute()"
@@ -562,7 +562,7 @@
                         </div>
 
                         {# Generate CV Button #}
-                        <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}' })"
+                        <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                              class="pipeline-action-wrapper">
                             <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                                 <button @click="execute()"
