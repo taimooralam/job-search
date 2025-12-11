@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-11 (Session 5: Annotation System Improvements - P2 Complete with Tracking Service & Keyword Placement Integration)
+**Last Updated**: 2025-12-11 (Session 6: SSE Streaming Progress Callbacks - BUG 8 Fixed - Real-time Operation Updates)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -41,6 +41,24 @@
   - EventSource with automatic retry and polling fallback for browser compatibility
   - Real-time progress updates during long-running operations
 - **Backward Compatibility**: Existing synchronous endpoints remain unchanged; streaming endpoints are opt-in
+
+### Today's Session (2025-12-11 Session 6): SSE Streaming Progress Callbacks - BUG 8 Fixed
+
+**BUG 8: Extract JD and Research operations timeout before completing - FIXED**:
+- **Issue**: Full extraction and research operations timed out with "Runner service timeout" error during SSE streaming
+- **Root Cause**: Services were not emitting intermediate progress updates during long LLM processing (2-5 minutes). SSE stream was idle, frontend thought operation stalled
+- **Fix Applied**: Added `progress_callback` parameter to all three operation services with real-time progress emission at each step
+  - `FullExtractionService`: Emits progress for jd_processor, jd_extractor, pain_points, fit_scoring, save_results
+  - `CompanyResearchService`: Emits progress for fetch_job, cache_check, company_research, role_research, people_research, save_results
+  - `CVGenerationService`: Emits progress for fetch_job, validate, build_state, cv_generator, persist
+  - Streaming endpoints updated to pass `layer_cb` as `progress_callback`
+- **Files Modified**:
+  - `src/services/full_extraction_service.py` - Added progress_callback + emit_progress()
+  - `src/services/company_research_service.py` - Added progress_callback + emit_progress()
+  - `src/services/cv_generation_service.py` - Added progress_callback + emit_progress()
+  - `runner_service/routes/operations.py` - Updated stream endpoints to pass progress_callback
+- **Impact**: Operations now send continuous SSE updates, preventing frontend timeout during long LLM processing. Console logs appear in real-time during execution.
+- **Test Coverage**: All 115 service-related unit tests pass. All 1598 unit tests pass.
 
 ### Today's Session (2025-12-11 Session 5): Annotation System Improvements
 

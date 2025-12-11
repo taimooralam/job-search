@@ -748,41 +748,29 @@ async def research_company_stream(
 
         try:
             update_operation_status(run_id, "running")
-            layer_cb("fetch_job", "processing", "Loading job data")
 
             service = CompanyResearchService()
             try:
-                layer_cb("fetch_job", "success", "Job loaded")
-                layer_cb("cache_check", "processing", "Checking cache")
-
-                # Execute the research
+                # Execute the research with progress callback for real-time updates
+                # The service emits progress for: fetch_job, cache_check, company_research,
+                # role_research, people_research, save_results
                 result = await service.execute(
                     job_id=job_id,
                     tier=tier,
                     force_refresh=request.force_refresh,
+                    progress_callback=layer_cb,  # Pass layer_cb for real-time progress
                 )
 
-                # Update layer statuses based on result
-                if result.data.get("from_cache"):
-                    layer_cb("cache_check", "success", "Using cached data")
-                    layer_cb("company_research", "skipped", "From cache")
-                    layer_cb("role_research", "skipped", "From cache")
-                else:
-                    layer_cb("cache_check", "success", "No cache, fetching fresh")
-                    layer_cb("company_research", "success", f"Found {result.data.get('signals_count', 0)} signals")
-                    layer_cb("role_research", "success", f"Found {result.data.get('business_impact_count', 0)} impacts")
-
-                layer_cb("persist", "success", "Results saved")
-
-                update_operation_status(run_id, "completed", result={
+                update_operation_status(run_id, "completed" if result.success else "failed", result={
                     "success": result.success,
                     "data": result.data,
                     "cost_usd": result.cost_usd,
                     "run_id": result.run_id,
                     "model_used": result.model_used,
                     "duration_ms": result.duration_ms,
+                    "error": result.error,
                 })
-                log_cb("✅ Research complete")
+                log_cb("✅ Research complete" if result.success else f"❌ Research failed: {result.error}")
 
             finally:
                 service.close()
@@ -840,31 +828,22 @@ async def generate_cv_stream(
 
         try:
             update_operation_status(run_id, "running")
-            layer_cb("fetch_job", "processing", "Loading job data")
 
             service = CVGenerationService()
 
-            layer_cb("fetch_job", "success", "Job loaded")
-            layer_cb("validate", "processing", "Validating job data")
-
-            # Execute CV generation
+            # Execute CV generation with progress callback for real-time updates
+            # The service emits progress for: fetch_job, validate, build_state,
+            # cv_generator, persist
             result = await service.execute(
                 job_id=job_id,
                 tier=tier,
                 use_annotations=request.use_annotations,
+                progress_callback=layer_cb,  # Pass layer_cb for real-time progress
             )
 
-            layer_cb("validate", "success", "Job validated")
-            layer_cb("build_state", "success", "State prepared")
-
             if result.success:
-                layer_cb("cv_generator", "success", f"CV generated ({result.data.get('word_count', 0)} words)")
-                layer_cb("persist", "success", "CV saved")
-
                 # Persist the operation run for tracking
                 service.persist_run(result, job_id, tier)
-            else:
-                layer_cb("cv_generator", "failed", result.error or "Generation failed")
 
             update_operation_status(run_id, "completed" if result.success else "failed", result={
                 "success": result.success,
@@ -930,21 +909,25 @@ async def full_extraction_stream(
 
         try:
             update_operation_status(run_id, "running")
-            layer_cb("jd_processor", "processing", "Parsing job description")
 
             service = FullExtractionService()
 
-            # Execute extraction
+            # Execute extraction with progress callback for real-time updates
             result = await service.execute(
                 job_id=job_id,
                 tier=tier,
                 use_llm=request.use_llm,
+                progress_callback=layer_cb,  # Pass layer_cb for real-time progress
             )
 
-            # Update layer statuses based on result
-            layer_status = result.data.get("layer_status", {})
+            # Final layer statuses are already emitted by the service via progress_callback
+            # Only emit any additional statuses not covered by the service
+            layer_status = result.data.get("layer_status", {}) if result.data else {}
             for layer_key, status_info in layer_status.items():
-                layer_cb(layer_key, status_info.get("status", "success"), status_info.get("message"))
+                # Service emits: jd_processor, jd_extractor, pain_points, fit_scoring, save_results
+                # Only emit if not already covered
+                if layer_key not in {"jd_processor", "jd_extractor", "pain_points", "fit_scoring", "save_results"}:
+                    layer_cb(layer_key, status_info.get("status", "success"), status_info.get("message"))
 
             update_operation_status(run_id, "completed" if result.success else "failed", result={
                 "success": result.success,
