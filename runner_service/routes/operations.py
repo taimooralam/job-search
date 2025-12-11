@@ -20,7 +20,9 @@ import asyncio
 import logging
 import os
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from functools import partial
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from bson import ObjectId
@@ -29,6 +31,9 @@ from fastapi.responses import StreamingResponse
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
+
+# Thread pool for running sync MongoDB operations without blocking the event loop
+_db_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mongo_")
 
 from src.common.model_tiers import (
     ModelTier,
@@ -169,10 +174,10 @@ class CostEstimateResponse(BaseModel):
 
 def _get_db_client() -> MongoClient:
     """
-    Get MongoDB client for job validation.
+    Get MongoDB client for job validation with proper timeouts.
 
     Returns:
-        MongoClient instance
+        MongoClient instance with connection timeouts configured
 
     Raises:
         HTTPException: If MongoDB is not configured
@@ -182,12 +187,18 @@ def _get_db_client() -> MongoClient:
         or os.getenv("MONGO_URI")
         or "mongodb://localhost:27017"
     )
-    return MongoClient(mongo_uri)
+    # Add timeouts to prevent blocking: 5s connect, 10s socket, 10s server selection
+    return MongoClient(
+        mongo_uri,
+        connectTimeoutMS=5000,
+        socketTimeoutMS=10000,
+        serverSelectionTimeoutMS=10000,
+    )
 
 
-def _validate_job_exists(job_id: str) -> dict:
+def _validate_job_exists_sync(job_id: str) -> dict:
     """
-    Validate that a job exists in MongoDB.
+    Synchronous validation that a job exists in MongoDB.
 
     Args:
         job_id: MongoDB ObjectId as string
@@ -214,6 +225,32 @@ def _validate_job_exists(job_id: str) -> dict:
         return job
     finally:
         client.close()
+
+
+async def _validate_job_exists_async(job_id: str) -> dict:
+    """
+    Async validation that a job exists in MongoDB.
+
+    Runs the sync MongoDB query in a thread pool to avoid blocking
+    the FastAPI event loop.
+
+    Args:
+        job_id: MongoDB ObjectId as string
+
+    Returns:
+        Job document if found
+
+    Raises:
+        HTTPException: If job_id is invalid or job not found
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_db_executor, _validate_job_exists_sync, job_id)
+
+
+# Alias for backwards compatibility with sync endpoints
+def _validate_job_exists(job_id: str) -> dict:
+    """Sync version for backwards compatibility with non-streaming endpoints."""
+    return _validate_job_exists_sync(job_id)
 
 
 def _validate_tier(tier_str: str) -> ModelTier:
@@ -730,8 +767,8 @@ async def research_company_stream(
     """
     operation = "research-company"
 
-    # Validate inputs
-    _validate_job_exists(job_id)
+    # Validate inputs (async to avoid blocking event loop)
+    await _validate_job_exists_async(job_id)
     tier = _validate_tier(request.tier)
 
     # Create operation run for streaming
@@ -810,8 +847,8 @@ async def generate_cv_stream(
     """
     operation = "generate-cv"
 
-    # Validate inputs
-    _validate_job_exists(job_id)
+    # Validate inputs (async to avoid blocking event loop)
+    await _validate_job_exists_async(job_id)
     tier = _validate_tier(request.tier)
 
     # Create operation run for streaming
@@ -891,8 +928,8 @@ async def full_extraction_stream(
     """
     operation = "full-extraction"
 
-    # Validate inputs
-    _validate_job_exists(job_id)
+    # Validate inputs (async to avoid blocking event loop)
+    await _validate_job_exists_async(job_id)
     tier = _validate_tier(request.tier)
 
     # Create operation run for streaming
