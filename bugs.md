@@ -175,3 +175,35 @@ The section uses consistent dark mode support and styling matching the rest of t
 - `frontend/templates/job_detail.html` (lines 1008-1139, added new Company & Role Research section)
 
 **Tests**: Template syntax validated via Jinja2. All 1682+ unit tests pass.
+
+BUG 7. [DIAGNOSTIC LOGGING ADDED] CV Generation fails with "list index out of range" error
+
+**Problem**: When clicking Generate CV, the process fails with:
+```
+✅ build_state: State prepared
+❌ cv_generator: CV Gen V2 error: list index out of range
+```
+
+**Root Cause**: Unable to pinpoint exact line without full stack trace. Searched 15+ files in layer6_v2 and found 20+ instances of `[0]` indexing - all have proper guards. Probable causes:
+1. LangChain/Pydantic structured output parsing failure
+2. Empty list from data filtering edge case
+3. Malformed MongoDB data in `extracted_jd` or `jd_annotations`
+
+**Investigation**:
+- All obvious index accesses in layer6_v2 have proper guards (len() checks, or fallbacks)
+- Error occurs after build_state succeeds, during cv_generator execution
+- Need full traceback to identify exact file/line/function
+
+**Diagnostic Fix Applied**:
+Added enhanced traceback logging to capture the full stack trace:
+1. Added `import traceback` and `traceback.format_exc()` to orchestrator.py
+2. Added `traceback` field to error response from orchestrator
+3. Added logger.error() call in cv_generation_service.py to log full traceback
+4. Added traceback to layer_status for debugging
+
+**Next Steps**:
+When the user runs CV generation again on the failing job, the full traceback will be logged showing the exact line causing the error. Report back with that traceback for definitive fix.
+
+**Files Modified**:
+- `src/layer6_v2/orchestrator.py` (added traceback capture in except block)
+- `src/services/cv_generation_service.py` (added traceback logging and layer_status)
