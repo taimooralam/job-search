@@ -16,14 +16,16 @@ Phase 3: Route scaffolding with stubbed implementations
 Phase 4: Actual service logic
 """
 
+import asyncio
 import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
@@ -37,6 +39,16 @@ from src.common.model_tiers import (
 from src.services.operation_base import OperationResult
 
 from ..auth import verify_token
+from .operation_streaming import (
+    create_operation_run,
+    get_operation_state,
+    append_operation_log,
+    update_operation_status,
+    update_layer_status,
+    create_log_callback,
+    create_layer_callback,
+    stream_operation_logs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -672,3 +684,330 @@ async def estimate_cost(
     except Exception as e:
         logger.exception(f"Cost estimation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Streaming Operation Endpoints (SSE Support)
+# =============================================================================
+
+
+class StreamingOperationResponse(BaseModel):
+    """Response for streaming operation kickoff."""
+
+    run_id: str = Field(..., description="Unique run identifier for SSE streaming")
+    log_stream_url: str = Field(..., description="URL to stream logs via SSE")
+    status: str = Field(default="queued", description="Initial status")
+
+
+class OperationStatusResponse(BaseModel):
+    """Response for operation status check."""
+
+    run_id: str = Field(..., description="Operation run ID")
+    status: str = Field(..., description="Current status")
+    layer_status: Dict[str, Any] = Field(default_factory=dict)
+    result: Optional[Dict[str, Any]] = Field(default=None)
+    error: Optional[str] = Field(default=None)
+
+
+@router.post(
+    "/{job_id}/research-company/stream",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start company research with SSE streaming",
+    description="Start company research and return run_id for SSE log streaming",
+)
+async def research_company_stream(
+    job_id: str,
+    request: ResearchCompanyRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOperationResponse:
+    """
+    Start company research with SSE streaming support.
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+    """
+    operation = "research-company"
+
+    # Validate inputs
+    _validate_job_exists(job_id)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Force refresh: {request.force_refresh}")
+
+    # Define the background task
+    async def execute_research():
+        from src.services.company_research_service import CompanyResearchService
+
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+            layer_cb("fetch_job", "processing", "Loading job data")
+
+            service = CompanyResearchService()
+            try:
+                layer_cb("fetch_job", "success", "Job loaded")
+                layer_cb("cache_check", "processing", "Checking cache")
+
+                # Execute the research
+                result = await service.execute(
+                    job_id=job_id,
+                    tier=tier,
+                    force_refresh=request.force_refresh,
+                )
+
+                # Update layer statuses based on result
+                if result.data.get("from_cache"):
+                    layer_cb("cache_check", "success", "Using cached data")
+                    layer_cb("company_research", "skipped", "From cache")
+                    layer_cb("role_research", "skipped", "From cache")
+                else:
+                    layer_cb("cache_check", "success", "No cache, fetching fresh")
+                    layer_cb("company_research", "success", f"Found {result.data.get('signals_count', 0)} signals")
+                    layer_cb("role_research", "success", f"Found {result.data.get('business_impact_count', 0)} impacts")
+
+                layer_cb("persist", "success", "Results saved")
+
+                update_operation_status(run_id, "completed", result={
+                    "success": result.success,
+                    "data": result.data,
+                    "cost_usd": result.cost_usd,
+                    "run_id": result.run_id,
+                    "model_used": result.model_used,
+                    "duration_ms": result.duration_ms,
+                })
+                log_cb("✅ Research complete")
+
+            finally:
+                service.close()
+
+        except Exception as e:
+            logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+            log_cb(f"❌ Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_research)
+
+    return StreamingOperationResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )
+
+
+@router.post(
+    "/{job_id}/generate-cv/stream",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start CV generation with SSE streaming",
+    description="Start CV generation and return run_id for SSE log streaming",
+)
+async def generate_cv_stream(
+    job_id: str,
+    request: GenerateCVRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOperationResponse:
+    """
+    Start CV generation with SSE streaming support.
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+    """
+    operation = "generate-cv"
+
+    # Validate inputs
+    _validate_job_exists(job_id)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Use annotations: {request.use_annotations}")
+
+    # Define the background task
+    async def execute_cv_generation():
+        from src.services.cv_generation_service import CVGenerationService
+
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+            layer_cb("fetch_job", "processing", "Loading job data")
+
+            service = CVGenerationService()
+
+            layer_cb("fetch_job", "success", "Job loaded")
+            layer_cb("validate", "processing", "Validating job data")
+
+            # Execute CV generation
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_annotations=request.use_annotations,
+            )
+
+            layer_cb("validate", "success", "Job validated")
+            layer_cb("build_state", "success", "State prepared")
+
+            if result.success:
+                layer_cb("cv_generator", "success", f"CV generated ({result.data.get('word_count', 0)} words)")
+                layer_cb("persist", "success", "CV saved")
+
+                # Persist the operation run for tracking
+                service.persist_run(result, job_id, tier)
+            else:
+                layer_cb("cv_generator", "failed", result.error or "Generation failed")
+
+            update_operation_status(run_id, "completed" if result.success else "failed", result={
+                "success": result.success,
+                "data": result.data,
+                "cost_usd": result.cost_usd,
+                "run_id": result.run_id,
+                "model_used": result.model_used,
+                "duration_ms": result.duration_ms,
+                "error": result.error,
+            })
+            log_cb("✅ CV generation complete" if result.success else f"❌ CV generation failed: {result.error}")
+
+        except Exception as e:
+            logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+            log_cb(f"❌ Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_cv_generation)
+
+    return StreamingOperationResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )
+
+
+@router.post(
+    "/{job_id}/full-extraction/stream",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start full extraction with SSE streaming",
+    description="Start full JD extraction and return run_id for SSE log streaming",
+)
+async def full_extraction_stream(
+    job_id: str,
+    request: FullExtractionRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOperationResponse:
+    """
+    Start full JD extraction with SSE streaming support.
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+    """
+    operation = "full-extraction"
+
+    # Validate inputs
+    _validate_job_exists(job_id)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Use LLM: {request.use_llm}")
+
+    # Define the background task
+    async def execute_extraction():
+        from src.services.full_extraction_service import FullExtractionService
+
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+            layer_cb("jd_processor", "processing", "Parsing job description")
+
+            service = FullExtractionService()
+
+            # Execute extraction
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_llm=request.use_llm,
+            )
+
+            # Update layer statuses based on result
+            layer_status = result.data.get("layer_status", {})
+            for layer_key, status_info in layer_status.items():
+                layer_cb(layer_key, status_info.get("status", "success"), status_info.get("message"))
+
+            update_operation_status(run_id, "completed" if result.success else "failed", result={
+                "success": result.success,
+                "data": result.data,
+                "cost_usd": result.cost_usd,
+                "run_id": result.run_id,
+                "model_used": result.model_used,
+                "duration_ms": result.duration_ms,
+                "error": result.error,
+            })
+            log_cb("✅ Extraction complete" if result.success else f"❌ Extraction failed: {result.error}")
+
+        except Exception as e:
+            logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+            log_cb(f"❌ Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_extraction)
+
+    return StreamingOperationResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )
+
+
+@router.get(
+    "/operations/{run_id}/logs",
+    dependencies=[Depends(verify_token)],
+    summary="Stream operation logs via SSE",
+    description="Stream real-time logs for an operation run",
+)
+async def stream_operation_logs_endpoint(run_id: str) -> StreamingResponse:
+    """
+    Stream logs for an operation via Server-Sent Events.
+
+    Connects to the operation's log buffer and streams updates in real-time.
+    The stream closes when the operation completes or fails.
+    """
+    return await stream_operation_logs(run_id)
+
+
+@router.get(
+    "/operations/{run_id}/status",
+    response_model=OperationStatusResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Get operation status",
+    description="Get current status of an operation run",
+)
+async def get_operation_status(run_id: str) -> OperationStatusResponse:
+    """
+    Get current status of an operation run.
+
+    Useful for polling-based status checks as fallback to SSE.
+    """
+    state = get_operation_state(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Operation run not found")
+
+    return OperationStatusResponse(
+        run_id=run_id,
+        status=state.status,
+        layer_status=state.layer_status,
+        result=state.result,
+        error=state.error,
+    )
