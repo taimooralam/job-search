@@ -636,6 +636,138 @@ class OutreachPackage(TypedDict):
 
 ## Frontend Architecture
 
+### Global CLI Panel (NEW - 2025-12-11)
+
+**Purpose**: Persistent, AWS/GCP CloudShell-style terminal interface at bottom of every page for real-time pipeline monitoring
+
+**Key Components**:
+
+1. **HTML Template** (`frontend/templates/components/cli_panel.html`):
+   - Alpine.js-based reactive component with `x-data="cliPanelStore()"`
+   - Multi-tab interface (up to 10 concurrent runs)
+   - Collapsible header with minimize/maximize buttons
+   - Log display area with auto-scroll and color-coded output
+   - Layer status footer showing pipeline progress (Layers 1-7)
+   - Copy logs and clear logs buttons
+
+2. **Alpine.js Store** (`frontend/static/js/cli-panel.js`):
+   - Stores active runs indexed by `run_id`
+   - Each run tracks: run_id, job_title, logs[], status, layer_status
+   - Event listeners for custom events: `cli:start-run`, `cli:log`, `cli:layer-status`, `cli:complete`
+   - sessionStorage persistence with debounced saves (500ms)
+   - Handles multi-run tab switching and cleanup
+
+3. **CSS Styling** (`frontend/static/css/cli-panel.css`):
+   - Terminal-themed dark background (dark gray/black)
+   - Monospace font (Monaco, Menlo, Courier New)
+   - Color-coded text:
+     - Red for errors
+     - Yellow for warnings
+     - Green for success
+     - Default white for standard logs
+   - Fixed position at bottom of viewport
+   - Collapsible with smooth transitions
+
+**Data Flow**:
+
+```
+User triggers pipeline action
+         │
+         ▼
+pipeline-actions.js dispatch 'cli:start-run'
+         │
+         ▼
+cli-panel.js initializes new run tab
+         │
+         ▼
+SSE EventSource 'log' events → dispatch 'cli:log'
+         │
+         ▼
+cli-panel updates logs array (auto-scroll)
+         │
+         ├─ Progress updates → dispatch 'cli:layer-status'
+         │
+         └─ Completion → dispatch 'cli:complete'
+                 │
+                 ▼
+         cli-panel marks run as done, sessionStorage saves
+         │
+         ▼
+User navigates away
+         │
+         ▼
+sessionStorage restored on next page load → logs persist
+```
+
+**Integration Points**:
+
+- `frontend/templates/base.html`:
+  - CSS include: `<link rel="stylesheet" href="{{ url_for('static', filename='css/cli-panel.css') }}">`
+  - JS include: `<script src="{{ url_for('static', filename='js/cli-panel.js') }}"></script>`
+  - HTML include: `{% include 'components/cli_panel.html' %}` (outside #htmx-main for persistence)
+
+- `frontend/static/js/pipeline-actions.js`:
+  - Dispatch `cli:start-run` event when pipeline starts
+  - Dispatch `cli:log` events as logs stream from SSE
+  - Dispatch `cli:layer-status` events for progress updates
+  - Dispatch `cli:complete` event when pipeline finishes
+
+- `frontend/static/js/job-detail.js`:
+  - Listen for `ui:refresh-job` event
+  - Call HTMX `/api/jobs/{job_id}` to refresh job detail partial
+  - Replaces page reload with partial refresh (preserves CLI state)
+
+- `frontend/templates/job_detail.html`:
+  - Pass `jobTitle` to action buttons for CLI context
+
+**Features**:
+
+- **Multi-Run Tabs**: Support up to 10 concurrent pipeline runs with individual tabs
+- **Real-time Logs**: SSE streaming with auto-scroll and timestamp tracking
+- **Color-Coded Output**: Error (red), warning (yellow), success (green)
+- **Layer Progress**: Footer showing which layers are pending/executing/complete
+- **Persistence**: sessionStorage keeps logs across page navigation
+- **Keyboard Shortcut**: Ctrl+` (backtick) toggles panel visibility
+- **Toast Notifications**: Alerts when panel is collapsed and new logs arrive
+- **Copy & Clear**: Buttons to copy all logs to clipboard or clear current run
+
+**Keyboard Shortcuts**:
+- `Ctrl+`` (backtick) - Toggle CLI panel visibility
+- Tab navigation between concurrent runs (if multiple open)
+
+**Session Storage Schema**:
+
+```javascript
+{
+  "cli_runs": {
+    "run_id_1": {
+      "run_id": "uuid",
+      "job_title": "Software Engineer - Company",
+      "logs": [
+        { "timestamp": "2025-12-11T14:30:45Z", "level": "info", "message": "Starting research-company..." },
+        { "timestamp": "2025-12-11T14:30:50Z", "level": "success", "message": "Company data fetched" }
+      ],
+      "status": "running|complete|error",
+      "layer_status": {
+        "layer_1": "complete",
+        "layer_2": "complete",
+        "layer_3": "executing",
+        "layer_4": "pending",
+        ...
+      }
+    }
+  }
+}
+```
+
+**Browser Compatibility**:
+- Chrome/Edge: Full support (EventSource + sessionStorage)
+- Firefox: Full support
+- Safari: Full support
+- Mobile browsers: Responsive layout, touch-friendly buttons
+
+---
+
 ### Master CV Editor Page (NEW - 2025-12-10)
 
 **Purpose**: Full-page dedicated editor for managing the Master CV stored in MongoDB
