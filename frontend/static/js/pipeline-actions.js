@@ -28,6 +28,16 @@ const PIPELINE_CONFIG = {
         'generate-cv': 'quality'
     },
 
+    // Actions that support SSE streaming (via runner service)
+    streamingActions: ['research-company', 'generate-cv', 'full-extraction'],
+
+    // Streaming endpoints (via Flask proxy)
+    streamingEndpoints: {
+        'research-company': '/api/runner/operations/{jobId}/research-company/stream',
+        'generate-cv': '/api/runner/operations/{jobId}/generate-cv/stream',
+        'full-extraction': '/api/runner/operations/{jobId}/full-extraction/stream'
+    },
+
     // Model mappings per tier per action
     models: {
         'structure-jd': {
@@ -193,6 +203,266 @@ document.addEventListener('alpine:init', () => {
          * @returns {Promise<Object>} Result from API
          */
         async execute(action, jobId, options = {}) {
+            // Use SSE streaming for supported actions
+            if (PIPELINE_CONFIG.streamingActions.includes(action)) {
+                return this.executeWithSSE(action, jobId, options);
+            }
+
+            // Fall back to synchronous execution for other actions
+            return this.executeSynchronous(action, jobId, options);
+        },
+
+        /**
+         * Execute a pipeline action with SSE streaming (real-time progress)
+         * @param {string} action - Action name
+         * @param {string} jobId - MongoDB job ID
+         * @param {Object} options - Additional options
+         * @returns {Promise<Object>} Result from API
+         */
+        async executeWithSSE(action, jobId, options = {}) {
+            if (this.loading[action]) {
+                console.log(`Action ${action} already running`);
+                return { success: false, error: 'Action already running' };
+            }
+
+            const tier = this.getTier(action);
+            const streamEndpoint = PIPELINE_CONFIG.streamingEndpoints[action]?.replace('{jobId}', jobId);
+
+            if (!streamEndpoint) {
+                console.warn(`No streaming endpoint for ${action}, falling back to sync`);
+                return this.executeSynchronous(action, jobId, options);
+            }
+
+            this.loading[action] = true;
+
+            // Show starting toast
+            const actionLabel = PIPELINE_CONFIG.labels[action] || action;
+            const tierInfo = this.getTierInfo(tier);
+            showToast(`Starting ${actionLabel} (${tierInfo.label}) with real-time progress...`, 'info');
+
+            // Show pipeline log panel immediately with pending states
+            this.showLayerStatusPanel(action, {}, {}, true);
+
+            try {
+                // Step 1: Start the operation and get run_id
+                const startResponse = await fetch(streamEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tier, ...options })
+                });
+
+                if (!startResponse.ok) {
+                    const errorData = await startResponse.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Failed to start operation: ${startResponse.status}`);
+                }
+
+                const startResult = await startResponse.json();
+                const runId = startResult.run_id;
+
+                if (!runId) {
+                    throw new Error('No run_id returned from streaming endpoint');
+                }
+
+                console.log(`[${action}] Started with run_id: ${runId}`);
+
+                // Step 2: Connect to SSE stream for real-time updates
+                return new Promise((resolve) => {
+                    const logStreamUrl = `/api/runner/operations/${runId}/logs`;
+                    const eventSource = new EventSource(logStreamUrl);
+
+                    let lastLayerStatus = {};
+                    let finalResult = null;
+
+                    // Handle regular log messages
+                    eventSource.onmessage = (event) => {
+                        console.log(`[${action}] Log: ${event.data}`);
+                        // Could update a log display here if desired
+                    };
+
+                    // Handle layer status updates
+                    eventSource.addEventListener('layer_status', (event) => {
+                        try {
+                            lastLayerStatus = JSON.parse(event.data);
+                            console.log(`[${action}] Layer status:`, lastLayerStatus);
+                            // Update the panel with real-time layer progress
+                            if (typeof window.showPipelineLogPanel === 'function') {
+                                window.showPipelineLogPanel(action, lastLayerStatus, {}, true);
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse layer_status:', e);
+                        }
+                    });
+
+                    // Handle final result
+                    eventSource.addEventListener('result', (event) => {
+                        try {
+                            finalResult = JSON.parse(event.data);
+                            console.log(`[${action}] Result:`, finalResult);
+                        } catch (e) {
+                            console.error('Failed to parse result:', e);
+                        }
+                    });
+
+                    // Handle completion/failure
+                    eventSource.addEventListener('end', (event) => {
+                        const status = event.data;
+                        console.log(`[${action}] Ended with status: ${status}`);
+
+                        eventSource.close();
+                        this.loading[action] = false;
+
+                        if (status === 'completed' && finalResult) {
+                            // Store result
+                            this.lastResults[action] = {
+                                success: finalResult.success,
+                                timestamp: new Date().toISOString(),
+                                cost: finalResult.cost_usd || this.getCost(tier),
+                                data: finalResult
+                            };
+
+                            // Update session costs
+                            this.sessionCosts[action] += finalResult.cost_usd || this.getCost(tier);
+
+                            // Show final layer status panel
+                            if (finalResult.data?.layer_status || Object.keys(lastLayerStatus).length > 0) {
+                                this.showLayerStatusPanel(
+                                    action,
+                                    finalResult.data?.layer_status || lastLayerStatus,
+                                    finalResult.data || {}
+                                );
+                            } else {
+                                showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                            }
+
+                            // Dispatch custom event
+                            document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
+                                detail: { action, jobId, result: finalResult }
+                            }));
+
+                            // Reload page after delay
+                            setTimeout(() => window.location.reload(), 3000);
+
+                            resolve(finalResult);
+                        } else {
+                            // Failed
+                            const errorMsg = finalResult?.error || 'Operation failed';
+                            showToast(`${actionLabel} failed: ${errorMsg}`, 'error');
+
+                            this.lastResults[action] = {
+                                success: false,
+                                timestamp: new Date().toISOString(),
+                                error: errorMsg
+                            };
+
+                            resolve({ success: false, error: errorMsg });
+                        }
+                    });
+
+                    // Handle SSE errors
+                    eventSource.addEventListener('error', (event) => {
+                        console.warn(`[${action}] SSE error, falling back to polling`);
+                        eventSource.close();
+
+                        // Fall back to polling for status
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
+                    });
+
+                    eventSource.onerror = (err) => {
+                        console.error(`[${action}] SSE connection error:`, err);
+                        // The 'error' event listener should handle this
+                    };
+                });
+
+            } catch (error) {
+                console.error(`${action} failed:`, error);
+                showToast(`${actionLabel} failed: ${error.message}`, 'error');
+
+                this.loading[action] = false;
+                this.lastResults[action] = {
+                    success: false,
+                    timestamp: new Date().toISOString(),
+                    error: error.message
+                };
+
+                return { success: false, error: error.message };
+            }
+        },
+
+        /**
+         * Poll operation status (fallback when SSE fails)
+         */
+        async pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve) {
+            const maxAttempts = 120;  // 2 minutes max
+            let attempts = 0;
+
+            const poll = async () => {
+                attempts++;
+
+                try {
+                    const statusResponse = await fetch(`/api/runner/operations/${runId}/status`);
+                    const statusData = await statusResponse.json();
+
+                    if (statusData.status === 'completed') {
+                        this.loading[action] = false;
+
+                        const result = statusData.result || { success: true };
+                        this.lastResults[action] = {
+                            success: result.success,
+                            timestamp: new Date().toISOString(),
+                            cost: result.cost_usd || this.getCost(tier),
+                            data: result
+                        };
+
+                        if (result.success !== false) {
+                            this.sessionCosts[action] += result.cost_usd || this.getCost(tier);
+                            showToast(`${actionLabel} completed successfully. Refreshing page...`, 'success');
+                            setTimeout(() => window.location.reload(), 3000);
+                        }
+
+                        resolve(result);
+                        return;
+                    }
+
+                    if (statusData.status === 'failed') {
+                        this.loading[action] = false;
+                        const errorMsg = statusData.error || 'Operation failed';
+                        showToast(`${actionLabel} failed: ${errorMsg}`, 'error');
+                        resolve({ success: false, error: errorMsg });
+                        return;
+                    }
+
+                    // Still running, poll again
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 1000);
+                    } else {
+                        this.loading[action] = false;
+                        showToast(`${actionLabel} timed out`, 'error');
+                        resolve({ success: false, error: 'Operation timed out' });
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 2000);
+                    } else {
+                        this.loading[action] = false;
+                        showToast(`${actionLabel} failed: ${error.message}`, 'error');
+                        resolve({ success: false, error: error.message });
+                    }
+                }
+            };
+
+            poll();
+        },
+
+        /**
+         * Execute a pipeline action synchronously (original behavior)
+         * @param {string} action - Action name (structure-jd, research-company, generate-cv)
+         * @param {string} jobId - MongoDB job ID
+         * @param {Object} options - Additional options
+         * @returns {Promise<Object>} Result from API
+         */
+        async executeSynchronous(action, jobId, options = {}) {
             if (this.loading[action]) {
                 console.log(`Action ${action} already running`);
                 return { success: false, error: 'Action already running' };
