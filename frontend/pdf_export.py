@@ -25,8 +25,9 @@ PDF_SERVICE_URL = os.getenv("PDF_SERVICE_URL", "http://localhost:8001")
 class DossierPDFExporter:
     """Generate PDF dossiers from JobState."""
 
-    def __init__(self, pdf_service_url: str = None):
+    def __init__(self, pdf_service_url: str = None, auth_token: str = None):
         self.pdf_service_url = pdf_service_url or PDF_SERVICE_URL
+        self.auth_token = auth_token
 
     def build_dossier_html(self, state: Dict[str, Any]) -> str:
         """
@@ -488,12 +489,22 @@ class DossierPDFExporter:
         """
         html = self.build_dossier_html(state)
 
+        # Build headers with authentication if token provided
+        headers = {"Content-Type": "application/json"}
+        if self.auth_token:
+            headers["Authorization"] = f"Bearer {self.auth_token}"
+
         try:
             response = requests.post(
                 f"{self.pdf_service_url}/render-pdf",
                 json={"html": html},
+                headers=headers,
                 timeout=30,
             )
+
+            if response.status_code == 401:
+                logger.error("PDF service authentication failed - check RUNNER_API_SECRET")
+                raise Exception("PDF service authentication failed")
 
             if response.status_code != 200:
                 logger.error(f"PDF service error: {response.status_code} - {response.text[:200]}")
