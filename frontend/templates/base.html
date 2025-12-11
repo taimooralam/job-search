@@ -945,10 +945,10 @@
 
         /* NOTE: Primary .skeleton class is defined earlier with theme-aware colors */
 
-        /* Toast Notifications - theme-aware */
+        /* Toast Notifications - theme-aware (positioned top-right to avoid Pipeline Log panel) */
         .toast {
             position: fixed;
-            bottom: var(--space-6);
+            top: var(--space-6);
             right: var(--space-6);
             background-color: var(--bg-card);
             border-radius: var(--radius-lg);
@@ -959,7 +959,7 @@
             gap: var(--space-3);
             min-width: 20rem;
             z-index: var(--z-tooltip);
-            animation: slideIn var(--transition-slow);
+            animation: slideInFromTop var(--transition-slow);
             border: 1px solid var(--border-default);
         }
 
@@ -983,6 +983,17 @@
             to {
                 opacity: 1;
                 transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-1rem);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -1693,6 +1704,9 @@
     <!-- Pipeline Actions CSS -->
     <link rel="stylesheet" href="/static/css/pipeline-actions.css">
 
+    <!-- CLI Panel CSS -->
+    <link rel="stylesheet" href="/static/css/cli-panel.css">
+
     {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full">
@@ -1804,6 +1818,9 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    <!-- Global CLI Panel (outside main content to survive HTMX swaps) -->
+    {% include 'components/cli_panel.html' %}
 
     <!-- Delete confirmation modal -->
     <div id="delete-modal" class="hidden modal">
@@ -2106,10 +2123,10 @@
 
             document.body.appendChild(toast);
 
-            // Auto-dismiss after 4 seconds
+            // Auto-dismiss after 4 seconds (slide up since toast is at top)
             setTimeout(() => {
                 toast.style.opacity = '0';
-                toast.style.transform = 'translateX(2rem)';
+                toast.style.transform = 'translateY(-1rem)';
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
@@ -2582,6 +2599,9 @@
 
     <!-- Pipeline Actions JS (must load after Alpine.js) -->
     <script src="/static/js/pipeline-actions.js"></script>
+
+    <!-- CLI Panel JS (must load after Alpine.js for store registration) -->
+    <script src="/static/js/cli-panel.js"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
