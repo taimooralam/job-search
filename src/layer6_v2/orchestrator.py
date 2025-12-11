@@ -362,12 +362,16 @@ class CVGeneratorV2:
             }
 
         except Exception as e:
+            import traceback
+            full_traceback = traceback.format_exc()
             self._logger.error(f"CV Generation V2 failed: {e}")
+            self._logger.error(f"Full traceback:\n{full_traceback}")
             return {
                 "cv_text": None,
                 "cv_path": None,
                 "cv_reasoning": f"Generation failed: {str(e)}",
                 "errors": [f"CV Gen V2 error: {str(e)}"],
+                "traceback": full_traceback,
             }
 
     def _build_default_extracted_jd(self, state: JobState) -> Dict[str, Any]:

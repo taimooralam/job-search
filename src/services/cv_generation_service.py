@@ -159,10 +159,15 @@ class CVGenerationService(OperationService):
                 cv_result = self._generate_cv(state, model)
 
                 if cv_result.get("errors"):
+                    # Include traceback if available for debugging
+                    traceback_info = cv_result.get("traceback", "")
+                    if traceback_info:
+                        logger.error(f"[{run_id[:16]}] CV generation traceback:\n{traceback_info}")
                     layer_status["cv_generator"] = {
                         "status": "failed",
                         "errors": cv_result["errors"],
-                        "message": f"Generation failed: {cv_result['errors'][0]}"
+                        "message": f"Generation failed: {cv_result['errors'][0]}",
+                        "traceback": traceback_info,
                     }
                     return self.create_error_result(
                         run_id=run_id,
