@@ -882,7 +882,9 @@ class CVGeneratorV2:
                     continue
 
                 # Get keyword from annotation
-                keyword = ann.get("matching_skill") or ann.get("suggested_keywords", [""])[0]
+                # Note: Must handle empty suggested_keywords list - .get() returns [] if key exists
+                suggested = ann.get("suggested_keywords") or []
+                keyword = ann.get("matching_skill") or (suggested[0] if suggested else "")
                 if not keyword:
                     # Fall back to target text
                     target = ann.get("target", {})
@@ -892,11 +894,13 @@ class CVGeneratorV2:
                     continue
 
                 # Set requirements based on requirement_type
+                # Note: use `or []` to handle both missing key AND None/empty values
                 req_type = ann.get("requirement_type", "neutral")
+                variants = ann.get("suggested_keywords") or []
                 if req_type == "must_have":
-                    ats_requirements[keyword] = {"min": 2, "max": 5, "variants": ann.get("suggested_keywords", [])}
+                    ats_requirements[keyword] = {"min": 2, "max": 5, "variants": variants}
                 elif req_type == "nice_to_have":
-                    ats_requirements[keyword] = {"min": 1, "max": 4, "variants": ann.get("suggested_keywords", [])}
+                    ats_requirements[keyword] = {"min": 1, "max": 4, "variants": variants}
 
         # Also include top_keywords from extracted_jd (if not already covered)
         if extracted_jd:

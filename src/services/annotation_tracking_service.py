@@ -417,7 +417,9 @@ class AnnotationTrackingService:
                 if not ann.get("is_active", True):
                     continue
 
-                keyword = ann.get("matching_skill") or ann.get("suggested_keywords", [""])[0]
+                # Note: Must handle empty suggested_keywords list - .get() returns [] if key exists
+                suggested = ann.get("suggested_keywords") or []
+                keyword = ann.get("matching_skill") or (suggested[0] if suggested else "")
                 if not keyword:
                     continue
 
