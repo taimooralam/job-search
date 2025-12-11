@@ -26,6 +26,30 @@ from src.common.annotation_types import ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
 
 
+def _build_cover_letter_system_prompt_with_persona(
+    jd_annotations: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Build cover letter system prompt with persona context prepended."""
+    persona_guidance = get_persona_guidance(jd_annotations)
+    if not persona_guidance:
+        return SYSTEM_PROMPT
+
+    persona_section = f"""=== CANDIDATE PERSONA (Central theme for the entire letter) ===
+
+{persona_guidance}
+
+This persona defines the candidate's professional identity.
+Frame the ENTIRE cover letter from this perspective.
+The opening hook should naturally incorporate this positioning.
+Use phrasing like "As a [persona element]..." to ground claims.
+Every achievement should reinforce this identity.
+
+=============================================================================
+
+"""
+    return persona_section + SYSTEM_PROMPT
+
+
 # ===== HELPER FUNCTIONS =====
 
 def _extract_companies_from_profile(profile: str) -> list:
@@ -862,21 +886,11 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
         lines = []
 
-        # Phase 5: Inject synthesized persona at the beginning
-        # The persona provides the central theme for the cover letter
-        persona_guidance = get_persona_guidance(jd_annotations)
-        if persona_guidance:
-            lines.append("=== SYNTHESIZED PERSONA (Frame entire letter around this) ===")
-            lines.append("")
-            lines.append(persona_guidance)
-            lines.append("")
-            lines.append("IMPORTANT: Frame the entire letter from this professional identity.")
-            lines.append("The opening should naturally incorporate this positioning.")
-            lines.append("Use 'As a [persona]...' or similar natural framing in the hook.")
-            lines.append("")
+        # Note: Persona is now injected into SYSTEM prompt via
+        # _build_cover_letter_system_prompt_with_persona, not here in USER prompt
 
         annotations = jd_annotations.get("annotations", [])
-        if not annotations and not persona_guidance:
+        if not annotations:
             return ""
 
         # Extract passion and identity areas
@@ -907,9 +921,9 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             elif identity == "not_identity":
                 identity_not_me.append(target_text)
 
-        # If no passion/identity data and no persona, return what we have
+        # If no passion/identity data, return empty string
         if not any([passion_love_it, passion_avoid, identity_core, identity_not_me]):
-            return "\n".join(lines) if lines else ""
+            return ""
 
         lines.append("=== PASSION & IDENTITY CONTEXT (Phase 4: Authentic Voice) ===")
 
@@ -970,8 +984,11 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         # Phase 4: Extract passion/identity context for authentic voice
         passion_identity_section = self._format_passion_identity_section(jd_annotations_data)
 
+        # Build system prompt with persona context (Phase 5: persona in SYSTEM prompt)
+        system_prompt = _build_cover_letter_system_prompt_with_persona(jd_annotations_data)
+
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
+            SystemMessage(content=system_prompt),
             HumanMessage(
                 content=USER_PROMPT_TEMPLATE.format(
                     title=state.get("title") or "",
