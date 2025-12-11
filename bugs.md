@@ -83,3 +83,59 @@ Users could not quickly annotate with Passion/Identity from the toolbar without 
 **Files Modified**:
 - `frontend/templates/partials/job_detail/_jd_annotation_panel.html` (lines 149-179, added button groups)
 - `frontend/static/js/jd-annotation.js` (lines 1959-1974, added handler functions)
+
+BUG 4. [FIXED] Annotation showing "null" instead of relevance level in sidebar
+
+**Problem**: In the annotation sidebar, some annotations displayed "null" as the relevance badge text instead of a proper label like "Core", "Strong", etc. This occurred when an annotation was created with only Passion or Identity set, but no Relevance selected.
+
+**Root Cause**: In `jd-annotation.js`, the `formatRelevance()` function at line 968 returned the raw `relevance` value as a fallback: `return labels[relevance] || relevance;`. When `relevance` was `null`, this returned `null` which was rendered literally as "null" in the HTML.
+
+The system intentionally allows saving annotations when ANY dimension is selected (relevance OR requirement OR passion OR identity) via OR logic in `updatePopoverSaveButton()`. This means users can create annotations with only passion set (e.g., "enjoy" = purple heart) and no relevance value.
+
+**Fix Applied**:
+Modified `renderAnnotationItem()` in `jd-annotation.js` to conditionally render the relevance badge only when `annotation.relevance` is truthy:
+
+```javascript
+// Relevance badge - only show if relevance is set (avoid showing "null")
+const relevanceBadge = annotation.relevance
+    ? `<span class="px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}">
+           ${this.formatRelevance(annotation.relevance)}
+       </span>`
+    : '';
+```
+
+This approach hides the relevance badge entirely when not set, rather than showing "null" or a confusing "Unset" label.
+
+**Files Modified**:
+- `frontend/static/js/jd-annotation.js` (lines 882-934, modified `renderAnnotationItem()` function)
+
+BUG 5. [FIXED] Synthesized persona too short, not reflecting all identities/strengths
+
+**Problem**: When users added many identity and core strength annotations, the synthesized persona was too short and didn't reflect all of them. Example persona was only ~27 words despite having 5+ core identity annotations.
+
+**Root Cause**: Multiple hardcoded limits in `persona_builder.py`:
+1. LLM prompt constrained to **20-35 words** only
+2. Only **3 annotations per category** passed to LLM (core_identity, love_it, etc.)
+3. Secondary identities capped at **5**
+4. Source annotation tracking capped at **3 per level**
+
+**Fix Applied**:
+1. Updated SYNTHESIS_PROMPT: Changed from "20-35 words" to "35-60 words, 1-2 sentences"
+2. Increased annotation limits per category:
+   | Category | Old | New |
+   |----------|-----|-----|
+   | core_identity | 3 | 6 |
+   | strong_identity | 3 | 5 |
+   | developing | 2 | 4 |
+   | love_it | 3 | 5 |
+   | enjoy | 3 | 5 |
+   | core_strength | 3 | 5 |
+   | extremely_relevant | 3 | 5 |
+3. Increased secondary_identities cap from 5 to 10
+4. Increased source annotation tracking from 3 to 6 per level
+5. Added debug logging when annotations are truncated
+
+**Files Modified**:
+- `src/common/persona_builder.py` (SYNTHESIS_PROMPT, _build_persona_context, _get_source_annotation_ids, secondary_identities cap)
+
+**Tests**: All 33 persona builder tests pass.
