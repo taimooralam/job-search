@@ -540,6 +540,52 @@ def format_priorities_for_prompt(
 
     lines = ["## JD Priority Requirements (from annotations)\n"]
 
+    # NEW: Add explicit placement rules at the top for ATS optimization
+    lines.append("### CRITICAL ATS PLACEMENT RULES")
+    lines.append(
+        "These rules are MANDATORY for ATS optimization and 6-7 second recruiter scan:"
+    )
+    lines.append("")
+
+    # Identity keywords for headline
+    if context.identity_priorities:
+        lines.append("**HEADLINE MUST CONTAIN:**")
+        for p in context.identity_priorities[:2]:
+            skill = p.matching_skill or (p.jd_text[:30] if p.jd_text else "")
+            if skill:
+                lines.append(f"  - '{skill}' (core identity)")
+        lines.append("")
+
+    # Must-have keywords for first 50 words
+    if context.must_have_priorities:
+        lines.append("**FIRST 50 WORDS OF NARRATIVE MUST CONTAIN:**")
+        for p in context.must_have_priorities[:3]:
+            skill = p.matching_skill or (p.jd_text[:30] if p.jd_text else "")
+            if skill:
+                lines.append(f"  - '{skill}' (must-have requirement)")
+        lines.append("")
+
+    # Core strengths for competencies
+    core_strengths = [
+        p
+        for p in context.priorities
+        if p.relevance in ["core_strength", "extremely_relevant"]
+    ]
+    if core_strengths:
+        lines.append("**CORE COMPETENCIES MUST INCLUDE:**")
+        for p in core_strengths[:4]:
+            skill = p.matching_skill or (p.jd_text[:30] if p.jd_text else "")
+            if skill:
+                lines.append(f"  - '{skill}'")
+        lines.append("")
+
+    lines.append("### PLACEMENT CHECKLIST (verify before output)")
+    lines.append("[ ] Identity keywords appear in headline")
+    lines.append("[ ] Must-have keywords appear in first 50 words of narrative")
+    lines.append("[ ] Core strengths are in core competencies section")
+    lines.append("[ ] Persona framing in opening statement")
+    lines.append("")
+
     # Identity items first - these define WHO the candidate IS
     identity_items = context.identity_priorities[:3]
     if identity_items:
