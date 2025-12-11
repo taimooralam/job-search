@@ -2276,7 +2276,15 @@ def export_dossier_pdf(job_id: str):
         runner_url = os.getenv("RUNNER_URL", "http://localhost:8000")
         pdf_service_url = f"{runner_url}/proxy/pdf"
 
-        exporter = DossierPDFExporter(pdf_service_url=pdf_service_url)
+        # Get authentication token for runner service
+        runner_token = os.getenv("RUNNER_API_SECRET")
+        if not runner_token:
+            logger.warning("RUNNER_API_SECRET not set - dossier PDF export may fail")
+
+        exporter = DossierPDFExporter(
+            pdf_service_url=pdf_service_url,
+            auth_token=runner_token
+        )
 
         try:
             pdf_bytes = exporter.export_to_pdf(job_doc)
