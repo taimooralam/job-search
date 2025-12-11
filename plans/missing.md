@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-11 (Session 6: SSE Streaming Progress Callbacks - BUG 8 Fixed - Real-time Operation Updates)
+**Last Updated**: 2025-12-11 (Session 7: Global CLI Panel - AWS/GCP CloudShell-style Terminal Interface)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -80,6 +80,40 @@
   - Persona now injected into SYSTEM prompt for all CV and cover letter generation
 - **Files Modified**: `src/layer6_v2/header_generator.py`, `src/layer6_v2/cover_letter_generator.py`
 - **Impact**: More coherent and consistent persona expression across all LLM outputs
+
+**Global CLI Panel - AWS/GCP CloudShell-style Terminal Interface** (P1.0 - NEW):
+- **Feature**: Persistent, collapsible CLI bar at bottom of every page showing real-time pipeline logs via SSE streaming
+- **Architecture**: Event-driven decoupling between pipeline-actions.js and cli-panel.js using custom Alpine.js store
+- **Files Created**:
+  - `frontend/templates/components/cli_panel.html` - Alpine.js-based HTML template with terminal UI
+  - `frontend/static/js/cli-panel.js` - Alpine store with event handling, sessionStorage persistence, debounced saves
+  - `frontend/static/css/cli-panel.css` - Terminal-themed dark styles (monospace font, color-coded logs)
+- **Files Modified**:
+  - `frontend/templates/base.html` - Added CSS/JS includes and CLI panel HTML include outside #htmx-main (persists across partial refreshes)
+  - `frontend/static/js/pipeline-actions.js` - Refactored to dispatch custom events instead of direct panel function calls:
+    - `cli:start-run` - Initializes new pipeline run in CLI panel
+    - `cli:log` - Streams individual log entries with timestamps
+    - `cli:layer-status` - Updates layer progress footer with completion status
+    - `cli:complete` - Marks run as complete and preserves logs
+    - `ui:refresh-job` - Replaces page reloads with HTMX partial refresh
+  - `frontend/static/js/job-detail.js` - Added `ui:refresh-job` event handler for HTMX swaps
+  - `frontend/templates/job_detail.html` - Updated tieredActionButton to pass jobTitle parameter for CLI context
+- **Key Features**:
+  - Multi-run support with tabs (up to 10 concurrent runs)
+  - Auto-scroll logs with color-coded output (errors=red, warnings=yellow, success=green)
+  - Layer status footer showing real-time pipeline progress (Layers 1-7)
+  - Copy logs and clear logs buttons
+  - Toast notifications when panel collapsed (prevents missed updates)
+  - Keyboard shortcut: Ctrl+` (backtick) to toggle panel visibility
+  - sessionStorage persistence with debounced saves (logs survive page navigation)
+  - HTMX partial refresh preserves CLI state (panel positioned outside swap target div)
+- **Technical Details**:
+  - Alpine.js store pattern for reactive state management
+  - EventSource-based SSE integration with automatic polling fallback
+  - Debounced save (500ms) to sessionStorage for performance
+  - Terminal-style styling with dark background, monospace font, color-coded text
+- **Impact**: Users see real-time pipeline execution across all pages without page reloads; logs persist during navigation; professional AWS/GCP-style UX
+- **Test Coverage**: Unit tests for event dispatch, sessionStorage persistence, and tab management
 
 **Suggest Strengths Feature** (P1.1):
 - **Feature**: New "Strengths" button in annotation panel with AI-powered strength suggestions
