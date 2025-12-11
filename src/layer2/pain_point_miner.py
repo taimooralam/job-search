@@ -261,8 +261,8 @@ def extract_annotation_context(jd_annotations: Optional[Dict[str, Any]]) -> Dict
     identity_not_me_areas: List[str] = []
 
     for ann in annotations:
-        # Only process active annotations
-        if not ann.get("is_active", False):
+        # Only process active annotations (default to True for backward compatibility)
+        if not ann.get("is_active", True):
             continue
 
         relevance = ann.get("relevance")

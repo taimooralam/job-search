@@ -119,8 +119,8 @@ class AnnotationBoostCalculator:
         annotations = jd_annotations.get("annotations", [])
 
         for ann in annotations:
-            # Only process active annotations
-            if not ann.get("is_active", False):
+            # Only process active annotations (default to True for backward compatibility)
+            if not ann.get("is_active", True):
                 continue
 
             active_annotations.append(ann)

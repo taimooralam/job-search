@@ -886,8 +886,8 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         identity_not_me = []
 
         for ann in annotations:
-            # Only process active annotations
-            if not ann.get("is_active", False):
+            # Only process active annotations (default to True for backward compatibility)
+            if not ann.get("is_active", True):
                 continue
 
             target = ann.get("target", {})
