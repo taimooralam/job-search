@@ -289,3 +289,151 @@ def health_check():
             "error": str(e),
             "runner_url": RUNNER_URL,
         }), 503
+
+
+# =============================================================================
+# Streaming Operation Proxy Routes (SSE Support for Small Actions)
+# =============================================================================
+
+
+@runner_bp.route("/operations/<job_id>/research-company/stream", methods=["POST"])
+def research_company_stream(job_id: str):
+    """
+    Start company research with SSE streaming.
+
+    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/research-company/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/operations/<job_id>/generate-cv/stream", methods=["POST"])
+def generate_cv_stream(job_id: str):
+    """
+    Start CV generation with SSE streaming.
+
+    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/generate-cv/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/operations/<job_id>/full-extraction/stream", methods=["POST"])
+def full_extraction_stream(job_id: str):
+    """
+    Start full JD extraction with SSE streaming.
+
+    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/full-extraction/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/operations/<run_id>/logs", methods=["GET"])
+def stream_operation_logs(run_id: str):
+    """
+    Stream real-time logs from an operation run via Server-Sent Events.
+
+    This is the SSE endpoint for streaming operation progress.
+    """
+    def generate() -> Generator[str, None, None]:
+        """Generate SSE stream from runner service."""
+        try:
+            response = requests.get(
+                f"{RUNNER_URL}/api/jobs/operations/{run_id}/logs",
+                headers=get_headers(),
+                stream=True,
+                timeout=300,  # Longer timeout for streaming
+            )
+
+            for line in response.iter_lines():
+                if line:
+                    yield line.decode("utf-8") + "\n\n"
+
+        except requests.exceptions.Timeout:
+            yield f"event: error\ndata: Runner service timeout\n\n"
+        except requests.exceptions.ConnectionError:
+            yield f"event: error\ndata: Cannot connect to runner service\n\n"
+        except Exception as e:
+            yield f"event: error\ndata: {str(e)}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@runner_bp.route("/operations/<run_id>/status", methods=["GET"])
+def get_operation_status(run_id: str):
+    """
+    Get current status of an operation run.
+
+    Fallback for polling-based status checks.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/api/jobs/operations/{run_id}/status",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
