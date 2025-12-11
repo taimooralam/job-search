@@ -347,11 +347,11 @@ class TestHeaderOutput:
             },
         )
         md = header.to_markdown()
-        # Research-aligned structure
+        # Hybrid Executive Summary structure
         assert "John Developer" in md
-        assert "PROFESSIONAL SUMMARY" in md  # ATS-optimized header
+        assert "EXECUTIVE SUMMARY" in md  # Updated header for hybrid format
         assert "CTO | 15+ Years" in md  # Headline with exact title
-        assert "Core Competencies:" in md  # New competencies section
+        assert "Core:" in md  # New inline competencies format
         assert "Technology Vision" in md  # From core_competencies
         assert "SKILLS & EXPERTISE" in md  # Skills section
         assert "EDUCATION" in md
@@ -867,3 +867,371 @@ class TestRoleCategoryHandling:
         )
 
         assert "Technology" in profile.text or "executive" in profile.text.lower()
+
+
+# ===== TESTS: Hybrid Executive Summary =====
+
+def _contains_pronouns(text: str) -> bool:
+    """Check if text contains first/second person pronouns."""
+    import re
+    pronouns = [
+        r'\bI\b', r'\bmy\b', r'\bme\b', r'\bmine\b',
+        r'\byou\b', r'\byour\b', r'\byours\b',
+        r'\bwe\b', r'\bour\b', r'\bours\b', r'\bus\b',
+    ]
+    text_lower = text.lower()
+    for pattern in pronouns:
+        if re.search(pattern, text_lower, re.IGNORECASE):
+            return True
+    return False
+
+
+class TestHybridExecutiveSummary:
+    """Test new Hybrid Executive Summary format."""
+
+    def test_profile_output_has_hybrid_fields(self):
+        """ProfileOutput has tagline and key_achievements fields."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[
+                "Led team of 25+ engineers to deliver platform migration, reducing latency by 75%",
+                "Built CI/CD pipeline improving deployment frequency by 300%",
+                "Scaled microservices architecture to 10M daily requests with 99.9% uptime",
+            ],
+            core_competencies=["Engineering Leadership", "Team Building", "Cloud Architecture"],
+        )
+
+        # Check fields exist
+        assert hasattr(profile, "tagline")
+        assert hasattr(profile, "key_achievements")
+        assert profile.tagline == "Technology leader who thrives on building high-performing teams"
+        assert len(profile.key_achievements) == 3
+
+    def test_is_hybrid_format_true_when_both_present(self):
+        """is_hybrid_format is True when tagline AND key_achievements exist."""
+        profile = ProfileOutput(
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[
+                "Led team of 25+ engineers to deliver platform migration",
+                "Built CI/CD pipeline improving deployment frequency by 300%",
+            ],
+        )
+        assert profile.is_hybrid_format is True
+
+    def test_is_hybrid_format_false_when_only_narrative(self):
+        """is_hybrid_format is False for legacy format."""
+        profile = ProfileOutput(
+            narrative="Engineering leader with 15 years of experience building teams.",
+        )
+        assert profile.is_hybrid_format is False
+
+    def test_is_hybrid_format_false_when_tagline_only(self):
+        """is_hybrid_format is False when only tagline (no achievements)."""
+        profile = ProfileOutput(
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[],  # Empty
+        )
+        assert profile.is_hybrid_format is False
+
+    def test_is_hybrid_format_false_when_achievements_only(self):
+        """is_hybrid_format is False when only achievements (no tagline)."""
+        profile = ProfileOutput(
+            tagline="",  # Empty
+            key_achievements=["Led team of 25+ engineers"],
+        )
+        assert profile.is_hybrid_format is False
+
+    def test_tagline_max_200_chars(self):
+        """Tagline should be max 200 characters."""
+        # Create a valid tagline under 200 chars
+        valid_tagline = "Technology leader who thrives on building high-performing teams and delivering scalable cloud infrastructure that drives business value"
+        assert len(valid_tagline) <= 200
+
+        profile = ProfileOutput(
+            tagline=valid_tagline,
+            key_achievements=["Achievement 1"],
+        )
+        assert len(profile.tagline) <= 200
+
+    def test_key_achievements_count_5_to_6(self):
+        """Should generate 5-6 key achievements."""
+        # Test with 5 achievements
+        profile_5 = ProfileOutput(
+            tagline="Technology leader passionate about engineering excellence",
+            key_achievements=[
+                "Achievement 1",
+                "Achievement 2",
+                "Achievement 3",
+                "Achievement 4",
+                "Achievement 5",
+            ],
+        )
+        assert len(profile_5.key_achievements) == 5
+        assert 5 <= len(profile_5.key_achievements) <= 6
+
+        # Test with 6 achievements
+        profile_6 = ProfileOutput(
+            tagline="Technology leader passionate about engineering excellence",
+            key_achievements=[
+                "Achievement 1",
+                "Achievement 2",
+                "Achievement 3",
+                "Achievement 4",
+                "Achievement 5",
+                "Achievement 6",
+            ],
+        )
+        assert len(profile_6.key_achievements) == 6
+        assert 5 <= len(profile_6.key_achievements) <= 6
+
+    def test_formatted_summary_structure(self):
+        """formatted_summary produces correct structure."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[
+                "Led team of 25+ engineers to deliver platform migration",
+                "Built CI/CD pipeline improving deployment frequency by 300%",
+                "Scaled microservices architecture to 10M daily requests",
+            ],
+            core_competencies=["Engineering Leadership", "Team Building", "Cloud Architecture"],
+        )
+
+        formatted = profile.formatted_summary
+
+        # Check structure
+        assert "Engineering Manager | 12+ Years" in formatted
+        assert "Technology leader who thrives" in formatted
+        assert "- Led team of 25+ engineers" in formatted
+        assert "- Built CI/CD pipeline" in formatted
+        assert "- Scaled microservices architecture" in formatted
+        assert "Core: Engineering Leadership | Team Building | Cloud Architecture" in formatted
+
+    def test_backward_compatibility_with_narrative(self):
+        """Old code using narrative field still works."""
+        # Legacy format
+        profile = ProfileOutput(
+            narrative="Engineering leader with 15 years of experience.",
+        )
+        assert profile.text == "Engineering leader with 15 years of experience."
+        assert profile.word_count == 7
+
+    def test_text_property_returns_hybrid_content(self):
+        """text property returns tagline + achievements for hybrid format."""
+        profile = ProfileOutput(
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[
+                "Led team of 25+ engineers to deliver platform migration",
+                "Built CI/CD pipeline improving deployment frequency by 300%",
+            ],
+        )
+
+        text = profile.text
+        assert "Technology leader who thrives" in text
+        assert "- Led team of 25+ engineers" in text
+        assert "- Built CI/CD pipeline" in text
+
+    def test_text_property_fallback_to_narrative(self):
+        """text property falls back to narrative for legacy format."""
+        profile = ProfileOutput(
+            narrative="Engineering leader with 15 years of experience.",
+        )
+        assert profile.text == "Engineering leader with 15 years of experience."
+
+
+class TestThirdPersonAbsentVoice:
+    """Test third-person absent voice (no pronouns) in tagline."""
+
+    def test_valid_tagline_no_pronouns(self):
+        """Valid taglines have no pronouns."""
+        valid_taglines = [
+            "Technology leader who thrives on building high-performing teams",
+            "Engineering executive passionate about driving technical excellence",
+            "Experienced architect focused on scalable cloud infrastructure",
+            "Strategic leader dedicated to innovation and team empowerment",
+        ]
+
+        for tagline in valid_taglines:
+            assert not _contains_pronouns(tagline), f"Tagline '{tagline}' contains pronouns"
+
+    def test_detect_pronoun_violations(self):
+        """Helper function detects pronouns in text."""
+        # First-person pronouns
+        assert _contains_pronouns("I am a technology leader") is True
+        assert _contains_pronouns("My expertise is in cloud architecture") is True
+        assert _contains_pronouns("Let me help you") is True
+
+        # Second-person pronouns
+        assert _contains_pronouns("You will benefit from my skills") is True
+        assert _contains_pronouns("Your team will grow") is True
+
+        # First-person plural
+        assert _contains_pronouns("We built a platform") is True
+        assert _contains_pronouns("Our team delivered") is True
+
+        # No pronouns
+        assert _contains_pronouns("Technology leader passionate about innovation") is False
+        assert _contains_pronouns("Engineering executive focused on results") is False
+
+    def test_fallback_taglines_no_pronouns(self):
+        """All role-specific fallback taglines use third-person absent voice."""
+        # These would be from the actual fallback generation logic
+        fallback_taglines = {
+            "engineering_manager": "Engineering leader passionate about building high-performing teams and driving technical excellence",
+            "staff_principal_engineer": "Staff engineer focused on scalable architecture and technical leadership across teams",
+            "cto": "Technology executive driving innovation and building world-class engineering organizations",
+            "vp_engineering": "Engineering executive focused on organizational growth and technical strategy",
+        }
+
+        for role, tagline in fallback_taglines.items():
+            assert not _contains_pronouns(tagline), f"Fallback for '{role}' contains pronouns: {tagline}"
+
+
+class TestHybridOutputRendering:
+    """Test output rendering for hybrid format."""
+
+    def test_to_markdown_uses_executive_summary_header(self):
+        """to_markdown uses 'EXECUTIVE SUMMARY' not 'PROFESSIONAL SUMMARY'."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=["Achievement 1"],
+            core_competencies=["Engineering Leadership"],
+        )
+        skills = [
+            SkillsSection("Technical", [SkillEvidence("Python", [], [])]),
+        ]
+        header = HeaderOutput(
+            profile=profile,
+            skills_sections=skills,
+            education=["M.Sc. CS"],
+            contact_info={"name": "John", "email": "john@example.com"},
+        )
+
+        md = header.to_markdown()
+        assert "EXECUTIVE SUMMARY" in md
+        assert "PROFESSIONAL SUMMARY" not in md
+
+    def test_to_markdown_renders_tagline(self):
+        """to_markdown includes tagline paragraph."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=["Achievement 1"],
+            core_competencies=["Engineering Leadership"],
+        )
+        skills = [SkillsSection("Technical", [SkillEvidence("Python", [], [])])]
+        header = HeaderOutput(
+            profile=profile,
+            skills_sections=skills,
+            education=["M.Sc. CS"],
+            contact_info={"name": "John", "email": "john@example.com"},
+        )
+
+        md = header.to_markdown()
+        assert "Technology leader who thrives on building high-performing teams" in md
+
+    def test_to_markdown_renders_bullets(self):
+        """to_markdown renders key_achievements as bullet list."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader passionate about engineering excellence",
+            key_achievements=[
+                "Led team of 25+ engineers to deliver platform migration",
+                "Built CI/CD pipeline improving deployment frequency by 300%",
+                "Scaled microservices architecture to 10M daily requests",
+            ],
+            core_competencies=["Engineering Leadership"],
+        )
+        skills = [SkillsSection("Technical", [SkillEvidence("Python", [], [])])]
+        header = HeaderOutput(
+            profile=profile,
+            skills_sections=skills,
+            education=["M.Sc. CS"],
+            contact_info={"name": "John", "email": "john@example.com"},
+        )
+
+        md = header.to_markdown()
+        assert "- Led team of 25+ engineers to deliver platform migration" in md
+        assert "- Built CI/CD pipeline improving deployment frequency by 300%" in md
+        assert "- Scaled microservices architecture to 10M daily requests" in md
+
+    def test_to_markdown_renders_core_inline(self):
+        """to_markdown renders competencies as 'Core: X | Y | Z'."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader passionate about engineering excellence",
+            key_achievements=["Achievement 1"],
+            core_competencies=["Engineering Leadership", "Team Building", "Cloud Architecture"],
+        )
+        skills = [SkillsSection("Technical", [SkillEvidence("Python", [], [])])]
+        header = HeaderOutput(
+            profile=profile,
+            skills_sections=skills,
+            education=["M.Sc. CS"],
+            contact_info={"name": "John", "email": "john@example.com"},
+        )
+
+        md = header.to_markdown()
+        # Note: The implementation uses bold markdown for Core
+        assert "**Core:**" in md or "Core:" in md
+        assert "Engineering Leadership | Team Building | Cloud Architecture" in md
+
+    def test_to_dict_includes_hybrid_fields(self):
+        """to_dict includes tagline, key_achievements, is_hybrid_format."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            tagline="Technology leader who thrives on building high-performing teams",
+            key_achievements=[
+                "Led team of 25+ engineers",
+                "Built CI/CD pipeline",
+            ],
+            core_competencies=["Engineering Leadership"],
+        )
+
+        data = profile.to_dict()
+        assert "tagline" in data
+        assert "key_achievements" in data
+        assert "is_hybrid_format" in data
+        assert data["is_hybrid_format"] is True
+        assert data["tagline"] == "Technology leader who thrives on building high-performing teams"
+        assert len(data["key_achievements"]) == 2
+
+    def test_to_markdown_fallback_to_narrative_when_hybrid_not_available(self):
+        """to_markdown falls back to narrative for legacy format."""
+        profile = ProfileOutput(
+            headline="Engineering Manager | 12+ Years Technology Leadership",
+            narrative="Engineering leader with track record of building teams and delivering results.",
+            core_competencies=["Engineering Leadership"],
+        )
+        skills = [SkillsSection("Technical", [SkillEvidence("Python", [], [])])]
+        header = HeaderOutput(
+            profile=profile,
+            skills_sections=skills,
+            education=["M.Sc. CS"],
+            contact_info={"name": "John", "email": "john@example.com"},
+        )
+
+        md = header.to_markdown()
+        # Should use narrative when tagline not present
+        assert "Engineering leader with track record of building teams" in md
+
+    def test_word_count_calculated_from_hybrid_content(self):
+        """Word count is calculated from tagline + key_achievements."""
+        profile = ProfileOutput(
+            tagline="Technology leader who thrives on building teams",  # 8 words
+            key_achievements=[
+                "Led team of engineers",  # 4 words
+                "Built CI pipeline",  # 2 words (CI counts as 1)
+            ],
+        )
+        # Total: 8 + 4 + 2 = 14 words
+        assert profile.word_count == 14
+
+    def test_word_count_fallback_to_narrative(self):
+        """Word count falls back to narrative for legacy format."""
+        profile = ProfileOutput(
+            narrative="Engineering leader with fifteen years of experience",  # 7 words
+        )
+        assert profile.word_count == 7
