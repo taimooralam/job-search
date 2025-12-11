@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-10 (Session 3: E2E Annotation Integration Complete - All 11 Phases Done, GAP-085 to GAP-094 Marked Complete)
+**Last Updated**: 2025-12-11 (Session 5: Annotation System Improvements - Source-Based Weighting, Persona SYSTEM Prompts, Suggest Strengths, ATS Keyword Placement)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -41,6 +41,62 @@
   - EventSource with automatic retry and polling fallback for browser compatibility
   - Real-time progress updates during long-running operations
 - **Backward Compatibility**: Existing synchronous endpoints remain unchanged; streaming endpoints are opt-in
+
+### Today's Session (2025-12-11 Session 5): Annotation System Improvements
+
+**Source-Based Weighting for Annotations** (P0.2):
+- **Feature**: Human annotations now weighted 20% higher than LLM suggestions
+- **Implementation**: Added `SOURCE_MULTIPLIERS` dict in `src/common/annotation_types.py`:
+  - Human annotations: 1.2x multiplier
+  - Preset templates: 1.1x multiplier
+  - Pipeline suggestions: 1.0x multiplier (baseline)
+- **Files Modified**: `src/common/annotation_boost.py` - Updated `calculate_boost()` to include source dimension in scoring
+- **Impact**: Manual annotations have greater influence on downstream scoring (pain points, fit scores, STAR selection)
+
+**Persona SYSTEM Prompt Migration** (P0.3):
+- **Problem**: Persona was injected into USER prompts, inconsistent framing across outputs
+- **Solution**: Moved persona from USER to SYSTEM prompts for stronger, more consistent LLM framing
+- **Implementation**:
+  - Added `_build_profile_system_prompt_with_persona()` helper in `src/layer6_v2/header_generator.py`
+  - Added `_build_cover_letter_system_prompt_with_persona()` helper in `src/layer6_v2/cover_letter_generator.py`
+  - Persona now injected into SYSTEM prompt for all CV and cover letter generation
+- **Files Modified**: `src/layer6_v2/header_generator.py`, `src/layer6_v2/cover_letter_generator.py`
+- **Impact**: More coherent and consistent persona expression across all LLM outputs
+
+**Suggest Strengths Feature** (P1.1):
+- **Feature**: New "Strengths" button in annotation panel with AI-powered strength suggestions
+- **Architecture**: New `StrengthSuggestionService` in `src/services/strength_suggestion_service.py`
+- **API Endpoint**: `POST /api/jobs/{job_id}/suggest-strengths` - Returns suggested strength skills with patterns and LLM analysis
+- **Frontend Integration** (`frontend/static/js/jd-annotation.js`):
+  - "Strengths" button in annotation popover panel
+  - Modal dialog displays suggested strengths from LLM analysis
+  - Patterns: 20+ hardcoded skill patterns (Python, AWS, K8s, Docker, leadership, communication, etc.)
+  - LLM analysis for deeper semantic matches beyond pattern matching
+- **Files Created/Modified**:
+  - `src/services/strength_suggestion_service.py` - NEW service with pattern and LLM-based suggestion logic
+  - `frontend/static/js/jd-annotation.js` - Added suggestStrengths() method and modal rendering
+- **Impact**: Users can quickly discover relevant skills from JD without manual analysis
+
+**ATS Keyword Placement Validator** (P1.2):
+- **Feature**: Validates that keywords appear in high-visibility CV sections for ATS optimization
+- **Architecture**: New `KeywordPlacementValidator` in `src/layer6_v2/keyword_placement.py`
+- **Scoring Rules**:
+  - Headline section: 40 points (highest priority)
+  - Narrative section: 30 points
+  - Competencies/Skills section: 20 points
+  - First role description: 10 points (lowest priority)
+  - Passing score: 70+ points (covers multiple sections)
+- **Output**:
+  - `ATS violations` - Keywords missing from priority sections
+  - `improvement_suggestions` - Specific placement recommendations
+- **Integration**:
+  - Enhanced CV generation prompts with explicit ATS placement rules
+  - Validation runs post-generation to identify and suggest improvements
+  - Results included in CV output for user feedback
+- **Files Created/Modified**:
+  - `src/layer6_v2/keyword_placement.py` - NEW validator with placement scoring logic
+  - `src/layer6_v2/types.py` - Added `KeywordPlacementResult` type
+- **Impact**: CVs now optimized for ATS parsing with keywords in strategic positions; users receive actionable improvement suggestions
 
 **E2E Annotation Integration Complete** (GAP-085 to GAP-094 - All DONE 2025-12-10):
 | GAP ID | Title | Priority | Status | Completed |
