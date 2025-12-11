@@ -7,8 +7,9 @@ and apply them to scoring algorithms throughout the pipeline.
 Key concepts:
 - Annotations with `is_active=True` influence scoring
 - Multiple annotations can affect the same item (conflict resolution applies)
-- Boost formula: relevance_mult × requirement_mult × priority_mult
+- Boost formula: relevance × requirement × passion × identity × priority × type × source
 - Keywords from annotations get injected into scoring algorithms
+- Source weighting: human (1.2x) > preset (1.1x) > pipeline_suggestion (1.0x)
 
 Usage:
     from src.common.annotation_boost import AnnotationBoostCalculator
@@ -30,6 +31,7 @@ from src.common.annotation_types import (
     IDENTITY_MULTIPLIERS,
     PRIORITY_MULTIPLIERS,
     TYPE_MODIFIERS,
+    SOURCE_MULTIPLIERS,
 )
 
 
@@ -182,11 +184,16 @@ class AnnotationBoostCalculator:
         """
         Calculate the boost multiplier for a single annotation.
 
-        Formula: relevance_mult × requirement_mult × passion_mult × identity_mult × priority_mult × type_mod
+        Formula: relevance × requirement × passion × identity × priority × type × source
 
-        The new dimensions (passion and identity) provide:
+        Dimensions:
+        - Relevance: How well candidate matches this requirement (core_strength=3.0x to gap=0.3x)
+        - Requirement: How important this is to the job (must_have=1.5x, disqualifier=0.0x)
         - Passion: How excited the candidate is about this aspect (love_it=1.5x to avoid=0.5x)
         - Identity: How strongly this defines professional identity (core_identity=2.0x to not_identity=0.3x)
+        - Priority: User-assigned priority (1=1.5x to 5=0.6x)
+        - Type: Annotation type modifier (reframe=1.2x, concern=0.0x)
+        - Source: Annotation origin weighting (human=1.2x, preset=1.1x, pipeline_suggestion=1.0x)
 
         Args:
             annotation: The annotation to calculate boost for
@@ -201,6 +208,7 @@ class AnnotationBoostCalculator:
         identity = annotation.get("identity", "peripheral")
         priority = annotation.get("priority", 3)
         ann_type = annotation.get("annotation_type", "skill_match")
+        source = annotation.get("created_by", "pipeline_suggestion")
 
         # Handle disqualifier (always returns 0)
         if requirement == "disqualifier":
@@ -212,8 +220,9 @@ class AnnotationBoostCalculator:
         identity_mult = IDENTITY_MULTIPLIERS.get(identity, 1.0)
         priority_mult = PRIORITY_MULTIPLIERS.get(priority, 1.0)
         type_mod = TYPE_MODIFIERS.get(ann_type, 1.0)
+        source_mult = SOURCE_MULTIPLIERS.get(source, 1.0)
 
-        return relevance_mult * requirement_mult * passion_mult * identity_mult * priority_mult * type_mod
+        return relevance_mult * requirement_mult * passion_mult * identity_mult * priority_mult * type_mod * source_mult
 
     def get_boost_for_star(self, star_id: str) -> BoostResult:
         """

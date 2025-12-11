@@ -542,6 +542,15 @@ TYPE_MODIFIERS: Dict[str, float] = {
     "concern": 0.0,
 }
 
+# Source multipliers (annotation origin weighting)
+# Human annotations are gold standard, preset selections show intentionality,
+# LLM suggestions are baseline that need human validation
+SOURCE_MULTIPLIERS: Dict[str, float] = {
+    "human": 1.2,              # Human annotations are gold standard
+    "preset": 1.1,             # User-selected presets are intentional
+    "pipeline_suggestion": 1.0,  # LLM suggestions are baseline
+}
+
 # Relevance level colors (for UI)
 RELEVANCE_COLORS: Dict[str, Dict[str, str]] = {
     "core_strength": {"bg": "bg-green-500/20", "border": "border-green-500", "badge": "badge-green", "hex": "#22c55e"},
