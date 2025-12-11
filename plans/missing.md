@@ -18,13 +18,29 @@
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
 
-### Today's Session (2025-12-10 Session 3): Annotation System Analysis
+### Today's Session (2025-12-10 Session 4): SSE Streaming for Operations
 
-**New Report Created**: `reports/annotation-system-analysis-2025-12-10.md` (~2100 lines)
-- Full technical deep-dive on annotation data model and pipeline flow
-- 5-dimension annotation system analysis (relevance, requirement_type, passion, identity, annotation_type)
-- Layer-by-layer integration audit identifying utilization gaps
-- Boost formula documentation with all multipliers
+**SSE Streaming Feature Implemented**:
+- **Feature**: Server-Sent Events streaming for smaller pipeline operations (research-company, generate-cv, full-extraction)
+- **Architecture**: Three-layer streaming system (FastAPI → Flask proxy → Frontend EventSource)
+- **Files Created**:
+  - `runner_service/routes/operation_streaming.py` - NEW: SSE infrastructure with `OperationState` dataclass and stream_operation_logs() generator
+- **Files Modified**:
+  - `runner_service/routes/operations.py` - Added stream endpoints for research-company, generate-cv, full-extraction + /operations/{run_id}/logs SSE proxy + /operations/{run_id}/status polling fallback
+  - `frontend/runner.py` - Added Flask proxy routes for SSE streaming
+  - `frontend/static/js/pipeline-actions.js` - Added executeWithSSE() method and EventSource API integration with polling fallback
+- **API Endpoints** (new streaming endpoints):
+  - `POST /{job_id}/research-company/stream` - Stream research-company operation with SSE logs
+  - `POST /{job_id}/generate-cv/stream` - Stream CV generation with SSE logs
+  - `POST /{job_id}/full-extraction/stream` - Stream full extraction with SSE logs
+  - `GET /operations/{run_id}/logs` - SSE streaming endpoint for operation logs
+  - `GET /operations/{run_id}/status` - Polling fallback endpoint for operation status
+- **Frontend Features**:
+  - In-memory operation state tracking with `_operation_runs` dict
+  - Log/layer status management helpers
+  - EventSource with automatic retry and polling fallback for browser compatibility
+  - Real-time progress updates during long-running operations
+- **Backward Compatibility**: Existing synchronous endpoints remain unchanged; streaming endpoints are opt-in
 
 **E2E Annotation Integration Complete** (GAP-085 to GAP-094 - All DONE 2025-12-10):
 | GAP ID | Title | Priority | Status | Completed |
