@@ -31,6 +31,46 @@ Vercel Frontend ──► VPS Runner Service ──► MongoDB Atlas
 
 ---
 
+## ⚠️ LLM Operations Architecture (IMPORTANT)
+
+**All LLM operations MUST be executed on the VPS Runner service**, not directly in the Frontend (Vercel).
+
+### Why?
+- **Vercel limitations**: LangChain and heavy ML dependencies don't work well on Vercel's serverless environment
+- **Timeout constraints**: Vercel has strict timeout limits; LLM operations may exceed them
+- **Cost tracking**: Runner has centralized cost tracking via LangSmith
+- **Error handling**: Runner has better retry logic and error recovery
+
+### Pattern to Follow
+```python
+# WRONG - Don't do LLM operations in frontend/app.py
+@app.route("/api/jobs/<job_id>/some-llm-operation")
+def some_llm_operation():
+    from src.common.some_llm_module import LLMClass
+    result = LLMClass().execute()  # ❌ Will fail on Vercel
+    return jsonify(result)
+
+# CORRECT - Proxy to VPS Runner
+@app.route("/api/jobs/<job_id>/some-llm-operation")
+def some_llm_operation():
+    response = requests.post(
+        f"{RUNNER_URL}/api/jobs/{job_id}/some-llm-operation",
+        headers=get_runner_headers(),
+        timeout=30,
+    )
+    return jsonify(response.json())  # ✅ LLM runs on VPS
+```
+
+### Operations that MUST run on Runner
+- CV Generation (Layer 6)
+- Company Research (Layer 3)
+- Pain Point Mining (Layer 2)
+- Persona Synthesis (PersonaBuilder)
+- JD Structuring (Layer 1.4 LLM mode)
+- Any operation using `create_tracked_*` LLM factories
+
+---
+
 ## Pipeline Layers (10 Nodes Total)
 
 ### Layer 1.4: JD Processor (Completed 2025-11-30, Enhanced 2025-12-10)
