@@ -29,35 +29,40 @@
     <div class="mb-3">
         <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Match Strength</label>
         <div class="grid grid-cols-5 gap-1">
-            <button onclick="setPopoverRelevance('core_strength')"
+            <button type="button"
+                    onclick="setPopoverRelevance('core_strength')"
                     data-relevance="core_strength"
                     class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
                            bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
                     title="5+ years direct experience; could teach others">
                 Core
             </button>
-            <button onclick="setPopoverRelevance('extremely_relevant')"
+            <button type="button"
+                    onclick="setPopoverRelevance('extremely_relevant')"
                     data-relevance="extremely_relevant"
                     class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
                            bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                     title="3-5 years; used daily in recent role">
                 Strong
             </button>
-            <button onclick="setPopoverRelevance('relevant')"
+            <button type="button"
+                    onclick="setPopoverRelevance('relevant')"
                     data-relevance="relevant"
                     class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
                            bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100"
                     title="1-3 years; transferable with minor framing">
                 Medium
             </button>
-            <button onclick="setPopoverRelevance('tangential')"
+            <button type="button"
+                    onclick="setPopoverRelevance('tangential')"
                     data-relevance="tangential"
                     class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
                            bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
                     title="Less than 1 year; requires significant reframing">
                 Weak
             </button>
-            <button onclick="setPopoverRelevance('gap')"
+            <button type="button"
+                    onclick="setPopoverRelevance('gap')"
                     data-relevance="gap"
                     class="relevance-btn px-2 py-1.5 rounded text-xs font-medium text-center transition
                            bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
@@ -71,21 +76,24 @@
     <div class="mb-3">
         <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Requirement Type</label>
         <div class="flex gap-2">
-            <button onclick="setPopoverRequirement('must_have')"
+            <button type="button"
+                    onclick="setPopoverRequirement('must_have')"
                     data-requirement="must_have"
                     class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
                            bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
                     title="Required/essential for the role">
                 Must-Have
             </button>
-            <button onclick="setPopoverRequirement('nice_to_have')"
+            <button type="button"
+                    onclick="setPopoverRequirement('nice_to_have')"
                     data-requirement="nice_to_have"
                     class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
                            bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
                     title="Preferred but not required">
                 Nice-to-Have
             </button>
-            <button onclick="setPopoverRequirement('neutral')"
+            <button type="button"
+                    onclick="setPopoverRequirement('neutral')"
                     data-requirement="neutral"
                     class="requirement-btn flex-1 px-3 py-1.5 rounded text-xs font-medium text-center transition
                            bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100"
@@ -102,35 +110,40 @@
             <span class="text-gray-400 font-normal">(how excited are you about this?)</span>
         </label>
         <div class="flex flex-wrap gap-1">
-            <button onclick="setPopoverPassion('love_it')"
+            <button type="button"
+                    onclick="setPopoverPassion('love_it')"
                     data-passion="love_it"
                     class="passion-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100"
                     title="Genuinely excited - would love to do this daily">
                 🔥 Love
             </button>
-            <button onclick="setPopoverPassion('enjoy')"
+            <button type="button"
+                    onclick="setPopoverPassion('enjoy')"
                     data-passion="enjoy"
                     class="passion-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
                     title="Would enjoy doing this regularly">
                 😊 Enjoy
             </button>
-            <button onclick="setPopoverPassion('neutral')"
+            <button type="button"
+                    onclick="setPopoverPassion('neutral')"
                     data-passion="neutral"
                     class="passion-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 ring-2 ring-gray-300"
                     title="Neither excited nor dreading - neutral">
                 😐 Neutral
             </button>
-            <button onclick="setPopoverPassion('tolerate')"
+            <button type="button"
+                    onclick="setPopoverPassion('tolerate')"
                     data-passion="tolerate"
                     class="passion-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100"
                     title="Can do it but would rather not emphasize">
                 😕 Tolerate
             </button>
-            <button onclick="setPopoverPassion('avoid')"
+            <button type="button"
+                    onclick="setPopoverPassion('avoid')"
                     data-passion="avoid"
                     class="passion-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-stone-50 text-stone-600 border border-stone-200 hover:bg-stone-100"
@@ -147,35 +160,40 @@
             <span class="text-gray-400 font-normal">(use in introductions?)</span>
         </label>
         <div class="flex flex-wrap gap-1">
-            <button onclick="setPopoverIdentity('core_identity')"
+            <button type="button"
+                    onclick="setPopoverIdentity('core_identity')"
                     data-identity="core_identity"
                     class="identity-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100"
                     title="This IS who I am - use in headlines and introductions">
                 ⭐ Core
             </button>
-            <button onclick="setPopoverIdentity('strong_identity')"
+            <button type="button"
+                    onclick="setPopoverIdentity('strong_identity')"
                     data-identity="strong_identity"
                     class="identity-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100"
                     title="Significant part of my professional identity">
                 💪 Strong
             </button>
-            <button onclick="setPopoverIdentity('developing')"
+            <button type="button"
+                    onclick="setPopoverIdentity('developing')"
                     data-identity="developing"
                     class="identity-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100"
                     title="Growing into this identity - frame as development">
                 🌱 Growing
             </button>
-            <button onclick="setPopoverIdentity('peripheral')"
+            <button type="button"
+                    onclick="setPopoverIdentity('peripheral')"
                     data-identity="peripheral"
                     class="identity-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 ring-2 ring-gray-300"
                     title="Not central to identity - include only if relevant">
                 ○ Peripheral
             </button>
-            <button onclick="setPopoverIdentity('not_identity')"
+            <button type="button"
+                    onclick="setPopoverIdentity('not_identity')"
                     data-identity="not_identity"
                     class="identity-btn px-2 py-1.5 rounded text-xs font-medium text-center transition whitespace-nowrap
                            bg-zinc-50 text-zinc-600 border border-zinc-200 hover:bg-zinc-100"

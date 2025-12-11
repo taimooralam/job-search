@@ -74,7 +74,8 @@ class AnnotationManager {
             isLoading: false,
             isEditing: false,
             hasIdentityAnnotations: false,
-            isUserEdited: false
+            isUserEdited: false,
+            unavailable: false  // True when on Vercel (LangChain not available)
         };
     }
 
@@ -493,6 +494,16 @@ class AnnotationManager {
             this.setPopoverRequirement(annotation.requirement_type);
         }
 
+        // Set passion level
+        if (annotation.passion) {
+            this.setPopoverPassion(annotation.passion);
+        }
+
+        // Set identity level
+        if (annotation.identity) {
+            this.setPopoverIdentity(annotation.identity);
+        }
+
         // Set STAR stories
         if (annotation.star_ids && annotation.star_ids.length > 0) {
             annotation.star_ids.forEach(starId => {
@@ -524,6 +535,8 @@ class AnnotationManager {
         this.popoverState.selectedText = annotation.target?.text || '';
         this.popoverState.relevance = annotation.relevance;
         this.popoverState.requirement = annotation.requirement_type;
+        this.popoverState.passion = annotation.passion || 'neutral';
+        this.popoverState.identity = annotation.identity || 'peripheral';
         this.popoverState.reframeNote = annotation.reframe_note || '';
         this.popoverState.strategicNote = annotation.strategic_note || '';
         this.popoverState.keywords = annotation.suggested_keywords?.join(', ') || '';
@@ -533,11 +546,17 @@ class AnnotationManager {
      * Reset popover form to default state
      */
     resetPopoverForm() {
-        // Clear button selections
+        // Clear button selections for all dimension types
         document.querySelectorAll('.relevance-btn').forEach(btn => {
             btn.classList.remove('ring-2', 'ring-indigo-500');
         });
         document.querySelectorAll('.requirement-btn').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-indigo-500');
+        });
+        document.querySelectorAll('.passion-btn').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-indigo-500');
+        });
+        document.querySelectorAll('.identity-btn').forEach(btn => {
             btn.classList.remove('ring-2', 'ring-indigo-500');
         });
 
@@ -1282,9 +1301,14 @@ class AnnotationManager {
 
             const data = await response.json();
 
-            if (data.success && data.persona) {
+            if (data.unavailable) {
+                // Expected on Vercel - LangChain not available
+                this.personaState.unavailable = true;
+                console.info('Persona synthesis unavailable on this deployment:', data.message);
+            } else if (data.success && data.persona) {
                 this.personaState.statement = data.persona;
                 this.personaState.isUserEdited = false;
+                this.personaState.unavailable = false;
                 console.log('Synthesized persona:', data.persona);
 
                 // Auto-save the synthesized persona to MongoDB
@@ -1357,6 +1381,16 @@ class AnnotationManager {
     }
 
     /**
+     * Start manual persona entry (when synthesis unavailable)
+     */
+    startManualPersonaEntry() {
+        this.personaState.statement = '';  // Start with empty statement
+        this.personaState.isEditing = true;
+        this.personaState.unavailable = false;  // Clear unavailable state
+        this.renderPersonaPanel();
+    }
+
+    /**
      * Cancel persona edit mode
      */
     cancelEditingPersona() {
@@ -1387,7 +1421,7 @@ class AnnotationManager {
             return;
         }
 
-        const { statement, isLoading, isEditing, isUserEdited } = this.personaState;
+        const { statement, isLoading, isEditing, isUserEdited, unavailable } = this.personaState;
 
         // Loading state
         if (isLoading) {
@@ -1401,6 +1435,24 @@ class AnnotationManager {
                         Synthesizing Persona...
                     </h4>
                     <p class="text-sm text-indigo-700">Analyzing identity annotations to create your professional positioning...</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Unavailable on Vercel - show manual entry option
+        if (unavailable && !statement) {
+            container.innerHTML = `
+                <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                    <h4 class="font-semibold text-amber-800 mb-2">Professional Persona</h4>
+                    <p class="text-sm text-amber-700 mb-3">
+                        AI-powered persona synthesis is not available on this deployment.
+                        You can enter your persona statement manually.
+                    </p>
+                    <button onclick="annotationManager.startManualPersonaEntry()"
+                            class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium">
+                        Enter Persona Manually
+                    </button>
                 </div>
             `;
             return;
