@@ -92,7 +92,7 @@ professional essence."""
 
 {persona_context}
 
-Write a single sentence (20-35 words) that positions this professional.
+Write a persona statement (35-60 words, 1-2 sentences) that positions this professional.
 
 Rules:
 - Start with "A" or "An"
@@ -101,8 +101,9 @@ Rules:
 - Make it sound authentic and compelling, not like a list
 - If they love something, let that passion shine through
 - If developing skills are mentioned, frame them as growth direction
+- For candidates with many identities/strengths, use two sentences to capture their multi-faceted nature
 
-Return ONLY the persona sentence, nothing else. No quotes around it."""
+Return ONLY the persona statement, nothing else. No quotes around it."""
 
     def __init__(self, layer: str = "persona_builder"):
         """
@@ -212,19 +213,25 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         # Core identity (WHO they are)
         core = grouped.get("core_identity", [])
         if core:
-            core_texts = [self._get_identity_text(a) for a in core[:3]]
+            if len(core) > 6:
+                logger.debug(f"Truncating {len(core)} core_identity annotations to 6")
+            core_texts = [self._get_identity_text(a) for a in core[:6]]
             identity_lines.append(f"  • Core identity: {', '.join(core_texts)}")
 
         # Strong identity
         strong = grouped.get("strong_identity", [])
         if strong:
-            strong_texts = [self._get_identity_text(a) for a in strong[:3]]
+            if len(strong) > 5:
+                logger.debug(f"Truncating {len(strong)} strong_identity annotations to 5")
+            strong_texts = [self._get_identity_text(a) for a in strong[:5]]
             identity_lines.append(f"  • Strong identity: {', '.join(strong_texts)}")
 
         # Developing identity
         developing = grouped.get("developing", [])
         if developing:
-            dev_texts = [self._get_identity_text(a) for a in developing[:2]]
+            if len(developing) > 4:
+                logger.debug(f"Truncating {len(developing)} developing annotations to 4")
+            dev_texts = [self._get_identity_text(a) for a in developing[:4]]
             identity_lines.append(f"  • Developing: {', '.join(dev_texts)}")
 
         if identity_lines:
@@ -237,13 +244,17 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         # Things they love
         love = grouped.get("love_it", [])
         if love:
-            love_texts = [self._get_identity_text(a) for a in love[:3]]
+            if len(love) > 5:
+                logger.debug(f"Truncating {len(love)} love_it annotations to 5")
+            love_texts = [self._get_identity_text(a) for a in love[:5]]
             passion_lines.append(f"  • Loves: {', '.join(love_texts)}")
 
         # Things they enjoy
         enjoy = grouped.get("enjoy", [])
         if enjoy:
-            enjoy_texts = [self._get_identity_text(a) for a in enjoy[:3]]
+            if len(enjoy) > 5:
+                logger.debug(f"Truncating {len(enjoy)} enjoy annotations to 5")
+            enjoy_texts = [self._get_identity_text(a) for a in enjoy[:5]]
             passion_lines.append(f"  • Enjoys: {', '.join(enjoy_texts)}")
 
         if passion_lines:
@@ -256,13 +267,17 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         # Core strengths
         core_str = grouped.get("core_strength", [])
         if core_str:
-            str_texts = [self._get_identity_text(a) for a in core_str[:3]]
+            if len(core_str) > 5:
+                logger.debug(f"Truncating {len(core_str)} core_strength annotations to 5")
+            str_texts = [self._get_identity_text(a) for a in core_str[:5]]
             strength_lines.append(f"  • Core strengths: {', '.join(str_texts)}")
 
         # Strong skills
         ext_rel = grouped.get("extremely_relevant", [])
         if ext_rel:
-            ext_texts = [self._get_identity_text(a) for a in ext_rel[:3]]
+            if len(ext_rel) > 5:
+                logger.debug(f"Truncating {len(ext_rel)} extremely_relevant annotations to 5")
+            ext_texts = [self._get_identity_text(a) for a in ext_rel[:5]]
             strength_lines.append(f"  • Strong skills: {', '.join(ext_texts)}")
 
         if strength_lines:
@@ -285,7 +300,7 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         """
         ids = []
         for level in IDENTITY_STRENGTH_ORDER:
-            for ann in grouped.get(level, [])[:3]:  # Max 3 per level
+            for ann in grouped.get(level, [])[:6]:  # Max 6 per level
                 ann_id = ann.get("id") or ann.get("_id")
                 if ann_id:
                     ids.append(str(ann_id))
@@ -383,10 +398,13 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
 
             logger.info(f"Synthesized persona: {persona_statement[:50]}...")
 
+            if len(secondary) > 10:
+                logger.debug(f"Truncating {len(secondary)} secondary_identities to 10")
+
             return SynthesizedPersona(
                 persona_statement=persona_statement,
                 primary_identity=primary_identity,
-                secondary_identities=secondary[:5],  # Cap at 5
+                secondary_identities=secondary[:10],  # Cap at 10
                 source_annotations=self._get_source_annotation_ids(grouped),
                 is_user_edited=False,
                 synthesized_at=datetime.utcnow(),
