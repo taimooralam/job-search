@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    image: job-search-runner:latest
+    container_name: job-runner-local
+    env_file:
+      - .env
+    environment:
+      - MAX_CONCURRENCY=3
+      - LOG_BUFFER_LIMIT=500
+      - PIPELINE_TIMEOUT_SECONDS=600
+      - PDF_SERVICE_URL=http://pdf-service:8001
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./applications:/app/applications
+      - ./credentials:/app/credentials:ro
+      - ./master-cv.md:/app/master-cv.md:ro
+    depends_on:
+      - pdf-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  pdf-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.pdf-service
+    image: job-search-pdf-service:latest
+    container_name: pdf-service-local
+    ports:
+      - "127.0.0.1:8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
