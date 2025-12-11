@@ -1957,6 +1957,24 @@ function setRequirementType(requirement) {
 }
 
 /**
+ * Set passion level (from toolbar)
+ */
+function setQuickPassion(passion) {
+    if (annotationManager) {
+        annotationManager.setPopoverPassion(passion);
+    }
+}
+
+/**
+ * Set identity level (from toolbar)
+ */
+function setQuickIdentity(identity) {
+    if (annotationManager) {
+        annotationManager.setPopoverIdentity(identity);
+    }
+}
+
+/**
  * Set relevance in popover
  */
 function setPopoverRelevance(relevance) {
