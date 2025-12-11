@@ -2860,6 +2860,13 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ---
 
+## Completed (Dec 2025)
+
+### Annotation System Enhancements
+- [x] Delete annotation from popover (2025-12-11): Added delete button to annotation popover for editing existing annotations, with visibility controls and confirmation handling
+
+---
+
 ## Quick Reference
 
 ### Priority Definitions
