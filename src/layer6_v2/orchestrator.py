@@ -85,6 +85,11 @@ from src.layer6_v2.types import (
     ATSValidationResult,
 )
 from src.layer6_v2.annotation_header_context import build_header_context
+from src.layer6_v2.keyword_placement import (
+    KeywordPlacementValidator,
+    KeywordPlacementResult,
+    extract_priority_keywords_from_annotations,
+)
 
 
 class CVGeneratorV2:
@@ -140,6 +145,7 @@ class CVGeneratorV2:
             use_llm_grading=use_llm_grading,
         )
         self.improver = CVImprover(model=self.model)
+        self.keyword_placement_validator = KeywordPlacementValidator()  # P2: ATS placement validation
 
         self._logger.info(f"CVGeneratorV2 initialized with model: {self.model}")
 
@@ -303,6 +309,14 @@ class CVGeneratorV2:
                 jd_annotations=jd_annotations,
             )
 
+            # Phase 5.7 (P2): Keyword placement validation
+            self._logger.info("Phase 5.7: Keyword placement validation...")
+            keyword_placement_result = self._validate_keyword_placement(
+                header=header_output,
+                stitched=stitched_cv,
+                jd_annotations=jd_annotations,
+            )
+
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
             master_cv_text = self._get_master_cv_text()
@@ -341,6 +355,8 @@ class CVGeneratorV2:
                 "cv_improvement_result": improvement_result.to_dict() if improvement_result and hasattr(improvement_result, 'to_dict') else None,
                 # Phase 6 (GAP-089): ATS validation result
                 "ats_validation": ats_validation.to_dict() if ats_validation else None,
+                # Phase 5.7 (P2): Keyword placement validation result
+                "keyword_placement_validation": keyword_placement_result.to_dict() if keyword_placement_result else None,
                 # Phase 9 (GAP-092): Reframe traceability result
                 "reframe_validation": reframe_validation,
             }
@@ -668,6 +684,90 @@ class CVGeneratorV2:
         lines.append(f"• Skills sections: {len(header.skills_sections)}")
 
         return "\n".join(lines)
+
+    def _validate_keyword_placement(
+        self,
+        header: HeaderOutput,
+        stitched: StitchedCV,
+        jd_annotations: Optional[Dict[str, Any]] = None,
+    ) -> Optional[KeywordPlacementResult]:
+        """
+        Phase 5.7 (P2): Validate keyword placement in CV sections for ATS optimization.
+
+        Checks that priority keywords from annotations appear in optimal positions:
+        - Headline (highest weight: 40 points)
+        - Profile narrative (30 points)
+        - Core competencies (20 points)
+        - First/most recent role (10 points)
+
+        The top 1/3 of a CV is critical for both ATS scanning and the 6-7 second
+        human review window. This validator ensures must-have and identity keywords
+        appear prominently.
+
+        Args:
+            header: Generated header output with profile and skills
+            stitched: Stitched CV with role bullets
+            jd_annotations: JD annotations with keyword priorities
+
+        Returns:
+            KeywordPlacementResult with scores and suggestions, or None if no annotations
+        """
+        if not jd_annotations:
+            self._logger.info("  Phase 5.7: No annotations - skipping placement validation")
+            return None
+
+        # Extract priority keywords from annotations
+        priority_keywords = extract_priority_keywords_from_annotations(jd_annotations)
+        if not priority_keywords:
+            self._logger.info("  Phase 5.7: No priority keywords - skipping placement validation")
+            return None
+
+        # Extract CV sections for validation
+        headline = header.profile.headline or ""
+        narrative = header.profile.narrative or header.profile.text or ""
+
+        # Get competencies from skills sections
+        competencies = []
+        for section in header.skills_sections:
+            competencies.extend(section.skill_names)
+        # Also include core_competencies from profile if available
+        competencies.extend(header.profile.core_competencies or [])
+
+        # Get first role bullets (most recent role)
+        first_role_bullets = []
+        if stitched.roles:
+            first_role_bullets = stitched.roles[0].bullets
+
+        # Run placement validation
+        result = self.keyword_placement_validator.validate(
+            headline=headline,
+            narrative=narrative,
+            competencies=competencies,
+            first_role_bullets=first_role_bullets,
+            priority_keywords=priority_keywords,
+        )
+
+        # Log results
+        self._logger.info(
+            f"  Phase 5.7 Placement Validation: {result.overall_score}/100 "
+            f"({result.keywords_in_top_third}/{result.total_keywords} in top 1/3)"
+        )
+        if result.must_have_score < 100:
+            self._logger.warning(
+                f"    ⚠ Must-have coverage: {result.must_have_score}%"
+            )
+        if result.identity_score < 100:
+            self._logger.warning(
+                f"    ⚠ Identity keyword score: {result.identity_score}%"
+            )
+        if result.violations:
+            for v in result.violations[:3]:  # Log first 3 violations
+                self._logger.warning(f"    ⚠ {v}")
+        if result.suggestions:
+            for s in result.suggestions[:3]:  # Log first 3 suggestions
+                self._logger.info(f"    💡 {s}")
+
+        return result
 
     def _validate_reframe_application(
         self,
