@@ -1094,6 +1094,97 @@
         </div>
         {% endif %}
 
+        <!-- Generated CV Section (Prominent in Main) -->
+        {% if job.has_cv %}
+        <div class="job-detail-card">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="job-detail-card-title mb-0">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Generated CV
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="openCVEditorPanel('{{ job._id }}')"
+                            class="btn btn-secondary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                        Edit CV
+                    </button>
+                    <button onclick="exportCVFromDetailPage()"
+                            class="btn btn-primary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                        </svg>
+                        Export PDF
+                    </button>
+                </div>
+            </div>
+            <!-- CV Preview - Full Width -->
+            <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 600px;">
+                <div id="cv-display-area" class="cv-preview-content" style="padding: 0.75in; max-width: 8.5in; margin: 0 auto;">
+                    <!-- Rendered by TipTap from editor state -->
+                </div>
+                <script>
+                    async function renderCVPreview() {
+                        try {
+                            const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
+                            if (!response.ok) return;
+                            const data = await response.json();
+                            const editorState = data.editor_state;
+                            if (!editorState || !editorState.content) return;
+                            const htmlContent = tiptapJsonToHtml(editorState.content);
+                            const displayArea = document.getElementById('cv-display-area');
+                            displayArea.innerHTML = htmlContent;
+                            if (editorState.documentStyles) {
+                                const styles = editorState.documentStyles;
+                                displayArea.style.fontFamily = styles.fontFamily || 'Inter, sans-serif';
+                                displayArea.style.lineHeight = styles.lineHeight || 1.5;
+                                displayArea.style.color = styles.colorText || '#1f2a38';
+                            }
+                        } catch (error) {
+                            console.error('Error rendering CV preview:', error);
+                        }
+                    }
+
+                    function tiptapJsonToHtml(content) {
+                        if (!content || content.type !== 'doc') return '';
+                        function processNode(node) {
+                            const type = node.type;
+                            const children = node.content || [];
+                            const attrs = node.attrs || {};
+                            const marks = node.marks || [];
+                            if (type === 'text') {
+                                let text = node.text || '';
+                                marks.forEach(mark => {
+                                    if (mark.type === 'bold') text = `<strong>${text}</strong>`;
+                                    if (mark.type === 'italic') text = `<em>${text}</em>`;
+                                    if (mark.type === 'underline') text = `<u>${text}</u>`;
+                                });
+                                return text;
+                            }
+                            const innerHtml = children.map(processNode).join('');
+                            if (type === 'paragraph') return `<p>${innerHtml}</p>`;
+                            if (type === 'heading') return `<h${attrs.level || 1}>${innerHtml}</h${attrs.level || 1}>`;
+                            if (type === 'bulletList') return `<ul>${innerHtml}</ul>`;
+                            if (type === 'orderedList') return `<ol>${innerHtml}</ol>`;
+                            if (type === 'listItem') return `<li>${innerHtml}</li>`;
+                            if (type === 'hardBreak') return '<br>';
+                            return innerHtml;
+                        }
+                        return content.content.map(processNode).join('');
+                    }
+
+                    document.addEventListener('DOMContentLoaded', renderCVPreview);
+                    window.addEventListener('cvContentUpdated', (event) => {
+                        if (event.detail.jobId === '{{ job._id }}') renderCVPreview();
+                    });
+                </script>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Raw Data (Expandable) -->
         <div class="job-detail-card">
             <button onclick="toggleRawData()"
@@ -1201,96 +1292,6 @@
                     {{ job.fit_rationale }}
                 </div>
                 {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Generated CV Card -->
-        {% if job.has_cv %}
-        <div class="job-detail-card">
-            <h2 class="job-detail-card-title">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Generated CV
-            </h2>
-            <div class="space-y-2">
-                <button onclick="openCVEditorPanel('{{ job._id }}')"
-                        class="btn btn-secondary btn-sm w-full">
-                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                    </svg>
-                    Edit CV
-                </button>
-                <button onclick="exportCVFromDetailPage()"
-                        class="btn btn-primary btn-sm w-full">
-                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-                    </svg>
-                    Export PDF
-                </button>
-
-                <!-- CV Preview -->
-                <div id="cv-container" class="border border-gray-200 rounded-lg overflow-auto bg-white mt-2" style="max-height: 400px;">
-                    <div id="cv-display-area" class="cv-preview-content" style="font-size: 0.65rem; padding: 0.5in; transform: scale(0.8); transform-origin: top left; width: 125%;">
-                        <!-- Rendered by TipTap from editor state -->
-                    </div>
-                    <script>
-                        async function renderCVPreview() {
-                            try {
-                                const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
-                                if (!response.ok) return;
-                                const data = await response.json();
-                                const editorState = data.editor_state;
-                                if (!editorState || !editorState.content) return;
-                                const htmlContent = tiptapJsonToHtml(editorState.content);
-                                const displayArea = document.getElementById('cv-display-area');
-                                displayArea.innerHTML = htmlContent;
-                                if (editorState.documentStyles) {
-                                    const styles = editorState.documentStyles;
-                                    displayArea.style.fontFamily = styles.fontFamily || 'Inter, sans-serif';
-                                    displayArea.style.lineHeight = styles.lineHeight || 1.5;
-                                    displayArea.style.color = styles.colorText || '#1f2a38';
-                                }
-                            } catch (error) {
-                                console.error('Error rendering CV preview:', error);
-                            }
-                        }
-
-                        function tiptapJsonToHtml(content) {
-                            if (!content || content.type !== 'doc') return '';
-                            function processNode(node) {
-                                const type = node.type;
-                                const children = node.content || [];
-                                const attrs = node.attrs || {};
-                                const marks = node.marks || [];
-                                if (type === 'text') {
-                                    let text = node.text || '';
-                                    marks.forEach(mark => {
-                                        if (mark.type === 'bold') text = `<strong>${text}</strong>`;
-                                        if (mark.type === 'italic') text = `<em>${text}</em>`;
-                                        if (mark.type === 'underline') text = `<u>${text}</u>`;
-                                    });
-                                    return text;
-                                }
-                                const innerHtml = children.map(processNode).join('');
-                                if (type === 'paragraph') return `<p>${innerHtml}</p>`;
-                                if (type === 'heading') return `<h${attrs.level || 1}>${innerHtml}</h${attrs.level || 1}>`;
-                                if (type === 'bulletList') return `<ul>${innerHtml}</ul>`;
-                                if (type === 'orderedList') return `<ol>${innerHtml}</ol>`;
-                                if (type === 'listItem') return `<li>${innerHtml}</li>`;
-                                if (type === 'hardBreak') return '<br>';
-                                return innerHtml;
-                            }
-                            return content.content.map(processNode).join('');
-                        }
-
-                        document.addEventListener('DOMContentLoaded', renderCVPreview);
-                        window.addEventListener('cvContentUpdated', (event) => {
-                            if (event.detail.jobId === '{{ job._id }}') renderCVPreview();
-                        });
-                    </script>
-                </div>
             </div>
         </div>
         {% endif %}
@@ -1463,17 +1464,16 @@
         </div>
     </aside>
 
-    <!-- ========== FOOTER (Full Width) ========== -->
+    <!-- ========== FOOTER (Delete in Lower Left) ========== -->
     <footer class="job-detail-footer">
-        <div class="job-detail-danger-zone">
-            <h2 class="job-detail-danger-zone-title">Danger Zone</h2>
-            <p class="text-sm text-gray-600 mb-4">Once you delete this job, there is no going back. Please be certain.</p>
+        <div class="flex justify-start">
             <button onclick="deleteJob()"
-                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
-                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="inline-flex items-center px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 hover:border-red-300 transition"
+                    title="Delete this job permanently">
+                <svg class="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
-                Delete This Job
+                Delete Job
             </button>
         </div>
     </footer>
