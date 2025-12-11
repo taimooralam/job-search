@@ -77,14 +77,17 @@ class PersonaProfileResult:
     keywords_found: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for synthesis."""
+        """Convert to dictionary for synthesis (hybrid format)."""
         return {
             "persona": self.persona.value,
             "headline": self.profile.headline,
-            "narrative": self.profile.narrative,
+            "tagline": self.profile.tagline,              # NEW: Hybrid format
+            "key_achievements": self.profile.key_achievements,  # NEW: Hybrid format
             "core_competencies": self.profile.core_competencies,
             "highlights_used": self.metrics_found,
             "keywords_integrated": self.keywords_found,
+            # Keep narrative for backward compatibility
+            "narrative": self.profile.narrative,
         }
 
 
@@ -371,10 +374,11 @@ class EnsembleHeaderGenerator:
             {"role": "user", "content": user_prompt},
         ])
 
-        # Convert to ProfileOutput
+        # Convert to ProfileOutput (hybrid format)
         profile = ProfileOutput(
             headline=response.headline,
-            narrative=response.narrative,
+            tagline=response.tagline,                    # NEW: Hybrid format
+            key_achievements=response.key_achievements,  # NEW: Hybrid format
             core_competencies=response.core_competencies,
             highlights_used=response.highlights_used,
             keywords_integrated=response.keywords_integrated,
@@ -383,6 +387,8 @@ class EnsembleHeaderGenerator:
             answers_what_problems=response.answers_what_problems,
             answers_proof=response.answers_proof,
             answers_why_you=response.answers_why_you,
+            # Keep narrative for backward compatibility (use tagline)
+            narrative=response.tagline,
         )
 
         return PersonaProfileResult(
@@ -401,7 +407,7 @@ class EnsembleHeaderGenerator:
         candidate_data: Dict,
     ) -> ProfileOutput:
         """
-        Combine best elements from multiple persona outputs.
+        Combine best elements from multiple hybrid executive summary outputs.
 
         Args:
             persona_results: Results from persona passes
@@ -409,11 +415,11 @@ class EnsembleHeaderGenerator:
             candidate_data: Candidate metadata
 
         Returns:
-            Synthesized ProfileOutput
+            Synthesized ProfileOutput with hybrid format
         """
         years_experience = self._calculate_years_experience(extracted_jd)
 
-        # Build synthesis prompt
+        # Build synthesis prompt (now uses hybrid format)
         persona_outputs = [r.to_dict() for r in persona_results]
         user_prompt = build_synthesis_user_prompt(
             persona_outputs=persona_outputs,
@@ -438,7 +444,8 @@ class EnsembleHeaderGenerator:
 
         return ProfileOutput(
             headline=response.headline,
-            narrative=response.narrative,
+            tagline=response.tagline,                    # NEW: Hybrid format
+            key_achievements=response.key_achievements,  # NEW: Hybrid format
             core_competencies=response.core_competencies,
             highlights_used=list(all_metrics),
             keywords_integrated=list(all_keywords),
@@ -447,6 +454,8 @@ class EnsembleHeaderGenerator:
             answers_what_problems=response.answers_what_problems,
             answers_proof=response.answers_proof,
             answers_why_you=response.answers_why_you,
+            # Keep narrative for backward compatibility (use tagline)
+            narrative=response.tagline,
         )
 
     def _validate_and_flag(
