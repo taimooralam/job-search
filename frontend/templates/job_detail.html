@@ -1005,7 +1005,7 @@
             </div>
             {% endif %}
 
-            <!-- Company & Role Research Section (Independent of Extracted JD) -->
+            <!-- Company & Role Research Section (standalone, renders when research data exists) -->
             {% if (job.company_research is defined and job.company_research) or (job.role_research is defined and job.role_research) %}
             <div class="mb-6" id="research-section">
                 <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
