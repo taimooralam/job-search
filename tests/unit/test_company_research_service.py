@@ -564,8 +564,10 @@ class TestCompanyResearchServiceIntegration:
     @patch.object(CompanyResearchService, "mongo_client", new_callable=lambda: MagicMock())
     @patch("src.services.company_research_service.CompanyResearcher")
     @patch("src.services.company_research_service.RoleResearcher")
+    @patch("src.services.company_research_service.PeopleMapper")
     async def test_full_research_flow(
         self,
+        MockPeopleMapper,
         MockRoleResearcher,
         MockCompanyResearcher,
         mock_mongo,
@@ -609,6 +611,18 @@ class TestCompanyResearchServiceIntegration:
         }
         MockRoleResearcher.return_value = mock_role_researcher
 
+        # Setup people mapper mock
+        mock_people_mapper = MagicMock()
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": [
+                {"name": "Hiring Manager", "role": "Engineering Manager", "why_relevant": "Test"}
+            ],
+            "secondary_contacts": [
+                {"name": "Engineer", "role": "Senior Engineer", "why_relevant": "Test"}
+            ],
+        }
+        MockPeopleMapper.return_value = mock_people_mapper
+
         # Execute
         service = CompanyResearchService()
         service._mongo_client = mock_mongo
@@ -628,3 +642,266 @@ class TestCompanyResearchServiceIntegration:
         assert result.data["signals_count"] == 2
         assert result.cost_usd > 0
         assert result.duration_ms >= 0  # Can be 0 in fast mocked tests
+
+
+# ===== PEOPLE RESEARCH INTEGRATION TESTS =====
+
+
+class TestCompanyResearchServicePeopleResearch:
+    """Test people research integration in company research service."""
+
+    @pytest.mark.asyncio
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    @patch.object(CompanyResearchService, "company_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "role_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "people_mapper", new_callable=lambda: MagicMock())
+    async def test_people_research_called_with_skip_outreach(
+        self,
+        mock_people_mapper,
+        mock_role_researcher,
+        mock_company_researcher,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        sample_job_doc,
+        sample_company_research,
+        sample_role_research,
+    ):
+        """People mapper is called with skip_outreach=True."""
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = None
+
+        mock_company_researcher.research_company.return_value = {
+            "company_research": sample_company_research,
+        }
+        mock_role_researcher.research_role.return_value = {
+            "role_research": sample_role_research,
+        }
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": [{"name": "Test", "role": "Manager"}],
+            "secondary_contacts": [],
+        }
+
+        service = CompanyResearchService()
+        service._company_researcher = mock_company_researcher
+        service._role_researcher = mock_role_researcher
+        service._people_mapper = mock_people_mapper
+
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+        )
+
+        assert result.success is True
+        # Verify people_mapper was called with skip_outreach=True
+        mock_people_mapper.map_people.assert_called_once()
+        call_args = mock_people_mapper.map_people.call_args
+        assert call_args[1].get("skip_outreach") is True or call_args[0][1] is True
+
+    @pytest.mark.asyncio
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    @patch.object(CompanyResearchService, "company_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "role_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "people_mapper", new_callable=lambda: MagicMock())
+    async def test_contacts_persisted_to_mongodb(
+        self,
+        mock_people_mapper,
+        mock_role_researcher,
+        mock_company_researcher,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        sample_job_doc,
+        sample_company_research,
+        sample_role_research,
+    ):
+        """Primary and secondary contacts are persisted to MongoDB."""
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = None
+
+        primary_contacts = [
+            {"name": "Hiring Manager", "role": "Engineering Manager", "why_relevant": "Test"},
+            {"name": "Recruiter", "role": "Technical Recruiter", "why_relevant": "Test"},
+        ]
+        secondary_contacts = [
+            {"name": "CTO", "role": "Chief Technology Officer", "why_relevant": "Test"},
+        ]
+
+        mock_company_researcher.research_company.return_value = {
+            "company_research": sample_company_research,
+        }
+        mock_role_researcher.research_role.return_value = {
+            "role_research": sample_role_research,
+        }
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": primary_contacts,
+            "secondary_contacts": secondary_contacts,
+        }
+
+        service = CompanyResearchService()
+        service._company_researcher = mock_company_researcher
+        service._role_researcher = mock_role_researcher
+        service._people_mapper = mock_people_mapper
+
+        await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+        )
+
+        # Verify contacts were passed to persist_research
+        mock_persist_research.assert_called_once()
+        call_kwargs = mock_persist_research.call_args[1]
+        assert call_kwargs.get("primary_contacts") == primary_contacts
+        assert call_kwargs.get("secondary_contacts") == secondary_contacts
+
+    @pytest.mark.asyncio
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    @patch.object(CompanyResearchService, "company_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "role_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "people_mapper", new_callable=lambda: MagicMock())
+    async def test_layer_status_includes_people_research(
+        self,
+        mock_people_mapper,
+        mock_role_researcher,
+        mock_company_researcher,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        sample_job_doc,
+        sample_company_research,
+        sample_role_research,
+    ):
+        """Layer status includes people_research with contact counts."""
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = None
+
+        mock_company_researcher.research_company.return_value = {
+            "company_research": sample_company_research,
+        }
+        mock_role_researcher.research_role.return_value = {
+            "role_research": sample_role_research,
+        }
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": [{"name": "Test1"}, {"name": "Test2"}],
+            "secondary_contacts": [{"name": "Test3"}],
+        }
+
+        service = CompanyResearchService()
+        service._company_researcher = mock_company_researcher
+        service._role_researcher = mock_role_researcher
+        service._people_mapper = mock_people_mapper
+
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+        )
+
+        assert result.success is True
+        layer_status = result.data.get("layer_status", {})
+        assert "people_research" in layer_status
+        assert layer_status["people_research"]["status"] == "success"
+        assert layer_status["people_research"]["primary_contacts"] == 2
+        assert layer_status["people_research"]["secondary_contacts"] == 1
+
+    @pytest.mark.asyncio
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    @patch.object(CompanyResearchService, "company_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "role_researcher", new_callable=lambda: MagicMock())
+    @patch.object(CompanyResearchService, "people_mapper", new_callable=lambda: MagicMock())
+    async def test_people_research_failure_non_fatal(
+        self,
+        mock_people_mapper,
+        mock_role_researcher,
+        mock_company_researcher,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        sample_job_doc,
+        sample_company_research,
+        sample_role_research,
+    ):
+        """People research failure is non-fatal - company research still succeeds."""
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = None
+
+        mock_company_researcher.research_company.return_value = {
+            "company_research": sample_company_research,
+        }
+        mock_role_researcher.research_role.return_value = {
+            "role_research": sample_role_research,
+        }
+        # People mapper raises exception
+        mock_people_mapper.map_people.side_effect = Exception("FireCrawl error")
+
+        service = CompanyResearchService()
+        service._company_researcher = mock_company_researcher
+        service._role_researcher = mock_role_researcher
+        service._people_mapper = mock_people_mapper
+
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+        )
+
+        # Company research should still succeed
+        assert result.success is True
+        assert result.data["company_research"] == sample_company_research
+        assert result.data["role_research"] == sample_role_research
+
+        # But people_research layer should show failure
+        layer_status = result.data.get("layer_status", {})
+        assert layer_status["people_research"]["status"] == "failed"
+        assert "FireCrawl error" in layer_status["people_research"]["message"]
+
+    @pytest.mark.asyncio
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    @patch.object(CompanyResearchService, "company_researcher", new_callable=lambda: MagicMock())
+    async def test_people_research_skipped_when_company_research_fails(
+        self,
+        mock_company_researcher,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        sample_job_doc,
+    ):
+        """People research is skipped when company research fails."""
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = None
+
+        # Company research returns None
+        mock_company_researcher.research_company.return_value = {
+            "company_research": None,
+        }
+
+        service = CompanyResearchService()
+        service._company_researcher = mock_company_researcher
+
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+        )
+
+        # People research should be skipped
+        layer_status = result.data.get("layer_status", {})
+        assert layer_status["people_research"]["status"] == "skipped"
+        assert "company research failed" in layer_status["people_research"]["message"].lower()
