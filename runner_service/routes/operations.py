@@ -971,6 +971,83 @@ async def full_extraction_stream(
     )
 
 
+# =============================================================================
+# Persona Synthesis Endpoint
+# =============================================================================
+
+
+@router.post(
+    "/{job_id}/synthesize-persona",
+    response_model=OperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Synthesize persona from identity annotations",
+    description="Synthesize a coherent persona statement from identity annotations using LLM",
+)
+async def synthesize_persona(job_id: str) -> OperationResponse:
+    """
+    Synthesize persona from identity annotations using LLM.
+
+    Extracts identity annotations (core_identity, strong_identity, developing)
+    and synthesizes them into a coherent persona statement.
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+
+    Returns:
+        OperationResponse with synthesized persona data
+    """
+    from src.common.persona_builder import PersonaBuilder
+
+    operation = "synthesize-persona"
+
+    logger.info(f"Starting {operation} for job {job_id}")
+
+    try:
+        # Validate job exists
+        job = _validate_job_exists(job_id)
+        jd_annotations = job.get("jd_annotations", {})
+
+        builder = PersonaBuilder()
+
+        # Check if there are identity annotations
+        if not builder.has_identity_annotations(jd_annotations):
+            return OperationResponse(
+                success=True,
+                data={"persona": None, "message": "No identity annotations found"},
+                cost_usd=0.0,
+                run_id=str(uuid.uuid4()),
+            )
+
+        # Run async synthesis
+        persona = await builder.synthesize(jd_annotations)
+
+        if not persona:
+            return OperationResponse(
+                success=True,
+                data={"persona": None, "message": "Failed to synthesize persona"},
+                cost_usd=0.0,
+                run_id=str(uuid.uuid4()),
+            )
+
+        logger.info(f"Successfully synthesized persona for job {job_id}")
+
+        return OperationResponse(
+            success=True,
+            data={
+                "persona": persona.persona_statement,
+                "primary": persona.primary_identity,
+                "secondary": persona.secondary_identities,
+                "source_annotations": persona.source_annotations,
+            },
+            cost_usd=0.001,  # Approximate cost for Haiku synthesis
+            run_id=str(uuid.uuid4()),
+        )
+
+    except Exception as e:
+        logger.exception(f"Error synthesizing persona for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Synthesis failed: {str(e)}")
+
+
 @router.get(
     "/operations/{run_id}/logs",
     dependencies=[Depends(verify_token)],
