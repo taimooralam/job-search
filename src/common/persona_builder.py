@@ -145,8 +145,9 @@ Return ONLY the persona sentence, nothing else. No quotes around it."""
         }
 
         for ann in annotations:
-            # Skip inactive annotations
-            if not ann.get("is_active", False):
+            # Skip inactive annotations (default to True for backward compatibility
+            # with annotations that don't have is_active field yet)
+            if not ann.get("is_active", True):
                 continue
 
             # Check identity

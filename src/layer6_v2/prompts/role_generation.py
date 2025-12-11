@@ -294,9 +294,10 @@ def _format_annotation_reframe_guidance(jd_annotations: Optional[Dict[str, Any]]
         return ""
 
     # Filter to active annotations with reframe guidance
+    # (default to True for backward compatibility with annotations missing is_active)
     active_with_reframe = [
         a for a in annotations
-        if a.get("is_active", False)
+        if a.get("is_active", True)
         and a.get("has_reframe", False)
         and a.get("reframe_note")
     ]
@@ -304,14 +305,14 @@ def _format_annotation_reframe_guidance(jd_annotations: Optional[Dict[str, Any]]
     # Get must-have annotations for prioritization
     must_haves = [
         a for a in annotations
-        if a.get("is_active", False)
+        if a.get("is_active", True)
         and a.get("requirement_type") == "must_have"
     ]
 
     # Get all annotation keywords for ATS
     annotation_keywords = set()
     for a in annotations:
-        if a.get("is_active", False):
+        if a.get("is_active", True):
             annotation_keywords.update(a.get("suggested_keywords", []))
 
     if not active_with_reframe and not must_haves and not annotation_keywords:

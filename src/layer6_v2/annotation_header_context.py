@@ -223,8 +223,8 @@ class AnnotationHeaderContextBuilder:
         priorities: List[AnnotationPriority] = []
 
         for ann in annotations:
-            # Skip inactive annotations
-            if not ann.get("is_active", False):
+            # Skip inactive annotations (default to True for backward compatibility)
+            if not ann.get("is_active", True):
                 continue
 
             # Skip rejected annotations
@@ -421,7 +421,8 @@ class AnnotationHeaderContextBuilder:
         annotations = self.jd_annotations.get("annotations", [])
 
         for ann in annotations:
-            if not ann.get("is_active", False):
+            # Skip inactive annotations (default to True for backward compatibility)
+            if not ann.get("is_active", True):
                 continue
 
             # Get keywords from annotation

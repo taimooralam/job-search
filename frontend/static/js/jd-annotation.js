@@ -128,7 +128,12 @@ class AnnotationManager {
 
             const data = await annotationsRes.json();
             if (data.success && data.annotations) {
-                this.annotations = data.annotations.annotations || [];
+                // Normalize annotations to ensure is_active defaults to true
+                // (for backward compatibility with older annotations)
+                this.annotations = (data.annotations.annotations || []).map(ann => ({
+                    ...ann,
+                    is_active: ann.is_active !== false  // Default to true unless explicitly false
+                }));
                 this.processedJdHtml = data.annotations.processed_jd_html;
                 this.settings = data.annotations.settings || this.settings;
 

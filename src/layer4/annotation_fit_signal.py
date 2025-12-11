@@ -153,8 +153,8 @@ class AnnotationFitSignal:
 
         # Count active annotations by relevance level
         for ann in annotations:
-            # Skip inactive annotations
-            if not ann.get("is_active", False):
+            # Skip inactive annotations (default to True for backward compatibility)
+            if not ann.get("is_active", True):
                 continue
 
             self.total_active_annotations += 1
