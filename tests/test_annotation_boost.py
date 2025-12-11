@@ -16,6 +16,7 @@ from src.common.annotation_types import (
     RELEVANCE_MULTIPLIERS,
     REQUIREMENT_MULTIPLIERS,
     PRIORITY_MULTIPLIERS,
+    SOURCE_MULTIPLIERS,
 )
 
 
@@ -469,3 +470,210 @@ class TestDisqualifier:
         result = calculator.get_boost_for_text("python programming")
         assert result.boost == 0.0
         assert result.is_disqualifier is True
+
+
+# =============================================================================
+# SOURCE-BASED WEIGHTING TESTS
+# =============================================================================
+
+class TestSourceBasedWeighting:
+    """Tests for annotation source-based weighting."""
+
+    def test_human_annotation_gets_higher_boost(self):
+        """Human annotations get 1.2x boost compared to pipeline suggestions."""
+        # Human annotation
+        human_ann = {
+            "id": "ann-human",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "human",
+            "suggested_keywords": ["python"],
+        }
+        # Pipeline suggestion (same attributes, different source)
+        pipeline_ann = {
+            "id": "ann-pipeline",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "pipeline_suggestion",
+            "suggested_keywords": ["java"],
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [human_ann, pipeline_ann]})
+
+        human_boost = calculator.calculate_boost(human_ann)
+        pipeline_boost = calculator.calculate_boost(pipeline_ann)
+
+        # Human should be 1.2x higher than pipeline
+        assert human_boost == pytest.approx(pipeline_boost * 1.2, rel=0.01)
+
+    def test_preset_annotation_gets_moderate_boost(self):
+        """Preset annotations get 1.1x boost compared to pipeline suggestions."""
+        # Preset annotation
+        preset_ann = {
+            "id": "ann-preset",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "preset",
+            "suggested_keywords": ["kubernetes"],
+        }
+        # Pipeline suggestion
+        pipeline_ann = {
+            "id": "ann-pipeline",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "pipeline_suggestion",
+            "suggested_keywords": ["docker"],
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [preset_ann, pipeline_ann]})
+
+        preset_boost = calculator.calculate_boost(preset_ann)
+        pipeline_boost = calculator.calculate_boost(pipeline_ann)
+
+        # Preset should be 1.1x higher than pipeline
+        assert preset_boost == pytest.approx(pipeline_boost * 1.1, rel=0.01)
+
+    def test_source_hierarchy_human_preset_pipeline(self):
+        """Verify human > preset > pipeline_suggestion hierarchy."""
+        base_attrs = {
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+        }
+
+        human_ann = {**base_attrs, "id": "ann-human", "created_by": "human"}
+        preset_ann = {**base_attrs, "id": "ann-preset", "created_by": "preset"}
+        pipeline_ann = {**base_attrs, "id": "ann-pipeline", "created_by": "pipeline_suggestion"}
+
+        calculator = AnnotationBoostCalculator({"annotations": [human_ann, preset_ann, pipeline_ann]})
+
+        human_boost = calculator.calculate_boost(human_ann)
+        preset_boost = calculator.calculate_boost(preset_ann)
+        pipeline_boost = calculator.calculate_boost(pipeline_ann)
+
+        assert human_boost > preset_boost > pipeline_boost
+
+    def test_missing_source_defaults_to_pipeline_suggestion(self):
+        """Annotations without created_by default to pipeline_suggestion (1.0x)."""
+        ann_with_source = {
+            "id": "ann-with-source",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "pipeline_suggestion",
+        }
+        ann_without_source = {
+            "id": "ann-without-source",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            # No created_by field
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [ann_with_source, ann_without_source]})
+
+        with_source_boost = calculator.calculate_boost(ann_with_source)
+        without_source_boost = calculator.calculate_boost(ann_without_source)
+
+        # Both should have same boost (pipeline_suggestion is default)
+        assert with_source_boost == without_source_boost
+
+    def test_unknown_source_defaults_to_baseline(self):
+        """Unknown source values default to 1.0x multiplier."""
+        ann_unknown_source = {
+            "id": "ann-unknown",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "unknown_source",  # Not in SOURCE_MULTIPLIERS
+        }
+        ann_pipeline = {
+            "id": "ann-pipeline",
+            "relevance": "relevant",
+            "requirement_type": "neutral",
+            "priority": 3,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "created_by": "pipeline_suggestion",
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [ann_unknown_source, ann_pipeline]})
+
+        unknown_boost = calculator.calculate_boost(ann_unknown_source)
+        pipeline_boost = calculator.calculate_boost(ann_pipeline)
+
+        # Both should have same boost (unknown defaults to 1.0)
+        assert unknown_boost == pipeline_boost
+
+    def test_source_multiplier_combines_with_other_factors(self):
+        """Source multiplier correctly combines with all other boost factors."""
+        ann = {
+            "id": "ann-001",
+            "relevance": "core_strength",      # 3.0x
+            "requirement_type": "must_have",   # 1.5x
+            "passion": "love_it",              # 1.5x
+            "identity": "core_identity",       # 2.0x
+            "priority": 1,                     # 1.5x
+            "annotation_type": "skill_match",  # 1.0x
+            "created_by": "human",             # 1.2x
+            "is_active": True,
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [ann]})
+        boost = calculator.calculate_boost(ann)
+
+        # Expected: 3.0 * 1.5 * 1.5 * 2.0 * 1.5 * 1.0 * 1.2 = 24.3
+        expected = 3.0 * 1.5 * 1.5 * 2.0 * 1.5 * 1.0 * 1.2
+        assert boost == pytest.approx(expected, rel=0.01)
+
+    def test_source_multiplier_values_match_constants(self):
+        """Verify source multiplier values match defined constants."""
+        assert SOURCE_MULTIPLIERS["human"] == 1.2
+        assert SOURCE_MULTIPLIERS["preset"] == 1.1
+        assert SOURCE_MULTIPLIERS["pipeline_suggestion"] == 1.0
+
+    def test_existing_tests_backward_compatible(self):
+        """Existing annotations without source should still work (backward compatibility)."""
+        # This is a sample from the existing fixture
+        sample_annotation = {
+            "id": "ann-001",
+            "relevance": "core_strength",
+            "requirement_type": "must_have",
+            "priority": 1,
+            "annotation_type": "skill_match",
+            "is_active": True,
+            "star_ids": ["star-001", "star-002"],
+            "suggested_keywords": ["kubernetes", "docker"],
+            "ats_variants": ["K8s", "k8s", "Kubernetes"],
+            "has_reframe": False,
+            "reframe_note": None,
+            # Note: no created_by field - should default to pipeline_suggestion
+        }
+
+        calculator = AnnotationBoostCalculator({"annotations": [sample_annotation]})
+        boost = calculator.calculate_boost(sample_annotation)
+
+        # Should calculate boost without error and with default source multiplier (1.0)
+        # 3.0 (core_strength) * 1.5 (must_have) * 1.5 (priority 1) * 1.0 (skill_match) * 1.0 (default source)
+        expected = 3.0 * 1.5 * 1.5 * 1.0 * 1.0
+        assert boost == pytest.approx(expected, rel=0.01)
