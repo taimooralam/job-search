@@ -3802,10 +3802,14 @@ def synthesize_persona(job_id: str):
         })
 
     except ImportError:
+        # Expected on Vercel deployment - LangChain modules not available
+        # Return success with unavailable flag for graceful frontend handling
         return jsonify({
-            "error": "PersonaBuilder not available",
-            "persona": None
-        }), 500
+            "success": True,
+            "persona": None,
+            "unavailable": True,
+            "message": "Persona synthesis requires VPS deployment (LangChain not available on Vercel)"
+        })
     except Exception as e:
         return jsonify({
             "error": f"Synthesis failed: {str(e)}",
