@@ -37,23 +37,21 @@
   min-height: calc(100vh - 44px); /* Account for CLI panel */
 }
 
-/* Desktop: 3-column layout */
+/* Desktop: 3-column layout - full width */
 @media (min-width: 1280px) {
   .job-detail-page {
     grid-template-columns: var(--job-detail-sidebar-left) 1fr var(--job-detail-sidebar-right);
-    max-width: var(--job-detail-max-width);
-    margin: 0 auto;
+    max-width: 100%;
     padding: 1.5rem 2rem;
     padding-top: 0;
   }
 }
 
-/* Tablet: 2-column layout (left sidebar + combined main) */
+/* Tablet: 2-column layout (left sidebar + combined main) - full width */
 @media (min-width: 768px) and (max-width: 1279px) {
   .job-detail-page {
     grid-template-columns: 240px 1fr;
-    max-width: 1200px;
-    margin: 0 auto;
+    max-width: 100%;
     padding: 1rem 1.5rem;
     padding-top: 0;
   }
@@ -506,25 +504,12 @@
 }
 
 /* ============================================================================
-   Danger Zone Footer
+   Footer - Compact Delete Button
    ============================================================================ */
 
-.job-detail-danger-zone {
-  margin-top: 2rem;
-  padding: 1rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-left: 4px solid #ef4444;
-  border-radius: 0.5rem;
-}
-
-.job-detail-danger-zone-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #991b1b;
-  margin-bottom: 0.75rem;
+.job-detail-footer {
+  padding: 0.5rem 0;
+  margin-top: 1rem;
 }
 
 /* ============================================================================
