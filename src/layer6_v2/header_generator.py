@@ -31,6 +31,33 @@ from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
 from src.common.persona_builder import get_persona_guidance
 from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
+
+
+def _build_profile_system_prompt_with_persona(
+    jd_annotations: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Build profile system prompt with persona context prepended."""
+    from src.layer6_v2.prompts.header_generation import PROFILE_SYSTEM_PROMPT
+
+    persona_guidance = get_persona_guidance(jd_annotations)
+    if not persona_guidance:
+        return PROFILE_SYSTEM_PROMPT
+
+    persona_section = f"""=== CANDIDATE PERSONA (Frame ALL output around this identity) ===
+
+{persona_guidance}
+
+This persona defines WHO the candidate is as a professional.
+The headline and opening of the narrative MUST embody this identity.
+Frame every achievement through this persona's lens.
+Avoid sounding like a generic list - BE this professional.
+
+=============================================================================
+
+"""
+    return persona_section + PROFILE_SYSTEM_PROMPT
+
+
 from src.layer6_v2.types import (
     StitchedCV,
     SkillEvidence,
@@ -511,10 +538,7 @@ class HeaderGenerator:
         Returns:
             Tuple of (ProfileResponse, HeaderProvenance) for traceability
         """
-        from src.layer6_v2.prompts.header_generation import (
-            PROFILE_SYSTEM_PROMPT,
-            build_profile_user_prompt,
-        )
+        from src.layer6_v2.prompts.header_generation import build_profile_user_prompt
         from src.layer6_v2.annotation_header_context import (
             format_priorities_for_prompt,
             format_ats_guidance_for_prompt,
@@ -647,22 +671,13 @@ class HeaderGenerator:
         if self._annotation_context and self._annotation_context.gap_mitigation:
             user_prompt = user_prompt + f"\n\nGAP MITIGATION (include once): {self._annotation_context.gap_mitigation}"
 
-        # Inject persona guidance if synthesized persona is available
-        # This provides a coherent narrative frame for the profile
-        persona_guidance = get_persona_guidance(self._jd_annotations)
-        if persona_guidance:
-            user_prompt = (
-                user_prompt + f"\n\n{persona_guidance}\n"
-                "This persona should be the central theme of the profile. "
-                "The headline and opening of the narrative should embody this professional identity. "
-                "Avoid sounding like a list of qualifications - frame everything through this persona."
-            )
-            self._logger.debug(f"Injected persona guidance: {persona_guidance[:50]}...")
+        # Build system prompt with persona context (Phase 5: persona in SYSTEM prompt)
+        system_prompt = _build_profile_system_prompt_with_persona(self._jd_annotations)
 
         # Call LLM with structured output
         structured_llm = self.llm.with_structured_output(ProfileResponse)
         response = structured_llm.invoke([
-            {"role": "system", "content": PROFILE_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ])
 
