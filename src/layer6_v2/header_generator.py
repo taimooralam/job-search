@@ -73,25 +73,54 @@ from src.layer6_v2.types import (
 # Pydantic models for structured LLM output
 class ProfileResponse(BaseModel):
     """
-    Research-aligned structured response for profile generation.
+    Hybrid Executive Summary structured response.
 
-    Based on research from 625 hiring managers:
-    - 100-150 word narrative (3-5 sentences)
-    - Headline with exact job title (10.6x interview factor)
-    - Core competencies for ATS optimization
-    - 4-question framework validation
+    Structure:
+    1. Headline: "[EXACT JD TITLE] | [X]+ Years Technology Leadership"
+    2. Tagline: Persona-driven hook, third-person absent voice (15-25 words, max 200 chars)
+    3. Key Achievements: 5-6 quantified proof points (no pronouns)
+    4. Core Competencies: 6-8 ATS-friendly keywords
     """
-    headline: str = Field(description="[EXACT JD TITLE] | [X]+ Years Technology Leadership")
-    narrative: str = Field(description="3-5 sentence profile paragraph (100-150 words)")
-    core_competencies: List[str] = Field(description="6-8 ATS-friendly keyword competencies")
-    highlights_used: List[str] = Field(description="Quantified achievements referenced")
-    keywords_integrated: List[str] = Field(description="JD keywords naturally included")
-    exact_title_used: str = Field(description="The exact title from the JD")
-    # 4-question framework validation
-    answers_who: bool = Field(default=True, description="Answers 'Who are you professionally?'")
-    answers_what_problems: bool = Field(default=True, description="Answers 'What problems can you solve?'")
-    answers_proof: bool = Field(default=True, description="Answers 'What proof do you have?'")
-    answers_why_you: bool = Field(default=True, description="Answers 'Why should they call you?'")
+    headline: str = Field(
+        description="[EXACT JD TITLE] | [X]+ Years Technology Leadership"
+    )
+    tagline: str = Field(
+        description="15-25 word persona-driven hook (max 200 chars). Third-person absent voice (NO pronouns: I/my/you). "
+                    "Embodies candidate identity. Example: 'Technology leader who thrives on building infrastructure that scales.'"
+    )
+    key_achievements: List[str] = Field(
+        description="5-6 quantified achievements. Each starts with action verb. "
+                    "No pronouns. Format: 'Achieved X by doing Y, resulting in Z'"
+    )
+    core_competencies: List[str] = Field(
+        description="6-8 ATS-friendly keywords matching JD terminology"
+    )
+    highlights_used: List[str] = Field(
+        description="Exact metrics from source bullets used in key_achievements"
+    )
+    keywords_integrated: List[str] = Field(
+        description="JD keywords naturally included across tagline and achievements"
+    )
+    exact_title_used: str = Field(
+        description="The exact title from the JD used in headline"
+    )
+    # 4-question framework validation (updated for new structure)
+    answers_who: bool = Field(
+        default=True,
+        description="Tagline answers 'Who are you professionally?'"
+    )
+    answers_what_problems: bool = Field(
+        default=True,
+        description="Key achievements show 'What problems can you solve?'"
+    )
+    answers_proof: bool = Field(
+        default=True,
+        description="Key achievements provide quantified proof"
+    )
+    answers_why_you: bool = Field(
+        default=True,
+        description="Tagline differentiates 'Why should they call you?'"
+    )
 
 
 class LegacyProfileResponse(BaseModel):
@@ -691,10 +720,11 @@ class HeaderGenerator:
         regional_variant: str = "us_eu",
     ) -> ProfileOutput:
         """
-        Generate research-aligned profile summary grounded in achievements.
+        Generate hybrid executive summary grounded in achievements.
 
         Based on research from 625 hiring managers:
-        - 100-150 word narrative (3-5 sentences)
+        - Tagline: 15-25 words, third-person absent voice (max 200 chars)
+        - Key Achievements: 5-6 quantified bullets
         - Headline with exact job title (10.6x interview factor)
         - Core competencies for ATS optimization
         - 4-question framework validation
@@ -706,9 +736,9 @@ class HeaderGenerator:
             regional_variant: "us_eu" (default) or "gulf"
 
         Returns:
-            ProfileOutput with research-aligned structure
+            ProfileOutput with hybrid executive summary structure
         """
-        self._logger.info("Generating research-aligned profile summary...")
+        self._logger.info("Generating hybrid executive summary...")
 
         provenance = None
         try:
@@ -716,10 +746,11 @@ class HeaderGenerator:
                 stitched_cv, extracted_jd, candidate_name, regional_variant
             )
 
-            # Build new research-aligned ProfileOutput with Phase 4.5 provenance
+            # Build new hybrid ProfileOutput with Phase 4.5 provenance
             profile = ProfileOutput(
                 headline=response.headline,
-                narrative=response.narrative,
+                tagline=response.tagline,                    # NEW: Hybrid format
+                key_achievements=response.key_achievements,  # NEW: Hybrid format
                 core_competencies=response.core_competencies,
                 highlights_used=response.highlights_used,
                 keywords_integrated=response.keywords_integrated,
@@ -729,6 +760,8 @@ class HeaderGenerator:
                 answers_proof=response.answers_proof,
                 answers_why_you=response.answers_why_you,
                 regional_variant=regional_variant,
+                # Keep narrative for backward compatibility (use tagline)
+                narrative=response.tagline,
                 # Phase 4.5: Annotation traceability
                 provenance=provenance,
                 annotation_influenced=provenance.has_annotation_influence if provenance else False,
@@ -736,7 +769,7 @@ class HeaderGenerator:
 
             # Log 4-question framework validation
             if profile.all_four_questions_answered:
-                self._logger.info("✓ Profile answers all 4 hiring manager questions")
+                self._logger.info("Profile answers all 4 hiring manager questions")
             else:
                 missing = []
                 if not profile.answers_who:
@@ -749,15 +782,22 @@ class HeaderGenerator:
                     missing.append("Why you?")
                 self._logger.warning(f"Profile missing answers to: {', '.join(missing)}")
 
+            # Log hybrid format details
+            self._logger.info(
+                f"Hybrid summary generated: tagline={len(profile.tagline.split())} words, "
+                f"achievements={len(profile.key_achievements)}, "
+                f"competencies={len(profile.core_competencies)}"
+            )
+
             # Phase 4.5: Log annotation influence
             if profile.annotation_influenced:
                 self._logger.info(
-                    f"✓ Profile influenced by {provenance.total_annotations_used} annotations"
+                    f"Profile influenced by {provenance.total_annotations_used} annotations"
                 )
 
         except Exception as e:
             self._logger.warning(f"LLM profile generation failed: {e}. Using fallback.")
-            # Fallback: Simple template-based profile
+            # Fallback: Template-based hybrid profile
             role_category = extracted_jd.get("role_category", "engineering_manager")
             job_title = extracted_jd.get("title", "Engineering Leader")
             profile = self._generate_fallback_profile(
@@ -776,11 +816,12 @@ class HeaderGenerator:
         regional_variant: str = "us_eu",
     ) -> ProfileOutput:
         """
-        Generate a research-aligned fallback profile when LLM fails.
+        Generate a fallback hybrid executive summary when LLM fails.
 
-        Still follows the research principles:
+        Still follows the hybrid structure:
         - Headline with job title
-        - 100+ word narrative
+        - Tagline (15-25 words, third-person absent voice)
+        - Key achievements (5-6 bullets)
         - Core competencies
         """
         # Extract some metrics
@@ -795,56 +836,85 @@ class HeaderGenerator:
         # Generate headline (research: 10.6x interview factor)
         headline = f"{job_title} | {years_experience}+ Years Technology Leadership"
 
-        # Role-specific narrative templates (expanded to ~100 words)
-        narratives = {
+        # Role-specific taglines (third-person absent voice, 15-25 words)
+        taglines = {
             "engineering_manager": (
-                "Engineering leader with a proven track record of building and scaling "
-                "high-performing teams that deliver exceptional results. Combines deep technical "
-                "expertise with strong people leadership to create environments where engineers "
-                "thrive and grow. Experienced in hiring, mentoring, and developing talent while "
-                "driving delivery excellence across complex technical initiatives. Passionate about "
-                "establishing engineering culture, improving processes, and enabling teams to "
-                "consistently exceed expectations."
+                "Engineering leader who builds high-performing teams that deliver exceptional results "
+                "while developing talent for the future."
             ),
             "staff_principal_engineer": (
-                "Staff engineer specializing in system architecture and technical strategy, "
-                "with expertise in designing scalable, resilient systems. Combines hands-on "
-                "technical depth with cross-team influence to drive architectural decisions "
-                "that enable business growth. Experienced in leading complex technical initiatives, "
-                "mentoring senior engineers, and establishing technical standards across organizations. "
-                "Proven ability to translate business requirements into elegant technical solutions."
+                "Staff engineer who designs scalable systems and drives technical excellence "
+                "through cross-team influence and mentorship."
             ),
             "director_of_engineering": (
-                "Engineering director experienced in scaling organizations and building "
-                "multi-team engineering functions. Proven ability to develop engineering managers, "
-                "establish strategic technical direction, and deliver complex programs on time "
-                "and within budget. Combines organizational leadership with technical credibility "
-                "to drive engineering excellence at scale. Passionate about creating high-performing "
-                "engineering cultures that attract and retain top talent."
+                "Engineering director who scales organizations and builds cultures of "
+                "engineering excellence that attract top talent."
             ),
             "head_of_engineering": (
-                "Head of Engineering with extensive experience building engineering functions "
-                "from the ground up. Expert in org design, talent strategy, and establishing "
-                "engineering excellence at scale. Combines executive presence with deep technical "
-                "understanding to drive business outcomes through technology. Proven track record "
-                "of transforming engineering organizations and delivering strategic initiatives "
-                "that create measurable business value."
+                "Engineering executive who builds functions from scratch and transforms "
+                "organizations to deliver measurable business outcomes."
             ),
             "cto": (
-                "Technology executive driving business transformation through engineering "
-                "excellence and strategic technology leadership. Experienced in board-level "
-                "communication, M&A technical due diligence, and defining technology vision "
-                "that enables business growth. Combines deep technical expertise with business "
-                "acumen to lead organizations through complex transformations. Proven track record "
-                "of building and scaling world-class engineering teams."
+                "Technology executive who drives business transformation through strategic "
+                "technology leadership and world-class engineering teams."
             ),
         }
 
-        narrative = narratives.get(role_category, narratives["engineering_manager"])
+        tagline = taglines.get(role_category, taglines["engineering_manager"])
 
-        # Add metric if available
-        if metrics:
-            narrative = narrative.rstrip('.') + f", achieving outcomes like {metrics[0]}."
+        # Generate key achievements from top metrics or generic fallbacks
+        key_achievements = []
+
+        # Try to use metrics from bullets
+        for metric in metrics[:5]:
+            key_achievements.append(f"Delivered {metric} through strategic initiatives")
+
+        # If not enough metrics, add generic achievements by role
+        generic_achievements_by_role = {
+            "engineering_manager": [
+                "Built and scaled high-performing engineering teams",
+                "Established engineering culture focused on continuous improvement",
+                "Drove delivery excellence across complex technical initiatives",
+                "Developed talent pipeline that accelerated team growth",
+                "Improved team velocity and predictability through process optimization",
+            ],
+            "staff_principal_engineer": [
+                "Architected scalable systems serving millions of users",
+                "Established technical standards adopted across the organization",
+                "Led complex cross-team technical initiatives",
+                "Mentored senior engineers on system design best practices",
+                "Drove architectural decisions enabling business growth",
+            ],
+            "director_of_engineering": [
+                "Scaled engineering organization across multiple teams",
+                "Developed engineering managers into effective leaders",
+                "Delivered complex programs on time and within budget",
+                "Established strategic technical direction for the organization",
+                "Built high-performing engineering culture",
+            ],
+            "head_of_engineering": [
+                "Built engineering function from scratch",
+                "Transformed engineering organization to enterprise scale",
+                "Established engineering excellence practices company-wide",
+                "Delivered strategic initiatives creating business value",
+                "Built talent strategy that attracted top engineers",
+            ],
+            "cto": [
+                "Led technology transformation across the organization",
+                "Defined technology vision enabling business growth",
+                "Built and scaled world-class engineering teams",
+                "Drove business outcomes through strategic technology leadership",
+                "Established board-level technical communication",
+            ],
+        }
+
+        generic_achievements = generic_achievements_by_role.get(
+            role_category, generic_achievements_by_role["engineering_manager"]
+        )
+
+        # Fill remaining slots with generic achievements
+        while len(key_achievements) < 5 and generic_achievements:
+            key_achievements.append(generic_achievements.pop(0))
 
         # Default core competencies based on role category
         competencies_by_role = {
@@ -876,9 +946,10 @@ class HeaderGenerator:
 
         return ProfileOutput(
             headline=headline,
-            narrative=narrative,
+            tagline=tagline,                      # NEW: Hybrid format
+            key_achievements=key_achievements,    # NEW: Hybrid format
             core_competencies=core_competencies,
-            highlights_used=metrics[:2],
+            highlights_used=metrics[:4],
             keywords_integrated=[],
             exact_title_used=job_title,
             answers_who=True,
@@ -886,6 +957,8 @@ class HeaderGenerator:
             answers_proof=bool(metrics),
             answers_why_you=True,
             regional_variant=regional_variant,
+            # Keep narrative for backward compatibility
+            narrative=tagline,
         )
 
     def generate_skills(

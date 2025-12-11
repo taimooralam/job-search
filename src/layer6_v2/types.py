@@ -693,29 +693,34 @@ class SkillsSection:
 @dataclass
 class ProfileOutput:
     """
-    Research-aligned profile summary for senior technical leadership.
+    Hybrid Executive Summary for senior technical leadership.
 
     Based on research from 625 hiring managers and eye-tracking studies:
     - Profile receives 80% of initial attention
     - First 7.4 seconds determine continue/reject decision
     - Candidates with exact job title are 10.6x more likely to get interviews
 
-    Structure follows the hybrid approach:
-    - Headline: "[EXACT TITLE] | [YEARS] Years Technology Leadership"
-    - Narrative: 3-5 sentences (100-150 words) following 60/30/10 formula
-    - Core Competencies: 6-8 ATS-optimized keyword bullets
+    New Hybrid Structure:
+    1. Headline: "[EXACT TITLE] | [X]+ Years Technology Leadership"
+    2. Tagline: Persona-driven hook (15-25 words, max 200 chars, third-person absent voice)
+    3. Key Achievements: 5-6 quantified bullets from experience
+    4. Core Competencies: 6-8 ATS-optimized keywords
 
-    The narrative must answer 4 questions:
-    1. Who are you professionally? (Identity)
-    2. What problems can you solve? (Relevance)
-    3. What proof do you have? (Evidence)
-    4. Why should they call you? (Differentiation)
+    The tagline and key_achievements must answer 4 questions:
+    1. Who are you professionally? (Identity) - answered by tagline
+    2. What problems can you solve? (Relevance) - answered by key_achievements
+    3. What proof do you have? (Evidence) - answered by key_achievements with metrics
+    4. Why should they call you? (Differentiation) - answered by tagline
     """
 
-    # Core content - new research-aligned structure
+    # Core content - Hybrid Executive Summary structure
     headline: str = ""                 # "[EXACT TITLE] | [YEARS] Years Technology Leadership"
-    narrative: str = ""                # 3-5 sentence paragraph (100-150 words)
+    tagline: str = ""                  # NEW: Persona-driven hook (15-25 words, max 200 chars)
+    key_achievements: List[str] = field(default_factory=list)  # NEW: 5-6 quantified bullets
     core_competencies: List[str] = field(default_factory=list)  # 6-8 ATS keyword bullets
+
+    # DEPRECATED: Keep for backward compatibility during transition
+    narrative: str = ""                # DEPRECATED: Use tagline + key_achievements instead
 
     # Grounding evidence
     highlights_used: List[str] = field(default_factory=list)  # Quantified achievements referenced
@@ -723,10 +728,10 @@ class ProfileOutput:
     exact_title_used: str = ""         # The exact JD title incorporated in headline
 
     # Validation - tracks if all 4 questions are answered
-    answers_who: bool = False          # Identity and level
-    answers_what_problems: bool = False  # Relevance to their needs
-    answers_proof: bool = False        # Evidence of impact (metrics)
-    answers_why_you: bool = False      # Differentiation
+    answers_who: bool = False          # Identity and level (tagline)
+    answers_what_problems: bool = False  # Relevance to their needs (key_achievements)
+    answers_proof: bool = False        # Evidence of impact (key_achievements with metrics)
+    answers_why_you: bool = False      # Differentiation (tagline)
 
     # Configuration
     word_count: int = 0
@@ -742,16 +747,47 @@ class ProfileOutput:
 
     def __post_init__(self):
         """Calculate word count and ensure backward compatibility."""
-        # Calculate word count from narrative (primary content)
-        if self.word_count == 0 and self.narrative:
-            self.word_count = len(self.narrative.split())
-        # If no word count yet but legacy text exists, use that
-        elif self.word_count == 0 and self._legacy_text:
-            self.word_count = len(self._legacy_text.split())
+        # Calculate word count from tagline + key_achievements (primary content)
+        if self.word_count == 0:
+            if self.tagline and self.key_achievements:
+                total_words = len(self.tagline.split())
+                total_words += sum(len(a.split()) for a in self.key_achievements)
+                self.word_count = total_words
+            elif self.narrative:
+                self.word_count = len(self.narrative.split())
+            elif self._legacy_text:
+                self.word_count = len(self._legacy_text.split())
+
+    @property
+    def is_hybrid_format(self) -> bool:
+        """Check if using new hybrid format vs legacy narrative."""
+        return bool(self.tagline and self.key_achievements)
+
+    @property
+    def formatted_summary(self) -> str:
+        """Return the complete formatted executive summary."""
+        lines = []
+        if self.headline:
+            lines.append(self.headline)
+            lines.append("")
+        if self.tagline:
+            lines.append(self.tagline)
+            lines.append("")
+        if self.key_achievements:
+            for achievement in self.key_achievements:
+                lines.append(f"- {achievement}")
+            lines.append("")
+        if self.core_competencies:
+            lines.append(f"Core: {' | '.join(self.core_competencies)}")
+        return "\n".join(lines)
 
     @property
     def text(self) -> str:
-        """Combined text for backward compatibility."""
+        """Combined text for backward compatibility and word count."""
+        if self.tagline and self.key_achievements:
+            bullets_text = "\n".join(f"- {a}" for a in self.key_achievements)
+            return f"{self.tagline}\n\n{bullets_text}"
+        # Fallback to legacy narrative
         if self.narrative:
             return self.narrative
         return self._legacy_text
@@ -760,7 +796,7 @@ class ProfileOutput:
     def text(self, value: str):
         """Allow setting text for backward compatibility."""
         self._legacy_text = value
-        if not self.narrative:
+        if not self.narrative and not self.tagline:
             self.narrative = value
         if self.word_count == 0:
             self.word_count = len(value.split())
@@ -786,8 +822,10 @@ class ProfileOutput:
         """Convert to dictionary for serialization."""
         return {
             "headline": self.headline,
-            "narrative": self.narrative,
+            "tagline": self.tagline,                    # NEW: Hybrid format
+            "key_achievements": self.key_achievements,  # NEW: Hybrid format
             "core_competencies": self.core_competencies,
+            "narrative": self.narrative,  # DEPRECATED but included for migration
             "text": self.text,  # Legacy compatibility
             "highlights_used": self.highlights_used,
             "keywords_integrated": self.keywords_integrated,
@@ -799,6 +837,7 @@ class ProfileOutput:
             "answers_proof": self.answers_proof,
             "answers_why_you": self.answers_why_you,
             "all_four_questions_answered": self.all_four_questions_answered,
+            "is_hybrid_format": self.is_hybrid_format,  # NEW: Format detection
             # Phase 4.5 annotation traceability
             "provenance": self.provenance.to_dict() if self.provenance else None,
             "annotation_influenced": self.annotation_influenced,
@@ -1191,13 +1230,15 @@ class HeaderOutput:
 
     def to_markdown(self) -> str:
         """
-        Convert to ATS-optimized plain text format for CV header.
+        Convert to ATS-optimized format for CV header.
 
-        Research-aligned structure:
-        - "PROFESSIONAL SUMMARY" header (ATS universal recognition)
-        - Headline with exact job title + years (10.6x interview factor)
-        - Narrative paragraph (100-150 words, 60/30/10 formula)
-        - Core Competencies as keyword bullets (hybrid scannability)
+        Uses Hybrid Executive Summary structure:
+        - EXECUTIVE SUMMARY header
+        - Headline with job title + years (10.6x interview factor)
+        - Tagline (persona-driven hook, 15-25 words)
+        - Key Achievements (5-6 quantified bullets)
+        - Core Competencies line
+        - Skills & Expertise sections
         """
         lines = []
 
@@ -1213,22 +1254,33 @@ class HeaderOutput:
         lines.append(" | ".join(contact_parts))
         lines.append("")
 
-        # Professional Summary (ATS-optimized header)
-        lines.append("PROFESSIONAL SUMMARY")
+        # Executive Summary (new format)
+        lines.append("EXECUTIVE SUMMARY")
 
-        # Add headline if available (research: exact title + years)
+        # Headline with job title + years (bold for emphasis)
         if self.profile.headline:
-            lines.append(self.profile.headline)
+            lines.append(f"**{self.profile.headline}**")
             lines.append("")
 
-        # Narrative paragraph (100-150 words)
-        lines.append(self.profile.text)
-        lines.append("")
+        # Tagline (new hybrid format) or fallback to narrative
+        if self.profile.tagline:
+            lines.append(self.profile.tagline)
+            lines.append("")
+        elif self.profile.narrative:
+            # Fallback to legacy narrative
+            lines.append(self.profile.narrative)
+            lines.append("")
 
-        # Core Competencies - inline format for ATS (from profile if available)
+        # Key Achievements (new hybrid format)
+        if self.profile.key_achievements:
+            for achievement in self.profile.key_achievements:
+                lines.append(f"- {achievement}")
+            lines.append("")
+
+        # Core Competencies - inline format for ATS
         if self.profile.core_competencies:
             competencies_str = " | ".join(self.profile.core_competencies)
-            lines.append(f"Core Competencies: {competencies_str}")
+            lines.append(f"**Core:** {competencies_str}")
             lines.append("")
 
         # Skills sections (detailed breakdown)
