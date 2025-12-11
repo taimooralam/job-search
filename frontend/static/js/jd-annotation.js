@@ -418,6 +418,16 @@ class AnnotationManager {
             saveBtn.textContent = editingAnnotation ? 'Update Annotation' : 'Add Annotation';
         }
 
+        // Show/hide delete button based on edit mode
+        const deleteBtn = document.getElementById('popover-delete-btn');
+        if (deleteBtn) {
+            if (editingAnnotation) {
+                deleteBtn.classList.remove('hidden');
+            } else {
+                deleteBtn.classList.add('hidden');
+            }
+        }
+
         // Update selected text display
         const textEl = document.getElementById('popover-selected-text');
         if (textEl) textEl.textContent = selectedText;
@@ -579,6 +589,10 @@ class AnnotationManager {
         // Disable save button
         const saveBtn = document.getElementById('popover-save-btn');
         if (saveBtn) saveBtn.disabled = true;
+
+        // Hide delete button
+        const deleteBtn = document.getElementById('popover-delete-btn');
+        if (deleteBtn) deleteBtn.classList.add('hidden');
     }
 
     /**
@@ -1986,6 +2000,33 @@ function saveAnnotationFromPopover() {
         annotationManager.createAnnotationFromPopover();
     }
 }
+
+/**
+ * Delete annotation from popover (when editing existing annotation)
+ */
+function deleteAnnotationFromPopover() {
+    if (!annotationManager) return;
+
+    const annotationId = annotationManager.editingAnnotationId;
+    if (!annotationId) {
+        console.warn('No annotation being edited to delete');
+        return;
+    }
+
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this annotation?')) {
+        return;
+    }
+
+    // Delete the annotation
+    annotationManager.deleteAnnotation(annotationId);
+
+    // Hide the popover
+    hideAnnotationPopover();
+}
+
+// Export to window for HTML onclick handlers
+window.deleteAnnotationFromPopover = deleteAnnotationFromPopover;
 
 /**
  * Filter annotations
