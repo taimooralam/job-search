@@ -112,4 +112,4 @@ Action: Delegate to doc-sync first, then test-generator
 - before committing always run unit tests
 - when testing during development do not test integration or bulk tests
 - whenever fetching a job fetch it with _id from the jobs database in MongoDB from the collection named level-2
-
+- whenever you run tests for testing, run them in parallel using python-xdist
