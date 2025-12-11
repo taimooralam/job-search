@@ -139,3 +139,39 @@ BUG 5. [FIXED] Synthesized persona too short, not reflecting all identities/stre
 - `src/common/persona_builder.py` (SYNTHESIS_PROMPT, _build_persona_context, _get_source_annotation_ids, secondary_identities cap)
 
 **Tests**: All 33 persona builder tests pass.
+
+BUG 6. [FIXED] Research data (company, role, people) not displaying on detail page after Research button completes
+
+**Problem**: User clicks the Research button, research completes successfully (persisted to MongoDB), but company research summary, role research (summary, business_impact, why_now), and contact information don't show on the job detail page after reload.
+
+**Root Cause**: The template `job_detail.html` was missing a dedicated UI section to display research data independently. The only place showing company signals was inside the "Intelligence Summary" collapsible, which was **nested inside** the `{% if job.extracted_jd %}` block (lines 659-1006). This meant:
+1. If a job had research data but no extracted_jd, company signals wouldn't display
+2. `company_research.summary`, `role_research.summary`, `role_research.business_impact`, `role_research.why_now` were NEVER displayed anywhere in the template
+3. The People/Contacts section existed and worked correctly (lines 1444+), but only if data existed
+
+**Investigation**:
+- Verified MongoDB has correct data: `company_research.summary`, `company_research.signals`, `role_research.summary`, `role_research.business_impact`, `role_research.why_now`, `primary_contacts`, `secondary_contacts` all present
+- Grep for template usage found no references to `role_research.summary`, `role_research.business_impact`, `role_research.why_now`, or `company_research.summary`
+- The `serialize_job()` function correctly passes all fields through
+- The issue was purely a template display gap
+
+**Fix Applied**:
+Added a new "Company & Role Research" section to `job_detail.html` that renders **independently** of extracted_jd (inserted at line 1008, after the extracted_jd section closes). The new section includes:
+
+1. **Company Intelligence Card**:
+   - Company type badge (Employer/Recruitment Agency)
+   - Company summary (2-3 sentences)
+   - Company URL link
+   - Business Signals list with type badges and dates
+
+2. **Role Intelligence Card**:
+   - Role summary (2-3 sentences)
+   - Business Impact bullets (3-5 items with checkmarks)
+   - "Why Now?" context box explaining timing significance
+
+The section uses consistent dark mode support and styling matching the rest of the page.
+
+**Files Modified**:
+- `frontend/templates/job_detail.html` (lines 1008-1139, added new Company & Role Research section)
+
+**Tests**: Template syntax validated via Jinja2. All 1682+ unit tests pass.
