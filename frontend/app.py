@@ -128,6 +128,22 @@ def inject_version():
     return {"version": APP_VERSION}
 
 
+@app.after_request
+def add_cache_headers(response):
+    """
+    Add cache-busting headers to HTMX partial responses.
+
+    This prevents browsers from caching HTMX responses, ensuring
+    that filter changes (like time range filters) always fetch fresh data.
+    """
+    # Only add no-cache headers for HTMX requests (partials)
+    if request.headers.get("HX-Request") == "true":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 # Authentication configuration
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "change-me-in-production")
 
@@ -366,10 +382,16 @@ def list_jobs():
     # Location filter (can be multiple values)
     locations = request.args.getlist("locations")
 
+    # Check for "applied only" quick filter - overrides status filter
+    applied_only = request.args.get("applied_only", "").lower() == "true"
+
     # Status filter (can be multiple values)
     # Default: exclude 'discarded', 'applied', 'interview scheduled'
     statuses = request.args.getlist("statuses")
-    if not statuses:
+    if applied_only:
+        # "Applied only" quick filter overrides status checkboxes
+        statuses = ["applied"]
+    elif not statuses:
         # If no statuses specified, use default exclusion list
         statuses = [s for s in JOB_STATUSES if s not in ["discarded", "applied", "interview scheduled"]]
 
@@ -1971,6 +1993,10 @@ def job_rows_partial():
         else:
             data = response.get_json()
 
+        # Get datetime params (prefer datetime_from/to, fall back to date_from/to for compatibility)
+        datetime_from = request.args.get("datetime_from", "") or request.args.get("date_from", "")
+        datetime_to = request.args.get("datetime_to", "") or request.args.get("date_to", "")
+
         return render_template(
             "partials/job_rows.html",
             jobs=data["jobs"],
@@ -1980,10 +2006,11 @@ def job_rows_partial():
             current_direction=request.args.get("direction", "desc"),
             current_query=request.args.get("query", ""),
             current_page_size=int(request.args.get("page_size", 10)),
-            current_date_from=request.args.get("date_from", ""),
-            current_date_to=request.args.get("date_to", ""),
+            current_datetime_from=datetime_from,
+            current_datetime_to=datetime_to,
             current_locations=request.args.getlist("locations"),
             current_statuses=request.args.getlist("statuses"),
+            current_applied_only=request.args.get("applied_only", ""),
         )
     except Exception as e:
         # Catch any unexpected errors and return them as HTML

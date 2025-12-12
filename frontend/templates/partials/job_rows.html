@@ -1,9 +1,10 @@
 <!-- Job table with sortable headers and data rows -->
 {# Build filter query string for HTMX calls #}
 {% set filter_params = [] %}
-{% if current_date_from %}{% set _ = filter_params.append('date_from=' ~ current_date_from) %}{% endif %}
-{% if current_date_to %}{% set _ = filter_params.append('date_to=' ~ current_date_to) %}{% endif %}
+{% if current_datetime_from %}{% set _ = filter_params.append('datetime_from=' ~ current_datetime_from) %}{% endif %}
+{% if current_datetime_to %}{% set _ = filter_params.append('datetime_to=' ~ current_datetime_to) %}{% endif %}
 {% for loc in current_locations %}{% set _ = filter_params.append('locations=' ~ (loc | urlencode)) %}{% endfor %}
+{% if current_applied_only %}{% set _ = filter_params.append('applied_only=' ~ current_applied_only) %}{% endif %}
 {% set filter_query = ('&' ~ filter_params | join('&')) if filter_params else '' %}
 
 <table class="min-w-full theme-table">
@@ -235,7 +236,7 @@
                     </svg>
                     <h3 class="mt-2 text-sm font-medium theme-text-primary">No jobs found</h3>
                     <p class="mt-1 text-sm theme-text-secondary">
-                        {% if current_query or current_date_from or current_date_to or current_locations %}
+                        {% if current_query or current_datetime_from or current_datetime_to or current_locations %}
                             No jobs match your filters. Try adjusting your search criteria.
                         {% else %}
                             No jobs in the database yet. Add jobs via the pipeline or seed script.
