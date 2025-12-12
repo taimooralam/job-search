@@ -3714,6 +3714,197 @@ Expected format:
     })
 
 
+@app.route("/api/jobs/<job_id>/contacts/generate-message", methods=["POST"])
+@login_required
+def generate_contact_message(job_id: str):
+    """
+    Generate an InMail or LinkedIn Connection Request message for a contact.
+
+    Uses the OutreachGenerationService via the VPS runner to generate
+    persona-enhanced, LLM-powered outreach messages.
+
+    Request Body:
+        contact_name: Name of the contact
+        contact_role: Role/title of the contact
+        message_type: 'inmail' or 'connection'
+        tier: Model tier ('fast', 'balanced', 'quality') - default 'balanced'
+
+    Returns:
+        JSON with the generated message
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job ID format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    contact_name = data.get("contact_name", "")
+    contact_role = data.get("contact_role", "")
+    message_type = data.get("message_type", "connection")
+    tier = data.get("tier", "balanced")
+
+    # Find the contact index by matching name in primary and secondary contacts
+    contact_type = None
+    contact_index = None
+
+    # Search primary contacts
+    primary_contacts = job.get("primary_contacts") or []
+    for i, contact in enumerate(primary_contacts):
+        name = contact.get("name") or contact.get("contact_name") or ""
+        if name.lower() == contact_name.lower():
+            contact_type = "primary"
+            contact_index = i
+            break
+
+    # If not found, search secondary contacts
+    if contact_type is None:
+        secondary_contacts = job.get("secondary_contacts") or []
+        for i, contact in enumerate(secondary_contacts):
+            name = contact.get("name") or contact.get("contact_name") or ""
+            if name.lower() == contact_name.lower():
+                contact_type = "secondary"
+                contact_index = i
+                break
+
+    # If still not found, return an error
+    if contact_type is None or contact_index is None:
+        return jsonify({
+            "success": False,
+            "error": f"Contact '{contact_name}' not found in job contacts"
+        }), 404
+
+    # Try to proxy to runner service first, fallback to local service
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach",
+            json={
+                "message_type": message_type,
+                "tier": tier
+            },
+            headers=get_runner_headers(),
+            timeout=60,  # 60 second timeout for LLM generation
+        )
+
+        result = response.json()
+
+        if response.status_code == 200 and result.get("success"):
+            # Extract message from runner response
+            result_data = result.get("data", {})
+            return jsonify({
+                "success": True,
+                "message": result_data.get("message", ""),
+                "subject": result_data.get("subject"),  # For InMail
+                "message_type": message_type,
+                "contact_name": contact_name,
+                "char_count": result_data.get("char_count"),
+                "persisted": result_data.get("persisted", False)
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Failed to generate message")
+            }), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Runner service timeout during outreach generation for job {job_id}")
+        return jsonify({
+            "success": False,
+            "error": "Message generation timed out. Please try again."
+        }), 504
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.RequestException) as conn_err:
+        # Fallback to local service when runner is unavailable
+        logger.warning(f"Runner unavailable ({conn_err}), falling back to local outreach generation")
+        return _generate_outreach_locally(job_id, contact_type, contact_index, message_type, tier)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error during outreach generation: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
+
+
+def _generate_outreach_locally(job_id: str, contact_type: str, contact_index: int,
+                               message_type: str, tier: str):
+    """
+    Fallback function to generate outreach messages locally when runner is unavailable.
+
+    Uses the OutreachGenerationService directly.
+    """
+    import asyncio
+    from src.services.outreach_service import OutreachGenerationService
+    from src.common.model_tiers import ModelTier
+
+    # Map tier string to ModelTier enum
+    tier_map = {
+        "fast": ModelTier.FAST,
+        "balanced": ModelTier.BALANCED,
+        "quality": ModelTier.QUALITY
+    }
+    model_tier = tier_map.get(tier.lower(), ModelTier.BALANCED)
+
+    try:
+        service = OutreachGenerationService()
+
+        # Run async service in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(
+                service.execute(
+                    job_id=job_id,
+                    contact_index=contact_index,
+                    contact_type=contact_type,
+                    tier=model_tier,
+                    message_type=message_type
+                )
+            )
+        finally:
+            loop.close()
+
+        if result.success:
+            return jsonify({
+                "success": True,
+                "message": result.data.get("message", ""),
+                "subject": result.data.get("subject"),
+                "message_type": message_type,
+                "contact_name": result.data.get("contact_name", ""),
+                "char_count": result.data.get("char_count"),
+                "persisted": result.data.get("persisted", False),
+                "local_generation": True  # Flag to indicate this was generated locally
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": result.error or "Failed to generate message locally"
+            }), 500
+
+    except ImportError as e:
+        logger.error(f"Cannot import OutreachGenerationService: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Message generation service not available. Please contact support."
+        }), 503
+
+    except Exception as e:
+        logger.exception(f"Error in local outreach generation: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Local generation error: {str(e)}"
+        }), 500
+
+
 # ============================================================================
 # JD Annotation System API
 # ============================================================================
