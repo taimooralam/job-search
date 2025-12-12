@@ -403,6 +403,104 @@ def create_tracked_llm_with_tier(
     return llm
 
 
+def create_tracked_llm_for_model(
+    model: str,
+    temperature: Optional[float] = None,
+    layer: Optional[str] = None,
+    tracker: Optional[TokenTracker] = None,
+    run_id: Optional[str] = None,
+    job_id: Optional[str] = None,
+    additional_callbacks: Optional[List[BaseCallbackHandler]] = None,
+    **kwargs: Any,
+) -> Union[ChatOpenAI, Any]:
+    """
+    Create an LLM instance that auto-detects provider based on model name.
+
+    This is the model-agnostic factory function that will create the appropriate
+    LLM type (ChatAnthropic for Claude models, ChatOpenAI for OpenAI models).
+
+    Args:
+        model: Model name (e.g., "gpt-4o", "claude-3-5-haiku-20241022")
+        temperature: Temperature for generation
+        layer: Pipeline layer name for cost attribution
+        tracker: Optional specific tracker (defaults to global)
+        run_id: Optional run_id (defaults to context)
+        job_id: Optional job_id (defaults to context)
+        additional_callbacks: Additional callbacks to add
+        **kwargs: Additional LLM parameters
+
+    Returns:
+        LLM instance (ChatAnthropic or ChatOpenAI) with token tracking
+
+    Example:
+        # Auto-detects OpenAI
+        llm = create_tracked_llm_for_model("gpt-4o", layer="layer6_v2")
+
+        # Auto-detects Claude
+        llm = create_tracked_llm_for_model("claude-3-5-haiku-20241022", layer="layer6_v2")
+    """
+    effective_temperature = temperature if temperature is not None else Config.ANALYTICAL_TEMPERATURE
+
+    # Detect provider from model name
+    is_claude = "claude" in model.lower()
+    provider = "anthropic" if is_claude else "openai"
+
+    # Create tracking callback
+    tracking_callback = _create_tracking_callback(
+        provider=provider,
+        layer=layer,
+        tracker=tracker,
+        run_id=run_id,
+        job_id=job_id,
+    )
+
+    callbacks: List[BaseCallbackHandler] = [tracking_callback]
+    if additional_callbacks:
+        callbacks.extend(additional_callbacks)
+
+    # Create Claude LLM for Claude models
+    if is_claude:
+        try:
+            from langchain_anthropic import ChatAnthropic
+
+            llm = ChatAnthropic(
+                model=model,
+                temperature=effective_temperature,
+                api_key=Config.ANTHROPIC_API_KEY,
+                callbacks=callbacks,
+                **kwargs,
+            )
+            logger.debug(
+                f"Created tracked Anthropic LLM: model={model}, "
+                f"layer={layer}, run_id={run_id or _current_run_id}"
+            )
+            return llm
+        except ImportError:
+            logger.warning(
+                "langchain-anthropic not installed, falling back to OpenAI. "
+                f"Original model was: {model}"
+            )
+            # Fall back to OpenAI with a different model
+            model = Config.DEFAULT_MODEL
+
+    # Create OpenAI LLM for OpenAI models (or fallback)
+    llm = ChatOpenAI(
+        model=model,
+        temperature=effective_temperature,
+        api_key=Config.get_llm_api_key(),
+        base_url=Config.get_llm_base_url(),
+        callbacks=callbacks,
+        **kwargs,
+    )
+
+    logger.debug(
+        f"Created tracked OpenAI LLM: model={model}, "
+        f"layer={layer}, run_id={run_id or _current_run_id}"
+    )
+
+    return llm
+
+
 # Convenience aliases
 create_openai_llm = create_tracked_llm
 create_cv_llm = create_tracked_cv_llm
