@@ -399,3 +399,80 @@
         animation: none;
     }
 }
+
+/* ============================================================================
+ * Dark Mode Overrides
+ * ============================================================================ */
+
+.dark .pipeline-step {
+    background: var(--bg-card, #1e293b);
+    border-color: var(--border-default, #334155);
+}
+
+.dark .pipeline-step.pending {
+    background: var(--bg-secondary, #1e293b);
+}
+
+.dark .pipeline-step.executing {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.15) 100%);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.dark .pipeline-step.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.15) 100%);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.dark .pipeline-step.failed {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.15) 100%);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.dark .pipeline-step.skipped {
+    background: var(--bg-secondary, #1e293b);
+    border-color: var(--border-default, #334155);
+}
+
+.dark .pipeline-step.pending .step-icon {
+    background: #334155;
+    color: #64748b;
+}
+
+.dark .pipeline-step.skipped .step-icon {
+    background: #334155;
+    color: #475569;
+}
+
+.dark .step-title {
+    color: var(--text-primary, #f1f5f9);
+}
+
+.dark .step-description {
+    color: var(--text-secondary, #94a3b8);
+}
+
+.dark .step-status {
+    color: var(--text-secondary, #94a3b8);
+}
+
+.dark .step-metadata {
+    color: var(--text-tertiary, #64748b);
+}
+
+.dark .pipeline-overall-progress-bar-container {
+    background: #334155;
+}
+
+.dark .pipeline-overall-progress-text {
+    color: var(--text-secondary, #94a3b8);
+}
+
+.dark .pipeline-stepper-with-lines .pipeline-step::before {
+    background: #475569;
+}
+
+.dark .step-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+}
