@@ -131,6 +131,55 @@ class CVGrader:
                 found.append(word)
         return len(found), found
 
+    def _check_keyword_front_loading(
+        self,
+        cv_text: str,
+        jd_keywords: List[str],
+    ) -> Tuple[float, int, int]:
+        """
+        Check if JD keywords appear in the first 3 words of bullets.
+
+        This helps recruiters quickly match experience to requirements during
+        their 6-7 second initial CV scan.
+
+        Args:
+            cv_text: The CV text to analyze
+            jd_keywords: JD keywords to check for front-loading
+
+        Returns:
+            Tuple of (front_load_ratio, front_loaded_count, keyword_addressable_count)
+        """
+        if not jd_keywords:
+            return 1.0, 0, 0  # No keywords to check
+
+        jd_keywords_lower = {kw.lower() for kw in jd_keywords}
+
+        # Extract bullets from CV
+        bullets = re.findall(r'[•\-\*]\s*([^\n]+)', cv_text)
+
+        front_loaded_count = 0
+        keyword_addressable_count = 0
+
+        for bullet in bullets:
+            words = bullet.lower().split()
+            first_three = ' '.join(words[:3]) if len(words) >= 3 else bullet.lower()
+            full_bullet = bullet.lower()
+
+            # Check if bullet contains any JD keyword
+            has_keyword = any(kw in full_bullet for kw in jd_keywords_lower)
+
+            if has_keyword:
+                keyword_addressable_count += 1
+                # Check if keyword is front-loaded (in first 3 words)
+                if any(kw in first_three for kw in jd_keywords_lower):
+                    front_loaded_count += 1
+
+        if keyword_addressable_count == 0:
+            return 1.0, 0, 0  # No keywords to front-load = perfect score
+
+        ratio = front_loaded_count / keyword_addressable_count
+        return ratio, front_loaded_count, keyword_addressable_count
+
     def _grade_ats_optimization(
         self,
         cv_text: str,
@@ -166,16 +215,33 @@ class CVGrader:
         has_bullets = "•" in cv_text or "-" in cv_text
         format_bonus = 0.5 if has_sections and has_bullets else 0
 
-        score = min(10, base_score + format_bonus)
+        # Check keyword front-loading (keywords in first 3 words of bullets)
+        front_load_ratio, front_loaded, addressable = self._check_keyword_front_loading(
+            cv_text, jd_keywords
+        )
+        # Apply bonus for good front-loading (0.5 point bonus if >50% front-loaded)
+        front_load_bonus = 0.5 if front_load_ratio >= 0.5 else 0
+
+        score = min(10, base_score + format_bonus + front_load_bonus)
 
         missing_keywords = [k for k in jd_keywords if k.lower() not in cv_text.lower()]
+
+        # Build feedback with front-loading metrics
+        front_load_info = f", {front_loaded}/{addressable} front-loaded ({front_load_ratio:.0%})" if addressable > 0 else ""
+
+        # Build issues list
+        issues = []
+        if missing_keywords:
+            issues.append(f"Missing keywords: {', '.join(missing_keywords[:5])}")
+        if addressable > 0 and front_load_ratio < 0.5:
+            issues.append(f"Low keyword front-loading: only {front_load_ratio:.0%} of keyword bullets have JD terms in first 3 words")
 
         return DimensionScore(
             dimension="ats_optimization",
             score=score,
             weight=self.DIMENSION_WEIGHTS["ats_optimization"],
-            feedback=f"Found {found_count}/{len(jd_keywords)} keywords ({coverage_ratio:.0%} coverage)",
-            issues=[f"Missing keywords: {', '.join(missing_keywords[:5])}"] if missing_keywords else [],
+            feedback=f"Found {found_count}/{len(jd_keywords)} keywords ({coverage_ratio:.0%} coverage){front_load_info}",
+            issues=issues,
             strengths=[f"Found keywords: {', '.join(found_keywords[:5])}"] if found_keywords else [],
         )
 
@@ -408,6 +474,7 @@ class CVGrader:
 
 DIMENSION 1: ATS OPTIMIZATION (weight: 20%)
 - Keyword coverage: Do JD keywords appear naturally?
+- Keyword front-loading: Are JD keywords in first 3 words of bullets?
 - Format compliance: Standard headers, clean structure?
 - Parsability: Would ATS extract sections correctly?
 
