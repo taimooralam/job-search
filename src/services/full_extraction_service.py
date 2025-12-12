@@ -17,7 +17,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from bson import ObjectId
 from pymongo import MongoClient
@@ -119,12 +119,16 @@ class FullExtractionService(OperationService):
 
         return processed_jd_to_dict(processed)
 
-    def _run_jd_extractor(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
+    def _run_jd_extractor(
+        self, job: Dict[str, Any], jd_text: str
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """
         Run JD Extractor: Extract structured intelligence from JD.
 
-        Returns extracted JD dict with role_category, responsibilities,
-        qualifications, top_keywords, competency_weights, etc.
+        Returns:
+            Tuple of (extracted_jd, error_message):
+            - On success: (extracted_jd_dict, None)
+            - On failure: (None, error_message_string)
         """
         state: JobState = {
             "job_id": str(job.get("_id", "")),
@@ -136,8 +140,26 @@ class FullExtractionService(OperationService):
         extractor = JDExtractor()
         result = extractor.extract(state)
 
-        # Return the extracted_jd or None if extraction failed
-        return result.get("extracted_jd")
+        extracted_jd = result.get("extracted_jd")
+        error_message = None
+
+        if not extracted_jd:
+            # Extract error message from the errors list
+            errors = result.get("errors", [])
+            if errors:
+                # Get the last error (most specific)
+                last_error = errors[-1] if isinstance(errors, list) else str(errors)
+                # Strip common prefix for cleaner display
+                prefix = "Layer 1.4 (JD Extractor) failed: "
+                if isinstance(last_error, str) and last_error.startswith(prefix):
+                    error_message = last_error[len(prefix):]
+                else:
+                    error_message = str(last_error)
+                # Truncate if too long for SSE display
+                if len(error_message) > 200:
+                    error_message = error_message[:197] + "..."
+
+        return extracted_jd, error_message
 
     def _run_layer_2(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
         """
@@ -452,7 +474,7 @@ class FullExtractionService(OperationService):
                 # 4b. Run JD Extractor: Extract structured intelligence
                 await emit_progress("jd_extractor", "processing", "Extracting role intelligence")
                 logger.info(f"[{run_id[:16]}] Running JD Extractor: Extracting role info")
-                extracted_jd = self._run_jd_extractor(job, jd_text)
+                extracted_jd, extractor_error = self._run_jd_extractor(job, jd_text)
                 if extracted_jd:
                     role_category = extracted_jd.get("role_category", "unknown")
                     keywords_count = len(extracted_jd.get("top_keywords", []))
@@ -465,12 +487,15 @@ class FullExtractionService(OperationService):
                     await emit_progress("jd_extractor", "success", f"Role: {role_category}, {keywords_count} keywords")
                     logger.info(f"[{run_id[:16]}] JD Extractor complete: role={role_category}, {keywords_count} keywords")
                 else:
+                    # Include actual error message in status and SSE stream
+                    error_display = f"Failed: {extractor_error}" if extractor_error else "Using fallback"
                     layer_status["jd_extractor"] = {
                         "status": "failed",
-                        "message": "JD extraction failed - using fallback"
+                        "error": extractor_error,
+                        "message": f"JD extraction failed - {error_display}"
                     }
-                    await emit_progress("jd_extractor", "failed", "Using fallback")
-                    logger.warning(f"[{run_id[:16]}] JD Extractor failed - continuing without extracted data")
+                    await emit_progress("jd_extractor", "failed", error_display)
+                    logger.warning(f"[{run_id[:16]}] JD Extractor failed: {extractor_error}")
 
                 # 5. Run Layer 2: Pain Point Mining
                 await emit_progress("pain_points", "processing", "Mining pain points")
