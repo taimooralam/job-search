@@ -2025,6 +2025,61 @@ async function copyFirecrawlPrompt() {
     }
 }
 
+/**
+ * Copy text to clipboard and show a toast notification.
+ * Used for copying existing outreach messages.
+ *
+ * @param {string} text - The text to copy
+ * @param {string} label - Label for the toast message (e.g., "Connection request")
+ */
+async function copyToClipboard(text, label = 'Text') {
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast(`${label} copied to clipboard!`, 'success');
+    } catch (err) {
+        showToast(`Failed to copy ${label}: ${err.message}`, 'error');
+    }
+}
+
+/**
+ * Generate a contact message (InMail or Connection Request) for a specific contact.
+ * This is called from the inline buttons on contact cards.
+ *
+ * @param {string} jobId - The job ID
+ * @param {string} contactName - Name of the contact
+ * @param {string} contactRole - Role/title of the contact
+ * @param {string} messageType - 'inmail' or 'connection'
+ */
+async function generateContactMessage(jobId, contactName, contactRole, messageType) {
+    const messageLabel = messageType === 'connection' ? 'Connection request' : 'InMail';
+
+    showToast(`Generating ${messageLabel} for ${contactName}...`, 'info');
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/contacts/generate-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contact_name: contactName,
+                contact_role: contactRole,
+                message_type: messageType
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.message) {
+            // Copy to clipboard
+            await navigator.clipboard.writeText(result.message);
+            showToast(`${messageLabel} copied to clipboard!`, 'success');
+        } else {
+            showToast(result.error || `Failed to generate ${messageLabel}`, 'error');
+        }
+    } catch (err) {
+        showToast(`Failed to generate ${messageLabel}: ${err.message}`, 'error');
+    }
+}
+
 function openAddContactsModal() {
     const modal = document.getElementById('add-contacts-modal');
     if (modal) {
@@ -2220,6 +2275,8 @@ window.saveCoverLetterChanges = saveCoverLetterChanges;
 window.generateCoverLetterPDF = generateCoverLetterPDF;
 window.deleteContact = deleteContact;
 window.generateOutreach = generateOutreach;
+window.generateContactMessage = generateContactMessage;
+window.copyToClipboard = copyToClipboard;
 window.copyFirecrawlPrompt = copyFirecrawlPrompt;
 window.openAddContactsModal = openAddContactsModal;
 window.closeAddContactsModal = closeAddContactsModal;
