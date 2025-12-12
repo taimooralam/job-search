@@ -53,15 +53,120 @@ User Request
 
 ### Standard Workflow for Bugs & Features
 
-**IMPORTANT**: For bug fixes and feature implementations, follow the full workflow defined in [`docs/WORKFLOW.md`](docs/WORKFLOW.md). This includes:
+**IMPORTANT**: For bug fixes and feature implementations, follow this workflow (from `docs/WORKFLOW.md`):
 
-1. **Classify** → Determine if it's info/research, architecture, bug, feature, or simple task
-2. **Architect** → Use `job-search-architect` to verify requirements and design
-3. **Implement** → Use `backend-developer`, `frontend-developer`, or `architecture-debugger`
-4. **Test** → Use `test-generator` to write tests
-5. **Document** → Use `doc-sync` to update docs
-6. **Commit** → Atomic commits (no Claude signature), run tests first
-7. **Summarize** → Provide root cause analysis and fix summary
+#### Step 0: Classify the Request
+
+| Type | Indicators | Action |
+|------|------------|--------|
+| **Information/Research** | "How does...", "What is...", "Explain...", "Where is..." | Answer directly or use `Explore` agent for codebase questions |
+| **Architecture/Design** | "Should we...", "How should we architect...", "Design..." | → Go to Step 1 |
+| **Bug Fix** | "X is broken", "Error when...", "Not working", stack traces | → Go to Step 1 |
+| **Feature Request** | "Add...", "Implement...", "Build...", "Create..." | → Go to Step 1 |
+| **Simple Task** | Single file edit, typo fix, small config change | Handle directly, skip to Step 5 |
+
+#### Step 1: Architecture Verification (Required for bugs & features)
+
+Use `job-search-architect` agent to:
+- Understand the correct/intended behavior
+- Identify which components are involved
+- Verify requirements against existing architecture
+- Determine root cause (for bugs) or design approach (for features)
+
+#### Step 2: Implementation (If substantial work needed)
+
+Route to the appropriate developer agent:
+
+| Domain | Agent | Examples |
+|--------|-------|----------|
+| Python, FastAPI, MongoDB, LangGraph, pipeline | `backend-developer` | API endpoints, pipeline nodes, data models |
+| Flask templates, TipTap, Tailwind, HTMX | `frontend-developer` | UI components, styling, editor features |
+| Cross-cutting, integration issues | `architecture-debugger` | Multi-component bugs, system failures |
+
+#### Step 3: Write Tests
+
+Use `test-generator` agent to:
+- Write pytest tests covering the fix/feature
+- Mock external dependencies (LLM, FireCrawl, MongoDB)
+- Include edge cases identified during architecture review
+
+#### Step 4: Update Documentation
+
+Use `doc-sync` agent to:
+- Update `missing.md` if feature gaps were closed
+- Update `architecture.md` if design changed
+- Update relevant plan documents
+
+#### Step 5: Commit & Summarize
+
+**Atomic commits (no Claude signature):**
+```bash
+# Run tests first
+pytest -n auto tests/unit/
+
+# Stage and commit atomically (one logical change per commit)
+git add <specific-files>
+git commit -m "fix(component): brief description"
+```
+
+**Final Summary Format:**
+```
+## Summary
+
+**Root Cause:** [What was wrong / What was missing]
+
+**Fix/Implementation:** [What was changed and why]
+
+**Files Changed:**
+- `path/to/file.py` - [what changed]
+
+**Tests Added:** [test file names]
+
+**Docs Updated:** [which docs]
+```
+
+#### Quick Reference Flowchart
+
+```
+User Request
+     │
+     ▼
+┌─────────────────┐
+│ Classify Request│
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+ Simple    Complex
+    │         │
+    │    ┌────┴────────────────────────┐
+    │    ▼                             │
+    │  job-search-architect            │
+    │  (verify architecture)           │
+    │    │                             │
+    │    ▼                             │
+    │  backend-developer OR            │
+    │  frontend-developer OR           │
+    │  architecture-debugger           │
+    │  (implement fix/feature)         │
+    │    │                             │
+    │    ▼                             │
+    │  test-generator                  │
+    │  (write tests)                   │
+    │    │                             │
+    │    ▼                             │
+    │  doc-sync                        │
+    │  (update docs)                   │
+    │    │                             │
+    └────┴─────────────────────────────┘
+         │
+         ▼
+   Atomic Commits
+   (run tests first, no Claude signature)
+         │
+         ▼
+   Summary with Root Cause & Fix
+```
 
 ### Example Reasoning
 
