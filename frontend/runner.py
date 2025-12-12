@@ -188,11 +188,16 @@ def stream_logs(run_id: str):
                 timeout=300,  # Longer timeout for streaming
             )
 
-            # Stream response to client
-            for line in response.iter_lines():
-                if line:
-                    # Forward SSE data to client
-                    yield line.decode("utf-8") + "\n\n"
+            # Stream response to client using iter_content for real-time delivery
+            # iter_content(chunk_size=None) yields data as it arrives without buffering
+            buffer = ""
+            for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
+                if chunk:
+                    buffer += chunk
+                    # Process complete SSE events (ending with double newline)
+                    while "\n\n" in buffer:
+                        event, buffer = buffer.split("\n\n", 1)
+                        yield event + "\n\n"
 
         except requests.exceptions.Timeout:
             yield f"event: error\ndata: Runner service timeout\n\n"
@@ -395,9 +400,16 @@ def stream_operation_logs(run_id: str):
                 timeout=300,  # Longer timeout for streaming
             )
 
-            for line in response.iter_lines():
-                if line:
-                    yield line.decode("utf-8") + "\n\n"
+            # Stream response to client using iter_content for real-time delivery
+            # iter_content(chunk_size=None) yields data as it arrives without buffering
+            buffer = ""
+            for chunk in response.iter_content(chunk_size=None, decode_unicode=True):
+                if chunk:
+                    buffer += chunk
+                    # Process complete SSE events (ending with double newline)
+                    while "\n\n" in buffer:
+                        event, buffer = buffer.split("\n\n", 1)
+                        yield event + "\n\n"
 
         except requests.exceptions.Timeout:
             yield f"event: error\ndata: Runner service timeout\n\n"
