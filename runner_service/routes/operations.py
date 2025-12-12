@@ -1042,6 +1042,130 @@ async def full_extraction_stream(
 
 
 # =============================================================================
+# Form Scraping and Answer Generation Endpoint
+# =============================================================================
+
+
+class ScrapeFormAnswersRequest(BaseModel):
+    """Request body for form scraping and answer generation."""
+
+    tier: str = Field(
+        default="balanced",
+        description="Model tier: 'fast', 'balanced', or 'quality'",
+    )
+    force_refresh: bool = Field(
+        default=False,
+        description="Force re-scrape even if form is cached",
+    )
+
+
+@router.post(
+    "/{job_id}/scrape-form-answers/stream",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Scrape application form and generate answers with SSE streaming",
+    description="Scrape the application form URL, extract fields, and generate personalized answers",
+)
+async def scrape_form_answers_stream(
+    job_id: str,
+    request: ScrapeFormAnswersRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOperationResponse:
+    """
+    Scrape application form and generate personalized answers with SSE streaming.
+
+    This endpoint:
+    1. Fetches the application_url from the job document
+    2. Scrapes the form page using FireCrawl
+    3. Extracts form fields using LLM
+    4. Generates personalized answers for each field
+    5. Saves results to MongoDB
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+    """
+    operation = "scrape-form-answers"
+
+    # Validate tier synchronously (fast, no I/O)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Force refresh: {request.force_refresh}")
+
+    # Define the background task
+    async def execute_scrape_and_generate():
+        from src.services.form_scraper_service import FormScraperService
+
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+
+            # Validate job exists IN THE BACKGROUND TASK
+            log_cb("Validating job exists...")
+            try:
+                job = await _validate_job_exists_async(job_id)
+                log_cb("Job validated")
+            except HTTPException as e:
+                log_cb(f"Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
+
+            # Get application URL from job
+            application_url = job.get("application_url")
+            if not application_url:
+                error_msg = "No application URL found for this job. Please add an application URL first."
+                log_cb(f"Error: {error_msg}")
+                update_operation_status(run_id, "failed", error=error_msg)
+                return
+
+            log_cb(f"Application URL: {application_url[:60]}...")
+
+            # Execute form scraping and answer generation
+            service = FormScraperService()
+            result = await service.scrape_and_generate_answers(
+                job_id=job_id,
+                application_url=application_url,
+                force_refresh=request.force_refresh,
+                progress_callback=layer_cb,
+            )
+
+            if result.get("success"):
+                fields_count = len(result.get("fields", []))
+                answers_count = len(result.get("planned_answers", []))
+                update_operation_status(run_id, "completed", result={
+                    "success": True,
+                    "fields_count": fields_count,
+                    "answers_count": answers_count,
+                    "form_type": result.get("form_type"),
+                    "form_title": result.get("form_title"),
+                    "from_cache": result.get("from_cache", False),
+                })
+                log_cb(f"Complete: {fields_count} fields, {answers_count} answers generated")
+            else:
+                error_msg = result.get("error", "Unknown error")
+                update_operation_status(run_id, "failed", error=error_msg)
+                log_cb(f"Failed: {error_msg}")
+
+        except Exception as e:
+            logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+            log_cb(f"Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_scrape_and_generate)
+
+    return StreamingOperationResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )
+
+
+# =============================================================================
 # Persona Synthesis Endpoint
 # =============================================================================
 

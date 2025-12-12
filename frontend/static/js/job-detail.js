@@ -918,6 +918,16 @@ async function saveFieldEdit(fieldElement) {
         if (result.success) {
             if (field === 'url' && newValue) {
                 valueEl.innerHTML = `<a href="${escapeHtml(newValue)}" target="_blank" class="text-indigo-600 hover:underline break-all">${escapeHtml(newValue)}</a>`;
+            } else if (field === 'application_url' && newValue) {
+                valueEl.innerHTML = `<a href="${escapeHtml(newValue)}" target="_blank" class="text-indigo-600 hover:underline break-all text-xs">${escapeHtml(newValue.length > 40 ? newValue.substring(0, 40) + '...' : newValue)}</a>`;
+                // Update config and trigger visibility update
+                window.JOB_DETAIL_CONFIG.applicationUrl = newValue;
+                updateScrapeGenerateVisibility();
+            } else if (field === 'application_url' && !newValue) {
+                valueEl.innerHTML = '<span class="text-gray-400 text-xs">Not set</span>';
+                // Clear config and trigger visibility update
+                window.JOB_DETAIL_CONFIG.applicationUrl = '';
+                updateScrapeGenerateVisibility();
             } else {
                 valueEl.textContent = newValue || '-';
             }
@@ -2028,6 +2038,160 @@ async function generateCoverLetterPDF() {
 }
 
 // ============================================================================
+// Cover Letter Main Section (Copy & Edit for main content area)
+// ============================================================================
+
+let clMainEditMode = false;
+
+/**
+ * Copy cover letter text to clipboard.
+ * Uses the main content area cover letter text.
+ *
+ * @param {HTMLElement} buttonElement - The button that triggered the copy (for visual feedback)
+ */
+async function copyCoverLetter(buttonElement = null) {
+    const clText = document.getElementById('cl-main-text')?.innerText;
+
+    if (!clText || clText.trim() === '') {
+        showToast('No cover letter to copy', 'error');
+        return;
+    }
+
+    await copyToClipboard(clText, 'Cover letter', buttonElement);
+}
+
+/**
+ * Toggle edit mode for cover letter in main content area.
+ */
+function toggleCoverLetterEditMain() {
+    clMainEditMode = !clMainEditMode;
+
+    const editBtn = document.getElementById('edit-cl-main-btn');
+    const editText = document.getElementById('edit-cl-main-text');
+    const saveBtn = document.getElementById('save-cl-main-btn');
+    const displayDiv = document.getElementById('cl-main-display');
+    const textArea = document.getElementById('cl-main-textarea');
+    const warningsDiv = document.getElementById('cl-main-warnings');
+
+    if (clMainEditMode) {
+        editText.textContent = 'Cancel';
+        editBtn.classList.remove('btn-secondary');
+        editBtn.classList.add('btn-danger');
+        saveBtn.classList.remove('hidden');
+        displayDiv.classList.add('hidden');
+        textArea.classList.remove('hidden');
+        warningsDiv.classList.add('hidden');
+        textArea.focus();
+    } else {
+        editText.textContent = 'Edit';
+        editBtn.classList.remove('btn-danger');
+        editBtn.classList.add('btn-secondary');
+        saveBtn.classList.add('hidden');
+        displayDiv.classList.remove('hidden');
+        textArea.classList.add('hidden');
+        textArea.value = document.getElementById('cl-main-text').textContent;
+    }
+}
+
+/**
+ * Save cover letter changes from main content area.
+ * Also syncs to the sidebar cover letter display.
+ */
+async function saveCoverLetterChangesMain() {
+    const jobId = getJobId();
+    const textArea = document.getElementById('cl-main-textarea');
+    const newText = textArea.value.trim();
+
+    if (!newText) {
+        showToast('Cover letter cannot be empty', 'error');
+        return;
+    }
+
+    showToast('Saving cover letter...', 'info');
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cover_letter: newText })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update main content area
+            document.getElementById('cl-main-text').textContent = newText;
+
+            // Also update sidebar cover letter if it exists
+            const sidebarClText = document.getElementById('cl-text');
+            if (sidebarClText) {
+                // Sidebar shows truncated version (500 chars)
+                sidebarClText.textContent = newText.length > 500
+                    ? newText.substring(0, 500) + '...'
+                    : newText;
+            }
+
+            // Update sidebar textarea too
+            const sidebarTextarea = document.getElementById('cl-textarea');
+            if (sidebarTextarea) {
+                sidebarTextarea.value = newText;
+            }
+
+            // Update word count
+            const wordCount = newText.split(/\s+/).filter(w => w.length > 0).length;
+            const wordCountEl = document.getElementById('cl-word-count');
+            if (wordCountEl) {
+                wordCountEl.textContent = `${wordCount} words`;
+            }
+
+            showToast('Cover letter saved');
+            validateCoverLetterMain(newText);
+            toggleCoverLetterEditMain();
+        } else {
+            showToast(result.error || 'Failed to save', 'error');
+        }
+    } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+    }
+}
+
+/**
+ * Validate cover letter and show warnings in main content area.
+ *
+ * @param {string} text - The cover letter text to validate
+ */
+function validateCoverLetterMain(text) {
+    const warnings = [];
+    const words = text.split(/\s+/).filter(w => w.length > 0).length;
+
+    if (words < 180) warnings.push(`Cover letter is short (${words} words, recommended: 180-420)`);
+    if (words > 420) warnings.push(`Cover letter is long (${words} words, recommended: 180-420)`);
+
+    if (!/\d+%|\d+x|\$\d+|\d+\s*(years?|months?|days?|hours?)/i.test(text)) {
+        warnings.push('No quantified metrics found (add percentages, multipliers, or dollar amounts)');
+    }
+
+    if (!text.includes('calendly.com/taimooralam')) {
+        warnings.push('Missing Calendly link (required for call-to-action)');
+    }
+
+    const boilerplate = ['excited to apply', 'dream job', 'perfect fit', 'passionate about', 'eager to'];
+    const found = boilerplate.filter(phrase => text.toLowerCase().includes(phrase));
+    if (found.length > 2) {
+        warnings.push('Contains generic phrases: ' + found.join(', '));
+    }
+
+    const warningsDiv = document.getElementById('cl-main-warnings');
+    if (warnings.length > 0) {
+        warningsDiv.innerHTML = '<strong>Validation Warnings:</strong><ul class="list-disc ml-4 mt-1">' +
+            warnings.map(w => `<li>${w}</li>`).join('') + '</ul>';
+        warningsDiv.classList.remove('hidden');
+    } else {
+        warningsDiv.classList.add('hidden');
+    }
+}
+
+// ============================================================================
 // Contact Management Functions
 // ============================================================================
 
@@ -2446,6 +2610,26 @@ let currentEditIndex = -1;
 function initPlannedAnswers() {
     plannedAnswersData = window.JOB_DETAIL_CONFIG?.plannedAnswers || [];
     renderPlannedAnswers();
+    updateScrapeGenerateVisibility();
+}
+
+/**
+ * Update visibility of Scrape & Generate button based on application_url.
+ */
+function updateScrapeGenerateVisibility() {
+    const applicationUrl = window.JOB_DETAIL_CONFIG?.applicationUrl || '';
+    const scrapeContainer = document.getElementById('scrape-generate-container');
+    const noUrlMessage = document.getElementById('no-app-url-message');
+
+    if (applicationUrl && applicationUrl.trim() !== '') {
+        // Application URL is set - show scrape button
+        if (scrapeContainer) scrapeContainer.classList.remove('hidden');
+        if (noUrlMessage) noUrlMessage.classList.add('hidden');
+    } else {
+        // No application URL - show message
+        if (scrapeContainer) scrapeContainer.classList.add('hidden');
+        if (noUrlMessage) noUrlMessage.classList.remove('hidden');
+    }
 }
 
 /**
@@ -2456,7 +2640,11 @@ function renderPlannedAnswers() {
     if (!container) return;
 
     if (plannedAnswersData.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">No answers yet. Click Auto-Fill or add manually.</p>';
+        const hasAppUrl = window.JOB_DETAIL_CONFIG?.applicationUrl;
+        const message = hasAppUrl
+            ? 'No answers yet. Click "Scrape & Generate" or add manually.'
+            : 'No answers yet. Set an Application URL to enable scraping, or add manually.';
+        container.innerHTML = `<p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">${message}</p>`;
         return;
     }
 
@@ -2609,48 +2797,202 @@ function closePlannedAnswerModal() {
     document.getElementById('planned-answer-modal').classList.add('hidden');
 }
 
+// SSE state for form scraping
+let formScrapeEventSource = null;
+let isFormScraping = false;
+
 /**
- * Auto-fill planned answers using AI (calls generate-answers API).
- * This endpoint may not exist yet - will show a graceful error.
+ * Scrape application form and generate planned answers using AI.
+ * @param {boolean} forceRefresh - If true, bypasses cached form fields
  */
-async function autoFillPlannedAnswers() {
-    const btn = document.getElementById('auto-fill-answers-btn');
+async function scrapeAndGenerateAnswers(forceRefresh = false) {
+    if (isFormScraping) {
+        showToast('Form scraping already in progress', 'info');
+        return;
+    }
+
+    const btn = document.getElementById('scrape-generate-btn');
+    const forceBtn = document.getElementById('force-refresh-btn');
     const originalHTML = btn.innerHTML;
+
+    // Update button states
+    isFormScraping = true;
     btn.disabled = true;
+    forceBtn.disabled = true;
+    forceBtn.classList.add('opacity-50', 'cursor-not-allowed');
     btn.innerHTML = `
         <svg class="h-3 w-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" class="opacity-75"></path>
         </svg>
-        Generating...
+        Scraping...
     `;
 
     const jobId = getJobId();
+
     try {
-        const response = await fetch(`/api/jobs/${jobId}/generate-answers`, {
+        // Step 1: POST to start the scraping operation
+        const response = await fetch(`/api/runner/jobs/${jobId}/scrape-form-answers/stream`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tier: 'balanced',
+                force_refresh: forceRefresh
+            })
         });
 
-        if (response.status === 404) {
-            showToast('Auto-fill endpoint not yet implemented', 'info');
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const runId = data.run_id;
+
+        if (!runId) {
+            throw new Error('No run_id returned from streaming endpoint');
+        }
+
+        console.log(`[scrape-form-answers] Started with run_id: ${runId}`);
+        showToast('Scraping application form...', 'info');
+
+        // Step 2: Connect to SSE stream for real-time updates
+        await connectToFormScrapeSSE(runId, btn, forceBtn, originalHTML);
+
+    } catch (err) {
+        console.error('Form scrape error:', err);
+        handleFormScrapeError(err.message);
+        resetFormScrapeButtons(btn, forceBtn, originalHTML);
+    }
+}
+
+/**
+ * Connect to SSE stream for form scraping progress.
+ */
+function connectToFormScrapeSSE(runId, btn, forceBtn, originalBtnHTML) {
+    return new Promise((resolve) => {
+        const logStreamUrl = `/api/runner/operations/${runId}/logs`;
+        console.log(`[scrape-form-answers] Creating EventSource for: ${logStreamUrl}`);
+
+        try {
+            formScrapeEventSource = new EventSource(logStreamUrl);
+        } catch (e) {
+            console.error('[scrape-form-answers] Failed to create EventSource:', e);
+            handleFormScrapeError('Failed to connect to streaming endpoint');
+            resetFormScrapeButtons(btn, forceBtn, originalBtnHTML);
+            resolve({ success: false });
             return;
         }
 
-        const result = await response.json();
+        formScrapeEventSource.onopen = () => {
+            console.log('[scrape-form-answers] SSE connection opened');
+        };
 
-        if (result.success) {
-            plannedAnswersData = result.planned_answers || [];
-            renderPlannedAnswers();
-            showToast('Answers generated successfully');
-        } else {
-            showToast(result.error || 'Generation failed', 'error');
-        }
-    } catch (err) {
-        showToast('Generation failed: ' + err.message, 'error');
-    } finally {
+        // Handle regular log messages
+        formScrapeEventSource.onmessage = (event) => {
+            console.log(`[scrape-form-answers] Log: ${event.data}`);
+            // Could append to a log panel if desired
+        };
+
+        // Handle result event (contains the generated answers)
+        formScrapeEventSource.addEventListener('result', (event) => {
+            try {
+                const result = JSON.parse(event.data);
+                console.log('[scrape-form-answers] Result received:', result);
+
+                if (result.success && result.planned_answers) {
+                    // Update local data and re-render
+                    plannedAnswersData = result.planned_answers;
+                    renderPlannedAnswers();
+                    showToast(`Generated ${result.planned_answers.length} answers!`, 'success');
+                } else if (result.error) {
+                    handleFormScrapeError(result.error);
+                }
+            } catch (e) {
+                console.error('[scrape-form-answers] Failed to parse result:', e);
+            }
+        });
+
+        // Handle end event
+        formScrapeEventSource.addEventListener('end', (event) => {
+            console.log('[scrape-form-answers] Stream ended:', event.data);
+            closeFormScrapeSSE();
+            resetFormScrapeButtons(btn, forceBtn, originalBtnHTML);
+
+            if (event.data === 'completed') {
+                // Reload to get fresh data from server
+                window.location.reload();
+            }
+            resolve({ success: true });
+        });
+
+        // Handle error event from server
+        formScrapeEventSource.addEventListener('error', (event) => {
+            console.error('[scrape-form-answers] SSE error event:', event);
+
+            // Check if this is a server-sent error with data
+            if (event.data) {
+                try {
+                    const errorData = JSON.parse(event.data);
+                    handleFormScrapeError(errorData.error || 'Unknown error');
+                } catch {
+                    handleFormScrapeError('Connection error');
+                }
+            }
+
+            closeFormScrapeSSE();
+            resetFormScrapeButtons(btn, forceBtn, originalBtnHTML);
+            resolve({ success: false });
+        });
+
+        // Handle connection errors
+        formScrapeEventSource.onerror = (err) => {
+            console.error('[scrape-form-answers] SSE connection error:', err);
+            // Don't close immediately - the error event listener handles cleanup
+        };
+    });
+}
+
+/**
+ * Close SSE connection for form scraping.
+ */
+function closeFormScrapeSSE() {
+    if (formScrapeEventSource) {
+        formScrapeEventSource.close();
+        formScrapeEventSource = null;
+    }
+    isFormScraping = false;
+}
+
+/**
+ * Handle form scrape errors with user-friendly messages.
+ */
+function handleFormScrapeError(errorMessage) {
+    const lowerError = (errorMessage || '').toLowerCase();
+
+    if (lowerError.includes('login') || lowerError.includes('auth') || lowerError.includes('blocked') || lowerError.includes('403')) {
+        showToast('Could not access the application form. The page may require login. Please manually add your questions.', 'error');
+    } else if (lowerError.includes('no form') || lowerError.includes('no field') || lowerError.includes('not found')) {
+        showToast('No form fields found. Please verify the URL points to an application form.', 'error');
+    } else if (lowerError.includes('timeout')) {
+        showToast('Request timed out. The application form may be loading slowly. Please try again.', 'error');
+    } else {
+        showToast(`Form scraping failed: ${errorMessage}. You can manually add questions below.`, 'error');
+    }
+}
+
+/**
+ * Reset form scrape buttons to their original state.
+ */
+function resetFormScrapeButtons(btn, forceBtn, originalHTML) {
+    isFormScraping = false;
+    if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
+    }
+    if (forceBtn) {
+        forceBtn.disabled = false;
+        forceBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 }
 
@@ -2685,6 +3027,10 @@ window.exportCVFromDetailPage = exportCVFromDetailPage;
 window.toggleCoverLetterEdit = toggleCoverLetterEdit;
 window.saveCoverLetterChanges = saveCoverLetterChanges;
 window.generateCoverLetterPDF = generateCoverLetterPDF;
+// Cover Letter Main Section
+window.copyCoverLetter = copyCoverLetter;
+window.toggleCoverLetterEditMain = toggleCoverLetterEditMain;
+window.saveCoverLetterChangesMain = saveCoverLetterChangesMain;
 window.deleteContact = deleteContact;
 window.generateOutreach = generateOutreach;
 window.startOutreachLogStreaming = startOutreachLogStreaming;
@@ -2700,10 +3046,11 @@ window.validateAndPreviewContacts = validateAndPreviewContacts;
 window.importContacts = importContacts;
 // Planned Answers
 window.initPlannedAnswers = initPlannedAnswers;
+window.updateScrapeGenerateVisibility = updateScrapeGenerateVisibility;
 window.copyPlannedAnswer = copyPlannedAnswer;
 window.editPlannedAnswer = editPlannedAnswer;
 window.addPlannedAnswer = addPlannedAnswer;
 window.savePlannedAnswer = savePlannedAnswer;
 window.deletePlannedAnswer = deletePlannedAnswer;
 window.closePlannedAnswerModal = closePlannedAnswerModal;
-window.autoFillPlannedAnswers = autoFillPlannedAnswers;
+window.scrapeAndGenerateAnswers = scrapeAndGenerateAnswers;

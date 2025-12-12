@@ -683,6 +683,7 @@ class PlannedAnswer(TypedDict):
 | `level-2` | Jobs + pipeline results | None |
 | `company_cache` | Cached research | 7 days |
 | `star_records` | STAR achievements | None |
+| `application_form_cache` | Scraped form fields (NEW 2025-12-12) | 30 days |
 
 ---
 
@@ -715,7 +716,7 @@ class PlannedAnswer(TypedDict):
 |---------|-------|---------|
 | **OpenAI** | 2-5 | General LLM calls |
 | **Anthropic** | 6 | CV generation (default) |
-| **FireCrawl** | 3, 5 | Web scraping, contact discovery |
+| **FireCrawl** | 3, 5, Frontend | Web scraping, contact discovery, application form scraping (NEW 2025-12-12) |
 | **Google Drive** | 7 | Optional output storage |
 | **Google Sheets** | 7 | Optional tracking |
 | **FireCrawl Credits API** | 5 | Real-time token usage tracking (NEW 2025-12-08) |
@@ -736,6 +737,113 @@ class PlannedAnswer(TypedDict):
 - Returns: Remaining credits, reset date
 - Frontend proxy: `/api/openrouter/credits` (CORS handling)
 - Config: `OPENROUTER_API_KEY` env variable
+
+---
+
+## Backend Services (NEW 2025-12-12)
+
+### FormScraperService
+
+**Purpose**: Scrape job application forms from URLs and extract form field metadata for answer generation.
+
+**Location**: `src/services/form_scraper_service.py`
+
+**Architecture**:
+
+```python
+class FormScraperService:
+    async def scrape_form_fields(
+        self,
+        application_url: str,
+        job_id: str,
+        force_refresh: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Scrape and extract form fields from application URL.
+
+        Returns:
+        {
+            "url": str,
+            "form_fields": List[Dict],  # [{label, input_type, placeholder, ...}, ...]
+            "scraped_at": str,  # ISO timestamp
+            "status": "success" | "error"
+        }
+        """
+```
+
+**Workflow**:
+
+1. **Cache Check**: Look up `application_form_cache` for URL (skip if `force_refresh=true`)
+2. **FireCrawl Scrape**: Use FireCrawl to fetch HTML from application_url
+3. **LLM Extraction**: Parse HTML with Claude/LLM using structured JSON schema:
+   ```json
+   {
+     "form_fields": [
+       {
+         "label": "Full Name",
+         "input_type": "text",
+         "placeholder": "Enter your full name",
+         "required": true,
+         "order": 1
+       }
+     ]
+   }
+   ```
+4. **Cache Store**: Save extracted fields to `application_form_cache` with 30-day TTL
+5. **Error Handling**: If login-required or inaccessible, return friendly error
+
+**Integration Points**:
+
+- **Frontend Endpoint**: `POST /api/jobs/{job_id}/scrape-form-answers/stream`
+  - Request: `{ "application_url": "...", "force_refresh": false }`
+  - Response: SSE stream with progress events
+  - Progress stages: "Scraping form...", "Extracting fields...", "Generating answers...", "Complete"
+
+- **AnswerGeneratorService**: Receives `form_fields` from FormScraperService
+  - Old: Hardcoded template questions
+  - New: Actual form questions extracted from application URL
+  - Generates personalized answers for each field
+
+**Error Scenarios**:
+
+| Error | User Message | Action |
+|-------|--------------|--------|
+| Login required | "This form requires login. Please provide answers manually." | Suggest manual entry |
+| Invalid URL | "Unable to scrape form. Please verify the URL." | Return 404 |
+| Timeout (>30s) | "Scraping took too long. Please try again." | Retry with shorter timeout |
+| No forms found | "No form fields detected on this page." | Suggest manual entry |
+
+**Testing**:
+
+- Unit tests in `tests/unit/services/test_form_scraper_service.py`
+- Mock FireCrawl responses
+- Test cache hit/miss scenarios
+- Test error handling for protected forms
+
+### AnswerGeneratorService (MODIFIED 2025-12-12)
+
+**Location**: `src/services/answer_generator_service.py`
+
+**Changes**:
+
+- **Before**: Hardcoded template questions (e.g., "Tell us about your experience with Python")
+- **After**: Accepts `form_fields` parameter (actual form questions)
+- Still synthesizes answers using job context: pain points, STAR records, company research
+- Generates personalized response for each extracted field
+
+**Example Usage**:
+
+```python
+scraper = FormScraperService()
+form_fields = await scraper.scrape_form_fields(application_url)
+
+generator = AnswerGeneratorService()
+answers = await generator.generate_answers(
+    job_id=job_id,
+    form_fields=form_fields["form_fields"],  # NEW parameter
+    job_state=state
+)
+```
 
 ---
 
