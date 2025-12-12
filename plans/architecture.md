@@ -2900,6 +2900,91 @@ File: `frontend/runner.py`
 - New streaming endpoints are alternative routes (`/operations/{job_id}/*/stream`)
 - Frontend auto-selects SSE or polling based on browser support and network conditions
 
+### SSE Streaming for Outreach Generation (EXTENDED - 2025-12-12)
+
+**New Endpoint**: `POST /{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach/stream`
+
+**Architecture**: Outreach generation integrated with the same SSE streaming infrastructure for real-time progress updates.
+
+**Progress Stages**:
+```
+validate  → validate job data exists and is valid
+contact   → fetch contact info from MongoDB
+generate  → invoke OutreachGenerationService LLM call
+save      → persist message to database
+```
+
+**Backend Implementation** (`runner_service/routes/contacts.py`):
+```python
+@app.post("/{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach/stream")
+async def generate_outreach_stream(job_id: str, contact_type: str, contact_index: int):
+    def layer_cb(layer: str, status: str, message: str):
+        # Callback invoked during each generation stage
+        # SSE emits: data: {"event": "log", "message": "..."}\n\n
+        pass
+
+    service = OutreachGenerationService(progress_callback=layer_cb)
+    result = await service.generate(job_id, contact_type, contact_index)
+    # Returns: {"run_id": "uuid", "status": "completed", "message": "..."}
+```
+
+**Frontend Integration** (`frontend/static/js/job-detail.js`):
+```javascript
+async function generateOutreach(tier, contactIndex, contactType, buttonElement) {
+    // Disable all outreach buttons to prevent concurrent generation
+    disableOutreachButtons();
+
+    // Start SSE stream for this specific contact's outreach generation
+    const runId = await startOutreachLogStreaming(jobId, contactIndex, contactType);
+
+    // Poll until complete, then re-enable buttons
+    // Shows real-time progress in CLI panel
+    // Returns: message text and save status
+}
+
+function startOutreachLogStreaming(jobId, contactIndex, contactType) {
+    const eventSource = new EventSource(`/api/runner/contacts/${jobId}/${contactType}/${contactIndex}/outreach-logs`);
+
+    eventSource.addEventListener('log', (event) => {
+        const { timestamp, layer, message } = JSON.parse(event.data);
+        // Display: "🔄 validate: Validating job..." → "✅ validate: Job validated"
+        displayOutreachLog(timestamp, layer, message);
+    });
+
+    eventSource.addEventListener('complete', (event) => {
+        enableOutreachButtons();
+        const result = JSON.parse(event.data);
+        updateContactMessage(result.message);
+        eventSource.close();
+    });
+}
+```
+
+**Expected Log Flow**:
+```
+🔄 validate: Validating job...
+✅ validate: Job validated
+🔄 contact: Fetching contact...
+✅ contact: Contact: John Smith
+🔄 generate: Generating inmail...
+✅ generate: Message generated (287 chars)
+🔄 save: Saving to database...
+✅ save: Saved
+```
+
+**Button State Management**:
+- Outreach buttons disabled during generation to prevent duplicate requests
+- Buttons re-enabled on completion (success or error)
+- Visual feedback: spinning icon during generation, checkmark on success
+
+**Error Handling**:
+- If validation fails: Early exit, error message displayed
+- If contact fetch fails: Error in SSE stream, button re-enabled
+- If LLM generation fails: Error logged, message not saved
+- If database save fails: Message displayed but not persisted
+
+**Impact**: Users see real-time progress (validate → contact → generate → save) when creating LinkedIn InMail/Connection messages, eliminating uncertainty during message generation.
+
 ---
 
 ## Anti-Hallucination Pattern (NEW - 2025-12-08)
