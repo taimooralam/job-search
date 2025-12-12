@@ -1,17 +1,39 @@
 # Time-Based Filters: Bug Fix + Enhancement Plan
 
-**Status**: Ready for implementation
+**Status**: BUG FIX COMPLETE | Enhancement PENDING
 **Priority**: HIGH (bug) / MEDIUM (enhancement)
 **Estimated Duration**: 3-5 hours total
 **Recommended Agent**: `frontend-developer` (with backend support as needed)
 
 ---
 
-## Overview
+## RESOLUTION UPDATE - 2025-12-12
 
-The job list UI has quick time-based filters (1h, 3h, 6h, 12h) that are not working correctly. They return all jobs from the entire day instead of the specified hour range. This document provides a complete plan for fixing the bug and adding a datetime range picker enhancement.
+### Bug Fix Status: COMPLETE
 
-**Good news**: Frontend and backend code appear logically correct. The issue is likely a data storage/query execution problem.
+The time-based filter bug has been successfully fixed and verified working. The issue was **not** a data storage/query execution problem as originally hypothesized.
+
+**Root Cause**: The `#job-table-container` div was missing the `hx-include=".filter-input"` attribute, preventing hidden datetime input values from being transmitted with HTMX requests.
+
+**Solution Implemented**:
+1. Added `hx-include=".filter-input"` to `#job-table-container` in `frontend/templates/index.html`
+2. Verified `frontend/templates/partials/job_rows.html` properly includes datetime params in filter_query
+3. Added `@app.after_request` cache-busting headers in `frontend/app.py`
+4. All quick filters (1h, 3h, 6h, 12h) now work correctly with hour-level precision
+
+**Verification**: Tested with real data - time-based filters returning correct hour ranges.
+
+### Enhancement Status: PENDING
+
+The enhancement for datetime-local picker inputs remains on the roadmap for future implementation.
+
+---
+
+## Original Overview
+
+The job list UI has quick time-based filters (1h, 3h, 6h, 12h) that were not working correctly. They were returning all jobs from the entire day instead of the specified hour range. This document provides a complete plan for fixing the bug and adding a datetime range picker enhancement.
+
+**Original Assumption**: Frontend and backend code appeared logically correct, suggesting a data storage/query execution problem. **Actual Finding**: The issue was a frontend HTMX configuration problem, not backend logic.
 
 ---
 

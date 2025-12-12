@@ -1,17 +1,33 @@
 # Time-Based Filters Bug Investigation & Enhancement Plan
 
 **Date**: 2025-11-30
-**Status**: Documentation Updated, Bug Logged, Ready for Investigation
+**Status**: RESOLVED
 **Severity**: HIGH (Bug), MEDIUM (Enhancement)
 **Estimated Effort**: 3-5 hours total
 
 ---
 
-## Executive Summary
+## RESOLUTION - COMPLETED 2025-12-12
 
-The job list UI has quick filter buttons for time-based filtering (1h, 3h, 6h, 12h) that appear to be broken. All filters currently return jobs from the entire day instead of the specified hour range.
+The time-based filter bug has been successfully fixed and verified. The issue was not a data/query problem but rather a missing HTMX configuration.
 
-**Good News**: Code review shows the frontend is correctly calculating hour-based datetimes and the backend has the infrastructure to support datetime filtering. The issue is likely a data/query execution problem rather than a logic problem.
+**Root Cause**: The `#job-table-container` div was missing the `hx-include=".filter-input"` attribute, preventing hidden datetime input values from being sent with HTMX refresh requests.
+
+**Solution Applied**:
+1. Added `hx-include=".filter-input"` to job table container in `frontend/templates/index.html`
+2. Ensured `frontend/templates/partials/job_rows.html` properly includes `datetime_from` and `datetime_to` in filter query params
+3. Added `@app.after_request` cache-busting headers to prevent stale responses
+4. Verified quick filter buttons (1h, 3h, 6h, 12h) now correctly filter by hour-level precision
+
+**Verification**: All quick filters now work correctly with hour-level precision filtering.
+
+---
+
+## Original Executive Summary
+
+The job list UI has quick filter buttons for time-based filtering (1h, 3h, 6h, 12h) that appeared to be broken. All filters were initially returning jobs from the entire day instead of the specified hour range.
+
+**Code Review Result**: Frontend logic was correctly calculating hour-based datetimes and the backend had proper infrastructure for datetime filtering.
 
 ---
 
