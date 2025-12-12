@@ -571,9 +571,23 @@ class VariantParser:
         return variants
 
     def _parse_skills(self, content: str) -> Tuple[List[str], List[str]]:
-        """Parse hard and soft skills from the Skills section."""
-        hard_skills = []
-        soft_skills = []
+        """
+        Parse hard and soft skills from the Skills section.
+
+        Handles multi-line categorized format for hard skills:
+            **Hard Skills**:
+            - **Languages**: JavaScript, Node.js, C++
+            - **Frameworks**: Qt (Widgets), WPF
+
+        And single-line format for soft skills:
+            **Soft Skills**: Leadership, Communication, Mentoring
+
+        Returns:
+            Tuple of (hard_skills, soft_skills) as clean lists without
+            markdown formatting or category labels.
+        """
+        hard_skills: List[str] = []
+        soft_skills: List[str] = []
 
         # Find Skills section
         skills_section_match = re.search(
@@ -586,19 +600,146 @@ class VariantParser:
 
         skills_content = skills_section_match.group(1)
 
-        # Extract hard skills
-        hard_match = self.HARD_SKILLS_PATTERN.search(skills_content)
-        if hard_match:
-            skills_text = hard_match.group(1).strip()
-            hard_skills = [s.strip() for s in skills_text.split(",") if s.strip()]
+        # Parse hard skills - handles multi-line categorized format
+        hard_skills = self._parse_categorized_skills(skills_content, "Hard Skills")
 
-        # Extract soft skills
-        soft_match = self.SOFT_SKILLS_PATTERN.search(skills_content)
-        if soft_match:
-            skills_text = soft_match.group(1).strip()
-            soft_skills = [s.strip() for s in skills_text.split(",") if s.strip()]
+        # Parse soft skills - handles both single-line and multi-line formats
+        soft_skills = self._parse_categorized_skills(skills_content, "Soft Skills")
 
         return hard_skills, soft_skills
+
+    def _parse_categorized_skills(
+        self, skills_content: str, section_name: str
+    ) -> List[str]:
+        """
+        Parse skills from a section that may be single-line or multi-line categorized.
+
+        Handles formats like:
+            **Hard Skills**:
+            - **Languages**: JavaScript, Node.js
+            - **Frameworks**: React, Vue
+
+        Or:
+            **Soft Skills**: Leadership, Communication
+
+        Args:
+            skills_content: The content of the ## Skills section
+            section_name: "Hard Skills" or "Soft Skills"
+
+        Returns:
+            List of clean skill names without formatting or categories.
+        """
+        skills: List[str] = []
+
+        # Find the section start
+        section_pattern = rf"\*\*{re.escape(section_name)}\*\*:\s*"
+        section_match = re.search(section_pattern, skills_content)
+        if not section_match:
+            return skills
+
+        # Get content after the section header
+        start_pos = section_match.end()
+
+        # Find where this section ends (next **Section**: or end of content)
+        remaining_content = skills_content[start_pos:]
+
+        # Find the end - either at next major section or end of content
+        end_match = re.search(r"\n\*\*(?:Hard|Soft) Skills\*\*:", remaining_content)
+        if end_match:
+            section_text = remaining_content[: end_match.start()]
+        else:
+            # Also stop at section dividers or next ## heading
+            end_match = re.search(r"\n---|\n##", remaining_content)
+            if end_match:
+                section_text = remaining_content[: end_match.start()]
+            else:
+                section_text = remaining_content
+
+        # Check if this is multi-line format (has bullet points with categories)
+        if re.search(r"^\s*-\s*\*\*\w+\*\*:", section_text, re.MULTILINE):
+            # Multi-line categorized format
+            skills = self._extract_skills_from_categorized_lines(section_text)
+        else:
+            # Single-line comma-separated format
+            # The content is on the same line or immediately after
+            first_line = section_text.split("\n")[0].strip()
+            if first_line:
+                skills = [s.strip() for s in first_line.split(",") if s.strip()]
+            else:
+                # Check subsequent lines for simple bullet list (no categories)
+                for line in section_text.split("\n"):
+                    line = line.strip()
+                    if line.startswith("- ") and "**" not in line:
+                        # Simple bullet point without category
+                        skill = line[2:].strip()
+                        if skill:
+                            skills.append(skill)
+
+        return skills
+
+    def _extract_skills_from_categorized_lines(self, section_text: str) -> List[str]:
+        """
+        Extract skills from categorized multi-line format.
+
+        Input format:
+            - **Languages**: JavaScript, Node.js, C++
+            - **Frameworks**: React, Vue
+            - **Cloud**: AWS (Lambda, ECS, S3), Terraform
+
+        Returns:
+            List of skills: ["JavaScript", "Node.js", "C++", "React", "Vue",
+                            "AWS (Lambda, ECS, S3)", "Terraform"]
+
+        Note:
+            Handles commas inside parentheses (e.g., "AWS (Lambda, ECS, S3)")
+            by not splitting on those commas.
+        """
+        skills: List[str] = []
+
+        # Pattern to match categorized lines: - **Category**: values
+        category_pattern = re.compile(r"^\s*-\s*\*\*[^*]+\*\*:\s*(.+)$", re.MULTILINE)
+
+        for match in category_pattern.finditer(section_text):
+            values_text = match.group(1).strip()
+            # Split respecting parentheses
+            parsed_skills = self._split_skills_respecting_parens(values_text)
+            skills.extend(parsed_skills)
+
+        return skills
+
+    def _split_skills_respecting_parens(self, text: str) -> List[str]:
+        """
+        Split comma-separated skills, respecting commas inside parentheses.
+
+        "AWS (Lambda, ECS, S3), Terraform" -> ["AWS (Lambda, ECS, S3)", "Terraform"]
+        "Python, JavaScript" -> ["Python", "JavaScript"]
+        """
+        skills = []
+        current_skill = []
+        paren_depth = 0
+
+        for char in text:
+            if char == "(":
+                paren_depth += 1
+                current_skill.append(char)
+            elif char == ")":
+                paren_depth = max(0, paren_depth - 1)
+                current_skill.append(char)
+            elif char == "," and paren_depth == 0:
+                # End of current skill
+                skill = "".join(current_skill).strip()
+                if skill:
+                    skills.append(skill)
+                current_skill = []
+            else:
+                current_skill.append(char)
+
+        # Don't forget the last skill
+        skill = "".join(current_skill).strip()
+        if skill:
+            skills.append(skill)
+
+        return skills
 
     def _parse_selection_guide(self, content: str) -> Optional[SelectionGuide]:
         """Parse the selection guide table from the content."""
