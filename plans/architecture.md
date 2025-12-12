@@ -1203,6 +1203,15 @@ def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dic
 - Contact type and outreach options visible at a glance
 - Enables smart routing based on contact authority level
 
+**Copy Button Pattern for Dynamic Content** (FIXED 2025-12-12):
+- **Problem**: Jinja `| e` (HTML escape) filter breaks JavaScript onclick handlers with special characters (quotes, newlines)
+- **Solution**: Use Jinja `| tojson` filter for JavaScript string literals instead of `| e`
+  - `| e` escapes for HTML context: `&quot;` `&apos;` (breaks JS syntax)
+  - `| tojson` escapes for JavaScript: `\"` `\n` (preserves JS string literals)
+- **Pattern**: `onclick="copyToClipboard({{ content | tojson }}, this)"`
+- **Visual Feedback**: Enhanced `copyToClipboard()` function shows checkmark + "Copied!" for 2 seconds
+- **Files**: `frontend/templates/job_detail.html` (4 copy buttons), `frontend/static/js/job-detail.js`
+
 ### Dashboard
 - Application stats: Today/week/month/total counts
 - Budget monitor: Progress bars, per-provider usage, thresholds

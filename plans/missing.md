@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-12 (Session 8: Role Persona Registry & Job List Sorting)
+**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,27 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
+
+**BUG FIX 9: LinkedIn recruiter contact card copy buttons broken - FIXED**:
+- **Issue**: Copy buttons on LinkedIn recruiter contact cards failed silently when messages contained single quotes (e.g., "I'd") or newlines
+- **Root Cause**: Jinja `| e` (HTML escape) filter was escaping quotes and special characters incorrectly for JavaScript context. Single quotes broke onclick handler syntax: `onclick="copyToClipboard('I'd like to...')"` became malformed
+- **Fix Applied**:
+  - Replaced `| e` filter with `| tojson` on all 4 copy button handlers in `frontend/templates/job_detail.html` (lines 1392, 1408, 1469, 1485)
+  - `tojson` properly escapes for JavaScript string literals instead of HTML
+  - Enhanced `copyToClipboard()` function in `frontend/static/js/job-detail.js` to show visual feedback:
+    - Button displays checkmark icon and "Copied!" text for 2 seconds
+    - Provides user confirmation that copy operation succeeded
+- **Files Modified**:
+  - `frontend/templates/job_detail.html` - Fixed Jinja escaping from `| e` to `| tojson` on 4 onclick handlers, added `this` parameter
+  - `frontend/static/js/job-detail.js` - Enhanced `copyToClipboard()` with button feedback (icon swap + text change with auto-revert)
+- **Test Coverage**: Existing contact card tests continue to pass. Copy button now handles special characters and newlines correctly.
+- **Impact**: LinkedIn recruiter messages now copy reliably regardless of content; users get immediate visual confirmation of successful copy
+
+---
 
 ### Today's Session (2025-12-10 Session 4): SSE Streaming for Operations
 
