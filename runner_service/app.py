@@ -89,6 +89,7 @@ class RunState:
 
 
 _runs: Dict[str, RunState] = {}
+_processes: Dict[str, asyncio.subprocess.Process] = {}  # Track subprocesses for cancellation
 _semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
 
@@ -166,13 +167,25 @@ async def _execute_pipeline_task(
         def log_callback(message: str) -> None:
             _append_log(run_id, message)
 
+        # Create process callback to register subprocess for cancellation
+        def process_callback(process: asyncio.subprocess.Process) -> None:
+            _processes[run_id] = process
+            logger.debug(f"[{run_id[:8]}] Registered process {process.pid} for cancellation")
+
         # Execute pipeline subprocess
         success, artifacts, pipeline_state = await execute_pipeline(
             job_id=job_id,
             profile_ref=profile_ref,
             log_callback=log_callback,
             processing_tier=processing_tier,
+            process_callback=process_callback,
         )
+
+        # Check if cancelled during execution (don't update status or persist)
+        state = _runs.get(run_id)
+        if state and state.status == "cancelled":
+            logger.info(f"[{run_id[:8]}] Pipeline was cancelled, skipping status update")
+            return
 
         # Update status based on result
         if success:
@@ -193,9 +206,15 @@ async def _execute_pipeline_task(
         _append_log(run_id, f"❌ Unexpected error: {exc}")
         _update_status(run_id, "failed")
     finally:
-        # Always release semaphore
-        _semaphore.release()
-        logger.debug(f"[{run_id[:8]}] Released semaphore")
+        # Clean up process reference
+        _processes.pop(run_id, None)
+        # Always release semaphore (unless already released by cancel)
+        try:
+            _semaphore.release()
+            logger.debug(f"[{run_id[:8]}] Released semaphore")
+        except ValueError:
+            # Semaphore was already released (e.g., by cancel endpoint)
+            logger.debug(f"[{run_id[:8]}] Semaphore already released")
 
 
 async def _enqueue_run(
@@ -425,6 +444,56 @@ async def get_status(run_id: str) -> StatusResponse:
     )
 
 
+@app.post("/jobs/{run_id}/cancel", dependencies=[Depends(verify_token)])
+async def cancel_run(run_id: str) -> Dict[str, Any]:
+    """
+    Cancel a running pipeline immediately (SIGKILL).
+
+    Discards all partial results - no MongoDB updates are made.
+    The job document remains unchanged as if the pipeline never ran.
+
+    Returns:
+        JSON with success status and message
+    """
+    # 1. Validate run exists
+    state = _runs.get(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # 2. Check if already in terminal state
+    if state.status in {"completed", "failed", "cancelled"}:
+        return {"success": False, "error": f"Run already {state.status}"}
+
+    # 3. Kill subprocess if running
+    process = _processes.get(run_id)
+    if process and process.returncode is None:
+        logger.info(f"[{run_id[:8]}] Killing process {process.pid} via SIGKILL")
+        process.kill()
+        try:
+            await process.wait()
+        except Exception as e:
+            logger.warning(f"[{run_id[:8]}] Error waiting for killed process: {e}")
+
+    # 4. Update status to cancelled (NO MongoDB persistence)
+    state.status = "cancelled"
+    state.updated_at = datetime.utcnow()
+    _append_log(run_id, "⛔ Pipeline cancelled by user - all changes discarded")
+    logger.info(f"[{run_id[:8]}] Pipeline cancelled by user")
+
+    # 5. Release semaphore
+    try:
+        _semaphore.release()
+        logger.debug(f"[{run_id[:8]}] Released semaphore after cancel")
+    except ValueError:
+        # Already released (shouldn't happen but handle gracefully)
+        pass
+
+    # 6. Clean up process reference
+    _processes.pop(run_id, None)
+
+    return {"success": True, "message": "Pipeline cancelled"}
+
+
 @app.get("/jobs/{run_id}/progress", response_model=PipelineProgressResponse)
 async def get_progress(run_id: str) -> PipelineProgressResponse:
     """
@@ -513,7 +582,7 @@ async def stream_logs(run_id: str) -> StreamingResponse:
                 last_index += 1
                 yield f"data: {line}\n\n"
 
-            if state.status in {"completed", "failed"}:
+            if state.status in {"completed", "failed", "cancelled"}:
                 yield f"event: end\ndata: {state.status}\n\n"
                 break
 
