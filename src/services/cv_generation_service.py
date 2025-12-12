@@ -14,6 +14,7 @@ Usage:
     result = await service.execute(job_id="123", tier=ModelTier.QUALITY)
 """
 
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -101,11 +102,12 @@ class CVGenerationService(OperationService):
         run_id = self.create_run_id()
         model = self.get_model(tier)
 
-        # Helper to call progress callback if provided
-        def emit_progress(layer_key: str, status: str, message: str):
+        # Helper to call progress callback if provided (async to yield to event loop)
+        async def emit_progress(layer_key: str, status: str, message: str):
             if progress_callback:
                 try:
                     progress_callback(layer_key, status, message)
+                    await asyncio.sleep(0)  # CRITICAL: Yield to event loop for SSE delivery
                 except Exception as e:
                     logger.warning(f"Progress callback failed: {e}")
 
@@ -120,7 +122,7 @@ class CVGenerationService(OperationService):
 
             try:
                 # Step 1: Fetch job from MongoDB
-                emit_progress("fetch_job", "processing", "Loading job data")
+                await emit_progress("fetch_job", "processing", "Loading job data")
                 logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._fetch_job(job_id)
                 if job is None:
@@ -128,7 +130,7 @@ class CVGenerationService(OperationService):
                         "status": "failed",
                         "message": f"Job not found: {job_id}"
                     }
-                    emit_progress("fetch_job", "failed", f"Job not found: {job_id}")
+                    await emit_progress("fetch_job", "failed", f"Job not found: {job_id}")
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
@@ -138,10 +140,10 @@ class CVGenerationService(OperationService):
                     "status": "success",
                     "message": f"Found job: {job.get('title', 'Unknown')}"
                 }
-                emit_progress("fetch_job", "success", f"Found job: {job.get('title', 'Unknown')}")
+                await emit_progress("fetch_job", "success", f"Found job: {job.get('title', 'Unknown')}")
 
                 # Step 2: Validate job has required data
-                emit_progress("validate", "processing", "Validating job data")
+                await emit_progress("validate", "processing", "Validating job data")
                 logger.info(f"[{run_id[:16]}] Validating job data")
                 validation_error = self._validate_job_data(job)
                 if validation_error:
@@ -149,7 +151,7 @@ class CVGenerationService(OperationService):
                         "status": "failed",
                         "message": validation_error
                     }
-                    emit_progress("validate", "failed", validation_error)
+                    await emit_progress("validate", "failed", validation_error)
                     return self.create_error_result(
                         run_id=run_id,
                         error=validation_error,
@@ -159,10 +161,10 @@ class CVGenerationService(OperationService):
                     "status": "success",
                     "message": "Job data validated"
                 }
-                emit_progress("validate", "success", "Job data validated")
+                await emit_progress("validate", "success", "Job data validated")
 
                 # Step 3: Build state for CV generator
-                emit_progress("build_state", "processing", "Preparing CV generation context")
+                await emit_progress("build_state", "processing", "Preparing CV generation context")
                 logger.info(f"[{run_id[:16]}] Building CV generation state")
                 state = self._build_state(job, use_annotations)
                 state_msg = f"State built with {'annotations' if state.get('jd_annotations') else 'no annotations'}"
@@ -172,10 +174,10 @@ class CVGenerationService(OperationService):
                     "has_stars": bool(state.get("all_stars")),
                     "message": state_msg
                 }
-                emit_progress("build_state", "success", state_msg)
+                await emit_progress("build_state", "success", state_msg)
 
                 # Step 4: Generate CV
-                emit_progress("cv_generator", "processing", f"Generating CV with {model}")
+                await emit_progress("cv_generator", "processing", f"Generating CV with {model}")
                 logger.info(f"[{run_id[:16]}] Generating CV with model {model}")
                 cv_result = self._generate_cv(state, model)
 
@@ -191,7 +193,7 @@ class CVGenerationService(OperationService):
                         "message": error_msg,
                         "traceback": traceback_info,
                     }
-                    emit_progress("cv_generator", "failed", error_msg)
+                    await emit_progress("cv_generator", "failed", error_msg)
                     return self.create_error_result(
                         run_id=run_id,
                         error="; ".join(cv_result["errors"]),
@@ -209,11 +211,11 @@ class CVGenerationService(OperationService):
                     "has_reasoning": bool(cv_result.get("cv_reasoning")),
                     "message": cv_success_msg
                 }
-                emit_progress("cv_generator", "success", cv_success_msg)
+                await emit_progress("cv_generator", "success", cv_success_msg)
                 logger.info(f"[{run_id[:16]}] CV generated: {word_count} words")
 
                 # Step 6: Persist to MongoDB
-                emit_progress("persist", "processing", "Saving CV to database")
+                await emit_progress("persist", "processing", "Saving CV to database")
                 logger.info(f"[{run_id[:16]}] Persisting CV to database")
                 persisted = self._persist_cv_result(job_id, cv_text, cv_editor_state, cv_result)
                 persist_msg = "Saved to database" if persisted else "Persistence failed"
@@ -221,7 +223,7 @@ class CVGenerationService(OperationService):
                     "status": "success" if persisted else "warning",
                     "message": persist_msg
                 }
-                emit_progress("persist", "success" if persisted else "warning", persist_msg)
+                await emit_progress("persist", "success" if persisted else "warning", persist_msg)
 
                 # Step 7: Calculate cost estimate
                 # Estimate tokens based on typical CV generation

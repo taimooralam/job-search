@@ -10,6 +10,7 @@ Usage:
     result = await service.execute(job_id, tier, force_refresh=False)
 """
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
@@ -316,11 +317,12 @@ class CompanyResearchService(OperationService):
         Returns:
             OperationResult with research data and cost info
         """
-        # Helper to call progress callback if provided
-        def emit_progress(layer_key: str, status: str, message: str):
+        # Helper to call progress callback if provided (async to yield to event loop)
+        async def emit_progress(layer_key: str, status: str, message: str):
             if progress_callback:
                 try:
                     progress_callback(layer_key, status, message)
+                    await asyncio.sleep(0)  # CRITICAL: Yield to event loop for SSE delivery
                 except Exception as e:
                     logger.warning(f"Progress callback failed: {e}")
 
@@ -338,7 +340,7 @@ class CompanyResearchService(OperationService):
 
             try:
                 # Fetch job from MongoDB
-                emit_progress("fetch_job", "processing", "Loading job data")
+                await emit_progress("fetch_job", "processing", "Loading job data")
                 logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._fetch_job(job_id)
                 if not job:
@@ -346,7 +348,7 @@ class CompanyResearchService(OperationService):
                         "status": "failed",
                         "message": f"Job not found: {job_id}"
                     }
-                    emit_progress("fetch_job", "failed", f"Job not found: {job_id}")
+                    await emit_progress("fetch_job", "failed", f"Job not found: {job_id}")
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
@@ -356,7 +358,7 @@ class CompanyResearchService(OperationService):
                     "status": "success",
                     "message": f"Found job: {job.get('title', 'Unknown')}"
                 }
-                emit_progress("fetch_job", "success", "Job loaded")
+                await emit_progress("fetch_job", "success", "Job loaded")
 
                 company_name = job.get("company", "")
                 if not company_name:
@@ -371,7 +373,7 @@ class CompanyResearchService(OperationService):
                     )
 
                 # Check cache (unless force_refresh)
-                emit_progress("cache_check", "processing", "Checking cache")
+                await emit_progress("cache_check", "processing", "Checking cache")
                 cached = self._check_cache(company_name, force_refresh)
                 if cached and not force_refresh:
                     # Return cached data
@@ -381,7 +383,7 @@ class CompanyResearchService(OperationService):
                         "status": "success",
                         "message": f"Cache hit for {company_name}"
                     }
-                    emit_progress("cache_check", "success", f"Cache hit for {company_name}")
+                    await emit_progress("cache_check", "success", f"Cache hit for {company_name}")
 
                     return self.create_success_result(
                         run_id=run_id,
@@ -400,13 +402,13 @@ class CompanyResearchService(OperationService):
                     "status": "success",
                     "message": "Cache miss - running fresh research"
                 }
-                emit_progress("cache_check", "success", "Cache miss - running fresh research")
+                await emit_progress("cache_check", "success", "Cache miss - running fresh research")
 
                 # Build JobState for research
                 state = self._build_job_state(job)
 
                 # Run Company Research (Layer 3)
-                emit_progress("company_research", "processing", f"Researching {company_name}")
+                await emit_progress("company_research", "processing", f"Researching {company_name}")
                 logger.info(f"[{run_id[:16]}] Running company research for {company_name}")
                 company_result = self.company_researcher.research_company(state)
 
@@ -422,14 +424,14 @@ class CompanyResearchService(OperationService):
                         "company_type": company_type,
                         "message": f"Found {signals_count} signals, type: {company_type}"
                     }
-                    emit_progress("company_research", "success", f"Found {signals_count} signals")
+                    await emit_progress("company_research", "success", f"Found {signals_count} signals")
                     state["company_research"] = company_research
                 else:
                     layer_status["company_research"] = {
                         "status": "failed",
                         "message": "Company research failed"
                     }
-                    emit_progress("company_research", "failed", "Company research failed")
+                    await emit_progress("company_research", "failed", "Company research failed")
                 logger.info(f"[{run_id[:16]}] Company research complete: {layer_status['company_research']['message']}")
 
                 # Run Role Research (Layer 3.5) if company research succeeded
@@ -438,7 +440,7 @@ class CompanyResearchService(OperationService):
                     # Skip role research for recruitment agencies
                     company_type = company_research.get("company_type", "employer")
                     if company_type != "recruitment_agency":
-                        emit_progress("role_research", "processing", "Researching role context")
+                        await emit_progress("role_research", "processing", "Researching role context")
                         logger.info(f"[{run_id[:16]}] Running role research")
                         role_result = self.role_researcher.research_role(state)
                         role_research = role_result.get("role_research")
@@ -449,7 +451,7 @@ class CompanyResearchService(OperationService):
                                 "business_impacts": business_impact_count,
                                 "message": f"Found {business_impact_count} business impacts"
                             }
-                            emit_progress("role_research", "success", f"Found {business_impact_count} impacts")
+                            await emit_progress("role_research", "success", f"Found {business_impact_count} impacts")
                             # Update state with role research for people mapper
                             state["role_research"] = role_research
                         else:
@@ -457,27 +459,27 @@ class CompanyResearchService(OperationService):
                                 "status": "failed",
                                 "message": "Role research failed"
                             }
-                            emit_progress("role_research", "failed", "Role research failed")
+                            await emit_progress("role_research", "failed", "Role research failed")
                     else:
                         layer_status["role_research"] = {
                             "status": "skipped",
                             "message": "Skipped for recruitment agency"
                         }
-                        emit_progress("role_research", "skipped", "Skipped (recruitment agency)")
+                        await emit_progress("role_research", "skipped", "Skipped (recruitment agency)")
                         logger.info(f"[{run_id[:16]}] Skipping role research (recruitment agency)")
                 else:
                     layer_status["role_research"] = {
                         "status": "skipped",
                         "message": "Skipped - company research failed"
                     }
-                    emit_progress("role_research", "skipped", "Skipped")
+                    await emit_progress("role_research", "skipped", "Skipped")
 
                 # Run People Research (Layer 5) with skip_outreach=True
                 # Contact discovery happens here; outreach generation is triggered separately
                 primary_contacts = None
                 secondary_contacts = None
                 if company_research:
-                    emit_progress("people_research", "processing", "Discovering contacts")
+                    await emit_progress("people_research", "processing", "Discovering contacts")
                     logger.info(f"[{run_id[:16]}] Running people research (contact discovery only)")
                     try:
                         people_result = self.people_mapper.map_people(state, skip_outreach=True)
@@ -492,7 +494,7 @@ class CompanyResearchService(OperationService):
                                 "secondary_contacts": len(secondary_contacts),
                                 "message": f"Found {len(primary_contacts)} primary + {len(secondary_contacts)} secondary contacts"
                             }
-                            emit_progress("people_research", "success", f"Found {total_contacts} contacts")
+                            await emit_progress("people_research", "success", f"Found {total_contacts} contacts")
                         else:
                             layer_status["people_research"] = {
                                 "status": "warning",
@@ -500,7 +502,7 @@ class CompanyResearchService(OperationService):
                                 "secondary_contacts": 0,
                                 "message": "No contacts discovered"
                             }
-                            emit_progress("people_research", "warning", "No contacts found")
+                            await emit_progress("people_research", "warning", "No contacts found")
                         logger.info(f"[{run_id[:16]}] People research complete: {layer_status['people_research']['message']}")
 
                     except Exception as e:
@@ -509,16 +511,16 @@ class CompanyResearchService(OperationService):
                             "status": "failed",
                             "message": f"People research failed: {str(e)}"
                         }
-                        emit_progress("people_research", "failed", "Contact discovery failed")
+                        await emit_progress("people_research", "failed", "Contact discovery failed")
                 else:
                     layer_status["people_research"] = {
                         "status": "skipped",
                         "message": "Skipped - company research failed"
                     }
-                    emit_progress("people_research", "skipped", "Skipped")
+                    await emit_progress("people_research", "skipped", "Skipped")
 
                 # Persist results to MongoDB
-                emit_progress("save_results", "processing", "Saving to database")
+                await emit_progress("save_results", "processing", "Saving to database")
                 logger.info(f"[{run_id[:16]}] Persisting results to database")
                 persisted = self._persist_research(
                     job_id=job_id,
@@ -532,7 +534,7 @@ class CompanyResearchService(OperationService):
                     "status": "success" if persisted else "warning",
                     "message": "Saved to database" if persisted else "Persistence failed"
                 }
-                emit_progress("save_results", "success" if persisted else "failed",
+                await emit_progress("save_results", "success" if persisted else "failed",
                              "Results saved" if persisted else "Persistence failed")
 
                 # Estimate cost (rough estimate based on typical token usage)
