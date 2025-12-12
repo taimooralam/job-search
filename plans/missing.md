@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix)
+**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix + CV Generation NoneType Error)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -188,6 +188,7 @@
 ### New Features Added (not in original gaps)
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 - **Identity-Based Persona Generation** (2025-12-10): Transform identity annotations into coherent persona statements injected into CV, cover letter, and outreach
+- **Dynamic Location Filter by Date Range** (2025-12-12): Location dropdown now dynamically updates based on selected date range, showing only locations for jobs within the filtered time window
 
 ### Today's Fixes (2025-12-10) Session 3
 
@@ -3293,16 +3294,45 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Related Documentation**: `plans/time-filter-bug-fix-and-enhancement.md`, `reports/sessions/2025-11-30-time-filter-bug-investigation.md`
 
 ### Applied Only Filter Toggle
-- [x] Added applied filter toggle (2025-12-12): Users can now filter job list to show only applied jobs (those with CV and outreach data).
+- [x] Added applied filter toggle (2025-12-12): Users can now filter job list to show only jobs with status="applied" for tracking application progress.
   - **Implementation**:
-    - Added `show_applied_only` boolean filter input (default: unchecked)
-    - Updated MongoDB query to exclude jobs without cv_text and outreach_body when toggle is enabled
-    - Added visual toggle button with "Applied Only" label in filter panel
+    - Added `applied_only` query parameter (boolean, default: unchecked)
+    - When enabled: overrides status filter checkboxes and sets `statuses = ["applied"]`
+    - Filter persists through pagination, sorting, and search via `filter_params` in `job_rows.html`
+    - Added visual checkbox input with "Applied Only" label in Quick Filters section
   - **Files Modified**:
-    - `frontend/templates/index.html` - Added checkbox filter input for "Applied Only"
-    - `frontend/app.py` - Updated query construction to filter based on toggle state
-  - **UX**: Toggle appears next to existing date filters; improves ability to see application progress at a glance
-  - **Verification**: Filter works correctly; applied jobs properly filtered; no regression on other filters
+    - `frontend/templates/index.html` (lines 228-240) - Added checkbox in Quick Filters with HTMX
+    - `frontend/app.py` (lines 429-439) - Query param parsing and status filter override logic
+    - `frontend/templates/partials/job_rows.html` (line 7) - Filter persistence in pagination links
+  - **Query Parameter Behavior**:
+    - `GET /partials/job-rows?applied_only=true` → returns only jobs where `status = "applied"`
+    - When unchecked: reverts to default status filter (excludes discarded, applied, interview scheduled)
+    - Checkbox state persists across page interactions via form state
+  - **UX**: Checkbox positioned in Quick Filters section next to date filter controls
+  - **Verification**: Filter works correctly; applied jobs properly displayed; no regression on other filters or pagination
+
+### CV Generation NoneType Error Fix
+- [x] Fixed NoneType error in CV generation (2025-12-12): Resolved crash when MongoDB stores `{"extracted_jd": null}` explicitly.
+  - **Root Cause**: Python's `dict.get("key", {})` only uses the default when the key is missing. When MongoDB stores explicit `null` values, the key exists but `.get()` returns `None`, ignoring the default fallback.
+  - **Symptom**: `'NoneType' object has no attribute 'get'` error during CV generation when accessing extracted JD structure
+  - **Pattern**: This is a common Python gotcha with nullable data in databases - always use `x or default` for truthy/falsy defaults
+  - **Fix Applied**: Changed defensive coding pattern from `job.get("extracted_jd", {})` to `job.get("extracted_jd") or {}`
+    - This handles three cases: missing key (None), explicit null in DB (None), and falsy values all default to `{}`
+    - Applied consistently in all CV generation code paths
+  - **Files Modified**:
+    - `src/services/cv_generation_service.py:326` - Extract JD from job before passing to CV generator
+    - `src/layer6_v2/orchestrator.py:172` - Extract JD in orchestrator pipeline phase
+  - **Architectural Pattern**: Updated pattern for defensive null-handling in MongoDB integration:
+    ```python
+    # Before (broken): None passed to .get() call
+    extracted_jd = job.get("extracted_jd", {})  # Returns None if DB has null
+
+    # After (correct): Handles both missing and null values
+    extracted_jd = job.get("extracted_jd") or {}  # Returns {} for null or missing
+    ```
+  - **Impact**: CV generation now handles all MongoDB null value scenarios without crashing; more robust defensive programming
+  - **Related Docs**: Updated architectural patterns section in `architecture.md` with null-handling best practices
+  - **Verification**: All CV generation service tests pass; null value handling validated
 
 ---
 
