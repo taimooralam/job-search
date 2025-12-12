@@ -554,13 +554,25 @@
     // Location Multi-Select Dropdown
     // ============================================================================
 
-    // Load locations from API
-    async function loadLocations() {
+    // Load locations from API with optional date filtering
+    async function loadLocations(datetimeFrom = '', datetimeTo = '') {
         try {
-            const response = await fetch('/api/locations');
+            const params = new URLSearchParams();
+            if (datetimeFrom) params.set('datetime_from', datetimeFrom);
+            if (datetimeTo) params.set('datetime_to', datetimeTo);
+
+            const url = '/api/locations' + (params.toString() ? '?' + params.toString() : '');
+
+            // Show loading state
+            renderLocationOptions([], true);
+
+            const response = await fetch(url);
             const data = await response.json();
             allLocations = data.locations || [];
             renderLocationOptions(allLocations);
+
+            // Validate selected locations still exist in filtered list
+            validateSelectedLocations();
         } catch (err) {
             console.error('Failed to load locations:', err);
             document.getElementById('location-options').innerHTML =
@@ -568,9 +580,29 @@
         }
     }
 
+    // Validate that selected locations still exist after filtering
+    function validateSelectedLocations() {
+        if (selectedLocations.size === 0) return;
+
+        const validLocationNames = new Set(allLocations.map(l => l.location));
+        const invalidLocations = Array.from(selectedLocations).filter(loc => !validLocationNames.has(loc));
+
+        if (invalidLocations.length > 0) {
+            // Remove invalid locations from selection
+            invalidLocations.forEach(loc => selectedLocations.delete(loc));
+            updateLocationButtonText();
+            updateSelectedLocationInputs();
+            updateActiveFilterCount();
+        }
+    }
+
     // Render location options in dropdown
-    function renderLocationOptions(locations) {
+    function renderLocationOptions(locations, isLoading = false) {
         const container = document.getElementById('location-options');
+        if (isLoading) {
+            container.innerHTML = '<div class="px-3 py-2 text-sm theme-text-tertiary">Loading locations...</div>';
+            return;
+        }
         if (locations.length === 0) {
             container.innerHTML = '<div class="px-3 py-2 text-sm theme-text-tertiary">No locations found</div>';
             return;
@@ -780,6 +812,12 @@
         // Update active filter count
         updateActiveFilterCount();
 
+        // Refresh locations with new date range
+        loadLocations(
+            document.getElementById('date-from').value,
+            document.getElementById('date-to').value
+        );
+
         // Trigger table refresh
         triggerTableRefresh();
     }
@@ -796,6 +834,9 @@
 
         // Update active filter count
         updateActiveFilterCount();
+
+        // Reload all locations (no date filter)
+        loadLocations();
 
         // Trigger table refresh
         triggerTableRefresh();
@@ -848,11 +889,23 @@
         document.getElementById('search-input').value = '';
 
         // Clear locations
-        selectedLocations = [];
-        renderSelectedLocations();
+        selectedLocations.clear();
+        updateLocationButtonText();
+        updateSelectedLocationInputs();
+
+        // Uncheck all location checkboxes
+        document.querySelectorAll('#location-options input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
 
         // Clear applied-only checkbox
         document.getElementById('applied-only-checkbox').checked = false;
+
+        // Reload all locations (no date filter)
+        loadLocations();
+
+        // Update active filter count
+        updateActiveFilterCount();
 
         // Trigger table refresh
         triggerTableRefresh();
@@ -862,12 +915,29 @@
     // Event Listeners
     // ============================================================================
 
+    // Debounce helper for performance optimization
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
     // Update filter count when date inputs change
     document.getElementById('date-from')?.addEventListener('change', updateActiveFilterCount);
     document.getElementById('date-to')?.addEventListener('change', updateActiveFilterCount);
 
-    // Load locations on page load
-    document.addEventListener('DOMContentLoaded', loadLocations);
+    // Refresh locations when custom date range changes (debounced to avoid excessive API calls)
+    const refreshLocationsDebounced = debounce(() => {
+        loadLocations(
+            document.getElementById('date-from').value,
+            document.getElementById('date-to').value
+        );
+    }, 300);
+
+    document.getElementById('date-from')?.addEventListener('change', refreshLocationsDebounced);
+    document.getElementById('date-to')?.addEventListener('change', refreshLocationsDebounced);
 
     // Set default filters on page load: 1-hour date filter + default statuses
     document.addEventListener('DOMContentLoaded', function() {
