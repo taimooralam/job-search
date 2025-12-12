@@ -147,6 +147,50 @@ JOB_STATUSES = [
     "offer received",
 ]
 
+# Default sorting configuration
+# Priority locations: Jobs in these locations appear first (case-insensitive substring match)
+PRIORITY_LOCATIONS = ["Saudi Arabia", "UAE", "United Arab Emirates", "Dubai", "Abu Dhabi", "Riyadh", "Jeddah"]
+
+# Seniority ranking: Higher index = more senior (used for descending sort)
+# Index 0 is lowest seniority, index 11 is highest
+SENIORITY_RANKING = [
+    "Senior Software Engineer",
+    "Lead Software Engineer",
+    "Staff Software Engineer",
+    "Principal Software Engineer",
+    "Engineering Manager",
+    "Tech Lead",
+    "Engineering Lead",
+    "Head of Technology",
+    "Director of Technology",
+    "Director of Software Engineering",
+    "Head of Engineering",
+    "CTO",
+]
+
+
+def get_seniority_rank(title: str) -> int:
+    """
+    Get seniority rank for a job title.
+    Higher value = more senior position.
+    Returns -1 if title doesn't match any known seniority level.
+    """
+    if not title:
+        return -1
+    title_lower = title.lower()
+    for rank, seniority_title in enumerate(SENIORITY_RANKING):
+        if seniority_title.lower() in title_lower:
+            return rank
+    return -1
+
+
+def is_priority_location(location: str) -> bool:
+    """Check if location matches any priority location (case-insensitive)."""
+    if not location:
+        return False
+    location_lower = location.lower()
+    return any(priority.lower() in location_lower for priority in PRIORITY_LOCATIONS)
+
 
 def get_db():
     """
@@ -449,6 +493,12 @@ def list_jobs():
     mongo_direction = DESCENDING if sort_direction == "desc" else ASCENDING
     sort_order = -1 if sort_direction == "desc" else 1
 
+    # Determine if default multi-criteria sort should be used
+    # Default sort applies when sort_field is "default" or "createdAt" (the initial default)
+    use_default_sort = sort_field in ("default", "createdAt")
+    # Skip location priority if user has filtered by specific locations
+    has_location_filter = len(locations) > 0
+
     # Projection for returned fields
     projection = {
         "_id": 1,
@@ -467,7 +517,9 @@ def list_jobs():
     # GAP-007: Use aggregation pipeline for date filtering to handle mixed types
     # MongoDB $toDate normalizes both ISO strings AND Date objects to Date objects
     # This allows hour-level granularity regardless of how createdAt was stored
-    use_aggregation = date_filter_from is not None or date_filter_to is not None
+    has_date_filter = date_filter_from is not None or date_filter_to is not None
+    # Use aggregation for date filtering OR for default multi-criteria sorting
+    use_aggregation = has_date_filter or use_default_sort
 
     if use_aggregation:
         # Build aggregation pipeline
@@ -477,37 +529,98 @@ def list_jobs():
         if mongo_query:
             pipeline.append({"$match": mongo_query})
 
-        # Stage 2: Add normalized date field using $toDate
-        # $toDate handles: ISO strings, Date objects, timestamps, ObjectIds
-        pipeline.append({
-            "$addFields": {
-                "_normalizedDate": {
-                    "$cond": {
-                        "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
-                        "then": {"$toDate": "$createdAt"},
-                        "else": "$createdAt"  # Already a Date object
-                    }
+        # Stage 2: Add computed fields for sorting and date normalization
+        add_fields: Dict[str, Any] = {}
+
+        # Add normalized date field if date filtering is needed
+        if has_date_filter:
+            add_fields["_normalizedDate"] = {
+                "$cond": {
+                    "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
+                    "then": {"$toDate": "$createdAt"},
+                    "else": "$createdAt"  # Already a Date object
                 }
             }
-        })
 
-        # Stage 3: Filter by normalized date
-        date_match: Dict[str, Any] = {}
-        if date_filter_from:
-            date_match["$gte"] = date_filter_from
-        if date_filter_to:
-            date_match["$lte"] = date_filter_to
-        pipeline.append({"$match": {"_normalizedDate": date_match}})
+        # Add computed sort fields for default multi-criteria sorting
+        if use_default_sort:
+            # Build regex pattern for priority locations (case-insensitive)
+            priority_regex = "|".join(PRIORITY_LOCATIONS)
+
+            # _isPriorityLocation: 1 if location matches priority, 0 otherwise
+            # Only add if no location filter is applied
+            if not has_location_filter:
+                add_fields["_isPriorityLocation"] = {
+                    "$cond": {
+                        "if": {
+                            "$regexMatch": {
+                                "input": {"$ifNull": ["$location", ""]},
+                                "regex": priority_regex,
+                                "options": "i"
+                            }
+                        },
+                        "then": 1,
+                        "else": 0
+                    }
+                }
+
+            # _seniorityRank: numeric rank based on job title
+            # Build a nested $switch to map title to seniority rank
+            seniority_branches = []
+            for rank, seniority_title in enumerate(SENIORITY_RANKING):
+                seniority_branches.append({
+                    "case": {
+                        "$regexMatch": {
+                            "input": {"$ifNull": ["$title", ""]},
+                            "regex": seniority_title,
+                            "options": "i"
+                        }
+                    },
+                    "then": rank
+                })
+
+            add_fields["_seniorityRank"] = {
+                "$switch": {
+                    "branches": seniority_branches,
+                    "default": -1  # Unknown titles get lowest rank
+                }
+            }
+
+        if add_fields:
+            pipeline.append({"$addFields": add_fields})
+
+        # Stage 3: Filter by normalized date (if date filtering is needed)
+        if has_date_filter:
+            date_match: Dict[str, Any] = {}
+            if date_filter_from:
+                date_match["$gte"] = date_filter_from
+            if date_filter_to:
+                date_match["$lte"] = date_filter_to
+            pipeline.append({"$match": {"_normalizedDate": date_match}})
+
+        # Build sort specification
+        if use_default_sort:
+            # Multi-criteria sort:
+            # 1. Priority location first (desc) - only if no location filter
+            # 2. Score descending
+            # 3. Seniority rank descending
+            sort_spec: Dict[str, int] = {}
+            if not has_location_filter:
+                sort_spec["_isPriorityLocation"] = -1  # Priority locations first
+            sort_spec["score"] = -1  # Higher scores first
+            sort_spec["_seniorityRank"] = -1  # More senior positions first
+        else:
+            sort_spec = {mongo_sort_field: sort_order}
 
         # Stage 4: Count total (for pagination) - use $facet for efficiency
-        # Note: We use inclusion projection only. The _normalizedDate temp field
-        # is automatically excluded since it's not in the projection dict.
+        # Note: We use inclusion projection only. Computed fields are
+        # automatically excluded since they're not in the projection dict.
         # MongoDB doesn't allow mixing inclusion and exclusion in $project.
         pipeline.append({
             "$facet": {
                 "metadata": [{"$count": "total"}],
                 "data": [
-                    {"$sort": {mongo_sort_field: sort_order}},
+                    {"$sort": sort_spec},
                     {"$skip": (page - 1) * page_size},
                     {"$limit": page_size},
                     {"$project": projection}
@@ -536,7 +649,7 @@ def list_jobs():
 
         jobs = [serialize_job(job) for job in jobs_raw]
     else:
-        # No date filtering - use simpler find() query (more efficient)
+        # No date filtering and explicit column sort - use simpler find() query
         total_count = collection.count_documents(mongo_query)
 
         skip = (page - 1) * page_size
