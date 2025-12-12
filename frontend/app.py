@@ -3948,7 +3948,7 @@ Instructions:
 2. Extract contacts using this schema:
 {{
   "name": "string",
-  "title": "string",
+  "role": "string",
   "linkedin_url": "string",
   "email": "string (if found)",
   "phone": "string (if found)",
@@ -3962,7 +3962,7 @@ Expected format:
 [
   {{
     "name": "Jane Doe",
-    "title": "Hiring Manager",
+    "role": "Hiring Manager",
     "linkedin_url": "https://linkedin.com/in/janedoe",
     "email": "jane@company.com",
     "relevance": "hiring_manager"

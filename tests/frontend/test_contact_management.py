@@ -368,7 +368,7 @@ class TestGetFirecrawlPrompt:
         data = response.get_json()
         assert "linkedin_url" in data["prompt"]
         assert "email" in data["prompt"]
-        assert "title" in data["prompt"]
+        assert '"role": "string"' in data["prompt"]  # Schema uses 'role', not 'title'
 
     def test_get_prompt_job_not_found(self, authenticated_client, mock_db):
         """Should return 404 when job doesn't exist."""
