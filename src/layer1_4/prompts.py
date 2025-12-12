@@ -12,7 +12,7 @@ JD_OUTPUT_SCHEMA = """{
   "company": "company name",
   "location": "city, country or Remote",
   "remote_policy": "fully_remote|hybrid|onsite|not_specified",
-  "role_category": "engineering_manager|staff_principal_engineer|director_of_engineering|head_of_engineering|cto|tech_lead|senior_engineer",
+  "role_category": "engineering_manager|staff_principal_engineer|director_of_engineering|head_of_engineering|vp_engineering|cto|tech_lead|senior_engineer",
   "seniority_level": "senior|staff|principal|director|vp|c_level",
   "competency_weights": {
     "delivery": 25,
@@ -40,7 +40,7 @@ Your mission: Extract structured intelligence from job descriptions to enable pr
 
 === ROLE CATEGORIZATION ===
 
-You MUST classify the role into exactly ONE of these 7 categories:
+You MUST classify the role into exactly ONE of these 8 categories:
 
 **Category 1 - engineering_manager**
 - Team multiplier focused on 1:1s, sprint planning, hiring, removing blockers
@@ -63,22 +63,28 @@ You MUST classify the role into exactly ONE of these 7 categories:
 **Category 4 - head_of_engineering**
 - Building the engineering function, often first eng leader or small exec team
 - Executive table presence, defines engineering culture and processes
-- Signals: "head of", "VP of engineering", "build the team from scratch", "engineering culture"
+- Signals: "head of engineering", "build the team from scratch", "engineering culture", "first engineering hire"
 - Competency mix: leadership 40-50%, delivery 20-30%, architecture 15-25%, process 10-15%
 
-**Category 5 - cto**
+**Category 5 - vp_engineering**
+- Executive engineering leader at scale, balances strategy + operational delivery
+- Owns 50-200+ engineers across multiple directors, focuses on execution excellence
+- Signals: "VP of engineering", "vice president engineering", "SVP engineering", "engineering executive"
+- Competency mix: leadership 35-45%, delivery 25-35%, architecture 15-25%, process 10-15%
+
+**Category 6 - cto**
 - Technology vision at board level, business outcomes > code
 - External facing (investors, customers, partners), technology strategy
 - Signals: "CTO", "chief technology", "technology vision", "board", "investors"
 - Competency mix: architecture 35-45%, leadership 30-40%, delivery 10-20%, process 5-15%
 
-**Category 6 - tech_lead**
+**Category 7 - tech_lead**
 - Hands-on technical leader with some team coordination, often player-coach
 - Leads small teams (2-6 engineers), writes code while guiding others
 - Signals: "tech lead", "team lead", "lead engineer", "lead developer", "technical lead"
 - Competency mix: architecture 30-40%, delivery 30-40%, leadership 15-25%, process 10-15%
 
-**Category 7 - senior_engineer**
+**Category 8 - senior_engineer**
 - Individual contributor with deep technical expertise, no direct reports
 - Owns significant systems/features, mentors informally through code review
 - Signals: "senior engineer", "senior developer", "software engineer", no management language
@@ -148,7 +154,7 @@ JD_EXTRACTION_USER_TEMPLATE = """# JOB DESCRIPTION ANALYSIS REQUEST
 Analyze this job description and extract structured intelligence.
 
 **Remember:**
-1. Classify into exactly ONE role category (engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, cto, tech_lead, senior_engineer)
+1. Classify into exactly ONE role category (engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, vp_engineering, cto, tech_lead, senior_engineer)
 2. Competency weights MUST sum to 100
 3. Extract exactly 15 ATS keywords
 4. Include 5-10 responsibilities and 3-8 qualifications
@@ -190,6 +196,14 @@ Define engineering culture, hiring bar, and technical processes.
 Report to CEO, join leadership team.""",
         "category": "head_of_engineering",
         "weights": {"delivery": 25, "process": 15, "architecture": 20, "leadership": 40}
+    },
+    "vp_engineering": {
+        "jd_snippet": """VP of Engineering
+Lead our 80-person engineering organization across 4 directors.
+Drive engineering excellence, delivery velocity, and operational maturity.
+Partner with CPO on roadmap execution. Report to CTO.""",
+        "category": "vp_engineering",
+        "weights": {"delivery": 30, "process": 15, "architecture": 20, "leadership": 35}
     },
     "cto": {
         "jd_snippet": """Chief Technology Officer
