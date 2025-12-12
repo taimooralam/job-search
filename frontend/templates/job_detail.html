@@ -1578,6 +1578,36 @@
                 </button>
             </div>
         </div>
+
+        <!-- Planned Answers Card -->
+        <div class="job-detail-card" id="planned-answers-card">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="job-detail-card-title mb-0 flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                    </svg>
+                    Planned Answers
+                </h2>
+                <button onclick="autoFillPlannedAnswers()" class="btn btn-secondary btn-sm" id="auto-fill-answers-btn" title="Auto-generate answers using AI">
+                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                    Auto-Fill
+                </button>
+            </div>
+
+            <div class="space-y-2" id="planned-answers-container">
+                <!-- Answers will be rendered here by JavaScript -->
+                <p class="text-xs text-gray-500 text-center py-4">Loading...</p>
+            </div>
+
+            <button onclick="addPlannedAnswer()" class="btn btn-secondary btn-sm w-full mt-3">
+                <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Answer
+            </button>
+        </div>
     </aside>
 
     <!-- ========== FOOTER (Delete in Lower Left) ========== -->
@@ -1601,17 +1631,57 @@
 
 {% include 'partials/job_detail/_add_contacts_modal.html' %}
 
+<!-- Planned Answer Modal -->
+<div id="planned-answer-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[500px] max-w-[90vw] max-h-[80vh] overflow-hidden">
+        <div class="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900 dark:text-white" id="pa-modal-title">Edit Answer</h3>
+            <button onclick="closePlannedAnswerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
+            <div>
+                <label for="pa-question" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Question</label>
+                <textarea id="pa-question" rows="2" class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Why do you want to work here?"></textarea>
+            </div>
+            <div>
+                <label for="pa-field-type" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Field Type</label>
+                <select id="pa-field-type" class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="text">Text (single line)</option>
+                    <option value="textarea" selected>Text Area (multi-line)</option>
+                    <option value="url">URL</option>
+                    <option value="select">Dropdown</option>
+                    <option value="checkbox">Checkbox</option>
+                    <option value="file">File Upload</option>
+                </select>
+            </div>
+            <div>
+                <label for="pa-answer" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Answer</label>
+                <textarea id="pa-answer" rows="8" class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500" placeholder="Your prepared answer..."></textarea>
+            </div>
+        </div>
+        <div class="p-4 border-t dark:border-gray-700 flex justify-end gap-2 bg-gray-50 dark:bg-gray-800">
+            <button onclick="closePlannedAnswerModal()" class="btn btn-secondary btn-sm">Cancel</button>
+            <button onclick="savePlannedAnswer()" class="btn btn-primary btn-sm">Save</button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 {# Job Detail Scripts - Extracted to external file for maintainability #}
 <script>
-    // Pass job ID to the external script
+    // Pass job ID and data to the external script
     window.JOB_DETAIL_CONFIG = {
-        jobId: "{{ job._id }}"
+        jobId: "{{ job._id }}",
+        plannedAnswers: {{ job.planned_answers | tojson | safe if job.planned_answers else '[]' }}
     };
 </script>
-<script src="/static/js/job-detail.js?v=20251211"></script>
+<script src="/static/js/job-detail.js?v=20251212"></script>
 
 <!-- Phase 5.1: Page Break Calculator Module -->
 <script src="/static/js/page-break-calculator.js?v=20251128"></script>
