@@ -33,6 +33,34 @@ from src.common.persona_builder import get_persona_guidance
 from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
 
 
+def _load_role_persona(role_category: str) -> dict:
+    """
+    Load persona data for a role from role_skills_taxonomy.json.
+
+    Args:
+        role_category: One of the 8 role categories
+
+    Returns:
+        Dict with persona data (identity_statement, voice, power_verbs, etc.)
+        or empty dict if not found.
+    """
+    import json
+    import os
+
+    taxonomy_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "data", "master-cv", "role_skills_taxonomy.json"
+    )
+    taxonomy_path = os.path.abspath(taxonomy_path)
+
+    try:
+        with open(taxonomy_path, "r") as f:
+            taxonomy_data = json.load(f)
+        role_data = taxonomy_data.get("target_roles", {}).get(role_category, {})
+        return role_data.get("persona", {})
+    except Exception:
+        return {}
+
+
 def _build_profile_system_prompt_with_persona(
     jd_annotations: Optional[Dict[str, Any]] = None,
 ) -> str:
@@ -68,6 +96,43 @@ from src.layer6_v2.types import (
     HeaderGenerationContext,
     HeaderProvenance,
 )
+
+
+def _check_third_person_voice(text: str) -> List[str]:
+    """
+    Check if text uses first/second person pronouns instead of third-person absent voice.
+
+    Third-person absent voice avoids pronouns like I, my, me, you, your, we, our.
+    This is a defense-in-depth validation to catch LLM non-compliance.
+
+    Args:
+        text: Text to check (typically a tagline or persona statement)
+
+    Returns:
+        List of pronoun violations found (empty list if compliant)
+    """
+    # Define pronoun patterns with word boundaries to avoid false positives
+    # e.g., "my" in "dynamically" would be a false positive without \b
+    pronoun_patterns = [
+        (r'\bI\b', 'I'),           # First person singular subject
+        (r'\bmy\b', 'my'),         # First person singular possessive
+        (r'\bme\b', 'me'),         # First person singular object
+        (r'\bmine\b', 'mine'),     # First person singular possessive pronoun
+        (r'\byou\b', 'you'),       # Second person
+        (r'\byour\b', 'your'),     # Second person possessive
+        (r'\byours\b', 'yours'),   # Second person possessive pronoun
+        (r'\bwe\b', 'we'),         # First person plural subject
+        (r'\bour\b', 'our'),       # First person plural possessive
+        (r'\bus\b', 'us'),         # First person plural object
+        (r'\bours\b', 'ours'),     # First person plural possessive pronoun
+    ]
+
+    violations = []
+    for pattern, pronoun_name in pronoun_patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            violations.append(pronoun_name)
+
+    return violations
 
 
 # Pydantic models for structured LLM output
@@ -678,6 +743,11 @@ class HeaderGenerator:
             if annotation_proofs:
                 top_metrics = annotation_proofs[:3] + top_metrics
 
+        # Load role persona from taxonomy for targeted generation
+        role_persona = _load_role_persona(role_category)
+        if role_persona:
+            self._logger.debug(f"Loaded persona for {role_category}: {role_persona.get('voice', 'N/A')}")
+
         # Build research-aligned prompt
         user_prompt = build_profile_user_prompt(
             candidate_name=candidate_name,
@@ -690,6 +760,7 @@ class HeaderGenerator:
             regional_variant=regional_variant,
             jd_pain_points=jd_pain_points,
             candidate_differentiators=candidate_differentiators,
+            role_persona=role_persona,
         )
 
         # Phase 4.5: Append annotation guidance to user prompt
@@ -795,6 +866,14 @@ class HeaderGenerator:
                     f"Profile influenced by {provenance.total_annotations_used} annotations"
                 )
 
+            # Defense-in-depth: Validate third-person absent voice in tagline
+            voice_violations = _check_third_person_voice(profile.tagline)
+            if voice_violations:
+                self._logger.warning(
+                    f"Tagline contains first/second person pronouns (should use third-person absent voice): "
+                    f"found [{', '.join(voice_violations)}] in tagline: '{profile.tagline[:100]}...'"
+                )
+
         except Exception as e:
             self._logger.warning(f"LLM profile generation failed: {e}. Using fallback.")
             # Fallback: Template-based hybrid profile
@@ -854,9 +933,21 @@ class HeaderGenerator:
                 "Engineering executive who builds functions from scratch and transforms "
                 "organizations to deliver measurable business outcomes."
             ),
+            "vp_engineering": (
+                "Engineering VP who leads organizations at scale, balancing strategic vision "
+                "with operational excellence to drive business outcomes."
+            ),
             "cto": (
                 "Technology executive who drives business transformation through strategic "
                 "technology leadership and world-class engineering teams."
+            ),
+            "tech_lead": (
+                "Hands-on technical leader who drives delivery excellence through code quality "
+                "and team guidance while shipping high-impact features."
+            ),
+            "senior_engineer": (
+                "Senior engineer who builds scalable systems and delivers high-quality code "
+                "through deep technical expertise and collaborative approach."
             ),
         }
 
@@ -899,12 +990,33 @@ class HeaderGenerator:
                 "Delivered strategic initiatives creating business value",
                 "Built talent strategy that attracted top engineers",
             ],
+            "vp_engineering": [
+                "Led engineering organization at scale across multiple directors",
+                "Drove operational excellence and delivery velocity",
+                "Established strategic partnerships with executive leadership",
+                "Transformed engineering practices to enterprise standards",
+                "Built high-performing engineering culture at scale",
+            ],
             "cto": [
                 "Led technology transformation across the organization",
                 "Defined technology vision enabling business growth",
                 "Built and scaled world-class engineering teams",
                 "Drove business outcomes through strategic technology leadership",
                 "Established board-level technical communication",
+            ],
+            "tech_lead": [
+                "Led team delivery of critical product features",
+                "Established code quality standards and best practices",
+                "Drove architectural decisions for team's domain",
+                "Mentored junior engineers on technical excellence",
+                "Delivered high-quality features on time",
+            ],
+            "senior_engineer": [
+                "Built scalable systems serving production traffic",
+                "Delivered high-impact features with quality code",
+                "Optimized system performance and reliability",
+                "Collaborated effectively across teams",
+                "Established coding standards within the team",
             ],
         }
 
@@ -934,9 +1046,21 @@ class HeaderGenerator:
                 "Function Building", "Org Design", "Executive Leadership",
                 "Talent Strategy", "Engineering Culture", "Business Alignment"
             ],
+            "vp_engineering": [
+                "Engineering Executive", "Operational Excellence", "Strategic Delivery",
+                "Organizational Scale", "Business Partnership", "Engineering Strategy"
+            ],
             "cto": [
                 "Technology Vision", "Executive Leadership", "Business Transformation",
                 "M&A Due Diligence", "Board Communication", "Strategic Planning"
+            ],
+            "tech_lead": [
+                "Technical Leadership", "Code Quality", "System Design",
+                "Team Guidance", "Agile Delivery", "Mentorship"
+            ],
+            "senior_engineer": [
+                "Software Development", "System Design", "Code Quality",
+                "Technical Expertise", "Collaboration", "Problem Solving"
             ],
         }
 
