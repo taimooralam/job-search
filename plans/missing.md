@@ -3165,6 +3165,78 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Frontend: `frontend/runner.py`, `frontend/templates/partials/job_detail/_pipeline_progress.html`, `frontend/templates/base.html`, `frontend/static/js/job-detail.js`
   - **Impact**: Users have full control over long-running pipelines; can immediately halt operations that are stuck or unnecessary
 
+### Complete MongoDB Migration for Master CV System
+- [x] MongoDB-first architecture implementation (2025-12-12): Completed full migration to use MongoDB as primary source for Master CV data across all code paths.
+  - **Scope**: Unified all CV loading, CV generation, and CV service endpoints to use MongoDB with file fallback
+  - **Changes Completed**:
+    1. **Quick Scorer Service** (`src/services/quick_scorer.py`):
+       - Now uses `MasterCVStore.get_profile_for_suggestions()` instead of reading `master-cv.md` directly
+       - Profile data sourced from MongoDB `master_cv_metadata` collection
+    2. **Pipeline Runner** (`scripts/run_pipeline.py`):
+       - Now uses `CVLoader(use_mongodb=True)` for all CV loading operations
+       - All role data sourced from MongoDB `master_cv_roles` collection
+    3. **Orchestrator** (`src/layer6_v2/orchestrator.py`):
+       - `_get_master_cv_text()` method now uses `self.cv_loader` instead of file I/O
+       - Consistent MongoDB-first loading across all pipeline layers
+    4. **Configuration Validation** (`src/common/config.py`):
+       - `USE_MASTER_CV_MONGODB` flag defaults to `true`
+       - File validation skipped when MongoDB flag enabled
+       - Backward-compatible with local files when MongoDB unavailable
+    5. **Test Fixtures** (`tests/ab_testing/conftest.py`, `scripts/run_integration_ab_tests.py`):
+       - Updated all CV loading to use MongoDB-first pattern
+       - Mock MongoDB collections for deterministic test behavior
+    6. **Docker Compose** (all 4 files):
+       - Removed `master-cv.md` volume mounts (no longer needed)
+       - Simplified deployment configuration
+    7. **CI/CD Pipeline** (`.github/workflows/runner-ci.yml`):
+       - Removed `master-cv.md` from deployment to VPS
+       - Reduced artifact size; all CV data persisted in MongoDB
+    8. **Legacy File Removal**:
+       - Deleted `master-cv.md` from project root (no longer used)
+       - Data fully migrated to MongoDB collections
+  - **Architecture**:
+    - **MongoDB Primary Source**: All CV data stored in 3 collections:
+      - `master_cv_metadata`: Candidate personal info, summary, languages, certifications
+      - `master_cv_roles`: Work experience, achievements, keywords per role
+      - `master_cv_taxonomy`: Skill categories and skill definitions
+    - **CVLoader**: Encapsulates MongoDB vs file logic; transparent to consumers
+    - **File Fallback**: If MongoDB unavailable, `data/master-cv/roles/*.md` files still used
+    - **Frontend Integration**: Master CV Editor (Vercel) → proxies through Runner Service (VPS) → accesses MongoDB
+  - **Data Flow**:
+    ```
+    CV Editor UI (Vercel)
+         ↓ (auto-save, 3s debounce)
+    Frontend API proxy layer
+         ↓ (HTTP proxy)
+    Runner Service (VPS:8000)
+         ↓ (direct connection)
+    MongoDB (master_cv_* collections)
+         ↓ (on-demand loading)
+    CV Generation Pipeline
+         ↓ (all CV text injected into CVs)
+    Output: Role-tailored CVs with MongoDB data
+    ```
+  - **Benefits**:
+    1. **Single Source of Truth**: CV data lives in MongoDB, not scattered across files
+    2. **Real-Time Edits**: CV Editor changes immediately available to all pipeline code paths
+    3. **Simplified Deployment**: No file synchronization needed; VPS only needs MongoDB URI
+    4. **Scalable**: Easy to add CV variants, versioning, or historical tracking
+    5. **Audit Trail**: All CV edits tracked in MongoDB for compliance
+  - **Files Modified**:
+    - `src/services/quick_scorer.py` - Uses MasterCVStore instead of file reading
+    - `scripts/run_pipeline.py` - Uses CVLoader(use_mongodb=True)
+    - `src/layer6_v2/orchestrator.py` - Uses self.cv_loader for all CV access
+    - `src/common/config.py` - USE_MASTER_CV_MONGODB flag and validation
+    - `tests/ab_testing/conftest.py`, `scripts/run_integration_ab_tests.py` - MongoDB fixtures
+    - `docker-compose.*.yml` (4 files) - Removed master-cv.md mounts
+    - `.github/workflows/runner-ci.yml` - Removed master-cv.md from deployment
+    - **Deleted**: `master-cv.md` (no longer needed)
+  - **Backward Compatibility**:
+    - All code paths default to MongoDB (`USE_MASTER_CV_MONGODB=true`)
+    - Automatic fallback to `data/master-cv/roles/*.md` if MongoDB unavailable
+    - No breaking changes to API contracts; CVLoader transparent interface
+  - **Verification**: All unit tests passing; 6 roles successfully loaded from MongoDB; file fallback tested
+
 ---
 
 ## Quick Reference
