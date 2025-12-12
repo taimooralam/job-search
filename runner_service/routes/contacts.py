@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from pymongo import MongoClient
 
@@ -30,6 +30,13 @@ from src.common.model_tiers import (
 )
 
 from ..auth import verify_token
+from .operation_streaming import (
+    create_operation_run,
+    append_operation_log,
+    update_operation_status,
+    create_log_callback,
+    create_layer_callback,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -755,3 +762,255 @@ async def generate_outreach(
             run_id=run_id,
             error=str(e),
         )
+
+
+# =============================================================================
+# Streaming Outreach Generation Endpoint
+# =============================================================================
+
+
+class StreamingOutreachResponse(BaseModel):
+    """Response for streaming outreach generation kickoff."""
+
+    run_id: str = Field(..., description="Unique run identifier for SSE streaming")
+    log_stream_url: str = Field(..., description="URL to stream logs via SSE")
+    status: str = Field(default="queued", description="Initial status")
+
+
+@router.post(
+    "/{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach/stream",
+    response_model=StreamingOutreachResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Generate outreach message with SSE streaming",
+    description="Generate outreach message with real-time log streaming via SSE",
+)
+async def generate_outreach_stream(
+    job_id: str,
+    contact_type: str,
+    contact_index: int,
+    request: OutreachRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOutreachResponse:
+    """
+    Generate outreach message with SSE streaming support.
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+        contact_type: "primary" or "secondary"
+        contact_index: 0-based index of the contact
+        request: OutreachRequest with tier and message_type
+        background_tasks: FastAPI background tasks
+
+    Returns:
+        StreamingOutreachResponse with run_id and log_stream_url
+    """
+    operation = "outreach"
+
+    # Validate tier synchronously (fast, no I/O)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {request.message_type} generation for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Contact: {contact_type}[{contact_index}]")
+
+    # Define the background task
+    async def execute_outreach_with_logging():
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+
+            # Layer 1: Validate job exists
+            layer_cb("validate", "processing", "Validating job...")
+            try:
+                job = _validate_job_exists(job_id)
+                layer_cb("validate", "success", "Job validated")
+            except HTTPException as e:
+                layer_cb("validate", "failed", f"Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
+
+            # Layer 2: Fetch contact
+            layer_cb("contact", "processing", "Fetching contact...")
+            try:
+                contact = _get_contact(job, contact_type, contact_index)
+                contact_name = contact.get("name", contact.get("contact_name", "Unknown"))
+                layer_cb("contact", "success", f"Contact: {contact_name}")
+            except HTTPException as e:
+                layer_cb("contact", "failed", f"Contact fetch failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
+
+            # Layer 3: Generate message
+            layer_cb("generate", "processing", f"Generating {request.message_type}...")
+
+            # Get model for this tier
+            model = get_model_for_operation(tier, "outreach")
+
+            try:
+                # Try using OutreachGenerationService first
+                from src.services.outreach_service import OutreachGenerationService
+
+                service = OutreachGenerationService()
+                result = await service.execute(
+                    job_id=job_id,
+                    contact_index=contact_index,
+                    contact_type=contact_type,
+                    tier=tier,
+                    message_type=request.message_type,
+                )
+
+                if result.success:
+                    char_count = result.data.get("char_count", 0) if result.data else 0
+                    layer_cb("generate", "success", f"Message generated ({char_count} chars)")
+
+                    # Layer 4: Save to database (already done by service)
+                    layer_cb("save", "success", "Saved")
+
+                    update_operation_status(run_id, "completed", result={
+                        "success": True,
+                        "message": result.data.get("message", "") if result.data else "",
+                        "subject": result.data.get("subject") if result.data else None,
+                        "char_count": char_count,
+                        "cost_usd": result.cost_usd,
+                        "model_used": result.model_used,
+                    })
+                else:
+                    layer_cb("generate", "failed", f"Generation failed: {result.error}")
+                    update_operation_status(run_id, "failed", error=result.error)
+
+            except ImportError:
+                # OutreachGenerationService not implemented yet
+                # Use the simplified approach with OutreachGenerator
+                log_cb("Using simplified generation (OutreachGenerationService not available)")
+
+                from src.layer6.outreach_generator import OutreachGenerator
+                from src.common.state import JobState
+
+                # Build minimal state for outreach generation
+                state: JobState = {
+                    "job_id": job_id,
+                    "title": job.get("title", ""),
+                    "company": job.get("company", ""),
+                    "job_description": job.get("jd_text", job.get("job_description", "")),
+                    "scraped_job_posting": job.get("scraped_job_posting"),
+                    "job_url": job.get("job_url", job.get("url", "")),
+                    "source": job.get("source", "unknown"),
+                    "candidate_profile": job.get("candidate_profile", ""),
+                    "selected_stars": job.get("selected_stars", []),
+                    "primary_contacts": [contact] if contact_type == "primary" else [],
+                    "secondary_contacts": [contact] if contact_type == "secondary" else [],
+                    "extracted_jd": job.get("extracted_jd"),
+                    "jd_annotations": job.get("jd_annotations"),
+                    "improvement_suggestions": job.get("improvement_suggestions"),
+                    "interview_prep": job.get("interview_prep"),
+                    "pain_points": job.get("pain_points"),
+                    "strategic_needs": job.get("strategic_needs"),
+                    "risks_if_unfilled": job.get("risks_if_unfilled"),
+                    "success_metrics": job.get("success_metrics"),
+                    "star_to_pain_mapping": job.get("star_to_pain_mapping"),
+                    "all_stars": job.get("all_stars"),
+                    "company_research": job.get("company_research"),
+                    "company_summary": job.get("company_summary"),
+                    "company_url": job.get("company_url"),
+                    "role_research": job.get("role_research"),
+                    "application_form_fields": job.get("application_form_fields"),
+                    "fit_score": job.get("fit_score"),
+                    "fit_rationale": job.get("fit_rationale"),
+                    "fit_category": job.get("fit_category"),
+                    "tier": job.get("tier"),
+                    "people": job.get("people"),
+                    "outreach_packages": job.get("outreach_packages"),
+                    "fallback_cover_letters": job.get("fallback_cover_letters"),
+                    "cover_letter": job.get("cover_letter"),
+                    "cv_path": job.get("cv_path"),
+                    "cv_text": job.get("cv_text"),
+                    "cv_reasoning": job.get("cv_reasoning"),
+                    "dossier_path": job.get("dossier_path"),
+                    "drive_folder_url": job.get("drive_folder_url"),
+                    "sheet_row_id": job.get("sheet_row_id"),
+                    "run_id": run_id,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "errors": [],
+                    "status": "processing",
+                    "trace_url": None,
+                    "token_usage": None,
+                    "total_tokens": None,
+                    "total_cost_usd": None,
+                    "processing_tier": request.tier.upper() if request.tier else "B",
+                    "tier_config": None,
+                    "pipeline_runs": None,
+                    "debug_mode": False,
+                }
+
+                generator = OutreachGenerator()
+                packages = generator.generate_outreach_packages(state)
+
+                # Find the package for the requested message type
+                message = ""
+                subject = None
+                char_count = 0
+
+                channel_map = {
+                    "connection": "linkedin_connection",
+                    "inmail": "inmail_email",
+                }
+                target_channel = channel_map.get(request.message_type, "linkedin_connection")
+
+                for pkg in packages:
+                    if pkg.get("channel") == target_channel:
+                        message = pkg.get("message", "")
+                        subject = pkg.get("subject")
+                        char_count = len(message)
+                        break
+
+                if message:
+                    layer_cb("generate", "success", f"Message generated ({char_count} chars)")
+
+                    # Layer 4: Save to database
+                    layer_cb("save", "processing", "Saving to database...")
+
+                    field_name = f"{contact_type}_contacts"
+                    contacts = list(job.get(field_name) or [])
+
+                    if request.message_type == "connection":
+                        contacts[contact_index]["linkedin_connection_message"] = message
+                    else:
+                        contacts[contact_index]["linkedin_inmail"] = message
+                        if subject:
+                            contacts[contact_index]["linkedin_inmail_subject"] = subject
+
+                    _update_contacts(job_id, contact_type, contacts)
+
+                    layer_cb("save", "success", "Saved")
+
+                    update_operation_status(run_id, "completed", result={
+                        "success": True,
+                        "message": message,
+                        "subject": subject,
+                        "char_count": char_count,
+                        "cost_usd": 0.0,
+                        "model_used": model,
+                    })
+                else:
+                    layer_cb("generate", "failed", "No valid content produced")
+                    update_operation_status(run_id, "failed", error="Failed to generate outreach message")
+
+        except Exception as e:
+            logger.exception(f"[{run_id}] Outreach generation failed: {e}")
+            log_cb(f"Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_outreach_with_logging)
+
+    return StreamingOutreachResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )

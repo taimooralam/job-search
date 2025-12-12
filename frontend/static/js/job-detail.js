@@ -962,6 +962,10 @@ function escapeHtml(text) {
 let statusPollingInterval = null;
 let eventSource = null;
 
+// Outreach generation state (for SSE streaming)
+let outreachEventSource = null;
+let isOutreachGenerating = false;
+
 // GAP-067: Editable Score Field (Detail Page)
 function enableScoreEditDetail(displayEl, jobId, currentScore) {
     const container = displayEl.closest('.editable-score-container');
@@ -1553,6 +1557,96 @@ function startLogStreaming(runId) {
     });
 }
 
+/**
+ * Start SSE log streaming for outreach generation (InMail/Connection).
+ * Similar to startLogStreaming but specific to outreach operations.
+ * @param {string} runId - The operation run ID
+ * @param {string} messageType - Either 'inmail' or 'connection'
+ */
+function startOutreachLogStreaming(runId, messageType) {
+    // Close any existing connection
+    if (outreachEventSource) {
+        outreachEventSource.close();
+        outreachEventSource = null;
+    }
+
+    const logsContent = document.getElementById('logs-content');
+    const logsContainer = document.getElementById('logs-container');
+
+    // Clear and show logs
+    if (logsContent) logsContent.innerHTML = '';
+    if (logsContainer) {
+        logsContainer.classList.remove('hidden');
+        const toggleText = document.getElementById('logs-toggle-text');
+        if (toggleText) toggleText.textContent = 'Hide';
+    }
+
+    // Connect to the runner service operation logs SSE endpoint
+    outreachEventSource = new EventSource(`/api/runner/jobs/operations/${runId}/logs`);
+
+    outreachEventSource.onmessage = (event) => {
+        // Use the existing appendLogToPipelinePanel function
+        appendLogToPipelinePanel(event.data);
+    };
+
+    outreachEventSource.addEventListener('result', (event) => {
+        try {
+            const result = JSON.parse(event.data);
+            if (result.success) {
+                const label = messageType === 'connection' ? 'Connection message' : 'InMail';
+                showToast(`${label} generated successfully!`, 'success');
+            }
+        } catch (e) {
+            console.error('Failed to parse result:', e);
+        }
+    });
+
+    outreachEventSource.addEventListener('end', (event) => {
+        if (outreachEventSource) {
+            outreachEventSource.close();
+            outreachEventSource = null;
+        }
+        isOutreachGenerating = false;
+        enableOutreachButtons();
+
+        if (event.data === 'completed') {
+            window.location.reload();
+        } else {
+            showToast('Generation failed', 'error');
+        }
+    });
+
+    outreachEventSource.addEventListener('error', (event) => {
+        console.error('Outreach SSE error:', event);
+        if (outreachEventSource) {
+            outreachEventSource.close();
+            outreachEventSource = null;
+        }
+        isOutreachGenerating = false;
+        enableOutreachButtons();
+    });
+}
+
+/**
+ * Disable all outreach generation buttons during generation.
+ */
+function disableOutreachButtons() {
+    document.querySelectorAll('button[onclick^="generateOutreach"]').forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+}
+
+/**
+ * Re-enable all outreach generation buttons after generation completes/fails.
+ */
+function enableOutreachButtons() {
+    document.querySelectorAll('button[onclick^="generateOutreach"]').forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    });
+}
+
 function parseLogAndUpdateSteps(logText) {
     // Layer detection patterns - match both module names and log messages
     // Logs look like: "2025-12-08 21:22:00 [INFO] src.layer3.company_researcher: Searching..."
@@ -1997,28 +2091,40 @@ function updateContactIndices(contactType) {
  * @param {HTMLButtonElement} buttonElement - The button that triggered the action
  */
 async function generateOutreach(contactType, contactIndex, messageType, buttonElement) {
+    // Prevent concurrent generations
+    if (isOutreachGenerating) {
+        showToast('Generation already in progress', 'info');
+        return;
+    }
+
     const jobId = getJobId();
 
     // Get the selected processing tier from the dropdown (if available)
-    const tier = document.getElementById('selected-tier')?.value || 'auto';
+    let tier = document.getElementById('selected-tier')?.value || 'auto';
+    // Map "auto" to "balanced" for outreach generation (backend only accepts fast/balanced/quality)
+    if (tier === 'auto') {
+        tier = 'balanced';
+    }
 
-    // Disable button and show loading state
+    isOutreachGenerating = true;
+    disableOutreachButtons();
+
+    // Show button spinner
     if (buttonElement) {
-        buttonElement.disabled = true;
-        const originalContent = buttonElement.innerHTML;
+        buttonElement.dataset.originalContent = buttonElement.innerHTML;
         buttonElement.innerHTML = `
-            <svg class="btn-spinner w-3 h-3" fill="none" viewBox="0 0 24 24">
+            <svg class="btn-spinner w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <span>Generating...</span>
         `;
-        buttonElement.dataset.originalContent = originalContent;
     }
 
     try {
+        // POST to streaming endpoint (note: /api/runner/ prefix for runner service)
         const response = await fetch(
-            `/api/jobs/${jobId}/contacts/${contactType}/${contactIndex}/generate-outreach`,
+            `/api/runner/contacts/${jobId}/${contactType}/${contactIndex}/generate-outreach/stream`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2029,29 +2135,22 @@ async function generateOutreach(contactType, contactIndex, messageType, buttonEl
             }
         );
 
-        const result = await response.json();
+        const kickoff = await response.json();
 
-        if (result.success) {
-            const messageLabel = messageType === 'connection' ? 'Connection message' : 'InMail/Email';
-            showToast(`${messageLabel} generated successfully!`, 'success');
-
-            // Reload the page to show the new message
-            // A more sophisticated approach would be to use HTMX to refresh just the contacts section
-            window.location.reload();
+        if (kickoff.run_id) {
+            // Start SSE streaming to show real-time logs
+            startOutreachLogStreaming(kickoff.run_id, messageType);
         } else {
-            showToast(result.error || 'Generation failed', 'error');
-            // Restore button
-            if (buttonElement && buttonElement.dataset.originalContent) {
-                buttonElement.innerHTML = buttonElement.dataset.originalContent;
-                buttonElement.disabled = false;
-            }
+            throw new Error(kickoff.error || kickoff.detail || 'Failed to start generation');
         }
     } catch (error) {
         showToast(`Failed to generate: ${error.message}`, 'error');
+        isOutreachGenerating = false;
+        enableOutreachButtons();
+
         // Restore button
         if (buttonElement && buttonElement.dataset.originalContent) {
             buttonElement.innerHTML = buttonElement.dataset.originalContent;
-            buttonElement.disabled = false;
         }
     }
 }
@@ -2286,6 +2385,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (runId) {
         monitorPipeline(runId);
     }
+
+    // Initialize Planned Answers
+    initPlannedAnswers();
 });
 
 // ============================================================================
@@ -2331,6 +2433,228 @@ window.addEventListener('ui:refresh-job', (event) => {
 });
 
 // ============================================================================
+// Planned Answers Management
+// ============================================================================
+
+let plannedAnswersData = [];
+let currentEditIndex = -1;
+
+/**
+ * Initialize Planned Answers from JOB_DETAIL_CONFIG.
+ * Called on DOMContentLoaded.
+ */
+function initPlannedAnswers() {
+    plannedAnswersData = window.JOB_DETAIL_CONFIG?.plannedAnswers || [];
+    renderPlannedAnswers();
+}
+
+/**
+ * Render the list of planned answers in the container.
+ */
+function renderPlannedAnswers() {
+    const container = document.getElementById('planned-answers-container');
+    if (!container) return;
+
+    if (plannedAnswersData.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 dark:text-gray-400 text-center py-4">No answers yet. Click Auto-Fill or add manually.</p>';
+        return;
+    }
+
+    container.innerHTML = plannedAnswersData.map((qa, i) => `
+        <div class="planned-answer-item border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition" data-index="${i}">
+            <div class="flex justify-between items-start gap-2 mb-2">
+                <span class="text-xs font-medium text-gray-700 dark:text-gray-300 flex-1">${escapeHtml(qa.question || '').substring(0, 80)}${(qa.question || '').length > 80 ? '...' : ''}</span>
+                <div class="flex gap-1 flex-shrink-0">
+                    <button onclick="copyPlannedAnswer(${i})" class="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Copy answer">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                    <button onclick="editPlannedAnswer(${i})" class="p-1 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition" title="Edit">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                    </button>
+                    <button onclick="deletePlannedAnswer(${i})" class="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition" title="Delete">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">${escapeHtml(qa.answer || '')}</p>
+            <span class="inline-block mt-2 px-2 py-0.5 text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">${qa.field_type || 'textarea'}</span>
+        </div>
+    `).join('');
+}
+
+/**
+ * Copy a planned answer to clipboard.
+ */
+async function copyPlannedAnswer(index) {
+    const qa = plannedAnswersData[index];
+    if (!qa || !qa.answer) return;
+
+    try {
+        await navigator.clipboard.writeText(qa.answer);
+        // Show visual feedback
+        const btn = document.querySelector(`[data-index="${index}"] button[onclick*="copyPlannedAnswer"]`);
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<svg class="h-3.5 w-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 1500);
+        }
+        showToast('Answer copied to clipboard');
+    } catch (err) {
+        showToast('Failed to copy', 'error');
+    }
+}
+
+/**
+ * Open the modal to edit an existing answer.
+ */
+function editPlannedAnswer(index) {
+    currentEditIndex = index;
+    const qa = plannedAnswersData[index];
+
+    document.getElementById('pa-modal-title').textContent = 'Edit Answer';
+    document.getElementById('pa-question').value = qa.question || '';
+    document.getElementById('pa-field-type').value = qa.field_type || 'textarea';
+    document.getElementById('pa-answer').value = qa.answer || '';
+
+    document.getElementById('planned-answer-modal').classList.remove('hidden');
+}
+
+/**
+ * Open the modal to add a new answer.
+ */
+function addPlannedAnswer() {
+    currentEditIndex = -1;
+
+    document.getElementById('pa-modal-title').textContent = 'Add Answer';
+    document.getElementById('pa-question').value = '';
+    document.getElementById('pa-field-type').value = 'textarea';
+    document.getElementById('pa-answer').value = '';
+
+    document.getElementById('planned-answer-modal').classList.remove('hidden');
+}
+
+/**
+ * Save the planned answer (add or update).
+ */
+async function savePlannedAnswer() {
+    const question = document.getElementById('pa-question').value.trim();
+    const answer = document.getElementById('pa-answer').value.trim();
+    const fieldType = document.getElementById('pa-field-type').value;
+
+    if (!question || !answer) {
+        showToast('Question and answer are required', 'error');
+        return;
+    }
+
+    const qa = {
+        question: question,
+        answer: answer,
+        field_type: fieldType,
+        source: 'manual'
+    };
+
+    if (currentEditIndex >= 0) {
+        plannedAnswersData[currentEditIndex] = qa;
+    } else {
+        plannedAnswersData.push(qa);
+    }
+
+    await savePlannedAnswersToServer();
+    closePlannedAnswerModal();
+    renderPlannedAnswers();
+}
+
+/**
+ * Delete a planned answer.
+ */
+async function deletePlannedAnswer(index) {
+    if (!confirm('Delete this answer?')) return;
+
+    plannedAnswersData.splice(index, 1);
+    await savePlannedAnswersToServer();
+    renderPlannedAnswers();
+}
+
+/**
+ * Persist planned answers to the server.
+ */
+async function savePlannedAnswersToServer() {
+    const jobId = getJobId();
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planned_answers: plannedAnswersData })
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            showToast(result.error || 'Save failed', 'error');
+        }
+    } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+    }
+}
+
+/**
+ * Close the planned answer modal.
+ */
+function closePlannedAnswerModal() {
+    document.getElementById('planned-answer-modal').classList.add('hidden');
+}
+
+/**
+ * Auto-fill planned answers using AI (calls generate-answers API).
+ * This endpoint may not exist yet - will show a graceful error.
+ */
+async function autoFillPlannedAnswers() {
+    const btn = document.getElementById('auto-fill-answers-btn');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `
+        <svg class="h-3 w-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" class="opacity-75"></path>
+        </svg>
+        Generating...
+    `;
+
+    const jobId = getJobId();
+    try {
+        const response = await fetch(`/api/jobs/${jobId}/generate-answers`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.status === 404) {
+            showToast('Auto-fill endpoint not yet implemented', 'info');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            plannedAnswersData = result.planned_answers || [];
+            renderPlannedAnswers();
+            showToast('Answers generated successfully');
+        } else {
+            showToast(result.error || 'Generation failed', 'error');
+        }
+    } catch (err) {
+        showToast('Generation failed: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+    }
+}
+
+// ============================================================================
 // Global Exports (for inline onclick handlers)
 // ============================================================================
 
@@ -2363,6 +2687,9 @@ window.saveCoverLetterChanges = saveCoverLetterChanges;
 window.generateCoverLetterPDF = generateCoverLetterPDF;
 window.deleteContact = deleteContact;
 window.generateOutreach = generateOutreach;
+window.startOutreachLogStreaming = startOutreachLogStreaming;
+window.disableOutreachButtons = disableOutreachButtons;
+window.enableOutreachButtons = enableOutreachButtons;
 window.generateContactMessage = generateContactMessage;
 window.copyToClipboard = copyToClipboard;
 window.copyFirecrawlPrompt = copyFirecrawlPrompt;
@@ -2371,3 +2698,12 @@ window.closeAddContactsModal = closeAddContactsModal;
 window.backToJsonInput = backToJsonInput;
 window.validateAndPreviewContacts = validateAndPreviewContacts;
 window.importContacts = importContacts;
+// Planned Answers
+window.initPlannedAnswers = initPlannedAnswers;
+window.copyPlannedAnswer = copyPlannedAnswer;
+window.editPlannedAnswer = editPlannedAnswer;
+window.addPlannedAnswer = addPlannedAnswer;
+window.savePlannedAnswer = savePlannedAnswer;
+window.deletePlannedAnswer = deletePlannedAnswer;
+window.closePlannedAnswerModal = closePlannedAnswerModal;
+window.autoFillPlannedAnswers = autoFillPlannedAnswers;

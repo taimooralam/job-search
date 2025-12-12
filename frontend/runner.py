@@ -409,6 +409,36 @@ def full_extraction_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route(
+    "/contacts/<job_id>/<contact_type>/<int:contact_index>/generate-outreach/stream",
+    methods=["POST"],
+)
+def generate_outreach_stream(job_id: str, contact_type: str, contact_index: int):
+    """
+    Start outreach generation with SSE streaming.
+
+    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=STREAMING_KICKOFF_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout starting outreach generation"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/operations/<run_id>/logs", methods=["GET"])
 def stream_operation_logs(run_id: str):
     """

@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix + InMail Button HTML Escaping Fix)
+**Last Updated**: 2025-12-12 (Session 10: SSE Streaming for Outreach Generation)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3198,6 +3198,35 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Backend: `runner_service/app.py`, `runner_service/executor.py`
     - Frontend: `frontend/runner.py`, `frontend/templates/partials/job_detail/_pipeline_progress.html`, `frontend/templates/base.html`, `frontend/static/js/job-detail.js`
   - **Impact**: Users have full control over long-running pipelines; can immediately halt operations that are stuck or unnecessary
+
+### SSE Streaming for Outreach Generation
+- [x] Real-time SSE logging for InMail/Connection request generation (2025-12-12): Added streaming endpoint for outreach message generation with real-time progress callbacks.
+  - **Feature**: `POST /{job_id}/contacts/{contact_type}/{contact_index}/generate-outreach/stream` endpoint enables live progress updates when generating LinkedIn messages
+  - **Architecture**: Integrated with existing SSE streaming infrastructure (operation_streaming.py); uses OutreachGenerationService with progress callbacks
+  - **Progress Events**: Streams real-time logs for each generation stage:
+    1. `validate` - Verifies job data
+    2. `contact` - Fetches contact information
+    3. `generate` - Creates outreach message
+    4. `save` - Persists to database
+  - **Frontend Integration**: `startOutreachLogStreaming()` function opens EventSource connection; `disableOutreachButtons()` prevents concurrent generations
+  - **Button State Management**: Outreach buttons disabled during generation; re-enabled on completion or error
+  - **Expected Log Output**: Real-time console updates like:
+    - `🔄 validate: Validating job...`
+    - `✅ validate: Job validated`
+    - `🔄 contact: Fetching contact...`
+    - `✅ contact: Contact: [Name]`
+    - `🔄 generate: Generating inmail...`
+    - `✅ generate: Message generated (X chars)`
+    - `🔄 save: Saving to database...`
+    - `✅ save: Saved`
+  - **Files Modified**:
+    - Backend: `src/services/outreach_generation_service.py` (added progress_callback parameter)
+    - Backend: `runner_service/routes/contacts.py` (added /stream endpoint)
+    - Frontend: `frontend/static/js/job-detail.js` (added startOutreachLogStreaming, disableOutreachButtons, enableOutreachButtons)
+  - **Test Coverage**: Existing outreach generation tests continue to pass with streaming integration
+  - **Backward Compatibility**: Original synchronous endpoints unchanged; streaming endpoint is opt-in
+  - **Impact**: Users see real-time progress when generating outreach messages; eliminates uncertainty during InMail/Connection request generation
+  - **Session**: Session 10 (2025-12-12)
 
 ### Complete MongoDB Migration for Master CV System
 - [x] MongoDB-first architecture implementation (2025-12-12): Completed full migration to use MongoDB as primary source for Master CV data across all code paths.
