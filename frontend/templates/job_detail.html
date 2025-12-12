@@ -593,6 +593,24 @@
                     {% endif %}
                     <input type="url" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ job_url or '' }}">
                 </div>
+                <!-- Application Form URL (editable) -->
+                <div class="editable-field" data-field="application_url">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span class="text-xs text-gray-500">Application Form URL</span>
+                        <button onclick="enableEdit(this.closest('.editable-field'))" class="edit-btn text-gray-400 hover:text-indigo-600">
+                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% set app_url = job.application_url %}
+                    {% if app_url %}
+                    <a href="{{ app_url }}" target="_blank" class="field-value text-indigo-600 hover:underline break-all text-xs">{{ app_url | truncate(40) }}</a>
+                    {% else %}
+                    <span class="field-value text-gray-400 text-xs">Not set</span>
+                    {% endif %}
+                    <input type="url" class="field-input hidden w-full border border-indigo-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-indigo-500" value="{{ app_url or '' }}">
+                </div>
                 <!-- Dedupe Key (read-only) -->
                 <div>
                     <span class="block text-xs text-gray-500 mb-0.5">Dedupe Key</span>
@@ -1389,7 +1407,7 @@
                     <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-green-700">Connection Request</span>
-                            <button onclick="copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, 'Connection request', this)"
+                            <button onclick='copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, "Connection request", this)'
                                     class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1405,7 +1423,7 @@
                     <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
-                            <button onclick="copyToClipboard({{ contact.linkedin_inmail | tojson }}, 'InMail', this)"
+                            <button onclick='copyToClipboard({{ contact.linkedin_inmail | tojson }}, "InMail", this)'
                                     class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1466,7 +1484,7 @@
                     <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-green-700">Connection Request</span>
-                            <button onclick="copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, 'Connection request', this)"
+                            <button onclick='copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, "Connection request", this)'
                                     class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1482,7 +1500,7 @@
                     <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
-                            <button onclick="copyToClipboard({{ contact.linkedin_inmail | tojson }}, 'InMail', this)"
+                            <button onclick='copyToClipboard({{ contact.linkedin_inmail | tojson }}, "InMail", this)'
                                     class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
