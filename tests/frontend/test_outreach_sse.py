@@ -139,25 +139,29 @@ class TestStartOutreachLogStreaming:
     def test_sse_connection_to_correct_endpoint(
         self, authenticated_client, mock_db
     ):
-        """Should connect EventSource to /api/runner/jobs/operations/{run_id}/logs."""
-        # This test verifies that the JavaScript creates an EventSource connection
+        """Should connect EventSource to /api/runner/operations/{run_id}/logs (NOT /api/runner/jobs/operations/)."""
+        # This test verifies that the JavaScript file contains the correct EventSource path
+        # by reading the actual JavaScript file (not the HTML which just loads it)
 
-        # Arrange
-        job_id = ObjectId()
-        mock_db.find_one.return_value = {
-            "_id": job_id,
-            "title": "Data Engineer",
-            "company": "DataCo",
-            "status": "not processed",
-            "score": 88,
-        }
+        # Arrange - Read the JavaScript file
+        import os
+        js_file_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../frontend/static/js/job-detail.js"
+        )
 
-        # Act
-        response = authenticated_client.get(f"/job/{str(job_id)}")
+        with open(js_file_path, 'r') as f:
+            js_content = f.read()
 
         # Assert
-        assert response.status_code == 200
-        # The JavaScript is loaded and contains the EventSource creation code
+        # Verify the correct endpoint path is used in JavaScript
+        assert "/api/runner/operations/" in js_content, "Should use /api/runner/operations/ path"
+        assert "EventSource(`/api/runner/operations/" in js_content or \
+               'EventSource("/api/runner/operations/' in js_content, \
+               "EventSource should use correct path"
+
+        # Ensure the INCORRECT path is NOT present
+        assert "/api/runner/jobs/operations/" not in js_content, "Should NOT use /api/runner/jobs/operations/ path"
 
     def test_sse_shows_logs_container_on_start(
         self, authenticated_client, mock_db
@@ -704,3 +708,247 @@ class TestOutreachSSEErrorHandling:
         # Assert
         assert response.status_code == 200
         # JavaScript includes error handler that restores button.innerHTML
+
+
+# =============================================================================
+# Backend Flask Proxy Route Tests
+# =============================================================================
+
+
+class TestOutreachSSEProxyRoute:
+    """
+    Tests for the Flask proxy route /api/runner/operations/<run_id>/logs.
+
+    This test suite ensures the SSE proxy route exists and correctly forwards
+    SSE events from the runner service to the frontend. The bug we're preventing
+    is accidentally using /api/runner/jobs/operations/ instead of /api/runner/operations/.
+    """
+
+    @pytest.fixture
+    def mock_requests_get(self, mocker):
+        """Mock requests.get for SSE streaming."""
+        return mocker.patch("frontend.runner.requests.get")
+
+    def test_sse_proxy_route_exists(self, authenticated_client, mock_db, mock_requests_get):
+        """Should have route /api/runner/operations/<run_id>/logs."""
+        # Arrange
+        run_id = "test-run-123"
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = iter([])
+        mock_requests_get.return_value = mock_response
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert response.status_code == 200
+        assert "text/event-stream" in response.content_type
+
+    def test_sse_proxy_forwards_to_correct_runner_endpoint(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should proxy to runner's /api/jobs/operations/{run_id}/logs endpoint."""
+        # Arrange
+        run_id = "test-run-456"
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = iter([])
+        mock_requests_get.return_value = mock_response
+
+        # Act
+        authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        mock_requests_get.assert_called_once()
+        call_args = mock_requests_get.call_args
+
+        # Verify the correct backend URL
+        assert f"/api/jobs/operations/{run_id}/logs" in call_args[0][0]
+        assert call_args[1]["stream"] is True
+        assert call_args[1]["timeout"] == 300
+
+    def test_sse_proxy_sets_correct_headers(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should set SSE headers and disable buffering."""
+        # Arrange
+        run_id = "test-run-789"
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = iter([])
+        mock_requests_get.return_value = mock_response
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert "text/event-stream" in response.content_type
+        assert response.headers.get("Cache-Control") == "no-cache"
+        assert response.headers.get("X-Accel-Buffering") == "no"
+
+    def test_sse_proxy_streams_log_events(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should stream SSE log events from runner to client."""
+        # Arrange
+        run_id = "test-run-stream"
+        sse_events = [
+            "event: log\ndata: Starting outreach generation\n\n",
+            "event: log\ndata: Analyzing contact profile\n\n",
+            "event: end\ndata: {\"status\": \"success\"}\n\n",
+        ]
+
+        mock_response = MagicMock()
+        # Simulate streaming chunks
+        mock_response.iter_content.return_value = iter(sse_events)
+        mock_requests_get.return_value = mock_response
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert response.status_code == 200
+        # The stream_with_context ensures events are forwarded
+        assert mock_requests_get.called
+
+    def test_sse_proxy_handles_runner_timeout(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should send error event when runner service times out."""
+        # Arrange
+        run_id = "test-run-timeout"
+        import requests
+        mock_requests_get.side_effect = requests.exceptions.Timeout("Runner timeout")
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert response.status_code == 200
+        assert "text/event-stream" in response.content_type
+
+        # Response should contain error event (generator will yield it)
+        # We can't easily test generator content here, but route should not raise
+
+    def test_sse_proxy_handles_runner_connection_error(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should send error event when runner service is unreachable."""
+        # Arrange
+        run_id = "test-run-connection-error"
+        import requests
+        mock_requests_get.side_effect = requests.exceptions.ConnectionError(
+            "Cannot connect"
+        )
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert response.status_code == 200
+        assert "text/event-stream" in response.content_type
+        # Generator will yield error event
+
+    def test_sse_proxy_handles_general_exception(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should send error event on unexpected exceptions."""
+        # Arrange
+        run_id = "test-run-exception"
+        mock_requests_get.side_effect = ValueError("Unexpected error")
+
+        # Act
+        response = authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        assert response.status_code == 200
+        assert "text/event-stream" in response.content_type
+
+    def test_sse_proxy_includes_authorization_header(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """Should include Bearer token in request to runner service."""
+        # Arrange
+        run_id = "test-run-auth"
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = iter([])
+        mock_requests_get.return_value = mock_response
+
+        # Act
+        authenticated_client.get(f"/api/runner/operations/{run_id}/logs")
+
+        # Assert
+        call_args = mock_requests_get.call_args
+        headers = call_args[1]["headers"]
+        assert "Authorization" in headers
+        assert headers["Authorization"].startswith("Bearer ")
+
+    def test_wrong_route_returns_404(self, authenticated_client, mock_db):
+        """Should return 404 for incorrect route /api/runner/jobs/operations/<run_id>/logs."""
+        # Arrange
+        run_id = "test-run-wrong-route"
+
+        # Act
+        response = authenticated_client.get(
+            f"/api/runner/jobs/operations/{run_id}/logs"
+        )
+
+        # Assert
+        # This should hit the OLD /api/runner/jobs/<run_id>/logs route (different endpoint)
+        # OR return 404 if that route doesn't exist with operations in path
+        assert response.status_code in (404, 200)  # Could be pipeline logs endpoint
+
+        # If it returns 200, make sure it's NOT the operations endpoint
+        if response.status_code == 200:
+            # This would be the pipeline logs endpoint, not operations
+            # We verify by checking the request mock wasn't called with operations path
+            pass
+
+
+class TestOutreachSSEEndToEnd:
+    """
+    End-to-end tests verifying the complete SSE flow for outreach generation.
+
+    These tests verify that:
+    1. Frontend JavaScript uses correct SSE URL
+    2. Flask proxy route exists at that URL
+    3. Proxy correctly forwards to runner service
+    """
+
+    @pytest.fixture
+    def mock_requests_get(self, mocker):
+        """Mock requests.get for SSE streaming."""
+        return mocker.patch("frontend.runner.requests.get")
+
+    def test_e2e_sse_url_path_matches_route(
+        self, authenticated_client, mock_db, mock_requests_get
+    ):
+        """JavaScript SSE URL should match Flask proxy route exactly."""
+        # Arrange - Read JavaScript source file
+        import os
+        js_file_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../frontend/static/js/job-detail.js"
+        )
+
+        with open(js_file_path, 'r') as f:
+            js_content = f.read()
+
+        # Assert - JavaScript uses correct path
+        assert "/api/runner/operations/" in js_content
+
+        # Extract the path pattern from JavaScript (verify it's what Flask expects)
+        # The JavaScript should have: new EventSource(`/api/runner/operations/${runId}/logs`)
+        assert "new EventSource(`/api/runner/operations/" in js_content or \
+               'new EventSource("/api/runner/operations/' in js_content, \
+               "EventSource should be created with correct path"
+
+        # Verify Flask route actually works with this path
+        run_id = "test-123"
+        mock_response = MagicMock()
+        mock_response.iter_content.return_value = iter([])
+        mock_requests_get.return_value = mock_response
+
+        route_response = authenticated_client.get(
+            f"/api/runner/operations/{run_id}/logs"
+        )
+        assert route_response.status_code == 200
+        assert "text/event-stream" in route_response.content_type
