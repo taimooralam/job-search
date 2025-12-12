@@ -4,6 +4,20 @@
   "target_roles": {
     "engineering_manager": {
       "display_name": "Engineering Manager",
+      "persona": {
+        "identity_statement": "team multiplier and talent developer who builds high-performing engineering teams",
+        "voice": "confident, people-focused, delivery-oriented",
+        "tagline_templates": [
+          "{Identity} who builds high-performing teams that {metric_hook}.",
+          "Engineering leader passionate about {passion} and delivering {outcome}.",
+          "{Identity} with a track record of {metric_hook} through people-first leadership."
+        ],
+        "power_verbs": ["built", "scaled", "grew", "coached", "developed", "delivered", "mentored", "transformed"],
+        "metric_priorities": ["team_size", "retention", "velocity", "delivery", "hiring"],
+        "headline_pattern": "{Title} | {Years}+ Years Building High-Performing Engineering Teams",
+        "key_achievement_focus": ["team growth", "culture impact", "delivery improvement", "talent development", "process optimization"],
+        "differentiators": ["multiplier effect", "high-performing teams", "engineering excellence", "talent development"]
+      },
       "sections": [
         {
           "name": "Technical Leadership",
@@ -97,6 +111,20 @@
     },
     "staff_principal_engineer": {
       "display_name": "Staff/Principal Engineer",
+      "persona": {
+        "identity_statement": "technical architect and systems thinker who drives architectural excellence across organizations",
+        "voice": "technically deep, thoughtful, influential, authoritative",
+        "tagline_templates": [
+          "{Identity} who architects systems that {metric_hook}.",
+          "Technical leader driving {passion} across {scope}.",
+          "{Identity} with deep expertise in {domain} and cross-team influence."
+        ],
+        "power_verbs": ["architected", "designed", "led", "drove", "established", "scaled", "pioneered", "influenced"],
+        "metric_priorities": ["system_scale", "latency", "reliability", "adoption", "technical_debt_reduction"],
+        "headline_pattern": "{Title} | {Years}+ Years Architecting Scalable Systems",
+        "key_achievement_focus": ["architectural impact", "cross-team influence", "technical depth", "system reliability", "performance optimization"],
+        "differentiators": ["architectural excellence", "cross-team impact", "technical strategy", "system thinking"]
+      },
       "sections": [
         {
           "name": "System Architecture",
@@ -185,6 +213,20 @@
     },
     "director_of_engineering": {
       "display_name": "Director of Engineering",
+      "persona": {
+        "identity_statement": "organizational builder and engineering strategist who scales engineering organizations",
+        "voice": "strategic, organizational, impactful, executive",
+        "tagline_templates": [
+          "{Identity} who scales engineering organizations to {metric_hook}.",
+          "Engineering executive building {passion} at {scope}.",
+          "{Identity} with a track record of growing teams from {start} to {end} engineers."
+        ],
+        "power_verbs": ["scaled", "transformed", "built", "drove", "established", "grew", "led", "unified"],
+        "metric_priorities": ["org_size", "team_count", "budget", "delivery", "manager_development"],
+        "headline_pattern": "{Title} | {Years}+ Years Scaling Engineering Organizations",
+        "key_achievement_focus": ["org scaling", "manager development", "program delivery", "strategic execution", "culture transformation"],
+        "differentiators": ["multi-team leadership", "engineering excellence", "strategic delivery", "org design"]
+      },
       "sections": [
         {
           "name": "Engineering Leadership",
@@ -266,6 +308,20 @@
     },
     "head_of_engineering": {
       "display_name": "Head of Engineering",
+      "persona": {
+        "identity_statement": "function builder and engineering culture champion who creates world-class engineering teams from scratch",
+        "voice": "executive, transformative, culture-focused, visionary",
+        "tagline_templates": [
+          "{Identity} who builds engineering functions that {metric_hook}.",
+          "Engineering executive who transforms {passion} into {outcome}.",
+          "{Identity} with experience building teams from {start} to {end} engineers."
+        ],
+        "power_verbs": ["built", "established", "transformed", "drove", "scaled", "created", "founded", "defined"],
+        "metric_priorities": ["function_size", "revenue_impact", "culture_metrics", "time_to_market"],
+        "headline_pattern": "{Title} | {Years}+ Years Building Engineering Organizations",
+        "key_achievement_focus": ["function building", "executive presence", "business impact", "culture creation", "first hire to scale"],
+        "differentiators": ["function building", "executive leadership", "transformation", "culture champion"]
+      },
       "sections": [
         {
           "name": "Executive Leadership",
@@ -341,8 +397,115 @@
       "max_skills_per_section": 5,
       "lax_multiplier": 1.3
     },
+    "vp_engineering": {
+      "display_name": "VP of Engineering",
+      "persona": {
+        "identity_statement": "engineering executive and operational leader who delivers at scale through organizational excellence",
+        "voice": "strategic, executive, business-aligned, operational",
+        "tagline_templates": [
+          "{Identity} who leads engineering organizations delivering {metric_hook}.",
+          "Engineering VP passionate about {passion} and {passion}.",
+          "{Identity} who combines strategic vision with operational excellence to {metric_hook}."
+        ],
+        "power_verbs": ["led", "scaled", "transformed", "drove", "built", "established", "delivered", "executed"],
+        "metric_priorities": ["org_size", "revenue_impact", "strategic_delivery", "operational_excellence"],
+        "headline_pattern": "{Title} | {Years}+ Years Engineering Executive Leadership",
+        "key_achievement_focus": ["organizational scale", "business impact", "executive partnership", "delivery excellence", "strategic execution"],
+        "differentiators": ["executive leadership", "business transformation", "organizational scale", "operational excellence"]
+      },
+      "sections": [
+        {
+          "name": "Engineering Leadership",
+          "priority": 1,
+          "description": "Executive engineering leadership and organizational development",
+          "skills": [
+            "Technical Leadership",
+            "Team Building",
+            "Hiring & Interviewing",
+            "Performance Management",
+            "Engineering Standards",
+            "Change Management",
+            "Strategic Planning"
+          ],
+          "jd_signals": ["vp engineering", "vice president", "engineering executive", "organizational leadership", "multiple directors", "scale", "executive"]
+        },
+        {
+          "name": "Operational Excellence",
+          "priority": 2,
+          "description": "Delivery excellence and engineering operations",
+          "skills": [
+            "Agile",
+            "Quality Engineering",
+            "Incident Management",
+            "Risk Analysis",
+            "Process Improvement",
+            "Release Management",
+            "Roadmap Execution",
+            "Observability"
+          ],
+          "jd_signals": ["operational", "delivery", "velocity", "reliability", "engineering excellence", "execution", "quality"]
+        },
+        {
+          "name": "Technology Strategy",
+          "priority": 3,
+          "description": "Technical strategy and platform decisions",
+          "skills": [
+            "Technical Vision",
+            "Architectural Runway",
+            "Technical Debt Strategy",
+            "Microservices",
+            "Event-Driven Architecture",
+            "System Design"
+          ],
+          "jd_signals": ["technology strategy", "platform", "architecture", "modernization", "technical direction", "roadmap"]
+        },
+        {
+          "name": "Business Partnership",
+          "priority": 4,
+          "description": "Executive partnership and business alignment",
+          "skills": [
+            "Stakeholder Management",
+            "Cross-Functional Collaboration",
+            "Strategic Planning",
+            "Risk Analysis",
+            "GDPR Compliance"
+          ],
+          "jd_signals": ["business", "stakeholder", "executive", "budget", "cross-functional", "partnership", "c-level"]
+        },
+        {
+          "name": "Cloud & Infrastructure",
+          "priority": 5,
+          "description": "Cloud platform oversight",
+          "skills": [
+            "AWS",
+            "Terraform",
+            "Serverless Architecture",
+            "Infrastructure as Code",
+            "CI/CD"
+          ],
+          "jd_signals": ["aws", "cloud", "infrastructure", "platform", "devops"]
+        }
+      ],
+      "max_sections": 4,
+      "max_skills_per_section": 5,
+      "lax_multiplier": 1.3
+    },
     "cto": {
       "display_name": "CTO",
+      "persona": {
+        "identity_statement": "technology visionary and business transformer who drives company success through technology strategy",
+        "voice": "visionary, strategic, business-focused, executive",
+        "tagline_templates": [
+          "{Identity} who transforms businesses through technology that {metric_hook}.",
+          "Technology executive driving {passion} and {passion}.",
+          "{Identity} who translates technology vision into {metric_hook}."
+        ],
+        "power_verbs": ["led", "transformed", "established", "drove", "defined", "shaped", "built", "innovated"],
+        "metric_priorities": ["company_impact", "valuation", "revenue", "transformation", "innovation"],
+        "headline_pattern": "{Title} | {Years}+ Years Technology Vision & Business Transformation",
+        "key_achievement_focus": ["technology vision", "business transformation", "executive leadership", "innovation", "strategic partnerships"],
+        "differentiators": ["technology vision", "business transformation", "innovation", "board-level presence"]
+      },
       "sections": [
         {
           "name": "Technology Vision & Strategy",
@@ -404,6 +567,20 @@
     },
     "tech_lead": {
       "display_name": "Tech Lead",
+      "persona": {
+        "identity_statement": "hands-on technical leader and player-coach who drives delivery through technical excellence",
+        "voice": "technically hands-on, pragmatic, team-oriented, delivery-focused",
+        "tagline_templates": [
+          "{Identity} who leads teams to deliver {metric_hook}.",
+          "Technical leader combining hands-on expertise with {passion}.",
+          "{Identity} who drives engineering excellence while shipping {outcome}."
+        ],
+        "power_verbs": ["led", "delivered", "architected", "built", "mentored", "shipped", "drove", "optimized"],
+        "metric_priorities": ["delivery", "system_quality", "team_velocity", "technical_debt_reduction"],
+        "headline_pattern": "{Title} | {Years}+ Years Hands-On Technical Leadership",
+        "key_achievement_focus": ["delivery excellence", "technical quality", "team guidance", "architectural decisions", "hands-on coding"],
+        "differentiators": ["player-coach", "hands-on leadership", "delivery focus", "technical mentorship"]
+      },
       "sections": [
         {
           "name": "Technical Excellence",
@@ -485,6 +662,20 @@
     },
     "senior_engineer": {
       "display_name": "Senior Engineer",
+      "persona": {
+        "identity_statement": "experienced software engineer with deep technical expertise who delivers high-impact solutions",
+        "voice": "technically deep, solution-oriented, collaborative, pragmatic",
+        "tagline_templates": [
+          "{Identity} who builds systems that {metric_hook}.",
+          "Software engineer passionate about {passion} and {passion}.",
+          "{Identity} with expertise in {domain} delivering {outcome}."
+        ],
+        "power_verbs": ["built", "developed", "designed", "implemented", "optimized", "shipped", "created", "improved"],
+        "metric_priorities": ["system_performance", "delivery", "code_quality", "reliability"],
+        "headline_pattern": "{Title} | {Years}+ Years Building Scalable Software Systems",
+        "key_achievement_focus": ["system delivery", "technical expertise", "performance optimization", "code quality", "feature delivery"],
+        "differentiators": ["technical depth", "delivery track record", "system expertise", "collaborative approach"]
+      },
       "sections": [
         {
           "name": "Core Technologies",

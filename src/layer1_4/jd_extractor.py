@@ -37,6 +37,7 @@ class RoleCategory(str, Enum):
     STAFF_PRINCIPAL_ENGINEER = "staff_principal_engineer"
     DIRECTOR_OF_ENGINEERING = "director_of_engineering"
     HEAD_OF_ENGINEERING = "head_of_engineering"
+    VP_ENGINEERING = "vp_engineering"  # VP/SVP Engineering - exec + operational at scale
     CTO = "cto"
     TECH_LEAD = "tech_lead"  # Covers Team Lead, Tech Lead, Lead Engineer
     SENIOR_ENGINEER = "senior_engineer"  # Fallback for senior IC roles
