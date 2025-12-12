@@ -4734,403 +4734,206 @@ def generate_improvement_suggestions(job_id: str):
 
 
 # ============================================================================
-# Master-CV API Endpoints
+# Master-CV API Endpoints (Proxied to Runner Service)
 # ============================================================================
+
+# Master CV endpoints are proxied to the runner service where src.common
+# modules are available. This allows the frontend to run on Vercel without
+# requiring the full src module dependencies.
+
+MASTER_CV_REQUEST_TIMEOUT = 30  # seconds
+
+
+def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dict = None):
+    """
+    Proxy Master CV API calls to the runner service.
+
+    Args:
+        endpoint: The API endpoint path (e.g., "/metadata", "/taxonomy")
+        method: HTTP method (GET, PUT, POST)
+        json_data: Optional JSON body for PUT/POST requests
+
+    Returns:
+        Flask Response (jsonify with appropriate status code)
+    """
+    full_url = f"{RUNNER_URL}/api/master-cv{endpoint}"
+
+    try:
+        if method == "GET":
+            response = requests.get(
+                full_url,
+                headers=get_runner_headers(),
+                timeout=MASTER_CV_REQUEST_TIMEOUT,
+            )
+        elif method == "PUT":
+            response = requests.put(
+                full_url,
+                json=json_data,
+                headers=get_runner_headers(),
+                timeout=MASTER_CV_REQUEST_TIMEOUT,
+            )
+        elif method == "POST":
+            response = requests.post(
+                full_url,
+                json=json_data,
+                headers=get_runner_headers(),
+                timeout=MASTER_CV_REQUEST_TIMEOUT,
+            )
+        else:
+            return jsonify({"error": f"Unsupported method: {method}"}), 400
+
+        # Return runner's response with original status code
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Runner service timeout for Master CV {endpoint}")
+        return jsonify({
+            "success": False,
+            "error": "Master CV operation timed out. Please try again."
+        }), 504
+
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Cannot connect to runner service for Master CV {endpoint}")
+        return jsonify({
+            "success": False,
+            "error": "Cannot connect to Master CV service. Please try again later."
+        }), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error proxying Master CV {endpoint}: {e}")
+        return jsonify({
+            "success": False,
+            "error": f"Unexpected error: {str(e)}"
+        }), 500
+
 
 @app.route("/api/master-cv/metadata", methods=["GET"])
 @login_required
 def get_master_cv_metadata():
-    """
-    Get the master-cv metadata (candidate info + role list).
-
-    Returns:
-        JSON with metadata document
-    """
-    from src.common.master_cv_store import get_store
-
-    store = get_store(use_mongodb=True)
-    metadata = store.get_metadata()
-
-    if not metadata:
-        return jsonify({"error": "Metadata not found"}), 404
-
-    return jsonify({
-        "success": True,
-        "metadata": metadata
-    })
+    """Get the master-cv metadata (candidate info + role list)."""
+    return proxy_master_cv_to_runner("/metadata", "GET")
 
 
 @app.route("/api/master-cv/metadata", methods=["PUT"])
 @login_required
 def update_master_cv_metadata():
-    """
-    Update the master-cv metadata.
-
-    Request Body:
-        candidate: dict - candidate info
-        roles: list - role metadata list
-
-    Returns:
-        JSON with success status and new version
-    """
-    from src.common.master_cv_store import get_store
-
+    """Update the master-cv metadata."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
-
-    store = get_store(use_mongodb=True)
-    change_summary = data.pop("change_summary", "Updated via API")
-
-    success = store.update_metadata(
-        data,
-        updated_by="user",
-        change_summary=change_summary
-    )
-
-    if not success:
-        return jsonify({"error": "Failed to update metadata"}), 500
-
-    # Get new version
-    metadata = store.get_metadata()
-
-    return jsonify({
-        "success": True,
-        "message": "Metadata updated",
-        "version": metadata.get("version") if metadata else None
-    })
+    return proxy_master_cv_to_runner("/metadata", "PUT", data)
 
 
 @app.route("/api/master-cv/metadata/roles/<role_id>", methods=["PUT"])
 @login_required
 def update_master_cv_metadata_role(role_id: str):
-    """
-    Update a specific role within metadata.
-
-    Request Body:
-        Role fields to update (id, keywords, etc.)
-
-    Returns:
-        JSON with success status
-    """
-    from src.common.master_cv_store import get_store
-
+    """Update a specific role within metadata."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
-
-    store = get_store(use_mongodb=True)
-    change_summary = data.pop("change_summary", f"Updated role {role_id}")
-
-    success = store.update_metadata_role(
-        role_id,
-        data,
-        updated_by="user",
-        change_summary=change_summary
-    )
-
-    if not success:
-        return jsonify({"error": "Failed to update role metadata"}), 500
-
-    return jsonify({
-        "success": True,
-        "message": f"Role {role_id} updated"
-    })
+    return proxy_master_cv_to_runner(f"/metadata/roles/{role_id}", "PUT", data)
 
 
 @app.route("/api/master-cv/taxonomy", methods=["GET"])
 @login_required
 def get_master_cv_taxonomy():
-    """
-    Get the skills taxonomy.
-
-    Returns:
-        JSON with taxonomy document
-    """
-    from src.common.master_cv_store import get_store
-
-    store = get_store(use_mongodb=True)
-    taxonomy = store.get_taxonomy()
-
-    if not taxonomy:
-        return jsonify({"error": "Taxonomy not found"}), 404
-
-    return jsonify({
-        "success": True,
-        "taxonomy": taxonomy
-    })
+    """Get the skills taxonomy."""
+    return proxy_master_cv_to_runner("/taxonomy", "GET")
 
 
 @app.route("/api/master-cv/taxonomy", methods=["PUT"])
 @login_required
 def update_master_cv_taxonomy():
-    """
-    Update the skills taxonomy.
-
-    Request Body:
-        target_roles: dict
-        skill_aliases: dict
-
-    Returns:
-        JSON with success status and new version
-    """
-    from src.common.master_cv_store import get_store
-
+    """Update the skills taxonomy."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
-
-    store = get_store(use_mongodb=True)
-    change_summary = data.pop("change_summary", "Updated via API")
-
-    success = store.update_taxonomy(
-        data,
-        updated_by="user",
-        change_summary=change_summary
-    )
-
-    if not success:
-        return jsonify({"error": "Failed to update taxonomy"}), 500
-
-    taxonomy = store.get_taxonomy()
-
-    return jsonify({
-        "success": True,
-        "message": "Taxonomy updated",
-        "version": taxonomy.get("version") if taxonomy else None
-    })
+    return proxy_master_cv_to_runner("/taxonomy", "PUT", data)
 
 
 @app.route("/api/master-cv/taxonomy/skill", methods=["POST"])
 @login_required
 def add_skill_to_taxonomy():
-    """
-    Add a skill to a specific section in the taxonomy.
-
-    Request Body:
-        role_category: str - e.g., "engineering_manager"
-        section_name: str - e.g., "Technical Leadership"
-        skill: str - skill to add
-
-    Returns:
-        JSON with success status
-    """
-    from src.common.master_cv_store import get_store
-
+    """Add a skill to a specific section in the taxonomy."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    role_category = data.get("role_category")
-    section_name = data.get("section_name")
-    skill = data.get("skill")
-
-    if not all([role_category, section_name, skill]):
+    # Validate required fields
+    if not all([data.get("role_category"), data.get("section_name"), data.get("skill")]):
         return jsonify({"error": "Missing required fields: role_category, section_name, skill"}), 400
 
-    store = get_store(use_mongodb=True)
-    success = store.add_skill_to_taxonomy(
-        role_category,
-        section_name,
-        skill,
-        updated_by="user"
-    )
-
-    if not success:
-        return jsonify({"error": "Failed to add skill"}), 500
-
-    return jsonify({
-        "success": True,
-        "message": f"Added '{skill}' to {role_category}/{section_name}"
-    })
+    return proxy_master_cv_to_runner("/taxonomy/skill", "POST", data)
 
 
 @app.route("/api/master-cv/roles", methods=["GET"])
 @login_required
 def get_master_cv_roles():
-    """
-    Get all role documents.
-
-    Returns:
-        JSON with list of role documents
-    """
-    from src.common.master_cv_store import get_store
-
-    store = get_store(use_mongodb=True)
-    roles = store.get_all_roles()
-
-    return jsonify({
-        "success": True,
-        "roles": roles,
-        "count": len(roles)
-    })
+    """Get all role documents."""
+    return proxy_master_cv_to_runner("/roles", "GET")
 
 
 @app.route("/api/master-cv/roles/<role_id>", methods=["GET"])
 @login_required
 def get_master_cv_role(role_id: str):
-    """
-    Get a specific role document.
-
-    Returns:
-        JSON with role document
-    """
-    from src.common.master_cv_store import get_store
-
-    store = get_store(use_mongodb=True)
-    role = store.get_role(role_id)
-
-    if not role:
-        return jsonify({"error": f"Role {role_id} not found"}), 404
-
-    return jsonify({
-        "success": True,
-        "role": role
-    })
+    """Get a specific role document."""
+    return proxy_master_cv_to_runner(f"/roles/{role_id}", "GET")
 
 
 @app.route("/api/master-cv/roles/<role_id>", methods=["PUT"])
 @login_required
 def update_master_cv_role(role_id: str):
-    """
-    Update a role document.
-
-    Request Body:
-        markdown_content: str - role markdown content
-        parsed: dict (optional) - parsed structure
-
-    Returns:
-        JSON with success status and new version
-    """
-    from src.common.master_cv_store import get_store
-
+    """Update a role document."""
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    markdown_content = data.get("markdown_content")
-    if not markdown_content:
+    if not data.get("markdown_content"):
         return jsonify({"error": "Missing markdown_content"}), 400
 
-    store = get_store(use_mongodb=True)
-    change_summary = data.get("change_summary", f"Updated role {role_id}")
-
-    success = store.update_role(
-        role_id,
-        markdown_content,
-        parsed=data.get("parsed"),
-        updated_by="user",
-        change_summary=change_summary
-    )
-
-    if not success:
-        return jsonify({"error": "Failed to update role"}), 500
-
-    role = store.get_role(role_id)
-
-    return jsonify({
-        "success": True,
-        "message": f"Role {role_id} updated",
-        "version": role.get("version") if role else None
-    })
+    return proxy_master_cv_to_runner(f"/roles/{role_id}", "PUT", data)
 
 
 @app.route("/api/master-cv/history/<collection_name>", methods=["GET"])
 @login_required
 def get_master_cv_history(collection_name: str):
-    """
-    Get version history for a collection.
-
-    Query Parameters:
-        doc_id: str (optional) - filter by document ID
-        limit: int (optional, default 10) - max entries to return
-
-    Returns:
-        JSON with history entries
-    """
-    from src.common.master_cv_store import get_store
-
+    """Get version history for a collection."""
     valid_collections = ["master_cv_metadata", "master_cv_taxonomy", "master_cv_roles"]
     if collection_name not in valid_collections:
         return jsonify({"error": f"Invalid collection. Must be one of: {valid_collections}"}), 400
 
-    doc_id = request.args.get("doc_id")
-    limit = int(request.args.get("limit", 10))
+    # Build query string for doc_id and limit
+    doc_id = request.args.get("doc_id", "")
+    limit = request.args.get("limit", "10")
+    query_params = f"?limit={limit}"
+    if doc_id:
+        query_params += f"&doc_id={doc_id}"
 
-    store = get_store(use_mongodb=True)
-    history = store.get_history(collection_name, doc_id=doc_id, limit=limit)
-
-    return jsonify({
-        "success": True,
-        "history": history,
-        "count": len(history)
-    })
+    return proxy_master_cv_to_runner(f"/history/{collection_name}{query_params}", "GET")
 
 
 @app.route("/api/master-cv/rollback/<collection_name>/<int:target_version>", methods=["POST"])
 @login_required
 def rollback_master_cv(collection_name: str, target_version: int):
-    """
-    Rollback a document to a previous version.
-
-    Request Body:
-        doc_id: str - document ID to rollback (required for roles)
-
-    Returns:
-        JSON with success status
-    """
-    from src.common.master_cv_store import get_store
-
+    """Rollback a document to a previous version."""
     valid_collections = ["master_cv_metadata", "master_cv_taxonomy", "master_cv_roles"]
     if collection_name not in valid_collections:
         return jsonify({"error": f"Invalid collection. Must be one of: {valid_collections}"}), 400
 
     data = request.get_json() or {}
 
-    # For metadata and taxonomy, doc_id is "canonical"
     # For roles, doc_id must be provided
-    if collection_name == "master_cv_roles":
-        doc_id = data.get("doc_id")
-        if not doc_id:
-            return jsonify({"error": "doc_id required for roles rollback"}), 400
-    else:
-        doc_id = "canonical"
+    if collection_name == "master_cv_roles" and not data.get("doc_id"):
+        return jsonify({"error": "doc_id required for roles rollback"}), 400
 
-    store = get_store(use_mongodb=True)
-    success = store.rollback(
-        collection_name,
-        doc_id,
-        target_version,
-        updated_by="user"
-    )
-
-    if not success:
-        return jsonify({"error": f"Failed to rollback to version {target_version}"}), 500
-
-    return jsonify({
-        "success": True,
-        "message": f"Rolled back {collection_name}/{doc_id} to version {target_version}"
-    })
+    return proxy_master_cv_to_runner(f"/rollback/{collection_name}/{target_version}", "POST", data)
 
 
 @app.route("/api/master-cv/stats", methods=["GET"])
 @login_required
 def get_master_cv_stats():
-    """
-    Get statistics about master-cv data.
-
-    Returns:
-        JSON with stats
-    """
-    from src.common.master_cv_store import get_store
-
-    store = get_store(use_mongodb=True)
-    stats = store.get_stats()
-
-    return jsonify({
-        "success": True,
-        "stats": stats
-    })
+    """Get statistics about master-cv data."""
+    return proxy_master_cv_to_runner("/stats", "GET")
 
 
 # ============================================================================
@@ -5179,8 +4982,6 @@ def generate_interview_prep(job_id: str):
     Returns:
         JSON with generated interview_prep data
     """
-    from src.layer7.interview_predictor import InterviewPredictor
-
     db = get_db()
     collection = db["level-2"]
 
@@ -5214,8 +5015,13 @@ def generate_interview_prep(job_id: str):
 
     # Generate questions
     try:
+        from src.layer7.interview_predictor import InterviewPredictor
+
         predictor = InterviewPredictor()
         interview_prep = predictor.predict_questions(state)
+    except ImportError as e:
+        logger.error(f"InterviewPredictor module not available: {e}")
+        return jsonify({"error": "Interview prep module not available"}), 503
     except Exception as e:
         logger.error(f"Failed to generate interview prep: {e}")
         return jsonify({"error": f"Generation failed: {str(e)}"}), 500
@@ -5336,13 +5142,13 @@ def update_job_outcome(job_id: str):
     Returns:
         JSON with updated outcome
     """
-    from src.analytics.outcome_tracker import OutcomeTracker
-
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
     try:
+        from src.analytics.outcome_tracker import OutcomeTracker
+
         tracker = OutcomeTracker()
         status = data.pop("status", None)
         outcome = tracker.update_outcome(job_id, status=status, **data)
@@ -5354,6 +5160,9 @@ def update_job_outcome(job_id: str):
             "success": True,
             "outcome": outcome,
         })
+    except ImportError as e:
+        logger.error(f"OutcomeTracker module not available: {e}")
+        return jsonify({"error": "Outcome tracking module not available"}), 503
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
     except Exception as e:
@@ -5373,11 +5182,11 @@ def get_outcome_analytics():
     Returns:
         JSON with effectiveness report
     """
-    from src.analytics.outcome_tracker import OutcomeTracker
-
     days = request.args.get("days", 90, type=int)
 
     try:
+        from src.analytics.outcome_tracker import OutcomeTracker
+
         tracker = OutcomeTracker()
         report = tracker.get_effectiveness_report(date_range_days=days)
 
@@ -5385,6 +5194,9 @@ def get_outcome_analytics():
             "success": True,
             "report": report,
         })
+    except ImportError as e:
+        logger.error(f"OutcomeTracker module not available: {e}")
+        return jsonify({"error": "Analytics module not available"}), 503
     except Exception as e:
         logger.error(f"Error generating analytics: {e}")
         return jsonify({"error": f"Analytics failed: {str(e)}"}), 500
@@ -5402,11 +5214,11 @@ def get_conversion_funnel():
     Returns:
         JSON with funnel metrics and conversion rates
     """
-    from src.analytics.outcome_tracker import OutcomeTracker
-
     days = request.args.get("days", 90, type=int)
 
     try:
+        from src.analytics.outcome_tracker import OutcomeTracker
+
         tracker = OutcomeTracker()
         funnel = tracker.get_conversion_funnel(date_range_days=days)
 
@@ -5414,6 +5226,9 @@ def get_conversion_funnel():
             "success": True,
             "funnel": funnel,
         })
+    except ImportError as e:
+        logger.error(f"OutcomeTracker module not available: {e}")
+        return jsonify({"error": "Funnel analytics module not available"}), 503
     except Exception as e:
         logger.error(f"Error generating funnel: {e}")
         return jsonify({"error": f"Funnel calculation failed: {str(e)}"}), 500
