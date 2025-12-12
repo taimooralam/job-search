@@ -298,6 +298,49 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> Optional[datetime]:
+    """
+    Parse date/datetime string to Python datetime for MongoDB comparison.
+
+    This function handles various date formats including:
+    - Full ISO datetime: 2025-11-30T14:30:00.000Z or 2025-11-30T14:30:00.709Z
+    - ISO datetime without milliseconds: 2025-11-30T14:30:00
+    - ISO datetime with timezone: 2025-11-30T14:30:00+00:00
+    - Date only: 2025-11-30
+
+    Args:
+        dt_str: ISO datetime string (with 'T') or date string (YYYY-MM-DD)
+        is_end_of_day: If True and dt_str is date-only, use 23:59:59.999999
+
+    Returns:
+        datetime object for MongoDB query, or None if parsing fails
+    """
+    if not dt_str or not dt_str.strip():
+        return None
+
+    try:
+        if 'T' in dt_str:
+            # Full ISO datetime: 2025-11-30T14:30:00.000Z or 2025-11-30T14:30:00.709Z
+            clean_str = dt_str.replace('Z', '').replace('+00:00', '')
+            # Handle milliseconds that may not be exactly 6 digits
+            # Python 3.9 fromisoformat is strict about microsecond format
+            if '.' in clean_str:
+                base, frac = clean_str.rsplit('.', 1)
+                # Pad or truncate to 6 digits for microseconds
+                frac = frac[:6].ljust(6, '0')
+                clean_str = f"{base}.{frac}"
+            return datetime.fromisoformat(clean_str)
+        else:
+            # Date only: 2025-11-30
+            if is_end_of_day:
+                return datetime.fromisoformat(f"{dt_str}T23:59:59.999999")
+            else:
+                return datetime.fromisoformat(f"{dt_str}T00:00:00")
+    except (ValueError, AttributeError) as e:
+        logger.warning(f"Failed to parse datetime filter '{dt_str}': {e}")
+        return None
+
+
 def sanitize_for_path(text: str) -> str:
     """
     Sanitize text for use in filesystem paths.
@@ -425,41 +468,9 @@ def list_jobs():
     # GAP-007 Fix: Handle mixed types (strings from n8n, Date objects from other sources)
     # We parse the filter values to datetime objects and will use aggregation with $toDate
     # to normalize the MongoDB field before comparison.
+    # Uses the module-level parse_datetime_filter() helper function.
     date_filter_from: Optional[datetime] = None
     date_filter_to: Optional[datetime] = None
-
-    def parse_datetime_filter(dt_str: str, is_end_of_day: bool = False) -> Optional[datetime]:
-        """
-        Parse date/datetime string to Python datetime for MongoDB comparison.
-
-        Args:
-            dt_str: ISO datetime string (with 'T') or date string (YYYY-MM-DD)
-            is_end_of_day: If True and dt_str is date-only, use 23:59:59.999999
-
-        Returns:
-            datetime object for MongoDB query, or None if parsing fails
-        """
-        try:
-            if 'T' in dt_str:
-                # Full ISO datetime: 2025-11-30T14:30:00.000Z or 2025-11-30T14:30:00.709Z
-                clean_str = dt_str.replace('Z', '').replace('+00:00', '')
-                # Handle milliseconds that may not be exactly 6 digits
-                # Python 3.9 fromisoformat is strict about microsecond format
-                if '.' in clean_str:
-                    base, frac = clean_str.rsplit('.', 1)
-                    # Pad or truncate to 6 digits for microseconds
-                    frac = frac[:6].ljust(6, '0')
-                    clean_str = f"{base}.{frac}"
-                return datetime.fromisoformat(clean_str)
-            else:
-                # Date only: 2025-11-30
-                if is_end_of_day:
-                    return datetime.fromisoformat(f"{dt_str}T23:59:59.999999")
-                else:
-                    return datetime.fromisoformat(f"{dt_str}T00:00:00")
-        except (ValueError, AttributeError) as e:
-            app.logger.warning(f"Failed to parse datetime filter '{dt_str}': {e}")
-            return None
 
     if effective_from:
         date_filter_from = parse_datetime_filter(effective_from, is_end_of_day=False)
@@ -1081,19 +1092,73 @@ def get_locations():
     """
     Get unique locations from the database with counts.
 
+    Optional query parameters:
+        datetime_from: ISO datetime string to filter jobs created after this time
+        datetime_to: ISO datetime string to filter jobs created before this time
+
     Returns:
         JSON with locations array sorted by count descending
+
+    Examples:
+        GET /api/locations - All locations
+        GET /api/locations?datetime_from=2025-12-12T10:00 - Locations from jobs after this time
+        GET /api/locations?datetime_to=2025-12-12T16:00 - Locations from jobs before this time
+        GET /api/locations?datetime_from=X&datetime_to=Y - Locations from jobs in range
     """
     db = get_db()
     collection = db["level-2"]
 
-    # Use aggregation to get unique locations with counts
-    pipeline = [
-        {"$match": {"location": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$location", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$project": {"location": "$_id", "count": 1, "_id": 0}},
-    ]
+    # Parse optional date filter parameters
+    datetime_from = request.args.get("datetime_from", "").strip()
+    datetime_to = request.args.get("datetime_to", "").strip()
+
+    date_filter_from: Optional[datetime] = None
+    date_filter_to: Optional[datetime] = None
+
+    if datetime_from:
+        date_filter_from = parse_datetime_filter(datetime_from, is_end_of_day=False)
+        logger.debug(f"Locations API: datetime_from={datetime_from} -> {date_filter_from}")
+    if datetime_to:
+        date_filter_to = parse_datetime_filter(datetime_to, is_end_of_day=True)
+        logger.debug(f"Locations API: datetime_to={datetime_to} -> {date_filter_to}")
+
+    has_date_filter = date_filter_from is not None or date_filter_to is not None
+
+    # Build aggregation pipeline
+    pipeline: List[Dict[str, Any]] = []
+
+    # Stage 1: Basic location filter - only jobs with non-empty location
+    pipeline.append({"$match": {"location": {"$exists": True, "$ne": None, "$ne": ""}}})
+
+    # Stage 2: Normalize createdAt to Date type (if date filtering is needed)
+    # This handles mixed types: ISO strings from n8n vs Date objects from other sources
+    if has_date_filter:
+        pipeline.append({"$addFields": {
+            "_normalizedDate": {
+                "$cond": {
+                    "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
+                    "then": {"$toDate": "$createdAt"},
+                    "else": "$createdAt"  # Already a Date object
+                }
+            }
+        }})
+
+        # Stage 3: Filter by date range
+        date_match: Dict[str, Any] = {}
+        if date_filter_from:
+            date_match["$gte"] = date_filter_from
+        if date_filter_to:
+            date_match["$lte"] = date_filter_to
+        pipeline.append({"$match": {"_normalizedDate": date_match}})
+
+    # Stage 4: Group by location and count
+    pipeline.append({"$group": {"_id": "$location", "count": {"$sum": 1}}})
+
+    # Stage 5: Sort by count descending
+    pipeline.append({"$sort": {"count": -1}})
+
+    # Stage 6: Project final output format
+    pipeline.append({"$project": {"location": "$_id", "count": 1, "_id": 0}})
 
     locations = list(collection.aggregate(pipeline))
 
