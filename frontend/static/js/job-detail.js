@@ -2061,6 +2061,23 @@ async function copyCoverLetter(buttonElement = null) {
 }
 
 /**
+ * Copy cover letter text to clipboard from sidebar (uses full text from textarea).
+ * The sidebar display is truncated, but the textarea has the full text.
+ */
+async function copyCoverLetterSidebar(buttonElement = null) {
+    // Use textarea which has full text (display is truncated)
+    const clTextarea = document.getElementById('cl-textarea');
+    const clText = clTextarea?.value || document.getElementById('cl-text')?.innerText;
+
+    if (!clText || clText.trim() === '') {
+        showToast('No cover letter to copy', 'error');
+        return;
+    }
+
+    await copyToClipboard(clText, 'Cover letter', buttonElement);
+}
+
+/**
  * Toggle edit mode for cover letter in main content area.
  */
 function toggleCoverLetterEditMain() {
@@ -3029,6 +3046,7 @@ window.saveCoverLetterChanges = saveCoverLetterChanges;
 window.generateCoverLetterPDF = generateCoverLetterPDF;
 // Cover Letter Main Section
 window.copyCoverLetter = copyCoverLetter;
+window.copyCoverLetterSidebar = copyCoverLetterSidebar;
 window.toggleCoverLetterEditMain = toggleCoverLetterEditMain;
 window.saveCoverLetterChangesMain = saveCoverLetterChangesMain;
 window.deleteContact = deleteContact;
