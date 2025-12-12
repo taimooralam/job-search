@@ -3154,14 +3154,26 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Editable field in job detail page sidebar (after Job URL field)
     - Stores actual ATS/Workday/Greenhouse application form URL separately from job posting URL
     - Synced to MongoDB via updated `PUT /api/jobs/{job_id}` endpoint
-  - **Feature 2 - Planned Answers**:
+  - **Feature 2 - Planned Answers with Form Scraping**:
     - Array of Q&A objects stored in MongoDB for each job
     - UI card in job detail right sidebar with copy/edit/delete buttons per answer
-    - Auto-Fill button triggers LLM-based answer generation via new endpoint `POST /api/jobs/{job_id}/generate-answers`
-    - Answers generated using job context: pain points, STAR records, company research
+    - "Scrape & Generate" button (visible only when application_url is set) triggers form scraping + answer generation
+    - Alternative "Auto-Fill" button for manual question entry (backward compatible)
     - Markdown editor for answer content with preview support
-  - **Backend Service**:
-    - New `src/services/answer_generator_service.py` service with `generate_answers()` method
+  - **Feature 2a - Form Scraper (NEW 2025-12-12)**:
+    - New `src/services/form_scraper_service.py` service with `scrape_form_fields()` async method
+    - Uses FireCrawl to scrape application form URLs
+    - Extracts form fields (labels, input types, placeholders) using LLM with structured output
+    - Caches scraped forms in new `application_form_cache` MongoDB collection
+    - Cache includes: URL, extracted_fields, scraped_at timestamp
+    - Streaming endpoint `POST /api/jobs/{job_id}/scrape-form-answers/stream` returns SSE updates:
+      - Progress: "Scraping form...", "Extracting fields...", "Generating answers...", "Complete"
+      - Error handling: Login-protected forms display user-friendly error with manual entry suggestion
+    - Force refresh parameter bypasses cache and re-scrapes form
+  - **Backend Service - AnswerGeneratorService (MODIFIED)**:
+    - Updated `src/services/answer_generator_service.py` now requires `form_fields` parameter
+    - Removed hardcoded template questions - uses actual form fields from scraper
+    - Generates personalized answers based on extracted form questions
     - Synthesizes context from job analysis and master CV data
     - Supports batch generation and updates existing answers
   - **Data Model Updates**:
@@ -3175,17 +3187,20 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Persistence**:
     - `src/layer7/output_publisher.py` - Updated to persist application_url and planned_answers
   - **Files Created**:
-    - `src/services/answer_generator_service.py` - Answer generation service (NEW)
-    - `tests/unit/services/test_answer_generator_service.py` - 17 unit tests (NEW)
+    - `src/services/answer_generator_service.py` - Answer generation service (2025-12-12)
+    - `src/services/form_scraper_service.py` - Form scraping & field extraction service (NEW 2025-12-12)
+    - `tests/unit/services/test_answer_generator_service.py` - 17 unit tests (2025-12-12)
+    - `tests/unit/services/test_form_scraper_service.py` - Form scraper tests (NEW 2025-12-12)
   - **Files Modified**:
-    - `frontend/app.py` - Whitelist fields, generate-answers endpoint
-    - `frontend/templates/job_detail.html` - UI components
-    - `frontend/static/js/job-detail.js` - Answer management logic
-    - `src/common/state.py` - JobState fields
+    - `frontend/app.py` - Whitelist fields, generate-answers endpoint, new scrape-form-answers endpoint
+    - `frontend/templates/job_detail.html` - UI components, conditional "Scrape & Generate" button
+    - `frontend/static/js/job-detail.js` - Answer management logic, SSE stream handling
+    - `src/common/state.py` - JobState fields (application_url, planned_answers)
     - `src/common/types.py` - PlannedAnswer type
-    - `src/layer7/output_publisher.py` - Persistence layer
-  - **Impact**: Users can now track application form URLs separately from job postings and pre-generate answers to common application questions using AI, streamlining the job application process
-  - **Verification**: 17 service tests passing; MongoDB persistence validated; frontend endpoints functional; manual testing confirms answer generation and CRUD operations
+    - `src/layer7/output_publisher.py` - Persistence layer (application_url, planned_answers)
+    - `src/services/answer_generator_service.py` - Now accepts form_fields parameter
+  - **Impact**: Users can now track application form URLs separately from job postings, automatically scrape actual job application forms, and pre-generate personalized answers to form questions using AI. This eliminates the need to manually identify form fields and drafts application responses, dramatically streamlining the job application process for ATS/Workday/Greenhouse forms and custom application sites.
+  - **Verification**: Answer generator tests passing (17 tests); form scraper tests passing; MongoDB persistence validated (application_form_cache collection); frontend endpoints functional; SSE streaming working; manual testing confirms form scraping, field extraction, answer generation, and CRUD operations
 
 ### Role Persona Registry Implementation
 - [x] Added comprehensive persona data to role_skills_taxonomy.json (2025-12-12): Populated persona registry for all 8 role categories with identity, voice, power verbs, tagline templates, and achievement focus.

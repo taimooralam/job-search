@@ -241,6 +241,7 @@ class JobState(TypedDict):
     application_form_fields: Optional[List[FormField]]  # Form fields with labels, types, requirements
     application_url: Optional[str]  # URL to actual application form (ATS/Workday/Greenhouse)
     planned_answers: Optional[List[Dict[str, Any]]]  # Pre-generated Q&A pairs for application form
+    form_scraped_at: Optional[str]  # ISO timestamp when form was scraped
 
     # ===== LAYER 4: Opportunity Mapper (Phase 6) =====
     fit_score: Optional[int]         # 0-100 overall fit rating

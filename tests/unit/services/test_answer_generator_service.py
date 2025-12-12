@@ -21,17 +21,6 @@ class TestAnswerGeneratorServiceInit:
         assert service is not None
         assert service.llm is None  # Lazy initialization
 
-    def test_common_questions_defined(self):
-        """Service has common questions defined."""
-        from src.services.answer_generator_service import AnswerGeneratorService
-
-        assert len(AnswerGeneratorService.COMMON_QUESTIONS) > 0
-
-        # Check question structure
-        for question, field_type in AnswerGeneratorService.COMMON_QUESTIONS:
-            assert isinstance(question, str)
-            assert field_type in ["textarea", "text", "url", "select"]
-
 
 class TestStaticAnswers:
     """Tests for static answer generation."""
@@ -122,7 +111,13 @@ class TestGenerateAnswers:
             "job_description": "We are looking for a Python developer.",
         }
 
-        answers = service.generate_answers(job)
+        # Provide form_fields (required parameter)
+        form_fields = [
+            {"label": "Why this role?", "field_type": "textarea", "required": True},
+            {"label": "LinkedIn", "field_type": "url", "required": False},
+        ]
+
+        answers = service.generate_answers(job, form_fields=form_fields)
 
         assert isinstance(answers, list)
         assert len(answers) > 0
@@ -134,6 +129,16 @@ class TestGenerateAnswers:
             assert "field_type" in answer
             assert "source" in answer
             assert answer["source"] == "auto_generated"
+
+    def test_generate_answers_raises_without_form_fields(self):
+        """generate_answers raises ValueError when form_fields not provided."""
+        from src.services.answer_generator_service import AnswerGeneratorService
+
+        service = AnswerGeneratorService()
+        job = {"company": "TestCo", "title": "Developer"}
+
+        with pytest.raises(ValueError, match="form_fields is required"):
+            service.generate_answers(job)
 
     @patch("src.services.answer_generator_service.database_client")
     @patch("src.services.answer_generator_service.create_tracked_llm")
@@ -154,7 +159,11 @@ class TestGenerateAnswers:
             "strategic_needs": ["Improve system reliability"],
         }
 
-        service.generate_answers(job)
+        form_fields = [
+            {"label": "Why this role?", "field_type": "textarea", "required": True},
+        ]
+
+        service.generate_answers(job, form_fields=form_fields)
 
         # LLM should be invoked
         assert mock_llm.invoke.called
@@ -195,7 +204,11 @@ class TestGenerateAnswers:
             "selected_star_ids": ["star-1"],
         }
 
-        service.generate_answers(job)
+        form_fields = [
+            {"label": "Describe a challenging project", "field_type": "textarea", "required": True},
+        ]
+
+        service.generate_answers(job, form_fields=form_fields)
 
         # Check STAR records are in context
         call_args = mock_llm.invoke.call_args[0][0]
@@ -220,7 +233,11 @@ class TestGenerateAnswers:
             "title": "Developer",
         }
 
-        answers = service.generate_answers(job)
+        form_fields = [
+            {"label": "Why this role?", "field_type": "textarea", "required": True},
+        ]
+
+        answers = service.generate_answers(job, form_fields=form_fields)
 
         # Should still return answers (with fallback text for errors)
         assert isinstance(answers, list)
@@ -244,7 +261,12 @@ class TestGenerateAnswers:
         service = AnswerGeneratorService()
         job = {"company": "TestCo", "title": "Developer"}
 
-        answers = service.generate_answers(job)
+        form_fields = [
+            {"label": "LinkedIn profile URL", "field_type": "url", "required": False},
+            {"label": "Portfolio/Website URL", "field_type": "url", "required": False},
+        ]
+
+        answers = service.generate_answers(job, form_fields=form_fields)
 
         # Find URL field answers
         url_answers = [a for a in answers if a["field_type"] == "url"]
@@ -252,6 +274,42 @@ class TestGenerateAnswers:
         # URL answers should have placeholder text, not LLM generated
         for answer in url_answers:
             assert "[Your" in answer["answer"]
+
+    def test_generate_answers_handles_empty_form_fields(self):
+        """generate_answers returns empty list for empty form_fields."""
+        from src.services.answer_generator_service import AnswerGeneratorService
+
+        service = AnswerGeneratorService()
+        job = {"company": "TestCo", "title": "Developer"}
+
+        answers = service.generate_answers(job, form_fields=[])
+
+        assert answers == []
+
+    @patch("src.services.answer_generator_service.database_client")
+    @patch("src.services.answer_generator_service.create_tracked_llm")
+    def test_generate_answers_respects_char_limit(self, mock_create_llm, mock_db):
+        """generate_answers passes char_limit to LLM prompt."""
+        from src.services.answer_generator_service import AnswerGeneratorService
+
+        mock_llm = MagicMock()
+        # Return a very long answer to test truncation
+        mock_llm.invoke.return_value = MagicMock(content="x" * 1000)
+        mock_create_llm.return_value = mock_llm
+        mock_db.get_all_star_records.return_value = []
+
+        service = AnswerGeneratorService()
+        job = {"company": "TestCo", "title": "Developer"}
+
+        form_fields = [
+            {"label": "Short answer", "field_type": "textarea", "required": True, "limit": 100},
+        ]
+
+        answers = service.generate_answers(job, form_fields=form_fields)
+
+        assert len(answers) == 1
+        # Answer should be truncated to around the limit
+        assert len(answers[0]["answer"]) <= 103  # Allow for "..."
 
 
 class TestLazyLLMInit:

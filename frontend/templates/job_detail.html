@@ -1203,6 +1203,67 @@
         </div>
         {% endif %}
 
+        <!-- Generated Cover Letter Section (Main Content) -->
+        {% if job.cover_letter %}
+        <div class="job-detail-card">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="job-detail-card-title mb-0">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Cover Letter
+                </h2>
+                <div class="flex gap-2">
+                    <button onclick="toggleCoverLetterEditMain()"
+                            id="edit-cl-main-btn"
+                            class="btn btn-secondary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                        <span id="edit-cl-main-text">Edit</span>
+                    </button>
+                    <button onclick="saveCoverLetterChangesMain()"
+                            id="save-cl-main-btn"
+                            class="hidden btn btn-primary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save
+                    </button>
+                    <button onclick="copyCoverLetter(this)"
+                            class="btn btn-secondary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                        Copy
+                    </button>
+                    <button onclick="generateCoverLetterPDF()"
+                            class="btn btn-primary btn-sm">
+                        <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                        </svg>
+                        Export PDF
+                    </button>
+                </div>
+            </div>
+            <!-- Cover Letter Display -->
+            <div id="cl-main-display" class="border border-gray-200 rounded-lg overflow-auto bg-white" style="max-height: 500px;">
+                <div id="cl-main-content" class="p-6" style="max-width: 8.5in; margin: 0 auto;">
+                    <pre id="cl-main-text" class="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">{{ job.cover_letter }}</pre>
+                </div>
+            </div>
+            <!-- Cover Letter Edit Textarea (hidden by default) -->
+            <textarea id="cl-main-textarea"
+                      class="hidden w-full h-80 p-4 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm font-sans"
+                      placeholder="Enter cover letter text...">{{ job.cover_letter }}</textarea>
+            <div id="cl-main-warnings" class="hidden mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800"></div>
+            <!-- Word count indicator -->
+            <div class="mt-2 text-xs text-gray-500">
+                <span id="cl-word-count">{{ job.cover_letter.split()|length }} words</span>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Raw Data (Expandable) -->
         <div class="job-detail-card">
             <button onclick="toggleRawData()"
@@ -1588,12 +1649,29 @@
                     </svg>
                     Planned Answers
                 </h2>
-                <button onclick="autoFillPlannedAnswers()" class="btn btn-secondary btn-sm" id="auto-fill-answers-btn" title="Auto-generate answers using AI">
-                    <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                    </svg>
-                    Auto-Fill
-                </button>
+            </div>
+
+            <!-- Scrape & Generate Answers button (only visible when application_url is set) -->
+            <div id="scrape-generate-container" class="mb-3 hidden">
+                <div class="flex items-center gap-2">
+                    <button onclick="scrapeAndGenerateAnswers()" class="btn btn-primary btn-sm flex-1" id="scrape-generate-btn" title="Scrape application form and generate answers">
+                        <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                        </svg>
+                        Scrape & Generate
+                    </button>
+                    <button onclick="scrapeAndGenerateAnswers(true)" class="btn btn-secondary btn-sm px-2" id="force-refresh-btn" title="Force refresh - bypass cached form fields">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1">Scrapes application form to generate Q&A</p>
+            </div>
+
+            <!-- No Application URL message -->
+            <div id="no-app-url-message" class="mb-3 text-xs text-gray-500 bg-gray-50 dark:bg-gray-800 rounded p-2 hidden">
+                Set an Application Form URL above to enable form scraping and auto-generated answers.
             </div>
 
             <div class="space-y-2" id="planned-answers-container">
@@ -1678,7 +1756,8 @@
     // Pass job ID and data to the external script
     window.JOB_DETAIL_CONFIG = {
         jobId: "{{ job._id }}",
-        plannedAnswers: {{ job.planned_answers | tojson | safe if job.planned_answers else '[]' }}
+        plannedAnswers: {{ job.planned_answers | tojson | safe if job.planned_answers else '[]' }},
+        applicationUrl: "{{ job.application_url | default('', true) }}"
     };
 </script>
 <script src="/static/js/job-detail.js?v=20251212"></script>

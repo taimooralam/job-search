@@ -3,7 +3,16 @@ Answer Generator Service
 
 Generates planned answers for job application forms using LLM.
 Uses job context (JD, annotations, extractions, pain points, master CV)
-to generate personalized answers for common application questions.
+to generate personalized answers for application questions.
+
+Usage:
+    service = AnswerGeneratorService()
+
+    # With form fields from scraper (preferred)
+    answers = service.generate_answers(job, form_fields=scraped_fields)
+
+    # Without form fields (raises error - form scraping required)
+    answers = service.generate_answers(job)  # ValueError
 """
 
 import logging
@@ -12,26 +21,13 @@ from typing import Any, Dict, List, Optional
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
 from src.common.database import db as database_client
+from src.common.types import FormField
 
 logger = logging.getLogger(__name__)
 
 
 class AnswerGeneratorService:
     """Generate planned answers for job application forms."""
-
-    # Common application questions that don't require form scraping
-    COMMON_QUESTIONS = [
-        ("Why are you interested in this role?", "textarea"),
-        ("Why do you want to work at this company?", "textarea"),
-        ("What relevant experience do you have for this position?", "textarea"),
-        ("What are your key strengths that make you a good fit?", "textarea"),
-        ("Describe a challenging project you've worked on.", "textarea"),
-        ("What is your expected salary range?", "text"),
-        ("Are you authorized to work in this location?", "select"),
-        ("What is your availability/notice period?", "text"),
-        ("LinkedIn profile URL", "url"),
-        ("Portfolio/Website URL", "url"),
-    ]
 
     def __init__(self):
         self.llm = None  # Lazy initialization
@@ -59,16 +55,35 @@ class AnswerGeneratorService:
             logger.warning(f"Failed to load STAR records from MongoDB: {e}")
             return []
 
-    def generate_answers(self, job: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def generate_answers(
+        self,
+        job: Dict[str, Any],
+        form_fields: Optional[List[FormField]] = None,
+    ) -> List[Dict[str, Any]]:
         """
-        Generate planned answers for a job.
+        Generate planned answers for a job based on form fields.
 
         Args:
             job: Job document from MongoDB with all available context
+            form_fields: List of FormField objects from the scraped application form.
+                         If not provided, raises ValueError.
 
         Returns:
-            List of PlannedAnswer dicts with question, answer, field_type, source
+            List of PlannedAnswer dicts with question, answer, field_type, required, source
+
+        Raises:
+            ValueError: If form_fields is None (form scraping required)
         """
+        if form_fields is None:
+            raise ValueError(
+                "form_fields is required. Use FormScraperService to scrape "
+                "the application form first, then pass the fields here."
+            )
+
+        if not form_fields:
+            logger.warning("Empty form_fields provided, returning empty answers")
+            return []
+
         # Extract context from job
         company = job.get("company", "the company")
         title = job.get("title", "this role")
@@ -93,15 +108,25 @@ class AnswerGeneratorService:
 
         planned_answers = []
 
-        for question_template, field_type in self.COMMON_QUESTIONS:
-            # Customize question with company/role info
-            question = question_template
+        for field in form_fields:
+            question = field.get("label", "")
+            field_type = field.get("field_type", "text")
+            required = field.get("required", False)
+            char_limit = field.get("limit")
+            options = field.get("options")
 
-            # Generate answer based on question type
-            if field_type in ["url", "select"]:
-                # Don't generate LLM answers for URL or select fields
+            if not question:
+                continue
+
+            # Generate answer based on field type
+            if field_type in ["url", "file"]:
+                # Don't generate LLM answers for URL or file upload fields
                 answer = self._get_static_answer(question, job)
+            elif field_type in ["select", "radio", "checkbox"] and options:
+                # For select/radio/checkbox with options, pick the best option
+                answer = self._select_best_option(question, options, job)
             else:
+                # Generate LLM answer for text/textarea fields
                 answer = self._generate_llm_answer(
                     question=question,
                     company=company,
@@ -113,7 +138,8 @@ class AnswerGeneratorService:
                     extracted_jd=extracted_jd,
                     company_research=company_research,
                     fit_rationale=fit_rationale,
-                    relevant_stars=relevant_stars
+                    relevant_stars=relevant_stars,
+                    char_limit=char_limit,
                 )
 
             if answer:
@@ -121,10 +147,86 @@ class AnswerGeneratorService:
                     "question": question,
                     "answer": answer,
                     "field_type": field_type,
+                    "required": required,
+                    "max_length": char_limit,
                     "source": "auto_generated"
                 })
 
         return planned_answers
+
+    def _select_best_option(
+        self,
+        question: str,
+        options: List[str],
+        job: Dict[str, Any],
+    ) -> Optional[str]:
+        """
+        Select the best option for a select/radio/checkbox field.
+
+        Uses simple heuristics for common questions, falls back to LLM for complex ones.
+
+        Args:
+            question: The question text
+            options: List of available options
+            job: Job document for context
+
+        Returns:
+            The selected option or None
+        """
+        question_lower = question.lower()
+
+        # Work authorization questions
+        if any(kw in question_lower for kw in ["authorized", "authorization", "eligibility", "work in"]):
+            # Prefer "Yes" or affirmative options
+            for opt in options:
+                if opt.lower() in ["yes", "yes, i am authorized", "authorized"]:
+                    return opt
+            # If no clear "yes", return first option (user will need to verify)
+            return options[0] if options else None
+
+        # Sponsorship questions
+        if any(kw in question_lower for kw in ["sponsorship", "visa"]):
+            # Look for "no sponsorship required" type options
+            for opt in options:
+                opt_lower = opt.lower()
+                if "no" in opt_lower and "sponsorship" in opt_lower:
+                    return opt
+                if opt_lower in ["no", "not required"]:
+                    return opt
+            return options[0] if options else None
+
+        # Gender/diversity questions - skip (personal choice)
+        if any(kw in question_lower for kw in ["gender", "race", "ethnicity", "veteran", "disability"]):
+            # Look for "prefer not to say" or similar
+            for opt in options:
+                if any(phrase in opt.lower() for phrase in ["prefer not", "decline", "not to say"]):
+                    return opt
+            return None  # Let user choose
+
+        # For other questions, use LLM to select
+        try:
+            prompt = f"""Select the most appropriate option for this job application question.
+
+Question: {question}
+Options: {', '.join(options)}
+
+Job: {job.get('title', '')} at {job.get('company', '')}
+
+Return ONLY the exact text of the best option, nothing else."""
+
+            llm = self._get_llm()
+            response = llm.invoke(prompt)
+            selected = response.content.strip()
+
+            # Verify the response is one of the options
+            for opt in options:
+                if selected.lower() == opt.lower() or selected in opt:
+                    return opt
+
+            return options[0] if options else None
+        except Exception as e:
+            logger.warning(f"Failed to select option with LLM: {e}")
+            return options[0] if options else None
 
     def _get_static_answer(self, question: str, job: Dict[str, Any]) -> Optional[str]:
         """Get static/placeholder answers for non-LLM fields."""
@@ -155,10 +257,29 @@ class AnswerGeneratorService:
         extracted_jd: Dict[str, Any],
         company_research: Dict[str, Any],
         fit_rationale: str,
-        relevant_stars: List[Dict[str, Any]]
+        relevant_stars: List[Dict[str, Any]],
+        char_limit: Optional[int] = None,
     ) -> str:
-        """Generate a single answer using LLM."""
+        """
+        Generate a single answer using LLM.
 
+        Args:
+            question: The question to answer
+            company: Company name
+            title: Job title
+            location: Job location
+            job_description: Full job description
+            pain_points: List of extracted pain points
+            strategic_needs: List of strategic needs
+            extracted_jd: Extracted JD structure
+            company_research: Company research data
+            fit_rationale: Why candidate is a good fit
+            relevant_stars: Relevant STAR records
+            char_limit: Optional character limit for the answer
+
+        Returns:
+            Generated answer string
+        """
         # Build context for LLM
         context_parts = []
 
@@ -195,10 +316,14 @@ class AnswerGeneratorService:
                 context_parts.append(f"Role Category: {extracted_jd['role_category']}")
 
         if company_research:
-            if company_research.get("company_summary"):
-                context_parts.append(
-                    f"\nCompany Context: {company_research['company_summary'][:500]}"
-                )
+            # Handle both dict and object access patterns
+            summary = (
+                company_research.get("summary")
+                or company_research.get("company_summary")
+                or ""
+            )
+            if summary:
+                context_parts.append(f"\nCompany Context: {summary[:500]}")
 
         if fit_rationale:
             context_parts.append(f"\nWhy I'm a Good Fit: {fit_rationale}")
@@ -216,6 +341,17 @@ class AnswerGeneratorService:
 
         context = "\n".join(context_parts)
 
+        # Determine length guidance based on char_limit
+        if char_limit:
+            if char_limit <= 150:
+                length_guidance = f"Keep your answer under {char_limit} characters (approximately {char_limit // 5} words). Be concise."
+            elif char_limit <= 500:
+                length_guidance = f"Keep your answer under {char_limit} characters (approximately {char_limit // 5} words). Be thorough but concise."
+            else:
+                length_guidance = f"Your answer can be up to {char_limit} characters. Provide a detailed, compelling response."
+        else:
+            length_guidance = "Keep the answer concise but compelling (150-300 words for textarea fields)."
+
         prompt = f"""You are helping a job candidate prepare answers for a job application form.
 
 CONTEXT:
@@ -228,7 +364,7 @@ INSTRUCTIONS:
 1. Write a professional, personalized answer that demonstrates fit for this specific role
 2. Reference specific details from the job description and company context
 3. Include relevant achievements or experiences where appropriate
-4. Keep the answer concise but compelling (150-300 words for textarea fields)
+4. {length_guidance}
 5. Write in first person as the candidate
 6. Be specific and avoid generic phrases
 7. Do NOT include any preamble like "Here's an answer..." - just write the answer directly
@@ -239,6 +375,22 @@ ANSWER:"""
             llm = self._get_llm()
             response = llm.invoke(prompt)
             answer = response.content.strip()
+
+            # Truncate if over limit (with buffer for LLM variability)
+            if char_limit and len(answer) > char_limit:
+                # Find a good break point near the limit
+                truncate_at = char_limit - 3  # Leave room for "..."
+                # Try to break at sentence or word boundary
+                last_period = answer.rfind(".", 0, truncate_at)
+                last_space = answer.rfind(" ", 0, truncate_at)
+
+                if last_period > truncate_at * 0.8:
+                    answer = answer[: last_period + 1]
+                elif last_space > truncate_at * 0.8:
+                    answer = answer[:last_space] + "..."
+                else:
+                    answer = answer[:truncate_at] + "..."
+
             return answer
         except Exception as e:
             logger.error(f"Failed to generate answer for '{question}': {e}")
