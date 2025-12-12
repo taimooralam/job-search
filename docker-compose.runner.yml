@@ -21,8 +21,8 @@ services:
       - ./applications:/app/applications
       # Google credentials (if using Drive/Sheets)
       - ./credentials:/app/credentials:ro
-      # Master CV for pipeline
-      - ./master-cv.md:/app/master-cv.md:ro
+      # Master CV data directory (file fallback for MongoDB)
+      - ./data/master-cv:/app/data/master-cv:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

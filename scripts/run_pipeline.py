@@ -19,12 +19,49 @@ from src.common.config import Config
 from src.common.tiering import resolve_tier, get_tier_config, ProcessingTier
 
 
-def load_candidate_profile(profile_path: str) -> str:
-    """Load candidate profile from markdown file."""
-    path = Path(profile_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Candidate profile not found: {profile_path}")
+def load_candidate_profile(profile_path: str = None) -> str:
+    """Load candidate profile from MongoDB or file fallback.
 
+    MongoDB is the primary source when USE_MASTER_CV_MONGODB is enabled.
+    Falls back to file if MongoDB is unavailable or disabled.
+
+    Args:
+        profile_path: Optional path to profile file (used as fallback)
+
+    Returns:
+        Candidate profile as formatted text
+    """
+    import logging
+
+    # Try MongoDB first if enabled
+    if Config.USE_MASTER_CV_MONGODB:
+        try:
+            from src.layer6_v2.cv_loader import CVLoader
+            loader = CVLoader(use_mongodb=True)
+            candidate = loader.load()
+            if candidate:
+                # Format candidate as text
+                lines = []
+                lines.append(f"# {candidate.name}")
+                lines.append(f"## {candidate.title_base}")
+                lines.append(f"Email: {candidate.email}")
+                lines.append(f"Location: {candidate.location}")
+                lines.append("")
+                lines.append("## Experience")
+                for role in candidate.roles:
+                    lines.append(f"### {role.company} - {role.title}")
+                    lines.append(f"{role.period} | {role.location}")
+                    for achievement in role.achievements[:5]:
+                        lines.append(f"- {achievement}")
+                    lines.append("")
+                return "\n".join(lines)
+        except Exception as e:
+            logging.warning(f"MongoDB unavailable for profile: {e}")
+
+    # File fallback
+    path = Path(profile_path or Config.CANDIDATE_PROFILE_PATH)
+    if not path.exists():
+        raise FileNotFoundError(f"Candidate profile not found: {path}")
     with open(path, 'r') as f:
         return f.read()
 
@@ -97,7 +134,7 @@ def main():
     parser.add_argument(
         "--profile",
         default=Config.CANDIDATE_PROFILE_PATH,
-        help="Path to candidate profile markdown file"
+        help="Path to candidate profile file (fallback). Primary source is MongoDB when USE_MASTER_CV_MONGODB=true"
     )
     parser.add_argument(
         "--test",

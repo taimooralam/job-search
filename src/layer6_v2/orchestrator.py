@@ -618,12 +618,26 @@ class CVGeneratorV2:
         return "\n".join(lines)
 
     def _get_master_cv_text(self) -> str:
-        """Load master CV text for anti-hallucination checking."""
+        """Load master CV text for anti-hallucination checking.
+
+        Uses the already-initialized CVLoader which supports MongoDB.
+        Falls back to file if needed.
+        """
+        try:
+            candidate = self.cv_loader.load()
+            if candidate:
+                # Concatenate all role content
+                role_texts = [role.raw_content for role in candidate.roles if role.raw_content]
+                if role_texts:
+                    return "\n\n".join(role_texts)
+        except Exception as e:
+            self._logger.warning(f"Failed to load master CV from CVLoader: {e}")
+
+        # File fallback (keep for safety)
         master_cv_path = Path("data/master-cv/master-cv.md")
         if master_cv_path.exists():
             return master_cv_path.read_text(encoding="utf-8")
 
-        # Fallback: concatenate role files
         roles_dir = Path("data/master-cv/roles")
         if roles_dir.exists():
             role_texts = []

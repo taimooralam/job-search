@@ -63,8 +63,53 @@ RATIONALE: Strong match on cloud architecture and Python skills. The role requir
 """
 
 
+def _format_profile_as_text(profile: dict) -> str:
+    """Format profile dict as text for LLM consumption."""
+    lines = []
+
+    # Name and summary
+    if profile.get("name"):
+        lines.append(f"# {profile['name']}")
+    if profile.get("summary"):
+        lines.append(f"\n{profile['summary']}")
+
+    # Skills
+    if profile.get("skills"):
+        lines.append(f"\n## Skills\n{', '.join(profile['skills'][:25])}")
+
+    # Roles
+    if profile.get("roles"):
+        lines.append("\n## Experience")
+        for role in profile.get("roles", [])[:6]:
+            company = role.get("company", "Unknown")
+            title = role.get("title", "Unknown")
+            period = role.get("period", "")
+            lines.append(f"\n### {company} - {title}")
+            if period:
+                lines.append(f"{period}")
+            for achievement in role.get("achievements", [])[:5]:
+                lines.append(f"- {achievement}")
+
+    return "\n".join(lines) if lines else "Candidate profile not available."
+
+
 def load_candidate_profile() -> str:
-    """Load the master CV/candidate profile."""
+    """Load the master CV/candidate profile from MongoDB or file fallback."""
+    # Try MongoDB first if enabled
+    if Config.USE_MASTER_CV_MONGODB:
+        try:
+            from src.common.master_cv_store import MasterCVStore
+
+            store = MasterCVStore(use_mongodb=True)
+            profile = store.get_profile_for_suggestions()
+
+            if profile:
+                logger.debug("Loaded candidate profile from MongoDB")
+                return _format_profile_as_text(profile)
+        except Exception as e:
+            logger.warning(f"MongoDB unavailable for profile, using file fallback: {e}")
+
+    # File fallback
     profile_path = Path(Config.CANDIDATE_PROFILE_PATH)
 
     if not profile_path.exists():

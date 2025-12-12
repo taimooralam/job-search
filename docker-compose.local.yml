@@ -19,7 +19,8 @@ services:
     volumes:
       - ./applications:/app/applications
       - ./credentials:/app/credentials:ro
-      - ./master-cv.md:/app/master-cv.md:ro
+      # Master CV data directory (file fallback for MongoDB)
+      - ./data/master-cv:/app/data/master-cv:ro
     depends_on:
       - pdf-service
     healthcheck:

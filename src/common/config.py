@@ -52,6 +52,8 @@ class Config:
     GOOGLE_SHEET_ID: str = os.getenv("GOOGLE_SHEET_ID", "")
 
     # ===== Candidate Profile =====
+    # DEPRECATED: Use USE_MASTER_CV_MONGODB=true instead (CV Editor in frontend).
+    # This path is only used as a fallback when MongoDB is unavailable.
     CANDIDATE_PROFILE_PATH: str = os.getenv(
         "CANDIDATE_PROFILE_PATH",
         "./master-cv.md"
@@ -163,10 +165,16 @@ class Config:
                     f"Google credentials file not found: {cls.GOOGLE_CREDENTIALS_PATH}"
                 )
 
-        if not Path(cls.CANDIDATE_PROFILE_PATH).exists():
-            raise FileNotFoundError(
-                f"Candidate profile file not found: {cls.CANDIDATE_PROFILE_PATH}"
-            )
+        # Only validate profile file if MongoDB is disabled
+        if not cls.USE_MASTER_CV_MONGODB:
+            profile_path = Path(cls.CANDIDATE_PROFILE_PATH)
+            if not profile_path.exists():
+                # Check for data/master-cv fallback
+                if not Path("data/master-cv/role_metadata.json").exists():
+                    raise FileNotFoundError(
+                        f"Candidate profile not found: {cls.CANDIDATE_PROFILE_PATH}. "
+                        "Enable USE_MASTER_CV_MONGODB=true or create the file."
+                    )
 
     @classmethod
     def get_llm_api_key(cls) -> str:

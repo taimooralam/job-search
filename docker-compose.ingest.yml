@@ -41,8 +41,8 @@ services:
     volumes:
       # Persist logs
       - ingest-logs:/app/logs
-      # Master CV for scoring context
-      - ./master-cv.md:/app/master-cv.md:ro
+      # Master CV data directory (file fallback for MongoDB)
+      - ./data/master-cv:/app/data/master-cv:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import json, os; from datetime import datetime, timedelta; f='/app/logs/ingest_latest.json'; d=json.load(open(f)) if os.path.exists(f) else {}; t=datetime.fromisoformat(d.get('end_time','2000-01-01').replace('Z','+00:00')); exit(0 if datetime.utcnow()-t < timedelta(hours=12) else 1)"]
       interval: 6h
