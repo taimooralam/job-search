@@ -52,14 +52,15 @@ You will generate FOUR components:
    - Start with past-tense action verb (Scaled, Reduced, Delivered, Built, Led)
    - Include quantified metric from source bullets (EXACT numbers only)
    - NO pronouns (no "I reduced...", just "Reduced...")
-   - Format: "[Verb] [what] [by how much / to what result]"
+   - **FRONT-LOAD JD KEYWORDS**: Position JD keywords in first 3 words when natural
+   - Format: "[Verb] [JD Keyword if applicable] [what] [by how much]"
 
-   Examples:
-   - "Scaled engineering organizations from 5 to 40+ engineers"
-   - "Reduced deployment time by 75%, MTTR by 60%"
-   - "Delivered $2M annual savings through cloud optimization"
-   - "Built culture that reduced attrition from 25% to 8%"
-   - "Led platform migration serving 10M+ daily users"
+   Examples with front-loaded keywords:
+   - "Scaled Kubernetes clusters to handle 10M+ daily requests" (Kubernetes in word 2)
+   - "Built AWS infrastructure reducing costs by 40%" (AWS in word 2)
+   - "Led engineering teams of 40+ engineers across 3 regions" (engineering in word 2)
+   - "Reduced deployment time by 75%, MTTR by 60%" (no keyword to front-load - acceptable)
+   - "Delivered platform migration serving 10M+ daily users"
 
 4. **CORE COMPETENCIES** (6-8 keywords)
    - ATS-friendly format

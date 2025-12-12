@@ -91,12 +91,35 @@ Executive Roles (head_of_engineering, cto):
 - Vision: Spearheaded, Championed, Pioneered, Launched, Founded
 - Business: Delivered, Generated, Secured, Achieved (business outcomes)
 
+=== KEYWORD FRONT-LOADING (ATS OPTIMIZATION) ===
+
+When a bullet addresses a JD requirement keyword, position that keyword within the FIRST 3 WORDS.
+
+WHY: Recruiters scan CVs in 6-7 seconds. Front-loading JD keywords makes experience-to-requirement matching instant.
+
+HOW: Combine action verbs with JD keywords naturally:
+✓ "Architected Kubernetes cluster serving 10M requests/day..." (Kubernetes in word 2)
+✓ "Scaled AWS infrastructure reducing costs by 40%..." (AWS in word 2)
+✓ "Led Python migration enabling 3x developer velocity..." (Python in word 2)
+✓ "Designed microservices architecture handling 1B events..." (microservices in word 2)
+
+WHAT TO AVOID:
+✗ Artificial prefixes: "Kubernetes: Managed cluster..." (WRONG - unnatural)
+✗ Forced word order: "Kubernetes was used to build..." (WRONG - passive)
+✗ Buried keywords: "Led initiative that used Kubernetes..." (WRONG - keyword in word 5)
+
+WHEN TO SKIP FRONT-LOADING:
+- If the keyword cannot fit naturally in first 3 words, prioritize readability
+- A natural bullet without front-loading beats an awkward bullet with forced placement
+- Still track the keyword in jd_keyword_used field for traceability
+
 === JD ALIGNMENT RULES ===
 
 1. Prioritize achievements that address JD pain points
 2. Integrate JD keywords NATURALLY (not forced)
 3. Mirror JD terminology where it fits
 4. Emphasize competencies matching JD weights (delivery, process, architecture, leadership)
+5. Front-load JD keywords in first 3 words when natural (see KEYWORD FRONT-LOADING above)
 
 === ANNOTATION REFRAME GUIDANCE (when provided) ===
 
