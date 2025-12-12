@@ -80,10 +80,10 @@ class TestAsyncEmitProgress:
                  "sections": [{"id": "s1", "heading": "Overview"}],
                  "content_hash": "abc123"
              }), \
-             patch.object(service, '_run_jd_extractor', return_value={
-                 "role_category": "engineering",
-                 "top_keywords": ["python", "aws"]
-             }), \
+             patch.object(service, '_run_jd_extractor', return_value=(
+                 {"role_category": "engineering", "top_keywords": ["python", "aws"]},
+                 None  # No error
+             )), \
              patch.object(service, '_run_layer_2', return_value={
                  "pain_points": ["Scale to 10M users"],
                  "strategic_needs": ["Cloud migration"]
@@ -132,7 +132,7 @@ class TestAsyncEmitProgress:
                  "sections": [{"id": "s1"}],
                  "content_hash": "abc"
              }), \
-             patch.object(service, '_run_jd_extractor', return_value=None), \
+             patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={
                  "fit_score": 80, "fit_category": "good", "annotation_signals": {}
@@ -255,7 +255,7 @@ class TestAsyncEmitProgress:
                  "sections": [{"id": "s1"}],
                  "content_hash": "abc"
              }), \
-             patch.object(service, '_run_jd_extractor', return_value=None), \
+             patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={
                  "fit_score": 80, "fit_category": "good", "annotation_signals": {}
@@ -453,7 +453,7 @@ class TestSSEStreamingIntegration:
 
         with patch.object(service, '_get_job', return_value=mock_job_doc), \
              patch.object(service, '_run_jd_processor', side_effect=delayed_jd_processor), \
-             patch.object(service, '_run_jd_extractor', return_value=None), \
+             patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', side_effect=delayed_layer_2), \
              patch.object(service, '_run_layer_4', return_value={
                  "fit_score": 80, "fit_category": "good", "annotation_signals": {}
@@ -489,7 +489,7 @@ class TestSSEStreamingIntegration:
              patch.object(service, '_run_jd_processor', return_value={
                  "html": "<div>test</div>", "sections": [{"id": "s1"}], "content_hash": "abc"
              }), \
-             patch.object(service, '_run_jd_extractor', return_value=None), \
+             patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={
                  "fit_score": 80, "fit_category": "good", "annotation_signals": {}
