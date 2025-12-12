@@ -235,10 +235,12 @@ class CVLoader:
             try:
                 from src.common.master_cv_store import MasterCVStore
                 self._mongo_store = MasterCVStore(use_mongodb=True, data_dir=self.data_path)
-                self._logger.info("CVLoader initialized with MongoDB support")
+                self._logger.info("✅ CVLoader initialized with MongoDB support (will use CV Editor data)")
             except Exception as e:
-                self._logger.warning(f"MongoDB unavailable for CVLoader, using files: {e}")
+                self._logger.warning(f"⚠️ MongoDB unavailable for CVLoader, using local files: {e}")
                 self._use_mongodb = False
+        elif not use_mongodb:
+            self._logger.info("📁 CVLoader using local files (MongoDB disabled via config)")
 
     def load(self) -> CandidateData:
         """
@@ -265,7 +267,7 @@ class CVLoader:
                     self._candidate = candidate
                     self._loaded_from_mongodb = True
                     self._logger.info(
-                        f"Loaded {len(self._candidate.roles)} roles from MongoDB"
+                        f"✅ Loaded {len(self._candidate.roles)} roles from MongoDB (CV Editor data)"
                     )
                     return self._candidate
             except Exception as e:

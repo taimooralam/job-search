@@ -132,7 +132,8 @@ class CVGeneratorV2:
         self.use_variant_selection = use_variant_selection  # Variant-based generation
 
         # Initialize components
-        self.cv_loader = CVLoader()
+        # Use MongoDB for master CV data when enabled (edited via CV Editor)
+        self.cv_loader = CVLoader(use_mongodb=Config.USE_MASTER_CV_MONGODB)
         self.role_generator = RoleGenerator(model=self.model)
         self.role_qa = RoleQA()
         self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
