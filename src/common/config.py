@@ -68,6 +68,8 @@ class Config:
     ENABLE_REMOTE_PUBLISHING: bool = os.getenv("ENABLE_REMOTE_PUBLISHING", "false").lower() == "true"
     # Disable FireCrawl-backed people discovery/outreach by default (use role-based contacts instead)
     DISABLE_FIRECRAWL_OUTREACH: bool = os.getenv("DISABLE_FIRECRAWL_OUTREACH", "true").lower() == "true"
+    # Use MongoDB for master CV data (edited via CV Editor) instead of local files
+    USE_MASTER_CV_MONGODB: bool = os.getenv("USE_MASTER_CV_MONGODB", "true").lower() == "true"
 
     # ===== STAR Selection Strategy (Phase 2.2) =====
     # LLM_ONLY: Skip embedding filter, use LLM scoring only (simple, slower)
@@ -232,6 +234,7 @@ Configuration Summary:
   Google Drive: {'✓ Configured' if cls.GOOGLE_DRIVE_FOLDER_ID else '✗ Missing'}
   Google Sheets: {'✓ Configured' if cls.GOOGLE_SHEET_ID else '✗ Missing'}
   Candidate Profile: {cls.CANDIDATE_PROFILE_PATH}
+  Master CV Source: {'MongoDB (CV Editor)' if cls.USE_MASTER_CV_MONGODB else 'Local files'}
   Default Model: {cls.DEFAULT_MODEL}
   Token Budget: ${cls.TOKEN_BUDGET_USD:.2f} ({'enforced' if cls.ENFORCE_TOKEN_BUDGET else 'tracking only'})
   Token Tracking: {'✓ Enabled' if cls.ENABLE_TOKEN_TRACKING else '✗ Disabled'}
