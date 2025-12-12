@@ -7,6 +7,7 @@ via the operations API. Handles:
 - Candidate profile loading
 - Tier-based model selection
 - CV generation with annotations
+- Cover letter generation (integrated)
 - Result persistence
 
 Usage:
@@ -31,18 +32,19 @@ logger = logging.getLogger(__name__)
 
 class CVGenerationService(OperationService):
     """
-    Service for generating tailored CVs via the operations API.
+    Service for generating tailored CVs and cover letters via the operations API.
 
-    Wraps the Layer 6 V2 orchestrator (CVGeneratorV2) for button-triggered
-    CV generation with tier-based model selection and cost tracking.
+    Wraps the Layer 6 V2 orchestrator (CVGeneratorV2) and CoverLetterGenerator
+    for button-triggered generation with tier-based model selection and cost tracking.
 
     The service:
     1. Fetches job data from MongoDB (extracted_jd, annotations, etc.)
     2. Loads candidate profile from master-cv
     3. Builds JobState for the orchestrator
     4. Calls CVGeneratorV2 with tier-appropriate model
-    5. Persists cv_text and cv_editor_state to MongoDB
-    6. Returns OperationResult with generated CV
+    5. Generates cover letter using CoverLetterGenerator (non-blocking on failure)
+    6. Persists cv_text, cv_editor_state, and cover_letter to MongoDB
+    7. Returns OperationResult with generated CV and cover letter
 
     Model tiers:
     - FAST: gpt-4o-mini (cheap, quick)
@@ -214,10 +216,36 @@ class CVGenerationService(OperationService):
                 await emit_progress("cv_generator", "success", cv_success_msg)
                 logger.info(f"[{run_id[:16]}] CV generated: {word_count} words")
 
+                # Step 5.5: Generate cover letter (non-blocking on failure)
+                await emit_progress("cover_letter", "processing", "Generating cover letter")
+                logger.info(f"[{run_id[:16]}] Generating cover letter")
+                cover_letter = self._generate_cover_letter(state)
+
+                if cover_letter:
+                    cl_word_count = len(cover_letter.split())
+                    cl_success_msg = f"Generated {cl_word_count} word cover letter"
+                    layer_status["cover_letter"] = {
+                        "status": "success",
+                        "word_count": cl_word_count,
+                        "message": cl_success_msg
+                    }
+                    await emit_progress("cover_letter", "success", cl_success_msg)
+                    logger.info(f"[{run_id[:16]}] Cover letter generated: {cl_word_count} words")
+                else:
+                    cl_warning_msg = "Cover letter generation skipped (see logs)"
+                    layer_status["cover_letter"] = {
+                        "status": "warning",
+                        "message": cl_warning_msg
+                    }
+                    await emit_progress("cover_letter", "warning", cl_warning_msg)
+                    logger.warning(f"[{run_id[:16]}] Cover letter generation failed or skipped")
+
                 # Step 6: Persist to MongoDB
-                await emit_progress("persist", "processing", "Saving CV to database")
-                logger.info(f"[{run_id[:16]}] Persisting CV to database")
-                persisted = self._persist_cv_result(job_id, cv_text, cv_editor_state, cv_result)
+                await emit_progress("persist", "processing", "Saving CV and cover letter to database")
+                logger.info(f"[{run_id[:16]}] Persisting CV and cover letter to database")
+                persisted = self._persist_cv_result(
+                    job_id, cv_text, cv_editor_state, cv_result, cover_letter
+                )
                 persist_msg = "Saved to database" if persisted else "Persistence failed"
                 layer_status["persist"] = {
                     "status": "success" if persisted else "warning",
@@ -226,9 +254,13 @@ class CVGenerationService(OperationService):
                 await emit_progress("persist", "success" if persisted else "warning", persist_msg)
 
                 # Step 7: Calculate cost estimate
-                # Estimate tokens based on typical CV generation
+                # Estimate tokens based on typical CV + cover letter generation
                 input_tokens = 5000  # ~5K input (JD + master CV context)
                 output_tokens = 2500  # ~2.5K output (CV text)
+                # Add cover letter tokens if generated
+                if cover_letter:
+                    input_tokens += 3000  # Additional context for cover letter
+                    output_tokens += 500   # Cover letter output
                 cost = self.estimate_cost(tier, input_tokens, output_tokens)
 
                 logger.info(
@@ -245,6 +277,7 @@ class CVGenerationService(OperationService):
                         "cv_reasoning": cv_result.get("cv_reasoning"),
                         "grade_result": cv_result.get("cv_grade_result"),
                         "word_count": word_count,
+                        "cover_letter": cover_letter,
                         "layer_status": layer_status,
                     },
                     cost_usd=cost,
@@ -312,14 +345,14 @@ class CVGenerationService(OperationService):
         use_annotations: bool,
     ) -> Dict[str, Any]:
         """
-        Build JobState dictionary for the CV generator.
+        Build JobState dictionary for the CV generator and cover letter generator.
 
         Args:
             job: Job document from MongoDB
             use_annotations: Whether to include annotations
 
         Returns:
-            JobState-compatible dictionary
+            JobState-compatible dictionary with fields for both CV and cover letter generation
         """
         # Get extracted_jd or build from raw text
         # Use `or {}` pattern to handle both missing keys AND explicit None values from MongoDB
@@ -343,6 +376,7 @@ class CVGenerationService(OperationService):
             "extracted_jd": extracted_jd,
             "run_id": f"cv_gen_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
             "fit_score": job.get("fit_score"),
+            "fit_rationale": job.get("fit_rationale"),
             "location": job.get("location", ""),
         }
 
@@ -354,6 +388,30 @@ class CVGenerationService(OperationService):
         # Include all_stars if available for achievement selection
         if job.get("all_stars"):
             state["all_stars"] = job["all_stars"]
+
+        # Include selected_stars for cover letter generation (STAR citations)
+        if job.get("selected_stars"):
+            state["selected_stars"] = job["selected_stars"]
+
+        # Include pain_points for cover letter personalization
+        if job.get("pain_points"):
+            state["pain_points"] = job["pain_points"]
+
+        # Include strategic_needs for cover letter context
+        if job.get("strategic_needs"):
+            state["strategic_needs"] = job["strategic_needs"]
+
+        # Include company_research for cover letter company signals
+        if job.get("company_research"):
+            state["company_research"] = job["company_research"]
+
+        # Include role_research for cover letter context
+        if job.get("role_research"):
+            state["role_research"] = job["role_research"]
+
+        # Include candidate_profile for cover letter generation
+        if job.get("candidate_profile"):
+            state["candidate_profile"] = job["candidate_profile"]
 
         return state
 
@@ -376,6 +434,47 @@ class CVGenerationService(OperationService):
 
         generator = CVGeneratorV2(model=model)
         return generator.generate(state)
+
+    def _generate_cover_letter(self, state: Dict[str, Any]) -> Optional[str]:
+        """
+        Generate a cover letter using CoverLetterGenerator.
+
+        This method is designed to be non-blocking on failure - if cover letter
+        generation fails for any reason, it logs a warning and returns None
+        rather than failing the entire CV generation operation.
+
+        Args:
+            state: JobState dictionary with pain_points, company_research,
+                   role_research, selected_stars, extracted_jd, jd_annotations
+
+        Returns:
+            Cover letter text if successful, None if generation fails
+        """
+        try:
+            from src.layer6.cover_letter_generator import CoverLetterGenerator
+
+            generator = CoverLetterGenerator()
+            cover_letter = generator.generate_cover_letter(state)
+            logger.info(
+                f"Cover letter generated: {len(cover_letter.split())} words"
+            )
+            return cover_letter
+
+        except ValueError as e:
+            # Validation errors from CoverLetterGenerator
+            logger.warning(
+                f"Cover letter validation failed: {e}. "
+                "Continuing with CV only."
+            )
+            return None
+
+        except Exception as e:
+            # Any other error (LLM failure, import error, etc.)
+            logger.warning(
+                f"Cover letter generation failed: {e}. "
+                "Continuing with CV only."
+            )
+            return None
 
     def _build_cv_editor_state(self, cv_text: str) -> Dict[str, Any]:
         """
@@ -414,15 +513,17 @@ class CVGenerationService(OperationService):
         cv_text: str,
         cv_editor_state: Dict[str, Any],
         cv_result: Dict[str, Any],
+        cover_letter: Optional[str] = None,
     ) -> bool:
         """
-        Persist CV generation results to MongoDB.
+        Persist CV and cover letter generation results to MongoDB.
 
         Args:
             job_id: Job ID
             cv_text: Generated CV markdown
             cv_editor_state: TipTap editor state
             cv_result: Full result from generator
+            cover_letter: Generated cover letter text (optional)
 
         Returns:
             True if persisted successfully
@@ -436,18 +537,25 @@ class CVGenerationService(OperationService):
         client = self._get_db()
         try:
             db = client[self._get_db_name()]
+
+            # Build update document
+            update_fields = {
+                "cv_text": cv_text,
+                "cv_editor_state": cv_editor_state,
+                "cv_path": cv_result.get("cv_path"),
+                "cv_reasoning": cv_result.get("cv_reasoning"),
+                "cv_generated_at": datetime.utcnow(),
+                "updatedAt": datetime.utcnow(),
+            }
+
+            # Include cover_letter if generated
+            if cover_letter is not None:
+                update_fields["cover_letter"] = cover_letter
+                update_fields["cover_letter_generated_at"] = datetime.utcnow()
+
             result = db["level-2"].update_one(
                 {"_id": object_id},
-                {
-                    "$set": {
-                        "cv_text": cv_text,
-                        "cv_editor_state": cv_editor_state,
-                        "cv_path": cv_result.get("cv_path"),
-                        "cv_reasoning": cv_result.get("cv_reasoning"),
-                        "cv_generated_at": datetime.utcnow(),
-                        "updatedAt": datetime.utcnow(),
-                    }
-                },
+                {"$set": update_fields},
             )
             if result.modified_count > 0:
                 logger.info(f"Persisted CV result for job {job_id}")
