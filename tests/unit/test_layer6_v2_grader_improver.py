@@ -647,3 +647,139 @@ class TestMetricExtraction:
         count, found = grader._count_keywords(text, keywords)
         assert count == 3
         assert "Python" in found
+
+
+# ===== TESTS: Keyword Front-Loading =====
+
+class TestKeywordFrontLoading:
+    """Test keyword front-loading detection."""
+
+    def test_detects_front_loaded_keywords(self):
+        """Detects keywords in first 3 words of bullets."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • Scaled Kubernetes infrastructure to handle 10M requests
+        • Built AWS platform reducing costs by 40%
+        • Led Python migration enabling faster development
+        """
+        keywords = ["Kubernetes", "AWS", "Python"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert addressable == 3  # All 3 bullets contain keywords
+        assert front_loaded == 3  # All 3 have keywords in first 3 words
+        assert ratio == 1.0  # 100% front-loaded
+
+    def test_detects_buried_keywords(self):
+        """Detects when keywords are buried later in bullets."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • Led initiative to implement Kubernetes clusters
+        • Worked on improving the AWS infrastructure
+        • Managed team using Python for backend services
+        """
+        keywords = ["Kubernetes", "AWS", "Python"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert addressable == 3  # All 3 bullets contain keywords
+        assert front_loaded == 0  # None have keywords in first 3 words
+        assert ratio == 0.0  # 0% front-loaded
+
+    def test_mixed_front_loading(self):
+        """Handles mix of front-loaded and buried keywords."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • Scaled Kubernetes infrastructure to handle requests
+        • Led initiative to implement AWS platform
+        • Built Python services for data processing
+        """
+        keywords = ["Kubernetes", "AWS", "Python"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert addressable == 3
+        assert front_loaded == 2  # Kubernetes and Python are front-loaded, AWS is buried
+        assert ratio == pytest.approx(0.667, rel=0.01)
+
+    def test_empty_keywords(self):
+        """Handles empty keyword list."""
+        grader = CVGrader(use_llm_grading=False)
+        text = "• Built platform using Python and Kubernetes"
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, []
+        )
+
+        assert ratio == 1.0  # Perfect score when no keywords to check
+        assert front_loaded == 0
+        assert addressable == 0
+
+    def test_no_keyword_matches(self):
+        """Handles bullets with no keyword matches."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • Built platform for data processing
+        • Led team to deliver project on time
+        """
+        keywords = ["Kubernetes", "AWS", "Python"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert ratio == 1.0  # Perfect score when no keywords to front-load
+        assert addressable == 0
+        assert front_loaded == 0
+
+    def test_case_insensitive(self):
+        """Keyword matching is case-insensitive."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • KUBERNETES platform scaling to millions of requests
+        • Built aws Infrastructure for cloud services
+        """
+        keywords = ["Kubernetes", "AWS"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert addressable == 2
+        assert front_loaded == 2  # Both are front-loaded despite case differences
+        assert ratio == 1.0
+
+    def test_short_bullets(self):
+        """Handles bullets with fewer than 3 words."""
+        grader = CVGrader(use_llm_grading=False)
+        text = """
+        • Kubernetes expert
+        • AWS certified
+        """
+        keywords = ["Kubernetes", "AWS"]
+
+        ratio, front_loaded, addressable = grader._check_keyword_front_loading(
+            text, keywords
+        )
+
+        assert addressable == 2
+        assert front_loaded == 2  # Keywords appear in the short bullets
+        assert ratio == 1.0
+
+    def test_integration_with_ats_scoring(self, sample_cv_text, sample_extracted_jd):
+        """Front-loading integrates with ATS scoring."""
+        grader = CVGrader(use_llm_grading=False)
+        jd_keywords = sample_extracted_jd["top_keywords"]
+
+        score = grader._grade_ats_optimization(sample_cv_text, jd_keywords)
+
+        # Check that feedback includes front-loading info
+        assert "front-loaded" in score.feedback.lower()
+        # Score should be calculated correctly
+        assert score.score >= 5
