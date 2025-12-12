@@ -1582,7 +1582,7 @@ function startOutreachLogStreaming(runId, messageType) {
     }
 
     // Connect to the runner service operation logs SSE endpoint
-    outreachEventSource = new EventSource(`/api/runner/jobs/operations/${runId}/logs`);
+    outreachEventSource = new EventSource(`/api/runner/operations/${runId}/logs`);
 
     outreachEventSource.onmessage = (event) => {
         // Use the existing appendLogToPipelinePanel function
