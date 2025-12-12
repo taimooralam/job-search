@@ -22,6 +22,24 @@
 
 ### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
 
+**BUG FIX 11: Clipboard copy not working in non-secure contexts - FIXED**:
+- **Issue**: Copy-to-clipboard functionality failed silently in non-HTTPS contexts and had no defensive validation
+- **Root Cause**:
+  1. `navigator.clipboard.writeText()` API requires secure context (HTTPS or localhost) - fails silently in other contexts
+  2. No null/undefined/empty string validation before attempting copy
+  3. `copyFirecrawlPrompt()` duplicated clipboard logic instead of reusing shared `copyToClipboard()` function
+- **Fix Applied**:
+  1. Added fallback using `document.execCommand('copy')` for non-secure contexts
+  2. Added defensive validation for null/undefined/empty values with user-friendly error messages
+  3. Refactored `copyFirecrawlPrompt()` to use shared `copyToClipboard()` function instead of duplicating logic
+  4. Added console.error logging for debugging failed copy attempts
+- **Files Modified**:
+  - `frontend/static/js/job-detail.js` - Updated `copyToClipboard()` with secure context fallback and validation; refactored `copyFirecrawlPrompt()` to use shared function
+- **Test Coverage**: Clipboard operations now work across all contexts (HTTPS, localhost, HTTP)
+- **Impact**: Copy buttons are now reliable regardless of deployment context or input validity; code duplication eliminated
+
+---
+
 **BUG FIX 10: InMail/Connection buttons fail when contact names contain special characters - FIXED**:
 - **Issue**: Clicking InMail or Connection Request buttons on LinkedIn contacts failed with no visible error
 - **Root Cause**: HTML escaping mismatch - contact names were HTML-escaped via Jinja's `| e` filter in template (e.g., `"Smith's"` became `"Smith&apos;s"`), but backend `generateContactMessage()` tried to match the escaped name against raw MongoDB data, causing lookup failures

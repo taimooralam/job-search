@@ -1203,14 +1203,23 @@ def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dic
 - Contact type and outreach options visible at a glance
 - Enables smart routing based on contact authority level
 
-**Copy Button Pattern for Dynamic Content** (FIXED 2025-12-12):
-- **Problem**: Jinja `| e` (HTML escape) filter breaks JavaScript onclick handlers with special characters (quotes, newlines)
-- **Solution**: Use Jinja `| tojson` filter for JavaScript string literals instead of `| e`
+**Copy Button Pattern for Dynamic Content** (ENHANCED 2025-12-12):
+- **Problem 1**: Jinja `| e` (HTML escape) filter breaks JavaScript onclick handlers with special characters (quotes, newlines)
+  - **Solution**: Use Jinja `| tojson` filter for JavaScript string literals instead of `| e`
   - `| e` escapes for HTML context: `&quot;` `&apos;` (breaks JS syntax)
   - `| tojson` escapes for JavaScript: `\"` `\n` (preserves JS string literals)
+- **Problem 2**: `navigator.clipboard.writeText()` requires secure context (HTTPS/localhost), fails silently elsewhere
+  - **Solution**: Added fallback to `document.execCommand('copy')` for non-secure contexts
+  - Tries modern Clipboard API first (better UX, supported in modern browsers)
+  - Falls back to legacy execCommand for HTTP or non-browser contexts
+  - Added null/undefined/empty validation with user-friendly error alerts
+  - Enhanced logging for debugging failed copy attempts
 - **Pattern**: `onclick="copyToClipboard({{ content | tojson }}, this)"`
-- **Visual Feedback**: Enhanced `copyToClipboard()` function shows checkmark + "Copied!" for 2 seconds
+- **Implementation**:
+  - `copyToClipboard()` function: Dual-method approach, defensive validation, visual feedback (checkmark + "Copied!" for 2 seconds)
+  - `copyFirecrawlPrompt()`: Refactored to use shared `copyToClipboard()` instead of duplicating logic
 - **Files**: `frontend/templates/job_detail.html` (4 copy buttons), `frontend/static/js/job-detail.js`
+- **Context Compatibility**: Works in HTTPS, localhost, and HTTP contexts (via fallback)
 
 ### Dashboard
 - Application stats: Today/week/month/total counts
