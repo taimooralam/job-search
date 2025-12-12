@@ -1220,6 +1220,94 @@ def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dic
 
 ---
 
+### Job List - Dynamic Location Filter by Date Range (NEW - 2025-12-12)
+
+**Purpose**: Location dropdown dynamically updates based on selected date range, showing only locations for jobs within the filtered time window. Provides intelligent filtering to focus user attention on relevant job markets.
+
+**Frontend Components**:
+- **Location Dropdown** (`frontend/templates/index.html`): Multi-select dropdown for filtering by job location
+- **Load Locations Function** (`frontend/static/js/main.js`):
+  - `loadLocations()` - Fetches available locations from `/api/locations` endpoint
+  - Called on page load and whenever date filters change
+  - Includes optional debouncing (300ms) to prevent rapid re-requests
+  - Validates selected locations when list changes; deselects locations no longer in filtered set
+
+**Backend Integration**:
+
+**Frontend API** (`frontend/app.py`):
+- `GET /api/locations?datetime_from=<ISO>&datetime_to=<ISO>` - Fetch available locations, optionally filtered by date range
+  - **Query Parameters**:
+    - `datetime_from` (optional) - ISO-format start datetime (e.g., `2025-12-12T00:00:00`)
+    - `datetime_to` (optional) - ISO-format end datetime (e.g., `2025-12-12T23:59:59`)
+  - **Response**: JSON array of location strings
+    ```json
+    ["Dubai, UAE", "San Francisco, CA", "New York, NY", ...]
+    ```
+  - **Backend**: Queries MongoDB `jobs` collection with date range filters, aggregates unique locations
+  - **Proxy Pattern**: Calls Runner Service endpoint `/api/locations` with same parameters
+
+**Runner Service API** (`runner_service/app.py`):
+- `GET /api/locations?datetime_from=<ISO>&datetime_to=<ISO>` - Native endpoint
+  - Queries MongoDB `level-0` collection (raw jobs) with date range filtering
+  - Handles empty results gracefully (returns empty array)
+  - Supports both date-filtered and unfiltered calls
+
+**Data Flow**:
+```
+User selects date range (datetime_from/datetime_to)
+         │
+         ▼
+JavaScript onChange handler triggers loadLocations()
+         │
+         ▼
+Frontend sends: GET /api/locations?datetime_from=X&datetime_to=Y
+         │
+         ▼
+Flask proxy forwards to Runner Service
+         │
+         ▼
+MongoDB query: jobs where created_at >= X AND created_at <= Y
+         │
+         ▼
+Extract unique 'location' field → return array
+         │
+         ▼
+Frontend receives locations array
+         │
+         ▼
+Update location dropdown options
+         │
+         ▼
+Validate currently selected locations (remove if no longer in filtered set)
+         │
+         ▼
+Refresh job list with selected location filter
+```
+
+**Key Features**:
+1. **Date-Aware Filtering**: Only shows locations that have jobs in the selected time window
+2. **Location Validation**: If user had locations A,B,C selected, and date range changes to exclude A,B, selection updates to only C
+3. **Debounced Requests**: 300ms debounce prevents excessive API calls during rapid date filter changes
+4. **Fallback Behavior**: If no date range specified, shows all available locations in database
+5. **Empty Results Handling**: Gracefully handles date ranges with no matching jobs
+
+**Files Changed**:
+- `frontend/app.py` - Added `/api/locations` proxy endpoint with optional datetime parameters
+- `frontend/templates/index.html` - Updated `loadLocations()` call to include date params, added validation logic
+- `runner_service/app.py` - New `/api/locations` endpoint with date filtering support
+- `tests/unit/test_parse_datetime_filter.py` - 16 new tests for datetime parsing
+- `tests/frontend/test_dynamic_location_filter.py` - 18 new tests for location filtering, validation, debouncing
+
+**Test Coverage**:
+- Datetime parameter parsing and validation
+- Location aggregation with and without date ranges
+- Location validation when date range changes
+- Debouncing behavior prevents rapid re-requests
+- Empty results handling (no jobs in date range)
+- Stale location removal from selection
+
+---
+
 ## CV Rich Text Editor (Phases 1-6 Complete, Enhanced 2025-12-08)
 
 **Technology**: TipTap v2 (ProseMirror), 60+ Google Fonts, Playwright PDF
