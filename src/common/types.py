@@ -6,6 +6,7 @@ including the STARRecord schema for knowledge base management and job-related ty
 """
 
 from typing import Any, Dict, List, Optional, TypedDict
+from typing_extensions import NotRequired
 
 
 class STARRecord(TypedDict):
@@ -63,6 +64,17 @@ class FormField(TypedDict):
     limit: Optional[int]               # Character/word limit if applicable
     default_value: Optional[str]       # Default value or hint text
     options: Optional[List[str]]       # Options for select/checkbox fields
+
+
+class PlannedAnswer(TypedDict):
+    """Pre-planned answer for an application form question."""
+    question: str                      # The question text
+    answer: str                        # The prepared answer
+    field_type: str                    # text | textarea | url | select | checkbox | file
+    field_id: NotRequired[str]         # Optional form field identifier
+    required: NotRequired[bool]        # Whether field is required
+    max_length: NotRequired[int]       # Character limit if applicable
+    source: NotRequired[str]           # "auto_generated" | "manual"
 
 
 class JobState(TypedDict):
