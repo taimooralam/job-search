@@ -94,12 +94,30 @@ professional essence."""
 
 Write a persona statement (35-60 words, 1-2 sentences) that positions this professional.
 
-Rules:
+=== CRITICAL: THIRD-PERSON ABSENT VOICE ===
+
+You MUST use third-person absent voice. This means:
+- NO pronouns: I, my, me, you, your, we, our, us
+- Use "who" clauses to connect identity to action
+- Start with role/identity noun phrase ("A", "An")
+
+CORRECT examples (third-person absent voice):
+- "An engineering leader WHO thrives on building high-performing teams and scalable systems."
+- "A platform architect WHO transforms infrastructure challenges into competitive advantages."
+- "An enthusiastic technologist with deep expertise in cloud-native systems and a passion for developing talent."
+
+INCORRECT examples (NEVER write like this - has pronouns):
+- "I am an engineering leader who thrives on..." (uses "I")
+- "My passion is building teams..." (uses "My")
+- "An engineering leader, I thrive on..." (uses "I")
+
+=== OTHER RULES ===
+
 - Start with "A" or "An"
 - Weave together their identity, passions, and strengths naturally
 - Focus on WHO they are and WHAT drives them, not just skills
 - Make it sound authentic and compelling, not like a list
-- If they love something, let that passion shine through
+- If they love something, let that passion shine through ("passionate about", "thrives on")
 - If developing skills are mentioned, frame them as growth direction
 - For candidates with many identities/strengths, use two sentences to capture their multi-faceted nature
 
