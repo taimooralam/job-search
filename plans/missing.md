@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-12 (Session 10: SSE Streaming for Outreach Generation)
+**Last Updated**: 2025-12-13 (Cover Letter Integration into CV Generation Partial Pipeline)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3458,6 +3458,61 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Impact**: CV generation now handles all MongoDB null value scenarios without crashing; more robust defensive programming
   - **Related Docs**: Updated architectural patterns section in `architecture.md` with null-handling best practices
   - **Verification**: All CV generation service tests pass; null value handling validated
+
+### Cover Letter Integration into CV Generation Partial Pipeline
+- [x] Cover letter generation integrated into partial CV generation pipeline (2025-12-13): Cover letters now generated automatically when CVs are generated, with full UI integration and PDF export.
+  - **Feature Overview**:
+    - Cover letter generation now runs after CV generation in `CVGenerationService`
+    - Uses same research context as full pipeline (pain_points, company_research, role_research, selected_stars, etc.)
+    - Generated cover letter persisted to MongoDB alongside CV
+    - Frontend UI includes copy, edit/save, export PDF, and word count features
+  - **Backend Implementation** (`src/services/cv_generation_service.py`):
+    - Added `CoverLetterGenerator` call after `CVGenerationService.generate_cv()` completes
+    - Passes all required inputs from state: pain_points, company_research, role_research, selected_stars, extracted_jd, job_title, candidate_profile
+    - Cover letter result stored in response and persisted in MongoDB in job document
+    - Progress callback emits "cover_letter_generator" step for SSE streaming visibility
+  - **Frontend Implementation** (`frontend/templates/job_detail.html`, `frontend/static/js/job-detail.js`):
+    - Added cover letter section in main content area below CV section
+    - Copy button: Copies full cover letter to clipboard with visual feedback
+    - Edit/Save: Inline editing with word count validation and save functionality
+    - Export PDF: Downloads cover letter as standalone PDF via existing PDF service
+    - Word count indicator: Shows real-time word count (industry standard: 220-380 words for employer cover letters)
+    - All UI controls styled consistently with CV section controls
+  - **Testing** (`tests/unit/services/test_cv_generation_service.py`):
+    - Added 8 new unit tests for cover letter integration:
+      - Tests cover letter generation with complete research context
+      - Tests edge cases: missing company_research, empty pain_points, no selected_stars
+      - Tests proper persistence to MongoDB
+      - Tests SSE progress callback emission for "cover_letter_generator" step
+    - All existing CV generation tests remain passing
+  - **Files Modified**:
+    - `src/services/cv_generation_service.py` - Added cover letter generation after CV, pass all context inputs
+    - `frontend/templates/job_detail.html` - Added cover letter section with controls
+    - `frontend/static/js/job-detail.js` - Added copy, edit, save, and word count functionality
+    - `tests/unit/services/test_cv_generation_service.py` - Added 8 tests for cover letter integration
+  - **Data Flow**:
+    1. User clicks "Generate CV" in job detail page
+    2. Frontend calls `/api/jobs/{job_id}/generate-cv/stream` with SSE
+    3. Backend calls CVGenerationService which:
+       a. Fetches job, builds state, generates CV
+       b. Emits progress callback for CV completion
+       c. Calls CoverLetterGenerator with same research context
+       d. Emits progress callback for cover letter completion
+       e. Persists both CV and cover letter to MongoDB
+    4. Frontend receives SSE updates for both "cv_generator" and "cover_letter_generator" steps
+    5. Once complete, partial refresh updates job detail page
+    6. Cover letter section displays with all edit/copy/export controls enabled
+  - **Architecture Impact**:
+    - No new MongoDB schema changes (cover_letter stored in existing job document)
+    - Leverages existing CoverLetterGenerator (Layer 6) - no new components required
+    - Partial pipeline (CVGenerationService) now generates both CV and cover letter atomically
+    - SSE streaming provides real-time progress visibility for both documents
+  - **User Benefits**:
+    - Users get both CV and cover letter from single "Generate CV" action
+    - Can edit and export cover letter independently without re-running pipeline
+    - Word count indicator helps maintain professional standards
+    - Consistent experience with full pipeline CV/cover letter generation
+  - **Verification**: All tests passing; manual testing confirms cover letter generates with CV, persists to DB, and UI controls work correctly
 
 ---
 
