@@ -601,18 +601,19 @@ async def generate_outreach(
             from src.services.outreach_service import OutreachGenerationService
 
             service = OutreachGenerationService()
-            result = await service.generate_for_contact(
-                job=job,
-                contact=contact,
-                message_type=request.message_type,
+            result = await service.execute(
+                job_id=job_id,
+                contact_index=contact_index,
+                contact_type=contact_type,
                 tier=tier,
+                message_type=request.message_type,
             )
 
             return OutreachResponse(
                 success=result.success,
-                message=result.data.get("message", ""),
-                subject=result.data.get("subject"),
-                char_count=result.data.get("char_count", 0),
+                message=result.data.get("message", "") if result.data else "",
+                subject=result.data.get("subject") if result.data else None,
+                char_count=result.data.get("char_count", 0) if result.data else 0,
                 cost_usd=result.cost_usd,
                 run_id=result.run_id,
                 model_used=result.model_used,
