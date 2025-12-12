@@ -1365,11 +1365,57 @@
                         </a>
                         {% endif %}
                     </div>
+                    <!-- Action buttons for InMail and Connection Request -->
+                    <div class="flex gap-1 mt-2">
+                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'inmail')"
+                                class="flex-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition"
+                                title="Generate InMail message">
+                            <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            InMail
+                        </button>
+                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'connection')"
+                                class="flex-1 px-2 py-1 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition"
+                                title="Generate connection request">
+                            <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                            Connect
+                        </button>
+                    </div>
+                    <!-- Existing messages with copy buttons -->
                     {% if contact.linkedin_connection_message or contact.linkedin_message %}
-                    <details class="mt-1">
-                        <summary class="text-xs text-green-600 cursor-pointer">Connection message</summary>
-                        <div class="mt-1 p-2 bg-green-50 rounded text-gray-700">{{ (contact.linkedin_connection_message or contact.linkedin_message) | truncate(150) }}</div>
-                    </details>
+                    <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-green-700">Connection Request</span>
+                            <button onclick="copyToClipboard('{{ (contact.linkedin_connection_message or contact.linkedin_message) | e }}', 'Connection request')"
+                                    class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
+                                    title="Copy to clipboard">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-700 line-clamp-3">{{ (contact.linkedin_connection_message or contact.linkedin_message) }}</div>
+                    </div>
+                    {% endif %}
+                    {% if contact.linkedin_inmail %}
+                    <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
+                            <button onclick="copyToClipboard('{{ contact.linkedin_inmail | e }}', 'InMail')"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                    title="Copy to clipboard">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-700 line-clamp-3">{{ contact.linkedin_inmail }}</div>
+                    </div>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -1396,6 +1442,58 @@
                         </a>
                         {% endif %}
                     </div>
+                    <!-- Action buttons for InMail and Connection Request -->
+                    <div class="flex gap-1 mt-2">
+                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'inmail')"
+                                class="flex-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
+                                title="Generate InMail message">
+                            <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            InMail
+                        </button>
+                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'connection')"
+                                class="flex-1 px-2 py-1 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition"
+                                title="Generate connection request">
+                            <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                            Connect
+                        </button>
+                    </div>
+                    <!-- Existing messages with copy buttons -->
+                    {% if contact.linkedin_connection_message or contact.linkedin_message %}
+                    <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-green-700">Connection Request</span>
+                            <button onclick="copyToClipboard('{{ (contact.linkedin_connection_message or contact.linkedin_message) | e }}', 'Connection request')"
+                                    class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
+                                    title="Copy to clipboard">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-700 line-clamp-3">{{ (contact.linkedin_connection_message or contact.linkedin_message) }}</div>
+                    </div>
+                    {% endif %}
+                    {% if contact.linkedin_inmail %}
+                    <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
+                            <button onclick="copyToClipboard('{{ contact.linkedin_inmail | e }}', 'InMail')"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                    title="Copy to clipboard">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-700 line-clamp-3">{{ contact.linkedin_inmail }}</div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
                 {% if job.secondary_contacts|length > 2 %}
