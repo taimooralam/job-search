@@ -1367,7 +1367,7 @@
                     </div>
                     <!-- Action buttons for InMail and Connection Request -->
                     <div class="flex gap-1 mt-2">
-                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'inmail')"
+                        <button onclick="generateOutreach('primary', {{ loop.index0 }}, 'inmail', this)"
                                 class="flex-1 px-2 py-1 text-xs bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition"
                                 title="Generate InMail message">
                             <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1375,7 +1375,7 @@
                             </svg>
                             InMail
                         </button>
-                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'connection')"
+                        <button onclick="generateOutreach('primary', {{ loop.index0 }}, 'connection', this)"
                                 class="flex-1 px-2 py-1 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition"
                                 title="Generate connection request">
                             <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1444,7 +1444,7 @@
                     </div>
                     <!-- Action buttons for InMail and Connection Request -->
                     <div class="flex gap-1 mt-2">
-                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'inmail')"
+                        <button onclick="generateOutreach('secondary', {{ loop.index0 }}, 'inmail', this)"
                                 class="flex-1 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition"
                                 title="Generate InMail message">
                             <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1452,7 +1452,7 @@
                             </svg>
                             InMail
                         </button>
-                        <button onclick="generateContactMessage('{{ job._id }}', '{{ (contact.name or contact.contact_name) | e }}', '{{ (contact.role or contact.contact_role) | e }}', 'connection')"
+                        <button onclick="generateOutreach('secondary', {{ loop.index0 }}, 'connection', this)"
                                 class="flex-1 px-2 py-1 text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition"
                                 title="Generate connection request">
                             <svg class="inline h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

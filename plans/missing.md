@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix + CV Generation NoneType Error)
+**Last Updated**: 2025-12-12 (Session 9: LinkedIn Copy Button Fix + InMail Button HTML Escaping Fix)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -21,6 +21,21 @@
 ---
 
 ### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
+
+**BUG FIX 10: InMail/Connection buttons fail when contact names contain special characters - FIXED**:
+- **Issue**: Clicking InMail or Connection Request buttons on LinkedIn contacts failed with no visible error
+- **Root Cause**: HTML escaping mismatch - contact names were HTML-escaped via Jinja's `| e` filter in template (e.g., `"Smith's"` became `"Smith&apos;s"`), but backend `generateContactMessage()` tried to match the escaped name against raw MongoDB data, causing lookup failures
+- **Fix Applied**:
+  - Changed InMail/Connection buttons from name-based lookup (`generateContactMessage(job_id, name, role, type)`) to index-based generation (`generateOutreach(tier, index, type, button_element)`)
+  - Removed HTML escaping requirement by using contact array indices instead of names
+  - Buttons now pass contact tier ('primary'/'secondary'), loop index, message type, and button element reference
+  - Backend lookup now uses contact array index instead of string matching
+- **Files Modified**:
+  - `frontend/templates/job_detail.html` - Updated 4 InMail/Connection button onclick handlers (primary contacts lines ~1370-1379, secondary contacts lines ~1447-1456)
+- **Test Coverage**: Existing contact tests continue to pass
+- **Impact**: InMail and Connection Request generation now works reliably for all contact names, including those with quotes, apostrophes, and special characters
+
+---
 
 **BUG FIX 9: LinkedIn recruiter contact card copy buttons broken - FIXED**:
 - **Issue**: Copy buttons on LinkedIn recruiter contact cards failed silently when messages contained single quotes (e.g., "I'd") or newlines
