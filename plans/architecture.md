@@ -412,7 +412,9 @@ Final CV: 100% pre-written, interview-defensible, no hallucinations
    - Parses role files with variant structure
    - Supports: Technical, Architecture, Impact, Leadership, Short variants
    - Backward compatible with legacy format
-   - 35 unit tests passing
+   - Enhanced skills parsing: Handles multi-line categorized skill format (e.g., `- **Languages**: JavaScript, Node.js`)
+   - Helper methods: `_parse_categorized_skills()`, `_extract_skills_from_categorized_lines()`, `_split_skills_respecting_parens()`
+   - 44 unit tests passing (including 10 new skills parsing tests)
 
 2. **VariantSelector** (`src/layer6_v2/variant_selector.py`)
    - Weighted scoring algorithm for optimal variant selection

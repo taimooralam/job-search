@@ -1054,7 +1054,9 @@ Changed `#0f766e` (teal/green) → `#475569` (slate-600 dark greyish blue) in:
 - Dataclasses: `AchievementVariant`, `Achievement`, `RoleMetadata`, `SelectionGuide`, `EnhancedRoleData`
 - Parses role files with variant structure: Technical, Architecture, Impact, Leadership, Short
 - Supports both enhanced format (variants) and legacy format (simple bullets)
-- 35 unit tests in `tests/test_variant_parser.py` - all passing
+- Enhanced skills parsing: Handles multi-line categorized skill format (e.g., `- **Languages**: JavaScript, Node.js`)
+  - Helper methods: `_parse_categorized_skills()`, `_extract_skills_from_categorized_lines()`, `_split_skills_respecting_parens()`
+- 44 unit tests in `tests/test_variant_parser.py` - all passing (10 new skills parsing tests added 2025-12-12)
 
 **Phase 2: VariantSelector** (`src/layer6_v2/variant_selector.py` - 391 lines)
 - Weighted scoring algorithm for variant selection:
@@ -1096,14 +1098,14 @@ All 6 role files in `data/master-cv/roles/` converted to enhanced format:
 5. **Interview Ready**: Each variant has defensibility context and notes
 6. **Provenance**: Every bullet traces back to pre-approved variant
 
-**Test Coverage**: 85 tests - 35 variant parser + 20 selector + 21 cv_loader + 9 role_generator
+**Test Coverage**: 94 tests - 44 variant parser + 20 selector + 21 cv_loader + 9 role_generator
 
 **Files Modified**:
-- `src/layer6_v2/variant_parser.py` - New (476 lines)
+- `src/layer6_v2/variant_parser.py` - New (476 lines), enhanced with categorized skills parsing (2025-12-12)
 - `src/layer6_v2/variant_selector.py` - New (391 lines)
 - `src/layer6_v2/cv_loader.py` - Updated with enhanced_data support
 - `src/layer6_v2/role_generator.py` - Added variant generation methods
-- `tests/test_variant_parser.py` - New (35 tests)
+- `tests/test_variant_parser.py` - New (44 tests: 35 original + 10 skills parsing tests)
 - `tests/test_variant_selector.py` - New (20 tests)
 - `tests/unit/test_layer6_v2_cv_loader.py` - Updated (21 tests)
 - `tests/unit/test_layer6_v2_role_generator.py` - Updated (9 tests)

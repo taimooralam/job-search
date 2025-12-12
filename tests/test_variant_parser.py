@@ -430,6 +430,278 @@ class TestSelectionGuide:
 
 
 # ============================================================================
+# TESTS: MULTI-LINE SKILLS PARSING
+# ============================================================================
+
+
+class TestMultiLineSkillsParsing:
+    """Tests for parsing multi-line categorized skills format."""
+
+    @pytest.fixture
+    def multiline_skills_content(self):
+        """Sample content with multi-line categorized skills."""
+        return dedent("""
+        # Test Company
+
+        **Role**: Senior Software Engineer
+        **Location**: Munich, DE
+        **Period**: 2020–Present
+        **Is Current**: true
+        **Career Stage**: Senior (Position 1 of 3)
+
+        ---
+
+        ## Achievements
+
+        ### Achievement 1: Test Achievement
+
+        **Core Fact**: Did something important.
+
+        **Variants**:
+        - **Technical**: Technical version of the achievement
+        - **Short**: Short version
+
+        **Keywords**: test, keyword
+
+        ---
+
+        ## Skills
+
+        **Hard Skills**:
+        - **Languages**: JavaScript, Node.js, C++, C#, SQL, HTML, CSS
+        - **Frameworks**: Qt (Widgets), WPF, Licode
+        - **Tools**: WebRTC, FFmpeg, REST APIs
+
+        **Soft Skills**: Client Communication, Cross-platform Development, Problem Solving
+
+        ---
+        """).strip()
+
+    @pytest.fixture
+    def temp_multiline_skills_file(self, tmp_path, multiline_skills_content):
+        """Create a temporary file with multi-line skills."""
+        role_file = tmp_path / "multiline_skills.md"
+        role_file.write_text(multiline_skills_content)
+        return role_file
+
+    def test_parse_multiline_hard_skills(self, parser, temp_multiline_skills_file):
+        """Parser should extract all hard skills from multi-line categorized format."""
+        result = parser.parse_role_file(temp_multiline_skills_file)
+
+        # Should have all skills from all categories
+        expected_skills = [
+            "JavaScript", "Node.js", "C++", "C#", "SQL", "HTML", "CSS",
+            "Qt (Widgets)", "WPF", "Licode",
+            "WebRTC", "FFmpeg", "REST APIs"
+        ]
+
+        for skill in expected_skills:
+            assert skill in result.hard_skills, f"Missing skill: {skill}"
+
+    def test_parse_multiline_hard_skills_no_category_labels(
+        self, parser, temp_multiline_skills_file
+    ):
+        """Parser should NOT include category labels in skills."""
+        result = parser.parse_role_file(temp_multiline_skills_file)
+
+        # Should NOT have category labels or formatting
+        for skill in result.hard_skills:
+            assert "**" not in skill, f"Found markdown in skill: {skill}"
+            assert skill.strip() != "-", f"Found bullet in skill: {skill}"
+            assert not skill.startswith("Languages"), f"Found category label: {skill}"
+            assert not skill.startswith("Frameworks"), f"Found category label: {skill}"
+            assert not skill.startswith("Tools"), f"Found category label: {skill}"
+
+    def test_parse_soft_skills_single_line(self, parser, temp_multiline_skills_file):
+        """Parser should still handle single-line soft skills."""
+        result = parser.parse_role_file(temp_multiline_skills_file)
+
+        expected_soft = ["Client Communication", "Cross-platform Development", "Problem Solving"]
+        for skill in expected_soft:
+            assert skill in result.soft_skills, f"Missing soft skill: {skill}"
+
+    def test_hard_skills_count(self, parser, temp_multiline_skills_file):
+        """Parser should extract correct number of hard skills."""
+        result = parser.parse_role_file(temp_multiline_skills_file)
+
+        # 7 from Languages + 3 from Frameworks + 3 from Tools = 13
+        assert len(result.hard_skills) == 13
+
+    def test_soft_skills_count(self, parser, temp_multiline_skills_file):
+        """Parser should extract correct number of soft skills."""
+        result = parser.parse_role_file(temp_multiline_skills_file)
+
+        # 3 soft skills
+        assert len(result.soft_skills) == 3
+
+
+class TestSkillsEdgeCases:
+    """Tests for edge cases in skills parsing."""
+
+    @pytest.fixture
+    def parser(self):
+        """Create parser instance."""
+        return VariantParser()
+
+    def test_empty_skills_section(self, parser, tmp_path):
+        """Parser should handle empty skills section."""
+        content = dedent("""
+        # Test Company
+
+        **Role**: Engineer
+        **Location**: Munich
+        **Period**: 2020–Present
+        **Is Current**: true
+        **Career Stage**: Senior
+
+        ---
+
+        ## Achievements
+
+        ### Achievement 1: Test
+
+        **Core Fact**: Did something.
+
+        **Variants**:
+        - **Technical**: Technical version
+
+        **Keywords**: test
+
+        ---
+
+        ## Skills
+
+        ---
+        """).strip()
+
+        role_file = tmp_path / "empty_skills.md"
+        role_file.write_text(content)
+
+        result = parser.parse_role_file(role_file)
+        assert result.hard_skills == []
+        assert result.soft_skills == []
+
+    def test_missing_skills_section(self, parser, tmp_path):
+        """Parser should handle missing skills section."""
+        content = dedent("""
+        # Test Company
+
+        **Role**: Engineer
+        **Location**: Munich
+        **Period**: 2020–Present
+        **Is Current**: true
+        **Career Stage**: Senior
+
+        ---
+
+        ## Achievements
+
+        ### Achievement 1: Test
+
+        **Core Fact**: Did something.
+
+        **Variants**:
+        - **Technical**: Technical version
+
+        **Keywords**: test
+
+        ---
+        """).strip()
+
+        role_file = tmp_path / "no_skills.md"
+        role_file.write_text(content)
+
+        result = parser.parse_role_file(role_file)
+        assert result.hard_skills == []
+        assert result.soft_skills == []
+
+    def test_only_hard_skills(self, parser, tmp_path):
+        """Parser should handle only hard skills present."""
+        content = dedent("""
+        # Test Company
+
+        **Role**: Engineer
+        **Location**: Munich
+        **Period**: 2020–Present
+        **Is Current**: true
+        **Career Stage**: Senior
+
+        ---
+
+        ## Achievements
+
+        ### Achievement 1: Test
+
+        **Core Fact**: Did something.
+
+        **Variants**:
+        - **Technical**: Technical version
+
+        **Keywords**: test
+
+        ---
+
+        ## Skills
+
+        **Hard Skills**:
+        - **Languages**: Python, JavaScript
+
+        ---
+        """).strip()
+
+        role_file = tmp_path / "only_hard.md"
+        role_file.write_text(content)
+
+        result = parser.parse_role_file(role_file)
+        assert "Python" in result.hard_skills
+        assert "JavaScript" in result.hard_skills
+        assert result.soft_skills == []
+
+    def test_skills_with_parentheses(self, parser, tmp_path):
+        """Parser should preserve skills with parentheses."""
+        content = dedent("""
+        # Test Company
+
+        **Role**: Engineer
+        **Location**: Munich
+        **Period**: 2020–Present
+        **Is Current**: true
+        **Career Stage**: Senior
+
+        ---
+
+        ## Achievements
+
+        ### Achievement 1: Test
+
+        **Core Fact**: Did something.
+
+        **Variants**:
+        - **Technical**: Technical version
+
+        **Keywords**: test
+
+        ---
+
+        ## Skills
+
+        **Hard Skills**:
+        - **Frameworks**: Qt (Widgets), AWS (Lambda, ECS, S3)
+
+        **Soft Skills**: Communication
+
+        ---
+        """).strip()
+
+        role_file = tmp_path / "paren_skills.md"
+        role_file.write_text(content)
+
+        result = parser.parse_role_file(role_file)
+        assert "Qt (Widgets)" in result.hard_skills
+        assert "AWS (Lambda, ECS, S3)" in result.hard_skills
+
+
+# ============================================================================
 # TESTS: ERROR HANDLING
 # ============================================================================
 
