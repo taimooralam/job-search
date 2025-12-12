@@ -634,27 +634,6 @@ Contents:
 
 ---
 
-### GAP-007: Time-Based Filters Bug ✅ COMPLETE
-**Priority**: P1 HIGH | **Status**: COMPLETE | **Effort**: 30 minutes
-**Impact**: 1h/3h/6h/12h quick filters now work correctly with hour-level precision
-
-**Root Cause Found**: The `#job-table-container` div was missing `hx-include=".filter-input"`, so when `triggerTableRefresh()` fired, the hidden datetime inputs weren't included in the request.
-
-**Fix Applied** (2025-12-01):
-Added `hx-include=".filter-input"` to the job table container in `frontend/templates/index.html:368-371`:
-```html
-<div id="job-table-container"
-     hx-get="/partials/job-rows"
-     hx-trigger="load, refresh from:body"
-     hx-include=".filter-input"  <!-- ADDED -->
-     hx-indicator=".htmx-indicator">
-```
-
-**How it works**:
-- Quick filter buttons set hidden `datetime-from` and `datetime-to` inputs with full ISO timestamps
-- HTMX now includes these hidden inputs when refreshing the table
-- Backend parses ISO timestamps for hour-level precision filtering
-
 ---
 
 ### GAP-008: GitHub Workflow - Master-CV Sync
@@ -3292,6 +3271,38 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `tests/unit/test_layer6_v2_grader_improver.py` - Added 8 new test methods
   - **Impact**: CVs now optimized for recruiter scanning patterns; front-loaded keywords increase likelihood of passing keyword screening filters and improve initial impression during rapid review
   - **Verification**: All 8 new tests passing; front-loading ratio calculation correct; ATS bonus applied conditionally; feedback includes metrics
+
+### Time-Based Filters Bug & Datetime Parameter Persistence Fix
+- [x] Time-based filter persistence and cache-busting (2025-12-12): Fixed datetime filter parameters not persisting through pagination and sorting, and added cache-busting headers to prevent stale responses.
+  - **Root Cause**: Parameter name mismatch - template was looking for `date_from`/`date_to` but filter params were `datetime_from`/`datetime_to`; additionally, browser cache was causing stale HTML to be served
+  - **Impact**: Time-based quick filters (1h, 3h, 6h, 12h) now correctly preserve selected time range through pagination, sorting, and job list interactions; cache-busting headers (Cache-Control, ETag) prevent serving stale HTML
+  - **Fix Applied**:
+    1. Updated `job_rows_partial()` in `frontend/app.py` to properly pass `datetime_from` and `datetime_to` parameters to template
+    2. Fixed `job_rows.html` template to use correct `datetime_from`/`datetime_to` parameter names in filter_params dict
+    3. Added `@app.after_request` handler in `frontend/app.py` for cache-busting: sets Cache-Control, Pragma, and ETag headers
+    4. Verified parameter flow: JavaScript creates hidden inputs → HTMX sends params → Flask receives → template constructs query → results returned fresh
+  - **Files Modified**:
+    - `frontend/app.py` - Fixed param passing in `job_rows_partial()`, added `@app.after_request` handler for cache-busting (lines 152-160, 285-305)
+    - `frontend/templates/partials/job_rows.html` - Fixed filter_params to use `datetime_from`/`datetime_to` (line 48)
+  - **Tests Added**: 22 new comprehensive tests in `frontend/tests/test_datetime_filter_persistence.py`:
+    - Parameter persistence through pagination (8 tests)
+    - Parameter persistence through sorting (8 tests)
+    - Cache-busting header validation (6 tests)
+    - All tests pass with full coverage of edge cases
+  - **Verification**: All 22 tests passing; manual testing confirms time-based filters persist through pagination/sorting; ETag headers returned with 304 Not Modified responses
+  - **Related Documentation**: `plans/time-filter-bug-fix-and-enhancement.md`, `reports/sessions/2025-11-30-time-filter-bug-investigation.md`
+
+### Applied Only Filter Toggle
+- [x] Added applied filter toggle (2025-12-12): Users can now filter job list to show only applied jobs (those with CV and outreach data).
+  - **Implementation**:
+    - Added `show_applied_only` boolean filter input (default: unchecked)
+    - Updated MongoDB query to exclude jobs without cv_text and outreach_body when toggle is enabled
+    - Added visual toggle button with "Applied Only" label in filter panel
+  - **Files Modified**:
+    - `frontend/templates/index.html` - Added checkbox filter input for "Applied Only"
+    - `frontend/app.py` - Updated query construction to filter based on toggle state
+  - **UX**: Toggle appears next to existing date filters; improves ability to see application progress at a glance
+  - **Verification**: Filter works correctly; applied jobs properly filtered; no regression on other filters
 
 ---
 
