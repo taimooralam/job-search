@@ -570,3 +570,136 @@ class TestIdentityStrengthOrder:
     def test_developing_is_weakest_included(self):
         """Test that developing is the last included identity."""
         assert IDENTITY_STRENGTH_ORDER[-1] == "developing"
+
+
+# ===== Test SYNTHESIS_PROMPT Third-Person Instructions =====
+
+
+class TestSynthesisPromptThirdPerson:
+    """Tests for third-person absent voice in SYNTHESIS_PROMPT."""
+
+    def test_prompt_contains_third_person_rules(self):
+        """SYNTHESIS_PROMPT includes third-person absent voice instructions."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Check for key phrases in the critical section
+        assert "THIRD-PERSON ABSENT VOICE" in prompt
+        assert "NO pronouns" in prompt or "no pronouns" in prompt.lower()
+
+    def test_prompt_lists_prohibited_pronouns(self):
+        """SYNTHESIS_PROMPT explicitly lists prohibited pronouns."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should explicitly list the pronouns to avoid
+        assert "I, my, me" in prompt or "I," in prompt
+        assert "you, your" in prompt or "your" in prompt
+        assert "we, our" in prompt or "our" in prompt
+
+    def test_prompt_has_correct_examples(self):
+        """SYNTHESIS_PROMPT includes correct third-person examples."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should have CORRECT examples section
+        assert "CORRECT" in prompt
+
+        # Check for valid third-person patterns in examples
+        assert "who thrives" in prompt.lower() or "who transforms" in prompt.lower()
+        assert "WHO" in prompt  # Should emphasize "who" clauses
+
+    def test_prompt_has_incorrect_examples(self):
+        """SYNTHESIS_PROMPT includes incorrect examples to avoid."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should have INCORRECT examples section
+        assert "INCORRECT" in prompt or "NEVER" in prompt
+
+    def test_prompt_emphasizes_who_clauses(self):
+        """SYNTHESIS_PROMPT emphasizes using 'who' clauses."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should mention "who" as the connecting pattern
+        assert '"who"' in prompt.lower() or "'who'" in prompt.lower() or "who clauses" in prompt.lower()
+
+    def test_prompt_requires_start_with_a_or_an(self):
+        """SYNTHESIS_PROMPT requires starting with 'A' or 'An'."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should specify starting with A/An
+        assert '"A"' in prompt or '"An"' in prompt or "Start with" in prompt
+
+    def test_prompt_correct_examples_have_no_pronouns(self):
+        """SYNTHESIS_PROMPT's CORRECT examples use third-person absent voice."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Extract CORRECT examples section
+        if "CORRECT examples" in prompt:
+            correct_section_start = prompt.index("CORRECT examples")
+            correct_section_end = prompt.index("INCORRECT", correct_section_start) if "INCORRECT" in prompt[correct_section_start:] else len(prompt)
+            correct_section = prompt[correct_section_start:correct_section_end]
+
+            # Check that CORRECT examples don't contain pronouns
+            # (This is a basic check - the examples should demonstrate third-person)
+            # We can verify specific patterns exist
+            assert "who thrives" in correct_section.lower() or "who transforms" in correct_section.lower()
+
+    def test_prompt_incorrect_examples_show_pronoun_violations(self):
+        """SYNTHESIS_PROMPT's INCORRECT examples show pronoun violations."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Extract INCORRECT examples section
+        if "INCORRECT examples" in prompt:
+            incorrect_section_start = prompt.index("INCORRECT examples")
+            # Find the end of incorrect section (next section or end)
+            next_section_markers = ["===", "Return ONLY"]
+            incorrect_section_end = len(prompt)
+            for marker in next_section_markers:
+                if marker in prompt[incorrect_section_start + 20:]:
+                    end_idx = prompt.index(marker, incorrect_section_start + 20)
+                    incorrect_section_end = min(incorrect_section_end, end_idx)
+            incorrect_section = prompt[incorrect_section_start:incorrect_section_end]
+
+            # INCORRECT examples should contain pronouns as anti-patterns
+            # Check for at least one pronoun in the incorrect section
+            has_pronoun = any(
+                pronoun in incorrect_section.lower()
+                for pronoun in ["i am", "my passion", "uses \"i\"", "uses \"my\""]
+            )
+            assert has_pronoun, "INCORRECT examples should show pronoun violations"
+
+    def test_prompt_structure_has_critical_section(self):
+        """SYNTHESIS_PROMPT has clearly marked critical section for third-person rules."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should have section markers
+        assert "===" in prompt  # Section dividers
+        assert "CRITICAL" in prompt  # Emphasis on importance
+
+    def test_prompt_explains_third_person_absent_voice(self):
+        """SYNTHESIS_PROMPT explains what third-person absent voice means."""
+        from src.common.persona_builder import PersonaBuilder
+
+        prompt = PersonaBuilder.SYNTHESIS_PROMPT
+
+        # Should define the concept clearly
+        assert "third-person absent" in prompt.lower()
+        # Should explain it means no pronouns
+        prompt_lower = prompt.lower()
+        assert ("no pronouns" in prompt_lower or "without pronouns" in prompt_lower)

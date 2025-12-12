@@ -1088,6 +1088,205 @@ class TestThirdPersonAbsentVoice:
             assert not _contains_pronouns(tagline), f"Fallback for '{role}' contains pronouns: {tagline}"
 
 
+# ===== TESTS: _check_third_person_voice Helper =====
+
+class TestCheckThirdPersonVoiceHelper:
+    """Tests for _check_third_person_voice helper function."""
+
+    def test_valid_third_person_no_violations(self):
+        """Third-person absent voice text passes validation."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "An engineering leader who thrives on building high-performing teams."
+        violations = _check_third_person_voice(text)
+
+        assert violations == []
+
+    def test_detects_first_person_I(self):
+        """Detects first-person 'I' pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "An engineering leader, I thrive on building teams."
+        violations = _check_third_person_voice(text)
+
+        assert "I" in violations
+
+    def test_detects_first_person_my(self):
+        """Detects first-person 'my' possessive."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "A leader who leverages my expertise in cloud systems."
+        violations = _check_third_person_voice(text)
+
+        assert "my" in violations
+
+    def test_detects_first_person_me(self):
+        """Detects first-person 'me' object pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Let me help you build better systems."
+        violations = _check_third_person_voice(text)
+
+        assert "me" in violations
+
+    def test_detects_first_person_mine(self):
+        """Detects first-person 'mine' possessive pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "The success is mine to claim."
+        violations = _check_third_person_voice(text)
+
+        assert "mine" in violations
+
+    def test_detects_second_person_you(self):
+        """Detects second-person 'you' pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "A leader who helps you achieve results."
+        violations = _check_third_person_voice(text)
+
+        assert "you" in violations
+
+    def test_detects_second_person_your(self):
+        """Detects second-person 'your' possessive."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Ready to transform your engineering organization."
+        violations = _check_third_person_voice(text)
+
+        assert "your" in violations
+
+    def test_detects_second_person_yours(self):
+        """Detects second-person 'yours' possessive pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Success like yours is achievable."
+        violations = _check_third_person_voice(text)
+
+        assert "yours" in violations
+
+    def test_detects_first_person_plural_we(self):
+        """Detects first-person plural 'we' pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "We built high-performing teams together."
+        violations = _check_third_person_voice(text)
+
+        assert "we" in violations
+
+    def test_detects_first_person_plural_our(self):
+        """Detects first-person plural 'our' possessive."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Our team delivered exceptional results."
+        violations = _check_third_person_voice(text)
+
+        assert "our" in violations
+
+    def test_detects_first_person_plural_us(self):
+        """Detects first-person plural 'us' object pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Let us build the future together."
+        violations = _check_third_person_voice(text)
+
+        assert "us" in violations
+
+    def test_detects_first_person_plural_ours(self):
+        """Detects first-person plural 'ours' possessive pronoun."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "The success is ours to share."
+        violations = _check_third_person_voice(text)
+
+        assert "ours" in violations
+
+    def test_detects_multiple_violations(self):
+        """Detects multiple pronoun violations in same text."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "I am a leader who leverages my expertise."
+        violations = _check_third_person_voice(text)
+
+        assert "I" in violations
+        assert "my" in violations
+        assert len(violations) == 2
+
+    def test_case_insensitive_detection(self):
+        """Detection is case insensitive."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "MY passion is building teams where I excel."
+        violations = _check_third_person_voice(text)
+
+        # Should detect both regardless of case
+        assert len(violations) >= 2
+        # Check that either lowercase or uppercase version is detected
+        assert any(v.lower() == "my" for v in violations)
+        assert any(v.lower() == "i" for v in violations)
+
+    def test_word_boundary_avoids_false_positives(self):
+        """Word boundaries prevent false positives in substrings."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        # "my" in "dynamically" should NOT trigger
+        text = "A leader who works dynamically with teams."
+        violations = _check_third_person_voice(text)
+
+        assert violations == []
+
+    def test_word_boundary_my_in_dynamically(self):
+        """Word boundary prevents 'my' match in 'dynamically'."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "Dynamically optimizing systems for performance."
+        violations = _check_third_person_voice(text)
+
+        assert "my" not in violations
+
+    def test_word_boundary_us_in_business(self):
+        """Word boundary prevents 'us' match in 'business'."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = "A business leader driving transformation."
+        violations = _check_third_person_voice(text)
+
+        assert "us" not in violations
+
+    def test_empty_text_returns_no_violations(self):
+        """Empty text returns empty violations list."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        violations = _check_third_person_voice("")
+
+        assert violations == []
+
+    def test_complex_valid_text(self):
+        """Complex third-person absent voice text passes."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = (
+            "A platform architect who transforms infrastructure challenges into "
+            "competitive advantages through scalable cloud solutions."
+        )
+        violations = _check_third_person_voice(text)
+
+        assert violations == []
+
+    def test_complex_invalid_text_multiple_types(self):
+        """Complex text with various pronoun types detected."""
+        from src.layer6_v2.header_generator import _check_third_person_voice
+
+        text = (
+            "I am an engineering leader with my team, and we work together "
+            "to help you achieve your goals."
+        )
+        violations = _check_third_person_voice(text)
+
+        # Should detect: I, my, we, you, your
+        assert len(violations) >= 5
+
+
 class TestHybridOutputRendering:
     """Test output rendering for hybrid format."""
 
