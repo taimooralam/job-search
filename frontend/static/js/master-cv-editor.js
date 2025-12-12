@@ -796,7 +796,9 @@ class MasterCVEditor {
         const container = document.getElementById('skill-aliases-container');
         if (!container || !this.taxonomy?.skill_aliases) return;
 
-        const aliases = Object.entries(this.taxonomy.skill_aliases);
+        // Filter out comment entries - only keep entries where value is an array
+        const aliases = Object.entries(this.taxonomy.skill_aliases)
+            .filter(([key, value]) => Array.isArray(value));
         if (aliases.length === 0) {
             container.innerHTML = '<div class="text-sm italic p-3" style="color: var(--text-tertiary);">No aliases defined</div>';
             return;
