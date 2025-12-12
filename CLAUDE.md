@@ -74,6 +74,18 @@ Example prompt: "Analyze [issue/feature]. What is the expected behavior? Which c
 
 ### Step 5: Commit & Summarize
 
+**⚠️ MANDATORY CHECKLIST - DO NOT SKIP ⚠️**
+
+Before providing any summary, you MUST complete ALL of these for bugs/features:
+
+| Step | Requirement | How to Verify |
+|------|-------------|---------------|
+| ✅ Tests | `test-generator` agent was used | Test file exists and all tests pass |
+| ✅ Docs | `doc-sync` agent was used | `missing.md` or `architecture.md` was updated |
+| ✅ Commit | Changes are committed | `git status` shows clean working tree |
+
+**DO NOT provide a summary with empty checklist fields. If a step was skipped, go back and complete it.**
+
 **Atomic commits (no Claude signature):**
 ```bash
 # Run tests first
@@ -84,7 +96,7 @@ git add <specific-files>
 git commit -m "fix(component): brief description"
 ```
 
-**Final Summary Format:**
+**Final Summary Format (ALL FIELDS REQUIRED):**
 ```
 ## Summary
 
@@ -95,9 +107,12 @@ git commit -m "fix(component): brief description"
 **Files Changed:**
 - `path/to/file.py` - [what changed]
 
-**Tests Added:** [test file names]
+## Workflow Checklist
+- [x] Tests: `path/to/test_file.py` (X tests passing)
+- [x] Docs: `missing.md` updated
+- [x] Commits: `abc1234` - "commit message"
 
-**Docs Updated:** [which docs]
+**INCOMPLETE CHECKLIST = INCOMPLETE TASK. Go back and finish.**
 ```
 
 ---
@@ -145,7 +160,17 @@ User Request
        (run tests first, no Claude signature)
              │
              ▼
-       Summary with Root Cause & Fix
+    ┌─────────────────────────────────┐
+    │ ⚠️ MANDATORY CHECKLIST          │
+    │ Before summary, verify:         │
+    │ ✅ Tests created & passing      │
+    │ ✅ Docs updated                 │
+    │ ✅ Changes committed            │
+    │ INCOMPLETE = GO BACK            │
+    └────────────┬────────────────────┘
+                 │
+                 ▼
+       Summary with Checklist
 ```
 
 ---
