@@ -78,11 +78,38 @@ def load_fixtures() -> Dict[str, Any]:
     with open(test_job_path) as f:
         test_job_1 = json.load(f)
 
-    # Load master CV
-    master_cv_path = Path(__file__).parent.parent / "master-cv.md"
+    # Load master CV (MongoDB first, then file fallback)
     master_cv = ""
-    if master_cv_path.exists():
-        master_cv = master_cv_path.read_text()
+
+    # Try MongoDB first if enabled
+    try:
+        from src.common.config import Config
+        if Config.USE_MASTER_CV_MONGODB:
+            from src.layer6_v2.cv_loader import CVLoader
+            loader = CVLoader(use_mongodb=True)
+            candidate = loader.load()
+            if candidate:
+                content = "\n\n".join(
+                    role.raw_content for role in candidate.roles if role.raw_content
+                )
+                if content:
+                    master_cv = content
+    except Exception:
+        pass
+
+    # File fallback if MongoDB didn't work
+    if not master_cv:
+        master_cv_path = Path(__file__).parent.parent / "master-cv.md"
+        if master_cv_path.exists():
+            master_cv = master_cv_path.read_text()
+
+    # Try structured roles directory as last resort
+    if not master_cv:
+        roles_dir = Path(__file__).parent.parent / "data" / "master-cv" / "roles"
+        if roles_dir.exists():
+            texts = [f.read_text() for f in sorted(roles_dir.glob("*.md"))]
+            if texts:
+                master_cv = "\n\n".join(texts)
 
     return {
         "test_job_1": test_job_1,

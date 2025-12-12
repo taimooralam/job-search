@@ -20,10 +20,36 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def master_cv() -> str:
-    """Load master CV for hallucination checking."""
+    """Load master CV for hallucination checking (MongoDB or file)."""
+    from src.common.config import Config
+
+    # Try MongoDB first if enabled
+    if Config.USE_MASTER_CV_MONGODB:
+        try:
+            from src.layer6_v2.cv_loader import CVLoader
+            loader = CVLoader(use_mongodb=True)
+            candidate = loader.load()
+            if candidate:
+                content = "\n\n".join(
+                    role.raw_content for role in candidate.roles if role.raw_content
+                )
+                if content:
+                    return content
+        except Exception:
+            pass
+
+    # File fallback: try legacy master-cv.md
     master_cv_path = Path(__file__).parent.parent.parent / "master-cv.md"
     if master_cv_path.exists():
         return master_cv_path.read_text()
+
+    # Try structured roles directory
+    roles_dir = Path(__file__).parent.parent.parent / "data" / "master-cv" / "roles"
+    if roles_dir.exists():
+        texts = [f.read_text() for f in sorted(roles_dir.glob("*.md"))]
+        if texts:
+            return "\n\n".join(texts)
+
     return ""
 
 

@@ -249,8 +249,9 @@ jobs:
             ssh-keyscan -t rsa -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
             # Copy files using scp (30s connection timeout)
+            # Note: master-cv.md removed - now using MongoDB for CV data
             scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 \
-              master-cv.md docker-compose.runner.yml \
+              docker-compose.runner.yml \
               ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/
 
             # Copy data directory
