@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-12 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), 1700+ total tests passing
+**Last Updated**: 2025-12-13 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), Cover Letter Integration into CV Generation Partial Pipeline (NEW - 2025-12-13), 1700+ total tests passing
 
 ---
 
@@ -2937,8 +2937,23 @@ def execute(self, job_id: str, ...):
     emit_progress("validate", "Validating job data...")
     emit_progress("build_state", "Building generation state...")
     emit_progress("cv_generator", "Generating CV...")
+    emit_progress("cover_letter_generator", "Generating cover letter...")  # NEW
     emit_progress("persist", "Saving to MongoDB...")
 ```
+
+**Cover Letter Integration** (NEW - 2025-12-13):
+- **Feature**: CV Generation now atomically generates both CV and cover letter
+- **Architecture**: After CV generation completes, `CoverLetterGenerator` is called with same research context
+- **Inputs**: Reuses job state (pain_points, company_research, role_research, selected_stars, extracted_jd, job_title, candidate_profile)
+- **Output**: Both CV and cover letter persisted to MongoDB in single transaction
+- **Frontend UI** (`frontend/templates/job_detail.html`, `frontend/static/js/job-detail.js`):
+  - Cover letter section displays below CV section
+  - Copy button: Copies to clipboard with visual feedback
+  - Edit/Save: Inline editing with word count validation
+  - Export PDF: Downloads cover letter as standalone PDF
+  - Word count indicator: Real-time word count (220-380 word standard)
+- **SSE Streaming**: Progress callback emits "cover_letter_generator" step visible in CLI panel
+- **Data Model**: No schema changes - cover_letter stored in existing job document structure
 
 **4. Streaming Endpoint Integration** (`runner_service/routes/operations.py`):
 ```python
