@@ -3145,6 +3145,52 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `identity_statement`: Role-specific professional identity (e.g., "Solutions-focused engineering leader")
     - `voice`: Writing tone and style indicators
     - `power_verbs`: High-impact action verbs specific to role category
+
+### Application URL & Planned Answers Feature
+- [x] Application URL field and Planned Answers system (2025-12-12): Added application form URL tracking and LLM-powered answer generation for job application pre-filling.
+  - **Feature 1 - Application URL**:
+    - Editable field in job detail page sidebar (after Job URL field)
+    - Stores actual ATS/Workday/Greenhouse application form URL separately from job posting URL
+    - Synced to MongoDB via updated `PUT /api/jobs/{job_id}` endpoint
+  - **Feature 2 - Planned Answers**:
+    - Array of Q&A objects stored in MongoDB for each job
+    - UI card in job detail right sidebar with copy/edit/delete buttons per answer
+    - Auto-Fill button triggers LLM-based answer generation via new endpoint `POST /api/jobs/{job_id}/generate-answers`
+    - Answers generated using job context: pain points, STAR records, company research
+    - Markdown editor for answer content with preview support
+  - **Backend Service**:
+    - New `src/services/answer_generator_service.py` service with `generate_answers()` method
+    - Synthesizes context from job analysis and master CV data
+    - Supports batch generation and updates existing answers
+  - **Data Model Updates**:
+    - Added `application_url` (string) to JobState in `src/common/state.py`
+    - Added `planned_answers` (PlannedAnswer array) to JobState
+    - New `PlannedAnswer` TypedDict in `src/common/types.py` with `question`, `answer`, `answer_type` fields
+  - **Frontend Updates**:
+    - `frontend/app.py` - Added fields to MongoDB whitelist, new generate-answers endpoint
+    - `frontend/templates/job_detail.html` - Added Application URL field + Planned Answers card + modal
+    - `frontend/static/js/job-detail.js` - Functions for managing answers (copy, edit, delete, save)
+  - **Persistence**:
+    - `src/layer7/output_publisher.py` - Updated to persist application_url and planned_answers
+  - **Files Created**:
+    - `src/services/answer_generator_service.py` - Answer generation service (NEW)
+    - `tests/unit/services/test_answer_generator_service.py` - 17 unit tests (NEW)
+  - **Files Modified**:
+    - `frontend/app.py` - Whitelist fields, generate-answers endpoint
+    - `frontend/templates/job_detail.html` - UI components
+    - `frontend/static/js/job-detail.js` - Answer management logic
+    - `src/common/state.py` - JobState fields
+    - `src/common/types.py` - PlannedAnswer type
+    - `src/layer7/output_publisher.py` - Persistence layer
+  - **Impact**: Users can now track application form URLs separately from job postings and pre-generate answers to common application questions using AI, streamlining the job application process
+  - **Verification**: 17 service tests passing; MongoDB persistence validated; frontend endpoints functional; manual testing confirms answer generation and CRUD operations
+
+### Role Persona Registry Implementation
+- [x] Added comprehensive persona data to role_skills_taxonomy.json (2025-12-12): Populated persona registry for all 8 role categories with identity, voice, power verbs, tagline templates, and achievement focus.
+  - **Data Added** (`data/master-cv/role_skills_taxonomy.json`):
+    - `identity_statement`: Role-specific professional identity (e.g., "Solutions-focused engineering leader")
+    - `voice`: Writing tone and style indicators
+    - `power_verbs`: High-impact action verbs specific to role category
     - `tagline_templates`: Role-specific professional taglines with placeholders
     - `metric_priorities`: Quantifiable measures most relevant to role
     - `key_achievement_focus`: Strategic impact areas for this role
