@@ -1050,7 +1050,9 @@ def update_job(job_id: str):
     editable_fields = [
         "status", "remarks", "notes", "priority",
         "company", "title", "location", "score", "url", "jobUrl",
-        "cover_letter"  # Added for Module 3: Cover Letter Editing
+        "cover_letter",  # Added for Module 3: Cover Letter Editing
+        "application_url",  # Application form URL (ATS/Workday/Greenhouse)
+        "planned_answers",  # Pre-generated Q&A pairs for application form
     ]
     update_data = {}
 
@@ -1061,6 +1063,15 @@ def update_job(job_id: str):
                 return jsonify({
                     "error": f"Invalid status. Must be one of: {', '.join(JOB_STATUSES)}"
                 }), 400
+            # Validate planned_answers structure if provided
+            if field == "planned_answers" and data[field] is not None:
+                if not isinstance(data[field], list):
+                    return jsonify({"error": "planned_answers must be an array"}), 400
+                for i, qa in enumerate(data[field]):
+                    if not isinstance(qa, dict):
+                        return jsonify({"error": f"planned_answers[{i}] must be an object"}), 400
+                    if "question" not in qa or "answer" not in qa:
+                        return jsonify({"error": f"planned_answers[{i}] must have question and answer"}), 400
             update_data[field] = data[field]
 
     if not update_data:
@@ -1084,6 +1095,53 @@ def update_job(job_id: str):
         "success": True,
         "job": serialize_job(job)
     })
+
+
+@app.route("/api/jobs/<job_id>/generate-answers", methods=["POST"])
+@login_required
+def generate_planned_answers(job_id: str):
+    """
+    Auto-generate planned answers using Answer Generator Service.
+
+    Uses job description, annotations, extractions, pain points, and master CV
+    to generate personalized answers for common application questions.
+    """
+    db = get_db()
+    collection = db["level-2"]
+
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        return jsonify({"error": "Invalid job_id format"}), 400
+
+    job = collection.find_one({"_id": object_id})
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+
+    try:
+        from src.services.answer_generator_service import AnswerGeneratorService
+        service = AnswerGeneratorService()
+        planned_answers = service.generate_answers(job)
+
+        # Persist to MongoDB
+        collection.update_one(
+            {"_id": object_id},
+            {"$set": {
+                "planned_answers": planned_answers,
+                "planned_answers_generated_at": datetime.utcnow(),
+                "updatedAt": datetime.utcnow()
+            }}
+        )
+
+        logger.info(f"Generated {len(planned_answers)} planned answers for job {job_id}")
+
+        return jsonify({
+            "success": True,
+            "planned_answers": planned_answers
+        })
+    except Exception as e:
+        logger.error(f"Failed to generate answers for job {job_id}: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/locations", methods=["GET"])

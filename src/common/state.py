@@ -239,6 +239,8 @@ class JobState(TypedDict):
     # ===== LAYER 1.5: Application Form Extractor =====
     # Extracts form fields from job application pages for pre-filling
     application_form_fields: Optional[List[FormField]]  # Form fields with labels, types, requirements
+    application_url: Optional[str]  # URL to actual application form (ATS/Workday/Greenhouse)
+    planned_answers: Optional[List[Dict[str, Any]]]  # Pre-generated Q&A pairs for application form
 
     # ===== LAYER 4: Opportunity Mapper (Phase 6) =====
     fit_score: Optional[int]         # 0-100 overall fit rating

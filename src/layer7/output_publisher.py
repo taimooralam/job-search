@@ -383,6 +383,13 @@ class OutputPublisher:
             if state.get('token_usage'):
                 update_data['token_usage'] = state['token_usage']
 
+            # Application form fields
+            if state.get('application_url'):
+                update_data['application_url'] = state['application_url']
+
+            if state.get('planned_answers'):
+                update_data['planned_answers'] = state['planned_answers']
+
             # Build pipeline run entry for history tracking
             # NOTE: datetime is already imported at module level (line 13)
             pipeline_run_entry = {
