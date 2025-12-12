@@ -27,6 +27,7 @@ async def execute_pipeline(
     profile_ref: Optional[str],
     log_callback,
     processing_tier: Optional[str] = "auto",
+    process_callback: Optional[callable] = None,
 ) -> tuple[bool, Dict[str, str], Optional[Dict]]:
     """
     Execute the pipeline as a subprocess and stream logs.
@@ -36,6 +37,7 @@ async def execute_pipeline(
         profile_ref: Optional profile path to pass to pipeline
         log_callback: Function to call with each log line (e.g., _append_log)
         processing_tier: Processing tier (auto, A, B, C, D) - GAP-045
+        process_callback: Optional callback to receive process handle for cancellation support
 
     Returns:
         Tuple of (success: bool, artifacts: Dict[str, str], pipeline_state: Optional[Dict])
@@ -65,6 +67,10 @@ async def execute_pipeline(
             stderr=asyncio.subprocess.STDOUT,  # Merge stderr into stdout
             env={**os.environ},  # Inherit environment variables
         )
+
+        # Register process for cancellation support
+        if process_callback:
+            process_callback(process)
 
         # Stream output line by line
         if process.stdout:
