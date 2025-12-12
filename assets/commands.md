@@ -7,28 +7,33 @@ use the prompts/simple-outreach.prompt.md for applications/FILIGRAN/Staff*-\_Tec
 ## Local Development
 
 ### Start Everything (Docker + Flask) - All in Background
+
 ```bash
-docker compose -f docker-compose.local.yml down && docker compose -f docker-compose.local.yml up -d --build && source .venv/bin/activate && nohup python frontend/app.py > flask.log 2>&1 &
+docker compose -f docker-compose.local.yml down && docker compose -f docker-compose.local.yml up -d --build && FLASK_DEBUG=true .venv/bin/python frontend/app.py > flask.log 2>&1 &
 ```
 
 ### Start Individual Services
 
 **Flask frontend only (port 5000):**
+
 ```bash
 source .venv/bin/activate && python frontend/app.py
 ```
 
 **Docker services only (runner:8000 + pdf:8001):**
+
 ```bash
 docker compose -f docker-compose.local.yml down && docker compose -f docker-compose.local.yml up -d --build
 ```
 
 ### Stop Everything
+
 ```bash
 docker compose -f docker-compose.local.yml down && pkill -f "python frontend/app.py"
 ```
 
 ### Check Running Processes
+
 ```bash
 docker ps && ps aux | grep "python frontend/app.py" | grep -v grep
 ```
