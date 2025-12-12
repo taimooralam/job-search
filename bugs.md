@@ -124,3 +124,39 @@ JD extraction waits pipelien with empty screen. Only starts with the extraction 
 - Test frontend receives logs during execution (not just after completion)
 
 **Verification**: All 12 SSE streaming tests pass, 1735 unit tests passing, frontend displays logs in real-time during pipeline operations.
+
+---
+
+### [FIXED] PersonaBuilder Generating First-Person Instead of Third-Person-Absent Voice
+
+**Issue**: Synthesized personas were generated with first-person pronouns (e.g., "I thrive on cloud transformations", "my passion is...") instead of the required third-person-absent professional voice (e.g., "who thrives on cloud transformations", "passionate about...").
+
+**Root Cause**: The `SYNTHESIS_PROMPT` in `src/common/persona_builder.py` lacked explicit constraints for voice. Without guidance, the LLM defaulted to first-person natural language, which broke the professional convention for CV profiles where personas must be introduced as external descriptions (third-person-absent).
+
+**Impact**: CV profiles injected with personas had inconsistent voice. When header generator added personas to CV profile sections, they read as first-person self-descriptions instead of professional third-party characterizations. This broke the polished, ATS-friendly format expected in professional documents.
+
+**Fix**:
+1. **Enhanced SYNTHESIS_PROMPT** (`src/common/persona_builder.py`):
+   - Added explicit section: "VOICE REQUIREMENTS: Use third-person-absent voice exclusively"
+   - Included negative examples: "Bad: 'I thrive on...', Bad: 'My passion is...'"
+   - Included positive examples: "Good: 'who thrives on...', Good: 'passionate about...'"
+   - Clarified that personas are external descriptions, not first-person statements
+
+2. **Defense-in-Depth Validation** (`src/layer6_v2/header_generator.py`):
+   - Added `_check_third_person_voice()` helper that validates persona text
+   - Detects first-person pronouns: "I ", "I'", "my ", "me ", "we ", "our "
+   - Validates before persona injection into CV; logs violations
+   - Returns validation status for monitoring
+
+3. **Test Coverage**:
+   - Added 10 tests in `tests/unit/test_persona_builder.py` for prompt structure validation
+   - Added 20 tests in `tests/unit/test_layer6_v2_header_generator.py` for voice checking logic
+   - Tests verify: voice validation catches violations, passes good personas, handles edge cases
+
+**Files Changed**:
+- `src/common/persona_builder.py` - Enhanced SYNTHESIS_PROMPT with explicit voice constraints
+- `src/layer6_v2/header_generator.py` - Added `_check_third_person_voice()` validation helper
+
+**Verification**: 30 new tests pass; voice validation successfully catches first-person violations; SYNTHESIS_PROMPT enforces third-person-absent in LLM output
+
+**Important Note**: This fix affects persona synthesis going forward. Existing personas in MongoDB were created before this fix and may contain first-person language. Users should re-synthesize their personas via the Master CV Editor "Synthesize Persona" button to apply the corrected voice. New personas generated after this fix will automatically use third-person-absent voice.
