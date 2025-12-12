@@ -3237,6 +3237,41 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - No breaking changes to API contracts; CVLoader transparent interface
   - **Verification**: All unit tests passing; 6 roles successfully loaded from MongoDB; file fallback tested
 
+### Keyword Front-Loading for ATS Optimization
+- [x] Implemented keyword front-loading for CV bullet generation (2025-12-12): CV bullets now position JD keywords in the first 3 words to enable recruiters' 6-7 second initial CV scan to instantly match experience to requirements.
+  - **Feature**: Generation prompts instruct LLM to place JD keywords naturally in opening of bullets (e.g., "Architected Kubernetes migration..." instead of "Led migration to Kubernetes...")
+  - **Grading Enhancement**: Added `_check_keyword_front_loading()` method in `src/layer6_v2/grader.py` that:
+    - Extracts bullets from CV using regex pattern for markers (•, -, *)
+    - Identifies JD keywords appearing anywhere in each bullet
+    - Checks if keyword appears within first 3 words of bullet text
+    - Calculates front-loading ratio: (front_loaded_count / keyword_addressable_count)
+  - **ATS Scoring Integration**:
+    - 0.5 point bonus added to ATS dimension score when front-loading ratio >= 50%
+    - Feedback includes front-loading metrics: "5/8 front-loaded (62%)"
+    - Issues flagged when addressable keywords have low front-loading ratio
+  - **Generation Prompts Updated**:
+    - `src/layer6_v2/prompts/role_generation.py`: Added KEYWORD FRONT-LOADING section (21 lines) with guidelines and examples
+    - `src/layer6_v2/prompts/header_generation.py`: Enhanced KEY ACHIEVEMENTS section with front-loading guidance
+  - **Unit Tests Added**: 8 new tests covering all edge cases:
+    - `test_detects_front_loaded_keywords()` - All keywords in first 3 words (100% ratio)
+    - `test_detects_buried_keywords()` - All keywords buried later in bullets (0% ratio)
+    - `test_mixed_front_loading()` - Mix of front-loaded and buried (67% ratio)
+    - `test_empty_keywords()` - No keywords to check (perfect score)
+    - `test_no_keyword_matches()` - Bullets with no keyword matches
+    - `test_case_insensitive()` - Keyword matching ignores case
+    - `test_short_bullets()` - Handles bullets with <3 words
+    - `test_integration_with_ats_scoring()` - Front-loading integrated into ATS dimension
+  - **Example Transformation**:
+    - Before: "Created clean architecture by devolving monolith to microservices"
+    - After: "Architected microservices migration from monolith, reducing deployment time 75%"
+  - **Files Modified**:
+    - `src/layer6_v2/grader.py` - Added `_check_keyword_front_loading()` method + ATS scoring bonus
+    - `src/layer6_v2/prompts/role_generation.py` - Added keyword front-loading guidance (lines 94-122)
+    - `src/layer6_v2/prompts/header_generation.py` - Enhanced KEY ACHIEVEMENTS section
+    - `tests/unit/test_layer6_v2_grader_improver.py` - Added 8 new test methods
+  - **Impact**: CVs now optimized for recruiter scanning patterns; front-loaded keywords increase likelihood of passing keyword screening filters and improve initial impression during rapid review
+  - **Verification**: All 8 new tests passing; front-loading ratio calculation correct; ATS bonus applied conditionally; feedback includes metrics
+
 ---
 
 ## Quick Reference

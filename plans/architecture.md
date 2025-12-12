@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-12 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), 1700+ total tests passing
+**Last Updated**: 2025-12-12 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), 1700+ total tests passing
 
 ---
 
@@ -2118,6 +2118,95 @@ class KeywordPlacementResult:
 - Keywords visible to both human and ATS readers
 - Users get actionable improvement suggestions
 - Higher likelihood of passing keyword screening filters
+
+---
+
+### Feature 5: Keyword Front-Loading in CV Generation (P1.3 - NEW 2025-12-12)
+
+**Problem**: Recruiters conduct 6-7 second initial CV scans. Keywords appearing mid-sentence or later in bullets are often missed.
+
+**Solution**: Generation prompts instruct LLM to position JD keywords naturally within the first 3 words of achievement bullets.
+
+**Implementation: `CVGrader._check_keyword_front_loading()`** (`src/layer6_v2/grader.py`):
+
+```python
+def _check_keyword_front_loading(
+    self,
+    cv_text: str,
+    jd_keywords: List[str],
+) -> Tuple[float, int, int]:
+    """
+    Check if JD keywords appear in the first 3 words of bullets.
+
+    Returns:
+        (front_load_ratio, front_loaded_count, keyword_addressable_count)
+
+    Example:
+        ✓ "Architected Kubernetes cluster..." - keyword in word 2
+        ✓ "Scaled AWS infrastructure..." - keyword in word 2
+        ✗ "Led initiative to use Kubernetes..." - keyword in word 5
+    """
+```
+
+**Algorithm**:
+1. Extract all bullets from CV (regex: `[•\-\*]\s*([^\n]+)`)
+2. For each bullet, check if it contains ANY JD keyword (case-insensitive)
+3. If keyword present, check if it appears in first 3 words
+4. Calculate ratio: `front_loaded_count / keyword_addressable_count`
+5. Return tuple: (ratio, front_loaded_count, addressable_count)
+
+**Generation Prompts Enhanced**:
+- `src/layer6_v2/prompts/role_generation.py`: Added KEYWORD FRONT-LOADING section (lines 94-122)
+  - Guidelines for natural keyword placement (e.g., "Architected Kubernetes" vs "Led initiative using Kubernetes")
+  - When to skip front-loading if keyword cannot fit naturally
+  - Examples of good vs bad front-loading
+- `src/layer6_v2/prompts/header_generation.py`: Enhanced KEY ACHIEVEMENTS section
+  - Instructions to integrate keywords into opening phrases
+
+**ATS Scoring Integration**:
+```python
+# In _grade_ats_optimization():
+front_load_bonus = 0.5 if front_load_ratio >= 0.5 else 0
+score = min(10, base_score + format_bonus + front_load_bonus)
+
+# Feedback includes metrics:
+feedback = f"Found {found_count}/{len(jd_keywords)} keywords, {front_loaded}/{addressable} front-loaded ({front_load_ratio:.0%})"
+
+# Issues flagged for low front-loading:
+if addressable > 0 and front_load_ratio < 0.5:
+    issues.append(f"Low keyword front-loading: only {front_load_ratio:.0%} of keyword bullets...")
+```
+
+**Unit Tests** (8 tests in `tests/unit/test_layer6_v2_grader_improver.py`):
+```
+test_detects_front_loaded_keywords()    - All keywords in first 3 words (100%)
+test_detects_buried_keywords()          - All keywords buried (0%)
+test_mixed_front_loading()              - Mix of front-loaded and buried (67%)
+test_empty_keywords()                   - No keywords (perfect score)
+test_no_keyword_matches()               - Bullets with no keyword matches
+test_case_insensitive()                 - Case-insensitive matching
+test_short_bullets()                    - Handles <3 word bullets
+test_integration_with_ats_scoring()     - Front-loading in ATS dimension
+```
+
+**Example Transformation**:
+```
+BEFORE: "Created clean architecture by devolving monolith to microservices"
+AFTER:  "Architected microservices migration from monolith, reducing deployment time 75%"
+         ↑ Keyword in word 2
+```
+
+**Impact**:
+- Recruiter can instantly match "Architected" + "microservices" to JD requirements during initial scan
+- 0.5 point ATS bonus when ≥50% of keyword-containing bullets are front-loaded
+- Feedback shows metrics: "5/8 front-loaded (62%)" helps user understand optimization level
+- Increases likelihood of passing ATS keyword screening systems
+
+**Files Modified**:
+- `src/layer6_v2/grader.py` - Added `_check_keyword_front_loading()` method + ATS bonus
+- `src/layer6_v2/prompts/role_generation.py` - Added KEYWORD FRONT-LOADING section (21 lines)
+- `src/layer6_v2/prompts/header_generation.py` - Enhanced KEY ACHIEVEMENTS guidance
+- `tests/unit/test_layer6_v2_grader_improver.py` - Added 8 new test methods
 
 ---
 
