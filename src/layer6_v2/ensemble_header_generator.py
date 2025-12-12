@@ -31,7 +31,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.llm_factory import create_tracked_llm_for_model
 from src.common.tiering import (
     ProcessingTier,
     TierConfig,
@@ -160,8 +160,8 @@ class EnsembleHeaderGenerator:
         )
 
     def _create_llm(self, model: str):
-        """Create an LLM instance with tracking."""
-        return create_tracked_llm(
+        """Create an LLM instance with tracking, auto-detecting provider from model name."""
+        return create_tracked_llm_for_model(
             model=model,
             temperature=self.temperature,
             layer="layer6_v2_ensemble",

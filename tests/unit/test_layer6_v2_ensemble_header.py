@@ -190,7 +190,7 @@ class TestTierRouting:
 class TestEnsembleGeneratorInit:
     """Test EnsembleHeaderGenerator initialization."""
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm')
+    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
     def test_initializes_with_gold_tier(
         self, mock_header_gen, mock_create_llm, gold_tier_config, sample_skill_whitelist
@@ -203,7 +203,7 @@ class TestEnsembleGeneratorInit:
         assert generator.tier_config == gold_tier_config
         assert generator._skill_whitelist == sample_skill_whitelist
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm')
+    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
     def test_initializes_with_silver_tier(
         self, mock_header_gen, mock_create_llm, silver_tier_config
@@ -321,7 +321,7 @@ class TestEnsembleMetadata:
 class TestGenerateWithMockedLLMs:
     """Test generate() with mocked LLM calls."""
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm')
+    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
     def test_bronze_tier_uses_fallback(
         self,
@@ -417,7 +417,7 @@ class TestLanguagesBugFix:
         assert "languages" in sample_candidate_data
         assert len(sample_candidate_data["languages"]) == 2
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm')
+    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
     def test_languages_passed_to_header_output(
         self,
