@@ -2,7 +2,8 @@
 Unit tests for CVGenerationService.
 
 Tests the CV generation service that wraps Layer 6 V2 orchestrator
-for button-triggered CV generation with tier-based model selection.
+and CoverLetterGenerator for button-triggered generation with tier-based
+model selection.
 """
 
 import pytest
@@ -73,7 +74,34 @@ def sample_job():
             ]
         },
         "fit_score": 85,
+        "fit_rationale": "Strong leadership and technical background.",
         "location": "Munich, DE",
+        # Fields for cover letter generation
+        "pain_points": ["Scale engineering team", "Improve delivery velocity"],
+        "strategic_needs": ["Build platform team", "Establish SRE practices"],
+        "selected_stars": [
+            {
+                "id": "star1",
+                "company": "Previous Corp",
+                "role": "Tech Lead",
+                "situation": "Team needed to scale",
+                "task": "Lead hiring and onboarding",
+                "actions": "Implemented structured interview process",
+                "results": "Grew team from 5 to 15 engineers",
+                "metrics": "3x team growth in 12 months",
+            }
+        ],
+        "company_research": {
+            "summary": "Test Corp is a growing tech company.",
+            "signals": [{"type": "funding", "description": "Series B raised"}],
+            "url": "https://testcorp.com",
+        },
+        "role_research": {
+            "summary": "Engineering Manager to lead platform team.",
+            "business_impact": ["Drive platform reliability", "Reduce incidents"],
+            "why_now": "Company expanding after Series B",
+        },
+        "candidate_profile": "# John Doe\nExperienced Engineering Manager...",
     }
 
 
@@ -608,11 +636,118 @@ class TestCVGenerationServiceCostEstimate:
         assert cost_2k == pytest.approx(cost_1k * 2)
 
 
+class TestCVGenerationServiceCoverLetter:
+    """Tests for cover letter generation integration."""
+
+    def test_generate_cover_letter_calls_generator(self, service, sample_job):
+        """Should call CoverLetterGenerator with state."""
+        state = service._build_state(sample_job, use_annotations=True)
+
+        with patch(
+            "src.layer6.cover_letter_generator.CoverLetterGenerator"
+        ) as MockGenerator:
+            mock_instance = MockGenerator.return_value
+            mock_instance.generate_cover_letter.return_value = "Cover letter text"
+
+            result = service._generate_cover_letter(state)
+
+            assert result == "Cover letter text"
+            mock_instance.generate_cover_letter.assert_called_once_with(state)
+
+    def test_generate_cover_letter_returns_none_on_value_error(self, service, sample_job):
+        """Should return None when CoverLetterGenerator raises ValueError."""
+        state = service._build_state(sample_job, use_annotations=True)
+
+        with patch(
+            "src.layer6.cover_letter_generator.CoverLetterGenerator"
+        ) as MockGenerator:
+            mock_instance = MockGenerator.return_value
+            mock_instance.generate_cover_letter.side_effect = ValueError(
+                "Validation failed"
+            )
+
+            result = service._generate_cover_letter(state)
+
+            assert result is None
+
+    def test_generate_cover_letter_returns_none_on_exception(self, service, sample_job):
+        """Should return None when CoverLetterGenerator raises any exception."""
+        state = service._build_state(sample_job, use_annotations=True)
+
+        with patch(
+            "src.layer6.cover_letter_generator.CoverLetterGenerator"
+        ) as MockGenerator:
+            mock_instance = MockGenerator.return_value
+            mock_instance.generate_cover_letter.side_effect = RuntimeError("LLM failure")
+
+            result = service._generate_cover_letter(state)
+
+            assert result is None
+
+    def test_build_state_includes_cover_letter_fields(self, service, sample_job):
+        """Should include fields required for cover letter generation."""
+        state = service._build_state(sample_job, use_annotations=True)
+
+        assert state.get("pain_points") == sample_job["pain_points"]
+        assert state.get("strategic_needs") == sample_job["strategic_needs"]
+        assert state.get("selected_stars") == sample_job["selected_stars"]
+        assert state.get("company_research") == sample_job["company_research"]
+        assert state.get("role_research") == sample_job["role_research"]
+        assert state.get("fit_rationale") == sample_job["fit_rationale"]
+        assert state.get("candidate_profile") == sample_job["candidate_profile"]
+
+
+class TestCVGenerationServicePersistWithCoverLetter:
+    """Tests for persisting CV results with cover letter."""
+
+    def test_persist_result_includes_cover_letter(self, service, mock_db_client):
+        """Should include cover_letter in MongoDB update when provided."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 1
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        job_id = "507f1f77bcf86cd799439011"
+        cv_text = "# CV Content"
+        cv_editor_state = {"type": "doc", "content": []}
+        cv_result = {"cv_path": "/path/to/cv.md", "cv_reasoning": "reasoning"}
+        cover_letter = "Dear Hiring Manager,\n\nThis is my cover letter."
+
+        result = service._persist_cv_result(
+            job_id, cv_text, cv_editor_state, cv_result, cover_letter
+        )
+
+        assert result is True
+        call_args = mock_collection.update_one.call_args
+        update_doc = call_args[0][1]["$set"]
+        assert update_doc["cover_letter"] == cover_letter
+        assert "cover_letter_generated_at" in update_doc
+
+    def test_persist_result_excludes_cover_letter_when_none(self, service, mock_db_client):
+        """Should not include cover_letter in update when None."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 1
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        job_id = "507f1f77bcf86cd799439011"
+        cv_text = "# CV Content"
+        cv_editor_state = {"type": "doc", "content": []}
+        cv_result = {"cv_path": "/path/to/cv.md", "cv_reasoning": "reasoning"}
+
+        service._persist_cv_result(job_id, cv_text, cv_editor_state, cv_result, None)
+
+        call_args = mock_collection.update_one.call_args
+        update_doc = call_args[0][1]["$set"]
+        assert "cover_letter" not in update_doc
+        assert "cover_letter_generated_at" not in update_doc
+
+
 class TestCVGenerationServiceIntegration:
     """Integration-style tests for complete execution flow."""
 
     @pytest.mark.asyncio
-    async def test_full_execution_flow_success(self, mock_db_client, sample_job, sample_cv_result):
+    async def test_full_execution_flow_success(
+        self, mock_db_client, sample_job, sample_cv_result
+    ):
         """Test complete successful execution flow."""
         service = CVGenerationService(db_client=mock_db_client)
 
@@ -621,7 +756,9 @@ class TestCVGenerationServiceIntegration:
         mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(
+            service, "_generate_cv", return_value=sample_cv_result
+        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,
@@ -643,6 +780,58 @@ class TestCVGenerationServiceIntegration:
         assert result.data["cv_path"] == sample_cv_result["cv_path"]
         assert result.data["cv_reasoning"] == sample_cv_result["cv_reasoning"]
         assert result.data["word_count"] > 0
+        assert result.data["cover_letter"] == "Cover letter text"
+
+    @pytest.mark.asyncio
+    async def test_full_execution_flow_with_cover_letter_failure(
+        self, mock_db_client, sample_job, sample_cv_result
+    ):
+        """Test that CV generation succeeds even when cover letter fails."""
+        service = CVGenerationService(db_client=mock_db_client)
+
+        mock_collection = MagicMock()
+        mock_collection.find_one.return_value = sample_job
+        mock_collection.update_one.return_value.modified_count = 1
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        with patch.object(
+            service, "_generate_cv", return_value=sample_cv_result
+        ), patch.object(service, "_generate_cover_letter", return_value=None):
+            result = await service.execute(
+                job_id=str(sample_job["_id"]),
+                tier=ModelTier.QUALITY,
+                use_annotations=True,
+            )
+
+        # CV generation should still succeed
+        assert result.success is True
+        assert result.data["cv_text"] == sample_cv_result["cv_text"]
+        # Cover letter should be None
+        assert result.data["cover_letter"] is None
+
+    @pytest.mark.asyncio
+    async def test_full_execution_includes_cover_letter_in_layer_status(
+        self, mock_db_client, sample_job, sample_cv_result
+    ):
+        """Test that layer_status includes cover_letter status."""
+        service = CVGenerationService(db_client=mock_db_client)
+
+        mock_collection = MagicMock()
+        mock_collection.find_one.return_value = sample_job
+        mock_collection.update_one.return_value.modified_count = 1
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        with patch.object(
+            service, "_generate_cv", return_value=sample_cv_result
+        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"):
+            result = await service.execute(
+                job_id=str(sample_job["_id"]),
+                tier=ModelTier.QUALITY,
+            )
+
+        layer_status = result.data["layer_status"]
+        assert "cover_letter" in layer_status
+        assert layer_status["cover_letter"]["status"] == "success"
 
     @pytest.mark.asyncio
     async def test_full_execution_flow_error(self, mock_db_client, sample_job):
@@ -658,7 +847,7 @@ class TestCVGenerationServiceIntegration:
             "errors": ["Generator failed: Rate limit exceeded"],
         }
 
-        with patch.object(service, '_generate_cv', return_value=cv_error_result):
+        with patch.object(service, "_generate_cv", return_value=cv_error_result):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
