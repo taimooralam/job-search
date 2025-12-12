@@ -168,7 +168,8 @@ class CVGeneratorV2:
         self._logger.info("=" * 60)
 
         # Extract required data from state
-        extracted_jd = state.get("extracted_jd", {})
+        # Use `or {}` to handle both missing and explicit None
+        extracted_jd = state.get("extracted_jd") or {}
         if not extracted_jd:
             self._logger.warning("No extracted_jd in state - using defaults")
             extracted_jd = self._build_default_extracted_jd(state)

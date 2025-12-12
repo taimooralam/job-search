@@ -322,7 +322,8 @@ class CVGenerationService(OperationService):
             JobState-compatible dictionary
         """
         # Get extracted_jd or build from raw text
-        extracted_jd = job.get("extracted_jd", {})
+        # Use `or {}` pattern to handle both missing keys AND explicit None values from MongoDB
+        extracted_jd = job.get("extracted_jd") or {}
 
         # If extracted_jd is minimal, populate basic fields from job
         if not extracted_jd.get("title"):
