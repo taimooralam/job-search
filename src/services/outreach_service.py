@@ -639,10 +639,11 @@ class OutreachGenerationService(OperationService):
         Returns:
             Connection message string
         """
-        from src.common.llm_factory import create_tracked_llm
+        from src.common.llm_factory import create_tracked_llm_for_model
 
-        # Create LLM
-        llm = create_tracked_llm(
+        # Create LLM - use create_tracked_llm_for_model to auto-detect provider
+        # This allows using Claude models for quality tier (claude-opus-4-5-20251101)
+        llm = create_tracked_llm_for_model(
             model=model,
             temperature=0.7,  # Slightly creative for personalization
             layer="outreach_service",
@@ -713,10 +714,11 @@ class OutreachGenerationService(OperationService):
         """
         import json
 
-        from src.common.llm_factory import create_tracked_llm
+        from src.common.llm_factory import create_tracked_llm_for_model
 
-        # Create LLM
-        llm = create_tracked_llm(
+        # Create LLM - use create_tracked_llm_for_model to auto-detect provider
+        # This allows using Claude models for quality tier (claude-opus-4-5-20251101)
+        llm = create_tracked_llm_for_model(
             model=model,
             temperature=0.7,
             layer="outreach_service",

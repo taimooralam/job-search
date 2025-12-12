@@ -364,7 +364,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should return OperationResult."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -386,7 +386,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should return success=True for valid inputs."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -409,7 +409,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate connection message when requested."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -433,7 +433,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate InMail message when requested."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_inmail_response
@@ -457,7 +457,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should persist result to MongoDB."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -479,7 +479,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include contact info in result data."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -504,7 +504,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include char_count in result data."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -527,7 +527,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should estimate cost."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -549,7 +549,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include model_used in result."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -573,7 +573,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include duration_ms in result."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -595,7 +595,7 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate unique run_id."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -687,7 +687,7 @@ class TestOutreachGenerationServiceExecuteErrors:
         service._fetch_job = MagicMock(return_value=sample_job_document)
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.side_effect = Exception("LLM API error")
@@ -714,7 +714,7 @@ class TestOutreachGenerationServiceExecuteErrors:
         service._persist_outreach = MagicMock(return_value=False)
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_llm_response
@@ -1033,7 +1033,7 @@ class TestOutreachGenerationServiceInMailParsing:
         mock_response.content = '{"subject": "Test Subject", "body": "Test body message"}'
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_response
@@ -1060,7 +1060,7 @@ class TestOutreachGenerationServiceInMailParsing:
         mock_response.content = "This is not JSON, just plain text message."
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_response
@@ -1088,7 +1088,7 @@ class TestOutreachGenerationServiceInMailParsing:
         mock_response.content = '{"subject": "This is a very long subject line that exceeds the maximum allowed length for InMail subjects", "body": "Test body"}'
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm"
+            "src.common.llm_factory.create_tracked_llm_for_model"
         ) as mock_create_llm:
             mock_llm = MagicMock()
             mock_llm.invoke.return_value = mock_response
