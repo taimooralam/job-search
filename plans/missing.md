@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-11 (Session 7: Global CLI Panel - AWS/GCP CloudShell-style Terminal Interface)
+**Last Updated**: 2025-12-12 (Session 8: Role Persona Registry & Job List Sorting)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3097,6 +3097,47 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `tests/unit/test_layer6_v2_header_generator.py` - 20 tests for voice validation logic
   - **Verification**: All new tests pass; voice validation catches first-person violations; prompt enforces third-person-absent
   - **Important Note**: Existing personas in MongoDB were synthesized before this fix. Users must re-synthesize personas to get third-person voice. New personas will be generated correctly by default.
+
+### VP Engineering Role Category Separation
+- [x] Added VP_ENGINEERING to RoleCategory enum (2025-12-12): Separated VP Engineering from CTO role to enable role-specific CV generation and persona injection.
+  - **Implementation**: Updated `src/common/role_category.py` to add `VP_ENGINEERING` as distinct enum value
+  - **Files Modified**: `src/common/role_category.py`
+  - **Impact**: System now supports 8 distinct role categories enabling hyper-personalized CV generation per role type
+  - **Verification**: RoleCategory enum extended; role references throughout codebase maintain compatibility
+
+### Role Persona Registry Implementation
+- [x] Added comprehensive persona data to role_skills_taxonomy.json (2025-12-12): Populated persona registry for all 8 role categories with identity, voice, power verbs, tagline templates, and achievement focus.
+  - **Data Added** (`data/master-cv/role_skills_taxonomy.json`):
+    - `identity_statement`: Role-specific professional identity (e.g., "Solutions-focused engineering leader")
+    - `voice`: Writing tone and style indicators
+    - `power_verbs`: High-impact action verbs specific to role category
+    - `tagline_templates`: Role-specific professional taglines with placeholders
+    - `metric_priorities`: Quantifiable measures most relevant to role
+    - `key_achievement_focus`: Strategic impact areas for this role
+    - `differentiators`: Unique value propositions per role category
+  - **Roles Covered**: Principal Engineer, Staff Engineer, Engineering Manager, VP Engineering, CTO, Solutions Architect, Product Manager, Data Science Lead
+  - **Files Modified**: `data/master-cv/role_skills_taxonomy.json`
+  - **Impact**: CV generation now uses role-specific persona data to inject coherent identity, voice, and achievement framing into headers and profiles
+
+### Persona-Enhanced Layer 6 Prompts
+- [x] Injected role persona context into CV generation prompts (2025-12-12): Updated build_profile_user_prompt and build_persona_user_prompt to include role persona data from taxonomy.
+  - **Implementation**:
+    - `build_profile_user_prompt()`: Extracts persona data from job's role_category and injects identity_statement, voice, and power_verbs
+    - `build_persona_user_prompt()`: Uses role-specific tagline_templates and key_achievement_focus for coherent persona synthesis
+    - Persona guidance automatically populated from role_skills_taxonomy during CV generation
+  - **Files Modified**: `src/layer6_v2/prompts/header_generation.py`
+  - **Impact**: CV headers now reflect role-specific professional identity, making each application feel tailored to the role category rather than generic
+  - **Verification**: Persona data flows from taxonomy → prompts → LLM → CV header during generation
+
+### Job List Multi-Criteria Sorting
+- [x] Implemented multi-criteria job sorting (2025-12-12): Default sort now prioritizes Gulf region locations + match score + seniority level.
+  - **Implementation**: Updated job list view to sort by:
+    1. Priority locations (Gulf region jobs sorted first)
+    2. Match score (highest score first within location tier)
+    3. Seniority level (senior roles ranked higher)
+  - **Files Modified**: `frontend/templates/job_list.html`, `frontend/runner.py`
+  - **Impact**: Users see most relevant opportunities (Gulf locations + high match) at top of list; dramatically improves job targeting efficiency
+  - **Verification**: Job list displays Gulf-region jobs first, then sorted by match score descending, then by seniority
 
 ---
 

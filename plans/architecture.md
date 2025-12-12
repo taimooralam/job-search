@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-11 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), 1600+ total tests passing
+**Last Updated**: 2025-12-12 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), 1700+ total tests passing
 
 ---
 
@@ -357,6 +357,24 @@ def some_llm_operation():
 - Example: "Principal Engineer · Staff Architect"
 - Helper method: `_get_generic_title()` maps role categories to generic titles
 - Auto-inserted after contact line
+
+**Role Persona Registry** (NEW - 2025-12-12):
+- **Purpose**: Centralized persona data for all 8 role categories enabling role-specific CV generation
+- **Source**: `data/master-cv/role_skills_taxonomy.json` - Expanded with comprehensive persona attributes
+- **Data Structure per Role**:
+  - `identity_statement`: Professional identity descriptor (e.g., "Solutions-focused engineering leader")
+  - `voice`: Writing tone and style indicators for this role
+  - `power_verbs`: High-impact action verbs specific to role type
+  - `tagline_templates`: Role-specific professional tagline templates with placeholders
+  - `metric_priorities`: Quantifiable measures most relevant to this role
+  - `key_achievement_focus`: Strategic impact areas for showcasing achievements
+  - `differentiators`: Unique value propositions specific to role category
+- **Roles Covered**: Principal Engineer, Staff Engineer, Engineering Manager, VP Engineering, CTO, Solutions Architect, Product Manager, Data Science Lead
+- **Integration Points**:
+  - Layer 6 CV generation: `build_profile_user_prompt()` injects identity_statement + voice
+  - Header generator: Uses persona data to frame profile section with role-specific language
+  - Persona synthesis: `build_persona_user_prompt()` leverages tagline_templates and key_achievement_focus
+  - Outreach: Contact discovery and messaging can reference role-specific differentiators
 
 **Small Caps Option** (NEW - Frontend):
 - Toggle button in CV editor toolbar
@@ -1215,7 +1233,7 @@ Pipeline (Markdown) ──► MongoDB cv_text
 7. Persist all results to MongoDB (both processed and extracted JD)
 8. Return aggregated output with per-layer status
 
-**JD Extraction Layers** (NEW - 2025-12-10):
+**JD Extraction Layers** (NEW - 2025-12-10, ENHANCED 2025-12-12):
 - **Layer 1.4 (JD Processor)**: Parses raw JD into structured HTML sections
   - Extracts qualifications, responsibilities, benefits
   - Returns HTML format for annotation UI highlighting
@@ -1224,6 +1242,11 @@ Pipeline (Markdown) ──► MongoDB cv_text
   - Analyzes role category, seniority, keywords, responsibilities
   - Returns structured JSON for template display
   - Output: `extracted_jd` with role_category, responsibilities, keywords, seniority_level
+  - **Role Categories** (8 distinct types, NEW 2025-12-12):
+    - Principal Engineer, Staff Engineer, Engineering Manager
+    - VP Engineering (separated from CTO via `RoleCategory.VP_ENGINEERING` enum)
+    - CTO, Solutions Architect, Product Manager, Data Science Lead
+    - Each role category has dedicated persona profile in `role_skills_taxonomy.json`
 
 **Dual Output Model** (NEW - 2025-12-10):
 - **`processed_jd`**: HTML sections (for annotation UI and highlighting)
