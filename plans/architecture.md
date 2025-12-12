@@ -778,12 +778,18 @@ sessionStorage restored on next page load → logs persist
 
 **Route**: `GET /master-cv` → `frontend/templates/master_cv.html`
 
-**Data Flow**:
+**Data Flow** (UPDATED - 2025-12-12: Vercel-Compatible Proxy Architecture):
 ```
 MongoDB (master_cv_metadata, master_cv_taxonomy, master_cv_roles)
            │
            ▼
-/api/master-cv/* endpoints
+Runner Service (VPS:8000) - MasterCVStore implementation
+    /api/master-cv/* endpoints
+           │
+           ▼
+Frontend (Vercel) - HTTP Proxy Layer
+    /api/master-cv/* endpoints
+    (proxy_master_cv_to_runner() helper)
            │
            ▼
 master_cv.html (tab template)
@@ -888,13 +894,42 @@ master-cv-editor.css (editor styles)
 - Warning banner: Yellow/amber background with icon ("Use with caution")
 - Save indicator: Green checkmark with timestamp
 
-**API Endpoints Used** (no new backend routes):
+**API Endpoints** (UPDATED - 2025-12-12):
+
+Frontend proxy endpoints (proxied to Runner Service):
 - `GET /api/master-cv/metadata` - Fetch candidate info
 - `PUT /api/master-cv/metadata` - Save candidate info
 - `GET /api/master-cv/roles` - Fetch work experience
 - `PUT /api/master-cv/roles` - Save roles
 - `GET /api/master-cv/taxonomy` - Fetch skill taxonomy
 - `PUT /api/master-cv/taxonomy` - Save taxonomy
+
+**Why Proxy?**: The frontend runs on Vercel, where the `src.common` module (containing `master_cv_store`) is not available in the deployment environment. The proxy pattern delegates all Master CV operations to the Runner Service (VPS), which has full access to the `src` module and MongoDB.
+
+**Proxy Implementation** (`frontend/app.py`):
+```python
+def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dict = None):
+    """Proxy Master CV API calls to the runner service."""
+    full_url = f"{RUNNER_URL}/api/master-cv{endpoint}"
+
+    # Forward request with proper headers and timeout (30s)
+    response = requests.get/put/post(
+        full_url,
+        headers=get_runner_headers(),
+        timeout=MASTER_CV_REQUEST_TIMEOUT,
+    )
+
+    # Return runner's response with original status code
+    return jsonify(response.json()), response.status_code
+```
+
+**Runner Service Endpoints** (`runner_service/app.py`):
+- `GET /api/master-cv/metadata` - Uses MasterCVStore from MongoDB
+- `PUT /api/master-cv/metadata` - Persists changes via MasterCVStore
+- `GET /api/master-cv/roles` - Fetches role data from MongoDB
+- `PUT /api/master-cv/roles` - Updates roles via MasterCVStore
+- `GET /api/master-cv/taxonomy` - Fetches taxonomy from MongoDB
+- `PUT /api/master-cv/taxonomy` - Updates taxonomy via MasterCVStore
 
 **Navigation** (`base.html`):
 - "Master CV" button added to main nav menu
@@ -1700,6 +1735,78 @@ POST /api/jobs/<job_id>/save-persona
 - When no identity annotations exist: System maintains status quo behavior (no persona injection)
 - Persona field optional in jd_annotations schema
 - Graceful degradation in all layers if persona missing
+
+---
+
+## Third-Person Absent Voice Enforcement (Enhanced - 2025-12-12)
+
+### Problem
+
+PersonaBuilder was generating personas with first-person pronouns (e.g., "I thrive on cloud transformations") instead of the professional third-person-absent voice required for CV profiles (e.g., "who thrives on cloud transformations").
+
+### Root Cause
+
+The `SYNTHESIS_PROMPT` in `PersonaBuilder` lacked explicit voice constraints. Without guidance, LLMs defaulted to natural first-person language, which breaks the professional convention where personas are external descriptions introduced in CV profile sections.
+
+### Solution: Defense-in-Depth Voice Validation
+
+**Layer 1: Prompt Engineering** (`src/common/persona_builder.py`):
+- Enhanced `SYNTHESIS_PROMPT` with explicit "VOICE REQUIREMENTS" section
+- Included negative examples: "Bad: 'I thrive on...', Bad: 'My passion is...'"
+- Included positive examples: "Good: 'who thrives on...', Good: 'passionate about...'"
+- Clarified that personas are external professional descriptions, not first-person self-statements
+
+**Layer 2: Defense-in-Depth Validation** (`src/layer6_v2/header_generator.py`):
+- Added `_check_third_person_voice()` validator that inspects persona text
+- Detects first-person pronouns: `"I "`, `"I'"`, `"my "`, `"me "`, `"we "`, `"our "`
+- Validates before persona injection into CV profile sections
+- Logs violations for monitoring; returns boolean status for error handling
+
+### Files Modified
+
+1. **`src/common/persona_builder.py`**:
+   - Updated `SYNTHESIS_PROMPT` with explicit third-person voice constraints
+   - Added voice requirement documentation in prompt
+
+2. **`src/layer6_v2/header_generator.py`**:
+   - Added `_check_third_person_voice(persona: str) -> bool` method
+   - Validates persona compliance before CV profile injection
+   - Catches violations to prevent non-compliant personas in output
+
+### Test Coverage
+
+- **`tests/unit/test_persona_builder.py`** (10 new tests):
+  - Prompt structure validation tests
+  - Voice constraint enforcement in synthesis
+
+- **`tests/unit/test_layer6_v2_header_generator.py`** (20 new tests):
+  - Voice validation helper tests
+  - First-person detection edge cases
+  - Compliant persona acceptance tests
+  - Integration with header generation
+
+### Example Output
+
+```
+Identity Annotations:
+- core_identity: Cloud architect, team leadership
+
+Before Fix (❌ First-person):
+"I thrive on cloud transformations and lead engineering teams"
+
+After Fix (✅ Third-person-absent):
+"Cloud architect who thrives on complex transformations and leads engineering teams"
+
+CV Profile Injection:
+"As a cloud architect who thrives on complex transformations and leads engineering teams,
+I bring expertise in distributed systems and high-performing team mentorship."
+```
+
+### Migration Note
+
+Existing personas in MongoDB were synthesized before this fix and may contain first-person language. To apply the corrected voice:
+1. Users should re-synthesize personas via Master CV Editor's "Synthesize Persona" button
+2. New personas generated after this fix will automatically use third-person-absent voice by default
 
 ---
 

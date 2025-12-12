@@ -3069,6 +3069,35 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 ### Annotation System Enhancements
 - [x] Delete annotation from popover (2025-12-11): Added delete button to annotation popover for editing existing annotations, with visibility controls and confirmation handling
 
+### Master CV API Vercel Deployment Fix
+- [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.
+  - **Problem**: Frontend running on Vercel doesn't have access to `src` module; direct imports of `master_cv_store` caused 500 errors
+  - **Solution**: Implemented HTTP proxy layer in `frontend/app.py` that forwards all Master CV requests to Runner Service (VPS:8000)
+  - **Architecture**: Frontend (Vercel) → proxies to → Runner Service (VPS) → uses → MasterCVStore (MongoDB)
+  - **Files Modified**:
+    - `frontend/app.py` - Removed direct imports of `src.common.master_cv_store`, added `proxy_master_cv_to_runner()` helper function
+    - Updated all 6 Master CV endpoints to use proxy pattern: `GET/PUT /api/master-cv/{metadata,roles,taxonomy}`
+  - **Timeout**: 30 seconds per request; headers proxied via `get_runner_headers()`
+  - **Backward Compatibility**: Runner Service continues to implement actual Master CV logic; all MongoDB operations happen on VPS
+  - **Verification**: Master CV Editor UI continues to work; API calls now routed through proxy layer
+
+### Third-Person Absent Voice Enforcement in PersonaBuilder
+- [x] Third-person voice validation fix (2025-12-12): Enforced third-person absent voice (e.g., "who thrives on...") instead of first-person pronouns (e.g., "I thrive on...") in synthesized personas.
+  - **Root Cause**: `SYNTHESIS_PROMPT` in `src/common/persona_builder.py` lacked explicit third-person voice constraints; LLM defaulted to first-person language
+  - **Impact**: Personas were generated with "I/my" pronouns, breaking the professional third-person-absent voice required for CV profiles
+  - **Fix Applied**:
+    1. Updated `SYNTHESIS_PROMPT` with explicit third-person rules and negative examples (bad: "I thrive", good: "who thrives")
+    2. Added `_check_third_person_voice()` validation in `src/layer6_v2/header_generator.py` for defense-in-depth
+    3. Header generator validates compliance before finalizing persona injection into CV profiles
+  - **Files Modified**:
+    - `src/common/persona_builder.py` - Enhanced SYNTHESIS_PROMPT with voice constraints
+    - `src/layer6_v2/header_generator.py` - Added third-person voice validation helper
+  - **Tests Added**:
+    - `tests/unit/test_persona_builder.py` - 10 tests for prompt structure and synthesis validation
+    - `tests/unit/test_layer6_v2_header_generator.py` - 20 tests for voice validation logic
+  - **Verification**: All new tests pass; voice validation catches first-person violations; prompt enforces third-person-absent
+  - **Important Note**: Existing personas in MongoDB were synthesized before this fix. Users must re-synthesize personas to get third-person voice. New personas will be generated correctly by default.
+
 ---
 
 ## Quick Reference
