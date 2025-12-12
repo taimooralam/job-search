@@ -44,7 +44,8 @@ CANDIDATE_NAME = "Taimoor Alam"
 CANDIDATE_SIGNATURE = f"Best. {CANDIDATE_NAME}"
 
 # System prompts for outreach generation
-CONNECTION_SYSTEM_PROMPT = """You are an expert at writing highly personalized LinkedIn connection requests.
+# Base system prompt (used when no persona available)
+CONNECTION_SYSTEM_PROMPT_BASE = """You are an expert at writing highly personalized LinkedIn connection requests.
 
 ## Guidelines
 - Maximum {char_limit} characters INCLUDING signature and Calendly link
@@ -66,6 +67,41 @@ CONNECTION_SYSTEM_PROMPT = """You are an expert at writing highly personalized L
 ## Output
 Return ONLY the connection message text. No explanations."""
 
+# Persona-enhanced system prompt (used when persona is available)
+CONNECTION_SYSTEM_PROMPT_PERSONA = """You ARE {candidate_name}, writing YOUR OWN LinkedIn connection request.
+
+## YOUR PROFESSIONAL PERSONA
+{persona_statement}
+
+## YOUR CORE STRENGTHS (use 1-2 naturally in the message)
+{core_strengths}
+
+## MESSAGE CONSTRAINTS
+- Maximum {char_limit} characters INCLUDING your signature and Calendly link
+- Write in first person ("I", "my") - this is YOUR message
+- Professional but warm - this is how YOU communicate
+- Reference specific pain points that YOU can solve
+- End with: "{signature}"
+- Include your Calendly naturally: "{calendly}"
+- No emojis
+- No placeholder text - use actual company/role names
+
+## CONTACT TYPE APPROACH
+- hiring_manager: Show YOUR skills + how you fit THEIR team
+- recruiter: Keywords matching JD, YOUR quantified achievements
+- vp_director: YOUR strategic outcomes, extreme brevity (50-100 words)
+- executive: Industry trends YOU understand, extreme brevity
+- peer: YOUR technical credibility, collaborative tone
+
+## FRAMING
+You have already applied to this role. You're reaching out to add context and make a personal connection.
+
+## Output
+Return ONLY the connection message text. No explanations. Write as yourself."""
+
+# Keep backward compatibility alias
+CONNECTION_SYSTEM_PROMPT = CONNECTION_SYSTEM_PROMPT_BASE
+
 CONNECTION_USER_PROMPT = """Generate a LinkedIn connection request for this contact.
 
 ## Job Details
@@ -85,7 +121,8 @@ CONNECTION_USER_PROMPT = """Generate a LinkedIn connection request for this cont
 ## Character Limit
 {char_limit} characters maximum (including signature and Calendly link)"""
 
-INMAIL_SYSTEM_PROMPT = """You are an expert at writing highly personalized LinkedIn InMail messages.
+# Base InMail system prompt (used when no persona available)
+INMAIL_SYSTEM_PROMPT_BASE = """You are an expert at writing highly personalized LinkedIn InMail messages.
 
 ## Guidelines
 - Target length: {min_chars}-{max_chars} characters
@@ -109,6 +146,44 @@ INMAIL_SYSTEM_PROMPT = """You are an expert at writing highly personalized Linke
 Return a JSON object with:
 - subject: InMail subject line (25-30 chars)
 - body: InMail message body ({min_chars}-{max_chars} chars)"""
+
+# Persona-enhanced InMail system prompt
+INMAIL_SYSTEM_PROMPT_PERSONA = """You ARE {candidate_name}, writing YOUR OWN LinkedIn InMail.
+
+## YOUR PROFESSIONAL PERSONA
+{persona_statement}
+
+## YOUR CORE STRENGTHS (weave 2-3 into your message naturally)
+{core_strengths}
+
+## MESSAGE CONSTRAINTS
+- Target length: {min_chars}-{max_chars} characters for the body
+- Write in first person ("I", "my") - this is YOUR message
+- Professional tone with YOUR clear value proposition
+- Reference pain points that YOU can solve with YOUR experience
+- Include YOUR quantified achievements (specific numbers, outcomes)
+- Subject line: 25-30 characters for mobile display
+- No emojis
+- No placeholder text - use actual company/role names
+- End with YOUR clear call to action
+
+## CONTACT TYPE APPROACH
+- hiring_manager: YOUR skills + how YOU fit their team, YOUR specific project examples
+- recruiter: Keywords matching JD, YOUR quantified achievements
+- vp_director: YOUR strategic outcomes, YOUR business impact, 50-150 words
+- executive: Extreme brevity, YOUR industry insights, YOUR market positioning
+- peer: YOUR technical credibility, collaborative opportunities
+
+## FRAMING
+You have already applied to this role. You're reaching out to add context, share YOUR unique value, and make a personal connection.
+
+## Output Format
+Return a JSON object with:
+- subject: InMail subject line (25-30 chars)
+- body: InMail message body ({min_chars}-{max_chars} chars) - written as yourself"""
+
+# Keep backward compatibility alias
+INMAIL_SYSTEM_PROMPT = INMAIL_SYSTEM_PROMPT_BASE
 
 INMAIL_USER_PROMPT = """Generate a LinkedIn InMail for this contact.
 
@@ -376,6 +451,9 @@ class OutreachGenerationService(OperationService):
         """
         Build context dictionary for outreach generation.
 
+        Includes persona and core strengths from jd_annotations for enhanced
+        personalization.
+
         Args:
             job: Job document from MongoDB
             contact: Contact dictionary
@@ -386,8 +464,11 @@ class OutreachGenerationService(OperationService):
         # Extract JD info
         extracted_jd = job.get("extracted_jd") or {}
 
-        # Get pain points
-        pain_points = job.get("pain_points") or []
+        # Get pain points - prefer annotated pain points over extracted
+        jd_annotations = job.get("jd_annotations") or {}
+        pain_points = self._extract_annotated_pain_points(jd_annotations)
+        if not pain_points:
+            pain_points = job.get("pain_points") or []
         if not pain_points and extracted_jd:
             pain_points = extracted_jd.get("implied_pain_points") or []
 
@@ -429,6 +510,10 @@ class OutreachGenerationService(OperationService):
             companies = list(set(star.get("company", "") for star in selected_stars if star.get("company")))
             candidate_summary = f"Experience at: {', '.join(companies[:3])}"
 
+        # Extract persona and core strengths from annotations
+        persona_statement = self._extract_persona_statement(jd_annotations)
+        core_strengths = self._extract_core_strengths(jd_annotations)
+
         return {
             "company": job.get("company") or extracted_jd.get("company", "Unknown"),
             "role": job.get("title") or extracted_jd.get("title", "Unknown"),
@@ -440,7 +525,102 @@ class OutreachGenerationService(OperationService):
             "company_signals": "\n".join(company_signals) if company_signals else "No recent signals available",
             "candidate_summary": candidate_summary or "Experienced engineering leader",
             "achievements": "\n".join(achievements) if achievements else "See resume for details",
+            # New persona-related fields
+            "persona_statement": persona_statement,
+            "core_strengths": core_strengths,
+            "has_persona": bool(persona_statement),
         }
+
+    def _extract_persona_statement(self, jd_annotations: Dict[str, Any]) -> str:
+        """
+        Extract synthesized persona statement from jd_annotations.
+
+        Args:
+            jd_annotations: JD annotations dict from job document
+
+        Returns:
+            Persona statement string or empty string if not available
+        """
+        synthesized = jd_annotations.get("synthesized_persona") or {}
+        return synthesized.get("persona_statement", "")
+
+    def _extract_core_strengths(self, jd_annotations: Dict[str, Any]) -> str:
+        """
+        Extract core strengths from annotations for outreach personalization.
+
+        Looks for annotations marked as core_strength or extremely_relevant relevance,
+        or core_identity/strong_identity.
+
+        Args:
+            jd_annotations: JD annotations dict from job document
+
+        Returns:
+            Formatted string of core strengths, or default if none found
+        """
+        annotations = jd_annotations.get("annotations") or []
+        strengths = []
+
+        for ann in annotations:
+            # Skip inactive annotations
+            if not ann.get("is_active", True):
+                continue
+
+            # Check for strength/relevance indicators
+            relevance = ann.get("relevance", "")
+            identity = ann.get("identity", "")
+
+            is_strength = relevance in ("core_strength", "extremely_relevant")
+            is_identity = identity in ("core_identity", "strong_identity")
+
+            if is_strength or is_identity:
+                # Get the skill/text that represents this strength
+                text = ann.get("matching_skill") or ann.get("target", {}).get("text", "")
+                if text and len(text) < 60:  # Only short, clean texts
+                    label = "Core strength" if is_strength else "Identity"
+                    strengths.append(f"- {text}")
+
+            # Limit to top 5 strengths
+            if len(strengths) >= 5:
+                break
+
+        if strengths:
+            return "\n".join(strengths)
+        else:
+            return "- Engineering leadership\n- Technical strategy\n- Team development"
+
+    def _extract_annotated_pain_points(self, jd_annotations: Dict[str, Any]) -> List[str]:
+        """
+        Extract pain points from annotations that are marked with pain-related categories.
+
+        Args:
+            jd_annotations: JD annotations dict from job document
+
+        Returns:
+            List of pain point strings from annotations
+        """
+        annotations = jd_annotations.get("annotations") or []
+        pain_points = []
+
+        for ann in annotations:
+            # Skip inactive annotations
+            if not ann.get("is_active", True):
+                continue
+
+            # Check for pain point indicators in category or other fields
+            category = ann.get("category", "").lower()
+            annotation_type = ann.get("type", "").lower()
+
+            # Look for pain-related annotations
+            if "pain" in category or "pain" in annotation_type or "challenge" in category:
+                text = ann.get("matching_skill") or ann.get("target", {}).get("text", "")
+                if text and len(text) < 100:
+                    pain_points.append(text)
+
+            # Limit to top 5
+            if len(pain_points) >= 5:
+                break
+
+        return pain_points
 
     def _generate_connection_message(
         self,
@@ -449,6 +629,8 @@ class OutreachGenerationService(OperationService):
     ) -> str:
         """
         Generate LinkedIn connection request (<=300 chars).
+
+        Uses persona-enhanced prompt if persona is available in context.
 
         Args:
             context: Context dictionary with job/contact info
@@ -466,12 +648,25 @@ class OutreachGenerationService(OperationService):
             layer="outreach_service",
         )
 
-        # Format prompts
-        system_prompt = CONNECTION_SYSTEM_PROMPT.format(
-            char_limit=CONNECTION_CHAR_LIMIT,
-            signature=CANDIDATE_SIGNATURE,
-            calendly=CANDIDATE_CALENDLY,
-        )
+        # Choose system prompt based on persona availability
+        if context.get("has_persona") and context.get("persona_statement"):
+            # Use persona-enhanced prompt - LLM "becomes" the candidate
+            logger.info("Using persona-enhanced system prompt for connection message")
+            system_prompt = CONNECTION_SYSTEM_PROMPT_PERSONA.format(
+                candidate_name=CANDIDATE_NAME,
+                persona_statement=context["persona_statement"],
+                core_strengths=context.get("core_strengths", "- Engineering leadership"),
+                char_limit=CONNECTION_CHAR_LIMIT,
+                signature=CANDIDATE_SIGNATURE,
+                calendly=CANDIDATE_CALENDLY,
+            )
+        else:
+            # Use base prompt
+            system_prompt = CONNECTION_SYSTEM_PROMPT_BASE.format(
+                char_limit=CONNECTION_CHAR_LIMIT,
+                signature=CANDIDATE_SIGNATURE,
+                calendly=CANDIDATE_CALENDLY,
+            )
 
         user_prompt = CONNECTION_USER_PROMPT.format(
             company=context["company"],
@@ -507,6 +702,8 @@ class OutreachGenerationService(OperationService):
         """
         Generate InMail message with subject and body.
 
+        Uses persona-enhanced prompt if persona is available in context.
+
         Args:
             context: Context dictionary with job/contact info
             model: Model name to use
@@ -525,11 +722,23 @@ class OutreachGenerationService(OperationService):
             layer="outreach_service",
         )
 
-        # Format prompts
-        system_prompt = INMAIL_SYSTEM_PROMPT.format(
-            min_chars=INMAIL_MIN_CHARS,
-            max_chars=INMAIL_MAX_CHARS,
-        )
+        # Choose system prompt based on persona availability
+        if context.get("has_persona") and context.get("persona_statement"):
+            # Use persona-enhanced prompt - LLM "becomes" the candidate
+            logger.info("Using persona-enhanced system prompt for InMail message")
+            system_prompt = INMAIL_SYSTEM_PROMPT_PERSONA.format(
+                candidate_name=CANDIDATE_NAME,
+                persona_statement=context["persona_statement"],
+                core_strengths=context.get("core_strengths", "- Engineering leadership"),
+                min_chars=INMAIL_MIN_CHARS,
+                max_chars=INMAIL_MAX_CHARS,
+            )
+        else:
+            # Use base prompt
+            system_prompt = INMAIL_SYSTEM_PROMPT_BASE.format(
+                min_chars=INMAIL_MIN_CHARS,
+                max_chars=INMAIL_MAX_CHARS,
+            )
 
         user_prompt = INMAIL_USER_PROMPT.format(
             company=context["company"],
