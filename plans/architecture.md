@@ -584,6 +584,31 @@ Output: CVs with role-tailored MongoDB data
   - `test_annotation_tracking_service.py` - 20 unit tests (all passing)
   - PersonaVariant validation, AnnotationOutcome tracking, ApplicationTracking lifecycle, effectiveness stats calculation
 
+**Answer Generator Service** (NEW - 2025-12-12):
+- Module: `src/services/answer_generator_service.py`
+- Purpose: Generate LLM-powered answers to job application questions using job context
+- Core Method:
+  - `generate_answers()` - Synthesizes answers from pain points, STAR records, company research
+- Data Used for Generation:
+  - Job pain points (challenges the role solves)
+  - STAR records (specific achievements/examples from master CV)
+  - Company research (culture, mission, challenges)
+  - Job requirements (skill gaps to address)
+- Answer Generation Process:
+  1. Analyzes job context for key themes
+  2. Identifies relevant STAR records and achievements
+  3. Uses LLM (OpenAI/Anthropic) to generate targeted answers
+  4. Stores answers in MongoDB as PlannedAnswer array
+  5. Returns answers with source attribution
+- Features:
+  - Batch generation for multiple questions
+  - Customizable answer length (short/medium/long)
+  - Answer type tracking (text/markdown/generated)
+  - Integration with job detail UI for copy/edit/delete
+- Test Coverage:
+  - `test_answer_generator_service.py` - 17 unit tests (all passing)
+  - Context synthesis, LLM integration, edge cases (empty STAR records, missing data)
+
 ---
 
 ## Data Model
@@ -606,6 +631,10 @@ class JobState(TypedDict):
     primary_contacts: List[Dict]
     cv_path: str
     cover_letter: str
+
+    # Application tracking (NEW 2025-12-12)
+    application_url: str  # Actual ATS/Workday/Greenhouse form URL
+    planned_answers: List[PlannedAnswer]  # Pre-generated answers to application questions
 
     # Token tracking
     token_usage: Dict
@@ -636,6 +665,14 @@ class OutreachPackage(TypedDict):
     email_body: str
     linkedin_message: str
     email_subject: str
+```
+
+**PlannedAnswer** (`src/common/types.py` - NEW 2025-12-12):
+```python
+class PlannedAnswer(TypedDict):
+    question: str  # Application form question text
+    answer: str  # User's pre-written or AI-generated answer
+    answer_type: str  # "text" | "markdown" | "generated" (for source tracking)
 ```
 
 **MongoDB Collections**:
