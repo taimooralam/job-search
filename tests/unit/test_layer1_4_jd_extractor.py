@@ -186,7 +186,10 @@ class TestRoleCategoryClassification:
         "staff_principal_engineer",
         "director_of_engineering",
         "head_of_engineering",
-        "cto"
+        "vp_engineering",
+        "cto",
+        "tech_lead",
+        "senior_engineer"
     ])
     def test_valid_role_categories(self, category):
         """All valid role categories are accepted."""
