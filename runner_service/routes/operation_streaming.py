@@ -242,7 +242,7 @@ async def stream_operation_logs(run_id: str) -> StreamingResponse:
                 yield f"event: end\ndata: {state.status}\n\n"
                 break
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)  # 100ms poll interval for responsive updates
 
     return StreamingResponse(
         event_generator(),

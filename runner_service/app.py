@@ -38,7 +38,7 @@ from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
 from .config import settings, validate_config_on_startup
-from .routes import operations_router, contacts_router
+from .routes import operations_router, contacts_router, master_cv_router
 
 # Configure logging
 logging.basicConfig(
@@ -70,6 +70,7 @@ if settings.cors_origins_list:
 # Include modular route handlers
 app.include_router(operations_router)
 app.include_router(contacts_router)
+app.include_router(master_cv_router)
 
 
 @dataclass
@@ -516,7 +517,7 @@ async def stream_logs(run_id: str) -> StreamingResponse:
                 yield f"event: end\ndata: {state.status}\n\n"
                 break
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)  # 100ms poll interval for responsive updates
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
