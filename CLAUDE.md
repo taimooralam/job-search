@@ -51,6 +51,18 @@ User Request
 4. **Trust agent outputs**: Agents are specialized; incorporate their recommendations
 5. **Proactive delegation**: Use agents without being asked when the situation fits
 
+### Standard Workflow for Bugs & Features
+
+**IMPORTANT**: For bug fixes and feature implementations, follow the full workflow defined in [`docs/WORKFLOW.md`](docs/WORKFLOW.md). This includes:
+
+1. **Classify** → Determine if it's info/research, architecture, bug, feature, or simple task
+2. **Architect** → Use `job-search-architect` to verify requirements and design
+3. **Implement** → Use `backend-developer`, `frontend-developer`, or `architecture-debugger`
+4. **Test** → Use `test-generator` to write tests
+5. **Document** → Use `doc-sync` to update docs
+6. **Commit** → Atomic commits (no Claude signature), run tests first
+7. **Summarize** → Provide root cause analysis and fix summary
+
 ### Example Reasoning
 
 ```
