@@ -956,25 +956,51 @@ def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dic
 
 ---
 
-### Pipeline Progress UI (NEW - 2025-12-08)
+### Pipeline Progress UI (NEW - 2025-12-08, Enhanced 2025-12-12 with Cancel Support)
 
 **Horizontal Layout with Progress Line**:
 - 7-layer pipeline displayed horizontally with visual flow
 - Progress line connects all steps with gradient animation
-- Step states: pending (gray) → executing (blue pulse) → success (green) → failed (red) → skipped (gray)
+- Step states: pending (gray) → executing (blue pulse) → success (green) → failed (red) → cancelled (gray striped) → skipped (gray)
 - Circular icons per layer with visual indicators
 - Click step to see layer-specific details in side panel
 - Progress percentage in header
+- Red "Stop" button in header (visible only while pipeline is running) to cancel pipeline execution
+
+**Pipeline Cancellation** (NEW - 2025-12-12):
+- **UI Control**: Red "Stop" button appears in pipeline progress card header when pipeline starts
+- **Behavior**: Clicking stop immediately kills the subprocess with SIGKILL
+- **Data Safety**: All partial results are discarded; no MongoDB updates occur during or after cancellation
+- **Status Update**: Job status changes to "cancelled" in the UI
+- **Log Trail**: Logs show the exact point where cancellation occurred
+- **Backend Flow**:
+  - `POST /jobs/{run_id}/cancel` endpoint in Runner Service
+  - Tracks subprocess handles in `_processes` dict for immediate access
+  - Executor passes subprocess handle via `process_callback` to register with app
+  - Cancelled status is terminal (stream_logs ends on "cancelled")
+- **Frontend Flow**:
+  - `showPipelineStopButton()` displays red stop button when monitoring starts
+  - `cancelPipeline(runId)` calls proxy endpoint `/api/runner/jobs/{run_id}/cancel`
+  - `handlePipelineCancelled()` updates UI with cancelled state
+  - SSE 'end' event handler and status polling detect "cancelled" status
 
 **Implementation Files**:
-- `frontend/templates/partials/job_detail/_pipeline_progress.html` - HTML structure with icons
-- `frontend/static/js/job-detail.js` - Functions: `resetPipelineSteps()`, `updatePipelineStep()`, `updateProgressLine()`, `showCurrentStepDetails()`
+- `runner_service/app.py` - POST /jobs/{run_id}/cancel endpoint, _processes dict, process_callback handling
+- `runner_service/executor.py` - process_callback parameter for subprocess registration
+- `frontend/templates/partials/job_detail/_pipeline_progress.html` - Stop button in header
+- `frontend/static/js/job-detail.js` - Cancel functions and state handlers
+- `frontend/templates/base.html` - JavaScript cancel utilities
+- `frontend/runner.py` - Proxy route for cancel endpoint
 
 **Key Functions**:
 - `resetPipelineSteps()` - Initialize all steps to pending state
 - `updatePipelineStep(layer, status)` - Update single step with visual state
 - `updateProgressLine()` - Animate progress line as steps complete
 - `showCurrentStepDetails(layer)` - Display layer-specific context
+- `cancelPipeline(runId)` - Send cancel request to runner service
+- `showPipelineStopButton()` - Display stop button during execution
+- `hidePipelineStopButton()` - Hide stop button when pipeline completes
+- `handlePipelineCancelled()` - Update UI to show cancelled state
 
 ---
 

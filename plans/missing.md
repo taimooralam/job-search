@@ -3139,6 +3139,32 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Impact**: Users see most relevant opportunities (Gulf locations + high match) at top of list; dramatically improves job targeting efficiency
   - **Verification**: Job list displays Gulf-region jobs first, then sorted by match score descending, then by seniority
 
+### Pipeline Stop/Cancel Feature
+- [x] Implemented pipeline cancellation (2025-12-12): Users can now stop a running pipeline from the frontend console. All partial results are discarded when stopped.
+  - **Backend Changes** (`runner_service/`):
+    - Added `_processes: Dict[str, asyncio.subprocess.Process]` to track subprocess handles for immediate cancellation
+    - Added `POST /jobs/{run_id}/cancel` endpoint that kills subprocess with SIGKILL
+    - Updated `_execute_pipeline_task()` to register process via callback and handle "cancelled" status
+    - Updated `stream_logs()` to handle "cancelled" as terminal status
+    - Modified `executor.py` with `process_callback` parameter to register subprocess immediately after creation
+  - **Frontend Changes** (`frontend/`):
+    - Added `/jobs/<run_id>/cancel` proxy route in `runner.py`
+    - Added red "Stop" button in pipeline progress card header (partial `_pipeline_progress.html`)
+    - Added JavaScript functions: `cancelPipeline()`, `showPipelineStopButton()`, `hidePipelineStopButton()` in `base.html`
+    - Updated `monitorPipeline()` to show stop button when pipeline starts
+    - Added `handlePipelineCancelled()` for UI state updates when cancelled
+    - Updated SSE 'end' event handler and status polling to handle "cancelled" status
+  - **Behavior**:
+    - Stop button appears only while pipeline is running
+    - Clicking stop kills subprocess immediately (SIGKILL)
+    - No MongoDB updates occur; all partial results discarded
+    - Job status changes to "cancelled" in UI
+    - Logs show cancellation point
+  - **Files Modified**:
+    - Backend: `runner_service/app.py`, `runner_service/executor.py`
+    - Frontend: `frontend/runner.py`, `frontend/templates/partials/job_detail/_pipeline_progress.html`, `frontend/templates/base.html`, `frontend/static/js/job-detail.js`
+  - **Impact**: Users have full control over long-running pipelines; can immediately halt operations that are stuck or unnecessary
+
 ---
 
 ## Quick Reference
