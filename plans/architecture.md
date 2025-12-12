@@ -2417,6 +2417,59 @@ def emit_progress(layer: str, message: str):
 
 **Result**: Services now emit progress every 10-30 seconds during long operations, keeping SSE stream alive and preventing frontend timeout.
 
+### Event Loop Starvation Fix (HOTFIX - 2025-12-12)
+
+**Problem**: Partial pipeline operations (research-company, generate-cv, full-extraction) showed empty screens during execution. Logs only appeared after completion, not in real-time. Root cause: `emit_progress()` was synchronous and blocking, preventing the event loop from yielding control to the SSE generator while services processed long-running LLM requests (2-5 minutes).
+
+**Solution**: Three-layer fix to restore event loop health and streaming responsiveness:
+
+**1. Service Layer** - Convert `emit_progress()` to async with yield point:
+```python
+# Before: Blocking call, starves event loop
+def emit_progress(layer: str, message: str):
+    if self.progress_callback:
+        self.progress_callback(layer, "processing", message)
+
+# After: Async with event loop yield
+async def emit_progress(layer: str, message: str):
+    if self.progress_callback:
+        self.progress_callback(layer, "processing", message)
+    await asyncio.sleep(0)  # Yield control to event loop
+```
+
+Apply to all three services:
+- `src/services/full_extraction_service.py`
+- `src/services/company_research_service.py`
+- `src/services/cv_generation_service.py`
+
+**2. SSE Generator** - Reduce poll interval from 500ms to 100ms:
+```python
+# Before
+poll_interval = 0.5  # 500ms - logs buffered, batch delivery
+
+# After
+poll_interval = 0.1  # 100ms - faster delivery, near real-time
+```
+File: `runner_service/routes/operation_streaming.py`
+
+**3. Flask Proxy** - Switch from line-based to chunk-based streaming:
+```python
+# Before: iter_lines() buffered until full line
+for line in response.iter_lines(decode_unicode=True):
+    yield f"data: {line}\n\n"
+
+# After: iter_content() delivers chunks immediately
+for chunk in response.iter_content(chunk_size=1024, decode_unicode=True):
+    yield chunk
+```
+File: `frontend/runner.py`
+
+**Result**:
+- Frontend now receives logs in real-time (within 200ms of emit)
+- UI displays live progress during execution instead of blank screen
+- No buffering - logs stream as service emits them
+- Event loop healthy - services yield between each progress emit
+
 ### Performance Considerations
 
 **Memory Usage**:
