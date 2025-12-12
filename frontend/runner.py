@@ -142,6 +142,32 @@ def get_run_status(run_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/jobs/<run_id>/cancel", methods=["POST"])
+def cancel_run(run_id: str):
+    """
+    Cancel a running pipeline.
+
+    Sends SIGKILL to the subprocess and discards all partial results.
+
+    Returns:
+        JSON with cancellation result
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/jobs/{run_id}/cancel",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/jobs/<run_id>/progress", methods=["GET"])
 def get_run_progress(run_id: str):
     """

@@ -2165,6 +2165,100 @@
             window.location.href = `/job/${jobId}`;
         }
 
+        // ============================================================================
+        // Pipeline Cancellation Functions
+        // ============================================================================
+
+        // Track current pipeline run for cancellation
+        let currentPipelineRunId = null;
+
+        /**
+         * Show the stop button when a pipeline starts
+         * @param {string} runId - The run ID of the started pipeline
+         */
+        function showPipelineStopButton(runId) {
+            currentPipelineRunId = runId;
+            const btn = document.getElementById('pipeline-stop-btn');
+            if (btn) {
+                btn.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Hide the stop button when pipeline completes/fails/cancels
+         */
+        function hidePipelineStopButton() {
+            const btn = document.getElementById('pipeline-stop-btn');
+            if (btn) {
+                btn.classList.add('hidden');
+            }
+            currentPipelineRunId = null;
+        }
+
+        /**
+         * Cancel the currently running pipeline
+         * Sends SIGKILL to subprocess and discards all partial results
+         */
+        async function cancelPipeline() {
+            if (!currentPipelineRunId) {
+                showToast('No active pipeline to cancel', 'warning');
+                return;
+            }
+
+            // Confirmation dialog
+            const confirmed = confirm(
+                'Cancel pipeline?\n\n' +
+                'This will immediately stop the pipeline and discard ALL partial results.\n' +
+                'The job will remain unchanged as if the pipeline never ran.\n\n' +
+                'This cannot be undone.'
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast('Cancelling pipeline...', 'info');
+
+                const response = await fetch(`/api/runner/jobs/${currentPipelineRunId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast('Pipeline cancelled - all changes discarded', 'info');
+                    hidePipelineStopButton();
+
+                    // Update UI to show cancelled state
+                    const progressContainer = document.getElementById('pipeline-progress-container');
+                    if (progressContainer) {
+                        // Update progress bar to show cancelled
+                        const progressBar = document.getElementById('pipeline-overall-progress-bar');
+                        if (progressBar) {
+                            progressBar.classList.remove('from-indigo-500', 'to-indigo-600');
+                            progressBar.classList.add('from-gray-400', 'to-gray-500');
+                        }
+
+                        // Update percentage text
+                        const percentText = document.getElementById('pipeline-overall-percent');
+                        if (percentText) {
+                            percentText.textContent = 'Cancelled';
+                            percentText.classList.remove('text-indigo-700', 'dark:text-indigo-400');
+                            percentText.classList.add('text-gray-600', 'dark:text-gray-400');
+                        }
+                    }
+                } else {
+                    showToast(result.error || 'Failed to cancel pipeline', 'error');
+                }
+            } catch (err) {
+                showToast('Cancel failed: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================================================
+        // Process Job Functions
+        // ============================================================================
+
         // Process job through pipeline
         async function processJob(jobId, jobTitle) {
             // Confirmation dialog
@@ -2193,6 +2287,8 @@
 
                 if (response.ok && result.run_id) {
                     showToast(`Pipeline started! Run ID: ${result.run_id}`);
+                    // Show stop button for cancellation
+                    showPipelineStopButton(result.run_id);
                     // Redirect to job detail page to see progress
                     setTimeout(() => {
                         window.location.href = `/job/${jobId}?run_id=${result.run_id}`;

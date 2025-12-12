@@ -1124,6 +1124,11 @@ function monitorPipeline(runId) {
 
     document.getElementById('pipeline-run-id').textContent = `Run: ${runId}`;
 
+    // Show stop button for cancellation (calls global function from base.html)
+    if (typeof showPipelineStopButton === 'function') {
+        showPipelineStopButton(runId);
+    }
+
     resetPipelineSteps();
     startLogStreaming(runId);
 
@@ -1403,6 +1408,35 @@ function handlePipelineFailed(errorMessage) {
     showToast(errorMessage || 'Pipeline failed', 'error');
 }
 
+function handlePipelineCancelled() {
+    if (statusPollingInterval) {
+        clearInterval(statusPollingInterval);
+        statusPollingInterval = null;
+    }
+
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+
+    // Update progress bar to show cancelled state
+    const progressBar = document.getElementById('pipeline-overall-progress-bar');
+    if (progressBar) {
+        progressBar.classList.remove('from-indigo-500', 'to-indigo-600');
+        progressBar.classList.add('from-gray-400', 'to-gray-500');
+    }
+
+    // Update percentage text
+    const percentText = document.getElementById('pipeline-overall-percent');
+    if (percentText) {
+        percentText.textContent = 'Cancelled';
+        percentText.classList.remove('text-indigo-700', 'dark:text-indigo-400');
+        percentText.classList.add('text-gray-600', 'dark:text-gray-400');
+    }
+
+    showToast('Pipeline cancelled - all changes discarded', 'info');
+}
+
 function formatDuration(seconds) {
     if (seconds < 1) return '<1s';
     if (seconds < 60) return `${Math.round(seconds)}s`;
@@ -1429,9 +1463,16 @@ async function pollPipelineStatus(runId) {
                 updateOverallProgress(progressValue);
             }
 
-            if (data.status === 'completed' || data.status === 'failed') {
+            if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
+                // Hide stop button when pipeline ends
+                if (typeof hidePipelineStopButton === 'function') {
+                    hidePipelineStopButton();
+                }
+
                 if (data.status === 'completed') {
                     handlePipelineComplete();
+                } else if (data.status === 'cancelled') {
+                    handlePipelineCancelled();
                 } else {
                     handlePipelineFailed(data.error);
                 }
@@ -1478,10 +1519,17 @@ function startLogStreaming(runId) {
             eventSource = null;
         }
 
-        // Check if pipeline completed or failed based on the event data
+        // Hide stop button when pipeline ends (calls global function from base.html)
+        if (typeof hidePipelineStopButton === 'function') {
+            hidePipelineStopButton();
+        }
+
+        // Check if pipeline completed, failed, or cancelled based on the event data
         const eventData = event.data ? event.data.toLowerCase() : '';
         if (eventData.includes('completed') || eventData.includes('success')) {
             handlePipelineComplete();
+        } else if (eventData.includes('cancelled')) {
+            handlePipelineCancelled();
         } else if (eventData.includes('failed') || eventData.includes('error')) {
             handlePipelineFailed(event.data);
         } else {
