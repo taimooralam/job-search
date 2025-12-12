@@ -139,14 +139,29 @@ Director of Engineering (Category 3):
 - Verbs: scaled, transformed, built, drove, established
 
 Head of Engineering (Category 4):
-- Lead with: function building, executive presence
-- Key metrics: function built from scratch, revenue impact
-- Verbs: built, established, transformed, drove, scaled
+- Lead with: function building, executive presence, culture creation
+- Key metrics: function built from scratch, revenue impact, culture transformation
+- Verbs: built, established, transformed, drove, scaled, created
 
-CTO / VP Engineering (Category 5):
-- Lead with: technology vision, business transformation
-- Key metrics: company-wide impact, revenue/valuation
-- Verbs: led, transformed, established, drove, defined
+VP Engineering (Category 5):
+- Lead with: engineering executive, operational excellence, strategic delivery
+- Key metrics: org scale (50-200+), delivery excellence, business partnership
+- Verbs: led, scaled, transformed, drove, delivered, executed
+
+CTO (Category 6):
+- Lead with: technology vision, business transformation, innovation
+- Key metrics: company-wide impact, revenue/valuation, board-level presence
+- Verbs: led, transformed, established, drove, defined, shaped
+
+Tech Lead (Category 7):
+- Lead with: hands-on leadership, technical excellence, team guidance
+- Key metrics: delivery velocity, system quality, technical debt reduction
+- Verbs: led, delivered, architected, built, mentored, shipped
+
+Senior Engineer (Category 8):
+- Lead with: technical depth, system delivery, feature ownership
+- Key metrics: system performance, delivery track record, code quality
+- Verbs: built, developed, designed, implemented, optimized, shipped
 
 === ATS OPTIMIZATION RULES ===
 
@@ -214,6 +229,7 @@ def build_profile_user_prompt(
     regional_variant: str = "us_eu",
     jd_pain_points: list = None,
     candidate_differentiators: list = None,
+    role_persona: dict = None,
 ) -> str:
     """
     Build the user prompt for hybrid executive summary generation.
@@ -221,7 +237,7 @@ def build_profile_user_prompt(
     Args:
         candidate_name: Name of the candidate
         job_title: Target job title (EXACT title from JD for 10.6x factor)
-        role_category: One of the 5 role categories
+        role_category: One of the 8 role categories
         top_keywords: JD keywords to integrate (pre-grounded)
         experience_bullets: Bullets from stitched experience
         metrics: Extracted quantified metrics
@@ -229,6 +245,7 @@ def build_profile_user_prompt(
         regional_variant: "us_eu" or "gulf"
         jd_pain_points: Pain points extracted from JD (for key achievements)
         candidate_differentiators: Unique strengths (for tagline differentiation)
+        role_persona: Persona data from role_skills_taxonomy.json (optional)
 
     Returns:
         Formatted user prompt
@@ -260,6 +277,37 @@ CANDIDATE DIFFERENTIATORS (weave into tagline):
 REGIONAL: Gulf market - include visa status in tagline if relevant.
 """
 
+    # Role persona instructions (from role_skills_taxonomy.json)
+    persona_text = ""
+    if role_persona:
+        identity = role_persona.get("identity_statement", "")
+        voice = role_persona.get("voice", "")
+        power_verbs = role_persona.get("power_verbs", [])
+        tagline_templates = role_persona.get("tagline_templates", [])
+        metric_priorities = role_persona.get("metric_priorities", [])
+        headline_pattern = role_persona.get("headline_pattern", "")
+        key_focus = role_persona.get("key_achievement_focus", [])
+        differentiators = role_persona.get("differentiators", [])
+
+        persona_text = f"""
+=== ROLE PERSONA (adapt tagline and achievements to this voice) ===
+IDENTITY: {identity}
+VOICE: {voice}
+POWER VERBS (prioritize these): {', '.join(power_verbs[:6])}
+METRIC PRIORITIES: {', '.join(metric_priorities[:4])}
+KEY ACHIEVEMENT FOCUS: {', '.join(key_focus[:4])}
+ROLE DIFFERENTIATORS: {', '.join(differentiators[:4])}
+"""
+        if tagline_templates:
+            templates_text = chr(10).join(f'  - "{t}"' for t in tagline_templates[:3])
+            persona_text += f"""
+TAGLINE TEMPLATES (adapt to candidate's actual achievements):
+{templates_text}
+"""
+        if headline_pattern:
+            persona_text += f"""HEADLINE PATTERN: {headline_pattern}
+"""
+
     return f"""Generate a HYBRID EXECUTIVE SUMMARY for {candidate_name}.
 
 === TARGET ROLE ===
@@ -267,7 +315,7 @@ EXACT JOB TITLE: {job_title}
 ROLE CATEGORY: {role_category}
 YEARS OF EXPERIENCE: {years_experience}+
 REGIONAL VARIANT: {regional_variant}
-{regional_instructions}
+{regional_instructions}{persona_text}
 === GROUNDED JD KEYWORDS (pre-verified - ONLY use these) ===
 {keywords_text}
 {pain_points_text}{differentiators_text}
@@ -665,6 +713,7 @@ def build_persona_user_prompt(
     regional_variant: str = "us_eu",
     jd_pain_points: list = None,
     candidate_differentiators: list = None,
+    role_persona: dict = None,
 ) -> str:
     """
     Build the user prompt for persona-specific hybrid executive summary generation.
@@ -673,7 +722,7 @@ def build_persona_user_prompt(
         persona: One of "metric", "narrative", "keyword"
         candidate_name: Name of the candidate
         job_title: Target job title (EXACT title from JD)
-        role_category: One of the 5 role categories
+        role_category: One of the 8 role categories
         top_keywords: JD keywords to integrate (pre-grounded)
         experience_bullets: Bullets from stitched experience
         metrics: Extracted quantified metrics
@@ -681,6 +730,7 @@ def build_persona_user_prompt(
         regional_variant: "us_eu" or "gulf"
         jd_pain_points: Pain points extracted from JD
         candidate_differentiators: Unique strengths
+        role_persona: Persona data from role_skills_taxonomy.json (optional)
 
     Returns:
         Formatted user prompt for specific persona
@@ -729,13 +779,29 @@ CANDIDATE DIFFERENTIATORS (weave into tagline):
 {chr(10).join(f'- {d}' for d in candidate_differentiators[:3])}
 """
 
+    # Role persona context (from role_skills_taxonomy.json)
+    role_persona_text = ""
+    if role_persona:
+        identity = role_persona.get("identity_statement", "")
+        voice = role_persona.get("voice", "")
+        power_verbs = role_persona.get("power_verbs", [])
+        metric_priorities = role_persona.get("metric_priorities", [])
+
+        role_persona_text = f"""
+=== ROLE PERSONA (adapt to this voice) ===
+IDENTITY: {identity}
+VOICE: {voice}
+POWER VERBS: {', '.join(power_verbs[:6])}
+METRIC PRIORITIES: {', '.join(metric_priorities[:4])}
+"""
+
     return f"""Generate a {persona.upper()}-focused HYBRID EXECUTIVE SUMMARY for {candidate_name}.
 {emphasis}
 === TARGET ROLE ===
 EXACT JOB TITLE: {job_title}
 ROLE CATEGORY: {role_category}
 YEARS OF EXPERIENCE: {years_experience}+
-{pain_points_text}{differentiators_text}
+{pain_points_text}{differentiators_text}{role_persona_text}
 === GROUNDED JD KEYWORDS (ONLY use these) ===
 {keywords_text}
 
@@ -816,7 +882,7 @@ Combine the best elements:
 Generate the synthesized hybrid executive summary JSON:"""
 
 
-# Role category to superpower mapping
+# Role category to superpower mapping (all 8 role categories)
 ROLE_SUPERPOWERS = {
     "engineering_manager": [
         "team multiplier",
@@ -846,11 +912,32 @@ ROLE_SUPERPOWERS = {
         "org design",
         "business outcomes",
     ],
+    "vp_engineering": [
+        "engineering executive",
+        "operational excellence",
+        "organizational scale",
+        "strategic delivery",
+        "business partnership",
+    ],
     "cto": [
         "technology vision",
         "business transformation",
         "executive leadership",
         "technical strategy",
         "innovation",
+    ],
+    "tech_lead": [
+        "hands-on leadership",
+        "technical excellence",
+        "team guidance",
+        "delivery focus",
+        "player-coach",
+    ],
+    "senior_engineer": [
+        "technical depth",
+        "system delivery",
+        "code quality",
+        "feature ownership",
+        "collaborative approach",
     ],
 }
