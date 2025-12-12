@@ -2063,8 +2063,7 @@ async function copyFirecrawlPrompt() {
         const result = await response.json();
 
         if (result.success) {
-            await navigator.clipboard.writeText(result.prompt);
-            showToast('FireCrawl prompt copied to clipboard!', 'success');
+            await copyToClipboard(result.prompt, 'FireCrawl prompt');
         } else {
             showToast(result.error || 'Failed to generate prompt', 'error');
         }
@@ -2081,8 +2080,37 @@ async function copyFirecrawlPrompt() {
  * @param {string} label - Label for the toast message (e.g., "Connection request")
  */
 async function copyToClipboard(text, label = 'Text', buttonElement = null) {
+    // Defensive null/undefined handling
+    if (text === null || text === undefined || text === '') {
+        showToast(`No ${label} content to copy`, 'error');
+        return;
+    }
+
+    // Ensure text is a string
+    const textStr = String(text);
+
     try {
-        await navigator.clipboard.writeText(text);
+        // Primary method: Clipboard API (requires secure context - HTTPS or localhost)
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(textStr);
+        } else {
+            // Fallback: execCommand for non-secure contexts (HTTP on non-localhost)
+            // This is deprecated but still works in all browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = textStr;
+            // Prevent scrolling to bottom of page
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const success = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (!success) {
+                throw new Error('Copy command failed');
+            }
+        }
         showToast(`${label} copied to clipboard!`, 'success');
 
         // Provide visual feedback on the button if available
@@ -2096,6 +2124,7 @@ async function copyToClipboard(text, label = 'Text', buttonElement = null) {
             }, 2000);
         }
     } catch (err) {
+        console.error('Clipboard copy failed:', err);
         showToast(`Failed to copy ${label}: ${err.message}`, 'error');
     }
 }
