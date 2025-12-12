@@ -1389,7 +1389,7 @@
                     <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-green-700">Connection Request</span>
-                            <button onclick="copyToClipboard('{{ (contact.linkedin_connection_message or contact.linkedin_message) | e }}', 'Connection request')"
+                            <button onclick="copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, 'Connection request', this)"
                                     class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1405,7 +1405,7 @@
                     <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
-                            <button onclick="copyToClipboard('{{ contact.linkedin_inmail | e }}', 'InMail')"
+                            <button onclick="copyToClipboard({{ contact.linkedin_inmail | tojson }}, 'InMail', this)"
                                     class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1466,7 +1466,7 @@
                     <div class="mt-2 p-2 bg-green-50 rounded border border-green-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-green-700">Connection Request</span>
-                            <button onclick="copyToClipboard('{{ (contact.linkedin_connection_message or contact.linkedin_message) | e }}', 'Connection request')"
+                            <button onclick="copyToClipboard({{ (contact.linkedin_connection_message or contact.linkedin_message) | tojson }}, 'Connection request', this)"
                                     class="text-xs text-green-600 hover:text-green-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1482,7 +1482,7 @@
                     <div class="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-xs font-medium text-indigo-700">InMail{% if contact.linkedin_inmail_subject %}: {{ contact.linkedin_inmail_subject }}{% endif %}</span>
-                            <button onclick="copyToClipboard('{{ contact.linkedin_inmail | e }}', 'InMail')"
+                            <button onclick="copyToClipboard({{ contact.linkedin_inmail | tojson }}, 'InMail', this)"
                                     class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                                     title="Copy to clipboard">
                                 <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

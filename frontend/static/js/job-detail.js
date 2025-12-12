@@ -2080,10 +2080,21 @@ async function copyFirecrawlPrompt() {
  * @param {string} text - The text to copy
  * @param {string} label - Label for the toast message (e.g., "Connection request")
  */
-async function copyToClipboard(text, label = 'Text') {
+async function copyToClipboard(text, label = 'Text', buttonElement = null) {
     try {
         await navigator.clipboard.writeText(text);
         showToast(`${label} copied to clipboard!`, 'success');
+
+        // Provide visual feedback on the button if available
+        if (buttonElement) {
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Copied!';
+            buttonElement.classList.add('text-green-600');
+            setTimeout(() => {
+                buttonElement.innerHTML = originalHTML;
+                buttonElement.classList.remove('text-green-600');
+            }, 2000);
+        }
     } catch (err) {
         showToast(`Failed to copy ${label}: ${err.message}`, 'error');
     }
