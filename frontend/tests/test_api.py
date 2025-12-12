@@ -98,7 +98,12 @@ class TestListJobsAPI:
         assert data["pagination"]["page_size"] == 10
 
     def test_list_jobs_with_search(self, client, mock_db):
-        """Test searching jobs."""
+        """Test searching jobs.
+
+        Note: We use sort=title to bypass default multi-criteria sorting,
+        which uses aggregation. This allows us to test the find() path
+        and verify the search query is correctly constructed.
+        """
         mock_database, mock_collection = mock_db
 
         mock_cursor = MagicMock()
@@ -109,7 +114,8 @@ class TestListJobsAPI:
         mock_collection.find.return_value = mock_cursor
         mock_collection.count_documents.return_value = 0
 
-        response = client.get('/api/jobs?query=google')
+        # Use sort=title to bypass default aggregation path
+        response = client.get('/api/jobs?query=google&sort=title')
 
         assert response.status_code == 200
         # Verify the find was called with search query (now nested in $and)
@@ -122,7 +128,12 @@ class TestListJobsAPI:
         assert search_condition is not None
 
     def test_list_jobs_pagination(self, client, mock_db):
-        """Test pagination parameters."""
+        """Test pagination parameters.
+
+        Note: We use sort=title to bypass default multi-criteria sorting,
+        which uses aggregation. This allows us to test the find() path
+        and verify pagination parameters are correctly applied.
+        """
         mock_database, mock_collection = mock_db
 
         mock_cursor = MagicMock()
@@ -133,7 +144,8 @@ class TestListJobsAPI:
         mock_collection.find.return_value = mock_cursor
         mock_collection.count_documents.return_value = 100
 
-        response = client.get('/api/jobs?page=3&page_size=50')
+        # Use sort=title to bypass default aggregation path
+        response = client.get('/api/jobs?page=3&page_size=50&sort=title')
 
         assert response.status_code == 200
         data = response.get_json()
@@ -532,7 +544,12 @@ class TestListJobsFilters:
         assert isinstance(date_filter["$lte"], datetime)
 
     def test_list_jobs_with_location_filter(self, client, mock_db):
-        """Test filtering jobs by location."""
+        """Test filtering jobs by location.
+
+        Note: We use sort=title to bypass default multi-criteria sorting,
+        which uses aggregation. This allows us to test the find() path
+        and verify the location filter query is correctly constructed.
+        """
         mock_database, mock_collection = mock_db
 
         mock_collection.count_documents.return_value = 10
@@ -542,7 +559,8 @@ class TestListJobsFilters:
         mock_cursor.limit.return_value = iter([])
         mock_collection.find.return_value = mock_cursor
 
-        response = client.get('/api/jobs?locations=Remote&locations=New+York')
+        # Use sort=title to bypass default aggregation path
+        response = client.get('/api/jobs?locations=Remote&locations=New+York&sort=title')
 
         assert response.status_code == 200
         # Verify the query included location filter (now nested in $and)
