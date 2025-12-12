@@ -420,13 +420,61 @@ Final CV: 100% pre-written, interview-defensible, no hallucinations
    - Per-role variant preference configuration
    - 20 unit tests passing
 
-3. **CVLoader Integration** (`src/layer6_v2/cv_loader.py`)
+3. **Master CV Data Loading - MongoDB-First Architecture** (NEW - 2025-12-12)
+
+**Design Philosophy**: Single source of truth for all CV data is MongoDB, with graceful fallback to local files.
+
+```
+MongoDB Collections (PRIMARY)
+├── master_cv_metadata (candidate info)
+├── master_cv_roles (work experience, achievements)
+└── master_cv_taxonomy (skills, persona data)
+        │
+        ▼
+CVLoader (abstraction layer)
+├── use_mongodb: bool (defaults to True)
+├── MONGO_UNAVAILABLE: falls back to data/master-cv/roles/*.md
+└── Transparent interface to all consumers
+        │
+        ├─ Quick Scorer Service
+        ├─ Pipeline Runner (scripts/run_pipeline.py)
+        ├─ Layer 6 Orchestrator
+        └─ Frontend API proxy
+        │
+        ▼
+Output: CVs with role-tailored MongoDB data
+```
+
+**Implementation Details**:
+
+- **Primary Source**: MongoDB `master_cv_*` collections (edited via Master CV Editor UI)
+- **Fallback Source**: `data/master-cv/roles/*.md` files (only if MongoDB unavailable)
+- **Config Flag**: `USE_MASTER_CV_MONGODB=true` (default)
+- **CVLoader Interface**: Transparent switching between MongoDB and file loading
+- **Frontend Integration**: Master CV Editor (Vercel) → HTTP proxy → Runner Service (VPS) → MongoDB
+
+**File-to-MongoDB Migration Status**:
+- Quick Scorer: Uses `MasterCVStore.get_profile_for_suggestions()` (MongoDB)
+- Pipeline Runner: Uses `CVLoader(use_mongodb=True)` (MongoDB)
+- Orchestrator: Uses `self.cv_loader` for consistent loading (MongoDB)
+- Configuration: Skips file validation when `USE_MASTER_CV_MONGODB=true` (MongoDB primary)
+- Deployment: `master-cv.md` removed from CI/CD (no longer deployed)
+
+**Benefits of MongoDB-First**:
+1. Single source of truth (no file scatter)
+2. Real-time edits immediately available to all code paths
+3. Simplified VPS deployment (file sync not needed)
+4. Audit trail of all CV edits
+5. Scalable versioning and variants
+
+4. **CVLoader Integration** (`src/layer6_v2/cv_loader.py`)
    - Supports `enhanced_data` with variants
    - Properties: `has_variants`, `variant_count`, `get_achievement_variants()`
    - Graceful fallback to legacy format
+   - Transparent MongoDB vs file-based loading (configurable)
    - 21 unit tests passing
 
-4. **RoleGenerator Integration** (`src/layer6_v2/role_generator.py`)
+5. **RoleGenerator Integration** (`src/layer6_v2/role_generator.py`)
    - `generate_from_variants()` - Zero-hallucination selection
    - `generate_with_variant_fallback()` - LLM backup (production method)
    - `generate_all_roles_from_variants()` - Batch processing
