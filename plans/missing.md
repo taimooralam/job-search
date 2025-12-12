@@ -3044,6 +3044,16 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ## Completed (Dec 2025)
 
+### MongoDB Master CV Integration Fix
+- [x] Fix CVLoader default MongoDB flag (2025-12-12): Changed CVLoader to use MongoDB master CV by default instead of falling back to local files. This ensures CV edits via the Master CV Editor are properly used in CV generation.
+  - **Root Cause**: CVLoader was initialized with `use_mongodb=False`, causing the CV Editor's MongoDB changes to be ignored during generation
+  - **Fix Applied**:
+    - Added `USE_MASTER_CV_MONGODB` config flag in `src/common/config.py` (defaults to `true`)
+    - Updated `CVLoader()` initialization in `src/layer6_v2/orchestrator.py` to use `Config.USE_MASTER_CV_MONGODB`
+    - Enhanced logging in `src/layer6_v2/cv_loader.py` with clear indicators for MongoDB vs local file usage
+  - **Files**: `src/common/config.py`, `src/layer6_v2/orchestrator.py`, `src/layer6_v2/cv_loader.py`
+  - **Verification**: 6 roles successfully loaded from MongoDB, config flag set to `True`, 35 unit tests passing
+
 ### Job Detail Page 3-Column Responsive Dashboard Layout
 - [x] Complete UI/UX overhaul (2025-12-11): Restructured job detail page from single-column narrow layout to responsive multi-column dashboard with CSS Grid.
   - **Files**: `frontend/static/css/job-detail.css` (NEW - 577 lines), `frontend/templates/job_detail.html` (RESTRUCTURED), `frontend/static/js/job-detail.js` (ENHANCED), `frontend/templates/base.html` (MODIFIED)
