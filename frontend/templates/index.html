@@ -224,6 +224,20 @@
 
                         <!-- Reset ALL filters -->
                         <button type="button" onclick="resetAllFilters()" class="btn btn-sm btn-error btn-ghost" title="Reset all filters to defaults">Reset All</button>
+
+                        <!-- Show Applied Only toggle -->
+                        <label class="flex items-center gap-2 cursor-pointer ml-4">
+                            <input type="checkbox"
+                                   id="applied-only-checkbox"
+                                   name="applied_only"
+                                   value="true"
+                                   class="filter-input h-4 w-4 rounded border-gray-300 text-accent-500 focus:ring-accent-500"
+                                   hx-get="/partials/job-rows"
+                                   hx-trigger="change"
+                                   hx-target="#job-table-container"
+                                   hx-include=".filter-input">
+                            <span class="text-sm font-medium theme-text-secondary">Applied Only</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -818,7 +832,7 @@
         updateActiveFilterCount();
     }
 
-    // Reset ALL filters (date + status + search + locations)
+    // Reset ALL filters (date + status + search + locations + applied-only)
     function resetAllFilters() {
         // Clear date filter
         document.getElementById('date-from').value = '';
@@ -836,6 +850,9 @@
         // Clear locations
         selectedLocations = [];
         renderSelectedLocations();
+
+        // Clear applied-only checkbox
+        document.getElementById('applied-only-checkbox').checked = false;
 
         // Trigger table refresh
         triggerTableRefresh();
