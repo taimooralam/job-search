@@ -270,6 +270,18 @@ def get_db():
     raise ConfigurationError("MongoDB connection failed - DNS resolution issue")
 
 
+def get_collection():
+    """
+    Get the level-2 MongoDB collection.
+
+    Convenience wrapper around get_db()["level-2"].
+
+    Returns:
+        MongoDB collection instance for level-2 jobs
+    """
+    return get_db()["level-2"]
+
+
 def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     """
     Serialize a MongoDB job document for JSON response.
