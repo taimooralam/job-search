@@ -72,7 +72,8 @@
             {% set job_url = job.url or job.jobUrl %}
             <tr class="job-row cursor-pointer"
                 data-job-id="{{ job._id }}"
-                onclick="navigateToJob(event, '{{ job._id }}')">
+                onclick="navigateToJob(event, '{{ job._id }}')"
+                oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}'); return false;">
                 <!-- Checkbox -->
                 <td class="px-4 py-3" onclick="event.stopPropagation()">
                     <input type="checkbox"

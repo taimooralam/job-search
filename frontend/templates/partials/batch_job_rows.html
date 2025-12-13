@@ -312,6 +312,26 @@
                             <span class="theme-text-muted">None</span>
                             {% endif %}
                         </div>
+
+                        <!-- Scrape & Fill Action -->
+                        <div class="md:col-span-2 lg:col-span-3 pt-2 border-t theme-border mt-2">
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-2">Application Form Actions</label>
+                            <div class="flex items-center gap-3">
+                                <button onclick="scrapeAndFillJob('{{ job._id }}', '{{ (job.title or '') | e | replace(chr(39), chr(92) + chr(39)) }}')"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
+                                               {% if app_url %}text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
+                                               {% else %}text-gray-400 bg-gray-200 dark:bg-gray-700 cursor-not-allowed{% endif %}"
+                                        {% if not app_url %}disabled title="Application URL required"{% else %}title="Scrape application form and generate answers"{% endif %}>
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                    </svg>
+                                    Scrape & Fill
+                                </button>
+                                {% if not app_url %}
+                                <span class="text-xs theme-text-muted">(Set application URL above to enable)</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -341,6 +361,91 @@
 </table>
 
 <script>
+    // Scrape & Fill job application form
+    async function scrapeAndFillJob(jobId, jobTitle) {
+        const confirmed = confirm(
+            `Scrape & Fill application form?\n\n` +
+            `Job: ${jobTitle}\n\n` +
+            `This will:\n` +
+            `1. Scrape the application form questions\n` +
+            `2. Generate AI-powered answers\n` +
+            `3. Save planned answers to the job`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            showToast('Starting Scrape & Fill...', 'info');
+
+            // Open CLI panel to show logs
+            if (typeof window.cliPanel !== 'undefined') {
+                window.cliPanel.open();
+                window.cliPanel.clear();
+                window.cliPanel.appendOutput(`[Scrape & Fill] Starting for job ${jobId}...`, 'info');
+            }
+
+            const response = await fetch(`/api/runner/operations/${jobId}/scrape-form-answers/stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.run_id) {
+                showToast(`Scrape & Fill started! Run ID: ${result.run_id}`, 'success');
+
+                // Connect to SSE log stream
+                if (result.log_stream_url && typeof window.cliPanel !== 'undefined') {
+                    connectToScrapeAndFillStream(result.log_stream_url, jobId);
+                }
+            } else {
+                showToast(result.error || 'Failed to start Scrape & Fill', 'error');
+                if (typeof window.cliPanel !== 'undefined') {
+                    window.cliPanel.appendOutput(`[ERROR] ${result.error || 'Failed to start Scrape & Fill'}`, 'error');
+                }
+            }
+        } catch (err) {
+            showToast('Scrape & Fill failed: ' + err.message, 'error');
+            if (typeof window.cliPanel !== 'undefined') {
+                window.cliPanel.appendOutput(`[ERROR] ${err.message}`, 'error');
+            }
+        }
+    }
+
+    // Connect to SSE stream for Scrape & Fill logs
+    function connectToScrapeAndFillStream(streamUrl, jobId) {
+        const eventSource = new EventSource(streamUrl);
+
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'log') {
+                    window.cliPanel.appendOutput(data.message, data.level || 'info');
+                } else if (data.type === 'complete') {
+                    window.cliPanel.appendOutput('[Scrape & Fill] Complete!', 'success');
+                    showToast('Scrape & Fill complete!', 'success');
+                    eventSource.close();
+                    // Refresh the batch table to show updated data
+                    htmx.trigger('#batch-table-container', 'refresh');
+                } else if (data.type === 'error') {
+                    window.cliPanel.appendOutput(`[ERROR] ${data.message}`, 'error');
+                    showToast('Scrape & Fill failed: ' + data.message, 'error');
+                    eventSource.close();
+                }
+            } catch (e) {
+                // Plain text message
+                window.cliPanel.appendOutput(event.data, 'info');
+            }
+        };
+
+        eventSource.onerror = function(err) {
+            console.error('SSE error:', err);
+            window.cliPanel.appendOutput('[Connection closed]', 'warning');
+            eventSource.close();
+        };
+    }
+
     // Process single job from batch view
     async function processSingleBatchJob(jobId) {
         const tier = document.getElementById('batch-tier')?.value || 'auto';
