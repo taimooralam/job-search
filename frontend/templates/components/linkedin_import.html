@@ -1,0 +1,86 @@
+<!-- LinkedIn Multi-Import Hover Dropdown Component -->
+<!-- Usage: {% include 'components/linkedin_import.html' %} -->
+<div class="relative" x-data="linkedinImport()">
+    <!-- Trigger Button -->
+    <button
+        @mouseenter="open = true"
+        @click="open = !open"
+        class="btn btn-sm btn-ghost flex items-center gap-1.5 group"
+        :class="{'bg-blue-50 dark:bg-blue-900/20': open}"
+        title="Import LinkedIn Jobs"
+    >
+        <svg class="h-4 w-4 text-[#0A66C2]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+        </svg>
+        <span class="text-xs font-medium hidden sm:inline">Import</span>
+        <svg class="h-3 w-3 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    <!-- Dropdown Panel -->
+    <div
+        x-show="open"
+        @mouseleave="if (!input && results.length === 0) open = false"
+        @click.away="open = false"
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="absolute z-50 mt-1 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border theme-border p-3"
+        x-cloak
+    >
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium theme-text-secondary">
+                Paste LinkedIn job IDs or URLs (one per line)
+            </label>
+            <textarea
+                x-model="input"
+                x-ref="inputField"
+                placeholder="4081234567&#10;https://linkedin.com/jobs/view/4081234568"
+                rows="3"
+                class="form-input text-sm w-full resize-none"
+                @keydown.ctrl.enter="importJobs()"
+                @keydown.meta.enter="importJobs()"
+                @focus="open = true"
+            ></textarea>
+            <div class="flex justify-between items-center">
+                <span class="text-xs theme-text-tertiary" x-show="!loading">Ctrl+Enter to import</span>
+                <span class="text-xs text-blue-600" x-show="loading" x-text="'Importing ' + progress + '...'"></span>
+                <button
+                    @click="importJobs()"
+                    :disabled="loading || !input.trim()"
+                    class="btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span x-show="!loading">Import & Score</span>
+                    <span x-show="loading" class="flex items-center gap-1">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Importing...
+                    </span>
+                </button>
+            </div>
+            <!-- Results -->
+            <div x-show="results.length > 0" class="max-h-40 overflow-y-auto text-xs space-y-1 border-t theme-border pt-2 mt-1">
+                <template x-for="r in results" :key="r.id">
+                    <div :class="r.success ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'" class="flex items-start gap-1">
+                        <span x-text="r.success ? '✓' : '✗'" class="flex-shrink-0"></span>
+                        <span x-text="r.message" class="break-all"></span>
+                    </div>
+                </template>
+            </div>
+            <!-- Clear Results Button -->
+            <button
+                x-show="results.length > 0 && !loading"
+                @click="results = []; input = ''"
+                class="text-xs theme-text-tertiary hover:theme-text-primary underline self-end"
+            >
+                Clear results
+            </button>
+        </div>
+    </div>
+</div>

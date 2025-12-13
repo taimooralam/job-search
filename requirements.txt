@@ -45,3 +45,8 @@ uvicorn[standard]>=0.24.0
 Flask>=3.0.0
 requests>=2.31.0
 pydantic-settings>=2.0.0
+
+# Queue management (Redis-backed)
+redis>=5.0.0
+flask-sock>=0.7.0
+websocket-client>=1.6.0

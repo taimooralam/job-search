@@ -1748,6 +1748,9 @@
                             <!-- Stats loaded via HTMX -->
                         </div>
 
+                        <!-- Queue Dropdowns (WebSocket-powered) -->
+                        {% include 'components/queue_dropdowns.html' %}
+
                         <!-- Batch Processing Button -->
                         <a
                             href="/batch-processing"
@@ -2912,6 +2915,14 @@
 
     <!-- CLI Panel JS (must load after Alpine.js for store registration) -->
     <script src="/static/js/cli-panel.js"></script>
+
+    <!-- Queue WebSocket and Store (must load after Alpine.js) -->
+    <script src="/static/js/queue-websocket.js"></script>
+    <script src="/static/js/queue-store.js"></script>
+    <script src="/static/js/live-status-badge.js"></script>
+
+    <!-- LinkedIn Import Component (must load after Alpine.js) -->
+    <script src="/static/js/linkedin-import.js"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

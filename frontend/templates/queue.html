@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline Queue - Job Search{% endblock %}
+
+{% block content %}
+<div x-data="queuePage()" class="space-y-6">
+    {# Page Header #}
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Pipeline Queue</h1>
+            <p class="text-sm mt-1" style="color: var(--text-tertiary);">
+                Monitor and manage pipeline execution
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            {# LinkedIn Multi-Import Dropdown #}
+            {% include 'components/linkedin_import.html' %}
+            {# Connection status #}
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg" style="background-color: var(--bg-card);">
+                <span
+                    class="w-2 h-2 rounded-full"
+                    :class="{
+                        'bg-green-500': $store.queue.connected,
+                        'bg-yellow-500 animate-pulse': $store.queue.connecting,
+                        'bg-red-500': !$store.queue.connected && !$store.queue.connecting
+                    }"
+                ></span>
+                <span class="text-xs" style="color: var(--text-secondary);" x-text="$store.queue.connected ? 'Connected' : ($store.queue.connecting ? 'Connecting...' : 'Disconnected')"></span>
+            </div>
+            {# Refresh button #}
+            <button
+                @click="$store.queue.refresh()"
+                class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                title="Refresh Queue"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {# Summary Cards #}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {# Running Card #}
+        <div class="rounded-lg p-4" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: var(--text-primary);" x-text="$store.queue.runningCount">0</p>
+                    <p class="text-xs" style="color: var(--text-tertiary);">Running</p>
+                </div>
+            </div>
+        </div>
+
+        {# Pending Card #}
+        <div class="rounded-lg p-4" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: var(--text-primary);" x-text="$store.queue.pendingCount">0</p>
+                    <p class="text-xs" style="color: var(--text-tertiary);">Pending</p>
+                </div>
+            </div>
+        </div>
+
+        {# Failed Card #}
+        <div class="rounded-lg p-4" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: var(--text-primary);" x-text="$store.queue.failedCount">0</p>
+                    <p class="text-xs" style="color: var(--text-tertiary);">Failed</p>
+                </div>
+            </div>
+        </div>
+
+        {# Completed Card #}
+        <div class="rounded-lg p-4" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+            <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold" style="color: var(--text-primary);" x-text="$store.queue.history.length">0</p>
+                    <p class="text-xs" style="color: var(--text-tertiary);">Recent</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Running Jobs Section #}
+    <div class="rounded-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+        <div class="p-4 border-b" style="border-color: var(--border-default);">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <h2 class="text-lg font-semibold" style="color: var(--text-primary);">Running</h2>
+                <span class="text-sm" style="color: var(--text-tertiary);" x-text="'(' + $store.queue.runningCount + ')'"></span>
+            </div>
+        </div>
+        <div class="p-4">
+            <template x-if="$store.queue.running.length === 0">
+                <div class="text-center py-8">
+                    <svg class="w-12 h-12 mx-auto mb-3" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                    </svg>
+                    <p style="color: var(--text-tertiary);">No jobs currently running</p>
+                </div>
+            </template>
+            <div class="space-y-3">
+                <template x-for="item in $store.queue.running" :key="item.queue_id">
+                    <div class="flex items-center gap-4 p-3 rounded-lg" style="background-color: var(--bg-hover);">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div class="flex-1 min-w-0">
+                            <a :href="'/job/' + item.job_id" class="font-medium hover:underline" style="color: var(--text-primary);" x-text="item.job_title"></a>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-sm" style="color: var(--text-secondary);" x-text="item.company"></span>
+                                <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--bg-indigo-subtle, #e0e7ff); color: var(--text-indigo, #4f46e5);" x-text="item.processing_tier"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs" style="color: var(--text-tertiary);">Started</p>
+                            <p class="text-sm font-mono" style="color: var(--text-secondary);" x-text="$store.queue.formatTimeAgo(item.started_at)"></p>
+                        </div>
+                        <button
+                            @click="openCLI(item.job_id, item.run_id)"
+                            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                            style="background-color: var(--bg-default); color: var(--text-secondary); border: 1px solid var(--border-default);"
+                            title="View Logs"
+                        >
+                            View Logs
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    {# Pending Jobs Section #}
+    <div class="rounded-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+        <div class="p-4 border-b" style="border-color: var(--border-default);">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <h2 class="text-lg font-semibold" style="color: var(--text-primary);">Pending Queue</h2>
+                <span class="text-sm" style="color: var(--text-tertiary);" x-text="'(' + $store.queue.pendingCount + ')'"></span>
+            </div>
+        </div>
+        <div class="p-4">
+            <template x-if="$store.queue.pending.length === 0">
+                <div class="text-center py-8">
+                    <svg class="w-12 h-12 mx-auto mb-3" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p style="color: var(--text-tertiary);">No jobs in queue</p>
+                </div>
+            </template>
+            <div class="divide-y" style="border-color: var(--border-default);">
+                <template x-for="(item, index) in $store.queue.pending" :key="item.queue_id">
+                    <div class="flex items-center gap-4 py-3">
+                        <span class="text-sm font-mono w-8 text-center" style="color: var(--text-tertiary);" x-text="'#' + (index + 1)"></span>
+                        <div class="flex-1 min-w-0">
+                            <a :href="'/job/' + item.job_id" class="font-medium hover:underline" style="color: var(--text-primary);" x-text="item.job_title"></a>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-sm" style="color: var(--text-secondary);" x-text="item.company"></span>
+                                <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--bg-hover); color: var(--text-tertiary);" x-text="item.processing_tier"></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs" style="color: var(--text-tertiary);">Queued</p>
+                            <p class="text-sm" style="color: var(--text-secondary);" x-text="$store.queue.formatTimeAgo(item.created_at)"></p>
+                        </div>
+                        <button
+                            @click="$store.queue.cancel(item.queue_id)"
+                            class="px-3 py-1.5 text-sm rounded-md transition-colors hover:bg-red-100 dark:hover:bg-red-900/30"
+                            style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);"
+                            title="Cancel"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    {# Failed Jobs Section #}
+    <div class="rounded-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-default);" x-show="$store.queue.failed.length > 0">
+        <div class="p-4 border-b" style="border-color: var(--border-default);">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                <h2 class="text-lg font-semibold text-red-600 dark:text-red-400">Failed Jobs</h2>
+                <span class="text-sm" style="color: var(--text-tertiary);" x-text="'(' + $store.queue.failedCount + ')'"></span>
+            </div>
+        </div>
+        <div class="p-4">
+            <div class="space-y-3">
+                <template x-for="item in $store.queue.failed" :key="item.queue_id">
+                    <div class="p-3 rounded-lg" style="background-color: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <div class="flex items-start gap-4">
+                            <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <div class="flex-1 min-w-0">
+                                <a :href="'/job/' + item.job_id" class="font-medium hover:underline" style="color: var(--text-primary);" x-text="item.job_title"></a>
+                                <p class="text-sm" style="color: var(--text-secondary);" x-text="item.company"></p>
+                                <p class="text-sm mt-2 text-red-600 dark:text-red-400" x-text="item.error"></p>
+                                <p class="text-xs mt-1" style="color: var(--text-tertiary);" x-text="'Failed ' + $store.queue.formatTimeAgo(item.completed_at)"></p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button
+                                    @click="$store.queue.retry(item.queue_id)"
+                                    class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                                    style="background-color: var(--bg-indigo-subtle, #e0e7ff); color: var(--text-indigo, #4f46e5);"
+                                >
+                                    Retry
+                                </button>
+                                <button
+                                    @click="$store.queue.dismiss(item.queue_id)"
+                                    class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                                    style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    {# Recent History Section #}
+    <div class="rounded-lg" style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+        <div class="p-4 border-b" style="border-color: var(--border-default);">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                <h2 class="text-lg font-semibold" style="color: var(--text-primary);">Recent Completed</h2>
+                <span class="text-sm" style="color: var(--text-tertiary);" x-text="'(' + $store.queue.history.length + ')'"></span>
+            </div>
+        </div>
+        <div class="p-4">
+            <template x-if="$store.queue.history.length === 0">
+                <div class="text-center py-8">
+                    <svg class="w-12 h-12 mx-auto mb-3" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p style="color: var(--text-tertiary);">No recent completions</p>
+                </div>
+            </template>
+            <div class="divide-y" style="border-color: var(--border-default);">
+                <template x-for="item in $store.queue.history.slice(0, 20)" :key="item.queue_id">
+                    <div class="flex items-center gap-4 py-3">
+                        <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div class="flex-1 min-w-0">
+                            <a :href="'/job/' + item.job_id" class="font-medium hover:underline" style="color: var(--text-primary);" x-text="item.job_title"></a>
+                            <p class="text-sm" style="color: var(--text-secondary);" x-text="item.company"></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs" style="color: var(--text-tertiary);">Completed</p>
+                            <p class="text-sm" style="color: var(--text-secondary);" x-text="$store.queue.formatTimeAgo(item.completed_at)"></p>
+                        </div>
+                        <a
+                            :href="'/job/' + item.job_id"
+                            class="px-3 py-1.5 text-sm rounded-md transition-colors"
+                            style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                        >
+                            View
+                        </a>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function queuePage() {
+    return {
+        openCLI(jobId, runId) {
+            // Dispatch event to open CLI panel with this job's logs
+            if (window.Alpine && Alpine.store('cli')) {
+                Alpine.store('cli').showPanel();
+                // Add or switch to this job's tab
+                if (runId) {
+                    Alpine.store('cli').addTab(jobId, runId);
+                }
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

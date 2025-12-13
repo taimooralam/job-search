@@ -61,6 +61,11 @@
                 Progress
             </th>
 
+            <!-- Pipeline status column (live WebSocket) -->
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
+                Pipeline
+            </th>
+
             <!-- Actions column -->
             <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
                 Actions
@@ -182,6 +187,12 @@
                     </div>
                 </td>
 
+                <!-- Pipeline Status (Live WebSocket Badge) -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
+                    {% set job_id = job._id | string %}
+                    {% include 'components/live_status_badge.html' %}
+                </td>
+
                 <!-- Actions -->
                 <td class="px-4 py-3 whitespace-nowrap text-sm no-navigate" onclick="event.stopPropagation()">
                     <div class="flex items-center gap-2">
@@ -215,7 +226,7 @@
 
             <!-- Expandable details row -->
             <tr x-show="expanded" x-collapse.duration.200ms class="theme-bg-secondary border-b theme-border">
-                <td colspan="9" class="px-4 py-3">
+                <td colspan="10" class="px-4 py-3">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <!-- Location -->
                         <div>
@@ -340,7 +351,7 @@
     {% else %}
         <tbody class="theme-bg-card">
             <tr>
-                <td colspan="9" class="px-4 py-12 text-center">
+                <td colspan="10" class="px-4 py-12 text-center">
                     <svg class="mx-auto h-12 w-12 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>

@@ -106,6 +106,16 @@ def persist_run_to_mongo(
                 if value is not None:
                     update_doc["$set"][key] = value
 
+            # Add boolean progress flags for UI indicators (JD/RS/CV)
+            # These allow the frontend to show progress without checking nested objects
+            update_doc["$set"]["processed_jd"] = bool(
+                pipeline_state.get("pain_points") or pipeline_state.get("strategic_needs")
+            )
+            update_doc["$set"]["has_research"] = bool(
+                pipeline_state.get("company_research") or pipeline_state.get("role_research")
+            )
+            update_doc["$set"]["generated_cv"] = bool(pipeline_state.get("cv_text"))
+
         # Update level-2 collection (processed jobs) using _id
         result = db["level-2"].update_one(
             {"_id": object_id},
@@ -190,3 +200,53 @@ def load_run_state_from_redis(run_id: str) -> Optional[dict]:
         logger.warning(f"Failed to load state from Redis for run {run_id}: {e}")
 
     return None
+
+
+def update_job_pipeline_failed(job_id: str, error: str) -> None:
+    """
+    Update MongoDB job status to pipeline_failed.
+
+    Called when a pipeline fails to persist the error state.
+
+    Args:
+        job_id: Job identifier (MongoDB ObjectId as string)
+        error: Error message describing the failure
+    """
+    mongodb_uri = os.getenv("MONGODB_URI")
+    if not mongodb_uri:
+        return
+
+    try:
+        from bson import ObjectId
+        from datetime import datetime
+
+        client = MongoClient(mongodb_uri)
+        db = client["jobs"]
+
+        # Convert job_id to ObjectId
+        try:
+            object_id = ObjectId(job_id)
+        except Exception:
+            object_id = job_id
+
+        # Update the job document
+        result = db["level-2"].update_one(
+            {"_id": object_id},
+            {
+                "$set": {
+                    "pipeline_status": "pipeline_failed",
+                    "pipeline_error": error,
+                    "pipeline_failed_at": datetime.utcnow(),
+                    "updatedAt": datetime.utcnow(),
+                }
+            },
+            upsert=False
+        )
+
+        if result.matched_count == 0:
+            logger.warning(f"Job {job_id} not found when updating pipeline_failed status")
+        else:
+            logger.info(f"Updated job {job_id} to pipeline_failed: {error[:100]}")
+
+    except Exception as e:
+        logger.exception(f"Failed to update pipeline_failed status for job {job_id}: {e}")

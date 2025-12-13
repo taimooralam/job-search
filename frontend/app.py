@@ -82,6 +82,30 @@ else:
     if _import_error:
         print(f"   Import errors: {_import_error}")
 
+# Import and initialize WebSocket support
+ws_bp = None
+_ws_import_error = None
+
+try:
+    # Try frontend.websocket first (correct module)
+    from frontend.websocket import ws_bp, init_websocket
+except ImportError as e1:
+    try:
+        # Fallback for direct execution (python frontend/app.py)
+        from websocket import ws_bp, init_websocket
+    except ImportError as e2:
+        _ws_import_error = f"Tried: frontend.websocket ({e1}), websocket ({e2})"
+
+if ws_bp:
+    print(f"✅ Imported WebSocket blueprint")
+    app.register_blueprint(ws_bp)
+    init_websocket(app)
+    print(f"✅ WebSocket support initialized at /ws/queue")
+else:
+    print(f"⚠️  WebSocket blueprint not available (queue real-time updates disabled)")
+    if _ws_import_error:
+        print(f"   Import errors: {_ws_import_error}")
+
 # Session configuration
 flask_secret_key = os.getenv("FLASK_SECRET_KEY")
 
@@ -2236,6 +2260,18 @@ def application_stats_partial():
 def master_cv_editor():
     """Render the Master CV editor page."""
     return render_template("master_cv.html")
+
+
+@app.route("/queue")
+@login_required
+def queue_page():
+    """
+    Pipeline queue management page.
+
+    Displays all queued, running, and failed pipeline jobs
+    with real-time WebSocket updates.
+    """
+    return render_template("queue.html")
 
 
 @app.route("/batch-processing")

@@ -111,6 +111,81 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('cli:complete', (e) => {
                 this.completeRun(e.detail);
             });
+
+            // Queue events for integration with WebSocket queue
+            window.addEventListener('queue:job-started', (e) => {
+                this._handleQueueJobStarted(e.detail);
+            });
+
+            window.addEventListener('queue:job-completed', (e) => {
+                this._handleQueueJobCompleted(e.detail);
+            });
+
+            window.addEventListener('queue:job-failed', (e) => {
+                this._handleQueueJobFailed(e.detail);
+            });
+        },
+
+        /**
+         * Handle queue job started event - transition from queued to running
+         */
+        _handleQueueJobStarted(detail) {
+            const { jobId, runId } = detail;
+
+            // Check if we have a queued tab for this job
+            const queuedRunId = `queued_${jobId}`;
+            if (this.runs[queuedRunId]) {
+                // Remove the queued tab
+                delete this.runs[queuedRunId];
+                const idx = this.runOrder.indexOf(queuedRunId);
+                if (idx > -1) {
+                    this.runOrder.splice(idx, 1);
+                }
+
+                // If it was active, we'll switch to the new run
+                if (this.activeRunId === queuedRunId) {
+                    this.activeRunId = null;
+                }
+            }
+
+            // The actual run tab will be created by the SSE/pipeline system
+            // We just need to make sure the panel is open
+            if (runId) {
+                this.expanded = true;
+            }
+        },
+
+        /**
+         * Handle queue job completed event
+         */
+        _handleQueueJobCompleted(detail) {
+            const { jobId } = detail;
+
+            // Check if we have a queued tab for this job
+            const queuedRunId = `queued_${jobId}`;
+            if (this.runs[queuedRunId]) {
+                // Update status
+                this.runs[queuedRunId].status = 'success';
+                this.runs[queuedRunId].completedAt = Date.now();
+                this._saveStateImmediate();
+            }
+        },
+
+        /**
+         * Handle queue job failed event
+         */
+        _handleQueueJobFailed(detail) {
+            const { jobId, error } = detail;
+
+            // Check if we have a queued tab for this job
+            const queuedRunId = `queued_${jobId}`;
+            if (this.runs[queuedRunId]) {
+                // Update status
+                this.runs[queuedRunId].status = 'error';
+                this.runs[queuedRunId].error = error;
+                this.runs[queuedRunId].completedAt = Date.now();
+                this._saveStateImmediate();
+            }
         },
 
         /**
@@ -119,6 +194,90 @@ document.addEventListener('alpine:init', () => {
         toggle() {
             this.expanded = !this.expanded;
             this._saveState();
+        },
+
+        /**
+         * Show the panel (expand it)
+         */
+        showPanel() {
+            this.expanded = true;
+            this._saveState();
+        },
+
+        /**
+         * Add or switch to a tab for a job
+         * Used by live status badges and queue page
+         * @param {string} jobId - The job ID
+         * @param {string} runId - Optional run ID if the job is running
+         */
+        addTab(jobId, runId = null) {
+            // If we have a run ID, check if that tab exists
+            if (runId && this.runs[runId]) {
+                this.activeRunId = runId;
+                this.expanded = true;
+                this._saveState();
+                return;
+            }
+
+            // Check for queued tab
+            const queuedRunId = `queued_${jobId}`;
+            if (this.runs[queuedRunId]) {
+                this.activeRunId = queuedRunId;
+                this.expanded = true;
+                this._saveState();
+                return;
+            }
+
+            // Get queue info from store
+            let jobTitle = 'Unknown Job';
+            let position = null;
+            let status = 'queued';
+
+            if (window.Alpine && Alpine.store('queue')) {
+                const queueItem = Alpine.store('queue').getItemByJobId(jobId);
+                if (queueItem) {
+                    jobTitle = queueItem.job_title || jobTitle;
+                    position = Alpine.store('queue').getPosition(jobId);
+
+                    if (queueItem.queueStatus === 'running') {
+                        status = 'running';
+                    } else if (queueItem.queueStatus === 'failed') {
+                        status = 'error';
+                    }
+                }
+            }
+
+            // Create a queued tab
+            this.runs[queuedRunId] = {
+                jobId,
+                jobTitle: this._truncateTitle(jobTitle),
+                action: 'queued',
+                status,
+                logs: [{
+                    ts: Date.now(),
+                    type: 'info',
+                    text: position
+                        ? `Waiting in queue (position #${position})...`
+                        : `Waiting for pipeline to start...`
+                }],
+                layerStatus: {},
+                startedAt: Date.now(),
+                completedAt: null,
+                queuePosition: position
+            };
+
+            // Add to front of run order
+            this.runOrder.unshift(queuedRunId);
+
+            // Switch to new tab
+            this.activeRunId = queuedRunId;
+            this.expanded = true;
+
+            // Cleanup old runs
+            this._cleanup();
+
+            // Save immediately
+            this._saveStateImmediate();
         },
 
         /**

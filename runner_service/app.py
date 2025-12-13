@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, WebSocket
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -92,6 +92,10 @@ _runs: Dict[str, RunState] = {}
 _processes: Dict[str, asyncio.subprocess.Process] = {}  # Track subprocesses for cancellation
 _semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
+# Queue management (Redis-backed, optional)
+_queue_manager: Optional["QueueManager"] = None
+_ws_manager: Optional["QueueWebSocketManager"] = None
+
 
 def _status_url(run_id: str) -> str:
     """Build relative status URL."""
@@ -147,7 +151,11 @@ def _update_status(
 
 
 async def _execute_pipeline_task(
-    run_id: str, job_id: str, profile_ref: Optional[str], processing_tier: Optional[str] = "auto"
+    run_id: str,
+    job_id: str,
+    profile_ref: Optional[str],
+    processing_tier: Optional[str] = "auto",
+    queue_id: Optional[str] = None,
 ) -> None:
     """
     Execute real pipeline as subprocess with log streaming.
@@ -157,7 +165,10 @@ async def _execute_pipeline_task(
         job_id: Job to process
         profile_ref: Optional profile path
         processing_tier: Processing tier (auto, A, B, C, D) - GAP-045
+        queue_id: Queue item ID (if queue manager is enabled)
     """
+    error_message = None
+
     try:
         logger.info(f"[{run_id[:8]}] Starting pipeline task for job {job_id} (tier={processing_tier})")
         _update_status(run_id, "running")
@@ -192,22 +203,40 @@ async def _execute_pipeline_task(
             logger.info(f"[{run_id[:8]}] Pipeline completed successfully for job {job_id}")
             _update_status(run_id, "completed", artifacts, pipeline_state)
             _append_log(run_id, "✅ Pipeline execution complete")
+
+            # Update queue item as completed
+            if queue_id and _queue_manager:
+                await _queue_manager.complete(queue_id, success=True)
         else:
+            error_message = "Pipeline execution failed"
             logger.warning(f"[{run_id[:8]}] Pipeline failed for job {job_id}")
             _update_status(run_id, "failed")
             _append_log(run_id, "❌ Pipeline execution failed")
 
     except asyncio.TimeoutError:
+        error_message = "Pipeline timed out"
         logger.error(f"[{run_id[:8]}] Pipeline timed out for job {job_id}")
         _append_log(run_id, "❌ Pipeline timed out")
         _update_status(run_id, "failed")
     except Exception as exc:
+        error_message = str(exc)
         logger.exception(f"[{run_id[:8]}] Unexpected error for job {job_id}: {exc}")
         _append_log(run_id, f"❌ Unexpected error: {exc}")
         _update_status(run_id, "failed")
     finally:
         # Clean up process reference
         _processes.pop(run_id, None)
+
+        # Update queue item as failed if there was an error
+        if error_message and queue_id and _queue_manager:
+            try:
+                await _queue_manager.complete(queue_id, success=False, error=error_message)
+                # Also update MongoDB to mark job as pipeline_failed
+                from .persistence import update_job_pipeline_failed
+                update_job_pipeline_failed(job_id, error_message)
+            except Exception as e:
+                logger.warning(f"[{run_id[:8]}] Failed to update queue item: {e}")
+
         # Always release semaphore (unless already released by cancel)
         try:
             _semaphore.release()
@@ -223,8 +252,15 @@ async def _enqueue_run(
     source: Optional[str],
     background_tasks: BackgroundTasks,
     processing_tier: Optional[str] = "auto",
+    job_title: Optional[str] = None,
+    company: Optional[str] = None,
 ) -> str:
-    """Create a run record and start a background task (stub) respecting concurrency limits."""
+    """
+    Create a run record and start a background task respecting concurrency limits.
+
+    If queue manager is available, also adds to Redis queue for persistence
+    and real-time visibility.
+    """
     if not job_id:
         raise HTTPException(status_code=400, detail="job_id is required")
 
@@ -243,10 +279,84 @@ async def _enqueue_run(
         artifacts={},
     )
 
+    # Add to Redis queue if queue manager is available
+    queue_id = None
+    if _queue_manager:
+        try:
+            # Fetch job details if not provided
+            if not job_title or not company:
+                job_title, company = await _get_job_details(job_id)
+
+            queue_item = await _queue_manager.enqueue(
+                job_id=job_id,
+                job_title=job_title or "Unknown Job",
+                company=company or "Unknown Company",
+                operation="full_pipeline",
+                processing_tier=processing_tier or "auto",
+            )
+            queue_id = queue_item.queue_id
+
+            # Immediately mark as running since we have the semaphore
+            # and link the run_id
+            if _queue_manager._redis:
+                from .queue.models import QueueItemStatus
+                await _queue_manager._redis.rpop(_queue_manager.PENDING_KEY)  # Remove from pending
+                await _queue_manager._redis.sadd(_queue_manager.RUNNING_KEY, queue_id)
+                queue_item.status = QueueItemStatus.RUNNING
+                queue_item.started_at = now
+                queue_item.run_id = run_id
+                await _queue_manager._update_item(queue_item)
+                await _queue_manager._publish_event("started", queue_item)
+
+            logger.info(f"[{run_id[:8]}] Added to queue as {queue_id}")
+        except Exception as e:
+            logger.warning(f"[{run_id[:8]}] Failed to add to queue: {e}")
+            queue_id = None
+
     logger.info(f"[{run_id[:8]}] Enqueued run for job {job_id} (source={source}, tier={processing_tier})")
     _append_log(run_id, f"Run created for job {job_id} (source={source}, tier={processing_tier}, profile={profile_ref})")
-    background_tasks.add_task(_execute_pipeline_task, run_id, job_id, profile_ref, processing_tier)
+    background_tasks.add_task(
+        _execute_pipeline_task, run_id, job_id, profile_ref, processing_tier, queue_id
+    )
     return run_id
+
+
+async def _get_job_details(job_id: str) -> tuple:
+    """
+    Fetch job title and company from MongoDB.
+
+    Returns:
+        Tuple of (job_title, company) or ("Unknown", "Unknown") if not found
+    """
+    try:
+        from bson import ObjectId
+        from pymongo import MongoClient
+
+        mongodb_uri = os.getenv("MONGODB_URI")
+        if not mongodb_uri:
+            return ("Unknown Job", "Unknown Company")
+
+        client = MongoClient(mongodb_uri)
+        db = client["jobs"]
+
+        try:
+            object_id = ObjectId(job_id)
+        except Exception:
+            return ("Unknown Job", "Unknown Company")
+
+        job = db["level-2"].find_one(
+            {"_id": object_id},
+            {"title": 1, "company": 1}
+        )
+
+        if job:
+            return (job.get("title", "Unknown Job"), job.get("company", "Unknown Company"))
+
+        return ("Unknown Job", "Unknown Company")
+
+    except Exception as e:
+        logger.warning(f"Failed to fetch job details for {job_id}: {e}")
+        return ("Unknown Job", "Unknown Company")
 
 
 @app.post("/jobs/run", response_model=RunResponse, dependencies=[Depends(verify_token)])
@@ -604,6 +714,185 @@ async def health_check() -> HealthResponse:
         max_concurrency=MAX_CONCURRENCY,
         timestamp=datetime.utcnow(),
     )
+
+
+# =============================================================================
+# Queue Management (Redis-backed)
+# =============================================================================
+
+
+@app.on_event("startup")
+async def startup_queue_manager():
+    """Initialize queue manager on startup if Redis is configured."""
+    global _queue_manager, _ws_manager
+
+    if not settings.redis_url:
+        logger.info("Redis not configured, queue persistence disabled")
+        return
+
+    try:
+        from .queue import QueueManager, QueueWebSocketManager
+
+        _queue_manager = QueueManager(settings.redis_url)
+        await _queue_manager.connect()
+
+        _ws_manager = QueueWebSocketManager(_queue_manager)
+
+        # Subscribe to queue events for WebSocket broadcasting
+        async def broadcast_event(event: dict):
+            if _ws_manager:
+                await _ws_manager.broadcast({
+                    "type": "queue_update",
+                    "payload": event
+                })
+
+        await _queue_manager.subscribe(broadcast_event)
+
+        # Restore any interrupted runs from previous instance
+        restored = await _queue_manager.restore_interrupted_runs()
+        if restored:
+            logger.info(f"Restored {len(restored)} interrupted runs to queue")
+
+        logger.info("Queue manager initialized with Redis")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize queue manager: {e}")
+        _queue_manager = None
+        _ws_manager = None
+
+
+@app.on_event("shutdown")
+async def shutdown_queue_manager():
+    """Disconnect queue manager on shutdown."""
+    global _queue_manager, _ws_manager
+
+    if _queue_manager:
+        await _queue_manager.disconnect()
+        _queue_manager = None
+        _ws_manager = None
+        logger.info("Queue manager disconnected")
+
+
+@app.websocket("/ws/queue")
+async def queue_websocket(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time queue state updates.
+
+    Provides:
+    - Initial queue state on connect
+    - Real-time updates as queue changes
+    - Client commands: retry, cancel, dismiss, refresh
+    """
+    if not _ws_manager:
+        await websocket.close(code=1011, reason="Queue not configured")
+        return
+
+    await _ws_manager.run_connection(websocket)
+
+
+@app.get("/queue/state")
+async def get_queue_state():
+    """
+    Get current queue state (REST fallback for WebSocket).
+
+    Returns queue state with pending, running, failed, and history items.
+    """
+    if not _queue_manager:
+        return {
+            "pending": [],
+            "running": [],
+            "failed": [],
+            "history": [],
+            "stats": {
+                "total_pending": 0,
+                "total_running": 0,
+                "total_failed": 0,
+                "total_completed_today": 0,
+            },
+            "queue_enabled": False,
+        }
+
+    state = await _queue_manager.get_state()
+    result = state.to_dict()
+    result["queue_enabled"] = True
+    return result
+
+
+@app.post("/queue/{queue_id}/retry", dependencies=[Depends(verify_token)])
+async def retry_queue_item(queue_id: str):
+    """
+    Retry a failed queue item.
+
+    Moves the item back to the pending queue for re-execution.
+    """
+    if not _queue_manager:
+        raise HTTPException(status_code=503, detail="Queue not configured")
+
+    item = await _queue_manager.retry(queue_id)
+    if not item:
+        raise HTTPException(
+            status_code=404,
+            detail="Queue item not found or not in failed state"
+        )
+
+    return {"success": True, "item": item.to_dict()}
+
+
+@app.post("/queue/{queue_id}/cancel", dependencies=[Depends(verify_token)])
+async def cancel_queue_item(queue_id: str):
+    """
+    Cancel a pending queue item.
+
+    Removes the item from the queue without execution.
+    """
+    if not _queue_manager:
+        raise HTTPException(status_code=503, detail="Queue not configured")
+
+    success = await _queue_manager.cancel(queue_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Queue item not found or not in pending state"
+        )
+
+    return {"success": True}
+
+
+@app.post("/queue/{queue_id}/dismiss", dependencies=[Depends(verify_token)])
+async def dismiss_queue_item(queue_id: str):
+    """
+    Dismiss a failed queue item.
+
+    Removes from failed list without retry, moves to history.
+    """
+    if not _queue_manager:
+        raise HTTPException(status_code=503, detail="Queue not configured")
+
+    success = await _queue_manager.dismiss_failed(queue_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Queue item not found or not in failed state"
+        )
+
+    return {"success": True}
+
+
+@app.get("/queue/item/{job_id}")
+async def get_queue_item_by_job(job_id: str):
+    """
+    Get queue item by job ID.
+
+    Useful for checking if a job is currently queued or running.
+    """
+    if not _queue_manager:
+        return {"found": False, "queue_enabled": False}
+
+    item = await _queue_manager.get_item_by_job_id(job_id)
+    if not item:
+        return {"found": False, "queue_enabled": True}
+
+    return {"found": True, "item": item.to_dict(), "queue_enabled": True}
 
 
 @app.get("/firecrawl/credits", response_model=FireCrawlCreditsResponse)
