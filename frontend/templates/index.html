@@ -544,6 +544,35 @@
         </div>
     </div>
 </div>
+
+<!-- Job Row Context Menu -->
+<div id="job-context-menu" class="cli-context-menu hidden" style="position: fixed; z-index: 9999;">
+    <button onclick="contextMenuAction('batch')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        </svg>
+        Move to Batch
+    </button>
+    <button onclick="contextMenuAction('open')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Open in New Tab
+    </button>
+    <div class="cli-context-divider"></div>
+    <button onclick="contextMenuAction('applied')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Mark as Applied
+    </button>
+    <button onclick="contextMenuAction('discard')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+        </svg>
+        Discard
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_js %}

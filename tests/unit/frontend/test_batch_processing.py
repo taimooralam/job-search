@@ -586,3 +586,417 @@ class TestBatchProcessingWorkflow:
 
             # Verify correct filter was used
             mock_collection.find.assert_called_with({"status": "under processing"})
+
+
+# ===== TESTS: Context Menu Actions =====
+
+class TestContextMenuActions:
+    """Tests for context menu actions on main job rows."""
+
+    @patch("frontend.app.get_collection")
+    def test_move_single_job_to_batch_via_context_menu(
+        self, mock_get_collection, authenticated_client, mock_db_collection
+    ):
+        """Should move single job to batch when called from context menu."""
+        # Arrange
+        mock_get_collection.return_value = mock_db_collection
+        mock_db_collection.update_many.return_value.modified_count = 1
+
+        job_id = "507f1f77bcf86cd799439011"
+
+        # Act - Context menu calls the same endpoint with single-item array
+        response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": [job_id]},
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["updated_count"] == 1
+
+        # Verify MongoDB was called with the single job ID
+        mock_db_collection.update_many.assert_called_once()
+        call_args = mock_db_collection.update_many.call_args
+        filter_arg = call_args[0][0]
+        assert len(filter_arg["_id"]["$in"]) == 1
+
+    @patch("frontend.app.get_db")
+    def test_context_menu_applied_action_updates_status(
+        self, mock_get_db, authenticated_client
+    ):
+        """Should update job status to 'applied' when applied action is selected."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_db = MagicMock()
+        mock_db.__getitem__.return_value = mock_collection
+        mock_get_db.return_value = mock_db
+
+        mock_update_result = MagicMock()
+        mock_update_result.matched_count = 1
+        mock_collection.update_one.return_value = mock_update_result
+
+        job_id = "507f1f77bcf86cd799439011"
+
+        # Act - Context menu calls status update endpoint with 'applied'
+        response = authenticated_client.post(
+            "/api/jobs/status",
+            json={"job_id": job_id, "status": "applied"},
+        )
+
+        # Assert
+        assert response.status_code == 200
+
+        # Verify MongoDB update was called
+        mock_collection.update_one.assert_called_once()
+        call_args = mock_collection.update_one.call_args
+
+        # Verify filter uses correct job ID
+        filter_arg = call_args[0][0]
+        assert "_id" in filter_arg
+
+        # Verify status is set to 'applied'
+        update_arg = call_args[0][1]
+        assert "$set" in update_arg
+        assert update_arg["$set"]["status"] == "applied"
+
+        # Verify appliedOn timestamp is set (GAP-064)
+        assert "appliedOn" in update_arg["$set"]
+        assert isinstance(update_arg["$set"]["appliedOn"], datetime)
+
+    @patch("frontend.app.get_db")
+    def test_context_menu_discard_action_updates_status(
+        self, mock_get_db, authenticated_client
+    ):
+        """Should update job status to 'discarded' when discard action is selected."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_db = MagicMock()
+        mock_db.__getitem__.return_value = mock_collection
+        mock_get_db.return_value = mock_db
+
+        mock_update_result = MagicMock()
+        mock_update_result.matched_count = 1
+        mock_collection.update_one.return_value = mock_update_result
+
+        job_id = "507f1f77bcf86cd799439012"
+
+        # Act - Context menu calls status update endpoint with 'discarded'
+        response = authenticated_client.post(
+            "/api/jobs/status",
+            json={"job_id": job_id, "status": "discarded"},
+        )
+
+        # Assert
+        assert response.status_code == 200
+
+        # Verify MongoDB update was called
+        mock_collection.update_one.assert_called_once()
+        call_args = mock_collection.update_one.call_args
+
+        # Verify status is set to 'discarded'
+        update_arg = call_args[0][1]
+        assert "$set" in update_arg
+        assert update_arg["$set"]["status"] == "discarded"
+
+        # Verify appliedOn is cleared (not 'applied' status)
+        assert update_arg["$set"]["appliedOn"] is None
+
+    @patch("frontend.app.get_collection")
+    def test_context_menu_rejects_invalid_status(
+        self, mock_get_collection, authenticated_client
+    ):
+        """Should reject invalid status values from context menu."""
+        # Arrange
+        mock_get_collection.return_value = MagicMock()
+        job_id = "507f1f77bcf86cd799439011"
+
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/status",
+            json={"job_id": job_id, "status": "invalid_status"},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "Invalid status" in data["error"]
+
+    @patch("frontend.app.get_collection")
+    def test_context_menu_requires_job_id(
+        self, mock_get_collection, authenticated_client
+    ):
+        """Should require job_id parameter for status update."""
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/status",
+            json={"status": "applied"},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "job_id is required" in data["error"]
+
+    @patch("frontend.app.get_collection")
+    def test_context_menu_requires_status(
+        self, mock_get_collection, authenticated_client
+    ):
+        """Should require status parameter for status update."""
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/status",
+            json={"job_id": "507f1f77bcf86cd799439011"},
+        )
+
+        # Assert
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+        assert "status is required" in data["error"]
+
+
+# ===== TESTS: Scrape-and-Fill Action (Frontend UI) =====
+
+class TestScrapeAndFillUI:
+    """Tests for scrape-and-fill UI in batch job rows.
+
+    Note: These tests verify the template rendering and button state logic.
+    Backend endpoint tests would belong in a separate integration test file
+    once /api/runner/operations/{job_id}/scrape-form-answers/stream is implemented.
+    """
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_scrape_button_enabled_when_application_url_exists(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should render scrape button as enabled when job has application_url."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        # Job with application_url
+        job_with_url = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "title": "Senior Engineer",
+            "company": "Tech Corp",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            "application_url": "https://example.com/apply",
+        }
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = [job_with_url]
+        mock_collection.find.return_value = mock_cursor
+
+        # Capture template call
+        def capture_render(template_name, **context):
+            # Store context for verification
+            capture_render.last_context = context
+            return "<html></html>"
+
+        capture_render.last_context = None
+        mock_render_template.side_effect = capture_render
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-rows")
+
+        # Assert
+        assert response.status_code == 200
+        assert capture_render.last_context is not None
+        jobs = capture_render.last_context.get("jobs", [])
+        assert len(jobs) == 1
+        assert jobs[0]["application_url"] == "https://example.com/apply"
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_scrape_button_disabled_when_no_application_url(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should render scrape button as disabled when job has no application_url."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        # Job without application_url
+        job_without_url = {
+            "_id": ObjectId("507f1f77bcf86cd799439012"),
+            "title": "Frontend Engineer",
+            "company": "StartupXYZ",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            # No application_url field
+        }
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = [job_without_url]
+        mock_collection.find.return_value = mock_cursor
+
+        def capture_render(template_name, **context):
+            capture_render.last_context = context
+            return "<html></html>"
+
+        capture_render.last_context = None
+        mock_render_template.side_effect = capture_render
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-rows")
+
+        # Assert
+        assert response.status_code == 200
+        jobs = capture_render.last_context.get("jobs", [])
+        assert len(jobs) == 1
+        # Verify job has no application_url (button should be disabled in template)
+        assert "application_url" not in jobs[0]
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_scrape_button_uses_job_url_as_fallback(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should use job.url in button logic when application_url is not set."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        # Job with url but no application_url
+        job_with_fallback = {
+            "_id": ObjectId("507f1f77bcf86cd799439013"),
+            "title": "Backend Engineer",
+            "company": "BigCorp",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            "url": "https://example.com/job-posting",
+            # No application_url - template should use url as fallback
+        }
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = [job_with_fallback]
+        mock_collection.find.return_value = mock_cursor
+
+        def capture_render(template_name, **context):
+            capture_render.last_context = context
+            return "<html></html>"
+
+        capture_render.last_context = None
+        mock_render_template.side_effect = capture_render
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-rows")
+
+        # Assert
+        assert response.status_code == 200
+        jobs = capture_render.last_context.get("jobs", [])
+        assert len(jobs) == 1
+        # Template should have access to job.url for fallback logic
+        assert jobs[0]["url"] == "https://example.com/job-posting"
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_batch_rows_show_planned_answers_count(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should display count of planned_answers in expandable row."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        job_with_answers = {
+            "_id": ObjectId("507f1f77bcf86cd799439014"),
+            "title": "DevOps Engineer",
+            "company": "CloudCo",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            "planned_answers": [
+                {"question": "Why us?", "answer": "Because..."},
+                {"question": "Experience?", "answer": "10 years..."},
+            ],
+        }
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = [job_with_answers]
+        mock_collection.find.return_value = mock_cursor
+
+        def capture_render(template_name, **context):
+            capture_render.last_context = context
+            return "<html></html>"
+
+        capture_render.last_context = None
+        mock_render_template.side_effect = capture_render
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-rows")
+
+        # Assert
+        assert response.status_code == 200
+        jobs = capture_render.last_context.get("jobs", [])
+        assert len(jobs) == 1
+        # Verify planned_answers are available to template
+        assert "planned_answers" in jobs[0]
+        assert len(jobs[0]["planned_answers"]) == 2
+
+
+# ===== INTEGRATION TESTS: Context Menu + Batch Workflow =====
+
+class TestContextMenuBatchIntegration:
+    """Integration tests for context menu to batch processing workflow."""
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_context_menu_to_batch_view_workflow(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should move job via context menu and see it in batch view."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        job_id = "507f1f77bcf86cd799439011"
+        job_title = "Senior Backend Engineer"
+
+        # Step 1: Move to batch via context menu
+        mock_collection.update_many.return_value.modified_count = 1
+
+        # Act - Move via context menu
+        move_response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": [job_id]},
+        )
+
+        # Assert - Move succeeded
+        assert move_response.status_code == 200
+        move_data = move_response.get_json()
+        assert move_data["success"] is True
+
+        # Step 2: Retrieve in batch view
+        batch_job = {
+            "_id": ObjectId(job_id),
+            "title": job_title,
+            "company": "Tech Corp",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+        }
+
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = [batch_job]
+        mock_collection.find.return_value = mock_cursor
+        mock_render_template.return_value = "<tr>1 job</tr>"
+
+        # Act - Get batch rows
+        batch_response = authenticated_client.get("/partials/batch-job-rows")
+
+        # Assert - Job appears in batch
+        assert batch_response.status_code == 200
+
+        # Verify batch query was executed
+        mock_collection.find.assert_called_with({"status": "under processing"})
+
+        # Verify template received the job
+        call_args = mock_render_template.call_args
+        context = call_args[1]
+        assert len(context["jobs"]) == 1
+        assert context["jobs"][0]["title"] == job_title

@@ -2473,6 +2473,155 @@
             }
         }
 
+        // ============================================================================
+        // Job Row Context Menu Functions
+        // ============================================================================
+
+        // Context menu state
+        let contextMenuTargetJobId = null;
+        let contextMenuTargetJobTitle = null;
+
+        /**
+         * Show the context menu at the click position
+         * @param {Event} event - The contextmenu event
+         * @param {string} jobId - The job ID
+         * @param {string} jobTitle - The job title for display
+         */
+        function showJobContextMenu(event, jobId, jobTitle) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const menu = document.getElementById('job-context-menu');
+            if (!menu) return;
+
+            // Store target job info
+            contextMenuTargetJobId = jobId;
+            contextMenuTargetJobTitle = jobTitle || 'this job';
+
+            // Position menu at click location, but ensure it stays on screen
+            const menuWidth = 180;
+            const menuHeight = 160;
+            let x = event.clientX;
+            let y = event.clientY;
+
+            // Adjust if would go off right edge
+            if (x + menuWidth > window.innerWidth) {
+                x = window.innerWidth - menuWidth - 10;
+            }
+
+            // Adjust if would go off bottom
+            if (y + menuHeight > window.innerHeight) {
+                y = y - menuHeight;
+            }
+
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            menu.classList.remove('hidden');
+
+            // Add click outside listener
+            setTimeout(() => {
+                document.addEventListener('click', hideJobContextMenuOnClickOutside);
+                document.addEventListener('keydown', hideJobContextMenuOnEscape);
+            }, 0);
+        }
+
+        /**
+         * Hide the context menu
+         */
+        function hideJobContextMenu() {
+            const menu = document.getElementById('job-context-menu');
+            if (menu) {
+                menu.classList.add('hidden');
+            }
+            contextMenuTargetJobId = null;
+            contextMenuTargetJobTitle = null;
+            document.removeEventListener('click', hideJobContextMenuOnClickOutside);
+            document.removeEventListener('keydown', hideJobContextMenuOnEscape);
+        }
+
+        function hideJobContextMenuOnClickOutside(event) {
+            const menu = document.getElementById('job-context-menu');
+            if (menu && !menu.contains(event.target)) {
+                hideJobContextMenu();
+            }
+        }
+
+        function hideJobContextMenuOnEscape(event) {
+            if (event.key === 'Escape') {
+                hideJobContextMenu();
+            }
+        }
+
+        /**
+         * Execute a context menu action
+         * @param {string} action - The action to perform
+         */
+        async function contextMenuAction(action) {
+            const jobId = contextMenuTargetJobId;
+            const jobTitle = contextMenuTargetJobTitle;
+
+            if (!jobId) {
+                hideJobContextMenu();
+                return;
+            }
+
+            hideJobContextMenu();
+
+            switch (action) {
+                case 'batch':
+                    // Move single job to batch
+                    await moveSingleJobToBatch(jobId, jobTitle);
+                    break;
+
+                case 'open':
+                    // Open job detail in new tab
+                    window.open(`/job/${jobId}`, '_blank');
+                    break;
+
+                case 'applied':
+                    // Mark as applied
+                    await updateStatus(jobId, 'applied');
+                    htmx.trigger('#job-table-container', 'refresh');
+                    break;
+
+                case 'discard':
+                    // Mark as discarded
+                    await updateStatus(jobId, 'discarded');
+                    htmx.trigger('#job-table-container', 'refresh');
+                    break;
+            }
+        }
+
+        /**
+         * Move a single job to batch processing
+         * @param {string} jobId - The job ID
+         * @param {string} jobTitle - The job title for feedback
+         */
+        async function moveSingleJobToBatch(jobId, jobTitle) {
+            try {
+                showToast(`Moving "${jobTitle}" to batch...`, 'info');
+
+                const response = await fetch('/api/jobs/move-to-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: [jobId]
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast(`"${jobTitle}" moved to batch!`, 'success');
+                    htmx.trigger('#job-table-container', 'refresh');
+                } else {
+                    showToast(result.error || 'Failed to move job to batch', 'error');
+                }
+            } catch (err) {
+                showToast('Move to batch failed: ' + err.message, 'error');
+            }
+        }
+
         // Import LinkedIn job by ID or URL (GAP-065)
         async function importLinkedInJob() {
             const input = document.getElementById('linkedin-job-input');
