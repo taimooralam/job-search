@@ -696,6 +696,45 @@ class TestCVGenerationServiceCoverLetter:
         assert state.get("fit_rationale") == sample_job["fit_rationale"]
         assert state.get("candidate_profile") == sample_job["candidate_profile"]
 
+    def test_build_state_loads_candidate_profile_from_file_when_missing(
+        self, service, sample_job
+    ):
+        """Should load candidate_profile from file when not in MongoDB."""
+        # Remove candidate_profile from job
+        job_without_profile = {**sample_job}
+        del job_without_profile["candidate_profile"]
+
+        # Mock file loading
+        with patch.object(
+            service, "_load_candidate_profile", return_value="Profile from file"
+        ):
+            state = service._build_state(job_without_profile, use_annotations=True)
+            assert state.get("candidate_profile") == "Profile from file"
+
+    def test_load_candidate_profile_reads_from_config_path(self, service, tmp_path):
+        """Should read candidate profile from configured path."""
+        # Create a temp profile file
+        profile_content = "My candidate profile\nWith multiple lines"
+        profile_file = tmp_path / "test-cv.md"
+        profile_file.write_text(profile_content)
+
+        # Patch Config to point to our temp file
+        with patch("src.common.config.Config.CANDIDATE_PROFILE_PATH", str(profile_file)):
+            result = service._load_candidate_profile()
+            assert result == profile_content
+
+    def test_load_candidate_profile_returns_none_when_no_file(self, service, tmp_path):
+        """Should return None when no profile file exists."""
+        # Use a path that doesn't exist
+        nonexistent_path = tmp_path / "does-not-exist.md"
+
+        with patch(
+            "src.common.config.Config.CANDIDATE_PROFILE_PATH", str(nonexistent_path)
+        ):
+            result = service._load_candidate_profile()
+            # Should be None since neither config path nor fallback exists
+            assert result is None
+
 
 class TestCVGenerationServicePersistWithCoverLetter:
     """Tests for persisting CV results with cover letter."""

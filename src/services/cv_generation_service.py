@@ -410,10 +410,46 @@ class CVGenerationService(OperationService):
             state["role_research"] = job["role_research"]
 
         # Include candidate_profile for cover letter generation
+        # CRITICAL: Load from file if not in MongoDB - prevents hallucination
         if job.get("candidate_profile"):
             state["candidate_profile"] = job["candidate_profile"]
+        else:
+            # Load candidate profile from file as fallback
+            candidate_profile = self._load_candidate_profile()
+            if candidate_profile:
+                state["candidate_profile"] = candidate_profile
+                logger.info("Loaded candidate_profile from file for cover letter generation")
 
         return state
+
+    def _load_candidate_profile(self) -> Optional[str]:
+        """
+        Load candidate profile from file for cover letter grounding.
+
+        Returns:
+            Candidate profile text, or None if not available
+        """
+        from pathlib import Path
+        from src.common.config import Config
+
+        # Try the configured path first
+        profile_path = Path(Config.CANDIDATE_PROFILE_PATH)
+        if profile_path.exists():
+            try:
+                return profile_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {profile_path}: {e}")
+
+        # Try data/master-cv/master-cv.md as fallback
+        fallback_path = Path("data/master-cv/master-cv.md")
+        if fallback_path.exists():
+            try:
+                return fallback_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {fallback_path}: {e}")
+
+        logger.warning("No candidate profile found - cover letter may lack grounding")
+        return None
 
     def _generate_cv(
         self,
