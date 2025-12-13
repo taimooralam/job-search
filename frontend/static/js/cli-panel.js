@@ -31,6 +31,14 @@ document.addEventListener('alpine:init', () => {
         runs: {},
         runOrder: [], // Newest first
 
+        // Context menu state
+        contextMenu: {
+            visible: false,
+            x: 0,
+            y: 0,
+            targetRunId: null
+        },
+
         // Internal
         _saveTimeout: null,
         _initialized: false,
@@ -267,6 +275,127 @@ document.addEventListener('alpine:init', () => {
             }
 
             this._saveStateImmediate();
+        },
+
+        /**
+         * Show context menu for a tab
+         * @param {MouseEvent} event - The contextmenu event
+         * @param {string} runId - The run ID for the tab
+         */
+        showTabContextMenu(event, runId) {
+            // Position menu at click location, but ensure it stays on screen
+            const menuWidth = 180;
+            const menuHeight = 160;
+            let x = event.clientX;
+            let y = event.clientY;
+
+            // Adjust if would go off right edge
+            if (x + menuWidth > window.innerWidth) {
+                x = window.innerWidth - menuWidth - 10;
+            }
+
+            // Adjust if would go off bottom (since panel is at bottom)
+            if (y + menuHeight > window.innerHeight) {
+                y = y - menuHeight;
+            }
+
+            this.contextMenu = {
+                visible: true,
+                x,
+                y,
+                targetRunId: runId
+            };
+        },
+
+        /**
+         * Hide the context menu
+         */
+        hideContextMenu() {
+            this.contextMenu.visible = false;
+            this.contextMenu.targetRunId = null;
+        },
+
+        /**
+         * Close the tab that was right-clicked
+         */
+        closeContextMenuTab() {
+            if (this.contextMenu.targetRunId) {
+                this.closeRun(this.contextMenu.targetRunId);
+            }
+            this.hideContextMenu();
+        },
+
+        /**
+         * Close all tabs except the one that was right-clicked
+         */
+        closeOtherTabs() {
+            const keepRunId = this.contextMenu.targetRunId;
+            if (!keepRunId) {
+                this.hideContextMenu();
+                return;
+            }
+
+            // Get all run IDs except the target
+            const toClose = this.runOrder.filter(id => id !== keepRunId);
+
+            // Close each one
+            for (const runId of toClose) {
+                delete this.runs[runId];
+            }
+
+            // Update order to only contain the kept run
+            this.runOrder = [keepRunId];
+            this.activeRunId = keepRunId;
+
+            this._saveStateImmediate();
+            this.hideContextMenu();
+        },
+
+        /**
+         * Close all tabs that have completed (success or error)
+         */
+        closeCompletedTabs() {
+            const toClose = this.runOrder.filter(id =>
+                this.runs[id]?.status === 'success' || this.runs[id]?.status === 'error'
+            );
+
+            for (const runId of toClose) {
+                delete this.runs[runId];
+                const idx = this.runOrder.indexOf(runId);
+                if (idx > -1) {
+                    this.runOrder.splice(idx, 1);
+                }
+            }
+
+            // If active run was closed, switch to another
+            if (!this.runs[this.activeRunId]) {
+                this.activeRunId = this.runOrder[0] || null;
+            }
+
+            this._saveStateImmediate();
+            this.hideContextMenu();
+
+            if (typeof showToast === 'function' && toClose.length > 0) {
+                showToast(`Closed ${toClose.length} completed tab${toClose.length > 1 ? 's' : ''}`, 'success');
+            }
+        },
+
+        /**
+         * Close all tabs
+         */
+        closeAllTabs() {
+            const count = this.runOrder.length;
+
+            this.runs = {};
+            this.runOrder = [];
+            this.activeRunId = null;
+
+            this._saveStateImmediate();
+            this.hideContextMenu();
+
+            if (typeof showToast === 'function' && count > 0) {
+                showToast(`Closed ${count} tab${count > 1 ? 's' : ''}`, 'success');
+            }
         },
 
         /**

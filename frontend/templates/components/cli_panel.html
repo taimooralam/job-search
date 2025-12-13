@@ -52,7 +52,8 @@
                 <template x-for="runId in $store.cli.runOrder" :key="runId">
                     <button class="cli-tab"
                             :class="{ 'cli-tab--active': $store.cli.activeRunId === runId }"
-                            @click.stop="$store.cli.switchToRun(runId)">
+                            @click.stop="$store.cli.switchToRun(runId)"
+                            @contextmenu.prevent="$store.cli.showTabContextMenu($event, runId)">
                         <!-- Status indicator -->
                         <span class="cli-tab-status"
                               :class="{
@@ -76,8 +77,8 @@
                         <!-- Tab title -->
                         <span class="cli-tab-title" x-text="$store.cli.runs[runId]?.jobTitle || 'Unknown'"></span>
                         <!-- Close button -->
-                        <button class="cli-tab-close" @click.stop="$store.cli.closeRun(runId)" title="Close">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button class="cli-tab-close" @click.stop="$store.cli.closeRun(runId)" title="Close tab">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
                         </button>
@@ -170,5 +171,39 @@
                 </template>
             </div>
         </div>
+    </div>
+
+    <!-- Tab Context Menu -->
+    <div id="cli-tab-context-menu"
+         x-show="$store.cli.contextMenu.visible"
+         x-cloak
+         @click.away="$store.cli.hideContextMenu()"
+         :style="`left: ${$store.cli.contextMenu.x}px; top: ${$store.cli.contextMenu.y}px;`"
+         class="cli-context-menu">
+        <button class="cli-context-item" @click="$store.cli.closeContextMenuTab()">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Close Tab
+        </button>
+        <button class="cli-context-item" @click="$store.cli.closeOtherTabs()">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Close Other Tabs
+        </button>
+        <button class="cli-context-item" @click="$store.cli.closeCompletedTabs()">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Close Completed
+        </button>
+        <div class="cli-context-divider"></div>
+        <button class="cli-context-item" @click="$store.cli.closeAllTabs()">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Close All Tabs
+        </button>
     </div>
 </div>
