@@ -2849,7 +2849,7 @@ async function scrapeAndGenerateAnswers(forceRefresh = false) {
 
     try {
         // Step 1: POST to start the scraping operation
-        const response = await fetch(`/api/runner/jobs/${jobId}/scrape-form-answers/stream`, {
+        const response = await fetch(`/api/runner/operations/${jobId}/scrape-form-answers/stream`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
