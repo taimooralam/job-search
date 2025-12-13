@@ -1748,6 +1748,19 @@
                             <!-- Stats loaded via HTMX -->
                         </div>
 
+                        <!-- Batch Processing Button -->
+                        <a
+                            href="/batch-processing"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                            style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                            title="Batch Processing"
+                            aria-label="Batch Processing"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                        </a>
+
                         <!-- Master CV Button -->
                         <a
                             href="/master-cv"
@@ -1898,6 +1911,13 @@
                 applyBtn.disabled = count === 0;
                 applyBtn.classList.toggle('opacity-50', count === 0);
                 applyBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
+            // Move to Batch button
+            const batchBtn = document.getElementById('move-to-batch-btn');
+            if (batchBtn) {
+                batchBtn.disabled = count === 0;
+                batchBtn.classList.toggle('opacity-50', count === 0);
+                batchBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
         }
 
@@ -2408,6 +2428,48 @@
                 }
             } catch (err) {
                 showToast('Update failed: ' + err.message, 'error');
+            }
+        }
+
+        // Move selected jobs to batch processing queue
+        async function moveSelectedToBatch() {
+            if (selectedJobIds.size === 0) return;
+
+            const count = selectedJobIds.size;
+            const confirmed = confirm(
+                `Move ${count} job${count > 1 ? 's' : ''} to batch processing?\n\n` +
+                `Jobs will be moved to the batch processing view for bulk operations.`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast(`Moving ${count} jobs to batch...`, 'info');
+
+                const response = await fetch('/api/jobs/move-to-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: Array.from(selectedJobIds)
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast(`${result.updated_count} jobs moved to batch! Redirecting...`, 'success');
+                    // Clear selection
+                    selectedJobIds.clear();
+                    updateSelectionCount();
+                    // Redirect to batch processing view
+                    setTimeout(() => {
+                        window.location.href = '/batch-processing';
+                    }, 1000);
+                } else {
+                    showToast(result.error || 'Failed to move jobs to batch', 'error');
+                }
+            } catch (err) {
+                showToast('Move to batch failed: ' + err.message, 'error');
             }
         }
 
