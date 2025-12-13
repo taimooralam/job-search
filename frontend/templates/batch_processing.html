@@ -17,6 +17,8 @@
             </div>
         </div>
         <div class="flex items-center gap-4">
+            <!-- LinkedIn Multi-Import Dropdown -->
+            {% include 'components/linkedin_import.html' %}
             <!-- Keyboard Shortcuts Help -->
             <button onclick="toggleKeyboardShortcutsHelp()"
                     class="btn btn-ghost btn-sm flex items-center gap-1"
@@ -230,6 +232,16 @@
     <!-- Job Table -->
     <div class="card">
         <div class="overflow-x-auto">
+            <!-- HTMX Loading Indicator (hidden by default, shown during requests) -->
+            <div class="htmx-indicator text-center py-2 bg-blue-50 dark:bg-blue-900/20 border-b theme-border">
+                <div class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm text-blue-600 dark:text-blue-400">Refreshing...</span>
+                </div>
+            </div>
             <div id="batch-table-container"
                  hx-get="/partials/batch-job-rows"
                  hx-trigger="load, refresh from:body"
@@ -656,7 +668,7 @@
                     updateBatchProgressUI();
                 }
 
-                showToast(`Started ${successCount}/${count} jobs`, successCount === count ? 'success' : 'warning');
+                showToast(`Queued ${successCount}/${count} jobs for extraction`, successCount === count ? 'success' : 'warning');
 
                 // Complete the batch operation
                 completeBatchOperation();
@@ -717,16 +729,20 @@
 
         batchOperationState.jobStatuses.forEach((job, jobId) => {
             const statusIcons = {
-                pending: '<span class="text-gray-400">-</span>',
-                running: '<span class="text-blue-500 animate-pulse">*</span>',
-                success: '<span class="text-green-500">+</span>',
-                error: '<span class="text-red-500">x</span>'
+                pending: '<span class="text-gray-400">○</span>',
+                queued: '<span class="text-yellow-500">◉</span>',
+                running: '<span class="text-blue-500 animate-pulse">●</span>',
+                success: '<span class="text-green-500">✓</span>',
+                extracted: '<span class="text-green-600">✓</span>',
+                error: '<span class="text-red-500">✗</span>'
             };
 
             const statusClasses = {
                 pending: 'text-gray-500',
+                queued: 'text-yellow-600',
                 running: 'text-blue-600 font-medium',
                 success: 'text-green-600',
+                extracted: 'text-green-700 font-medium',
                 error: 'text-red-600'
             };
 
@@ -961,6 +977,45 @@
         batchSelectedJobs.clear();
         updateBatchSelectionUI();
         setupKeyboardShortcuts();
+
+        // Listen for WebSocket queue events to track actual extraction completion
+        document.addEventListener('queue:job-started', function(e) {
+            const jobId = e.detail?.jobId;
+            if (jobId && batchOperationState.jobStatuses.has(jobId)) {
+                updateJobProgress(jobId, 'running');
+            }
+        });
+
+        document.addEventListener('queue:job-completed', function(e) {
+            const jobId = e.detail?.jobId;
+            if (jobId && batchOperationState.jobStatuses.has(jobId)) {
+                updateJobProgress(jobId, 'extracted');
+                batchOperationState.completedJobs++;
+                updateBatchProgressUI();
+
+                // Check if all batch jobs are done
+                const allDone = Array.from(batchOperationState.jobStatuses.values())
+                    .every(j => j.status === 'extracted' || j.status === 'error' || j.status === 'success');
+                if (allDone && batchOperationState.active) {
+                    const extractedCount = Array.from(batchOperationState.jobStatuses.values())
+                        .filter(j => j.status === 'extracted' || j.status === 'success').length;
+                    const totalCount = batchOperationState.jobStatuses.size;
+                    showToast(`Extracted ${extractedCount}/${totalCount} jobs`, extractedCount === totalCount ? 'success' : 'warning');
+                    completeBatchOperation();
+                    // Refresh the table to show updated progress indicators
+                    htmx.trigger(document.body, 'refresh');
+                }
+            }
+        });
+
+        document.addEventListener('queue:job-failed', function(e) {
+            const jobId = e.detail?.jobId;
+            if (jobId && batchOperationState.jobStatuses.has(jobId)) {
+                updateJobProgress(jobId, 'error');
+                batchOperationState.completedJobs++;
+                updateBatchProgressUI();
+            }
+        });
     });
 </script>
 {% endblock %}

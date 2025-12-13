@@ -62,13 +62,17 @@
 <div class="job-detail-page">
     <!-- ========== HEADER WRAPPER (Full Width) ========== -->
     <div class="job-detail-header-wrapper" x-data="stickyHeader()" x-init="init()">
-        <!-- Back navigation -->
-        <a href="/" class="job-detail-back-link">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-            Back to Jobs
-        </a>
+        <!-- Back navigation and header actions -->
+        <div class="flex items-center justify-between mb-2">
+            <a href="/" class="job-detail-back-link">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Jobs
+            </a>
+            <!-- LinkedIn Multi-Import Dropdown -->
+            {% include 'components/linkedin_import.html' %}
+        </div>
 
         <!-- Full Header (visible at top) -->
         <div class="job-detail-header-full">
@@ -170,6 +174,25 @@
                         <option value="medium" {{ 'selected' if job.priority == 'medium' }}>Medium</option>
                         <option value="high" {{ 'selected' if job.priority == 'high' }}>High</option>
                     </select>
+                </div>
+                <!-- Batch Queue Toggle -->
+                <div class="pt-2 border-t theme-border">
+                    <button
+                        onclick="updateJobField('status', '{{ 'not processed' if job.status == 'under processing' else 'under processing' }}')"
+                        class="w-full px-3 py-2 text-sm rounded-lg flex items-center justify-center gap-2 transition-colors {{ 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700' if job.status == 'under processing' else 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border theme-border hover:bg-gray-200 dark:hover:bg-gray-600' }}"
+                    >
+                        {% if job.status == 'under processing' %}
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        In Batch Queue
+                        {% else %}
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add to Batch Queue
+                        {% endif %}
+                    </button>
                 </div>
                 {% if job.updatedAt %}
                 <div class="text-xs theme-text-tertiary pt-2 border-t theme-border">

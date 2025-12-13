@@ -533,3 +533,129 @@ def get_operation_status(run_id: str):
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# Queue Management Routes (Redis-backed real-time queue)
+# =============================================================================
+
+
+@runner_bp.route("/queue/state", methods=["GET"])
+def get_queue_state():
+    """
+    Get current queue state from runner service.
+
+    Returns queue state with pending, running, failed, and history items.
+    This is a REST fallback for WebSocket-based updates.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/queue/state",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/queue/<queue_id>/retry", methods=["POST"])
+def retry_queue_item(queue_id: str):
+    """
+    Retry a failed queue item.
+
+    Moves the item back to the pending queue for re-execution.
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/queue/{queue_id}/retry",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/queue/<queue_id>/cancel", methods=["POST"])
+def cancel_queue_item(queue_id: str):
+    """
+    Cancel a pending queue item.
+
+    Removes the item from the queue without execution.
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/queue/{queue_id}/cancel",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/queue/<queue_id>/dismiss", methods=["POST"])
+def dismiss_queue_item(queue_id: str):
+    """
+    Dismiss a failed queue item.
+
+    Removes from failed list without retry, moves to history.
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/queue/{queue_id}/dismiss",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/queue/item/<job_id>", methods=["GET"])
+def get_queue_item_by_job(job_id: str):
+    """
+    Get queue item by job ID.
+
+    Useful for checking if a job is currently queued or running.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/queue/item/{job_id}",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
