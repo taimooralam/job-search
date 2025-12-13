@@ -317,7 +317,7 @@
                         <div class="md:col-span-2 lg:col-span-3 pt-2 border-t theme-border mt-2">
                             <label class="block text-xs font-medium theme-text-tertiary uppercase mb-2">Application Form Actions</label>
                             <div class="flex items-center gap-3">
-                                <button onclick="scrapeAndFillJob('{{ job._id }}', '{{ (job.title or '') | e | replace(chr(39), chr(92) + chr(39)) }}')"
+                                <button onclick="scrapeAndFillJob('{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}')"
                                         class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
                                                {% if app_url %}text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
                                                {% else %}text-gray-400 bg-gray-200 dark:bg-gray-700 cursor-not-allowed{% endif %}"
