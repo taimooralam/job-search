@@ -3445,6 +3445,179 @@ incident reduction and zero downtime for 3 years."
 
 ---
 
+## Batch Processing Workflow Architecture (NEW - 2025-12-13)
+
+### Overview
+Dedicated batch processing system enables efficient bulk job operations with a focused "under processing" view, keyboard shortcuts, and improved CLI panel tab management.
+
+### Core Components
+
+#### 1. Job Status Extension
+- Added `"under processing"` status to `JOB_STATUSES` enum
+- Default list view filters out "under processing" jobs (clutter reduction)
+- Batch view (`/batch-processing`) shows ONLY "under processing" jobs
+
+#### 2. Batch Processing View (`frontend/templates/batch_processing.html`)
+**Route**: `GET /batch-processing`
+
+**Purpose**: Dedicated UI for managing jobs in bulk
+
+**Layout**:
+- Top bar: Status filters, bulk action buttons
+- Table with columns:
+  - Checkbox (select/multi-select)
+  - Company name
+  - Job title (clickable → detail page)
+  - Score badge
+  - Status dropdown (inline edit)
+  - Actions menu (more options)
+- Expandable row details:
+  - Location
+  - Application URL (edit-in-place)
+  - Extraction status badge
+  - Research status badge
+  - Planned answers count
+
+**Bulk Actions**:
+- Move to Batch (from job list)
+- Process Selected (run extraction/research/CV generation)
+- Mark Applied (updates status, removes from view)
+- Mark Discarded (updates status, removes from view)
+- Delete (with confirmation modal)
+
+#### 3. CLI Panel Enhancements
+**File**: `frontend/static/js/cli-panel.js`, `frontend/static/css/cli-panel.css`
+
+**Tab Context Menu**:
+- Right-click on tab header → context menu
+- Options:
+  - "Close Tab" - Closes single tab
+  - "Close Other Tabs" - Closes all except current
+  - "Close Completed Tabs" - Closes tabs with completed status
+- Used when managing concurrent batch operations
+
+**Hover Fixes**:
+- Fixed pointer-events on tab close button
+- Adjusted z-index to prevent interaction blocking
+- Proper visibility during hover states
+
+#### 4. API Endpoints
+
+**POST /api/jobs/move-to-batch**
+```json
+{
+  "job_ids": ["id1", "id2", ...]
+}
+```
+- Sets status to "under processing"
+- Adds `batch_added_at` timestamp
+- Returns count of updated jobs
+
+**GET /batch-processing**
+- Returns batch_processing.html template
+- Pre-loads jobs with status="under processing"
+- Passes JOB_STATUSES for dropdown
+
+#### 5. Keyboard Shortcuts
+
+| Shortcut | Action | Context |
+|----------|--------|---------|
+| `Ctrl+A` | Select all visible jobs | Batch view |
+| `Ctrl+Enter` | Process selected jobs | Batch view (if selected) |
+| `Escape` | Clear selection | Batch view |
+| `d` | Mark selected as discarded | Batch view (if selected) |
+| `a` | Mark selected as applied | Batch view (if selected) |
+
+#### 6. Frontend Navigation
+- Added "Move to Batch" button to job list (replaces "Process Selected")
+- Calls `/api/jobs/move-to-batch` and redirects to `/batch-processing`
+- Added "Batch Processing" link to main navigation
+
+#### 7. Data Flow
+
+```
+Job List Page
+    ↓
+User selects jobs + clicks "Move to Batch"
+    ↓
+moveSelectedToBatch() → /api/jobs/move-to-batch
+    ↓
+MongoDB: Update status="under processing", add batch_added_at
+    ↓
+Redirect to /batch-processing
+    ↓
+Batch View
+    ↓
+User selects jobs + presses Ctrl+Enter (or clicks "Process")
+    ↓
+Batch operations trigger SSE streams → CLI panel tabs
+    ↓
+Tab context menu allows tab management
+```
+
+#### 8. Integration Points
+
+**With CLI Panel**:
+- Each batch operation spawns new SSE stream
+- Stream registers via `cli:start-run` event
+- New CLI tab created for each run
+- Tab context menu enables batch management during execution
+
+**With Job Detail**:
+- "View Details" in batch table links to job detail page
+- Keeps `batch_added_at` timestamp in MongoDB
+- No changes to job detail UI needed
+
+**With Pipeline**:
+- Batch view integrates seamlessly with existing streaming operations
+- No new pipeline endpoints needed
+- Reuses existing `/api/runner/operations/{job_id}/{operation}/stream` endpoints
+
+### User Experience
+
+**Workflow**:
+1. Navigate to job list page
+2. Select multiple jobs via checkboxes
+3. Click "Move to Batch" button
+4. Redirected to dedicated batch view
+5. See "under processing" jobs in focused table
+6. Use Ctrl+A to select all, Ctrl+Enter to process, d/a for quick status changes
+7. Right-click CLI panel tabs to manage concurrent operations
+8. Click "View Details" for any job (opens detail page in new tab)
+9. Once jobs complete, mark as "applied" or "discarded"
+10. Jobs disappear from batch view, reappear in main list with new status
+
+### Files Involved
+
+**Created**:
+- `frontend/templates/batch_processing.html`
+- `frontend/templates/partials/batch_job_rows.html`
+
+**Modified**:
+- `frontend/app.py` - Added `/batch-processing` route and `/api/jobs/move-to-batch` endpoint
+- `frontend/templates/base.html` - Added `moveSelectedToBatch()` function and nav link
+- `frontend/templates/index.html` - Added "Move to Batch" button
+- `frontend/static/js/cli-panel.js` - Added context menu handlers
+- `frontend/static/css/cli-panel.css` - Fixed hover issues, added context menu styles
+- `frontend/templates/components/cli_panel.html` - Added context menu HTML
+
+### Performance Considerations
+
+- Batch view queries MongoDB with `{"status": "under processing"}` filter
+- Expandable rows use AJAX to fetch additional details on-demand
+- No pagination needed initially (typical batch size: 10-50 jobs)
+- CLI panel max 10 concurrent tabs (limits SSE overhead)
+- Keyboard shortcuts use event delegation (efficient for large job lists)
+
+### Security
+
+- User auth required for `/batch-processing` route
+- API endpoint validates user owns jobs before updating
+- Status updates sanitized through MongoDB schema
+- No direct SQL injection risk (MongoDB)
+
+---
+
 ## Next Priorities
 
 1. Fix time-based filters bug (affects all users)
