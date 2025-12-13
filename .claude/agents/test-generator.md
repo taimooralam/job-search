@@ -287,6 +287,7 @@ source .venv/bin/activate && pytest tests/unit/ -v -n auto
 - **Keep tests fast** - Unit tests should run in < 1 second each
 - **Clear docstrings** - Every test should explain what it validates
 - **No hardcoded secrets** - Use fixtures or env vars for test credentials
+- **DO NOT write report files** - Only write test code files (test_*.py). Do NOT create summary markdown files, reports, or documentation files after test runs
 
 ## Multi-Agent Context
 
