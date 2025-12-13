@@ -3514,6 +3514,39 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Consistent experience with full pipeline CV/cover letter generation
   - **Verification**: All tests passing; manual testing confirms cover letter generates with CV, persists to DB, and UI controls work correctly
 
+### Batch Processing Workflow Implementation
+- [x] Complete batch processing workflow (2025-12-13): Implemented all 3 phases of batch processing system with dedicated "under processing" view, tab context menu, keyboard shortcuts, and progress overview.
+  - **Phase 1: Core Infrastructure**:
+    - Added "under processing" status to JOB_STATUSES
+    - Created `/batch-processing` route showing jobs with "under processing" status
+    - Implemented batch_processing.html template with job table and expandable row details
+    - Created /api/jobs/move-to-batch endpoint to update job status
+    - Added "Move to Batch" button to job list (replaces generic "Process Selected")
+    - Bulk action buttons: Move to Batch, Process Selected, Mark Applied, Mark Discarded, Delete
+  - **Phase 2: CLI Panel & Inline Editing**:
+    - Fixed tab close functionality with context menu (close/close others/close completed)
+    - Fixed hover issues on CLI panel tabs and buttons visibility
+    - Added expandable row details showing Location, Application URL, extraction/research status
+    - Implemented inline edit-in-place pattern for application URLs
+    - Fixed CLI tab close button pointer-events and z-index issues
+  - **Phase 3: Advanced Features**:
+    - Keyboard shortcuts: Ctrl+A (select all), Ctrl+Enter (process), Escape (deselect), d (discard), a (apply)
+    - Progress overview panel showing job counts and operation progress
+    - Floating action bar for bulk operations on selected jobs
+    - Full integration with existing CLI panel SSE streaming
+  - **Files Created**:
+    - `frontend/templates/batch_processing.html` - Main batch view (300+ lines)
+    - `frontend/templates/partials/batch_job_rows.html` - Reusable row partial
+  - **Files Modified**:
+    - `frontend/app.py` - Added batch routes and API endpoints
+    - `frontend/templates/base.html` - Added moveSelectedToBatch function and nav link
+    - `frontend/templates/index.html` - Replaced "Process Selected" with "Move to Batch" button
+    - `frontend/static/js/cli-panel.js` - Added context menu handlers
+    - `frontend/static/css/cli-panel.css` - Fixed hover/visibility issues, added context menu styles
+    - `frontend/templates/components/cli_panel.html` - Added context menu HTML
+  - **Impact**: Users can now efficiently batch process large numbers of jobs with a dedicated view, keyboard shortcuts for power users, and improved CLI panel management. Tab context menu dramatically improves usability for concurrent operations.
+  - **Verification**: All routes functional, workflow tested end-to-end, keyboard shortcuts working, CLI panel interactions smooth, context menu displays/functions correctly
+
 ---
 
 ## Quick Reference
