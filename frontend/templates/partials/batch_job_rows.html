@@ -1,9 +1,12 @@
-<!-- Batch processing job table rows -->
+<!-- Batch processing job table rows with expandable details -->
 <table class="min-w-full theme-table">
     <thead class="sticky-header">
         <tr>
+            <!-- Expand toggle -->
+            <th scope="col" class="px-2 py-3 w-8"></th>
+
             <!-- Select checkbox -->
-            <th scope="col" class="px-4 py-3 w-10">
+            <th scope="col" class="px-2 py-3 w-10">
                 <input type="checkbox"
                        id="batch-select-all-header"
                        onchange="toggleBatchSelectAll(this)"
@@ -64,15 +67,28 @@
             </th>
         </tr>
     </thead>
-    <tbody class="theme-bg-card">
-        {% if jobs %}
-            {% for job in jobs %}
-            {% set job_url = job.url or job.jobUrl %}
-            <tr class="job-row cursor-pointer hover:theme-bg-hover"
-                data-job-id="{{ job._id }}"
-                onclick="navigateToBatchJob(event, '{{ job._id }}')">
+    {% if jobs %}
+        {% for job in jobs %}
+        {% set job_url = job.url or job.jobUrl %}
+        {% set app_url = job.application_url or job_url %}
+        <tbody x-data="{ expanded: false }" class="theme-bg-card">
+            <!-- Main row -->
+            <tr class="job-row hover:theme-bg-hover border-b theme-border"
+                :class="{ 'theme-bg-hover': expanded }"
+                data-job-id="{{ job._id }}">
+                <!-- Expand toggle -->
+                <td class="px-2 py-3 no-navigate" onclick="event.stopPropagation()">
+                    <button @click="expanded = !expanded"
+                            class="p-1 rounded hover:theme-bg-tertiary transition-transform duration-200"
+                            :class="{ 'rotate-90': expanded }">
+                        <svg class="w-4 h-4 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </td>
+
                 <!-- Checkbox -->
-                <td class="px-4 py-3 no-navigate" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 no-navigate" onclick="event.stopPropagation()">
                     <input type="checkbox"
                            class="batch-row-checkbox h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500"
                            data-job-id="{{ job._id }}"
@@ -80,14 +96,16 @@
                 </td>
 
                 <!-- Company -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap cursor-pointer"
+                    onclick="navigateToBatchJob(event, '{{ job._id }}')">
                     <div class="text-sm font-medium theme-text-primary">
                         {{ job.company or '-' }}
                     </div>
                 </td>
 
                 <!-- Role/Title -->
-                <td class="px-2 sm:px-4 py-3">
+                <td class="px-2 sm:px-4 py-3 cursor-pointer"
+                    onclick="navigateToBatchJob(event, '{{ job._id }}')">
                     <div class="text-sm theme-text-primary max-w-[200px] truncate" title="{{ job.title or '' }}">
                         {% if job_url %}
                         <a href="{{ job_url }}" target="_blank"
@@ -99,11 +117,6 @@
                         {{ job.title or '-' }}
                         {% endif %}
                     </div>
-                    {% if job.location %}
-                    <div class="text-xs theme-text-tertiary truncate max-w-[200px]" title="{{ job.location }}">
-                        {{ job.location }}
-                    </div>
-                    {% endif %}
                 </td>
 
                 <!-- Score -->
@@ -148,21 +161,18 @@
                 <!-- Progress indicators -->
                 <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
-                        <!-- JD Extracted -->
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
                                      {% if job.processed_jd %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
                               title="JD {{ 'Extracted' if job.processed_jd else 'Not extracted' }}">
                             JD
                         </span>
-                        <!-- Research done -->
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
                                      {% if job.company_research %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
                               title="Research {{ 'Complete' if job.company_research else 'Not done' }}">
                             RS
                         </span>
-                        <!-- CV generated -->
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
                                      {% if job.generated_cv %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
@@ -202,10 +212,115 @@
                     </div>
                 </td>
             </tr>
-            {% endfor %}
-        {% else %}
+
+            <!-- Expandable details row -->
+            <tr x-show="expanded" x-collapse.duration.200ms class="theme-bg-secondary border-b theme-border">
+                <td colspan="9" class="px-4 py-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        <!-- Location -->
+                        <div>
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">Location</label>
+                            <span class="theme-text-primary">{{ job.location or 'Not specified' }}</span>
+                        </div>
+
+                        <!-- Application URL (editable) -->
+                        <div class="md:col-span-2" x-data="{ editing: false, url: '{{ (app_url or '') | e }}' }">
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">Application URL</label>
+                            <div class="flex items-center gap-2">
+                                <template x-if="!editing">
+                                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                                        {% if app_url %}
+                                        <a :href="url" target="_blank"
+                                           class="text-accent-500 hover:text-accent-400 truncate max-w-md"
+                                           x-text="url || 'Not set'"></a>
+                                        {% else %}
+                                        <span class="theme-text-muted">Not set</span>
+                                        {% endif %}
+                                        <button @click="editing = true"
+                                                class="p-1 rounded hover:theme-bg-hover theme-text-tertiary hover:theme-text-primary"
+                                                title="Edit URL">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="editing">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <input type="url"
+                                               x-model="url"
+                                               class="flex-1 px-2 py-1 text-sm rounded border theme-border theme-bg-card theme-text-primary focus:ring-2 focus:ring-accent-500"
+                                               placeholder="https://..."
+                                               @keydown.enter="saveBatchJobUrl('{{ job._id }}', url); editing = false"
+                                               @keydown.escape="editing = false">
+                                        <button @click="saveBatchJobUrl('{{ job._id }}', url); editing = false"
+                                                class="p-1 rounded bg-green-600 hover:bg-green-700 text-white"
+                                                title="Save">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </button>
+                                        <button @click="editing = false"
+                                                class="p-1 rounded hover:theme-bg-hover theme-text-tertiary"
+                                                title="Cancel">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Extraction status -->
+                        <div>
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">JD Extraction</label>
+                            {% if job.processed_jd %}
+                            <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Complete
+                            </span>
+                            {% else %}
+                            <span class="theme-text-muted">Not extracted</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Research status -->
+                        <div>
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">Company Research</label>
+                            {% if job.company_research %}
+                            <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Complete
+                            </span>
+                            {% else %}
+                            <span class="theme-text-muted">Not researched</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Planned answers count -->
+                        <div>
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">Planned Answers</label>
+                            {% set answer_count = (job.planned_answers | length) if job.planned_answers else 0 %}
+                            {% if answer_count > 0 %}
+                            <span class="theme-text-primary">{{ answer_count }} answers</span>
+                            {% else %}
+                            <span class="theme-text-muted">None</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    {% else %}
+        <tbody class="theme-bg-card">
             <tr>
-                <td colspan="8" class="px-4 py-12 text-center">
+                <td colspan="9" class="px-4 py-12 text-center">
                     <svg class="mx-auto h-12 w-12 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
@@ -221,8 +336,8 @@
                     </a>
                 </td>
             </tr>
-        {% endif %}
-    </tbody>
+        </tbody>
+    {% endif %}
 </table>
 
 <script>
@@ -257,6 +372,25 @@
             }
         } catch (err) {
             showToast('Pipeline failed: ' + err.message, 'error');
+        }
+    }
+
+    // Save application URL for a job
+    async function saveBatchJobUrl(jobId, url) {
+        try {
+            const response = await fetch(`/api/jobs/${jobId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ application_url: url })
+            });
+
+            if (response.ok) {
+                showToast('Application URL saved', 'success');
+            } else {
+                showToast('Failed to save URL', 'error');
+            }
+        } catch (err) {
+            showToast('Save failed: ' + err.message, 'error');
         }
     }
 
