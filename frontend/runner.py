@@ -409,6 +409,33 @@ def full_extraction_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/operations/<job_id>/scrape-form-answers/stream", methods=["POST"])
+def scrape_form_answers_stream(job_id: str):
+    """
+    Start form scraping and answer generation with SSE streaming.
+
+    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/scrape-form-answers/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=STREAMING_KICKOFF_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout starting scrape-form-answers"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route(
     "/contacts/<job_id>/<contact_type>/<int:contact_index>/generate-outreach/stream",
     methods=["POST"],
