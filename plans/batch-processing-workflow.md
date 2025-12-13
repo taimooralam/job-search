@@ -91,7 +91,7 @@ async function moveSelectedToBatch() {
 }
 ```
 
-### 1.5 Add Context Menu for Single Job
+### 1.5 Add Context Menu for Single Job [IMPLEMENTED 2025-12-13]
 **File**: `frontend/templates/partials/job_rows.html`
 
 Add right-click context menu on job rows:
@@ -104,6 +104,8 @@ Context menu options:
 - "Open in New Tab"
 - "Mark as Applied"
 - "Discard"
+
+**Status**: COMPLETE - Context menu fully functional on main job rows. Reuses CSS from CLI panel context menu for consistency. Click event handlers properly attached to job row elements.
 
 ### 1.6 Create API Endpoint: Move to Batch
 **File**: `frontend/app.py`
@@ -226,10 +228,10 @@ In expandable row, click-to-edit pattern:
 
 ## Phase 3: Advanced Features
 
-### 3.1 Scrape-and-Fill Action
-**File**: `frontend/static/js/batch-processing.js`
+### 3.1 Scrape-and-Fill Action [IMPLEMENTED 2025-12-13]
+**File**: `frontend/templates/partials/batch_job_rows.html`
 
-Per-row action button that triggers form scraping:
+Per-row action button in batch expandable row that triggers form scraping:
 ```javascript
 async function triggerScrapeAndFill(jobId) {
     const response = await fetch(`/api/runner/operations/${jobId}/scrape-form-answers/stream`, {
@@ -238,6 +240,8 @@ async function triggerScrapeAndFill(jobId) {
     // ... connect to SSE, show in CLI panel
 }
 ```
+
+**Status**: COMPLETE - Scrape-and-Fill button integrated into batch job row. Button is only enabled when job has application_url set. Calls `/api/runner/operations/{job_id}/scrape-form-answers/stream` endpoint and streams SSE logs to CLI panel. Results in form answers being captured and stored in job document.
 
 ### 3.2 Keyboard Shortcuts
 **File**: `frontend/static/js/batch-processing.js`
@@ -324,6 +328,7 @@ When jobs selected, show fixed bar at bottom with quick actions.
 - [x] Implemented "Move to Batch" button replacing "Process Selected"
 - [x] Created `/api/jobs/move-to-batch` endpoint
 - [x] Added bulk action buttons (Move, Process, Mark Applied, Mark Discarded, Delete)
+- [x] **SECTION 1.5: Context Menu on Main Job Rows** - Right-click context menu on main jobs page with Move to Batch, Open in New Tab, Mark as Applied, and Discard options
 
 **Phase 2: CLI Panel & Inline Editing**
 - [x] Fixed tab close functionality with context menu (close/close others/close completed)
@@ -336,6 +341,7 @@ When jobs selected, show fixed bar at bottom with quick actions.
 - [x] Implemented keyboard shortcuts (Ctrl+A, Ctrl+Enter, Escape, d, a)
 - [x] Added progress overview panel with job counts and completion tracking
 - [x] Implemented floating action bar for selected jobs
+- [x] **SECTION 3.1: Scrape-and-Fill Action** - Per-row button in batch expandable row to trigger form scraping via `/api/runner/operations/{job_id}/scrape-form-answers/stream` with SSE logs
 - [x] All features integrated with existing CLI panel streaming
 
 ### Files Created

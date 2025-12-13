@@ -3515,7 +3515,7 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Verification**: All tests passing; manual testing confirms cover letter generates with CV, persists to DB, and UI controls work correctly
 
 ### Batch Processing Workflow Implementation
-- [x] Complete batch processing workflow (2025-12-13): Implemented all 3 phases of batch processing system with dedicated "under processing" view, tab context menu, keyboard shortcuts, and progress overview.
+- [x] Complete batch processing workflow (2025-12-13): Implemented all 3 phases of batch processing system with dedicated "under processing" view, tab context menu, keyboard shortcuts, and progress overview. FINAL COMPLETION includes job row context menu (Section 1.5) and scrape-and-fill action (Section 3.1).
   - **Phase 1: Core Infrastructure**:
     - Added "under processing" status to JOB_STATUSES
     - Created `/batch-processing` route showing jobs with "under processing" status
@@ -3523,6 +3523,7 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Created /api/jobs/move-to-batch endpoint to update job status
     - Added "Move to Batch" button to job list (replaces generic "Process Selected")
     - Bulk action buttons: Move to Batch, Process Selected, Mark Applied, Mark Discarded, Delete
+    - **Section 1.5: Context menu on main job rows** - Right-click context menu with Move to Batch, Open in New Tab, Mark as Applied, Discard options
   - **Phase 2: CLI Panel & Inline Editing**:
     - Fixed tab close functionality with context menu (close/close others/close completed)
     - Fixed hover issues on CLI panel tabs and buttons visibility
@@ -3533,6 +3534,7 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - Keyboard shortcuts: Ctrl+A (select all), Ctrl+Enter (process), Escape (deselect), d (discard), a (apply)
     - Progress overview panel showing job counts and operation progress
     - Floating action bar for bulk operations on selected jobs
+    - **Section 3.1: Scrape-and-Fill action** - Per-row button in batch expandable row to scrape application forms via `/api/runner/operations/{job_id}/scrape-form-answers/stream`
     - Full integration with existing CLI panel SSE streaming
   - **Files Created**:
     - `frontend/templates/batch_processing.html` - Main batch view (300+ lines)
@@ -3541,11 +3543,13 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `frontend/app.py` - Added batch routes and API endpoints
     - `frontend/templates/base.html` - Added moveSelectedToBatch function and nav link
     - `frontend/templates/index.html` - Replaced "Process Selected" with "Move to Batch" button
+    - `frontend/templates/partials/job_rows.html` - Added job row context menu
+    - `frontend/templates/partials/batch_job_rows.html` - Added scrape-and-fill button
     - `frontend/static/js/cli-panel.js` - Added context menu handlers
     - `frontend/static/css/cli-panel.css` - Fixed hover/visibility issues, added context menu styles
     - `frontend/templates/components/cli_panel.html` - Added context menu HTML
-  - **Impact**: Users can now efficiently batch process large numbers of jobs with a dedicated view, keyboard shortcuts for power users, and improved CLI panel management. Tab context menu dramatically improves usability for concurrent operations.
-  - **Verification**: All routes functional, workflow tested end-to-end, keyboard shortcuts working, CLI panel interactions smooth, context menu displays/functions correctly
+  - **Impact**: Users can now efficiently batch process large numbers of jobs with a dedicated view, quick-access context menu on main page, per-job form scraping, keyboard shortcuts for power users, and improved CLI panel management. Tab context menu dramatically improves usability for concurrent operations.
+  - **Verification**: All routes functional, workflow tested end-to-end, keyboard shortcuts working, CLI panel interactions smooth, context menu displays/functions correctly, scrape-and-fill only enabled when application_url exists
 
 ---
 

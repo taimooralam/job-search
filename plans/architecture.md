@@ -3485,7 +3485,20 @@ Dedicated batch processing system enables efficient bulk job operations with a f
 - Mark Discarded (updates status, removes from view)
 - Delete (with confirmation modal)
 
-#### 3. CLI Panel Enhancements
+#### 3. Job Row Context Menu (Main Jobs Page)
+**File**: `frontend/templates/partials/job_rows.html`
+
+**Right-Click Context Menu on Job Rows**:
+- Right-click any job row in main jobs page → context menu
+- Options:
+  - "Move to Batch Processing" - Moves job to batch view
+  - "Open in New Tab" - Opens job detail in new browser tab
+  - "Mark as Applied" - Updates job status to "applied"
+  - "Discard" - Updates job status to "discarded"
+- Reuses CSS from CLI panel context menu for consistent styling
+- Enables power users to quickly manage individual jobs without opening detail page
+
+#### 4. CLI Panel Enhancements
 **File**: `frontend/static/js/cli-panel.js`, `frontend/static/css/cli-panel.css`
 
 **Tab Context Menu**:
@@ -3501,7 +3514,19 @@ Dedicated batch processing system enables efficient bulk job operations with a f
 - Adjusted z-index to prevent interaction blocking
 - Proper visibility during hover states
 
-#### 4. API Endpoints
+#### 5. Scrape-and-Fill Action (Batch Job Rows)
+**File**: `frontend/templates/partials/batch_job_rows.html`
+
+**Per-Row Scrape Button in Expandable Details**:
+- Each batch job row has expandable details section
+- Contains "Scrape & Fill" button that triggers form scraping
+- Endpoint: `POST /api/runner/operations/{job_id}/scrape-form-answers/stream`
+- Button only enabled when job has `application_url` set
+- Streams SSE logs to CLI panel in real-time
+- Captured form answers stored in job document in MongoDB
+- Useful for pre-filling application forms before final submission
+
+#### 6. API Endpoints
 
 **POST /api/jobs/move-to-batch**
 ```json
@@ -3518,7 +3543,7 @@ Dedicated batch processing system enables efficient bulk job operations with a f
 - Pre-loads jobs with status="under processing"
 - Passes JOB_STATUSES for dropdown
 
-#### 5. Keyboard Shortcuts
+#### 7. Keyboard Shortcuts
 
 | Shortcut | Action | Context |
 |----------|--------|---------|
@@ -3528,7 +3553,7 @@ Dedicated batch processing system enables efficient bulk job operations with a f
 | `d` | Mark selected as discarded | Batch view (if selected) |
 | `a` | Mark selected as applied | Batch view (if selected) |
 
-#### 6. Frontend Navigation
+#### 8. Frontend Navigation
 - Added "Move to Batch" button to job list (replaces "Process Selected")
 - Calls `/api/jobs/move-to-batch` and redirects to `/batch-processing`
 - Added "Batch Processing" link to main navigation
@@ -3555,23 +3580,31 @@ Batch operations trigger SSE streams → CLI panel tabs
 Tab context menu allows tab management
 ```
 
-#### 8. Integration Points
+#### 9. Integration Points
 
 **With CLI Panel**:
 - Each batch operation spawns new SSE stream
 - Stream registers via `cli:start-run` event
 - New CLI tab created for each run
 - Tab context menu enables batch management during execution
+- Scrape-and-fill operations also stream to CLI panel
 
 **With Job Detail**:
 - "View Details" in batch table links to job detail page
 - Keeps `batch_added_at` timestamp in MongoDB
+- Context menu "Open in New Tab" opens job detail in new browser tab
 - No changes to job detail UI needed
 
 **With Pipeline**:
 - Batch view integrates seamlessly with existing streaming operations
 - No new pipeline endpoints needed
 - Reuses existing `/api/runner/operations/{job_id}/{operation}/stream` endpoints
+- Scrape-and-fill uses `/api/runner/operations/{job_id}/scrape-form-answers/stream`
+
+**With Main Job List**:
+- Job row context menu provides quick access to common actions
+- "Move to Batch Processing" option integrates with batch workflow
+- No changes to job list UI needed beyond context menu addition
 
 ### User Experience
 
@@ -3590,13 +3623,15 @@ Tab context menu allows tab management
 ### Files Involved
 
 **Created**:
-- `frontend/templates/batch_processing.html`
-- `frontend/templates/partials/batch_job_rows.html`
+- `frontend/templates/batch_processing.html` - Main batch processing view
+- `frontend/templates/partials/batch_job_rows.html` - Batch job rows with scrape-and-fill button
 
 **Modified**:
 - `frontend/app.py` - Added `/batch-processing` route and `/api/jobs/move-to-batch` endpoint
 - `frontend/templates/base.html` - Added `moveSelectedToBatch()` function and nav link
 - `frontend/templates/index.html` - Added "Move to Batch" button
+- `frontend/templates/partials/job_rows.html` - Added job row context menu
+- `frontend/templates/partials/batch_job_rows.html` - Added scrape-and-fill button in expandable row details
 - `frontend/static/js/cli-panel.js` - Added context menu handlers
 - `frontend/static/css/cli-panel.css` - Fixed hover issues, added context menu styles
 - `frontend/templates/components/cli_panel.html` - Added context menu HTML
