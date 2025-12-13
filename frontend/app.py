@@ -87,14 +87,14 @@ ws_bp = None
 _ws_import_error = None
 
 try:
-    # Try frontend.websocket first (correct module)
-    from frontend.websocket import ws_bp, init_websocket
+    # Try frontend.ws_proxy first (correct module)
+    from frontend.ws_proxy import ws_bp, init_websocket
 except ImportError as e1:
     try:
         # Fallback for direct execution (python frontend/app.py)
-        from websocket import ws_bp, init_websocket
+        from ws_proxy import ws_bp, init_websocket
     except ImportError as e2:
-        _ws_import_error = f"Tried: frontend.websocket ({e1}), websocket ({e2})"
+        _ws_import_error = f"Tried: frontend.ws_proxy ({e1}), ws_proxy ({e2})"
 
 if ws_bp:
     print(f"✅ Imported WebSocket blueprint")
