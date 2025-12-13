@@ -154,6 +154,7 @@ MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/jobs")
 JOB_STATUSES = [
     "not processed",
     "marked for applying",
+    "under processing",
     "ready for applying",
     "to be deleted",
     "discarded",
@@ -436,7 +437,7 @@ def list_jobs():
         statuses = ["applied"]
     elif not statuses:
         # If no statuses specified, use default exclusion list
-        statuses = [s for s in JOB_STATUSES if s not in ["discarded", "applied", "interview scheduled"]]
+        statuses = [s for s in JOB_STATUSES if s not in ["discarded", "applied", "interview scheduled", "under processing"]]
 
     # Validate page_size
     if page_size not in [5, 10, 50, 100]:
@@ -930,6 +931,51 @@ def update_jobs_status_bulk():
 def get_statuses():
     """Return the list of valid job statuses."""
     return jsonify({"statuses": JOB_STATUSES})
+
+
+@app.route("/api/jobs/move-to-batch", methods=["POST"])
+@login_required
+def move_to_batch():
+    """
+    Move selected jobs to batch processing queue.
+
+    Updates status to "under processing" and sets batch_added_at timestamp.
+
+    Request body:
+        job_ids: List of job IDs to move to batch
+
+    Returns:
+        JSON with success status and updated count
+    """
+    data = request.get_json()
+    job_ids = data.get("job_ids", [])
+
+    if not job_ids:
+        return jsonify({"error": "No job_ids provided"}), 400
+
+    collection = get_collection()
+
+    # Convert string IDs to ObjectId
+    try:
+        object_ids = [ObjectId(jid) for jid in job_ids]
+    except Exception:
+        return jsonify({"error": "Invalid job_id format in array"}), 400
+
+    # Update status and set batch_added_at timestamp
+    batch_added_at = datetime.utcnow()
+    result = collection.update_many(
+        {"_id": {"$in": object_ids}},
+        {"$set": {
+            "status": "under processing",
+            "batch_added_at": batch_added_at
+        }}
+    )
+
+    return jsonify({
+        "success": True,
+        "updated_count": result.modified_count,
+        "batch_added_at": batch_added_at.isoformat()
+    })
 
 
 @app.route("/api/jobs/import-linkedin", methods=["POST"])
@@ -2178,6 +2224,58 @@ def application_stats_partial():
 def master_cv_editor():
     """Render the Master CV editor page."""
     return render_template("master_cv.html")
+
+
+@app.route("/batch-processing")
+@login_required
+def batch_processing():
+    """
+    Batch processing view for jobs with 'under processing' status.
+
+    Displays a focused table view for processing multiple jobs at once,
+    with bulk actions for pipeline execution and status updates.
+    """
+    return render_template("batch_processing.html", statuses=JOB_STATUSES)
+
+
+@app.route("/partials/batch-job-rows", methods=["GET"])
+@login_required
+def batch_job_rows_partial():
+    """
+    HTMX partial: Return table rows for batch processing view.
+
+    Only returns jobs with status='under processing'.
+    """
+    collection = get_collection()
+
+    # Get sort parameters
+    sort_field = request.args.get("sort", "batch_added_at")
+    sort_direction = request.args.get("direction", "desc")
+
+    # Map frontend field names to MongoDB field names
+    field_mapping = {
+        "batch_added_at": "batch_added_at",
+        "createdAt": "createdAt",
+        "company": "company",
+        "title": "title",
+        "score": "score",
+    }
+
+    mongo_sort_field = field_mapping.get(sort_field, "batch_added_at")
+    mongo_sort_direction = -1 if sort_direction == "desc" else 1
+
+    # Query only jobs with 'under processing' status
+    jobs = list(collection.find(
+        {"status": "under processing"}
+    ).sort(mongo_sort_field, mongo_sort_direction))
+
+    return render_template(
+        "partials/batch_job_rows.html",
+        jobs=jobs,
+        statuses=JOB_STATUSES,
+        current_sort=sort_field,
+        current_direction=sort_direction,
+    )
 
 
 @app.route("/job/<job_id>")

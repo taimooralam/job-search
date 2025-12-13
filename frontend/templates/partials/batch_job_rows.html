@@ -1,0 +1,274 @@
+<!-- Batch processing job table rows -->
+<table class="min-w-full theme-table">
+    <thead class="sticky-header">
+        <tr>
+            <!-- Select checkbox -->
+            <th scope="col" class="px-4 py-3 w-10">
+                <input type="checkbox"
+                       id="batch-select-all-header"
+                       onchange="toggleBatchSelectAll(this)"
+                       class="h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500">
+            </th>
+
+            {% set sort_fields = [
+                ('company', 'Company'),
+                ('title', 'Role'),
+                ('score', 'Score'),
+                ('batch_added_at', 'Added'),
+            ] %}
+
+            {% for field, label in sort_fields %}
+            {% set is_active = current_sort == field %}
+            {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
+            <th scope="col"
+                class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ 'sort-active' if is_active }}"
+                hx-get="/partials/batch-job-rows?sort={{ field }}&direction={{ new_direction }}"
+                hx-target="#batch-table-container"
+                hx-indicator=".htmx-indicator">
+                <div class="flex items-center gap-1">
+                    {{ label }}
+                    <span class="sort-icon">
+                        {% if is_active %}
+                            {% if current_direction == 'desc' %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                            {% else %}
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                            </svg>
+                            {% endif %}
+                        {% else %}
+                            <svg class="h-4 w-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                            </svg>
+                        {% endif %}
+                    </span>
+                </div>
+            </th>
+            {% endfor %}
+
+            <!-- Status column -->
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
+                Status
+            </th>
+
+            <!-- Progress indicators column -->
+            <th scope="col" class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
+                Progress
+            </th>
+
+            <!-- Actions column -->
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
+                Actions
+            </th>
+        </tr>
+    </thead>
+    <tbody class="theme-bg-card">
+        {% if jobs %}
+            {% for job in jobs %}
+            {% set job_url = job.url or job.jobUrl %}
+            <tr class="job-row cursor-pointer hover:theme-bg-hover"
+                data-job-id="{{ job._id }}"
+                onclick="navigateToBatchJob(event, '{{ job._id }}')">
+                <!-- Checkbox -->
+                <td class="px-4 py-3 no-navigate" onclick="event.stopPropagation()">
+                    <input type="checkbox"
+                           class="batch-row-checkbox h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500"
+                           data-job-id="{{ job._id }}"
+                           onchange="toggleBatchRowSelection(this)">
+                </td>
+
+                <!-- Company -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium theme-text-primary">
+                        {{ job.company or '-' }}
+                    </div>
+                </td>
+
+                <!-- Role/Title -->
+                <td class="px-2 sm:px-4 py-3">
+                    <div class="text-sm theme-text-primary max-w-[200px] truncate" title="{{ job.title or '' }}">
+                        {% if job_url %}
+                        <a href="{{ job_url }}" target="_blank"
+                           class="text-accent-500 hover:text-accent-400 hover:underline no-navigate"
+                           onclick="event.stopPropagation()">
+                            {{ job.title or '-' }}
+                        </a>
+                        {% else %}
+                        {{ job.title or '-' }}
+                        {% endif %}
+                    </div>
+                    {% if job.location %}
+                    <div class="text-xs theme-text-tertiary truncate max-w-[200px]" title="{{ job.location }}">
+                        {{ job.location }}
+                    </div>
+                    {% endif %}
+                </td>
+
+                <!-- Score -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm">
+                    {% if job.score is not none %}
+                        {% if job.score >= 80 %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-success">{{ job.score }}</span>
+                        {% elif job.score >= 60 %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-warning">{{ job.score }}</span>
+                        {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">{{ job.score }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">—</span>
+                    {% endif %}
+                </td>
+
+                <!-- Added to batch -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary">
+                    {% if job.batch_added_at %}
+                        {{ job.batch_added_at.strftime('%m/%d %H:%M') if job.batch_added_at is not string else job.batch_added_at[:16] }}
+                    {% elif job.createdAt %}
+                        {{ job.createdAt[:10] }}
+                    {% else %}
+                        <span class="theme-text-muted">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Status dropdown -->
+                <td class="px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
+                    {% set status = job.status or 'not processed' %}
+                    {% set status_class = status | replace(' ', '-') %}
+                    <select class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
+                            onchange="updateBatchJobStatus('{{ job._id }}', this.value)"
+                            style="min-width: 130px;">
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+
+                <!-- Progress indicators -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
+                    <div class="flex items-center gap-1.5">
+                        <!-- JD Extracted -->
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
+                                     {% if job.processed_jd %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
+                              title="JD {{ 'Extracted' if job.processed_jd else 'Not extracted' }}">
+                            JD
+                        </span>
+                        <!-- Research done -->
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
+                                     {% if job.company_research %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
+                              title="Research {{ 'Complete' if job.company_research else 'Not done' }}">
+                            RS
+                        </span>
+                        <!-- CV generated -->
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
+                                     {% if job.generated_cv %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
+                              title="CV {{ 'Generated' if job.generated_cv else 'Not generated' }}">
+                            CV
+                        </span>
+                    </div>
+                </td>
+
+                <!-- Actions -->
+                <td class="px-4 py-3 whitespace-nowrap text-sm no-navigate" onclick="event.stopPropagation()">
+                    <div class="flex items-center gap-2">
+                        {% if job_url %}
+                        <a href="{{ job_url }}" target="_blank"
+                           class="text-accent-500 hover:text-accent-400"
+                           title="Open job posting">
+                            <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        {% endif %}
+                        <a href="/job/{{ job._id }}"
+                           class="theme-text-secondary hover:text-accent-400"
+                           title="View details">
+                            <svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </a>
+                        <button onclick="processSingleBatchJob('{{ job._id }}')"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+                                title="Process job through pipeline">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="8" class="px-4 py-12 text-center">
+                    <svg class="mx-auto h-12 w-12 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium theme-text-primary">No jobs in batch queue</h3>
+                    <p class="mt-1 text-sm theme-text-secondary">
+                        Select jobs from the main page and click "Move to Batch" to add them here.
+                    </p>
+                    <a href="/" class="mt-4 inline-flex items-center btn btn-primary btn-md">
+                        <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Go to Jobs
+                    </a>
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<script>
+    // Process single job from batch view
+    async function processSingleBatchJob(jobId) {
+        const tier = document.getElementById('batch-tier')?.value || 'auto';
+        const tierLabels = { 'auto': 'Auto', 'A': 'Gold (A)', 'B': 'Silver (B)', 'C': 'Bronze (C)' };
+
+        const confirmed = confirm(
+            `Process this job through the full pipeline?\n\nTier: ${tierLabels[tier] || tier}`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            showToast('Starting pipeline...', 'info');
+
+            const response = await fetch(`/api/jobs/${jobId}/full-extraction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier })
+            });
+
+            const result = await response.json();
+            if (result.run_id) {
+                showToast('Pipeline started! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = `/job/${jobId}?run_id=${result.run_id}`;
+                }, 1000);
+            } else {
+                showToast(result.error || 'Failed to start pipeline', 'error');
+            }
+        } catch (err) {
+            showToast('Pipeline failed: ' + err.message, 'error');
+        }
+    }
+
+    // Sync the header checkbox with the main one
+    document.addEventListener('DOMContentLoaded', function() {
+        const headerCheckbox = document.getElementById('batch-select-all-header');
+        const mainCheckbox = document.getElementById('batch-select-all');
+        if (headerCheckbox && mainCheckbox) {
+            headerCheckbox.addEventListener('change', function() {
+                mainCheckbox.checked = this.checked;
+                mainCheckbox.dispatchEvent(new Event('change'));
+            });
+        }
+    });
+</script>

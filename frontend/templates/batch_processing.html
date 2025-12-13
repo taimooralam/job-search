@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-4">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="/" class="btn btn-ghost btn-sm">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back
+            </a>
+            <div>
+                <h1 class="text-xl font-bold theme-text-primary">Batch Processing</h1>
+                <p class="text-sm theme-text-secondary">Process multiple jobs at once</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="batch-job-count" class="text-sm theme-text-secondary">
+                <span class="font-semibold">0</span> jobs in queue
+            </span>
+        </div>
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    <div class="panel p-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Selection Info -->
+            <div class="flex items-center gap-2">
+                <input type="checkbox"
+                       id="batch-select-all"
+                       onchange="toggleBatchSelectAll(this)"
+                       class="h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500">
+                <span class="text-sm theme-text-secondary">
+                    <span id="batch-selection-count" class="font-semibold">0</span> selected
+                </span>
+            </div>
+
+            <div class="h-6 w-px theme-bg-tertiary"></div>
+
+            <!-- Pipeline Operations Dropdown -->
+            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                <button @click="open = !open"
+                        id="batch-process-btn"
+                        disabled
+                        class="btn btn-success btn-md flex items-center gap-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span>Run Pipeline</span>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="open" x-cloak x-transition
+                     class="absolute left-0 mt-2 w-64 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
+                    <div class="py-1">
+                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
+                            Pipeline Operations
+                        </div>
+                        <button onclick="executeBatchOperation('full-extraction'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">Full Extraction</div>
+                                <div class="text-xs theme-text-tertiary">JD + Research + CV</div>
+                            </div>
+                        </button>
+                        <button onclick="executeBatchOperation('process-jd'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">Extract JD</div>
+                                <div class="text-xs theme-text-tertiary">Parse job description</div>
+                            </div>
+                        </button>
+                        <button onclick="executeBatchOperation('research-company'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">Research Company</div>
+                                <div class="text-xs theme-text-tertiary">Company intel</div>
+                            </div>
+                        </button>
+                        <button onclick="executeBatchOperation('generate-cv'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">Generate CV</div>
+                                <div class="text-xs theme-text-tertiary">Tailored CV</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tier Selection -->
+            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                <input type="hidden" id="batch-tier" value="auto">
+                <button @click="open = !open"
+                        class="btn btn-ghost btn-md flex items-center gap-2">
+                    <span id="batch-tier-label">Tier: Auto</span>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="open" x-cloak x-transition
+                     class="absolute left-0 mt-2 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
+                    <div class="py-1">
+                        <button onclick="setBatchTier('auto'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                            Auto (by score)
+                        </button>
+                        <button onclick="setBatchTier('A'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                            Gold (A)
+                        </button>
+                        <button onclick="setBatchTier('B'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                            Silver (B)
+                        </button>
+                        <button onclick="setBatchTier('C'); $dispatch('click')"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
+                            Bronze (C)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="h-6 w-px theme-bg-tertiary"></div>
+
+            <!-- Status Actions -->
+            <button id="batch-mark-applied-btn"
+                    onclick="batchUpdateStatus('applied')"
+                    disabled
+                    class="btn btn-primary btn-md">
+                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Mark Applied
+            </button>
+
+            <button id="batch-mark-ready-btn"
+                    onclick="batchUpdateStatus('ready for applying')"
+                    disabled
+                    class="btn btn-secondary btn-md">
+                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                Mark Ready
+            </button>
+
+            <button id="batch-discard-btn"
+                    onclick="batchUpdateStatus('discarded')"
+                    disabled
+                    class="btn btn-ghost btn-md text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                </svg>
+                Discard
+            </button>
+
+            <button id="batch-delete-btn"
+                    onclick="openBatchDeleteModal()"
+                    disabled
+                    class="btn btn-danger btn-md">
+                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+            </button>
+        </div>
+    </div>
+
+    <!-- Job Table -->
+    <div class="card">
+        <div class="overflow-x-auto">
+            <div id="batch-table-container"
+                 hx-get="/partials/batch-job-rows"
+                 hx-trigger="load, refresh from:body"
+                 hx-indicator=".htmx-indicator">
+                <!-- Table content loaded via HTMX -->
+                <div class="p-8 text-center theme-text-tertiary">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="mt-2 text-sm font-medium theme-text-secondary">Loading batch queue...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="batch-delete-modal" class="fixed inset-0 z-50 hidden" aria-modal="true">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeBatchDeleteModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative">
+            <h3 class="text-lg font-semibold theme-text-primary mb-2">Delete Selected Jobs?</h3>
+            <p class="text-sm theme-text-secondary mb-4">
+                This will permanently delete <span id="delete-count" class="font-semibold">0</span> jobs.
+                This action cannot be undone.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeBatchDeleteModal()" class="btn btn-ghost btn-md">Cancel</button>
+                <button onclick="confirmBatchDelete()" class="btn btn-danger btn-md">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================================================================
+    // Batch Processing State
+    // ============================================================================
+
+    const batchSelectedJobs = new Set();
+    const tierLabels = { 'auto': 'Auto', 'A': 'Gold (A)', 'B': 'Silver (B)', 'C': 'Bronze (C)' };
+
+    // ============================================================================
+    // Selection Management
+    // ============================================================================
+
+    function toggleBatchSelectAll(checkbox) {
+        const rows = document.querySelectorAll('.batch-row-checkbox');
+        rows.forEach(row => {
+            row.checked = checkbox.checked;
+            const jobId = row.dataset.jobId;
+            if (checkbox.checked) {
+                batchSelectedJobs.add(jobId);
+            } else {
+                batchSelectedJobs.delete(jobId);
+            }
+        });
+        updateBatchSelectionUI();
+    }
+
+    function toggleBatchRowSelection(checkbox) {
+        const jobId = checkbox.dataset.jobId;
+        if (checkbox.checked) {
+            batchSelectedJobs.add(jobId);
+        } else {
+            batchSelectedJobs.delete(jobId);
+        }
+        updateBatchSelectionUI();
+    }
+
+    function updateBatchSelectionUI() {
+        const count = batchSelectedJobs.size;
+        document.getElementById('batch-selection-count').textContent = count;
+
+        // Enable/disable buttons based on selection
+        const hasSelection = count > 0;
+        document.getElementById('batch-process-btn').disabled = !hasSelection;
+        document.getElementById('batch-mark-applied-btn').disabled = !hasSelection;
+        document.getElementById('batch-mark-ready-btn').disabled = !hasSelection;
+        document.getElementById('batch-discard-btn').disabled = !hasSelection;
+        document.getElementById('batch-delete-btn').disabled = !hasSelection;
+
+        // Update select-all checkbox state
+        const allCheckboxes = document.querySelectorAll('.batch-row-checkbox');
+        const selectAll = document.getElementById('batch-select-all');
+        if (allCheckboxes.length === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        } else if (count === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        } else if (count === allCheckboxes.length) {
+            selectAll.checked = true;
+            selectAll.indeterminate = false;
+        } else {
+            selectAll.checked = false;
+            selectAll.indeterminate = true;
+        }
+    }
+
+    // ============================================================================
+    // Tier Selection
+    // ============================================================================
+
+    function setBatchTier(tier) {
+        document.getElementById('batch-tier').value = tier;
+        document.getElementById('batch-tier-label').textContent = `Tier: ${tierLabels[tier] || tier}`;
+    }
+
+    // ============================================================================
+    // Pipeline Operations
+    // ============================================================================
+
+    async function executeBatchOperation(operation) {
+        if (batchSelectedJobs.size === 0) return;
+
+        const tier = document.getElementById('batch-tier').value || 'auto';
+        const tierDisplay = tierLabels[tier] || tier;
+        const count = batchSelectedJobs.size;
+
+        const operationNames = {
+            'full-extraction': 'Full Extraction',
+            'process-jd': 'JD Extraction',
+            'research-company': 'Company Research',
+            'generate-cv': 'CV Generation'
+        };
+
+        const confirmed = confirm(
+            `Run ${operationNames[operation] || operation} on ${count} job${count > 1 ? 's' : ''}?\n\n` +
+            `Tier: ${tierDisplay}\n` +
+            `Jobs will be processed concurrently.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            showToast(`Starting ${operationNames[operation]} for ${count} jobs...`, 'info');
+
+            // For batch operations, use the bulk runner endpoint
+            if (operation === 'full-extraction') {
+                const response = await fetch('/api/runner/jobs/run-bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: Array.from(batchSelectedJobs),
+                        level: 2,
+                        processing_tier: tier
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success || result.batch_id) {
+                    showToast(`Batch started: ${result.queued_count || count} jobs queued`, 'success');
+                } else {
+                    showToast(result.error || 'Failed to start batch', 'error');
+                }
+            } else {
+                // For individual operations, process each job
+                let successCount = 0;
+                for (const jobId of batchSelectedJobs) {
+                    try {
+                        const response = await fetch(`/api/jobs/${jobId}/${operation}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tier })
+                        });
+                        if (response.ok) successCount++;
+                    } catch (err) {
+                        console.error(`Failed to process ${jobId}:`, err);
+                    }
+                }
+                showToast(`Started ${successCount}/${count} jobs`, successCount === count ? 'success' : 'warning');
+            }
+        } catch (err) {
+            showToast('Batch operation failed: ' + err.message, 'error');
+        }
+    }
+
+    // ============================================================================
+    // Status Updates
+    // ============================================================================
+
+    async function batchUpdateStatus(newStatus) {
+        if (batchSelectedJobs.size === 0) return;
+
+        const count = batchSelectedJobs.size;
+        const confirmed = confirm(`Update ${count} job${count > 1 ? 's' : ''} to "${newStatus}"?`);
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/jobs/status/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_ids: Array.from(batchSelectedJobs),
+                    status: newStatus
+                })
+            });
+
+            const result = await response.json();
+            if (result.success || response.ok) {
+                showToast(`Updated ${result.updated_count || count} jobs to "${newStatus}"`, 'success');
+                // Clear selection and refresh table
+                batchSelectedJobs.clear();
+                updateBatchSelectionUI();
+                htmx.trigger('#batch-table-container', 'refresh');
+            } else {
+                showToast(result.error || 'Failed to update status', 'error');
+            }
+        } catch (err) {
+            showToast('Status update failed: ' + err.message, 'error');
+        }
+    }
+
+    async function updateBatchJobStatus(jobId, newStatus) {
+        try {
+            const response = await fetch('/api/jobs/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: jobId, status: newStatus })
+            });
+
+            if (response.ok) {
+                // If job is no longer "under processing", remove from view after a brief delay
+                if (newStatus !== 'under processing') {
+                    setTimeout(() => {
+                        htmx.trigger('#batch-table-container', 'refresh');
+                    }, 500);
+                }
+            } else {
+                showToast('Failed to update status', 'error');
+            }
+        } catch (err) {
+            showToast('Status update failed: ' + err.message, 'error');
+        }
+    }
+
+    // ============================================================================
+    // Delete Operations
+    // ============================================================================
+
+    function openBatchDeleteModal() {
+        document.getElementById('delete-count').textContent = batchSelectedJobs.size;
+        document.getElementById('batch-delete-modal').classList.remove('hidden');
+    }
+
+    function closeBatchDeleteModal() {
+        document.getElementById('batch-delete-modal').classList.add('hidden');
+    }
+
+    async function confirmBatchDelete() {
+        if (batchSelectedJobs.size === 0) return;
+
+        try {
+            const response = await fetch('/api/jobs/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_ids: Array.from(batchSelectedJobs) })
+            });
+
+            const result = await response.json();
+            if (result.success || response.ok) {
+                showToast(`Deleted ${result.deleted_count || batchSelectedJobs.size} jobs`, 'success');
+                batchSelectedJobs.clear();
+                updateBatchSelectionUI();
+                closeBatchDeleteModal();
+                htmx.trigger('#batch-table-container', 'refresh');
+            } else {
+                showToast(result.error || 'Failed to delete jobs', 'error');
+            }
+        } catch (err) {
+            showToast('Delete failed: ' + err.message, 'error');
+        }
+    }
+
+    // ============================================================================
+    // Navigation & UI
+    // ============================================================================
+
+    function navigateToBatchJob(event, jobId) {
+        // Don't navigate if clicking on interactive elements
+        if (event.target.closest('input, select, button, a, .no-navigate')) {
+            return;
+        }
+        window.location.href = `/job/${jobId}`;
+    }
+
+    // Update job count after HTMX load
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'batch-table-container') {
+            const rows = document.querySelectorAll('.batch-row-checkbox');
+            document.getElementById('batch-job-count').innerHTML =
+                `<span class="font-semibold">${rows.length}</span> jobs in queue`;
+
+            // Restore selection state after refresh
+            rows.forEach(checkbox => {
+                if (batchSelectedJobs.has(checkbox.dataset.jobId)) {
+                    checkbox.checked = true;
+                }
+            });
+            updateBatchSelectionUI();
+        }
+    });
+
+    // Clear selection on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        batchSelectedJobs.clear();
+        updateBatchSelectionUI();
+    });
+</script>
+{% endblock %}
