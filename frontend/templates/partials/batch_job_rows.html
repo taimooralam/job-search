@@ -386,7 +386,8 @@
 
             const response = await fetch(`/api/runner/operations/${jobId}/scrape-form-answers/stream`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier: 'balanced', force_refresh: false })
             });
 
             const result = await response.json();
