@@ -400,18 +400,31 @@ document.addEventListener('alpine:init', () => {
          * @private
          */
         _addUnavailableRunPlaceholder(runId, jobId, jobTitle) {
+            const now = Date.now();
             this.runs[runId] = {
                 jobId,
                 jobTitle: this._truncateTitle(jobTitle || `Job ${jobId?.slice(-6) || 'Unknown'}`),
                 action: 'pipeline',
                 status: 'unknown',
                 logs: [{
-                    ts: Date.now(),
+                    ts: now,
                     type: 'warning',
-                    text: 'Logs are no longer available. The runner service may have restarted.'
+                    text: '⚠️ Pipeline logs are no longer available'
+                }, {
+                    ts: now + 1,
+                    type: 'info',
+                    text: 'This usually happens after a runner service restart or deployment.'
+                }, {
+                    ts: now + 2,
+                    type: 'info',
+                    text: 'Logs are kept in memory for ~1 hour. After that, only cached logs in Redis remain (24h TTL).'
+                }, {
+                    ts: now + 3,
+                    type: 'success',
+                    text: '✓ Pipeline results are still saved in the database - check the job page for output.'
                 }],
                 layerStatus: {},
-                startedAt: Date.now(),
+                startedAt: now,
                 completedAt: null
             };
 
@@ -767,6 +780,73 @@ document.addEventListener('alpine:init', () => {
             if (!title) return 'Unknown';
             if (title.length <= maxLen) return title;
             return title.substring(0, maxLen - 3) + '...';
+        },
+
+        /**
+         * Find a run by job ID
+         * @param {string} jobId - The job ID to search for
+         * @returns {string|null} - The run ID if found, null otherwise
+         */
+        findRunByJobId(jobId) {
+            // First check for queued tab
+            const queuedRunId = `queued_${jobId}`;
+            if (this.runs[queuedRunId]) {
+                return queuedRunId;
+            }
+
+            // Search through all runs for matching jobId
+            for (const [runId, run] of Object.entries(this.runs)) {
+                if (run.jobId === jobId) {
+                    return runId;
+                }
+            }
+            return null;
+        },
+
+        /**
+         * Show logs for a specific job
+         * Opens the CLI panel and switches to the job's run tab
+         * @param {string} jobId - The job ID
+         * @param {string} jobTitle - The job title for display
+         */
+        showJobLogs(jobId, jobTitle = null) {
+            const existingRunId = this.findRunByJobId(jobId);
+
+            if (existingRunId) {
+                // Switch to existing tab
+                this.activeRunId = existingRunId;
+                this.expanded = true;
+                this._saveState();
+            } else {
+                // No run found - create placeholder showing no logs available
+                const placeholderRunId = `view_${jobId}`;
+                if (!this.runs[placeholderRunId]) {
+                    const now = Date.now();
+                    this.runs[placeholderRunId] = {
+                        jobId,
+                        jobTitle: this._truncateTitle(jobTitle || `Job ${jobId?.slice(-6) || 'Unknown'}`),
+                        action: 'pipeline',
+                        status: 'unknown',
+                        logs: [{
+                            ts: now,
+                            type: 'info',
+                            text: 'No pipeline run found in memory for this job.'
+                        }, {
+                            ts: now + 1,
+                            type: 'info',
+                            text: 'Start a pipeline run from the job detail page to see logs here.'
+                        }],
+                        layerStatus: {},
+                        startedAt: now,
+                        completedAt: null
+                    };
+                    this.runOrder.unshift(placeholderRunId);
+                }
+                this.activeRunId = placeholderRunId;
+                this.expanded = true;
+                this._cleanup();
+                this._saveStateImmediate();
+            }
         },
 
         /**
