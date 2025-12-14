@@ -847,6 +847,106 @@ answers = await generator.generate_answers(
 
 ---
 
+## Real-Time Communication (NEW - 2025-12-14)
+
+### WebSocket Authentication & Queue Status (NEW - 2025-12-14)
+
+**Purpose**: Provide real-time job processing queue status and authentication for WebSocket connections.
+
+**Location**:
+- Backend: `runner_service/auth.py` - `verify_websocket_token()` function
+- Backend: `runner_service/app.py` - `/ws/queue` endpoint
+- Frontend: `frontend/websocket.py`, `frontend/static/js/queue-websocket.js`
+
+**Architecture - Authentication Flow**:
+
+```
+Client → WebSocket Connection Attempt
+         │
+         ├─ Headers: Authorization: Bearer <token>
+         │
+         ▼
+Server: /ws/queue endpoint receives connection
+         │
+         ├─ CRITICAL: Call accept() before close() (ASGI spec compliance)
+         │
+         ▼
+verify_websocket_token() validates Bearer token
+         │
+         ├─ Auth disabled (dev mode) → Allow
+         ├─ Missing header → Return error 1008
+         ├─ Invalid format → Return error 1008
+         ├─ Wrong token → Return error 1008
+         └─ Valid token → Send queue state
+         │
+         ▼
+Client receives initial queue state or error JSON
+         │
+         ▼
+Real-time queue updates via JSON messages
+```
+
+**Key Components**:
+
+1. **verify_websocket_token()** (`runner_service/auth.py`):
+   - Takes FastAPI WebSocket instance
+   - Returns tuple: (is_valid: bool, error_message: Optional[str])
+   - Checks `Authorization` header for `Bearer <token>` format
+   - Compares token against `RUNNER_API_SECRET` environment variable
+   - Supports auth bypass via `AUTH_REQUIRED=false` (development)
+   - Error messages include helpful hints (e.g., "Bearer <token>" format)
+
+2. **WebSocket Endpoint** (`runner_service/app.py` - `/ws/queue`):
+   - **CRITICAL ASGI COMPLIANCE**: Always calls `await websocket.accept()` before `close()`
+     - Per ASGI spec, WebSocket must accept handshake before closing
+     - Without accept(), endpoint returns HTTP 403 Forbidden instead of proper close codes
+   - Flow:
+     1. Accept WebSocket (ASGI requirement)
+     2. Verify authentication
+     3. If auth fails: Send close frame with code 1008 (Policy Violation) + JSON error
+     4. If auth passes: Send initial queue state (JSON)
+     5. Maintain connection for real-time updates
+     6. If Redis unavailable: Send close code 1011 (Server Error) + error JSON
+
+3. **Error Response Format**:
+   ```json
+   {
+     "error": "Missing Authorization header",
+     "code": 1008,
+     "timestamp": "2025-12-14T23:39:00Z"
+   }
+   ```
+
+**Configuration**:
+
+| Variable | Purpose | Default | Example |
+|----------|---------|---------|---------|
+| `RUNNER_API_SECRET` | Bearer token for WebSocket auth | (required) | `sk-abcd1234` |
+| `AUTH_REQUIRED` | Enable/disable auth (dev mode) | `true` | `false` |
+| `REDIS_URL` | Redis connection for queue state | (required) | `redis://localhost:6379` |
+
+**Testing**:
+
+- `tests/runner/test_websocket_auth.py` - 15 unit tests covering:
+  - Auth disabled mode (all connections allowed)
+  - Missing Authorization header (error 1008)
+  - Invalid Bearer format (error 1008 with hint)
+  - Invalid token (error 1008)
+  - Valid token (connection established)
+  - Redis unavailable (error 1011)
+  - ASGI compliance (accept before close)
+
+**Related Features**:
+
+- Real-time queue visibility on frontend `/queue` page
+- Live status badges on job rows
+- Queue dropdowns in header for quick status access
+- Client-side queue state synchronization via `queue-websocket.js` and `queue-store.js`
+
+**Impact**: WebSocket connections now properly authenticated and fully ASGI-compliant. No more HTTP 403 errors. Clear error messages aid debugging. Real-time queue visibility works reliably.
+
+---
+
 ## Frontend Architecture
 
 ### Global CLI Panel (NEW - 2025-12-11)

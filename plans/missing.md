@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-13 (Cover Letter Integration into CV Generation Partial Pipeline)
+**Last Updated**: 2025-12-14 (WebSocket Authentication 403 Fix + Real-Time Queue Implementation)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,53 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-14 Session 12): WebSocket Authentication 403 Fix + Real-Time Queue
+
+**BUG FIX 12: WebSocket 403 Forbidden error during real-time queue connection - FIXED**:
+- **Issue**: WebSocket connections to `/ws/queue` endpoint failed with HTTP 403 Forbidden, preventing real-time queue status visibility
+- **Root Cause**: ASGI specification violation - WebSocket endpoint called `close()` without calling `accept()` first. The spec requires accepting the WebSocket handshake before closing the connection, regardless of authentication outcome.
+  - When authentication failed, endpoint immediately closed without accepting
+  - Per ASGI spec, this results in HTTP 403 Forbidden response instead of proper WebSocket 1008 code
+  - This prevented both authenticated and unauthenticated error handling from working correctly
+- **Fix Applied**:
+  1. Added `verify_websocket_token()` function to `runner_service/auth.py` for centralized WebSocket authentication
+     - Checks `RUNNER_API_SECRET` from environment (same as REST API)
+     - Returns tuple (is_valid, error_message) for clean error handling
+     - Supports auth bypass in development mode via `AUTH_REQUIRED` flag
+  2. Modified `/ws/queue` endpoint in `runner_service/app.py`:
+     - Always call `await websocket.accept()` before any `close()` call (ASGI spec compliance)
+     - Verify authentication after accepting but before sending messages
+     - Send JSON error with proper WebSocket close code 1008 (Policy Violation) if auth fails
+     - Send JSON error with code 1011 (Server Error) if Redis unavailable
+  3. Added comprehensive error messages for debugging:
+     - Missing Authorization header detection
+     - Invalid Bearer token format validation
+     - Token mismatch detection
+     - Clear error JSON in WebSocket close payload
+- **Files Modified**:
+  - `runner_service/auth.py` - Added `verify_websocket_token()` function with full authentication logic
+  - `runner_service/app.py` - Modified `/ws/queue` endpoint to properly accept before closing, integrated `verify_websocket_token()`
+- **Files Created**:
+  - `tests/runner/test_websocket_auth.py` - 15 comprehensive unit tests covering:
+    - Auth disabled (development mode) - allows all connections
+    - Missing Authorization header - returns error
+    - Invalid Bearer format - returns error with format hint
+    - Invalid token - returns error
+    - Valid token - allows connection
+    - Redis unavailable - returns error
+    - ASGI spec compliance (accept before close)
+    - Error message formatting and JSON structure
+- **Test Coverage**: 15 new unit tests passing; all authentication paths tested
+- **Verification**:
+  - WebSocket connections now properly handled per ASGI spec
+  - Authentication failures return proper WebSocket close codes
+  - Error messages are JSON-formatted for client parsing
+  - Real-time queue status updates work without 403 errors
+- **Impact**: Real-time queue visibility feature now works correctly. WebSocket connections properly handle authentication without ASGI violations. Clients receive clear error messages for debugging.
+- **Commit**: `2d87fce8` - fix(frontend): rename websocket.py to avoid import collision (related to WebSocket infrastructure)
 
 ---
 
