@@ -1083,6 +1083,34 @@ sessionStorage restored on next page load → logs persist
 - Safari: Full support
 - Mobile browsers: Responsive layout, touch-friendly buttons
 
+### Alpine.js Plugin Infrastructure (NEW - 2025-12-15)
+
+**Alpine.js Plugin Dependencies** (`frontend/templates/base.html`):
+
+The application uses Alpine.js with community plugins for enhanced UI functionality:
+
+1. **@alpinejs/collapse Plugin** (NEW - 2025-12-15):
+   - **Purpose**: Provides `@collapse` directive for smooth collapse/expand animations
+   - **Usage**: `<div @collapse>` toggles visibility with animated height transitions
+   - **CDN**: `https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js`
+   - **Import Order**: Must be loaded BEFORE Alpine.js core to register directive
+   - **Used In**:
+     - Batch processing expandable job rows
+     - Collapsible sections throughout UI
+     - Modal accordions
+   - **Bug Fix**: Fixed "can't access property 'after', O is undefined" error when plugin was missing. Without plugin, Alpine.js tried to execute undefined `@collapse` directive.
+
+**Plugin Loading Pattern**:
+```html
+<!-- Load plugins FIRST (before Alpine) -->
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+
+<!-- Load Alpine.js SECOND (will pick up registered plugins) -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpine@3.x.x/dist/cdn.min.js"></script>
+```
+
+**Plugin Registry**: Each loaded plugin registers directives with Alpine during script execution. Alpine initialization fails silently if plugins missing.
+
 ### Live Status Badges (Real-Time Pipeline Status)
 
 **Component**: `frontend/static/js/live-status-badge.js`
@@ -2878,15 +2906,20 @@ class OperationState:
     start_time: datetime
     end_time: Optional[datetime]
     error_message: Optional[str]
+    logs_event: asyncio.Event  # NEW (2025-12-15): Reactive notification for new logs
 
 # In-memory state storage (can be extended to Redis for distributed)
 _operation_runs: Dict[str, OperationState] = {}
 
 async def stream_operation_logs(run_id: str) -> AsyncGenerator[str, None]:
-    """Async generator for SSE streaming"""
-    # Yields: data: {log_entry}\n\n format
-    # Updates operation state as pipeline progresses
-    # Sends final status on completion
+    """Async generator for SSE streaming with reactive event notification"""
+    # NEW ARCHITECTURE (2025-12-15): Event-driven instead of polling
+    # - Yields: data: {log_entry}\n\n format
+    # - Waits on asyncio.Event instead of polling timer
+    # - Backend sets logs_event when new log written → instantly wakes stream
+    # - Reduces log display latency from 30+ seconds to <100ms
+    # - Updates operation state as pipeline progresses
+    # - Sends final status on completion
 ```
 
 **Helper Functions**:
@@ -3758,6 +3791,14 @@ Dedicated batch processing system enables efficient bulk job operations with a f
 - Streams SSE logs to CLI panel in real-time
 - Captured form answers stored in job document in MongoDB
 - Useful for pre-filling application forms before final submission
+
+**View Logs Button (NEW - 2025-12-15)**:
+- Added "View Logs" button in batch job row expandable details
+- Clicking button opens/focuses CLI panel at bottom
+- Filters logs to show only entries for current job_id
+- Allows users to monitor form scraping/answer generation without leaving batch view
+- Function: `showJobLogs(jobId)` in `frontend/static/js/cli-panel.js`
+- Uses existing CLI panel infrastructure with job_id filtering
 
 #### 6. API Endpoints
 
