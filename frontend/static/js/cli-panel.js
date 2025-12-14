@@ -150,12 +150,14 @@ document.addEventListener('alpine:init', () => {
                     const queuedTab = this.runs[queuedRunId];
                     delete this.runs[queuedRunId];
 
-                    // Create run entry with the actual runId
+                    // Create run entry with the actual runId, preserving job info from queued tab
                     this.runs[runId] = {
                         jobId: queuedTab.jobId,
+                        jobTitle: queuedTab.jobTitle,  // Preserve title from queued tab
                         action: 'pipeline',
                         status: 'running',
                         startedAt: Date.now(),
+                        layerStatus: {},
                         logs: [{
                             ts: Date.now(),
                             type: 'info',
@@ -189,11 +191,7 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             }
-
-            // Ensure panel is open
-            if (runId) {
-                this.expanded = true;
-            }
+            // Note: Don't auto-expand panel - user should open it on demand
         },
 
         /**
