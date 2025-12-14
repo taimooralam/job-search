@@ -14,6 +14,14 @@
     <!-- Alpine.js for interactive components -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- Global configuration for JavaScript -->
+    <script>
+        // Runner WebSocket URL for real-time queue updates
+        // On Vercel, this connects directly to runner service
+        // On Flask/VPS, this is used as fallback (Flask proxy is preferred)
+        window.RUNNER_WS_URL = "{{ runner_ws_url }}";
+    </script>
+
     <!-- Tailwind Configuration - Design System Integration -->
     <script>
     tailwind.config = {

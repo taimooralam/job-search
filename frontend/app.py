@@ -145,11 +145,19 @@ if os.getenv("VERCEL") == "1":
     print(f"🔍 Session Config: SECURE={app.config['SESSION_COOKIE_SECURE']}, SAMESITE={app.config['SESSION_COOKIE_SAMESITE']}")
 
 
-# Context processor to inject version into all templates
+# Context processor to inject version and config into all templates
 @app.context_processor
-def inject_version():
-    """Inject version info into all templates."""
-    return {"version": APP_VERSION}
+def inject_globals():
+    """Inject version and config info into all templates."""
+    # Generate runner WebSocket URL for direct connection (needed for Vercel)
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    runner_ws_url = runner_url.replace("http://", "ws://").replace("https://", "wss://")
+    runner_ws_url = f"{runner_ws_url}/ws/queue"
+
+    return {
+        "version": APP_VERSION,
+        "runner_ws_url": runner_ws_url,
+    }
 
 
 @app.after_request

@@ -22,9 +22,18 @@ class QueueWebSocket {
     }
 
     /**
-     * Get WebSocket URL based on current location
+     * Get WebSocket URL based on current location or runner URL config
+     *
+     * On Vercel/serverless: Uses RUNNER_WS_URL from window config (direct to runner)
+     * On Flask/VPS: Uses current host (proxied through Flask)
      */
     getWsUrl() {
+        // Check for explicit runner WebSocket URL (for serverless deployments like Vercel)
+        if (window.RUNNER_WS_URL) {
+            return window.RUNNER_WS_URL;
+        }
+
+        // Default: use current host (works when Flask proxies WebSocket)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         return `${protocol}//${window.location.host}/ws/queue`;
     }
