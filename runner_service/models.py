@@ -62,6 +62,8 @@ class HealthResponse(BaseModel):
     active_runs: int
     max_concurrency: int
     timestamp: datetime
+    pdf_service_status: Optional[str] = None
+    pdf_service_error: Optional[str] = None
 
 
 # === Pipeline Progress Models (Gap #25) ===

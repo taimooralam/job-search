@@ -706,13 +706,40 @@ async def health_check() -> HealthResponse:
     """
     Health check endpoint for container orchestration.
 
-    Returns service status and capacity information.
+    Returns service status, capacity information, and PDF service status.
     """
+    import httpx
+
+    # Check PDF service health
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
+    pdf_service_status = "unknown"
+    pdf_service_error = None
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{pdf_service_url}/health")
+            if response.status_code == 200:
+                pdf_service_status = "healthy"
+            else:
+                pdf_service_status = "unhealthy"
+                pdf_service_error = f"HTTP {response.status_code}"
+    except httpx.TimeoutException:
+        pdf_service_status = "unhealthy"
+        pdf_service_error = "Timeout"
+    except httpx.RequestError as e:
+        pdf_service_status = "unhealthy"
+        pdf_service_error = str(e)
+    except Exception as e:
+        pdf_service_status = "unhealthy"
+        pdf_service_error = str(e)
+
     return HealthResponse(
         status="healthy",
         active_runs=MAX_CONCURRENCY - _semaphore._value,
         max_concurrency=MAX_CONCURRENCY,
         timestamp=datetime.utcnow(),
+        pdf_service_status=pdf_service_status,
+        pdf_service_error=pdf_service_error,
     )
 
 
