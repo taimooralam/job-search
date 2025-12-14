@@ -70,10 +70,14 @@ async def verify_token(
 
 def verify_websocket_token(websocket: WebSocket) -> Tuple[bool, Optional[str]]:
     """
-    Verify authentication token from WebSocket headers.
+    Verify authentication token from WebSocket headers or query parameters.
 
-    WebSocket connections pass auth via headers during handshake.
-    Extracts and validates the Bearer token from the Authorization header.
+    WebSocket connections can pass auth via:
+    1. Authorization header (for server-side proxies like Flask)
+    2. Query parameter ?token=xxx (for browser direct connections)
+
+    Browser WebSocket API cannot set custom headers, so query params are needed
+    for direct browser-to-server connections (e.g., Vercel deployment).
 
     Args:
         websocket: FastAPI WebSocket instance
@@ -88,19 +92,25 @@ def verify_websocket_token(websocket: WebSocket) -> Tuple[bool, Optional[str]]:
         logger.debug("[WS Auth] Auth not required, allowing connection")
         return True, None
 
-    # Get Authorization header
+    # Try to get token from multiple sources
+    token = None
+
+    # 1. Check Authorization header (preferred for server-side proxies)
     auth_header = websocket.headers.get("authorization", "")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header[7:]  # Remove "Bearer " prefix
+        logger.debug("[WS Auth] Token found in Authorization header")
 
-    if not auth_header:
-        logger.warning("[WS Auth] Missing Authorization header")
-        return False, "Missing Authorization header"
+    # 2. Fallback: Check query parameter (for browser direct connections)
+    if not token:
+        token = websocket.query_params.get("token", "")
+        if token:
+            logger.debug("[WS Auth] Token found in query parameter")
 
-    # Parse Bearer token
-    if not auth_header.lower().startswith("bearer "):
-        logger.warning("[WS Auth] Invalid Authorization header format")
-        return False, "Invalid Authorization header format (expected: Bearer <token>)"
-
-    token = auth_header[7:]  # Remove "Bearer " prefix
+    # No token found
+    if not token:
+        logger.warning("[WS Auth] No authentication token provided (header or query param)")
+        return False, "Missing authentication token"
 
     # Validate token
     try:

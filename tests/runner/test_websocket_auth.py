@@ -32,6 +32,7 @@ class TestVerifyWebSocketToken:
         """Create a mock WebSocket instance."""
         ws = MagicMock(spec=WebSocket)
         ws.headers = {}
+        ws.query_params = {}
         return ws
 
     @pytest.fixture
@@ -58,30 +59,46 @@ class TestVerifyWebSocketToken:
         assert is_valid is True
         assert error_msg is None
 
-    def test_returns_false_when_auth_required_but_header_missing(self, mock_websocket, mock_settings_auth_required):
-        """Should return (False, error) when Authorization header is missing."""
+    def test_returns_false_when_auth_required_but_no_token(self, mock_websocket, mock_settings_auth_required):
+        """Should return (False, error) when no token provided (header or query param)."""
         from runner_service.auth import verify_websocket_token
 
-        # No Authorization header
+        # No Authorization header and no query params
         mock_websocket.headers = {}
+        mock_websocket.query_params = {}
 
         is_valid, error_msg = verify_websocket_token(mock_websocket)
 
         assert is_valid is False
-        assert error_msg == "Missing Authorization header"
+        assert error_msg == "Missing authentication token"
 
-    def test_returns_false_when_auth_header_format_invalid(self, mock_websocket, mock_settings_auth_required):
-        """Should return (False, error) when Authorization header doesn't start with 'Bearer '."""
+    def test_returns_false_when_auth_header_format_invalid_and_no_query_param(self, mock_websocket, mock_settings_auth_required):
+        """Should return (False, error) when header has invalid format and no query param token."""
         from runner_service.auth import verify_websocket_token
 
-        # Invalid format (missing Bearer prefix)
+        # Invalid format (missing Bearer prefix) and no query param
         mock_websocket.headers = {"authorization": "test-secret-key-1234"}
+        mock_websocket.query_params = {}
 
         is_valid, error_msg = verify_websocket_token(mock_websocket)
 
+        # Falls back to query param, finds nothing, returns missing token
         assert is_valid is False
-        assert "Invalid Authorization header format" in error_msg
-        assert "Bearer <token>" in error_msg
+        assert error_msg == "Missing authentication token"
+
+    def test_falls_back_to_query_param_when_header_format_invalid(self, mock_websocket, mock_settings_auth_required):
+        """Should fall back to query param when header format is invalid."""
+        from runner_service.auth import verify_websocket_token
+
+        # Invalid header format but valid query param
+        mock_websocket.headers = {"authorization": "test-secret-key-1234"}  # Missing Bearer
+        mock_websocket.query_params = {"token": "test-secret-key-1234"}
+
+        is_valid, error_msg = verify_websocket_token(mock_websocket)
+
+        # Falls back to query param which is valid
+        assert is_valid is True
+        assert error_msg is None
 
     def test_returns_false_when_token_invalid(self, mock_websocket, mock_settings_auth_required):
         """Should return (False, error) when token doesn't match secret."""
@@ -116,6 +133,46 @@ class TestVerifyWebSocketToken:
 
         is_valid, error_msg = verify_websocket_token(mock_websocket)
 
+        assert is_valid is True
+        assert error_msg is None
+
+    def test_returns_true_when_valid_token_in_query_param(self, mock_websocket, mock_settings_auth_required):
+        """Should return (True, None) when valid token provided via query parameter."""
+        from runner_service.auth import verify_websocket_token
+
+        # Token in query param (browser direct connection)
+        mock_websocket.headers = {}
+        mock_websocket.query_params = {"token": "test-secret-key-1234"}
+
+        is_valid, error_msg = verify_websocket_token(mock_websocket)
+
+        assert is_valid is True
+        assert error_msg is None
+
+    def test_returns_false_when_invalid_token_in_query_param(self, mock_websocket, mock_settings_auth_required):
+        """Should return (False, error) when invalid token provided via query parameter."""
+        from runner_service.auth import verify_websocket_token
+
+        # Invalid token in query param
+        mock_websocket.headers = {}
+        mock_websocket.query_params = {"token": "wrong-token-12345"}
+
+        is_valid, error_msg = verify_websocket_token(mock_websocket)
+
+        assert is_valid is False
+        assert error_msg == "Invalid authentication token"
+
+    def test_prefers_header_over_query_param(self, mock_websocket, mock_settings_auth_required):
+        """Should use Authorization header when both header and query param are provided."""
+        from runner_service.auth import verify_websocket_token
+
+        # Both header (valid) and query param (invalid)
+        mock_websocket.headers = {"authorization": "Bearer test-secret-key-1234"}
+        mock_websocket.query_params = {"token": "wrong-token-12345"}
+
+        is_valid, error_msg = verify_websocket_token(mock_websocket)
+
+        # Header takes precedence, so should succeed
         assert is_valid is True
         assert error_msg is None
 
