@@ -953,14 +953,29 @@
     document.getElementById('date-to')?.addEventListener('change', refreshLocationsDebounced);
 
     // Set default filters on page load: 1-hour date filter + default statuses
+    // Only apply defaults if user doesn't have active filters (from URL params or checkbox state)
     document.addEventListener('DOMContentLoaded', function() {
-        // Reset statuses to default (overrides any browser-cached form state)
-        resetStatusesToDefault();
+        // Check if user has existing filters (from URL params or checkbox state)
+        const appliedOnlyChecked = document.getElementById('applied-only-checkbox')?.checked;
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasUrlFilters = urlParams.has('applied_only') || urlParams.has('datetime_from');
 
-        // Find the 1h button and trigger the filter
-        const oneHourBtn = document.querySelector('.quick-date-btn-hour');
-        if (oneHourBtn && oneHourBtn.textContent.trim() === '1h') {
-            setQuickDateFilter(oneHourBtn, 1, 'hour');
+        // Only set defaults if no existing filters
+        if (!appliedOnlyChecked && !hasUrlFilters) {
+            // Reset statuses to default (overrides any browser-cached form state)
+            resetStatusesToDefault();
+
+            // Find the 1h button and trigger the filter
+            const oneHourBtn = document.querySelector('.quick-date-btn-hour');
+            if (oneHourBtn && oneHourBtn.textContent.trim() === '1h') {
+                setQuickDateFilter(oneHourBtn, 1, 'hour');
+            }
+        } else {
+            // User has filters - just load locations without triggering refresh
+            loadLocations(
+                document.getElementById('date-from').value,
+                document.getElementById('date-to').value
+            );
         }
     });
 
