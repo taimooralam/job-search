@@ -50,6 +50,7 @@ from ..models import BulkOperationRequest, BulkOperationResponse, BulkOperationR
 from .operation_streaming import (
     create_operation_run,
     get_operation_state,
+    get_operation_state_from_redis,
     append_operation_log,
     update_operation_status,
     update_layer_status,
@@ -1271,8 +1272,12 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
     Get current status of an operation run.
 
     Useful for polling-based status checks as fallback to SSE.
+    Uses Redis fallback if in-memory state is not found (e.g., after runner restart).
     """
     state = get_operation_state(run_id)
+    if not state:
+        # Try Redis fallback - logs persist for 24 hours even after runner restart
+        state = await get_operation_state_from_redis(run_id)
     if not state:
         raise HTTPException(status_code=404, detail="Operation run not found")
 
