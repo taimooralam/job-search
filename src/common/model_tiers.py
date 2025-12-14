@@ -116,16 +116,29 @@ def get_tier_from_string(tier_str: str) -> Optional[ModelTier]:
     """
     Convert a string to ModelTier enum.
 
+    Accepts multiple naming conventions:
+    - Descriptive: "fast", "balanced", "quality"
+    - Letter grades: "A" (quality), "B" (balanced), "C" (fast), "D" (fast)
+    - "auto" defaults to balanced
+
     Args:
-        tier_str: String representation of tier ("fast", "balanced", "quality")
+        tier_str: String representation of tier
 
     Returns:
         ModelTier enum value or None if invalid
     """
     tier_map = {
+        # Descriptive names
         "fast": ModelTier.FAST,
         "balanced": ModelTier.BALANCED,
         "quality": ModelTier.QUALITY,
+        # Letter grades (A=quality/gold, B=balanced/silver, C=fast/bronze, D=skip/fast)
+        "a": ModelTier.QUALITY,
+        "b": ModelTier.BALANCED,
+        "c": ModelTier.FAST,
+        "d": ModelTier.FAST,
+        # Auto defaults to balanced
+        "auto": ModelTier.BALANCED,
     }
     return tier_map.get(tier_str.lower())
 

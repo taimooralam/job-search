@@ -271,7 +271,7 @@ def _validate_tier(tier_str: str) -> ModelTier:
     Validate and convert tier string to ModelTier enum.
 
     Args:
-        tier_str: Tier string ('fast', 'balanced', 'quality')
+        tier_str: Tier string ('fast', 'balanced', 'quality', 'A', 'B', 'C', 'auto')
 
     Returns:
         ModelTier enum value
@@ -283,7 +283,7 @@ def _validate_tier(tier_str: str) -> ModelTier:
     if tier is None:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid tier '{tier_str}'. Must be 'fast', 'balanced', or 'quality'",
+            detail=f"Invalid tier '{tier_str}'. Must be 'fast'/'balanced'/'quality' or 'A'/'B'/'C'/'auto'",
         )
     return tier
 
