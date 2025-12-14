@@ -118,7 +118,8 @@ class TestLinkedInJobToMongoDoc:
         # dedupeKey follows the pattern: company|title|location|source (all lowercase)
         assert doc["dedupeKey"] == "testcorp|senior software engineer|san francisco, ca|linkedin_import"
 
-        assert doc["status"] == "not processed"
+        assert doc["status"] == "under processing"  # Ready for batch processing
+        assert "batch_added_at" in doc  # For batch table sorting
         assert doc["score"] is None
         assert doc["source"] == "linkedin_import"
 
