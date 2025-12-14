@@ -168,3 +168,36 @@ class OpenRouterCreditsResponse(BaseModel):
         description="Status: healthy, warning (<$5), critical (<$1), exhausted ($0)"
     )
     error: Optional[str] = Field(None, description="Error message if API call failed")
+
+
+# === Bulk Operation Models ===
+
+
+class BulkOperationRequest(BaseModel):
+    """Request body for bulk operation execution (extraction, research, CV generation)."""
+
+    job_ids: List[str] = Field(..., min_items=1, description="Job identifiers to process.")
+    tier: str = Field(default="B", description="Processing tier: A (gold), B (silver), C (bronze)")
+    # Operation-specific fields
+    force_refresh: Optional[bool] = Field(
+        default=False, description="Force refresh for company research (ignore cache)"
+    )
+    use_llm: Optional[bool] = Field(
+        default=True, description="Use LLM for extraction (vs rule-based)"
+    )
+
+
+class BulkOperationRunInfo(BaseModel):
+    """Information about a single run in a bulk operation."""
+
+    run_id: str = Field(..., description="Unique run identifier for SSE streaming")
+    job_id: str = Field(..., description="Job ID being processed")
+    log_stream_url: str = Field(..., description="URL to stream logs via SSE")
+    status: str = Field(default="queued", description="Initial status")
+
+
+class BulkOperationResponse(BaseModel):
+    """Response for bulk operation kickoff."""
+
+    runs: List[BulkOperationRunInfo] = Field(..., description="List of runs created")
+    total_count: int = Field(..., description="Total number of jobs queued")

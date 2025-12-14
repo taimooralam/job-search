@@ -590,7 +590,7 @@
     async function executeBatchOperation(operation) {
         if (batchSelectedJobs.size === 0) return;
 
-        const tier = document.getElementById('batch-tier').value || 'auto';
+        const tier = document.getElementById('batch-tier').value || 'B';
         const tierDisplay = tierLabels[tier] || tier;
         const count = batchSelectedJobs.size;
 
@@ -601,10 +601,18 @@
             'generate-cv': 'CV Generation'
         };
 
+        // Map operations to their bulk endpoints
+        const bulkEndpoints = {
+            'full-extraction': '/api/runner/jobs/full-extraction/bulk',
+            'process-jd': '/api/runner/jobs/full-extraction/bulk',
+            'research-company': '/api/runner/jobs/research-company/bulk',
+            'generate-cv': '/api/runner/jobs/generate-cv/bulk'
+        };
+
         const confirmed = confirm(
             `Run ${operationNames[operation] || operation} on ${count} job${count > 1 ? 's' : ''}?\n\n` +
             `Tier: ${tierDisplay}\n` +
-            `Jobs will be processed concurrently.`
+            `Jobs will be queued and processed. Check Pipeline Queue for progress.`
         );
 
         if (!confirmed) return;
@@ -615,64 +623,41 @@
         try {
             showToast(`Starting ${operationNames[operation]} for ${count} jobs...`, 'info');
 
-            // For batch operations, use the bulk runner endpoint
-            // process-jd maps to full-extraction (JD + pain points + fit scoring)
-            if (operation === 'full-extraction' || operation === 'process-jd') {
-                const response = await fetch('/api/runner/jobs/run-bulk', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        job_ids: Array.from(batchSelectedJobs),
-                        level: 2,
-                        processing_tier: tier
-                    })
+            // Use the appropriate bulk endpoint for the operation
+            const endpoint = bulkEndpoints[operation];
+            if (!endpoint) {
+                showToast(`Unknown operation: ${operation}`, 'error');
+                hideBatchProgress();
+                return;
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_ids: Array.from(batchSelectedJobs),
+                    tier: tier,
+                    use_llm: true,  // For full-extraction
+                    force_refresh: false  // For research-company
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.runs) {
+                // Success - jobs are queued
+                showToast(`Queued ${result.total_count} jobs for ${operationNames[operation]}. Check Pipeline Queue for progress.`, 'success');
+
+                // Mark all jobs as queued in progress panel
+                result.runs.forEach(run => {
+                    updateJobProgress(run.job_id, 'queued');
                 });
 
-                const result = await response.json();
-                if (result.success || result.batch_id) {
-                    showToast(`Batch started: ${result.queued_count || count} jobs queued`, 'success');
-                    // Start polling for status updates
-                    startBatchProgressPolling();
-                } else {
-                    showToast(result.error || 'Failed to start batch', 'error');
-                    hideBatchProgress();
-                }
+                // Start polling for status updates via WebSocket queue
+                startBatchProgressPolling();
             } else {
-                // For individual operations, process each job sequentially with progress updates
-                let successCount = 0;
-                const jobIds = Array.from(batchSelectedJobs);
-
-                for (let i = 0; i < jobIds.length; i++) {
-                    const jobId = jobIds[i];
-                    if (batchOperationState.cancelled) break;
-
-                    updateJobProgress(jobId, 'running');
-
-                    try {
-                        const response = await fetch(`/api/jobs/${jobId}/${operation}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tier })
-                        });
-                        if (response.ok) {
-                            successCount++;
-                            updateJobProgress(jobId, 'success');
-                        } else {
-                            updateJobProgress(jobId, 'error');
-                        }
-                    } catch (err) {
-                        console.error(`Failed to process ${jobId}:`, err);
-                        updateJobProgress(jobId, 'error');
-                    }
-
-                    batchOperationState.completedJobs++;
-                    updateBatchProgressUI();
-                }
-
-                showToast(`Queued ${successCount}/${count} jobs for extraction`, successCount === count ? 'success' : 'warning');
-
-                // Complete the batch operation
-                completeBatchOperation();
+                showToast(result.error || result.detail || 'Failed to start batch', 'error');
+                hideBatchProgress();
             }
         } catch (err) {
             showToast('Batch operation failed: ' + err.message, 'error');

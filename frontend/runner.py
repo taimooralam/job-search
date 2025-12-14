@@ -659,3 +659,112 @@ def get_queue_item_by_job(job_id: str):
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# Bulk Operation Proxy Routes (Batch Processing)
+# =============================================================================
+
+
+@runner_bp.route("/jobs/full-extraction/bulk", methods=["POST"])
+def full_extraction_bulk():
+    """
+    Start full extraction for multiple jobs.
+
+    Request Body:
+        job_ids: List of MongoDB job IDs
+        tier: Processing tier (A, B, C)
+        use_llm: Whether to use LLM (default True)
+
+    Returns:
+        JSON with runs array containing run_ids for each job
+    """
+    try:
+        data = request.get_json()
+        if not data or "job_ids" not in data:
+            return jsonify({"error": "job_ids array is required"}), 400
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/full-extraction/bulk",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/research-company/bulk", methods=["POST"])
+def research_company_bulk():
+    """
+    Start company research for multiple jobs.
+
+    Request Body:
+        job_ids: List of MongoDB job IDs
+        tier: Processing tier (A, B, C)
+        force_refresh: Whether to force refresh (default False)
+
+    Returns:
+        JSON with runs array containing run_ids for each job
+    """
+    try:
+        data = request.get_json()
+        if not data or "job_ids" not in data:
+            return jsonify({"error": "job_ids array is required"}), 400
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/research-company/bulk",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/generate-cv/bulk", methods=["POST"])
+def generate_cv_bulk():
+    """
+    Start CV generation for multiple jobs.
+
+    Request Body:
+        job_ids: List of MongoDB job IDs
+        tier: Processing tier (A, B, C)
+
+    Returns:
+        JSON with runs array containing run_ids for each job
+    """
+    try:
+        data = request.get_json()
+        if not data or "job_ids" not in data:
+            return jsonify({"error": "job_ids array is required"}), 400
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/generate-cv/bulk",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
