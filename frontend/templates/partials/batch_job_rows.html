@@ -324,10 +324,22 @@
                             {% endif %}
                         </div>
 
-                        <!-- Scrape & Fill Action -->
+                        <!-- Actions -->
                         <div class="md:col-span-2 lg:col-span-3 pt-2 border-t theme-border mt-2">
-                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-2">Application Form Actions</label>
-                            <div class="flex items-center gap-3">
+                            <label class="block text-xs font-medium theme-text-tertiary uppercase mb-2">Actions</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <!-- View Logs Button -->
+                                <button @click="$store.cli.showJobLogs('{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}')"
+                                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
+                                               text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+                                        title="View pipeline logs for this job">
+                                    <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    View Logs
+                                </button>
+
+                                <!-- Scrape & Fill Button -->
                                 <button onclick="scrapeAndFillJob('{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}')"
                                         class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition
                                                {% if app_url %}text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500
