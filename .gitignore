@@ -71,3 +71,4 @@ assets/*.docx
 node_modules/
 .vercel/
 GEMINI.md
+.env*.local
