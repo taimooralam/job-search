@@ -443,7 +443,8 @@ def linkedin_job_to_mongodb_doc(job_data: LinkedInJobData) -> Dict[str, Any]:
         "description": job_data.description,
         "dedupeKey": dedupe_key,
         "createdAt": datetime.utcnow(),
-        "status": "not processed",
+        "status": "under processing",  # Match batch processing filter
+        "batch_added_at": datetime.utcnow(),  # For batch table sorting
         "score": None,  # Will be set by quick scorer
         "source": "linkedin_import",
 
