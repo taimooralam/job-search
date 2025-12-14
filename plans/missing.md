@@ -77,6 +77,42 @@
 
 ---
 
+### GAP-097: Self-Hosted GitHub Actions Runner on VPS
+**Priority**: P0 URGENT | **Status**: 🔴 OPEN | **Effort**: 2-4 hours
+**Impact**: CI/CD deployments intermittently fail due to network connectivity issues from GitHub-hosted runners to VPS
+
+**Problem**:
+- GitHub Actions runners (Azure-hosted) have intermittent network connectivity to VPS (72.61.92.76)
+- Deployments fail with `ssh: connect to host *** port 22: Connection timed out`
+- Pattern observed: Push-triggered workflows fail, manual re-runs succeed
+- Root cause: Network routing variability from different GitHub runner regions
+- Issue appeared around 2025-12-14 (possibly after GitHub Pro upgrade)
+- Current workaround: Increased retries (5 attempts), timeouts (60s), added connectivity pre-check
+
+**Proposed Solution**: Install self-hosted GitHub Actions runner on VPS
+1. Eliminates network latency and routing issues (deployment is localhost)
+2. Runner has direct access to Docker and filesystem
+3. No SSH/SCP needed for deployments
+4. More control over runner environment
+
+**Implementation Steps**:
+1. Install GitHub Actions runner on VPS (`/root/actions-runner`)
+2. Configure as service with auto-start
+3. Update workflow to use `runs-on: self-hosted` for deploy job
+4. Keep test/build jobs on `ubuntu-latest` for parallelism
+5. Add runner health monitoring
+
+**Alternative Solutions**:
+- Webhook-based deployment (VPS pulls on trigger)
+- Different CI provider with better connectivity
+- Keep current retry-based approach (less reliable)
+
+**References**:
+- GitHub Docs: https://docs.github.com/en/actions/hosting-your-own-runners
+- Workflow improvement commit: `d054d2f1` - "fix(ci): improve deployment reliability with connectivity pre-check"
+
+---
+
 ### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
 
 **BUG FIX 11: Clipboard copy not working in non-secure contexts - FIXED**:
