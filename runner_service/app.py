@@ -326,7 +326,7 @@ async def _get_job_details(job_id: str) -> tuple:
     Fetch job title and company from MongoDB.
 
     Returns:
-        Tuple of (job_title, company) or ("Unknown", "Unknown") if not found
+        Tuple of (job_title, company) or ("Unknown Job", "Unknown Company") if not found
     """
     try:
         from bson import ObjectId
@@ -334,24 +334,35 @@ async def _get_job_details(job_id: str) -> tuple:
 
         mongodb_uri = os.getenv("MONGODB_URI")
         if not mongodb_uri:
+            logger.warning("MONGODB_URI not set, cannot fetch job details")
             return ("Unknown Job", "Unknown Company")
 
-        client = MongoClient(mongodb_uri)
-        db = client["jobs"]
+        # Validate job_id format (must be 24 character hex string)
+        if not job_id or len(job_id) != 24:
+            logger.warning(f"Invalid job_id format: {job_id}")
+            return ("Unknown Job", "Unknown Company")
 
         try:
             object_id = ObjectId(job_id)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to convert job_id to ObjectId: {job_id} - {e}")
             return ("Unknown Job", "Unknown Company")
+
+        client = MongoClient(mongodb_uri)
+        db = client["job-search"]  # Fixed: was "jobs", should be "job-search"
 
         job = db["level-2"].find_one(
             {"_id": object_id},
-            {"title": 1, "company": 1}
+            {"title": 1, "company_name": 1, "company": 1}  # Include both company fields
         )
 
         if job:
-            return (job.get("title", "Unknown Job"), job.get("company", "Unknown Company"))
+            title = job.get("title") or "Unknown Job"
+            company = job.get("company_name") or job.get("company") or "Unknown Company"
+            logger.debug(f"Fetched job details for {job_id}: title='{title}', company='{company}'")
+            return (title, company)
 
+        logger.debug(f"Job not found in MongoDB: {job_id}")
         return ("Unknown Job", "Unknown Company")
 
     except Exception as e:
