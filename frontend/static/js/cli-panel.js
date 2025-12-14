@@ -135,21 +135,62 @@ document.addEventListener('alpine:init', () => {
             // Check if we have a queued tab for this job
             const queuedRunId = `queued_${jobId}`;
             if (this.runs[queuedRunId]) {
-                // Remove the queued tab
-                delete this.runs[queuedRunId];
-                const idx = this.runOrder.indexOf(queuedRunId);
-                if (idx > -1) {
-                    this.runOrder.splice(idx, 1);
-                }
+                // If actual run tab already exists from SSE, just remove queued and switch
+                if (runId && this.runs[runId]) {
+                    delete this.runs[queuedRunId];
+                    const idx = this.runOrder.indexOf(queuedRunId);
+                    if (idx > -1) {
+                        this.runOrder.splice(idx, 1);
+                    }
+                    if (this.activeRunId === queuedRunId) {
+                        this.activeRunId = runId;  // Switch to actual run
+                    }
+                } else if (runId) {
+                    // SSE hasn't created the run tab yet - transition queued tab to running
+                    const queuedTab = this.runs[queuedRunId];
+                    delete this.runs[queuedRunId];
 
-                // If it was active, we'll switch to the new run
-                if (this.activeRunId === queuedRunId) {
-                    this.activeRunId = null;
+                    // Create run entry with the actual runId
+                    this.runs[runId] = {
+                        jobId: queuedTab.jobId,
+                        action: 'pipeline',
+                        status: 'running',
+                        startedAt: Date.now(),
+                        logs: [{
+                            ts: Date.now(),
+                            type: 'info',
+                            text: 'Pipeline started...'
+                        }]
+                    };
+
+                    // Update runOrder - replace queued ID with real run ID
+                    const idx = this.runOrder.indexOf(queuedRunId);
+                    if (idx > -1) {
+                        this.runOrder[idx] = runId;
+                    } else {
+                        this.runOrder.unshift(runId);
+                    }
+
+                    // Switch active if needed
+                    if (this.activeRunId === queuedRunId) {
+                        this.activeRunId = runId;
+                    }
+
+                    this._saveStateImmediate();
+                } else {
+                    // No runId provided - just remove queued tab (shouldn't normally happen)
+                    delete this.runs[queuedRunId];
+                    const idx = this.runOrder.indexOf(queuedRunId);
+                    if (idx > -1) {
+                        this.runOrder.splice(idx, 1);
+                    }
+                    if (this.activeRunId === queuedRunId) {
+                        this.activeRunId = null;
+                    }
                 }
             }
 
-            // The actual run tab will be created by the SSE/pipeline system
-            // We just need to make sure the panel is open
+            // Ensure panel is open
             if (runId) {
                 this.expanded = true;
             }
