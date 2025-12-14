@@ -23,6 +23,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, ExtractedJD
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.json_utils import parse_llm_json
 from src.layer1_4.prompts import (
     JD_EXTRACTION_SYSTEM_PROMPT,
     JD_EXTRACTION_USER_TEMPLATE,
@@ -229,30 +230,12 @@ class JDExtractor:
 
     def _parse_response(self, llm_response: str) -> ExtractedJDModel:
         """Parse and validate LLM response."""
-        # Try to extract JSON from response
-        json_str = llm_response.strip()
-
-        # Remove markdown code blocks if present
-        if json_str.startswith("```json"):
-            json_str = json_str[7:]
-        if json_str.startswith("```"):
-            json_str = json_str[3:]
-        if json_str.endswith("```"):
-            json_str = json_str[:-3]
-        json_str = json_str.strip()
-
-        # Find JSON object if wrapped in other text
-        if not json_str.startswith("{"):
-            json_match = re.search(r'\{.*\}', json_str, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-            else:
-                raise ValueError(f"No JSON found in response: {llm_response[:500]}")
-
+        # Use robust JSON parser that handles malformed LLM outputs
+        # (single quotes, trailing commas, unquoted keys, markdown wrappers)
         try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON: {e}\nResponse: {json_str[:500]}")
+            data = parse_llm_json(llm_response)
+        except ValueError as e:
+            raise ValueError(f"Failed to parse JSON from LLM response: {e}")
 
         # Normalize enum values (handle case variations)
         if "role_category" in data:
