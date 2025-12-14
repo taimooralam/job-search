@@ -36,7 +36,7 @@ from .models import (
 )
 from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
-from .auth import verify_token
+from .auth import verify_token, verify_websocket_token
 from .config import settings, validate_config_on_startup
 from .routes import operations_router, contacts_router, master_cv_router
 
@@ -782,11 +782,55 @@ async def queue_websocket(websocket: WebSocket):
     - Initial queue state on connect
     - Real-time updates as queue changes
     - Client commands: retry, cancel, dismiss, refresh
+
+    Authentication:
+    - Validates Bearer token from Authorization header
+    - Uses same secret as REST API endpoints (RUNNER_API_SECRET)
+
+    Note: WebSocket connections MUST call accept() before close() to avoid
+    Uvicorn returning HTTP 403 Forbidden (per ASGI spec).
     """
+    # Diagnostic logging for connection debugging
+    client_host = websocket.client.host if websocket.client else "unknown"
+    logger.info(f"[WS] WebSocket connection attempt from {client_host}")
+    logger.debug(f"[WS] Headers: {dict(websocket.headers)}")
+    logger.debug(f"[WS] Path: {websocket.url.path}")
+
+    # Verify authentication BEFORE accepting (but must accept to send error)
+    is_authenticated, auth_error = verify_websocket_token(websocket)
+
+    if not is_authenticated:
+        # CRITICAL: Must accept() before close() to avoid HTTP 403 response.
+        # Per ASGI spec, closing without accepting results in 403 Forbidden.
+        logger.warning(f"[WS] Authentication failed for {client_host}: {auth_error}")
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "payload": {
+                "message": f"Authentication failed: {auth_error}",
+                "code": "AUTH_FAILED"
+            }
+        })
+        await websocket.close(code=1008, reason="Authentication failed")
+        return
+
+    logger.info(f"[WS] Queue manager configured: {_ws_manager is not None}")
+
     if not _ws_manager:
+        # CRITICAL: Must accept() before close() to avoid HTTP 403 response.
+        logger.warning(f"[WS] Queue not configured (Redis unavailable), sending error to client")
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "payload": {
+                "message": "Queue service not configured. Redis may be unavailable.",
+                "code": "QUEUE_NOT_CONFIGURED"
+            }
+        })
         await websocket.close(code=1011, reason="Queue not configured")
         return
 
+    logger.info(f"[WS] Accepting authenticated WebSocket connection from {client_host}")
     await _ws_manager.run_connection(websocket)
 
 
