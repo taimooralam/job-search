@@ -2769,6 +2769,36 @@
                     </div>
                 `);
 
+                // WebSocket Queue Health - dynamically updated by queue-websocket.js
+                const wsStatus = window.queueWebSocket?.isConnected ? 'connected' :
+                                 window.queueWebSocket?.shouldReconnect === false ? 'disabled' : 'disconnected';
+                const wsClass = wsStatus === 'connected' ? 'health-healthy' :
+                                wsStatus === 'disabled' ? 'health-unknown' : 'health-unhealthy';
+                const wsTitle = wsStatus === 'connected' ? 'WebSocket: Connected' :
+                                wsStatus === 'disabled' ? 'WebSocket: Disabled (mixed content or service unavailable)' :
+                                'WebSocket: Disconnected';
+                indicators.push(`
+                    <div class="health-indicator" id="ws-health-indicator" title="${wsTitle}">
+                        <div class="health-dot ${wsClass}"></div>
+                        <span class="text-gray-700">Q(ws)</span>
+                    </div>
+                `);
+
+                // PDF Service Health (from runner response)
+                const pdfStatus = data.runner_response?.pdf_service_status || 'unknown';
+                const pdfClass = pdfStatus === 'healthy' ? 'health-healthy' :
+                                 pdfStatus === 'unhealthy' ? 'health-unhealthy' : 'health-unknown';
+                const pdfError = data.runner_response?.pdf_service_error || '';
+                const pdfTitle = pdfStatus === 'healthy' ? 'PDF Service: Healthy' :
+                                 pdfStatus === 'unhealthy' ? `PDF Service: Unhealthy (${pdfError})` :
+                                 'PDF Service: Unknown';
+                indicators.push(`
+                    <div class="health-indicator" id="pdf-health-indicator" title="${pdfTitle}">
+                        <div class="health-dot ${pdfClass}"></div>
+                        <span class="text-gray-700">PDF</span>
+                    </div>
+                `);
+
                 // n8n Health (if available)
                 if (data.n8n) {
                     const n8nClass = data.n8n?.status === 'healthy' ? 'health-healthy' :
