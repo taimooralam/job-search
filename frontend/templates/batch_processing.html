@@ -709,38 +709,51 @@
         }
     }
 
+    // Progress display constants (moved outside function to avoid allocation per iteration)
+    const PROGRESS_STATUS_ICONS = {
+        pending: '<span class="text-gray-400">○</span>',
+        queued: '<span class="text-yellow-500">◉</span>',
+        running: '<span class="text-blue-500 animate-pulse">●</span>',
+        success: '<span class="text-green-500">✓</span>',
+        extracted: '<span class="text-green-600">✓</span>',
+        error: '<span class="text-red-500">✗</span>'
+    };
+
+    const PROGRESS_STATUS_CLASSES = {
+        pending: 'text-gray-500',
+        queued: 'text-yellow-600',
+        running: 'text-blue-600 font-medium',
+        success: 'text-green-600',
+        extracted: 'text-green-700 font-medium',
+        error: 'text-red-600'
+    };
+
+    // Track pending render to avoid duplicate RAF calls
+    let _progressRenderPending = false;
+
     function renderProgressDetails() {
-        const container = document.getElementById('batch-progress-details');
-        const items = [];
+        // Debounce: skip if render already scheduled
+        if (_progressRenderPending) return;
+        _progressRenderPending = true;
 
-        batchOperationState.jobStatuses.forEach((job, jobId) => {
-            const statusIcons = {
-                pending: '<span class="text-gray-400">○</span>',
-                queued: '<span class="text-yellow-500">◉</span>',
-                running: '<span class="text-blue-500 animate-pulse">●</span>',
-                success: '<span class="text-green-500">✓</span>',
-                extracted: '<span class="text-green-600">✓</span>',
-                error: '<span class="text-red-500">✗</span>'
-            };
+        // Use requestAnimationFrame to yield to browser and avoid blocking UI
+        requestAnimationFrame(() => {
+            _progressRenderPending = false;
 
-            const statusClasses = {
-                pending: 'text-gray-500',
-                queued: 'text-yellow-600',
-                running: 'text-blue-600 font-medium',
-                success: 'text-green-600',
-                extracted: 'text-green-700 font-medium',
-                error: 'text-red-600'
-            };
+            const container = document.getElementById('batch-progress-details');
+            const items = [];
 
-            items.push(`
-                <div class="flex items-center gap-2 text-xs ${statusClasses[job.status]}">
-                    ${statusIcons[job.status]}
-                    <span class="truncate">${job.title}</span>
-                </div>
-            `);
+            batchOperationState.jobStatuses.forEach((job, jobId) => {
+                items.push(`
+                    <div class="flex items-center gap-2 text-xs ${PROGRESS_STATUS_CLASSES[job.status]}">
+                        ${PROGRESS_STATUS_ICONS[job.status]}
+                        <span class="truncate">${job.title}</span>
+                    </div>
+                `);
+            });
+
+            container.innerHTML = items.join('');
         });
-
-        container.innerHTML = items.join('');
     }
 
     function hideBatchProgress() {
