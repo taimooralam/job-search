@@ -99,7 +99,7 @@
                         <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
                             Pipeline Operations
                         </div>
-                        <button onclick="executeBatchOperation('full-extraction'); $dispatch('click')"
+                        <button @click="executeBatchOperation('full-extraction'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
                             <span class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                                 <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@
                                 <div class="text-xs theme-text-tertiary">JD + Research + CV</div>
                             </div>
                         </button>
-                        <button onclick="executeBatchOperation('process-jd'); $dispatch('click')"
+                        <button @click="executeBatchOperation('process-jd'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
                             <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                                 <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@
                                 <div class="text-xs theme-text-tertiary">Parse job description</div>
                             </div>
                         </button>
-                        <button onclick="executeBatchOperation('research-company'); $dispatch('click')"
+                        <button @click="executeBatchOperation('research-company'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
                             <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
                                 <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +135,7 @@
                                 <div class="text-xs theme-text-tertiary">Company intel</div>
                             </div>
                         </button>
-                        <button onclick="executeBatchOperation('generate-cv'); $dispatch('click')"
+                        <button @click="executeBatchOperation('generate-cv'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
                             <span class="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
                                 <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,19 +164,19 @@
                 <div x-show="open" x-cloak x-transition
                      class="absolute left-0 mt-2 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
                     <div class="py-1">
-                        <button onclick="setBatchTier('auto'); $dispatch('click')"
+                        <button @click="setBatchTier('auto'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
                             Auto (by score)
                         </button>
-                        <button onclick="setBatchTier('A'); $dispatch('click')"
+                        <button @click="setBatchTier('A'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
                             Gold (A)
                         </button>
-                        <button onclick="setBatchTier('B'); $dispatch('click')"
+                        <button @click="setBatchTier('B'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
                             Silver (B)
                         </button>
-                        <button onclick="setBatchTier('C'); $dispatch('click')"
+                        <button @click="setBatchTier('C'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
                             Bronze (C)
                         </button>
