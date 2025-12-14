@@ -111,12 +111,35 @@ document.addEventListener('alpine:init', () => {
             window.queueWebSocket.connect();
         },
 
-        // Update full state
+        // Update full state (with transition detection for missed events)
         updateState(state) {
+            // Track running items BEFORE update to detect transitions
+            // This handles the case where completion events were missed (e.g., during reconnection)
+            const oldRunningIds = new Set(this.running.map(i => i.job_id));
+
+            // Update state arrays
             this.pending = state.pending || [];
             this.running = state.running || [];
             this.failed = state.failed || [];
             this.history = state.history || [];
+
+            // Detect items that completed/failed while we were disconnected
+            const newHistoryIds = new Set(this.history.map(i => i.job_id));
+            const newFailedIds = new Set(this.failed.map(i => i.job_id));
+
+            oldRunningIds.forEach(jobId => {
+                // Item was running but is no longer running
+                if (!this.running.some(i => i.job_id === jobId)) {
+                    if (newHistoryIds.has(jobId)) {
+                        // Moved to history → completed
+                        this.dispatchJobCompleted(jobId);
+                    } else if (newFailedIds.has(jobId)) {
+                        // Moved to failed
+                        const failedItem = this.failed.find(i => i.job_id === jobId);
+                        this.dispatchJobFailed(jobId, failedItem?.error);
+                    }
+                }
+            });
         },
 
         // Handle incremental update
