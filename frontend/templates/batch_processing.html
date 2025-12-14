@@ -813,10 +813,13 @@
                 let runningCount = 0;
                 let completeCount = 0;
 
+                // OPTIMIZATION: Build lookup Map ONCE outside the loop (O(n) instead of O(n²))
+                const runs = Object.values(cliStore.runs || {});
+                const runsByJobId = new Map(runs.map(r => [r.jobId, r]));
+
                 batchOperationState.jobStatuses.forEach((job, jobId) => {
-                    // Look for runs matching this job
-                    const runs = Object.values(cliStore.runs || {});
-                    const jobRun = runs.find(r => r.jobId === jobId);
+                    // O(1) lookup instead of O(n) find()
+                    const jobRun = runsByJobId.get(jobId);
 
                     if (jobRun) {
                         if (jobRun.status === 'running') {
