@@ -13,9 +13,28 @@ services:
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
+    # Traefik handles external traffic via HTTPS; keep direct port for local/fallback
     ports:
-      # Expose to internet - protected by RUNNER_API_SECRET authentication
       - "0.0.0.0:8000:8000"
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+      # Tell Traefik which Docker network to use for routing
+      - "traefik.docker.network=n8n-prod_default"
+      # HTTP Router - redirects to HTTPS
+      - "traefik.http.routers.runner-http.rule=Host(`runner.uqab.digital`)"
+      - "traefik.http.routers.runner-http.entrypoints=web"
+      - "traefik.http.routers.runner-http.middlewares=redirect-to-https"
+      # HTTPS Router - main entry point with SSL
+      - "traefik.http.routers.runner.rule=Host(`runner.uqab.digital`)"
+      - "traefik.http.routers.runner.entrypoints=websecure"
+      - "traefik.http.routers.runner.tls=true"
+      - "traefik.http.routers.runner.tls.certresolver=mytlschallenge"
+      # Service configuration - point to container port 8000
+      - "traefik.http.services.runner.loadbalancer.server.port=8000"
+      # Redirect middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
     volumes:
       # Pipeline artifacts
       - ./applications:/app/applications
