@@ -237,6 +237,23 @@ class QueueManager:
         await self._update_item(item)
         return item
 
+    async def fail(
+        self,
+        queue_id: str,
+        error: str
+    ) -> Optional[QueueItem]:
+        """
+        Mark a job as failed (convenience wrapper for complete with success=False).
+
+        Args:
+            queue_id: Queue item ID
+            error: Error message
+
+        Returns:
+            Updated QueueItem or None if not found
+        """
+        return await self.complete(queue_id, success=False, error=error)
+
     async def retry(self, queue_id: str) -> Optional[QueueItem]:
         """
         Retry a failed job (move back to pending).
@@ -622,3 +639,139 @@ class QueueManager:
                 logger.info(f"Restored interrupted run {queue_id} for job {item.job_id}")
 
         return restored
+
+    async def cleanup_stale_items(self, max_age_minutes: int = 60) -> Dict[str, int]:
+        """
+        Clean up stale/orphaned queue items.
+
+        Removes:
+        1. Pending items older than max_age_minutes that haven't started
+        2. Queue IDs in pending list that have no corresponding item data
+        3. Queue IDs in running set that have no corresponding item data
+
+        Args:
+            max_age_minutes: Maximum age for pending items before cleanup
+
+        Returns:
+            Dict with cleanup statistics
+        """
+        if not self._redis:
+            return {"error": "Not connected to Redis"}
+
+        stats = {
+            "stale_pending_removed": 0,
+            "orphan_pending_removed": 0,
+            "orphan_running_removed": 0,
+            "total_cleaned": 0,
+        }
+
+        from datetime import timedelta
+        cutoff_time = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+
+        # Clean up pending queue
+        pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
+        for queue_id in pending_ids:
+            item = await self.get_item(queue_id)
+
+            if not item:
+                # Orphan: queue_id in list but no item data
+                await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
+                stats["orphan_pending_removed"] += 1
+                logger.info(f"Removed orphan pending queue_id: {queue_id}")
+            elif item.status == QueueItemStatus.PENDING and item.created_at < cutoff_time:
+                # Stale: pending for too long without being picked up
+                await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
+                # Mark as failed with timeout reason
+                item.status = QueueItemStatus.FAILED
+                item.error = f"Stale: pending for over {max_age_minutes} minutes"
+                item.completed_at = datetime.utcnow()
+                await self._update_item(item)
+                # Add to failed set for visibility
+                await self._redis.zadd(
+                    self.FAILED_KEY,
+                    {queue_id: item.completed_at.timestamp()}
+                )
+                await self._publish_event("failed", item)
+                stats["stale_pending_removed"] += 1
+                logger.info(f"Removed stale pending {queue_id} for job {item.job_id} (created: {item.created_at})")
+            elif item.status != QueueItemStatus.PENDING:
+                # Item in pending list but status is not pending (completed/failed/etc)
+                await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
+                stats["orphan_pending_removed"] += 1
+                logger.info(f"Removed completed item from pending list: {queue_id} (status: {item.status})")
+
+        # Clean up running set
+        running_ids = await self._redis.smembers(self.RUNNING_KEY)
+        for queue_id in running_ids:
+            item = await self.get_item(queue_id)
+            if not item:
+                # Orphan: queue_id in set but no item data
+                await self._redis.srem(self.RUNNING_KEY, queue_id)
+                stats["orphan_running_removed"] += 1
+                logger.info(f"Removed orphan running queue_id: {queue_id}")
+
+        stats["total_cleaned"] = (
+            stats["stale_pending_removed"] +
+            stats["orphan_pending_removed"] +
+            stats["orphan_running_removed"]
+        )
+
+        if stats["total_cleaned"] > 0:
+            logger.info(f"Queue cleanup completed: {stats}")
+
+        return stats
+
+    async def clear_all(self) -> Dict[str, int]:
+        """
+        Clear all queue data (for admin/maintenance use).
+
+        Removes all items from pending, running, failed, and history.
+
+        Returns:
+            Dict with counts of items removed from each queue
+        """
+        if not self._redis:
+            return {"error": "Not connected to Redis"}
+
+        stats = {
+            "pending_cleared": 0,
+            "running_cleared": 0,
+            "failed_cleared": 0,
+            "history_cleared": 0,
+            "items_deleted": 0,
+        }
+
+        # Get all queue_ids before clearing
+        pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
+        running_ids = await self._redis.smembers(self.RUNNING_KEY)
+        failed_ids = await self._redis.zrange(self.FAILED_KEY, 0, -1)
+        history_ids = await self._redis.lrange(self.HISTORY_KEY, 0, -1)
+
+        # Clear lists/sets
+        if pending_ids:
+            await self._redis.delete(self.PENDING_KEY)
+            stats["pending_cleared"] = len(pending_ids)
+
+        if running_ids:
+            await self._redis.delete(self.RUNNING_KEY)
+            stats["running_cleared"] = len(running_ids)
+
+        if failed_ids:
+            await self._redis.delete(self.FAILED_KEY)
+            stats["failed_cleared"] = len(failed_ids)
+
+        if history_ids:
+            await self._redis.delete(self.HISTORY_KEY)
+            stats["history_cleared"] = len(history_ids)
+
+        # Delete all item hashes
+        all_queue_ids = set(pending_ids) | running_ids | set(failed_ids) | set(history_ids)
+        for queue_id in all_queue_ids:
+            key = f"{self.ITEM_PREFIX}{queue_id}"
+            deleted = await self._redis.delete(key)
+            if deleted:
+                stats["items_deleted"] += 1
+
+        logger.warning(f"Queue cleared by admin: {stats}")
+
+        return stats

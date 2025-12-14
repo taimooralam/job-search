@@ -349,7 +349,7 @@ async def _get_job_details(job_id: str) -> tuple:
             return ("Unknown Job", "Unknown Company")
 
         client = MongoClient(mongodb_uri)
-        db = client["job-search"]  # Fixed: was "jobs", should be "job-search"
+        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
 
         job = db["level-2"].find_one(
             {"_id": object_id},
@@ -791,6 +791,11 @@ async def startup_queue_manager():
         if restored:
             logger.info(f"Restored {len(restored)} interrupted runs to queue")
 
+        # Clean up any stale/orphaned queue items
+        cleanup_stats = await _queue_manager.cleanup_stale_items(max_age_minutes=60)
+        if cleanup_stats.get("total_cleaned", 0) > 0:
+            logger.info(f"Cleaned up stale queue items: {cleanup_stats}")
+
         logger.info("Queue manager initialized with Redis")
 
     except Exception as e:
@@ -975,6 +980,35 @@ async def get_queue_item_by_job(job_id: str):
         return {"found": False, "queue_enabled": True}
 
     return {"found": True, "item": item.to_dict(), "queue_enabled": True}
+
+
+@app.post("/queue/cleanup", dependencies=[Depends(verify_token)])
+async def cleanup_queue(max_age_minutes: int = 60):
+    """
+    Clean up stale/orphaned queue items.
+
+    Removes pending items older than max_age_minutes and orphaned queue entries.
+    """
+    if not _queue_manager:
+        raise HTTPException(status_code=503, detail="Queue manager not available")
+
+    stats = await _queue_manager.cleanup_stale_items(max_age_minutes=max_age_minutes)
+    return {"success": True, "stats": stats}
+
+
+@app.post("/queue/clear", dependencies=[Depends(verify_token)])
+async def clear_queue():
+    """
+    Clear all queue data (admin operation).
+
+    Removes all pending, running, failed, and history items.
+    Use with caution - this cannot be undone.
+    """
+    if not _queue_manager:
+        raise HTTPException(status_code=503, detail="Queue manager not available")
+
+    stats = await _queue_manager.clear_all()
+    return {"success": True, "stats": stats}
 
 
 @app.get("/firecrawl/credits", response_model=FireCrawlCreditsResponse)

@@ -1486,7 +1486,7 @@ async def _get_job_details_for_bulk(job_id: str) -> tuple:
             logger.error("MongoDB client not available for bulk job lookup")
             return ("Unknown Job", "Unknown Company")
 
-        db = client["job-search"]
+        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
         collection = db["level-2"]
 
         # Use asyncio.to_thread for modern async pattern (Python 3.9+)
