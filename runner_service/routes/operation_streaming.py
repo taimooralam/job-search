@@ -47,6 +47,8 @@ class OperationState:
     current_layer: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    # Event for reactive SSE streaming - set when new logs are appended
+    log_event: Optional[asyncio.Event] = None
 
 
 # Global operation state storage (in-memory, similar to _runs in app.py)
@@ -73,6 +75,7 @@ def create_operation_run(job_id: str, operation: str) -> str:
         status="queued",
         started_at=now,
         updated_at=now,
+        log_event=asyncio.Event(),  # Initialize event for reactive SSE streaming
     )
     _operation_runs[run_id] = state
 
@@ -102,6 +105,10 @@ def append_operation_log(run_id: str, message: str) -> None:
 
     state.logs.append(message)
     state.updated_at = datetime.utcnow()
+
+    # Signal SSE generator that new logs are available (reactive streaming)
+    if state.log_event:
+        state.log_event.set()
 
     # Trim logs if exceeding buffer limit
     if len(state.logs) > MAX_LOG_BUFFER:
@@ -137,6 +144,10 @@ def update_operation_status(
         state.result = result
     if error is not None:
         state.error = error
+
+    # Signal SSE generator that status changed (for immediate completion notification)
+    if state.log_event:
+        state.log_event.set()
 
     # Persist status update to Redis
     asyncio.create_task(_persist_operation_meta_to_redis(run_id, state))
@@ -274,7 +285,17 @@ async def stream_operation_logs(run_id: str) -> StreamingResponse:
                 yield f"event: end\ndata: {state.status}\n\n"
                 break
 
-            await asyncio.sleep(0.1)  # 100ms poll interval for responsive updates
+            # Reactive wait: block until new logs arrive OR timeout for status checks
+            # This eliminates the 100ms polling delay - logs appear instantly
+            if state.log_event:
+                try:
+                    await asyncio.wait_for(state.log_event.wait(), timeout=0.5)
+                    state.log_event.clear()  # Reset for next batch of logs
+                except asyncio.TimeoutError:
+                    pass  # Timeout is normal - check status and continue
+            else:
+                # Fallback to polling if no event (e.g., Redis-restored state)
+                await asyncio.sleep(0.1)
 
     return StreamingResponse(
         event_generator(),
