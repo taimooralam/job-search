@@ -3127,6 +3127,25 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ## Completed (Dec 2025)
 
+### WebSocket Mixed Content Security - Traefik HTTPS Infrastructure (2025-12-14)
+- [x] Resolved mixed content security issue preventing WebSocket connections from HTTPS frontend to HTTP VPS backend
+  - **Problem**: Vercel frontend (HTTPS) could not establish `ws://` connections to VPS (HTTP). Browsers block insecure WebSocket protocol from secure pages.
+  - **Solution**: Deployed Traefik reverse proxy with SSL/TLS termination and Let's Encrypt auto-provisioned certificates
+  - **Architecture Changes**:
+    1. **docker-compose.runner.yml**: Added Traefik service with ACME resolver (Let's Encrypt) for automatic SSL certificate provisioning
+    2. **Runner service labels**: Added Traefik routing rules to expose runner service via `https://runner.uqab.digital:443` with automatic HTTP→HTTPS redirect
+    3. **Traefik configuration**: Fixed Docker network routing via `traefik.docker.network=n8n-prod_default` label
+    4. **Vercel environment**: Updated `RUNNER_URL` from `http://72.61.92.76:8000` to `https://runner.uqab.digital`
+  - **Frontend Integration**: Added Q(ws) health indicator in top navigation bar showing real-time WebSocket connection status (green=connected, red=disconnected, gray=disabled)
+  - **Benefits**:
+    - Eliminates mixed content warnings in browser console
+    - Browsers now allow secure `wss://` connections from `https://` pages
+    - User-friendly DNS name instead of IP address
+    - Let's Encrypt certificates auto-renewed by Traefik
+    - Zero changes to backend code (Traefik handles all SSL/TLS)
+  - **Testing**: WebSocket connections verified in browser DevTools; Q(ws) indicator shows correct status; no more security warnings
+  - **Files Modified**: `docker-compose.runner.yml` (Traefik config), `frontend/templates/base.html` (Q(ws) indicator), `frontend/static/js/base.js` (WebSocket status check)
+
 ### MongoDB Master CV Integration Fix
 - [x] Fix CVLoader default MongoDB flag (2025-12-12): Changed CVLoader to use MongoDB master CV by default instead of falling back to local files. This ensures CV edits via the Master CV Editor are properly used in CV generation.
   - **Root Cause**: CVLoader was initialized with `use_mongodb=False`, causing the CV Editor's MongoDB changes to be ignored during generation

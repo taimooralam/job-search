@@ -3542,6 +3542,67 @@ incident reduction and zero downtime for 3 years."
 **Frontend**: Vercel (Flask app proxies to runner)
 **Database**: MongoDB Atlas (PITR enabled but not tested)
 **PDF Service**: Docker container on VPS, internal network
+**Infrastructure**: Traefik reverse proxy for HTTPS/WSS routing (NEW 2025-12-14)
+
+### HTTPS & WebSocket Security (NEW 2025-12-14)
+
+**Problem**: Mixed content security issue - Vercel frontend (HTTPS) could not establish WebSocket connections to VPS via `ws://` protocol. Browsers block `ws://` (insecure) connections from `https://` (secure) pages.
+
+**Solution**: Traefik reverse proxy with SSL/TLS termination
+
+**Architecture**:
+
+```
+User Browser (Vercel HTTPS)
+         │
+         ▼
+HTTPS/WSS Request to runner.uqab.digital
+         │
+         ▼
+Traefik Reverse Proxy (runner.uqab.digital:443)
+  - SSL/TLS termination
+  - Auto-provisioned Let's Encrypt certificates via ACME resolver
+  - Routes HTTPS → HTTP (internal)
+  - Routes WSS → WS (internal)
+         │
+         ▼
+FastAPI Runner Service (VPS 72.61.92.76:8000)
+  - Receives HTTP/WS from Traefik (internal network)
+  - No SSL/TLS overhead
+```
+
+**Configuration**:
+
+**docker-compose.runner.yml**:
+- Traefik service configured with ACME resolver for Let's Encrypt
+- Runner service labeled with Traefik routing rules:
+  - `traefik.http.routers.runner.rule=Host(runner.uqab.digital)`
+  - `traefik.http.routers.runner.entrypoints=websecure`
+  - `traefik.http.routers.runner.tls.certresolver=letsencrypt`
+  - `traefik.docker.network=n8n-prod_default` (ensures routing on correct network)
+
+**Vercel Environment Variables**:
+- `RUNNER_URL` changed from `http://72.61.92.76:8000` to `https://runner.uqab.digital`
+- Frontend automatically uses `wss://` for WebSocket connections (browser HTTPS context)
+
+**Frontend Integration** (`frontend/templates/base.html`):
+- Added Q(ws) health indicator in top navigation
+- Shows WebSocket connection status: green (connected), red (disconnected), gray (disabled)
+- Uses `window.queueWebSocket?.isConnected` to determine status
+- Helps users debug connection issues in real-time
+
+**Key Benefits**:
+1. ✅ Eliminates mixed content security warnings
+2. ✅ Browsers allow `wss://` connections from `https://` pages
+3. ✅ Let's Encrypt certificates auto-renewed by Traefik
+4. ✅ No changes needed to backend code (Traefik handles SSL/TLS)
+5. ✅ User-friendly DNS name (`runner.uqab.digital`) instead of IP address
+
+**Testing**:
+- Open browser DevTools: Check Network → WebSocket connections
+- Verify Connection header: `Connection: upgrade`
+- Verify Protocol: `Sec-WebSocket-Protocol: wss://runner.uqab.digital`
+- Check Q(ws) indicator: Should show green when connected
 
 ---
 
