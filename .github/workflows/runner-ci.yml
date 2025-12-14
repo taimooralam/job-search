@@ -62,8 +62,14 @@ jobs:
             paths: tests/unit/test_layer6_v2_header_generator.py tests/unit/test_layer6_v2_ensemble_header.py
           - name: layer6-v2-role
             paths: tests/unit/test_layer6_v2_role_generator.py tests/unit/test_layer6_v2_role_qa.py tests/unit/test_layer6_v2_grader_improver.py
-          - name: layer6-v2-utils
-            paths: tests/unit/test_layer6_v2_achievement_mapper.py tests/unit/test_layer6_v2_cv_loader.py tests/unit/test_layer6_v2_orchestrator.py tests/unit/test_layer6_v2_stitcher.py
+          - name: layer6-v2-achievement
+            paths: tests/unit/test_layer6_v2_achievement_mapper.py
+          - name: layer6-v2-cvloader
+            paths: tests/unit/test_layer6_v2_cv_loader.py
+          - name: layer6-v2-orchestrator
+            paths: tests/unit/test_layer6_v2_orchestrator.py
+          - name: layer6-v2-stitcher
+            paths: tests/unit/test_layer6_v2_stitcher.py
           - name: layer7
             paths: tests/unit/test_layer7*.py
           - name: analytics
