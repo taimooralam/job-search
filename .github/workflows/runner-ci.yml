@@ -249,9 +249,9 @@ jobs:
       - name: Copy deployment files to VPS (with retry)
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 2
-          max_attempts: 3
-          retry_wait_seconds: 30
+          timeout_minutes: 4
+          max_attempts: 5
+          retry_wait_seconds: 45
           command: |
             # Install SSH client
             which ssh || sudo apt-get update && sudo apt-get install -y openssh-client
@@ -261,34 +261,44 @@ jobs:
             echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
             chmod 600 ~/.ssh/deploy_key
 
-            # Add host to known_hosts (skip verification for CI)
-            ssh-keyscan -t rsa -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+            # Add host to known_hosts (try multiple key types)
+            ssh-keyscan -t ed25519,rsa -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-            # Copy files using scp (30s connection timeout)
+            # Test connectivity before attempting transfer
+            echo "Testing TCP connectivity to VPS port 22..."
+            timeout 60 bash -c "until nc -z -w 5 ${{ secrets.VPS_HOST }} 22; do echo 'Waiting for port 22...'; sleep 5; done"
+            echo "✅ Port 22 reachable"
+
+            # Copy files using scp (60s connection timeout, increased for network variability)
             # Note: master-cv.md removed - now using MongoDB for CV data
-            scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 \
+            scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
               docker-compose.runner.yml \
               ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/
 
             # Copy data directory
-            scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 -r \
+            scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -r \
               data/master-cv \
               ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/data/
 
       - name: Deploy to VPS (with retry)
         uses: nick-fields/retry@v3
         with:
-          timeout_minutes: 5
-          max_attempts: 3
-          retry_wait_seconds: 30
+          timeout_minutes: 6
+          max_attempts: 5
+          retry_wait_seconds: 45
           command: |
             # Setup SSH key
             mkdir -p ~/.ssh
             echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
             chmod 600 ~/.ssh/deploy_key
 
-            # Execute deployment script via SSH (30s connection timeout)
-            ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ServerAliveInterval=10 \
+            # Test connectivity before attempting SSH
+            echo "Testing TCP connectivity to VPS port 22..."
+            timeout 60 bash -c "until nc -z -w 5 ${{ secrets.VPS_HOST }} 22; do echo 'Waiting for port 22...'; sleep 5; done"
+            echo "✅ Port 22 reachable"
+
+            # Execute deployment script via SSH (60s connection timeout, increased for network variability)
+            ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
               ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
 
             cd /root/job-runner
