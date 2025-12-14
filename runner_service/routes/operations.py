@@ -46,6 +46,7 @@ from src.common.model_tiers import (
 from src.services.operation_base import OperationResult
 
 from ..auth import verify_token
+from ..models import BulkOperationRequest, BulkOperationResponse, BulkOperationRunInfo
 from .operation_streaming import (
     create_operation_run,
     get_operation_state,
@@ -1449,3 +1450,514 @@ async def suggest_strengths(
             success=False,
             error=str(e),
         )
+
+
+# =============================================================================
+# Bulk Operation Endpoints (Batch Processing)
+# =============================================================================
+
+
+async def _get_job_details_for_bulk(job_id: str) -> tuple:
+    """
+    Fetch job title and company from MongoDB for bulk operations.
+
+    Returns:
+        Tuple of (job_title, company) or ("Unknown", "Unknown") if not found
+    """
+    try:
+        client = _get_mongo_client()
+        db = client["job-search"]
+        collection = db["level-2"]
+
+        job = await asyncio.get_event_loop().run_in_executor(
+            _db_executor,
+            lambda: collection.find_one(
+                {"_id": ObjectId(job_id)},
+                {"title": 1, "company_name": 1, "company": 1}
+            )
+        )
+
+        if not job:
+            return ("Unknown Job", "Unknown Company")
+
+        title = job.get("title", "Unknown Job")
+        company = job.get("company_name") or job.get("company", "Unknown Company")
+        return (title, company)
+
+    except Exception as e:
+        logger.warning(f"Failed to fetch job details for {job_id}: {e}")
+        return ("Unknown Job", "Unknown Company")
+
+
+def _get_queue_manager():
+    """Get the queue manager instance from the app module."""
+    try:
+        from runner_service.app import _queue_manager
+        return _queue_manager
+    except ImportError:
+        return None
+
+
+@router.post(
+    "/full-extraction/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start full extraction for multiple jobs",
+    description="Queue multiple jobs for extraction (Layer 1.4 + 2 + 4). Returns run_ids for individual log streams.",
+)
+async def full_extraction_bulk(
+    request: BulkOperationRequest,
+    background_tasks: BackgroundTasks,
+) -> BulkOperationResponse:
+    """
+    Start full extraction for multiple jobs with queue integration.
+
+    Each job is added to the Redis queue (appears in Pipeline Queue UI),
+    and executes asynchronously. Returns immediately with run_ids.
+    """
+    operation = "full-extraction"
+    tier = _validate_tier(request.tier)
+    responses: List[BulkOperationRunInfo] = []
+    queue_manager = _get_queue_manager()
+
+    for job_id in request.job_ids:
+        # Create operation run for log tracking
+        run_id = create_operation_run(job_id, operation)
+        append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+        append_operation_log(run_id, f"Tier: {tier.value}, Use LLM: {request.use_llm}")
+
+        # Add to Redis queue if available (shows in Pipeline Queue UI)
+        queue_id = None
+        if queue_manager and queue_manager.is_connected:
+            try:
+                job_title, company = await _get_job_details_for_bulk(job_id)
+                queue_item = await queue_manager.enqueue(
+                    job_id=job_id,
+                    job_title=job_title,
+                    company=company,
+                    operation=operation,
+                    processing_tier=tier.value,
+                )
+                queue_id = queue_item.queue_id
+
+                # Link run_id to queue item (enables "View Logs" button)
+                await queue_manager.link_run_id(queue_id, run_id)
+                append_operation_log(run_id, f"📋 Queued as {queue_id}")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
+                append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
+
+        # Add background task for execution
+        background_tasks.add_task(
+            _execute_extraction_bulk_task,
+            run_id=run_id,
+            job_id=job_id,
+            tier=tier,
+            use_llm=request.use_llm,
+            queue_id=queue_id,
+        )
+
+        responses.append(BulkOperationRunInfo(
+            run_id=run_id,
+            job_id=job_id,
+            log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+            status="queued",
+        ))
+
+    logger.info(f"Bulk {operation}: queued {len(responses)} jobs")
+    return BulkOperationResponse(runs=responses, total_count=len(responses))
+
+
+async def _start_queue_item(queue_manager, queue_id: str, log_cb) -> bool:
+    """Move queue item from pending to running and broadcast WebSocket event."""
+    from runner_service.queue.models import QueueItemStatus
+
+    try:
+        if not queue_manager or not queue_manager.is_connected:
+            return False
+
+        item = await queue_manager.get_item(queue_id)
+        if not item:
+            return False
+
+        # Remove from pending queue
+        await queue_manager._redis.lrem(queue_manager.PENDING_KEY, 1, queue_id)
+
+        # Add to running set
+        await queue_manager._redis.sadd(queue_manager.RUNNING_KEY, queue_id)
+
+        # Update item status
+        item.status = QueueItemStatus.RUNNING
+        item.started_at = datetime.utcnow()
+        item.position = 0
+        await queue_manager._update_item(item)
+
+        # Publish WebSocket event
+        await queue_manager._publish_event("started", item)
+
+        log_cb("🚀 Started processing")
+        return True
+
+    except Exception as e:
+        logger.warning(f"Failed to start queue item {queue_id}: {e}")
+        return False
+
+
+async def _execute_extraction_bulk_task(
+    run_id: str,
+    job_id: str,
+    tier: ModelTier,
+    use_llm: bool,
+    queue_id: Optional[str],
+):
+    """Execute extraction with queue status updates."""
+    from src.services.full_extraction_service import FullExtractionService
+
+    log_cb = create_log_callback(run_id)
+    layer_cb = create_layer_callback(run_id)
+    queue_manager = _get_queue_manager()
+
+    try:
+        # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        if queue_id:
+            await _start_queue_item(queue_manager, queue_id, log_cb)
+
+        update_operation_status(run_id, "running")
+
+        # Validate job exists
+        log_cb("🔍 Validating job exists...")
+        try:
+            await _validate_job_exists_async(job_id)
+            log_cb("✅ Job validated")
+        except HTTPException as e:
+            log_cb(f"❌ Job validation failed: {e.detail}")
+            update_operation_status(run_id, "failed", error=e.detail)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                await queue_manager.fail(queue_id, e.detail)
+            return
+
+        # Execute extraction
+        service = FullExtractionService()
+        result = await service.execute(
+            job_id=job_id,
+            tier=tier,
+            use_llm=use_llm,
+            progress_callback=layer_cb,
+        )
+
+        # Update status
+        update_operation_status(run_id, "completed" if result.success else "failed", result={
+            "success": result.success,
+            "data": result.data,
+            "cost_usd": result.cost_usd,
+            "run_id": result.run_id,
+            "model_used": result.model_used,
+            "duration_ms": result.duration_ms,
+            "error": result.error,
+        })
+        log_cb("✅ Extraction complete" if result.success else f"❌ Extraction failed: {result.error}")
+
+        # Complete queue item (broadcasts WebSocket event)
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                if result.success:
+                    await queue_manager.complete(queue_id)
+                else:
+                    await queue_manager.fail(queue_id, result.error or "Extraction failed")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+
+    except Exception as e:
+        logger.exception(f"[{run_id[:16]}] Bulk extraction failed: {e}")
+        log_cb(f"❌ Error: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                await queue_manager.fail(queue_id, str(e))
+            except Exception:
+                pass
+
+
+@router.post(
+    "/research-company/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start company research for multiple jobs",
+    description="Queue multiple jobs for company research. Returns run_ids for individual log streams.",
+)
+async def research_company_bulk(
+    request: BulkOperationRequest,
+    background_tasks: BackgroundTasks,
+) -> BulkOperationResponse:
+    """
+    Start company research for multiple jobs with queue integration.
+
+    Each job is added to the Redis queue (appears in Pipeline Queue UI),
+    and executes asynchronously. Returns immediately with run_ids.
+    """
+    operation = "research-company"
+    tier = _validate_tier(request.tier)
+    responses: List[BulkOperationRunInfo] = []
+    queue_manager = _get_queue_manager()
+
+    for job_id in request.job_ids:
+        # Create operation run for log tracking
+        run_id = create_operation_run(job_id, operation)
+        append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+        append_operation_log(run_id, f"Tier: {tier.value}, Force refresh: {request.force_refresh}")
+
+        # Add to Redis queue if available
+        queue_id = None
+        if queue_manager and queue_manager.is_connected:
+            try:
+                job_title, company = await _get_job_details_for_bulk(job_id)
+                queue_item = await queue_manager.enqueue(
+                    job_id=job_id,
+                    job_title=job_title,
+                    company=company,
+                    operation=operation,
+                    processing_tier=tier.value,
+                )
+                queue_id = queue_item.queue_id
+                await queue_manager.link_run_id(queue_id, run_id)
+                append_operation_log(run_id, f"📋 Queued as {queue_id}")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
+                append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
+
+        # Add background task for execution
+        background_tasks.add_task(
+            _execute_research_bulk_task,
+            run_id=run_id,
+            job_id=job_id,
+            tier=tier,
+            force_refresh=request.force_refresh or False,
+            queue_id=queue_id,
+        )
+
+        responses.append(BulkOperationRunInfo(
+            run_id=run_id,
+            job_id=job_id,
+            log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+            status="queued",
+        ))
+
+    logger.info(f"Bulk {operation}: queued {len(responses)} jobs")
+    return BulkOperationResponse(runs=responses, total_count=len(responses))
+
+
+async def _execute_research_bulk_task(
+    run_id: str,
+    job_id: str,
+    tier: ModelTier,
+    force_refresh: bool,
+    queue_id: Optional[str],
+):
+    """Execute company research with queue status updates."""
+    from src.services.company_research_service import CompanyResearchService
+
+    log_cb = create_log_callback(run_id)
+    layer_cb = create_layer_callback(run_id)
+    queue_manager = _get_queue_manager()
+
+    try:
+        # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        if queue_id:
+            await _start_queue_item(queue_manager, queue_id, log_cb)
+
+        update_operation_status(run_id, "running")
+
+        # Validate job exists
+        log_cb("🔍 Validating job exists...")
+        try:
+            await _validate_job_exists_async(job_id)
+            log_cb("✅ Job validated")
+        except HTTPException as e:
+            log_cb(f"❌ Job validation failed: {e.detail}")
+            update_operation_status(run_id, "failed", error=e.detail)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                await queue_manager.fail(queue_id, e.detail)
+            return
+
+        # Execute research
+        service = CompanyResearchService()
+        try:
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                force_refresh=force_refresh,
+                progress_callback=layer_cb,
+            )
+
+            update_operation_status(run_id, "completed" if result.success else "failed", result={
+                "success": result.success,
+                "data": result.data,
+                "cost_usd": result.cost_usd,
+                "run_id": result.run_id,
+                "model_used": result.model_used,
+                "duration_ms": result.duration_ms,
+                "error": result.error,
+            })
+            log_cb("✅ Research complete" if result.success else f"❌ Research failed: {result.error}")
+
+            # Complete queue item
+            if queue_id and queue_manager and queue_manager.is_connected:
+                try:
+                    if result.success:
+                        await queue_manager.complete(queue_id)
+                    else:
+                        await queue_manager.fail(queue_id, result.error or "Research failed")
+                except Exception as e:
+                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+
+        finally:
+            service.close()
+
+    except Exception as e:
+        logger.exception(f"[{run_id[:16]}] Bulk research failed: {e}")
+        log_cb(f"❌ Error: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                await queue_manager.fail(queue_id, str(e))
+            except Exception:
+                pass
+
+
+@router.post(
+    "/generate-cv/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start CV generation for multiple jobs",
+    description="Queue multiple jobs for CV generation. Returns run_ids for individual log streams.",
+)
+async def generate_cv_bulk(
+    request: BulkOperationRequest,
+    background_tasks: BackgroundTasks,
+) -> BulkOperationResponse:
+    """
+    Start CV generation for multiple jobs with queue integration.
+
+    Each job is added to the Redis queue (appears in Pipeline Queue UI),
+    and executes asynchronously. Returns immediately with run_ids.
+    """
+    operation = "generate-cv"
+    tier = _validate_tier(request.tier)
+    responses: List[BulkOperationRunInfo] = []
+    queue_manager = _get_queue_manager()
+
+    for job_id in request.job_ids:
+        # Create operation run for log tracking
+        run_id = create_operation_run(job_id, operation)
+        append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+        append_operation_log(run_id, f"Tier: {tier.value}")
+
+        # Add to Redis queue if available
+        queue_id = None
+        if queue_manager and queue_manager.is_connected:
+            try:
+                job_title, company = await _get_job_details_for_bulk(job_id)
+                queue_item = await queue_manager.enqueue(
+                    job_id=job_id,
+                    job_title=job_title,
+                    company=company,
+                    operation=operation,
+                    processing_tier=tier.value,
+                )
+                queue_id = queue_item.queue_id
+                await queue_manager.link_run_id(queue_id, run_id)
+                append_operation_log(run_id, f"📋 Queued as {queue_id}")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
+                append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
+
+        # Add background task for execution
+        background_tasks.add_task(
+            _execute_cv_bulk_task,
+            run_id=run_id,
+            job_id=job_id,
+            tier=tier,
+            queue_id=queue_id,
+        )
+
+        responses.append(BulkOperationRunInfo(
+            run_id=run_id,
+            job_id=job_id,
+            log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+            status="queued",
+        ))
+
+    logger.info(f"Bulk {operation}: queued {len(responses)} jobs")
+    return BulkOperationResponse(runs=responses, total_count=len(responses))
+
+
+async def _execute_cv_bulk_task(
+    run_id: str,
+    job_id: str,
+    tier: ModelTier,
+    queue_id: Optional[str],
+):
+    """Execute CV generation with queue status updates."""
+    from src.services.cv_generation_service import CVGenerationService
+
+    log_cb = create_log_callback(run_id)
+    layer_cb = create_layer_callback(run_id)
+    queue_manager = _get_queue_manager()
+
+    try:
+        # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        if queue_id:
+            await _start_queue_item(queue_manager, queue_id, log_cb)
+
+        update_operation_status(run_id, "running")
+
+        # Validate job exists
+        log_cb("🔍 Validating job exists...")
+        try:
+            await _validate_job_exists_async(job_id)
+            log_cb("✅ Job validated")
+        except HTTPException as e:
+            log_cb(f"❌ Job validation failed: {e.detail}")
+            update_operation_status(run_id, "failed", error=e.detail)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                await queue_manager.fail(queue_id, e.detail)
+            return
+
+        # Execute CV generation
+        service = CVGenerationService()
+        result = await service.execute(
+            job_id=job_id,
+            tier=tier,
+            progress_callback=layer_cb,
+        )
+
+        update_operation_status(run_id, "completed" if result.success else "failed", result={
+            "success": result.success,
+            "data": result.data,
+            "cost_usd": result.cost_usd,
+            "run_id": result.run_id,
+            "model_used": result.model_used,
+            "duration_ms": result.duration_ms,
+            "error": result.error,
+        })
+        log_cb("✅ CV generation complete" if result.success else f"❌ CV generation failed: {result.error}")
+
+        # Complete queue item
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                if result.success:
+                    await queue_manager.complete(queue_id)
+                else:
+                    await queue_manager.fail(queue_id, result.error or "CV generation failed")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+
+    except Exception as e:
+        logger.exception(f"[{run_id[:16]}] Bulk CV generation failed: {e}")
+        log_cb(f"❌ Error: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                await queue_manager.fail(queue_id, str(e))
+            except Exception:
+                pass
