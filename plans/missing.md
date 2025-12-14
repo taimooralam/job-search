@@ -67,6 +67,16 @@
 
 ---
 
+**ENHANCEMENT: Batch Extract JD Uses Runner Bulk Endpoint (2025-12-14)**:
+- **Change**: "Extract JD" from batch page now uses runner bulk endpoint
+- **File Modified**: `frontend/templates/batch_processing.html` (line 619-620)
+- **Before**: `if (operation === 'full-extraction')`
+- **After**: `if (operation === 'full-extraction' || operation === 'process-jd')`
+- **Impact**: Extract JD from batch now runs concurrently via runner service, matching full-extraction behavior
+- **Commit**: `53fd501a`
+
+---
+
 ### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
 
 **BUG FIX 11: Clipboard copy not working in non-secure contexts - FIXED**:
@@ -1257,19 +1267,15 @@ Skipped tests are A/B comparison tests for LLM output quality, not implementatio
 
 ---
 
-### GAP-053: Phase 6 - PDF Service Separation
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: PDF generation tightly coupled to runner service; scalability limited
+### GAP-053: Phase 6 - PDF Service Separation ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: COMPLETE (2025-12-14) | **Effort**: N/A (already done)
+**Impact**: PDF service now runs as separate container
 
-**Description**: Separate PDF generation from runner service into dedicated Docker container for better separation of concerns and independent scaling.
-
-**Benefits**:
-- Clear separation of concerns (pipeline ≠ PDF rendering)
-- Independent scaling and resource management
-- Easy to add new document types (cover letters, dossiers)
-- PDF service isolated, can restart without affecting pipeline
-
-**Plan**: `plans/phase6-pdf-service-separation.md`
+**Implementation** (verified in docker-compose.runner.yml):
+- Separate `pdf-service` container (lines 59-81)
+- Internal network only (no external port exposure)
+- Health checks with 90s start period for Playwright
+- Runner depends on pdf-service being healthy
 
 ---
 
