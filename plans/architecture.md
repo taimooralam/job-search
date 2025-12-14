@@ -1083,6 +1083,33 @@ sessionStorage restored on next page load → logs persist
 - Safari: Full support
 - Mobile browsers: Responsive layout, touch-friendly buttons
 
+### Live Status Badges (Real-Time Pipeline Status)
+
+**Component**: `frontend/static/js/live-status-badge.js`
+
+Alpine.js component showing real-time pipeline status on job table rows.
+
+**States**:
+- `pending` (yellow) - Job queued, shows position
+- `running` (blue, pulsing) - Pipeline executing, shows run ID
+- `completed` (green, fades after 5s) - Pipeline finished successfully
+- `failed` (red) - Pipeline error, click to view
+
+**Integration**:
+- Included in `job_rows.html` (line 176) and `batch_job_rows.html` (line 193)
+- Listens to queue store via `$watch('$store.queue.pending', ...)`
+- Dispatches click to `openCLI()` for log viewing
+
+### On-Demand Log Fetching (NEW - 2025-12-14)
+
+**Method**: `fetchRunLogs(runId, jobId, jobTitle)` in cli-panel.js
+
+When clicking a live status badge for a past run:
+1. Check if logs exist in memory (`$store.cli.runs[runId]`)
+2. If not, fetch from `/api/runner/operations/{runId}/status`
+3. Parse API response into run entry format
+4. Add placeholder if logs unavailable (runner restarted)
+
 ---
 
 ### Master CV Editor Page (NEW - 2025-12-10)
@@ -3603,6 +3630,51 @@ FastAPI Runner Service (VPS 72.61.92.76:8000)
 - Verify Connection header: `Connection: upgrade`
 - Verify Protocol: `Sec-WebSocket-Protocol: wss://runner.uqab.digital`
 - Check Q(ws) indicator: Should show green when connected
+
+**Authentication Methods** (commit b04c8314):
+1. **Authorization Header** (preferred for server-side proxies like Flask)
+   - Format: `Authorization: Bearer <RUNNER_API_SECRET>`
+2. **Query Parameter** (for browser direct connections)
+   - Format: `?token=<RUNNER_API_SECRET>`
+   - Required because browser WebSocket API cannot set custom headers
+
+---
+
+## n8n Infrastructure (VPS Integration)
+
+### Purpose
+The runner service shares infrastructure with an existing n8n workflow automation installation on the VPS. This is a **decoupled architecture** where:
+
+1. **Shared Redis**: Runner uses the same Redis instance (`n8n-prod_default` network) for queue state
+2. **Independent Execution**: Pipeline runs independently of n8n workflows
+3. **Future Integration**: n8n webhooks can trigger pipeline runs via runner API
+
+### Network Configuration
+
+```yaml
+# docker-compose.runner.yml (lines 83-89)
+networks:
+  job-pipeline:
+    driver: bridge
+  n8n-prod_default:
+    external: true  # Connects to existing n8n network
+```
+
+### Why This Matters
+
+1. **Redis Sharing**: Queue state persists in production Redis (DB 5), enabling:
+   - Queue visibility across service restarts
+   - Potential n8n workflow triggers based on queue events
+
+2. **Decoupled Design**: Pipeline logic is independent - n8n can be removed without affecting the runner
+
+3. **Webhook Potential**: n8n can call `/api/runner/jobs/run` to trigger pipelines from external events (LinkedIn alerts, email notifications, etc.)
+
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `REDIS_URL` | Redis connection (shared with n8n) | `redis://n8n-redis:6379` |
 
 ---
 
