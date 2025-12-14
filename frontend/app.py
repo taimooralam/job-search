@@ -1492,8 +1492,12 @@ def get_health():
                 "url": runner_url,
                 "active_runs": runner_data.get("active_runs", 0),
                 "max_concurrency": runner_data.get("max_concurrency", 3),
-                "capacity_percent": int((runner_data.get("active_runs", 0) / max(runner_data.get("max_concurrency", 3), 1)) * 100)
+                "capacity_percent": int((runner_data.get("active_runs", 0) / max(runner_data.get("max_concurrency", 3), 1)) * 100),
+                "pdf_service_status": runner_data.get("pdf_service_status"),
+                "pdf_service_error": runner_data.get("pdf_service_error")
             }
+            # Also expose raw runner response for frontend health indicator
+            health_data["runner_response"] = runner_data
             # Check if runner is at capacity (degraded state)
             if health_data["runner"]["capacity_percent"] >= 100:
                 health_data["runner"]["status"] = "busy"
