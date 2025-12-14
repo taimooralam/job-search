@@ -150,9 +150,14 @@ if os.getenv("VERCEL") == "1":
 def inject_globals():
     """Inject version and config info into all templates."""
     # Generate runner WebSocket URL for direct connection (needed for Vercel)
+    # Browser WebSocket API cannot set Authorization headers, so we pass token as query param
     runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    runner_token = os.getenv("RUNNER_API_SECRET", "")
     runner_ws_url = runner_url.replace("http://", "ws://").replace("https://", "wss://")
     runner_ws_url = f"{runner_ws_url}/ws/queue"
+    # Add token as query parameter for browser direct connections
+    if runner_token:
+        runner_ws_url = f"{runner_ws_url}?token={runner_token}"
 
     return {
         "version": APP_VERSION,
