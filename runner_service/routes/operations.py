@@ -1685,7 +1685,7 @@ async def _execute_extraction_bulk_task(
         if queue_id and queue_manager and queue_manager.is_connected:
             try:
                 if result.success:
-                    await queue_manager.complete(queue_id)
+                    await queue_manager.complete(queue_id, success=True)
                 else:
                     await queue_manager.fail(queue_id, result.error or "Extraction failed")
             except Exception as e:
@@ -1828,7 +1828,7 @@ async def _execute_research_bulk_task(
             if queue_id and queue_manager and queue_manager.is_connected:
                 try:
                     if result.success:
-                        await queue_manager.complete(queue_id)
+                        await queue_manager.complete(queue_id, success=True)
                     else:
                         await queue_manager.fail(queue_id, result.error or "Research failed")
                 except Exception as e:
@@ -1970,7 +1970,7 @@ async def _execute_cv_bulk_task(
         if queue_id and queue_manager and queue_manager.is_connected:
             try:
                 if result.success:
-                    await queue_manager.complete(queue_id)
+                    await queue_manager.complete(queue_id, success=True)
                 else:
                     await queue_manager.fail(queue_id, result.error or "CV generation failed")
             except Exception as e:
