@@ -80,8 +80,8 @@
                         >
                             <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium truncate" style="color: var(--text-primary);" x-text="$store.queue.truncate(item.job_title, 25)"></p>
-                                <p class="text-xs truncate" style="color: var(--text-tertiary);" x-text="item.company"></p>
+                                <p class="text-sm font-medium truncate" style="color: var(--text-primary);" x-text="$store.queue.truncate(item.job_title || 'Loading...', 25)"></p>
+                                <p class="text-xs truncate" style="color: var(--text-tertiary);" x-text="item.company || 'Job ID: ' + (item.job_id || '').slice(-8)"></p>
                             </div>
                             <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--bg-indigo-subtle, #e0e7ff); color: var(--text-indigo, #4f46e5);" x-text="item.processing_tier"></span>
                         </a>
@@ -100,8 +100,8 @@
                             <div class="flex items-center gap-2 p-2 rounded-md group" style="background-color: var(--bg-default);">
                                 <span class="text-xs font-mono w-6 text-center" style="color: var(--text-tertiary);" x-text="'#' + (index + 1)"></span>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm truncate" style="color: var(--text-secondary);" x-text="$store.queue.truncate(item.job_title, 20)"></p>
-                                    <p class="text-xs truncate" style="color: var(--text-tertiary);" x-text="item.company"></p>
+                                    <p class="text-sm truncate" style="color: var(--text-secondary);" x-text="$store.queue.truncate(item.job_title || 'Queued Job', 20)"></p>
+                                    <p class="text-xs truncate" style="color: var(--text-tertiary);" x-text="item.company || 'Job ID: ' + (item.job_id || '').slice(-8)"></p>
                                 </div>
                                 <button
                                     @click.prevent.stop="$store.queue.cancel(item.queue_id)"
