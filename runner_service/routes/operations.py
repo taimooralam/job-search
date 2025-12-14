@@ -1467,30 +1467,49 @@ async def _get_job_details_for_bulk(job_id: str) -> tuple:
     Fetch job title and company from MongoDB for bulk operations.
 
     Returns:
-        Tuple of (job_title, company) or ("Unknown", "Unknown") if not found
+        Tuple of (job_title, company) or ("Unknown Job", "Unknown Company") if not found
     """
     try:
+        # Validate ObjectId format first
+        if not job_id or len(job_id) != 24:
+            logger.warning(f"Invalid job_id format for bulk lookup: {job_id}")
+            return ("Unknown Job", "Unknown Company")
+
+        try:
+            oid = ObjectId(job_id)
+        except Exception as e:
+            logger.warning(f"Failed to convert job_id to ObjectId: {job_id} - {e}")
+            return ("Unknown Job", "Unknown Company")
+
         client = _get_mongo_client()
+        if not client:
+            logger.error("MongoDB client not available for bulk job lookup")
+            return ("Unknown Job", "Unknown Company")
+
         db = client["job-search"]
         collection = db["level-2"]
 
-        job = await asyncio.get_event_loop().run_in_executor(
-            _db_executor,
-            lambda: collection.find_one(
-                {"_id": ObjectId(job_id)},
+        # Use asyncio.to_thread for modern async pattern (Python 3.9+)
+        def sync_find():
+            return collection.find_one(
+                {"_id": oid},
                 {"title": 1, "company_name": 1, "company": 1}
             )
-        )
+
+        job = await asyncio.to_thread(sync_find)
 
         if not job:
+            logger.debug(f"Job not found in MongoDB for bulk lookup: {job_id}")
             return ("Unknown Job", "Unknown Company")
 
-        title = job.get("title", "Unknown Job")
-        company = job.get("company_name") or job.get("company", "Unknown Company")
+        title = job.get("title") or "Unknown Job"
+        company = job.get("company_name") or job.get("company") or "Unknown Company"
+
+        logger.debug(f"Bulk lookup for {job_id}: title='{title}', company='{company}'")
         return (title, company)
 
     except Exception as e:
-        logger.warning(f"Failed to fetch job details for {job_id}: {e}")
+        logger.exception(f"Failed to fetch job details for {job_id}: {e}")
         return ("Unknown Job", "Unknown Company")
 
 
