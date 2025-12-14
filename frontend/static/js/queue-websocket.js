@@ -113,6 +113,13 @@ class QueueWebSocket {
 
             case 'error':
                 console.error('[QueueWS] Server error:', payload.message);
+                // Check for permanent errors that shouldn't trigger reconnection
+                if (payload.message?.includes('not configured') ||
+                    payload.message?.includes('Redis') ||
+                    payload.code === 'SERVICE_UNAVAILABLE') {
+                    console.warn('[QueueWS] Permanent error detected, disabling reconnection');
+                    this.shouldReconnect = false;
+                }
                 this.emit('error', payload);
                 break;
 
