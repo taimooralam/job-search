@@ -616,7 +616,8 @@
             showToast(`Starting ${operationNames[operation]} for ${count} jobs...`, 'info');
 
             // For batch operations, use the bulk runner endpoint
-            if (operation === 'full-extraction') {
+            // process-jd maps to full-extraction (JD + pain points + fit scoring)
+            if (operation === 'full-extraction' || operation === 'process-jd') {
                 const response = await fetch('/api/runner/jobs/run-bulk', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

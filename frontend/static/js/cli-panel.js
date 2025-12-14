@@ -281,6 +281,108 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Fetch and add run logs from runner API (on-demand)
+         * Used when clicking indicator for a run whose logs aren't in memory
+         * @param {string} runId - The run ID
+         * @param {string} jobId - The job ID
+         * @param {string} jobTitle - Optional job title
+         * @returns {Promise<boolean>} - True if logs were fetched successfully
+         */
+        async fetchRunLogs(runId, jobId, jobTitle = null) {
+            // If already in memory, just switch to it
+            if (this.runs[runId]) {
+                this.activeRunId = runId;
+                this.expanded = true;
+                this._saveState();
+                return true;
+            }
+
+            try {
+                const response = await fetch(`/api/runner/operations/${runId}/status`);
+
+                if (!response.ok) {
+                    // Logs no longer available
+                    console.warn(`[CLI] Logs not available for run ${runId}: ${response.status}`);
+                    this._addUnavailableRunPlaceholder(runId, jobId, jobTitle);
+                    return false;
+                }
+
+                const data = await response.json();
+
+                // Create run entry from API response
+                this.runs[runId] = {
+                    jobId,
+                    jobTitle: this._truncateTitle(jobTitle || data.job_title || `Job ${jobId?.slice(-6) || 'Unknown'}`),
+                    action: data.operation || 'pipeline',
+                    status: data.status === 'completed' ? 'success' : (data.status || 'unknown'),
+                    logs: (data.logs || []).map(log => ({
+                        ts: Date.now(),
+                        type: 'info',
+                        text: typeof log === 'string' ? log : log.text || JSON.stringify(log)
+                    })),
+                    layerStatus: data.layer_status || {},
+                    startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
+                    completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
+                    error: data.error || null
+                };
+
+                // Add error log if present
+                if (data.error) {
+                    this.runs[runId].logs.push({
+                        ts: Date.now(),
+                        type: 'error',
+                        text: `Error: ${data.error}`
+                    });
+                }
+
+                // Add to front of run order
+                this.runOrder.unshift(runId);
+
+                // Switch to the new tab
+                this.activeRunId = runId;
+                this.expanded = true;
+
+                // Cleanup old runs
+                this._cleanup();
+
+                // Save immediately
+                this._saveStateImmediate();
+
+                return true;
+            } catch (err) {
+                console.error('[CLI] Failed to fetch run logs:', err);
+                this._addUnavailableRunPlaceholder(runId, jobId, jobTitle);
+                return false;
+            }
+        },
+
+        /**
+         * Add a placeholder tab when logs are unavailable
+         * @private
+         */
+        _addUnavailableRunPlaceholder(runId, jobId, jobTitle) {
+            this.runs[runId] = {
+                jobId,
+                jobTitle: this._truncateTitle(jobTitle || `Job ${jobId?.slice(-6) || 'Unknown'}`),
+                action: 'pipeline',
+                status: 'unknown',
+                logs: [{
+                    ts: Date.now(),
+                    type: 'warning',
+                    text: 'Logs are no longer available. The runner service may have restarted.'
+                }],
+                layerStatus: {},
+                startedAt: Date.now(),
+                completedAt: null
+            };
+
+            this.runOrder.unshift(runId);
+            this.activeRunId = runId;
+            this.expanded = true;
+            this._saveStateImmediate();
+        },
+
+        /**
          * Start a new pipeline run
          * @param {Object} detail - { runId, jobId, jobTitle, action }
          */
