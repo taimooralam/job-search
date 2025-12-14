@@ -39,6 +39,16 @@ class QueueWebSocket {
     }
 
     /**
+     * Check if WebSocket connection would cause mixed content error
+     * (ws:// from https:// page is blocked by browsers)
+     */
+    wouldCauseMixedContent(wsUrl) {
+        const isSecurePage = window.location.protocol === 'https:';
+        const isInsecureWs = wsUrl.startsWith('ws://');
+        return isSecurePage && isInsecureWs;
+    }
+
+    /**
      * Connect to WebSocket server
      */
     connect() {
@@ -49,6 +59,16 @@ class QueueWebSocket {
         this.isConnecting = true;
         const url = this.getWsUrl();
         console.log('[QueueWS] Connecting to:', url);
+
+        // Check for mixed content (https page + ws:// URL)
+        if (this.wouldCauseMixedContent(url)) {
+            console.warn('[QueueWS] Mixed content blocked: Cannot connect to ws:// from https:// page.');
+            console.warn('[QueueWS] Real-time queue updates disabled. Runner needs HTTPS/WSS for this feature.');
+            this.isConnecting = false;
+            this.shouldReconnect = false;  // Don't keep retrying
+            this.emit('error', { message: 'Mixed content: WebSocket requires HTTPS on runner', code: 'MIXED_CONTENT' });
+            return;
+        }
 
         try {
             this.ws = new WebSocket(url);
