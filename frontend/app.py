@@ -28,14 +28,19 @@ from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 # Load environment variables
 load_dotenv()
 
-# Import version (from parent directory)
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Import version - try local first (works on Vercel), then parent directory
 try:
     from version import __version__
     APP_VERSION = __version__
 except ImportError:
-    APP_VERSION = "dev"
+    # Fallback to parent directory for backward compatibility
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        from version import __version__
+        APP_VERSION = __version__
+    except ImportError:
+        APP_VERSION = "dev"
 
 app = Flask(__name__)
 
