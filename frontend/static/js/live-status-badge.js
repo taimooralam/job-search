@@ -86,13 +86,24 @@ function liveStatusBadge(jobId) {
             }
         },
 
-        openCLI() {
+        async openCLI() {
             if (window.Alpine && Alpine.store('cli')) {
                 Alpine.store('cli').showPanel();
 
-                // If we have a run_id, add/switch to that tab
+                // If we have a run_id, try to show logs
                 if (this.runId) {
-                    Alpine.store('cli').addTab(this.jobId, this.runId);
+                    const cliStore = Alpine.store('cli');
+
+                    // If logs are in memory, just switch to them
+                    if (cliStore.runs[this.runId]) {
+                        cliStore.activeRunId = this.runId;
+                    } else {
+                        // Fetch logs on-demand from API
+                        await cliStore.fetchRunLogs(this.runId, this.jobId);
+                    }
+                } else {
+                    // No run ID, show queued tab placeholder
+                    Alpine.store('cli').addTab(this.jobId);
                 }
             }
         },
