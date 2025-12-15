@@ -3294,7 +3294,44 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 - **Verification**: "View Logs" button appears in batch expanded view and opens correct logs
 - **Impact**: Users can view logs for any job in batch processing without leaving batch view
 
-**BUGS FIX 8-9: Missing elements in rendered HTML & dark mode styling - FIXED via Bug Fix 1**:
+**BUG FIX 8: Progress Badges Not Updating in Batch View - FIXED (2025-12-15)**:
+- **Issue**: Batch processing status badges (JD, RS, CV) were not reflecting actual pipeline progress; showing incorrect field names
+- **Root Cause**: Badge field checks in `batch_job_rows.html` were checking wrong MongoDB field names:
+  - JD badge: only checked `processed_jd` (missing `extracted_jd`)
+  - RS badge: checked `rs_results` (field doesn't exist; should be `company_research` or `role_skills`)
+  - CV badge: checked `cv_results` (field doesn't exist; should be `generated_cv` or `cv_output`)
+- **Fix Applied**:
+  1. Updated JD badge check from `processed_jd` to `extracted_jd OR processed_jd`
+  2. Updated RS badge check from `rs_results` to `company_research OR role_skills`
+  3. Updated CV badge check from `cv_results` to `generated_cv OR cv_output`
+- **Files Modified**: `frontend/templates/partials/batch_job_rows.html`
+- **Verification**: Badges now correctly display when pipeline operations complete; status reflects actual MongoDB data
+- **Impact**: Users have accurate real-time visibility into batch job processing status without confusion about incomplete operations
+
+**BUG FIX 9: SSE Logs Not Streaming in Bulk Operations - FIXED (2025-12-15)**:
+- **Issue**: When running bulk operations from batch processing page, SSE logs did not stream to CLI panel; logs appeared offline
+- **Root Cause**: Batch operations from `/batch-processing` page did not trigger SSE stream connection; missing event dispatch to Alpine.js store
+- **Fix Applied**:
+  1. Added `connectBatchSSEStream()` function in `frontend/templates/batch_processing.html` to establish EventSource connection for bulk operations
+  2. Added synthetic queue event dispatch after stream connection to update Alpine.js store with operation status
+  3. SSE streams now properly connected when running Research, Generate CV, or Scrape-and-Fill from batch view
+- **Files Modified**: `frontend/templates/batch_processing.html`
+- **Verification**: SSE logs stream in real-time during batch operations; CLI panel updates and shows progress; EventSource connection established successfully
+- **Impact**: Users can monitor bulk job processing in real-time with live log streaming, matching single-job operation experience
+
+**BUG FIX 10: No Debug Logging for Batch Operations - FIXED (2025-12-15)**:
+- **Issue**: Operators had no visibility into batch processing internals; SSE connection failures and queue issues were silent
+- **Fix Applied**:
+  1. Created new file `frontend/static/js/batch-debug.js` (NEW - 100+ lines) with BatchDebug utility
+  2. Implemented category-based logging: SSE, QUEUE, BATCH, PROGRESS
+  3. Added localStorage persistence for logs across page refreshes
+  4. Enabled via browser console: `BatchDebug.enable()`
+  5. Logs saved to `localStorage.batch_debug_logs` for inspection
+- **Files Modified**: `frontend/static/js/batch-debug.js` (NEW), `frontend/templates/batch_processing.html` (included script)
+- **Verification**: Debug logs available in browser console; persisted logs viewable via `localStorage.getItem('batch_debug_logs')`
+- **Impact**: Operators can troubleshoot batch processing issues independently; debug logs help identify SSE connection, queue, and progress update problems
+
+**BUGS FIX 11-12: Missing elements in rendered HTML & dark mode styling - FIXED via Bug Fix 1**:
 - **Issue**: Some HTML elements not rendering; dark mode CSS variables not applying
 - **Root Cause**: Same as Bug Fix 1 - missing Alpine collapse plugin prevented proper DOM initialization of dependent elements; CSS custom properties couldn't cascade properly with broken DOM structure
 - **Fix Applied**: Resolved by adding Alpine collapse plugin (see Bug Fix 1)
