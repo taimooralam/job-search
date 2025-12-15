@@ -368,6 +368,28 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+/* Expanded row styling for batch processing table */
+.expanded-detail-row {
+    position: relative;
+    z-index: 5; /* Below sticky header (z-index: 20) */
+}
+
+.expanded-detail-row td {
+    max-width: 0; /* Forces content to respect colspan */
+}
+
+/* Ensure Application URL field doesn't overflow */
+.expanded-detail-row input[type="url"] {
+    max-width: 100%;
+    min-width: 200px;
+}
+
+/* Fix truncation issues in expanded content */
+.expanded-detail-row .truncate {
+    max-width: 300px;
+}
+</style>
 <script>
     // ============================================================================
     // Batch Processing State
@@ -384,6 +406,62 @@
         jobStatuses: new Map(), // jobId -> { status: 'pending'|'running'|'success'|'error', title: string }
         cancelled: false
     };
+
+    // ============================================================================
+    // Expanded Row State Management (persists across HTMX swaps)
+    // ============================================================================
+
+    // Track expanded job IDs in Set (restored from sessionStorage)
+    const expandedJobIds = new Set(
+        JSON.parse(sessionStorage.getItem('batch_expanded_jobs') || '[]')
+    );
+
+    /**
+     * Toggle expansion state for a job row
+     * @param {string} jobId - The job ID to toggle
+     * @returns {boolean} - The new expanded state
+     */
+    function toggleJobExpand(jobId) {
+        if (expandedJobIds.has(jobId)) {
+            expandedJobIds.delete(jobId);
+        } else {
+            expandedJobIds.add(jobId);
+        }
+        saveExpandedState();
+        return expandedJobIds.has(jobId);
+    }
+
+    /**
+     * Check if a job row is expanded
+     * @param {string} jobId - The job ID to check
+     * @returns {boolean} - Whether the row is expanded
+     */
+    function isJobExpanded(jobId) {
+        return expandedJobIds.has(jobId);
+    }
+
+    /**
+     * Save expanded state to sessionStorage
+     */
+    function saveExpandedState() {
+        sessionStorage.setItem('batch_expanded_jobs', JSON.stringify([...expandedJobIds]));
+    }
+
+    /**
+     * Restore expanded rows after HTMX swap
+     * Updates Alpine.js component state for rows that were previously expanded
+     */
+    function restoreExpandedRows() {
+        document.querySelectorAll('tbody[data-job-id]').forEach(tbody => {
+            const jobId = tbody.dataset.jobId;
+            if (expandedJobIds.has(jobId)) {
+                // Access Alpine.js data stack and set expanded = true
+                if (tbody._x_dataStack && tbody._x_dataStack[0]) {
+                    tbody._x_dataStack[0].expanded = true;
+                }
+            }
+        });
+    }
 
     // ============================================================================
     // Selection Management
@@ -971,6 +1049,10 @@
                 }
             });
             updateBatchSelectionUI();
+
+            // Restore expanded rows state after HTMX swap
+            // Use setTimeout to ensure Alpine.js has initialized the new rows
+            setTimeout(restoreExpandedRows, 50);
         }
     });
 

@@ -76,14 +76,15 @@
         {% for job in jobs %}
         {% set job_url = job.url or job.jobUrl %}
         {% set app_url = job.application_url or job_url %}
-        <tbody x-data="{ expanded: false }" class="theme-bg-card">
+        <tbody x-data="{ expanded: isJobExpanded('{{ job._id }}') }"
+               data-job-id="{{ job._id }}"
+               class="theme-bg-card">
             <!-- Main row -->
             <tr class="job-row hover:theme-bg-hover border-b theme-border"
-                :class="{ 'theme-bg-hover': expanded }"
-                data-job-id="{{ job._id }}">
+                :class="{ 'theme-bg-hover': expanded }">
                 <!-- Expand toggle -->
                 <td class="px-2 py-3 no-navigate" onclick="event.stopPropagation()">
-                    <button @click="expanded = !expanded"
+                    <button @click="expanded = toggleJobExpand('{{ job._id }}')"
                             class="p-1 rounded hover:theme-bg-tertiary transition-transform duration-200"
                             :class="{ 'rotate-90': expanded }">
                         <svg class="w-4 h-4 theme-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,9 +226,12 @@
             </tr>
 
             <!-- Expandable details row -->
-            <tr x-show="expanded" x-collapse.duration.200ms class="theme-bg-secondary border-b theme-border">
+            <tr x-show="expanded" x-collapse.duration.200ms
+                class="theme-bg-secondary border-b theme-border expanded-detail-row">
                 <td colspan="10" class="px-4 py-3">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <!-- Overflow wrapper to handle wide content -->
+                    <div class="max-w-full overflow-x-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm min-w-0">
                         <!-- Location -->
                         <div>
                             <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">Location</label>
@@ -355,7 +359,8 @@
                                 {% endif %}
                             </div>
                         </div>
-                    </div>
+                        </div> <!-- Close grid -->
+                    </div> <!-- Close overflow wrapper -->
                 </td>
             </tr>
         </tbody>

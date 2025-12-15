@@ -3,10 +3,19 @@
  *
  * Manages WebSocket connection to the queue service for real-time updates.
  * Provides automatic reconnection with exponential backoff.
+ *
+ * Debug Mode:
+ * - Enable via: localStorage.setItem('ws_debug', 'true') or ?ws_debug=true
+ * - Check history: queueWebSocket.getHistory()
+ * - Toggle: queueWebSocket.setDebug(true/false)
  */
 
 class QueueWebSocket {
     constructor() {
+        // Debug mode - enabled via localStorage or URL param
+        this.debug = localStorage.getItem('ws_debug') === 'true' ||
+                     window.location.search.includes('ws_debug=true');
+
         this.ws = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 10;
@@ -19,6 +28,56 @@ class QueueWebSocket {
 
         // Queue for messages to send when connected
         this.messageQueue = [];
+
+        // Connection history for debugging
+        this.connectionHistory = [];
+        this.maxHistoryLength = 20;
+
+        if (this.debug) {
+            console.log('[QueueWS] Debug mode enabled');
+        }
+    }
+
+    /**
+     * Debug logging helper - only logs when debug mode is enabled
+     */
+    _debug(...args) {
+        if (this.debug) {
+            console.log('[QueueWS DEBUG]', new Date().toISOString(), ...args);
+        }
+    }
+
+    /**
+     * Record event in connection history for debugging
+     */
+    _recordHistory(event, data = {}) {
+        this.connectionHistory.push({
+            event,
+            timestamp: Date.now(),
+            time: new Date().toISOString(),
+            ...data
+        });
+
+        // Keep history bounded
+        if (this.connectionHistory.length > this.maxHistoryLength) {
+            this.connectionHistory.shift();
+        }
+    }
+
+    /**
+     * Get connection history (for debugging via console)
+     */
+    getHistory() {
+        return this.connectionHistory;
+    }
+
+    /**
+     * Enable/disable debug mode
+     */
+    setDebug(enabled) {
+        this.debug = enabled;
+        localStorage.setItem('ws_debug', enabled ? 'true' : 'false');
+        console.log(`[QueueWS] Debug mode ${enabled ? 'enabled' : 'disabled'}`);
     }
 
     /**
@@ -28,14 +87,23 @@ class QueueWebSocket {
      * On Flask/VPS: Uses current host (proxied through Flask)
      */
     getWsUrl() {
+        this._debug('Building WebSocket URL', {
+            RUNNER_WS_URL: window.RUNNER_WS_URL,
+            protocol: window.location.protocol,
+            host: window.location.host
+        });
+
         // Check for explicit runner WebSocket URL (for serverless deployments like Vercel)
         if (window.RUNNER_WS_URL) {
+            this._debug('Using explicit RUNNER_WS_URL:', window.RUNNER_WS_URL);
             return window.RUNNER_WS_URL;
         }
 
         // Default: use current host (works when Flask proxies WebSocket)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${protocol}//${window.location.host}/ws/queue`;
+        const url = `${protocol}//${window.location.host}/ws/queue`;
+        this._debug('Using derived URL:', url);
+        return url;
     }
 
     /**
@@ -52,7 +120,18 @@ class QueueWebSocket {
      * Connect to WebSocket server
      */
     connect() {
+        const connectState = {
+            wsState: this.ws?.readyState,
+            wsStateText: this._readyStateText(this.ws?.readyState),
+            isConnecting: this.isConnecting,
+            shouldReconnect: this.shouldReconnect,
+            reconnectAttempts: this.reconnectAttempts
+        };
+
+        this._debug('connect() called', connectState);
+
         if (this.ws?.readyState === WebSocket.OPEN || this.isConnecting) {
+            this._debug('Skipping connect - already connected/connecting');
             return;
         }
 
@@ -60,10 +139,18 @@ class QueueWebSocket {
         const url = this.getWsUrl();
         console.log('[QueueWS] Connecting to:', url);
 
+        // Record connection attempt in history
+        this._recordHistory('connect_attempt', { url, state: connectState });
+
         // Check for mixed content (https page + ws:// URL)
         if (this.wouldCauseMixedContent(url)) {
+            this._debug('Mixed content detected', {
+                pageProtocol: window.location.protocol,
+                wsUrl: url
+            });
             console.warn('[QueueWS] Mixed content blocked: Cannot connect to ws:// from https:// page.');
             console.warn('[QueueWS] Real-time queue updates disabled. Runner needs HTTPS/WSS for this feature.');
+            this._recordHistory('mixed_content_blocked', { url });
             this.isConnecting = false;
             this.shouldReconnect = false;  // Don't keep retrying
             this.emit('error', { message: 'Mixed content: WebSocket requires HTTPS on runner', code: 'MIXED_CONTENT' });
@@ -71,9 +158,12 @@ class QueueWebSocket {
         }
 
         try {
+            this._debug('Creating WebSocket instance');
             this.ws = new WebSocket(url);
 
             this.ws.onopen = () => {
+                this._debug('WebSocket opened successfully');
+                this._recordHistory('connected', { url });
                 console.log('[QueueWS] Connected');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
@@ -83,9 +173,13 @@ class QueueWebSocket {
                 this.startPingInterval();
 
                 // Send any queued messages
+                const queuedCount = this.messageQueue.length;
                 while (this.messageQueue.length > 0) {
                     const msg = this.messageQueue.shift();
                     this.send(msg);
+                }
+                if (queuedCount > 0) {
+                    this._debug(`Sent ${queuedCount} queued messages`);
                 }
             };
 
@@ -95,11 +189,36 @@ class QueueWebSocket {
                     this.handleMessage(data);
                 } catch (e) {
                     console.error('[QueueWS] Error parsing message:', e);
+                    this._debug('Message parse error', { raw: event.data?.substring(0, 200), error: e.message });
                 }
             };
 
             this.ws.onclose = (event) => {
-                console.log('[QueueWS] Disconnected:', event.code, event.reason);
+                const closeInfo = {
+                    code: event.code,
+                    reason: event.reason || '<empty>',
+                    wasClean: event.wasClean,
+                    url: url
+                };
+
+                this._debug('WebSocket closed', closeInfo);
+                this._recordHistory('disconnected', closeInfo);
+
+                console.log('[QueueWS] Disconnected:', event.code, event.reason || '<empty string>');
+
+                // Enhanced close code interpretation
+                if (event.code === 1006) {
+                    console.warn('[QueueWS] Abnormal closure (1006) - possible causes:');
+                    console.warn('  - Server down/unreachable');
+                    console.warn('  - Network connection interrupted');
+                    console.warn('  - Proxy/load balancer timeout');
+                    console.warn('  - SSL/TLS handshake failure');
+                    this._debug('Code 1006 details', {
+                        hint: 'Check if runner service is running and accessible',
+                        url: url
+                    });
+                }
+
                 this.isConnecting = false;
                 this.stopPingInterval();
                 this.emit('disconnected');
@@ -110,15 +229,40 @@ class QueueWebSocket {
             };
 
             this.ws.onerror = (error) => {
+                // Note: Browser security limits error info available
+                this._debug('WebSocket error event', {
+                    type: error.type,
+                    readyState: this.ws?.readyState,
+                    readyStateText: this._readyStateText(this.ws?.readyState)
+                });
+                this._recordHistory('error', { type: error.type });
                 console.error('[QueueWS] Error:', error);
                 this.emit('error', error);
             };
 
         } catch (error) {
+            this._debug('Connection creation failed', {
+                error: error.message,
+                stack: error.stack
+            });
+            this._recordHistory('connect_exception', { error: error.message });
             console.error('[QueueWS] Connection error:', error);
             this.isConnecting = false;
             this.scheduleReconnect();
         }
+    }
+
+    /**
+     * Convert WebSocket readyState to human-readable text
+     */
+    _readyStateText(state) {
+        const states = {
+            0: 'CONNECTING',
+            1: 'OPEN',
+            2: 'CLOSING',
+            3: 'CLOSED'
+        };
+        return states[state] || 'UNKNOWN';
     }
 
     /**
@@ -227,8 +371,17 @@ class QueueWebSocket {
      * Schedule reconnection with exponential backoff
      */
     scheduleReconnect() {
+        this._debug('scheduleReconnect called', {
+            attempts: this.reconnectAttempts,
+            maxAttempts: this.maxReconnectAttempts,
+            shouldReconnect: this.shouldReconnect
+        });
+
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             console.error('[QueueWS] Max reconnect attempts reached');
+            this._recordHistory('max_reconnects_reached', {
+                attempts: this.reconnectAttempts
+            });
             this.emit('max_reconnects');
             return;
         }
@@ -237,6 +390,13 @@ class QueueWebSocket {
             this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
             this.maxReconnectDelay
         );
+
+        this._debug('Scheduling reconnect', {
+            delay,
+            attempt: this.reconnectAttempts + 1,
+            formula: `${this.baseReconnectDelay} * 2^${this.reconnectAttempts} = ${delay}ms`
+        });
+        this._recordHistory('reconnect_scheduled', { delay, attempt: this.reconnectAttempts + 1 });
 
         console.log(`[QueueWS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
 
