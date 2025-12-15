@@ -1579,6 +1579,18 @@ def proxy_master_cv_to_runner(endpoint: str, method: str = "GET", json_data: dic
 - HTML structure verified via Flask test client
 - CSS breakpoints verified programmatically
 
+**Z-Index Layering Pattern** (ESTABLISHED - 2025-12-15):
+- **Purpose**: Manage stacking context for overlapping UI elements during scroll interactions
+- **Pattern**:
+  - Sticky header: `z-index: 50` (highest, always on top)
+  - Floating panels (pipelines, CLI): `z-index: 40` (above main content, below dropdowns)
+  - Main content: No z-index (default stacking)
+  - Modals/overlays: `z-index: 100+` (reserved for truly modal content)
+- **Implementation**: Each panel that needs positioning during scroll gets `position: relative; z-index: 40;`
+- **Benefits**: Prevents panels from being hidden behind sticky elements when scrolling
+- **Conflict Resolution**: When panel layering causes issues, increment z-index by 10-unit steps to maintain clear separation
+- **Files**: `frontend/static/css/job-detail.css`, component-specific stylesheets
+
 ---
 
 ### Job Detail Page (Enhanced - 2025-12-09)
@@ -2260,6 +2272,21 @@ POST /api/jobs/<job_id>/save-persona
 ```
 
 ### Frontend UI Components
+
+**Error Feedback Pattern** (ESTABLISHED - 2025-12-15):
+- **Purpose**: Provide clear, actionable feedback when user actions fail silently or encounter errors
+- **Pattern**:
+  1. **Silent Failure Detection**: Identify when operations return early without feedback
+  2. **Toast Notifications**: Use toast (not alert) for non-blocking feedback
+  3. **Context Message**: Include operation name and reason for failure
+  4. **HTTP Error Handling**: Distinguish between network errors (timeout/connection) and API errors (400/500)
+  5. **User Action**: Message explains what user should do next (retry, check settings, contact support)
+- **Implementation**:
+  - When `run_id` is missing: `showToast("Logs not available for [operation_name]", "warning")`
+  - When HTTP fails: `showToast("[Operation] failed: [Error code] - [Message]", "error")`
+  - Provides user actionable recovery path instead of confusing silence
+- **Benefits**: Operators understand why actions didn't work and can troubleshoot independently
+- **Files**: `frontend/static/js/job-pipelines-panel.js`, `frontend/static/js/pipeline-actions.js`
 
 **Persona Panel** (`frontend/static/js/jd-annotation.js`):
 
