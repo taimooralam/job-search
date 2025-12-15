@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-15 (Frontend Performance & UX Bug Fixes - 9 Issues)
+**Last Updated**: 2025-12-15 (Alpine.js Version Pinning & Pipeline Console Stability Fix)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3250,6 +3250,32 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 - **Fix Applied**: Resolved by adding Alpine collapse plugin (see Bug Fix 1)
 - **Verification**: All HTML elements render correctly; dark mode styling applies properly
 - **Impact**: Complete UI consistency across all pages and themes
+
+---
+
+### Alpine.js Version Pinning & DOM Stability Fix (2025-12-15)
+- [x] Fixed "TypeError: can't access property 'after', v is undefined" causing pipeline console logs to stop
+  - **Root Causes**:
+    1. Alpine.js version mismatch - core and Collapse plugin using `@3.x.x` wildcards, allowing mismatched versions
+    2. `<template x-if>` inside x-for loops - Alpine removes DOM elements, causing `.after()` to fail on undefined siblings
+    3. Orphan run IDs in x-for iteration - filter missing check for validity
+  - **Fix Applied**:
+    1. **Version Pinning**: Pinned Alpine.js core and Collapse plugin to exact v3.14.8 in `frontend/templates/base.html`
+       - Before: `<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js">`
+       - After: `<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js">`
+    2. **DOM Stability**: Replaced `<template x-if>` with `<span x-show>` for status icons in `cli_panel.html`
+       - x-if removes/recreates DOM elements → siblings become undefined → .after() fails
+       - x-show toggles CSS display:none → DOM stable → .after() works reliably
+    3. **Defensive Filtering**: Added filter to x-for loop: `$store.cli.runOrder.filter(id => id && $store.cli.runs[id])`
+       - Skips null/undefined run IDs that could cause iteration errors
+    4. **FOUC Prevention**: Added `x-cloak` class to expandable rows to prevent flash of unstyled content
+  - **Files Modified**:
+    - `frontend/templates/base.html` - Version pinning (Alpine.js and Collapse plugin to v3.14.8)
+    - `frontend/templates/components/cli_panel.html` - Replaced x-if with x-show for 10 status icon toggles
+    - `frontend/templates/partials/batch_job_rows.html` - Added x-cloak to expandable rows
+  - **Impact**: Pipeline console logs now stream continuously without interruption; UI remains stable during reactive updates; users see real-time job execution logs without encountering "logs unavailable" errors
+  - **Verification**: Error no longer appears in browser console; CLI panel logs stream continuously during pipeline execution; batch job rows expand/collapse smoothly
+  - **Commit**: `d924b2dd` - fix(frontend): resolve Alpine.js error causing pipeline logs to stop
 
 ---
 
