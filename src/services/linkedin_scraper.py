@@ -103,17 +103,23 @@ def extract_job_id(input_str: str) -> str:
         return input_str
 
     # Try to extract from URL patterns
-    # Pattern 1: /jobs/view/{job_id}
+    # Pattern 1: /jobs/view/{job_id} (pure numeric)
     match = re.search(r'/jobs/view/(\d+)', input_str)
     if match:
         return match.group(1)
 
-    # Pattern 2: /jobs/{job_id} (older format)
+    # Pattern 2: /jobs/view/{slug}-{job_id} (slugified title ending with job ID)
+    # e.g., /jobs/view/senior-engineer-at-company-4081234567
+    match = re.search(r'/jobs/view/[^/]+-(\d{8,})', input_str)
+    if match:
+        return match.group(1)
+
+    # Pattern 3: /jobs/{job_id} (older format)
     match = re.search(r'/jobs/(\d+)', input_str)
     if match:
         return match.group(1)
 
-    # Pattern 3: currentJobId={job_id} in query params
+    # Pattern 4: currentJobId={job_id} in query params
     match = re.search(r'currentJobId=(\d+)', input_str)
     if match:
         return match.group(1)
@@ -122,6 +128,29 @@ def extract_job_id(input_str: str) -> str:
         f"Could not extract job ID from: {input_str}. "
         "Expected a numeric job ID or LinkedIn job URL."
     )
+
+
+def normalize_linkedin_url(url: str) -> Optional[str]:
+    """Normalize any LinkedIn job URL to canonical format.
+
+    Handles various LinkedIn URL formats:
+    - Country subdomains: https://de.linkedin.com/jobs/view/...
+    - Slugified titles: https://linkedin.com/jobs/view/engineer-at-company-123456
+    - Query parameters: https://linkedin.com/jobs/view/123456?trk=...
+
+    Args:
+        url: Any LinkedIn job URL or non-LinkedIn URL
+
+    Returns:
+        Canonical URL: https://linkedin.com/jobs/view/<jobId> or None if not a LinkedIn job URL
+    """
+    if not url or "linkedin" not in url.lower():
+        return None
+    try:
+        job_id = extract_job_id(url)
+        return f"https://linkedin.com/jobs/view/{job_id}"
+    except ValueError:
+        return None
 
 
 def scrape_linkedin_job(job_id_or_url: str) -> LinkedInJobData:

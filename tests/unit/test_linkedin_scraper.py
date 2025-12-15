@@ -11,6 +11,7 @@ from unittest.mock import patch, MagicMock
 
 from src.services.linkedin_scraper import (
     extract_job_id,
+    normalize_linkedin_url,
     scrape_linkedin_job,
     linkedin_job_to_mongodb_doc,
     _parse_job_html,
@@ -348,3 +349,55 @@ class TestExtractFunctions:
         html = '<span class="topcard__flavor--bullet">Remote (US)</span>'
         soup = BeautifulSoup(html, "html.parser")
         assert _extract_location(soup) == "Remote (US)"
+
+
+class TestNormalizeLinkedInUrl:
+    """Tests for LinkedIn URL normalization."""
+
+    def test_normalize_standard_url(self):
+        """Test normalization of standard LinkedIn job URL."""
+        url = "https://www.linkedin.com/jobs/view/4081234567"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+    def test_normalize_country_subdomain(self):
+        """Test normalization of URL with country subdomain."""
+        url = "https://de.linkedin.com/jobs/view/4081234567"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+        url = "https://uk.linkedin.com/jobs/view/4081234567"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+    def test_normalize_slugified_title(self):
+        """Test normalization of URL with slugified job title."""
+        url = "https://de.linkedin.com/jobs/view/senior-engineer-at-company-4081234567"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+    def test_normalize_with_query_params(self):
+        """Test normalization of URL with query parameters."""
+        url = "https://linkedin.com/jobs/view/4081234567?trk=public_jobs_topcard"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+    def test_normalize_with_current_job_id_param(self):
+        """Test normalization of URL with currentJobId parameter."""
+        url = "https://linkedin.com/jobs/search/?currentJobId=4081234567"
+        assert normalize_linkedin_url(url) == "https://linkedin.com/jobs/view/4081234567"
+
+    def test_normalize_already_canonical(self):
+        """Test that already canonical URL is returned unchanged."""
+        url = "https://linkedin.com/jobs/view/4081234567"
+        assert normalize_linkedin_url(url) == url
+
+    def test_normalize_non_linkedin_url_returns_none(self):
+        """Test that non-LinkedIn URLs return None."""
+        assert normalize_linkedin_url("https://indeed.com/jobs/123") is None
+        assert normalize_linkedin_url("https://google.com") is None
+
+    def test_normalize_empty_or_none_returns_none(self):
+        """Test that empty/None input returns None."""
+        assert normalize_linkedin_url("") is None
+        assert normalize_linkedin_url(None) is None
+
+    def test_normalize_invalid_linkedin_url_returns_none(self):
+        """Test that LinkedIn URLs without job ID return None."""
+        assert normalize_linkedin_url("https://linkedin.com/in/username") is None
+        assert normalize_linkedin_url("https://linkedin.com/company/acme") is None
