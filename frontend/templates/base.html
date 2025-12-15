@@ -2775,13 +2775,32 @@
                 `);
 
                 // WebSocket Queue Health - dynamically updated by queue-websocket.js
-                const wsStatus = window.queueWebSocket?.isConnected ? 'connected' :
-                                 window.queueWebSocket?.shouldReconnect === false ? 'disabled' : 'disconnected';
-                const wsClass = wsStatus === 'connected' ? 'health-healthy' :
-                                wsStatus === 'disabled' ? 'health-unknown' : 'health-unhealthy';
-                const wsTitle = wsStatus === 'connected' ? 'WebSocket: Connected' :
-                                wsStatus === 'disabled' ? 'WebSocket: Disabled (mixed content or service unavailable)' :
-                                'WebSocket: Disconnected';
+                // Handle three states: connected, connecting (unknown), disconnected
+                const ws = window.queueWebSocket;
+                let wsStatus, wsClass, wsTitle;
+                if (ws?.isConnected) {
+                    wsStatus = 'connected';
+                    wsClass = 'health-healthy';
+                    wsTitle = 'WebSocket: Connected';
+                } else if (ws?.shouldReconnect === false) {
+                    wsStatus = 'disabled';
+                    wsClass = 'health-unknown';
+                    wsTitle = 'WebSocket: Disabled (mixed content or service unavailable)';
+                } else if (ws?.isConnecting) {
+                    // Connecting state - show as pending/unknown (not red)
+                    wsStatus = 'connecting';
+                    wsClass = 'health-unknown';
+                    wsTitle = 'WebSocket: Connecting...';
+                } else if (!ws || ws.reconnectAttempts === 0) {
+                    // Not initialized yet or first attempt - show as pending
+                    wsStatus = 'pending';
+                    wsClass = 'health-unknown';
+                    wsTitle = 'WebSocket: Initializing...';
+                } else {
+                    wsStatus = 'disconnected';
+                    wsClass = 'health-unhealthy';
+                    wsTitle = 'WebSocket: Disconnected';
+                }
                 indicators.push(`
                     <div class="health-indicator" id="ws-health-indicator" title="${wsTitle}">
                         <div class="health-dot ${wsClass}"></div>
