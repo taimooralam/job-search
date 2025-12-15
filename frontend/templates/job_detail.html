@@ -120,6 +120,42 @@
         </div>
     </div>
 
+    <!-- ========== ACTIVE PIPELINES PANEL ========== -->
+    <!-- Shows queued/running operations for this job with real-time status updates -->
+    <div x-data x-init="$store.detailPipelines.init('{{ job._id }}')" class="job-detail-pipelines-panel">
+        <div class="theme-bg-card rounded-lg p-4 border theme-border">
+            <h3 class="text-sm font-medium theme-text-secondary mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Active Pipelines
+            </h3>
+            <div class="flex flex-wrap gap-2" x-show="$store.detailPipelines.hasActiveOperations()">
+                <template x-for="[name, op] in Object.entries($store.detailPipelines.operations)" :key="name">
+                    <button x-show="op && op.status"
+                            @click="$store.detailPipelines.openLogs(name)"
+                            class="px-3 py-2 rounded-md text-sm flex items-center gap-2 transition cursor-pointer"
+                            :class="{
+                                'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300': op.status === 'running',
+                                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300': op.status === 'pending',
+                                'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300': op.status === 'completed',
+                                'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300': op.status === 'failed'
+                            }">
+                        <span x-text="$store.detailPipelines.getOperationLabel(name)"></span>
+                        <span x-show="op.status === 'running'" class="animate-pulse">*</span>
+                        <span x-show="op.status === 'pending'" class="text-xs opacity-75">#<span x-text="op.position"></span></span>
+                        <svg x-show="op.status === 'completed'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                </template>
+            </div>
+            <span x-show="!$store.detailPipelines.hasActiveOperations()" class="text-sm theme-text-muted">
+                No active pipelines. Use the buttons below to queue operations.
+            </span>
+        </div>
+    </div>
+
     <!-- ========== LEFT SIDEBAR ========== -->
     <aside class="job-detail-left-sidebar">
         <!-- Status & Actions Card -->
@@ -298,7 +334,7 @@
                 <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
-                        <button @click="execute()"
+                        <button @click="queueExecute()"
                                 class="btn-action-main btn-action-primary flex-1"
                                 :disabled="loading"
                                 title="Structure the job description (Alt+1)">
@@ -348,7 +384,7 @@
                 <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
-                        <button @click="execute()"
+                        <button @click="queueExecute()"
                                 class="btn-action-main btn-action-accent flex-1"
                                 :disabled="loading"
                                 title="Full JD extraction (Alt+2)">
@@ -398,7 +434,7 @@
                 <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
-                        <button @click="execute()"
+                        <button @click="queueExecute()"
                                 class="btn-action-main btn-action-secondary flex-1"
                                 :disabled="loading"
                                 title="Research company and role (Alt+3)">
@@ -448,7 +484,7 @@
                 <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
-                        <button @click="execute()"
+                        <button @click="queueExecute()"
                                 class="btn-action-main btn-action-success flex-1"
                                 :disabled="loading"
                                 title="Generate tailored CV (Alt+4)">
@@ -1754,6 +1790,9 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Job Pipelines Panel - must load before pipeline-actions.js for queue integration #}
+<script src="/static/js/job-pipelines-panel.js"></script>
+
 {# Job Detail Scripts - Extracted to external file for maintainability #}
 <script>
     // Pass job ID and data to the external script

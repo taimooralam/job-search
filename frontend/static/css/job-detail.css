@@ -272,6 +272,28 @@
 }
 
 /* ============================================================================
+   Active Pipelines Panel
+   ============================================================================ */
+
+.job-detail-pipelines-panel {
+  grid-column: 1 / -1;
+  margin-bottom: 0.5rem;
+}
+
+/* Make pipelines panel blend with header on desktop */
+@media (min-width: 1280px) {
+  .job-detail-pipelines-panel {
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Hide panel completely when no active operations (handled by Alpine x-show) */
+.job-detail-pipelines-panel:empty {
+  display: none;
+}
+
+/* ============================================================================
    Card Component
    ============================================================================ */
 

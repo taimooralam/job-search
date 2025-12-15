@@ -768,3 +768,75 @@ def generate_cv_bulk():
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# Queue-Based Operation Endpoints (Job Detail Page)
+# =============================================================================
+
+
+@runner_bp.route("/jobs/<job_id>/operations/<operation>/queue", methods=["POST"])
+def queue_operation(job_id: str, operation: str):
+    """
+    Queue a pipeline operation for background execution.
+
+    This is the queue-first approach for the job detail page:
+    - Adds operation to Redis queue
+    - Status updates via WebSocket
+    - User can view logs on-demand
+
+    Request Body:
+        tier: Processing tier (fast, balanced, quality)
+        force_refresh: Whether to force refresh (for company research)
+        use_llm: Whether to use LLM (for extraction)
+        use_annotations: Whether to use annotations (for CV generation)
+
+    Returns:
+        JSON with queue_id, position, and estimated wait time
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/operations/{operation}/queue",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/<job_id>/queue-status", methods=["GET"])
+def get_job_queue_status(job_id: str):
+    """
+    Get queue status for all operations on a specific job.
+
+    Used by the frontend pipelines panel to show current status
+    of each operation type (full-extraction, research-company, generate-cv).
+
+    Returns:
+        JSON with status for each operation type
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/api/jobs/{job_id}/queue-status",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
