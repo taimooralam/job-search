@@ -165,7 +165,7 @@ class FullExtractionService(OperationService):
         state: JobState = {
             "job_id": str(job.get("_id", "")),
             "title": job.get("title", ""),
-            "company": job.get("company", ""),
+            "company": job.get("firm") or job.get("company", ""),
             "job_description": jd_text,
         }
 
@@ -204,7 +204,7 @@ class FullExtractionService(OperationService):
         state: JobState = {
             "job_id": str(job.get("_id", "")),
             "title": job.get("title", ""),
-            "company": job.get("company", ""),
+            "company": job.get("firm") or job.get("company", ""),
             "job_description": jd_text,
         }
 
@@ -320,7 +320,7 @@ class FullExtractionService(OperationService):
         state: JobState = {
             "job_id": str(job.get("_id", "")),
             "title": job.get("title", ""),
-            "company": job.get("company", ""),
+            "company": job.get("firm") or job.get("company", ""),
             "job_description": jd_text,
             # Include pain points from Layer 2
             "pain_points": pain_points_data.get("pain_points", []),
@@ -379,8 +379,11 @@ class FullExtractionService(OperationService):
             db = client[os.getenv("MONGO_DB_NAME", "jobs")]
             collection = db["level-2"]
 
-            # Get existing annotations to preserve them
-            job = collection.find_one({"_id": object_id}, {"jd_annotations": 1})
+            # Get existing annotations and URL fields to preserve/normalize them
+            job = collection.find_one(
+                {"_id": object_id},
+                {"jd_annotations": 1, "job_url": 1, "jobUrl": 1},
+            )
             existing_annotations = job.get("jd_annotations", {}) if job else {}
 
             # Update with processed JD (for annotation UI)
@@ -390,6 +393,19 @@ class FullExtractionService(OperationService):
             existing_annotations["annotation_version"] = (
                 existing_annotations.get("annotation_version", 0) + 1
             )
+
+            # Normalize LinkedIn URL if present
+            normalized_url = None
+            if job:
+                current_url = job.get("job_url") or job.get("jobUrl")
+                if current_url:
+                    from src.services.linkedin_scraper import normalize_linkedin_url
+
+                    normalized_url = normalize_linkedin_url(current_url)
+                    if normalized_url and normalized_url != current_url:
+                        logger.info(
+                            f"Normalized LinkedIn URL: {current_url} -> {normalized_url}"
+                        )
 
             # Build update document
             update_doc = {
@@ -413,6 +429,11 @@ class FullExtractionService(OperationService):
                 "full_extraction_completed_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
             }
+
+            # Add normalized LinkedIn URL if changed
+            if normalized_url:
+                update_doc["job_url"] = normalized_url
+                update_doc["jobUrl"] = normalized_url
 
             result = collection.update_one(
                 {"_id": object_id},
