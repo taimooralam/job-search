@@ -261,6 +261,38 @@ class OutreachGenerationService(OperationService):
         """Get database name from environment."""
         return os.getenv("MONGO_DB_NAME", "jobs")
 
+    def _load_candidate_profile(self) -> Optional[str]:
+        """
+        Load candidate profile from file for outreach personalization.
+
+        Uses Config.CANDIDATE_PROFILE_PATH with fallback to data/master-cv/master-cv.md.
+        This ensures outreach messages have candidate context even when not in MongoDB.
+
+        Returns:
+            Candidate profile text, or None if not available
+        """
+        from pathlib import Path
+        from src.common.config import Config
+
+        # Try the configured path first
+        profile_path = Path(Config.CANDIDATE_PROFILE_PATH)
+        if profile_path.exists():
+            try:
+                return profile_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {profile_path}: {e}")
+
+        # Try data/master-cv/master-cv.md as fallback
+        fallback_path = Path("data/master-cv/master-cv.md")
+        if fallback_path.exists():
+            try:
+                return fallback_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {fallback_path}: {e}")
+
+        logger.warning("No candidate profile found - outreach will use generic content")
+        return None
+
     async def execute(
         self,
         job_id: str,
@@ -499,7 +531,8 @@ class OutreachGenerationService(OperationService):
                 achievements.append(f"- {achievement}")
 
         # Build candidate summary from profile or STARs
-        candidate_profile = job.get("candidate_profile") or ""
+        # Check MongoDB first, then file fallback for consistent grounding
+        candidate_profile = job.get("candidate_profile") or self._load_candidate_profile() or ""
         candidate_summary = ""
         if candidate_profile:
             # Extract first few sentences

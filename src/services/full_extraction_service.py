@@ -91,6 +91,38 @@ class FullExtractionService(OperationService):
 
         return jd_text
 
+    def _load_candidate_profile(self) -> Optional[str]:
+        """
+        Load candidate profile from file for fit scoring.
+
+        Uses Config.CANDIDATE_PROFILE_PATH with fallback to data/master-cv/master-cv.md.
+        This ensures fit analysis has candidate context even when not stored in MongoDB.
+
+        Returns:
+            Candidate profile text, or None if not available
+        """
+        from pathlib import Path
+        from src.common.config import Config
+
+        # Try the configured path first
+        profile_path = Path(Config.CANDIDATE_PROFILE_PATH)
+        if profile_path.exists():
+            try:
+                return profile_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {profile_path}: {e}")
+
+        # Try data/master-cv/master-cv.md as fallback
+        fallback_path = Path("data/master-cv/master-cv.md")
+        if fallback_path.exists():
+            try:
+                return fallback_path.read_text(encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Error reading candidate profile from {fallback_path}: {e}")
+
+        logger.warning("No candidate profile found - fit analysis may lack grounding")
+        return None
+
     def _run_jd_processor(self, jd_text: str, model: str, use_llm: bool) -> Dict[str, Any]:
         """
         Run JD Processor: Parse JD into HTML sections for annotation.
@@ -298,8 +330,9 @@ class FullExtractionService(OperationService):
             # Include any existing research
             "company_research": job.get("company_research"),
             "role_research": job.get("role_research"),
-            # Include candidate profile if available
-            "candidate_profile": job.get("candidate_profile", ""),
+            # Include candidate profile - check MongoDB first, then file fallback
+            # CRITICAL: Ensures fit analysis has candidate context for accurate scoring
+            "candidate_profile": job.get("candidate_profile") or self._load_candidate_profile() or "",
             "selected_stars": job.get("selected_stars", []),
             "all_stars": job.get("all_stars", []),
             # Include annotation signals for fit scoring
