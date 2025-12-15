@@ -74,40 +74,17 @@
             {% include 'components/linkedin_import.html' %}
         </div>
 
-        <!-- Full Header (visible at top) -->
+        <!-- Full Header (visible at top) - Compact single-line layout -->
         <div class="job-detail-header-full">
-            <div class="job-detail-header-content">
+            <div class="job-detail-header-content job-detail-header-compact-layout">
                 <div class="job-detail-header-info">
                     <div class="job-detail-header-title-row">
-                        <h1 class="job-detail-header-title">{{ job.title or 'Untitled Position' }}</h1>
+                        <h1 class="job-detail-header-title">
+                            {{ job.title or 'Untitled Position' }}
+                            <span class="job-detail-header-title-company">@ {{ job.company or 'Unknown' }}</span>
+                        </h1>
                         {% if job.score is not none %}
                         <span class="job-detail-header-score">{{ job.score }}%</span>
-                        {% endif %}
-                    </div>
-                    <p class="job-detail-header-company">{{ job.company or 'Unknown Company' }}</p>
-                    <div class="job-detail-header-meta">
-                        <span class="job-detail-header-chip">
-                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            </svg>
-                            {{ job.location or 'Location not specified' }}
-                        </span>
-                        {% if job.createdAt %}
-                        <span class="job-detail-header-chip">
-                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            Added {{ job.createdAt[:10] }}
-                        </span>
-                        {% endif %}
-                        {% if job.processing_tier %}
-                        <span class="job-detail-header-chip">Tier {{ job.processing_tier }}</span>
-                        {% endif %}
-                        {% set company_type = job.company_research.company_type if job.company_research and job.company_research.company_type else 'unknown' %}
-                        {% if company_type == 'recruitment_agency' %}
-                        <span class="job-detail-header-chip">Agency</span>
-                        {% elif company_type == 'employer' %}
-                        <span class="job-detail-header-chip">Direct</span>
                         {% endif %}
                     </div>
                 </div>
@@ -653,6 +630,18 @@
                 </div>
                 {% endif %}
             </div>
+        </div>
+
+        <!-- Danger Zone - Delete Button (de-emphasized) -->
+        <div class="job-detail-sidebar-delete">
+            <button onclick="deleteJob()"
+                    class="job-detail-delete-btn"
+                    title="Delete this job permanently">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete Job
+            </button>
         </div>
     </aside>
 
@@ -1715,19 +1704,6 @@
         </div>
     </aside>
 
-    <!-- ========== FOOTER (Delete in Lower Left) ========== -->
-    <footer class="job-detail-footer">
-        <div class="flex justify-start">
-            <button onclick="deleteJob()"
-                    class="inline-flex items-center px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 hover:border-red-300 transition"
-                    title="Delete this job permanently">
-                <svg class="h-3.5 w-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Delete Job
-            </button>
-        </div>
-    </footer>
 </div>
 
 {% include 'partials/job_detail/_cv_editor_panel.html' %}
