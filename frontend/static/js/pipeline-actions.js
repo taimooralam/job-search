@@ -241,18 +241,8 @@ document.addEventListener('alpine:init', () => {
             const jobTitle = options.jobTitle || 'Unknown Job';
             showToast(`Starting ${actionLabel} (${tierInfo.label})...`, 'info');
 
-            // Generate a unique run ID for CLI tracking
-            const cliRunId = `run-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-            // Dispatch CLI start event (replaces old showLayerStatusPanel)
-            window.dispatchEvent(new CustomEvent('cli:start-run', {
-                detail: {
-                    runId: cliRunId,
-                    jobId,
-                    jobTitle,
-                    action: action.replace('-', '_')
-                }
-            }));
+            // NOTE: We no longer generate cliRunId locally - we use server's run_id
+            // This prevents run ID mismatch between client and server
 
             try {
                 // Step 1: Start the operation and get run_id (with timeout to prevent infinite hang)
@@ -284,6 +274,17 @@ document.addEventListener('alpine:init', () => {
 
                 console.log(`[${action}] Started with run_id: ${runId}`);
 
+                // Dispatch CLI start event AFTER we have the server's run_id
+                // This ensures the CLI panel uses the same ID as the server
+                window.dispatchEvent(new CustomEvent('cli:start-run', {
+                    detail: {
+                        runId: runId,  // Use server's run_id, not local cliRunId
+                        jobId,
+                        jobTitle,
+                        action: action.replace('-', '_')
+                    }
+                }));
+
                 // Step 2: Connect to SSE stream for real-time updates
                 return new Promise((resolve) => {
                     const logStreamUrl = `/api/runner/operations/${runId}/logs`;
@@ -296,7 +297,7 @@ document.addEventListener('alpine:init', () => {
                     } catch (e) {
                         console.error(`[${action}] Failed to create EventSource:`, e);
                         // Fall back to polling immediately
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId);
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
                         return;
                     }
 
@@ -315,7 +316,7 @@ document.addEventListener('alpine:init', () => {
                         const logType = window.cliDetectLogType ? window.cliDetectLogType(event.data) : 'info';
                         window.dispatchEvent(new CustomEvent('cli:log', {
                             detail: {
-                                runId: cliRunId,
+                                runId: runId,  // Use server's run_id
                                 text: event.data,
                                 logType
                             }
@@ -330,7 +331,7 @@ document.addEventListener('alpine:init', () => {
                             // Dispatch CLI layer status event
                             window.dispatchEvent(new CustomEvent('cli:layer-status', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     layerStatus: lastLayerStatus
                                 }
                             }));
@@ -372,7 +373,7 @@ document.addEventListener('alpine:init', () => {
                             // Dispatch CLI complete event
                             window.dispatchEvent(new CustomEvent('cli:complete', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     status: 'success',
                                     result: finalResult
                                 }
@@ -399,7 +400,7 @@ document.addEventListener('alpine:init', () => {
                             // Dispatch CLI complete with error
                             window.dispatchEvent(new CustomEvent('cli:complete', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     status: 'error',
                                     error: errorMsg
                                 }
@@ -421,7 +422,7 @@ document.addEventListener('alpine:init', () => {
                         eventSource.close();
 
                         // Fall back to polling for status
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId);
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
                     });
 
                     eventSource.onerror = (err) => {
@@ -463,13 +464,12 @@ document.addEventListener('alpine:init', () => {
          * Poll operation status (fallback when SSE fails)
          * @param {string} action - Action name
          * @param {string} jobId - Job ID
-         * @param {string} runId - Runner operation run ID
+         * @param {string} runId - Runner operation run ID (used for both API and CLI events)
          * @param {string} actionLabel - Display label for action
          * @param {string} tier - Selected tier
          * @param {Function} resolve - Promise resolve function
-         * @param {string} cliRunId - CLI panel run ID for event tracking
          */
-        async pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve, cliRunId) {
+        async pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve) {
             const maxAttempts = 120;  // 2 minutes max
             let attempts = 0;
             let lastLogIndex = 0;  // Track which logs we've already displayed
@@ -488,7 +488,7 @@ document.addEventListener('alpine:init', () => {
                         // Dispatch CLI layer status event
                         window.dispatchEvent(new CustomEvent('cli:layer-status', {
                             detail: {
-                                runId: cliRunId,
+                                runId: runId,  // Use server's run_id
                                 layerStatus: lastLayerStatus
                             }
                         }));
@@ -501,7 +501,7 @@ document.addEventListener('alpine:init', () => {
                             const logType = window.cliDetectLogType ? window.cliDetectLogType(log) : 'info';
                             window.dispatchEvent(new CustomEvent('cli:log', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     text: log,
                                     logType
                                 }
@@ -527,7 +527,7 @@ document.addEventListener('alpine:init', () => {
                             // Dispatch CLI complete event
                             window.dispatchEvent(new CustomEvent('cli:complete', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     status: 'success',
                                     result: result
                                 }
@@ -549,7 +549,7 @@ document.addEventListener('alpine:init', () => {
                             // Success=false means it completed but had issues
                             window.dispatchEvent(new CustomEvent('cli:complete', {
                                 detail: {
-                                    runId: cliRunId,
+                                    runId: runId,  // Use server's run_id
                                     status: 'error',
                                     error: result.error || 'Operation completed with errors'
                                 }
@@ -567,7 +567,7 @@ document.addEventListener('alpine:init', () => {
                         // Dispatch CLI complete with error
                         window.dispatchEvent(new CustomEvent('cli:complete', {
                             detail: {
-                                runId: cliRunId,
+                                runId: runId,  // Use server's run_id
                                 status: 'error',
                                 error: errorMsg
                             }
@@ -592,7 +592,7 @@ document.addEventListener('alpine:init', () => {
                         // Dispatch CLI complete with timeout error
                         window.dispatchEvent(new CustomEvent('cli:complete', {
                             detail: {
-                                runId: cliRunId,
+                                runId: runId,  // Use server's run_id
                                 status: 'error',
                                 error: 'Operation timed out'
                             }
@@ -611,7 +611,7 @@ document.addEventListener('alpine:init', () => {
                         // Dispatch CLI complete with error
                         window.dispatchEvent(new CustomEvent('cli:complete', {
                             detail: {
-                                runId: cliRunId,
+                                runId: runId,  // Use server's run_id
                                 status: 'error',
                                 error: error.message
                             }
