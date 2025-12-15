@@ -606,3 +606,136 @@ class TestHelperFunctionEdgeCases:
 
         # Should be limited to 5
         assert len(result["predicted_questions"]) == 5
+
+
+# ===== CANDIDATE PROFILE FALLBACK TESTS =====
+
+
+class TestCandidateProfileFallback:
+    """Tests for the candidate_profile fallback when STAR records are empty."""
+
+    def test_format_stars_uses_star_ids_when_available(self):
+        """When STAR IDs are available, should use them instead of candidate_profile."""
+        predictor = InterviewPredictor()
+        result = predictor._format_stars_for_prompt(
+            star_ids=["star_1", "star_2", "star_3"],
+            candidate_profile="Experienced engineer at Company X with 10 years..."
+        )
+
+        assert "Available STAR story IDs:" in result
+        assert "star_1" in result
+        assert "star_2" in result
+        assert "star_3" in result
+        assert "Candidate Profile Summary" not in result
+
+    def test_format_stars_uses_candidate_profile_when_no_stars(self):
+        """When no STAR IDs available, should fallback to candidate_profile."""
+        predictor = InterviewPredictor()
+        candidate_text = "Experienced engineer at Company X with 10 years of experience in Python and cloud infrastructure."
+
+        result = predictor._format_stars_for_prompt(
+            star_ids=[],
+            candidate_profile=candidate_text
+        )
+
+        assert "[Candidate Profile Summary]" in result
+        assert "Experienced engineer" in result
+        assert "Company X" in result
+
+    def test_format_stars_returns_default_message_when_no_stars_and_no_profile(self):
+        """When no STAR IDs and no candidate_profile, should return default message."""
+        predictor = InterviewPredictor()
+
+        result = predictor._format_stars_for_prompt(star_ids=[], candidate_profile="")
+
+        assert result == "No STAR stories available."
+
+    def test_format_stars_truncates_long_candidate_profile(self):
+        """Should truncate candidate_profile to 1500 chars to avoid token bloat."""
+        predictor = InterviewPredictor()
+        # Create a profile longer than 1500 chars
+        long_profile = "A" * 2000
+
+        result = predictor._format_stars_for_prompt(star_ids=[], candidate_profile=long_profile)
+
+        # Should be truncated - header + 1500 chars
+        assert "[Candidate Profile Summary]" in result
+        assert len(result) < len(long_profile) + 50  # Header overhead
+        assert result.count("A") == 1500  # Exactly 1500 A's
+
+    def test_format_stars_handles_none_candidate_profile(self):
+        """Should handle None candidate_profile gracefully via default param."""
+        predictor = InterviewPredictor()
+
+        # Empty string (default) should return the default message
+        result = predictor._format_stars_for_prompt(star_ids=[])
+
+        assert result == "No STAR stories available."
+
+    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    def test_predict_questions_passes_candidate_profile_to_generate(self, mock_create_llm):
+        """candidate_profile should flow through predict_questions to _generate_questions."""
+        mock_llm = MagicMock()
+        mock_llm.with_structured_output.return_value.invoke.return_value = (
+            QuestionGenerationOutput(
+                questions=[
+                    PredictedQuestion(
+                        question="Tell me about your experience?",
+                        question_type="behavioral",
+                        difficulty="medium",
+                        suggested_answer_approach="Focus on achievements",
+                    )
+                ]
+            )
+        )
+        mock_create_llm.return_value = mock_llm
+
+        state = {
+            "job_id": "test123",
+            "title": "Senior Engineer",
+            "company": "TechCo",
+            "candidate_profile": "Experienced Python developer with 8 years...",
+            "all_stars": [],  # Empty to trigger fallback
+            "jd_annotations": {"annotations": [], "concerns": []},
+        }
+
+        predictor = InterviewPredictor()
+        result = predictor.predict_questions(state)
+
+        # Verify LLM was called
+        mock_llm.with_structured_output.return_value.invoke.assert_called_once()
+
+        # The candidate_profile should have been passed through
+        assert len(result["predicted_questions"]) == 1
+
+    @patch("src.layer7.interview_predictor.create_tracked_llm")
+    def test_candidate_profile_used_in_prompt_when_stars_empty(self, mock_create_llm):
+        """When stars are empty, candidate_profile should appear in the prompt."""
+        mock_llm = MagicMock()
+        mock_structured_llm = MagicMock()
+        mock_llm.with_structured_output.return_value = mock_structured_llm
+        mock_structured_llm.invoke.return_value = QuestionGenerationOutput(questions=[])
+        mock_create_llm.return_value = mock_llm
+
+        candidate_text = "UNIQUE_MARKER_12345_engineer_profile_text"
+        state = {
+            "job_id": "test123",
+            "title": "Engineer",
+            "company": "Co",
+            "candidate_profile": candidate_text,
+            "all_stars": [],
+            "selected_stars": [],
+            "jd_annotations": {"annotations": [], "concerns": []},
+        }
+
+        predictor = InterviewPredictor()
+        predictor.predict_questions(state)
+
+        # Get the messages passed to invoke
+        call_args = mock_structured_llm.invoke.call_args[0][0]
+        # The second message (index 1) should be the user message with the formatted content
+        user_message_content = call_args[1].content
+
+        # The unique marker should appear in the prompt since stars are empty
+        assert "UNIQUE_MARKER_12345" in user_message_content
+        assert "[Candidate Profile Summary]" in user_message_content
