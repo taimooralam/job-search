@@ -268,6 +268,22 @@ document.addEventListener('alpine:init', () => {
 
                 const result = await response.json();
 
+                // Handle HTTP error responses (4xx, 5xx)
+                if (!response.ok) {
+                    // Extract error from FastAPI format (detail) or Flask proxy format (error)
+                    const errorMsg = result.detail || result.error || `Server error (${response.status})`;
+                    console.error(`Queue endpoint returned ${response.status}:`, result);
+
+                    this.lastResults[action] = {
+                        success: false,
+                        timestamp: new Date().toISOString(),
+                        error: errorMsg
+                    };
+
+                    showToast(errorMsg, 'error');
+                    return { success: false, error: errorMsg };
+                }
+
                 if (result.success) {
                     // Store result
                     this.lastResults[action] = {
