@@ -368,6 +368,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- BatchDebug utility - must load before batch-specific scripts -->
+<script src="{{ url_for('static', filename='js/batch-debug.js') }}"></script>
 <style>
 /* Expanded row styling for batch processing table */
 .expanded-detail-row {
@@ -406,6 +408,203 @@
         jobStatuses: new Map(), // jobId -> { status: 'pending'|'running'|'success'|'error', title: string }
         cancelled: false
     };
+
+    // Active SSE connection for bulk operations
+    let activeBatchSSE = null;
+
+    // ============================================================================
+    // SSE Streaming for Bulk Operations
+    // ============================================================================
+
+    /**
+     * Start SSE stream for a bulk operation
+     * Connects to the runner service's log stream for real-time updates
+     * @param {string} runId - The run ID returned from the bulk operation
+     * @param {string} operation - Operation name for logging
+     */
+    function connectBatchSSEStream(runId, operation) {
+        BatchDebug.log('SSE', `Connecting to stream for run ${runId}`, { operation });
+
+        // Close any existing connection
+        if (activeBatchSSE) {
+            BatchDebug.log('SSE', 'Closing previous SSE connection');
+            activeBatchSSE.close();
+            activeBatchSSE = null;
+        }
+
+        const logStreamUrl = `/api/runner/operations/${runId}/logs`;
+        BatchDebug.log('SSE', `Creating EventSource: ${logStreamUrl}`);
+
+        try {
+            activeBatchSSE = new EventSource(logStreamUrl);
+
+            activeBatchSSE.onopen = function() {
+                BatchDebug.log('SSE', 'Connection opened', { readyState: activeBatchSSE.readyState });
+            };
+
+            // Handle regular log messages
+            activeBatchSSE.onmessage = function(event) {
+                BatchDebug.log('SSE', 'Log message', event.data);
+                // Append to CLI panel if available
+                if (window.cliPanel && typeof window.cliPanel.appendOutput === 'function') {
+                    window.cliPanel.appendOutput(event.data, 'info');
+                }
+            };
+
+            // Handle status events (job started, completed, etc.)
+            activeBatchSSE.addEventListener('status', function(event) {
+                BatchDebug.log('SSE', 'Status event received', event.data);
+                try {
+                    const statusData = JSON.parse(event.data);
+                    handleBatchSSEStatus(statusData);
+                } catch (e) {
+                    BatchDebug.error('SSE', 'Failed to parse status event', e);
+                }
+            });
+
+            // Handle layer status updates
+            activeBatchSSE.addEventListener('layer_status', function(event) {
+                BatchDebug.log('SSE', 'Layer status event', event.data);
+                try {
+                    const layerData = JSON.parse(event.data);
+                    // Dispatch to CLI panel
+                    window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                        detail: { runId, layerStatus: layerData }
+                    }));
+                } catch (e) {
+                    BatchDebug.error('SSE', 'Failed to parse layer_status', e);
+                }
+            });
+
+            // Handle completion
+            activeBatchSSE.addEventListener('end', function(event) {
+                const status = event.data;
+                BatchDebug.log('SSE', `Stream ended with status: ${status}`);
+                activeBatchSSE.close();
+                activeBatchSSE = null;
+            });
+
+            // Handle errors
+            activeBatchSSE.onerror = function(err) {
+                BatchDebug.error('SSE', 'Connection error', err);
+                // Don't immediately close - EventSource will try to reconnect
+                // If we want to close, we can check readyState
+                if (activeBatchSSE.readyState === EventSource.CLOSED) {
+                    BatchDebug.log('SSE', 'Connection closed by server');
+                    activeBatchSSE = null;
+                }
+            };
+
+        } catch (e) {
+            BatchDebug.error('SSE', 'Failed to create EventSource', e);
+        }
+    }
+
+    /**
+     * Handle status events from SSE stream
+     * Updates progress badges and dispatches synthetic queue events
+     * @param {Object} statusData - Status data from SSE event
+     */
+    function handleBatchSSEStatus(statusData) {
+        BatchDebug.log('QUEUE', 'Processing status update', statusData);
+
+        const { job_id, status, operation, progress, error } = statusData;
+
+        // Update job progress in batch operation state
+        if (job_id && batchOperationState.jobStatuses.has(job_id)) {
+            const mappedStatus = mapSSEStatusToBatchStatus(status);
+            updateJobProgress(job_id, mappedStatus);
+
+            if (mappedStatus === 'success' || mappedStatus === 'error') {
+                batchOperationState.completedJobs++;
+                updateBatchProgressUI();
+            }
+        }
+
+        // Dispatch synthetic queue event to update live status badges
+        dispatchSyntheticQueueEvent(statusData);
+    }
+
+    /**
+     * Map SSE status strings to batch operation status strings
+     * @param {string} sseStatus - Status from SSE event
+     * @returns {string} Mapped status for batch operation
+     */
+    function mapSSEStatusToBatchStatus(sseStatus) {
+        const statusMap = {
+            'started': 'running',
+            'running': 'running',
+            'completed': 'success',
+            'success': 'success',
+            'failed': 'error',
+            'error': 'error',
+            'queued': 'queued',
+            'pending': 'pending'
+        };
+        return statusMap[sseStatus] || sseStatus;
+    }
+
+    /**
+     * Dispatch synthetic queue event to update Alpine.js queue store
+     * This makes live status badges update even for bulk operations
+     * @param {Object} statusData - Status data from SSE
+     */
+    function dispatchSyntheticQueueEvent(statusData) {
+        BatchDebug.log('QUEUE', 'Dispatching synthetic queue event', statusData);
+
+        // Update Alpine queue store directly if available
+        if (window.Alpine && Alpine.store('queue')) {
+            const store = Alpine.store('queue');
+            const { job_id, status, operation } = statusData;
+
+            // Map SSE status to queue store status
+            const queueStatus = mapSSEStatusToBatchStatus(status);
+
+            // Update the queue store's job tracking
+            if (job_id) {
+                // If job is starting, add to active jobs
+                if (queueStatus === 'running') {
+                    store.currentJobId = job_id;
+                    store.currentOperation = operation || store.currentOperation;
+                }
+
+                // Dispatch custom event for live_status_badge.html to react to
+                document.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                    detail: {
+                        jobId: job_id,
+                        status: queueStatus,
+                        operation: operation
+                    }
+                }));
+
+                // Also dispatch the specific events that existing code listens for
+                if (queueStatus === 'running') {
+                    document.dispatchEvent(new CustomEvent('queue:job-started', {
+                        detail: { jobId: job_id, operation }
+                    }));
+                } else if (queueStatus === 'success') {
+                    document.dispatchEvent(new CustomEvent('queue:job-completed', {
+                        detail: { jobId: job_id, operation }
+                    }));
+                } else if (queueStatus === 'error') {
+                    document.dispatchEvent(new CustomEvent('queue:job-failed', {
+                        detail: { jobId: job_id, error: statusData.error }
+                    }));
+                }
+            }
+        }
+    }
+
+    /**
+     * Close active SSE connection
+     */
+    function closeBatchSSE() {
+        if (activeBatchSSE) {
+            BatchDebug.log('SSE', 'Manually closing SSE connection');
+            activeBatchSSE.close();
+            activeBatchSSE = null;
+        }
+    }
 
     // ============================================================================
     // Expanded Row State Management (persists across HTMX swaps)
@@ -671,6 +870,9 @@
         const tier = document.getElementById('batch-tier').value || 'B';
         const tierDisplay = tierLabels[tier] || tier;
         const count = batchSelectedJobs.size;
+        const jobIds = Array.from(batchSelectedJobs);
+
+        BatchDebug.log('BATCH', `Starting ${operation}`, { count, tier, jobIds });
 
         const operationNames = {
             'full-extraction': 'Full Extraction',
@@ -693,10 +895,13 @@
             `Jobs will be queued and processed. Check Pipeline Queue for progress.`
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            BatchDebug.log('BATCH', 'Operation cancelled by user');
+            return;
+        }
 
         // Initialize progress tracking
-        initBatchProgress(Array.from(batchSelectedJobs), operationNames[operation] || operation);
+        initBatchProgress(jobIds, operationNames[operation] || operation);
 
         try {
             showToast(`Starting ${operationNames[operation]} for ${count} jobs...`, 'info');
@@ -704,16 +909,19 @@
             // Use the appropriate bulk endpoint for the operation
             const endpoint = bulkEndpoints[operation];
             if (!endpoint) {
+                BatchDebug.error('BATCH', `Unknown operation: ${operation}`);
                 showToast(`Unknown operation: ${operation}`, 'error');
                 hideBatchProgress();
                 return;
             }
 
+            BatchDebug.log('BATCH', `Calling bulk endpoint`, { endpoint });
+
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    job_ids: Array.from(batchSelectedJobs),
+                    job_ids: jobIds,
                     tier: tier,
                     use_llm: true,  // For full-extraction
                     force_refresh: false  // For research-company
@@ -721,6 +929,7 @@
             });
 
             const result = await response.json();
+            BatchDebug.log('BATCH', 'Bulk endpoint response', result);
 
             if (response.ok && result.runs) {
                 // Success - jobs are queued
@@ -728,16 +937,26 @@
 
                 // Mark all jobs as queued in progress panel
                 result.runs.forEach(run => {
+                    BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
                     updateJobProgress(run.job_id, 'queued');
+
+                    // Connect SSE stream for the first job to get real-time logs
+                    // Note: For true bulk SSE, we'd need a bulk log stream endpoint
+                    if (run.run_id && result.runs.indexOf(run) === 0) {
+                        BatchDebug.log('SSE', `Connecting to SSE for first job: ${run.run_id}`);
+                        connectBatchSSEStream(run.run_id, operation);
+                    }
                 });
 
                 // Start polling for status updates via WebSocket queue
                 startBatchProgressPolling();
             } else {
+                BatchDebug.error('BATCH', 'Bulk endpoint failed', result);
                 showToast(result.error || result.detail || 'Failed to start batch', 'error');
                 hideBatchProgress();
             }
         } catch (err) {
+            BatchDebug.error('BATCH', 'Batch operation failed', err);
             showToast('Batch operation failed: ' + err.message, 'error');
             hideBatchProgress();
         }
@@ -835,17 +1054,22 @@
     }
 
     function hideBatchProgress() {
+        BatchDebug.log('PROGRESS', 'Hiding progress panel');
         batchOperationState.active = false;
         document.getElementById('batch-progress-panel').classList.add('hidden');
+        // Clean up SSE connection
+        closeBatchSSE();
     }
 
     function cancelBatchOperation() {
+        BatchDebug.log('BATCH', 'Operation cancelled by user');
         batchOperationState.cancelled = true;
         showToast('Batch operation cancelled', 'warning');
         hideBatchProgress();
     }
 
     function completeBatchOperation() {
+        BatchDebug.log('BATCH', 'Operation complete');
         // Keep the panel visible for a moment to show completion
         const { totalJobs, completedJobs, jobStatuses } = batchOperationState;
         const successCount = Array.from(jobStatuses.values()).filter(j => j.status === 'success').length;
@@ -878,9 +1102,12 @@
     let batchProgressPollInterval = null;
 
     function startBatchProgressPolling() {
+        BatchDebug.log('PROGRESS', 'Starting progress polling (every 2s)');
+
         // Poll every 2 seconds to check status
         batchProgressPollInterval = setInterval(async () => {
             if (!batchOperationState.active) {
+                BatchDebug.log('PROGRESS', 'Stopping polling - batch no longer active');
                 clearInterval(batchProgressPollInterval);
                 return;
             }
@@ -891,7 +1118,7 @@
                 let runningCount = 0;
                 let completeCount = 0;
 
-                // OPTIMIZATION: Build lookup Map ONCE outside the loop (O(n) instead of O(n²))
+                // OPTIMIZATION: Build lookup Map ONCE outside the loop (O(n) instead of O(n*n))
                 const runs = Object.values(cliStore.runs || {});
                 const runsByJobId = new Map(runs.map(r => [r.jobId, r]));
 
@@ -913,15 +1140,20 @@
                     }
                 });
 
+                BatchDebug.log('PROGRESS', `Poll update: ${completeCount}/${batchOperationState.totalJobs} complete, ${runningCount} running`);
+
                 batchOperationState.completedJobs = completeCount;
                 updateBatchProgressUI();
                 renderProgressDetails();
 
                 // Check if all done
                 if (completeCount >= batchOperationState.totalJobs) {
+                    BatchDebug.log('PROGRESS', 'All jobs complete - stopping polling');
                     clearInterval(batchProgressPollInterval);
                     completeBatchOperation();
                 }
+            } else {
+                BatchDebug.warn('PROGRESS', 'CLI store not available for polling');
             }
         }, 2000);
     }

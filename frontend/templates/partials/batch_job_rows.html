@@ -165,24 +165,28 @@
                 </td>
 
                 <!-- Progress indicators -->
+                <!-- MongoDB field names: extracted_jd (pipeline), company_research, generated_cv -->
+                {% set has_jd = job.extracted_jd or job.processed_jd %}
+                {% set has_research = job.company_research or job.role_skills %}
+                {% set has_cv = job.generated_cv or job.cv_output %}
                 <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
                     <div class="flex items-center gap-1.5">
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                                     {% if job.processed_jd %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% if has_jd %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                              title="JD {{ 'Extracted' if job.processed_jd else 'Not extracted' }}">
+                              title="JD {{ 'Extracted' if has_jd else 'Not extracted' }}">
                             JD
                         </span>
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                                     {% if job.company_research %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% if has_research %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                              title="Research {{ 'Complete' if job.company_research else 'Not done' }}">
+                              title="Research {{ 'Complete' if has_research else 'Not done' }}">
                             RS
                         </span>
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                                     {% if job.generated_cv %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                                     {% if has_cv %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
                                      {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                              title="CV {{ 'Generated' if job.generated_cv else 'Not generated' }}">
+                              title="CV {{ 'Generated' if has_cv else 'Not generated' }}">
                             CV
                         </span>
                     </div>
@@ -291,7 +295,7 @@
                         <!-- Extraction status -->
                         <div>
                             <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">JD Extraction</label>
-                            {% if job.processed_jd %}
+                            {% if has_jd %}
                             <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
