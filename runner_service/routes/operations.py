@@ -46,7 +46,15 @@ from src.common.model_tiers import (
 from src.services.operation_base import OperationResult
 
 from ..auth import verify_token
-from ..models import BulkOperationRequest, BulkOperationResponse, BulkOperationRunInfo
+from ..models import (
+    BulkOperationRequest,
+    BulkOperationResponse,
+    BulkOperationRunInfo,
+    QueueOperationRequest,
+    QueueOperationResponse,
+    OperationQueueStatus,
+    JobQueueStatusResponse,
+)
 from .operation_streaming import (
     create_operation_run,
     get_operation_state,
@@ -1455,6 +1463,349 @@ async def suggest_strengths(
             success=False,
             error=str(e),
         )
+
+
+# =============================================================================
+# Queue-Based Operation Endpoints (Job Detail Page)
+# =============================================================================
+
+# Valid operations that can be queued from the detail page
+VALID_QUEUE_OPERATIONS = {
+    "structure-jd",
+    "full-extraction",
+    "research-company",
+    "generate-cv",
+}
+
+# Estimated seconds per operation (for wait time estimation)
+OPERATION_TIME_ESTIMATES = {
+    "structure-jd": 15,
+    "full-extraction": 45,
+    "research-company": 60,
+    "generate-cv": 30,
+}
+
+
+@router.post(
+    "/{job_id}/operations/{operation}/queue",
+    response_model=QueueOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Queue a pipeline operation for background execution",
+    description="Add a pipeline operation to the Redis queue instead of executing directly. Status updates via WebSocket.",
+)
+async def queue_operation(
+    job_id: str,
+    operation: str,
+    request: QueueOperationRequest,
+    background_tasks: BackgroundTasks,
+) -> QueueOperationResponse:
+    """
+    Queue a pipeline operation for background execution.
+
+    Instead of executing immediately, adds to Redis queue.
+    Status updates are broadcast via WebSocket.
+
+    This is the new queue-first approach for the job detail page:
+    - Button click -> queue operation -> WebSocket status updates
+    - User can view logs on-demand via "View Logs" button
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+        operation: Operation type (structure-jd, full-extraction, research-company, generate-cv)
+        request: Queue operation request parameters
+        background_tasks: FastAPI background tasks for async execution
+
+    Returns:
+        QueueOperationResponse with queue_id and position
+    """
+    # Validate operation type
+    if operation not in VALID_QUEUE_OPERATIONS:
+        return QueueOperationResponse(
+            success=False,
+            queue_id="",
+            job_id=job_id,
+            operation=operation,
+            status="failed",
+            position=0,
+            error=f"Invalid operation: {operation}. Valid: {', '.join(sorted(VALID_QUEUE_OPERATIONS))}",
+        )
+
+    # Validate tier
+    try:
+        tier = _validate_tier(request.tier)
+    except HTTPException as e:
+        return QueueOperationResponse(
+            success=False,
+            queue_id="",
+            job_id=job_id,
+            operation=operation,
+            status="failed",
+            position=0,
+            error=e.detail,
+        )
+
+    # Get queue manager
+    queue_manager = _get_queue_manager()
+    if not queue_manager or not queue_manager.is_connected:
+        return QueueOperationResponse(
+            success=False,
+            queue_id="",
+            job_id=job_id,
+            operation=operation,
+            status="failed",
+            position=0,
+            error="Queue service unavailable. Please try again later.",
+        )
+
+    try:
+        # Fetch job details for queue display (async to avoid blocking)
+        job_title, company = await _get_job_details_for_bulk(job_id)
+
+        # Enqueue the operation
+        queue_item = await queue_manager.enqueue(
+            job_id=job_id,
+            job_title=job_title,
+            company=company,
+            operation=operation,
+            processing_tier=tier.value,
+        )
+
+        # Get position in queue
+        position = await queue_manager.get_position(queue_item.queue_id)
+
+        # Create operation run for log tracking (links to queue item)
+        run_id = create_operation_run(job_id, operation)
+        append_operation_log(run_id, f"Queued {operation} for job {job_id}")
+        append_operation_log(run_id, f"Queue position: #{position}")
+
+        # Link run_id to queue item (enables "View Logs" button)
+        await queue_manager.link_run_id(queue_item.queue_id, run_id)
+
+        # Calculate estimated wait time
+        # Rough estimate: position * average operation time
+        avg_time = OPERATION_TIME_ESTIMATES.get(operation, 30)
+        estimated_wait = (position - 1) * avg_time if position > 1 else 0
+
+        # Add background task to execute the operation
+        background_tasks.add_task(
+            _execute_queued_operation,
+            queue_id=queue_item.queue_id,
+            run_id=run_id,
+            job_id=job_id,
+            operation=operation,
+            tier=tier,
+            force_refresh=request.force_refresh or False,
+            use_llm=request.use_llm if request.use_llm is not None else True,
+            use_annotations=request.use_annotations if request.use_annotations is not None else True,
+        )
+
+        logger.info(
+            f"Queued {operation} for job {job_id} as {queue_item.queue_id} (position #{position})"
+        )
+
+        return QueueOperationResponse(
+            success=True,
+            queue_id=queue_item.queue_id,
+            job_id=job_id,
+            operation=operation,
+            status="pending",
+            position=position,
+            estimated_wait_seconds=estimated_wait,
+        )
+
+    except Exception as e:
+        logger.exception(f"Failed to queue {operation} for job {job_id}: {e}")
+        return QueueOperationResponse(
+            success=False,
+            queue_id="",
+            job_id=job_id,
+            operation=operation,
+            status="failed",
+            position=0,
+            error=str(e),
+        )
+
+
+async def _execute_queued_operation(
+    queue_id: str,
+    run_id: str,
+    job_id: str,
+    operation: str,
+    tier: ModelTier,
+    force_refresh: bool,
+    use_llm: bool,
+    use_annotations: bool,
+):
+    """
+    Execute a queued operation in the background.
+
+    This is the worker function that runs after queuing.
+    Updates both operation state and queue state with progress.
+
+    Args:
+        queue_id: Queue item ID
+        run_id: Operation run ID (for log streaming)
+        job_id: MongoDB job ID
+        operation: Operation type
+        tier: Model tier
+        force_refresh: Whether to force refresh (for company research)
+        use_llm: Whether to use LLM (for extraction)
+        use_annotations: Whether to use annotations (for CV generation)
+    """
+    log_cb = create_log_callback(run_id)
+    layer_cb = create_layer_callback(run_id)
+    queue_manager = _get_queue_manager()
+
+    try:
+        # Move from PENDING -> RUNNING (broadcasts WebSocket event)
+        if queue_id:
+            await _start_queue_item(queue_manager, queue_id, log_cb)
+
+        update_operation_status(run_id, "running")
+
+        # Validate job exists
+        log_cb("Validating job exists...")
+        try:
+            await _validate_job_exists_async(job_id)
+            log_cb("Job validated")
+        except HTTPException as e:
+            log_cb(f"Job validation failed: {e.detail}")
+            update_operation_status(run_id, "failed", error=e.detail)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                await queue_manager.fail(queue_id, e.detail)
+            return
+
+        # Execute the appropriate operation
+        result = None
+
+        if operation == "structure-jd":
+            from src.services.structure_jd_service import StructureJDService
+            service = StructureJDService()
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_llm=use_llm,
+            )
+
+        elif operation == "full-extraction":
+            from src.services.full_extraction_service import FullExtractionService
+            service = FullExtractionService()
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_llm=use_llm,
+                progress_callback=layer_cb,
+            )
+
+        elif operation == "research-company":
+            from src.services.company_research_service import CompanyResearchService
+            service = CompanyResearchService()
+            try:
+                result = await service.execute(
+                    job_id=job_id,
+                    tier=tier,
+                    force_refresh=force_refresh,
+                    progress_callback=layer_cb,
+                )
+            finally:
+                service.close()
+
+        elif operation == "generate-cv":
+            from src.services.cv_generation_service import CVGenerationService
+            service = CVGenerationService()
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_annotations=use_annotations,
+                progress_callback=layer_cb,
+            )
+            if result.success:
+                service.persist_run(result, job_id, tier)
+
+        # Update operation status
+        if result:
+            update_operation_status(
+                run_id,
+                "completed" if result.success else "failed",
+                result={
+                    "success": result.success,
+                    "data": result.data,
+                    "cost_usd": result.cost_usd,
+                    "run_id": result.run_id,
+                    "model_used": result.model_used,
+                    "duration_ms": result.duration_ms,
+                    "error": result.error,
+                }
+            )
+            log_cb(f"Operation complete" if result.success else f"Operation failed: {result.error}")
+
+            # Complete queue item (broadcasts WebSocket event)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                try:
+                    if result.success:
+                        await queue_manager.complete(queue_id, success=True)
+                    else:
+                        await queue_manager.fail(queue_id, result.error or "Operation failed")
+                except Exception as e:
+                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+
+    except Exception as e:
+        logger.exception(f"[{run_id[:16]}] Queued {operation} failed: {e}")
+        log_cb(f"Error: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                await queue_manager.fail(queue_id, str(e))
+            except Exception:
+                pass
+
+
+@router.get(
+    "/{job_id}/queue-status",
+    response_model=JobQueueStatusResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Get queue status for all operations on a job",
+    description="Get the queue status for each pipeline operation on a specific job. Used by the pipelines panel.",
+)
+async def get_job_queue_status(job_id: str) -> JobQueueStatusResponse:
+    """
+    Get queue status for all operations on a specific job.
+
+    Used by the frontend pipelines panel to show current status
+    of each operation type (full-extraction, research-company, generate-cv).
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+
+    Returns:
+        JobQueueStatusResponse with status for each operation
+    """
+    queue_manager = _get_queue_manager()
+
+    operations: Dict[str, Optional[OperationQueueStatus]] = {}
+
+    for op in VALID_QUEUE_OPERATIONS:
+        item = None
+        if queue_manager and queue_manager.is_connected:
+            try:
+                item = await queue_manager.get_item_by_job_id_and_operation(job_id, op)
+            except Exception as e:
+                logger.warning(f"Failed to get queue status for {op} on job {job_id}: {e}")
+
+        if item:
+            operations[op] = OperationQueueStatus(
+                status=item.status.value,
+                queue_id=item.queue_id,
+                run_id=item.run_id,
+                position=item.position if item.position > 0 else None,
+                started_at=item.started_at,
+                completed_at=item.completed_at,
+                error=item.error,
+            )
+        else:
+            operations[op] = None
+
+    return JobQueueStatusResponse(job_id=job_id, operations=operations)
 
 
 # =============================================================================

@@ -38,6 +38,14 @@ const PIPELINE_CONFIG = {
         'full-extraction': '/api/runner/operations/{jobId}/full-extraction/stream'
     },
 
+    // Queue endpoints (for queue-first approach on detail page)
+    queueEndpoints: {
+        'structure-jd': '/api/runner/jobs/{jobId}/operations/structure-jd/queue',
+        'full-extraction': '/api/runner/jobs/{jobId}/operations/full-extraction/queue',
+        'research-company': '/api/runner/jobs/{jobId}/operations/research-company/queue',
+        'generate-cv': '/api/runner/jobs/{jobId}/operations/generate-cv/queue'
+    },
+
     // Model mappings per tier per action
     models: {
         'structure-jd': {
@@ -210,6 +218,118 @@ document.addEventListener('alpine:init', () => {
 
             // Fall back to synchronous execution for other actions
             return this.executeSynchronous(action, jobId, options);
+        },
+
+        /**
+         * Queue a pipeline action for background execution (queue-first approach)
+         *
+         * This is the new queue-based execution for the job detail page:
+         * - Adds operation to Redis queue
+         * - Status updates via WebSocket
+         * - User can view logs on-demand via CLI panel
+         *
+         * @param {string} action - Action name (structure-jd, full-extraction, research-company, generate-cv)
+         * @param {string} jobId - MongoDB job ID
+         * @param {Object} options - Additional options (force_refresh, use_llm, use_annotations)
+         * @returns {Promise<Object>} Queue response
+         */
+        async queueExecution(action, jobId, options = {}) {
+            if (this.loading[action]) {
+                console.log(`Action ${action} already running/queued`);
+                return { success: false, error: 'Action already running' };
+            }
+
+            const tier = this.getTier(action);
+            const queueEndpoint = PIPELINE_CONFIG.queueEndpoints[action]?.replace('{jobId}', jobId);
+
+            if (!queueEndpoint) {
+                console.warn(`No queue endpoint for ${action}, falling back to SSE`);
+                return this.executeWithSSE(action, jobId, options);
+            }
+
+            this.loading[action] = true;
+
+            const actionLabel = PIPELINE_CONFIG.labels[action] || action;
+            const tierInfo = this.getTierInfo(tier);
+
+            showToast(`Queuing ${actionLabel} (${tierInfo.label})...`, 'info');
+
+            try {
+                const response = await fetch(queueEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tier,
+                        force_refresh: options.force_refresh || false,
+                        use_llm: options.use_llm !== undefined ? options.use_llm : true,
+                        use_annotations: options.use_annotations !== undefined ? options.use_annotations : true,
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Store result
+                    this.lastResults[action] = {
+                        success: true,
+                        timestamp: new Date().toISOString(),
+                        queued: true,
+                        queue_id: result.queue_id,
+                        position: result.position
+                    };
+
+                    // Show success toast with position
+                    const waitMsg = result.estimated_wait_seconds > 0
+                        ? ` (est. ${Math.round(result.estimated_wait_seconds / 60)} min wait)`
+                        : '';
+                    showToast(`${actionLabel} queued at position #${result.position}${waitMsg}`, 'success');
+
+                    // Update detail pipelines panel if available
+                    const pipelinesStore = Alpine.store('detailPipelines');
+                    if (pipelinesStore) {
+                        pipelinesStore.operations[action] = {
+                            status: 'pending',
+                            queue_id: result.queue_id,
+                            run_id: null,
+                            position: result.position,
+                            started_at: null,
+                            completed_at: null,
+                            error: null
+                        };
+                    }
+
+                    return result;
+
+                } else {
+                    // Queuing failed
+                    this.lastResults[action] = {
+                        success: false,
+                        timestamp: new Date().toISOString(),
+                        error: result.error
+                    };
+
+                    showToast(result.error || `Failed to queue ${actionLabel}`, 'error');
+                    return result;
+                }
+
+            } catch (error) {
+                console.error(`Failed to queue ${action}:`, error);
+                showToast(`Failed to queue: ${error.message}`, 'error');
+
+                this.lastResults[action] = {
+                    success: false,
+                    timestamp: new Date().toISOString(),
+                    error: error.message
+                };
+
+                return { success: false, error: error.message };
+
+            } finally {
+                // Reset loading state after a short delay to show queued status
+                setTimeout(() => {
+                    this.loading[action] = false;
+                }, 500);
+            }
         },
 
         /**
@@ -967,6 +1087,15 @@ function tieredActionButton(config) {
         async execute() {
             if (this.loading) return;
             await Alpine.store('pipeline').execute(this.action, this.jobId, { jobTitle: this.jobTitle });
+        },
+
+        /**
+         * Queue execution for background processing (queue-first approach)
+         * Uses queueExecution instead of execute for job detail page
+         */
+        async queueExecute() {
+            if (this.loading) return;
+            await Alpine.store('pipeline').queueExecution(this.action, this.jobId, { jobTitle: this.jobTitle });
         },
 
         getTierIcon(tier) {

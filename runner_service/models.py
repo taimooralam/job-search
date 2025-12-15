@@ -201,3 +201,65 @@ class BulkOperationResponse(BaseModel):
 
     runs: List[BulkOperationRunInfo] = Field(..., description="List of runs created")
     total_count: int = Field(..., description="Total number of jobs queued")
+
+
+# === Queue Operation Models (Detail Page Pipeline Buttons) ===
+
+
+class QueueOperationRequest(BaseModel):
+    """Request body for queuing a pipeline operation from the job detail page."""
+
+    tier: str = Field(
+        default="balanced",
+        description="Model tier: 'fast', 'balanced', or 'quality'"
+    )
+    force_refresh: Optional[bool] = Field(
+        default=False,
+        description="Force refresh for company research (ignore cache)"
+    )
+    use_llm: Optional[bool] = Field(
+        default=True,
+        description="Use LLM for extraction (vs rule-based)"
+    )
+    use_annotations: Optional[bool] = Field(
+        default=True,
+        description="Whether to incorporate user annotations for CV generation"
+    )
+
+
+class QueueOperationResponse(BaseModel):
+    """Response after queuing a pipeline operation."""
+
+    success: bool = Field(..., description="Whether the operation was queued successfully")
+    queue_id: str = Field(..., description="Unique queue entry ID")
+    job_id: str = Field(..., description="MongoDB job ID")
+    operation: str = Field(..., description="Operation type queued")
+    status: str = Field(default="pending", description="Initial status (always 'pending')")
+    position: int = Field(..., description="Position in queue (1-indexed)")
+    estimated_wait_seconds: Optional[int] = Field(
+        None,
+        description="Estimated wait time in seconds (based on queue position)"
+    )
+    error: Optional[str] = Field(None, description="Error message if queuing failed")
+
+
+class OperationQueueStatus(BaseModel):
+    """Status of a single operation in the queue for a specific job."""
+
+    status: str = Field(..., description="Operation status: pending, running, completed, failed, or null if never queued")
+    queue_id: Optional[str] = Field(None, description="Queue item ID if queued")
+    run_id: Optional[str] = Field(None, description="Run ID for log streaming if started")
+    position: Optional[int] = Field(None, description="Queue position if pending")
+    started_at: Optional[datetime] = Field(None, description="When operation started")
+    completed_at: Optional[datetime] = Field(None, description="When operation completed")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class JobQueueStatusResponse(BaseModel):
+    """Response containing queue status for all operations on a specific job."""
+
+    job_id: str = Field(..., description="MongoDB job ID")
+    operations: Dict[str, Optional[OperationQueueStatus]] = Field(
+        ...,
+        description="Queue status for each operation type. None if never queued."
+    )

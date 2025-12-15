@@ -442,6 +442,129 @@ class QueueManager:
 
         return None
 
+    async def get_item_by_job_id_and_operation(
+        self,
+        job_id: str,
+        operation: str
+    ) -> Optional[QueueItem]:
+        """
+        Find queue item by job_id AND operation type.
+
+        Returns most recent item matching both criteria.
+        Searches running, pending, failed, and history in that order.
+
+        Args:
+            job_id: MongoDB job _id
+            operation: Operation type (e.g., 'full-extraction', 'research-company')
+
+        Returns:
+            QueueItem or None if not found
+        """
+        if not self._redis:
+            return None
+
+        # Check running first (most likely to be actively queried)
+        running_ids = await self._redis.smembers(self.RUNNING_KEY)
+        for queue_id in running_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id and item.operation == operation:
+                return item
+
+        # Check pending
+        pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
+        for i, queue_id in enumerate(reversed(pending_ids)):
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id and item.operation == operation:
+                item.position = i + 1
+                return item
+
+        # Check failed
+        failed_ids = await self._redis.zrange(self.FAILED_KEY, 0, -1)
+        for queue_id in failed_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id and item.operation == operation:
+                return item
+
+        # Check recent history (last 50 for performance)
+        history_ids = await self._redis.lrange(self.HISTORY_KEY, 0, 49)
+        for queue_id in history_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id and item.operation == operation:
+                return item
+
+        return None
+
+    async def get_items_by_job_id(self, job_id: str) -> List[QueueItem]:
+        """
+        Find all queue items for a specific job_id.
+
+        Returns all items (running, pending, failed, and recent history) for the job.
+        Useful for showing all pipeline operations on a job detail page.
+
+        Args:
+            job_id: MongoDB job _id
+
+        Returns:
+            List of QueueItems for this job (may be empty)
+        """
+        if not self._redis:
+            return []
+
+        items: List[QueueItem] = []
+
+        # Check running
+        running_ids = await self._redis.smembers(self.RUNNING_KEY)
+        for queue_id in running_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id:
+                items.append(item)
+
+        # Check pending
+        pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
+        for i, queue_id in enumerate(reversed(pending_ids)):
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id:
+                item.position = i + 1
+                items.append(item)
+
+        # Check failed
+        failed_ids = await self._redis.zrange(self.FAILED_KEY, 0, -1)
+        for queue_id in failed_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id:
+                items.append(item)
+
+        # Check recent history (last 50 for performance)
+        history_ids = await self._redis.lrange(self.HISTORY_KEY, 0, 49)
+        for queue_id in history_ids:
+            item = await self.get_item(queue_id)
+            if item and item.job_id == job_id:
+                items.append(item)
+
+        return items
+
+    async def get_position(self, queue_id: str) -> int:
+        """
+        Get the current position of a queue item in the pending queue.
+
+        Args:
+            queue_id: Queue item ID
+
+        Returns:
+            Position (1-indexed) or 0 if not in pending queue
+        """
+        if not self._redis:
+            return 0
+
+        pending_ids = await self._redis.lrange(self.PENDING_KEY, 0, -1)
+        # pending_ids are in LIFO order (newest first), we want FIFO position
+        try:
+            # Reverse to get FIFO order, find index, add 1 for 1-indexed position
+            fifo_order = list(reversed(pending_ids))
+            return fifo_order.index(queue_id) + 1
+        except ValueError:
+            return 0
+
     async def get_state(self, pending_limit: int = 10) -> QueueState:
         """
         Get full queue state for WebSocket clients.
