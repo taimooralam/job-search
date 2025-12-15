@@ -427,7 +427,8 @@
         .sticky-header th {
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 20; /* Increased from 10 to stay above expanded rows */
+            background: var(--bg-primary); /* Ensure solid background */
         }
 
         /* Loading indicator */
@@ -2841,6 +2842,45 @@
             // Refresh health status every 30 seconds
             setInterval(updateHealthStatus, 30000);
         });
+    </script>
+
+    <!-- Global Debug Mode Helpers -->
+    <script>
+    /**
+     * Enable debug modes via URL params or console
+     * Usage: Add ?debug=true to URL or call enableDebug() in console
+     */
+    (function() {
+        // Auto-enable debug modes if ?debug=true in URL
+        if (window.location.search.includes('debug=true')) {
+            localStorage.setItem('ws_debug', 'true');
+            localStorage.setItem('cli_debug', 'true');
+            console.log('[Debug] All debug modes enabled via URL param');
+        }
+
+        // Global helper to enable debug modes
+        window.enableDebug = function(modes) {
+            const allModes = modes || ['ws', 'cli'];
+            allModes.forEach(mode => {
+                localStorage.setItem(`${mode}_debug`, 'true');
+            });
+            console.log('[Debug] Enabled for:', allModes);
+            console.log('[Debug] Reload page to take effect');
+        };
+
+        // Global helper to disable all debug modes
+        window.disableDebug = function() {
+            localStorage.removeItem('ws_debug');
+            localStorage.removeItem('cli_debug');
+            console.log('[Debug] All debug modes disabled');
+            console.log('[Debug] Reload page to take effect');
+        };
+
+        // Log debug helpers availability
+        if (localStorage.getItem('ws_debug') === 'true' || localStorage.getItem('cli_debug') === 'true') {
+            console.log('[Debug] Debug mode is active. Use disableDebug() to turn off.');
+        }
+    })();
     </script>
 
     <!-- Theme Manager (Phase 2: Dark/Light Mode Toggle) -->

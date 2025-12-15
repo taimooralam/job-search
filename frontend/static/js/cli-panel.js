@@ -8,6 +8,11 @@
  * - Alpine.js store for reactive state
  * - Custom events for loose coupling with pipeline-actions.js
  * - sessionStorage for persistence across navigation
+ *
+ * Debug Mode:
+ * - Enable via: localStorage.setItem('cli_debug', 'true') or ?cli_debug=true
+ * - Check state: Alpine.store('cli').debugState()
+ * - Clear corrupted state: Alpine.store('cli').clearAll()
  */
 
 /* ============================================================================
@@ -18,6 +23,121 @@ const CLI_STORAGE_KEY = 'cli_state';
 const MAX_RUNS = 10;
 const MAX_LOGS_PER_RUN = 500;
 const SAVE_DEBOUNCE_MS = 2000;
+
+// Debug mode - enabled via localStorage or URL param
+const CLI_DEBUG = localStorage.getItem('cli_debug') === 'true' ||
+                  window.location.search.includes('cli_debug=true');
+
+/**
+ * Debug logging for CLI panel
+ */
+function cliDebug(...args) {
+    if (CLI_DEBUG) {
+        console.log('[CLI DEBUG]', new Date().toISOString(), ...args);
+    }
+}
+
+/**
+ * Validate and sanitize runOrder array
+ * Removes undefined/null entries, duplicates, and orphaned entries
+ * @param {Array} runOrder - The runOrder array to sanitize
+ * @param {Object} runs - The runs object to validate against
+ * @returns {Array} - Sanitized runOrder array
+ */
+function sanitizeRunOrder(runOrder, runs) {
+    if (!Array.isArray(runOrder)) {
+        cliDebug('runOrder is not an array, returning empty', typeof runOrder);
+        return [];
+    }
+
+    const seen = new Set();
+    const sanitized = [];
+    const removed = { undefined: 0, null: 0, duplicates: 0, orphaned: 0 };
+
+    for (const runId of runOrder) {
+        // Skip undefined
+        if (runId === undefined) {
+            removed.undefined++;
+            continue;
+        }
+        // Skip null
+        if (runId === null) {
+            removed.null++;
+            continue;
+        }
+        // Skip duplicates
+        if (seen.has(runId)) {
+            removed.duplicates++;
+            continue;
+        }
+        // Skip orphaned entries (in runOrder but not in runs)
+        if (runs && !runs[runId]) {
+            removed.orphaned++;
+            cliDebug('Removing orphaned runId:', runId);
+            continue;
+        }
+
+        seen.add(runId);
+        sanitized.push(runId);
+    }
+
+    const totalRemoved = removed.undefined + removed.null + removed.duplicates + removed.orphaned;
+    if (totalRemoved > 0) {
+        console.warn('[CLI] Sanitized runOrder - removed:', removed);
+        cliDebug('Sanitization details', {
+            originalLength: runOrder.length,
+            sanitizedLength: sanitized.length,
+            removed
+        });
+    }
+
+    return sanitized;
+}
+
+/**
+ * Validate runs object - ensure all entries are valid
+ * @param {Object} runs - The runs object to sanitize
+ * @returns {Object} - Sanitized runs object
+ */
+function sanitizeRuns(runs) {
+    if (!runs || typeof runs !== 'object') {
+        cliDebug('runs is not an object, returning empty', typeof runs);
+        return {};
+    }
+
+    const sanitized = {};
+    let removed = 0;
+
+    for (const [runId, run] of Object.entries(runs)) {
+        // Skip invalid entries
+        if (!run || typeof run !== 'object') {
+            removed++;
+            cliDebug('Removing invalid run entry', runId, run);
+            continue;
+        }
+
+        // Ensure required fields exist with defaults
+        sanitized[runId] = {
+            jobId: run.jobId || null,
+            jobTitle: run.jobTitle || 'Unknown',
+            action: run.action || 'unknown',
+            status: run.status || 'unknown',
+            logs: Array.isArray(run.logs) ? run.logs : [],
+            layerStatus: run.layerStatus || {},
+            startedAt: run.startedAt || Date.now(),
+            completedAt: run.completedAt || null,
+            error: run.error || null,
+            // Preserve any extra fields
+            ...run
+        };
+    }
+
+    if (removed > 0) {
+        console.warn('[CLI] Removed', removed, 'invalid run entries');
+    }
+
+    return sanitized;
+}
 
 /* ============================================================================
    Alpine Store
@@ -50,18 +170,53 @@ document.addEventListener('alpine:init', () => {
             if (this._initialized) return;
             this._initialized = true;
 
-            // Restore state from sessionStorage
+            cliDebug('Initializing CLI store');
+
+            // Restore state from sessionStorage with validation
             try {
                 const saved = sessionStorage.getItem(CLI_STORAGE_KEY);
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    this.expanded = state.expanded || false;
-                    this.activeRunId = state.activeRunId || null;
-                    this.runs = state.runs || {};
-                    this.runOrder = state.runOrder || [];
+                cliDebug('Raw sessionStorage data:', saved ? `${saved.length} chars` : 'null');
 
-                    // Validate activeRunId still exists
-                    if (this.activeRunId && !this.runs[this.activeRunId]) {
+                if (saved) {
+                    let state;
+                    try {
+                        state = JSON.parse(saved);
+                    } catch (parseError) {
+                        console.error('[CLI] Failed to parse sessionStorage, clearing corrupted data:', parseError);
+                        sessionStorage.removeItem(CLI_STORAGE_KEY);
+                        this._setupEventListeners();
+                        this._setupKeyboardShortcut();
+                        console.log('[CLI] Initialized (cleared corrupted state)');
+                        return;
+                    }
+
+                    cliDebug('Parsed state:', {
+                        expanded: state.expanded,
+                        activeRunId: state.activeRunId,
+                        runsCount: state.runs ? Object.keys(state.runs).length : 0,
+                        runOrderLength: state.runOrder ? state.runOrder.length : 0,
+                        runOrderRaw: state.runOrder
+                    });
+
+                    this.expanded = state.expanded || false;
+
+                    // Sanitize runs first (before runOrder validation)
+                    const originalRunsCount = state.runs ? Object.keys(state.runs).length : 0;
+                    this.runs = sanitizeRuns(state.runs);
+
+                    // Sanitize runOrder - remove undefined, null, duplicates, orphaned
+                    const originalRunOrderLength = state.runOrder ? state.runOrder.length : 0;
+                    this.runOrder = sanitizeRunOrder(state.runOrder, this.runs);
+
+                    // Validate activeRunId
+                    if (state.activeRunId) {
+                        if (this.runs[state.activeRunId]) {
+                            this.activeRunId = state.activeRunId;
+                        } else {
+                            cliDebug('activeRunId not found in runs, selecting first', state.activeRunId);
+                            this.activeRunId = this.runOrder[0] || null;
+                        }
+                    } else {
                         this.activeRunId = this.runOrder[0] || null;
                     }
 
@@ -69,23 +224,37 @@ document.addEventListener('alpine:init', () => {
                         runs: this.runOrder.length,
                         activeRunId: this.activeRunId
                     });
+
+                    // If we had to sanitize, save the clean state immediately
+                    if (originalRunOrderLength !== this.runOrder.length ||
+                        originalRunsCount !== Object.keys(this.runs).length) {
+                        cliDebug('State was sanitized, saving clean version');
+                        this._saveStateImmediate();
+                    }
                 }
             } catch (e) {
                 console.error('[CLI] Failed to restore state:', e);
+                // Clear corrupted state
+                sessionStorage.removeItem(CLI_STORAGE_KEY);
             }
 
             // Set up event listeners
             this._setupEventListeners();
+            this._setupKeyboardShortcut();
 
-            // Keyboard shortcut: Ctrl+` to toggle
+            console.log('[CLI] Initialized');
+        },
+
+        /**
+         * Set up keyboard shortcut (Ctrl+` to toggle)
+         */
+        _setupKeyboardShortcut() {
             document.addEventListener('keydown', (e) => {
                 if (e.ctrlKey && e.key === '`') {
                     e.preventDefault();
                     this.toggle();
                 }
             });
-
-            console.log('[CLI] Initialized');
         },
 
         /**
@@ -441,7 +610,26 @@ document.addEventListener('alpine:init', () => {
         startRun(detail) {
             const { runId, jobId, jobTitle, action } = detail;
 
+            // Guard against undefined runId
+            if (!runId) {
+                console.error('[CLI] startRun called with undefined/null runId');
+                cliDebug('startRun rejected - no runId', detail);
+                return;
+            }
+
+            cliDebug('Starting run:', { runId, jobId, jobTitle, action });
             console.log('[CLI] Starting run:', { runId, jobId, jobTitle, action });
+
+            // Check if already exists (prevent duplicates)
+            if (this.runs[runId]) {
+                cliDebug('Run already exists, updating status instead of creating', runId);
+                this.runs[runId].status = 'running';
+                this.runs[runId].startedAt = Date.now();
+                this.activeRunId = runId;
+                this.expanded = true;
+                this._saveStateImmediate();
+                return;
+            }
 
             // Create run entry
             this.runs[runId] = {
@@ -455,8 +643,10 @@ document.addEventListener('alpine:init', () => {
                 completedAt: null
             };
 
-            // Add to front of run order
-            this.runOrder.unshift(runId);
+            // Add to front of run order (prevent duplicates)
+            if (!this.runOrder.includes(runId)) {
+                this.runOrder.unshift(runId);
+            }
 
             // Switch to new run
             this.activeRunId = runId;
@@ -573,14 +763,19 @@ document.addEventListener('alpine:init', () => {
          * Close a run tab
          */
         closeRun(runId) {
+            // Guard against undefined runId
+            if (!runId) {
+                console.error('[CLI] closeRun called with undefined/null runId');
+                return;
+            }
+
+            cliDebug('Closing run:', runId);
+
             // Remove from runs
             delete this.runs[runId];
 
-            // Remove from order
-            const idx = this.runOrder.indexOf(runId);
-            if (idx > -1) {
-                this.runOrder.splice(idx, 1);
-            }
+            // Remove all instances from order (handles duplicates)
+            this.runOrder = this.runOrder.filter(id => id !== runId);
 
             // If we closed the active run, switch to another
             if (this.activeRunId === runId) {
@@ -916,6 +1111,49 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             }
+        },
+
+        /**
+         * Debug utility - dump current state (for console debugging)
+         * Usage: Alpine.store('cli').debugState()
+         */
+        debugState() {
+            const state = {
+                expanded: this.expanded,
+                activeRunId: this.activeRunId,
+                runOrder: [...this.runOrder],
+                runOrderLength: this.runOrder.length,
+                runsCount: Object.keys(this.runs).length,
+                runs: Object.fromEntries(
+                    Object.entries(this.runs).map(([id, run]) => [
+                        id,
+                        {
+                            jobId: run.jobId,
+                            jobTitle: run.jobTitle,
+                            status: run.status,
+                            logsCount: run.logs?.length || 0
+                        }
+                    ])
+                ),
+                runOrderValid: this.runOrder.every(id =>
+                    id !== undefined && id !== null && this.runs[id]
+                )
+            };
+            console.log('[CLI] Current State:', state);
+            return state;
+        },
+
+        /**
+         * Force clear and reset CLI state (for debugging corrupted state)
+         * Usage: Alpine.store('cli').clearAll()
+         */
+        clearAll() {
+            this.runs = {};
+            this.runOrder = [];
+            this.activeRunId = null;
+            this.expanded = false;
+            sessionStorage.removeItem(CLI_STORAGE_KEY);
+            console.log('[CLI] State cleared');
         }
     });
 });
