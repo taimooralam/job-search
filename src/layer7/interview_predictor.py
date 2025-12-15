@@ -340,6 +340,9 @@ class InterviewPredictor:
         all_stars = state.get("all_stars") or state.get("selected_stars") or []
         star_ids = [s.get("id", "") for s in all_stars if s.get("id")]
 
+        # Get candidate profile for fallback context when STARs unavailable
+        candidate_profile = state.get("candidate_profile", "")
+
         # Generate questions via LLM
         questions = self._generate_questions(
             gaps=gaps,
@@ -348,6 +351,7 @@ class InterviewPredictor:
             company=state.get("company", ""),
             seniority_level=self._get_seniority_level(state),
             star_ids=star_ids,
+            candidate_profile=candidate_profile,
             max_questions=max_questions,
             # Phase 5: Passion and identity areas
             passion_items=passion_items,
@@ -382,7 +386,8 @@ class InterviewPredictor:
         company: str,
         seniority_level: str,
         star_ids: List[str],
-        max_questions: int,
+        candidate_profile: str = "",
+        max_questions: int = 12,
         # Phase 5: Passion and identity areas
         passion_items: Optional[List[JDAnnotation]] = None,
         avoid_items: Optional[List[JDAnnotation]] = None,
@@ -392,7 +397,7 @@ class InterviewPredictor:
         # Format gaps text
         gaps_text = self._format_gaps_for_prompt(gaps)
         concerns_text = self._format_concerns_for_prompt(concerns)
-        stars_text = self._format_stars_for_prompt(star_ids)
+        stars_text = self._format_stars_for_prompt(star_ids, candidate_profile)
 
         # Phase 5: Format passion/identity context
         passion_identity_text = self._format_passion_identity_for_prompt(
@@ -501,9 +506,21 @@ class InterviewPredictor:
 
         return "\n".join(lines)
 
-    def _format_stars_for_prompt(self, star_ids: List[str]) -> str:
-        """Format available STAR IDs for the prompt."""
+    def _format_stars_for_prompt(self, star_ids: List[str], candidate_profile: str = "") -> str:
+        """
+        Format available STAR IDs for the prompt, with master-cv fallback.
+
+        When no STAR records are available, falls back to candidate_profile
+        to provide context for interview question answer preparation.
+
+        Note: Truncation at 1500 chars is a research gap - see missing.md GAP-098
+        for discussion on optimal truncation length for interview prep context.
+        """
         if not star_ids:
+            if candidate_profile:
+                # Truncate to 1500 chars to avoid token bloat
+                truncated_profile = candidate_profile[:1500]
+                return f"[Candidate Profile Summary]\n{truncated_profile}"
             return "No STAR stories available."
 
         return "Available STAR story IDs: " + ", ".join(star_ids[:20])  # Limit to avoid token bloat

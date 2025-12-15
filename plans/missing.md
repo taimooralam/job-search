@@ -113,6 +113,56 @@
 
 ---
 
+### Today's Session (2025-12-15 Session 13): Master-CV Loading Analysis + Layer 7 Fallback Fix
+
+**FIX: Layer 7 Interview Predictor master-cv fallback - IMPLEMENTED**:
+- **Issue**: When STAR records were empty, interview predictor returned "No STAR stories available" instead of using candidate_profile as fallback, unlike Layer 5 which had proper fallback logic
+- **Root Cause**: Inconsistent fallback patterns between layers. Layer 5's `_format_stars_summary()` correctly fell back to `_candidate_profile_snippet()`, but Layer 7's `_format_stars_for_prompt()` did not
+- **Fix Applied**:
+  1. Added `candidate_profile = state.get("candidate_profile", "")` loading in `predict_questions()` method
+  2. Updated `_generate_questions()` signature to accept `candidate_profile` parameter
+  3. Updated `_format_stars_for_prompt()` to accept `candidate_profile` and return truncated profile as fallback
+  4. Truncation set at 1500 chars (see GAP-098 for research on optimal value)
+- **Files Modified**: `src/layer7/interview_predictor.py`
+- **Impact**: Interview questions now have candidate context even when STAR records are empty
+
+---
+
+### GAP-098: Optimal Truncation Length for candidate_profile in Prompts
+**Priority**: P3 LOW | **Status**: 🟡 RESEARCH GAP | **Effort**: Investigation
+
+**Context**:
+- Different layers use different truncation lengths for `candidate_profile`:
+  - Layer 4 (Opportunity Mapper): 1200 chars
+  - Layer 6a (Cover Letter): ~1200 chars via `_candidate_profile_snippet()`
+  - Layer 7 (Interview Predictor): 1500 chars (newly added)
+- No systematic analysis exists for optimal truncation length
+
+**Research Questions**:
+1. What is the token impact of different truncation lengths (800, 1200, 1500, 2000)?
+2. Does longer context improve output quality for interview prep vs fit analysis?
+3. Should truncation be smart (preserve sections) vs simple (character slice)?
+4. Should we standardize truncation length across all layers?
+
+**Current Implementation**:
+```python
+# Layer 7: Simple character truncation
+truncated_profile = candidate_profile[:1500]
+```
+
+**Potential Improvements**:
+- Smart truncation that preserves achievement bullets
+- Section-aware truncation (keep recent roles, drop education if needed)
+- Dynamic truncation based on remaining context budget
+- Centralized `truncate_candidate_profile()` helper with consistent logic
+
+**References**:
+- Layer 4: `src/layer4/opportunity_mapper.py:172-177` (`_truncate_text()`)
+- Layer 5: `src/layer5/people_mapper.py:1248-1251` (`_candidate_profile_snippet()`)
+- Layer 7: `src/layer7/interview_predictor.py:509-526` (`_format_stars_for_prompt()`)
+
+---
+
 ### Today's Session (2025-12-12 Session 9): LinkedIn Copy Button Fix + Visual Feedback
 
 **BUG FIX 11: Clipboard copy not working in non-secure contexts - FIXED**:
