@@ -3364,6 +3364,45 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Verification**: Error no longer appears in browser console; CLI panel logs stream continuously during pipeline execution; batch job rows expand/collapse smoothly
   - **Commit**: `d924b2dd` - fix(frontend): resolve Alpine.js error causing pipeline logs to stop
 
+### Job Detail Page UI/UX Fixes (2025-12-15)
+
+**BUG FIX 13: Pipelines Panel Z-index Issue - FIXED**:
+- **Issue**: Active Pipelines panel on job detail page went behind sticky header when scrolling down
+- **Root Cause**: `.job-detail-pipelines-panel` had no z-index positioning; sticky header had `z-index: 50`
+- **Fix Applied**: Added `position: relative; z-index: 40;` to `.job-detail-pipelines-panel` in `frontend/static/css/job-detail.css` (lines 278-283)
+  - Panel now layers above main content but below header dropdown menus
+  - Maintains proper stacking context during scroll interactions
+- **Files Modified**: `frontend/static/css/job-detail.css`
+- **Verification**: Panel stays visible and accessible when scrolling; no layering conflicts
+- **Impact**: Users can reliably interact with pipeline badges and buttons regardless of scroll position
+
+**BUG FIX 14: Silent Click Handler Failure - FIXED**:
+- **Issue**: Clicking pipeline badges to view logs did nothing when `run_id` wasn't available; no feedback to user
+- **Root Cause**: `openLogs()` method in `frontend/static/js/job-pipelines-panel.js` silently returned when `run_id` was undefined
+  - User clicked button expecting action but nothing happened
+  - No error message or explanation of why logs unavailable
+- **Fix Applied**: Added toast notification "Logs not available for [operation]" instead of silent failure (lines 201-218)
+  - When `run_id` is missing, displays user-friendly toast message
+  - Message explains logs unavailable for this operation
+  - Users understand why action didn't work instead of being confused
+- **Files Modified**: `frontend/static/js/job-pipelines-panel.js`
+- **Verification**: Toast appears when clicking badge without run_id; message displays operation name correctly
+- **Impact**: Improved UX feedback for unavailable logs; users get explanatory message instead of silent failure
+
+**BUG FIX 15: HTTP Error Handling Improvements - ENHANCED**:
+- **Issue**: Pipeline action HTTP errors not properly logged; debugging difficult for network failures
+- **Enhancement Applied**: Improved error handling in `frontend/static/js/pipeline-actions.js` to capture and log HTTP status codes and response messages
+  - Added error context to toast notifications
+  - Distinguishes between network errors (connection failed) and API errors (500, 401, etc.)
+  - Toast messages now specify error type for troubleshooting
+- **Files Modified**: `frontend/static/js/pipeline-actions.js`
+- **Verification**: HTTP error toast messages display specific error codes and descriptions
+- **Impact**: Operators can diagnose API failures faster; error messages guide troubleshooting
+
+---
+
+**Commit**: `ddd339d4` - fix(frontend): Z-index layering, silent failures, and HTTP error handling
+
 ---
 
 ### WebSocket Mixed Content Security - Traefik HTTPS Infrastructure (2025-12-14)
