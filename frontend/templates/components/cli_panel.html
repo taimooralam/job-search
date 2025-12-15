@@ -49,7 +49,7 @@
         <!-- Tab Bar -->
         <div class="cli-tabs" x-show="$store.cli.runOrder.length > 0">
             <div class="cli-tabs-scroll">
-                <template x-for="runId in $store.cli.runOrder" :key="runId">
+                <template x-for="runId in $store.cli.runOrder.filter(id => id && $store.cli.runs[id])" :key="runId">
                     <button class="cli-tab"
                             :class="{ 'cli-tab--active': $store.cli.activeRunId === runId }"
                             @click.stop="$store.cli.switchToRun(runId)"
@@ -61,18 +61,15 @@
                                   'cli-tab-status--success': $store.cli.runs[runId]?.status === 'success',
                                   'cli-tab-status--error': $store.cli.runs[runId]?.status === 'error'
                               }">
-                            <template x-if="$store.cli.runs[runId]?.status === 'running'">
+                            <!-- Use x-show with wrapper span for status icons to avoid x-if timing issues -->
+                            <span x-show="$store.cli.runs[runId]?.status === 'running'">
                                 <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                            </template>
-                            <template x-if="$store.cli.runs[runId]?.status === 'success'">
-                                <span>✓</span>
-                            </template>
-                            <template x-if="$store.cli.runs[runId]?.status === 'error'">
-                                <span>✗</span>
-                            </template>
+                            </span>
+                            <span x-show="$store.cli.runs[runId]?.status === 'success'">✓</span>
+                            <span x-show="$store.cli.runs[runId]?.status === 'error'">✗</span>
                         </span>
                         <!-- Tab title -->
                         <span class="cli-tab-title" x-text="$store.cli.runs[runId]?.jobTitle || 'Unknown'"></span>
@@ -145,30 +142,25 @@
                               'cli-layer--error': layer === 'error'
                           }"
                           :title="key + ': ' + layer">
-                        <template x-if="layer === 'running'">
+                        <!-- Use x-show instead of x-if for status icons to prevent DOM timing issues -->
+                        <span x-show="layer === 'running'" class="inline-flex">
                             <svg class="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                             </svg>
-                        </template>
-                        <template x-if="layer === 'complete'">
-                            <span>✓</span>
-                        </template>
-                        <template x-if="layer === 'error'">
-                            <span>✗</span>
-                        </template>
-                        <template x-if="layer === 'pending'">
-                            <span>○</span>
-                        </template>
+                        </span>
+                        <span x-show="layer === 'complete'">✓</span>
+                        <span x-show="layer === 'error'">✗</span>
+                        <span x-show="layer === 'pending'">○</span>
                         <span class="cli-layer-name" x-text="key"></span>
                     </span>
                 </template>
             </div>
 
             <div class="cli-footer-right">
-                <template x-if="$store.cli.runs[$store.cli.activeRunId]?.action">
-                    <span class="cli-action-badge" x-text="$store.cli.runs[$store.cli.activeRunId].action.replace('_', ' ')"></span>
-                </template>
+                <span x-show="$store.cli.runs[$store.cli.activeRunId]?.action"
+                      class="cli-action-badge"
+                      x-text="$store.cli.runs[$store.cli.activeRunId]?.action?.replace('_', ' ') || ''"></span>
             </div>
         </div>
     </div>
