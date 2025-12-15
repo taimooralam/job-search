@@ -74,4 +74,18 @@ Requires job_id to be in context.
             <span>Done</span>
         </span>
     </template>
+
+    {# Idle Badge (when not in queue) #}
+    <template x-if="!status">
+        <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+            style="background-color: rgba(107, 114, 128, 0.1); color: #6b7280;"
+            title="Not currently in pipeline queue"
+        >
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Idle</span>
+        </span>
+    </template>
 </div>
