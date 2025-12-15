@@ -3272,6 +3272,40 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Testing**: WebSocket connections verified in browser DevTools; Q(ws) indicator shows correct status; no more security warnings
   - **Files Modified**: `docker-compose.runner.yml` (Traefik config), `frontend/templates/base.html` (Q(ws) indicator), `frontend/static/js/base.js` (WebSocket status check)
 
+### Queue Manager Fixes & Cleanup Functionality (2025-12-15)
+- [x] Fixed database name bug causing "Unknown Company" display in queue UI (2025-12-15)
+  - **Root Cause**: Methods `_get_job_details()` and `_get_job_details_for_bulk()` in QueueManager used hardcoded `"job-search"` database name instead of reading from environment variable
+  - **Impact**: Jobs displayed "Unknown Company" in queue dropdown because lookup failed against wrong database; job details not found
+  - **Fix Applied**:
+    1. Updated `_get_job_details()` to use `os.getenv("MONGO_DB_NAME", "jobs")` for database lookup
+    2. Updated `_get_job_details_for_bulk()` to use same environment-based database name
+    3. Now correctly reads from active MongoDB database configured in environment
+  - **Files Modified**: `runner_service/queue/manager.py`
+  - **Verification**: Queue dropdown now displays correct company names for all jobs; database name pulled from runtime environment
+
+- [x] Added missing `fail()` method to QueueManager (2025-12-15)
+  - **Root Cause**: QueueManager was called with `.fail(queue_id, error)` in 9 locations throughout codebase but method didn't exist, causing silent failures and jobs to get stuck in "pending" state
+  - **Impact**: Failed pipeline operations were not properly recorded; jobs couldn't transition to "failed" state; operators unaware of failures
+  - **Fix Applied**:
+    1. Implemented `fail(queue_id: str, error: str)` method in QueueManager
+    2. Method updates queue item status to "failed" with error message and timestamp
+    3. Removes item from active processing to prevent infinite retry loops
+    4. Maintains queue state consistency with Redis
+  - **Files Modified**: `runner_service/queue/manager.py`
+  - **Verification**: All 9 call sites now execute without AttributeError; failed operations properly recorded in queue state
+
+- [x] Implemented queue cleanup & admin functions (2025-12-15)
+  - **Purpose**: Remove orphaned/stale items from queue and enable full queue reset for administrative recovery
+  - **Features Implemented**:
+    1. **`cleanup_stale_items(max_age_minutes)`**: Removes pending items older than specified age (orphaned jobs stuck in queue)
+    2. **`clear_all()`**: Admin function to completely clear queue (used during recovery operations)
+    3. **Auto-cleanup on startup**: Runner service automatically cleans stale items (max age: 1440 minutes / 24 hours)
+    4. **New API endpoints**:
+       - `POST /queue/cleanup` - Cleanup stale items (body: `{"max_age_minutes": 1440}`)
+       - `POST /queue/clear` - Clear entire queue (admin-only operation)
+  - **Files Modified**: `runner_service/queue/manager.py`, `runner_service/routes/operations.py`
+  - **Verification**: Stale items automatically cleaned on startup; operators can manually trigger cleanup via API; queue reset available for emergency recovery
+
 ### MongoDB Master CV Integration Fix
 - [x] Fix CVLoader default MongoDB flag (2025-12-12): Changed CVLoader to use MongoDB master CV by default instead of falling back to local files. This ensures CV edits via the Master CV Editor are properly used in CV generation.
   - **Root Cause**: CVLoader was initialized with `use_mongodb=False`, causing the CV Editor's MongoDB changes to be ignored during generation

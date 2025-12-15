@@ -945,6 +945,94 @@ Real-time queue updates via JSON messages
 
 **Impact**: WebSocket connections now properly authenticated and fully ASGI-compliant. No more HTTP 403 errors. Clear error messages aid debugging. Real-time queue visibility works reliably.
 
+### Queue Manager & State Management (UPDATED - 2025-12-15)
+
+**Purpose**: Manage job processing queue state, track operation status (pending/completed/failed), and provide cleanup mechanisms for operational recovery.
+
+**Location**:
+- Backend: `runner_service/queue/manager.py` - QueueManager class
+- Backend: `runner_service/app.py` - Queue initialization and startup cleanup
+- Backend: `runner_service/routes/operations.py` - Queue API endpoints
+
+**Architecture - Queue State Model**:
+
+```
+Queue Item (Redis)
+├─ queue_id: str (UUID)
+├─ job_id: str (MongoDB _id)
+├─ status: "pending" | "completed" | "failed"
+├─ created_at: ISO timestamp
+├─ completed_at: ISO timestamp (optional)
+├─ error: str (optional, only if failed)
+└─ job_details: {company, title, url} (cached for UI)
+```
+
+**Key Components**:
+
+1. **Database Name Configuration** (FIXED 2025-12-15):
+   - Reads MongoDB database name from `os.getenv("MONGO_DB_NAME", "jobs")`
+   - Methods `_get_job_details()` and `_get_job_details_for_bulk()` now correctly query active database
+   - Fixed bug where hardcoded `"job-search"` database name caused "Unknown Company" display in queue UI
+   - Impact: Queue dropdown displays correct company names regardless of deployed environment
+
+2. **Status Transition Methods**:
+   - `add(job_id, job_title)` → Creates new queue item, returns queue_id
+   - `complete(queue_id, success=True)` → Marks item as completed, clears from active processing
+   - `fail(queue_id, error)` → NEW (2025-12-15): Marks item as failed with error message, enables proper error tracking
+   - `get_status(queue_id)` → Retrieves current item status
+   - `get_all()` → Returns all pending/completed items for dashboard
+
+3. **Cleanup & Recovery Functions** (NEW - 2025-12-15):
+   - `cleanup_stale_items(max_age_minutes)` → Removes pending items older than specified age
+     - Prevents orphaned jobs from accumulating indefinitely
+     - Default: 1440 minutes (24 hours) on startup
+   - `clear_all()` → Admin function to completely clear queue
+     - Used during disaster recovery or complete reset scenarios
+     - Logs all cleared items for audit trail
+
+4. **Startup Initialization**:
+   - Runner service automatically calls `queue.cleanup_stale_items(max_age_minutes=1440)` on startup
+   - Removes any jobs stuck in pending state from previous session
+   - Prevents queue from growing unbounded with failed/orphaned operations
+
+**API Endpoints** (Updated 2025-12-15):
+
+| Endpoint | Method | Purpose | Body |
+|----------|--------|---------|------|
+| `/queue/add` | POST | Add job to queue | `{"job_id": str, "job_title": str}` |
+| `/queue/complete` | POST | Mark job complete | `{"queue_id": str}` |
+| `/queue/fail` | POST | Mark job failed (NEW) | `{"queue_id": str, "error": str}` |
+| `/queue/status` | GET | Get item status | - |
+| `/queue/all` | GET | Get all queue items | - |
+| `/queue/cleanup` | POST | Cleanup stale items (NEW) | `{"max_age_minutes": int}` |
+| `/queue/clear` | POST | Clear entire queue (NEW) | - |
+
+**Error Handling**:
+
+- All status changes logged with timestamps
+- Failed operations recorded with error message for debugging
+- Stale cleanup logged with count of removed items
+- Redis connection failures result in graceful degradation (in-memory fallback during development)
+
+**Testing**:
+
+- `tests/runner/test_queue_manager.py` - 25+ tests covering:
+  - Adding jobs to queue
+  - Transitioning states (pending → completed/failed)
+  - Database name resolution from environment variable
+  - Cleanup of stale items
+  - Clear all functionality
+  - Job details lookup from MongoDB
+
+**Related Features**:
+
+- Queue WebSocket endpoint (`/ws/queue`) provides real-time updates
+- Queue dashboard page displays pending and completed jobs
+- Admin recovery operations via `/queue/cleanup` and `/queue/clear` endpoints
+- Automatic startup cleanup prevents zombie jobs from blocking processing
+
+**Impact**: Jobs no longer get stuck in queue; failed operations properly recorded; operators have administrative recovery tools. Queue stays clean through automatic stale item cleanup.
+
 ---
 
 ## Frontend Architecture
