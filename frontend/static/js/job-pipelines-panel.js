@@ -201,8 +201,18 @@ document.addEventListener('alpine:init', () => {
         openLogs(operation) {
             const opStatus = this.operations[operation];
 
-            if (!opStatus || !opStatus.run_id) {
+            if (!opStatus) {
+                console.log(`[Pipelines Panel] No status for ${operation}`);
+                return;
+            }
+
+            // If no run_id, show a helpful message instead of silently failing
+            if (!opStatus.run_id) {
                 console.log(`[Pipelines Panel] No run_id for ${operation}`);
+                if (typeof showToast === 'function') {
+                    const label = PIPELINES_PANEL_CONFIG.labels[operation] || operation;
+                    showToast(`Logs not available for ${label}`, 'info');
+                }
                 return;
             }
 
