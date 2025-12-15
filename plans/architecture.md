@@ -1226,6 +1226,49 @@ When clicking a live status badge for a past run:
 3. Parse API response into run entry format
 4. Add placeholder if logs unavailable (runner restarted)
 
+### Batch Processing Debug Logging (NEW - 2025-12-15)
+
+**File**: `frontend/static/js/batch-debug.js`
+
+**Purpose**: Provide operators with visibility into batch processing internals for troubleshooting SSE connection failures, queue issues, and progress updates.
+
+**Categories**:
+- `SSE` - EventSource connection lifecycle (open, close, errors)
+- `QUEUE` - Queue manager events and job status updates
+- `BATCH` - Batch operation lifecycle (start, progress, completion)
+- `PROGRESS` - Progress badge updates and field checks
+
+**Usage**:
+```javascript
+// Enable debugging in browser console
+BatchDebug.enable();
+
+// View persisted logs across page refreshes
+localStorage.getItem('batch_debug_logs')
+```
+
+**Features**:
+- Category-based logging with color-coded output
+- localStorage persistence (survives page refreshes)
+- Timestamps on all log entries
+- Structured log format: `{category, level, timestamp, message, data}`
+
+**Integration**:
+- Included in `batch_processing.html` template
+- Auto-initializes if `localStorage.batch_debug_enabled === 'true'`
+- Logs persist in `localStorage.batch_debug_logs` (max 1000 entries)
+
+**Example Log Entry**:
+```javascript
+{
+  "category": "SSE",
+  "level": "info",
+  "timestamp": "2025-12-15T14:30:45Z",
+  "message": "EventSource connected for job research",
+  "data": { "jobId": "abc123", "url": "/api/runner/operations/run-xyz/logs" }
+}
+```
+
 ---
 
 ### Master CV Editor Page (NEW - 2025-12-10)
