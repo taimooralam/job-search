@@ -144,10 +144,10 @@ class CVEditor {
             const marginBottom = document.getElementById('cv-margin-bottom');
             const marginLeft = document.getElementById('cv-margin-left');
 
-            if (marginTop) marginTop.value = styles.margins.top || 1.0;
-            if (marginRight) marginRight.value = styles.margins.right || 1.0;
-            if (marginBottom) marginBottom.value = styles.margins.bottom || 1.0;
-            if (marginLeft) marginLeft.value = styles.margins.left || 1.0;
+            if (marginTop) marginTop.value = styles.margins.top || 0.5;
+            if (marginRight) marginRight.value = styles.margins.right || 0.5;
+            if (marginBottom) marginBottom.value = styles.margins.bottom || 0.5;
+            if (marginLeft) marginLeft.value = styles.margins.left || 0.5;
 
             // GAP-057: Update margin preset dropdown to match restored margins
             if (typeof updateMarginPreset === 'function') {
@@ -572,10 +572,10 @@ class CVEditor {
         };
 
         return {
-            top: safeParseFloat(topMargin, 1.0),
-            right: safeParseFloat(rightMargin, 1.0),
-            bottom: safeParseFloat(bottomMargin, 1.0),
-            left: safeParseFloat(leftMargin, 1.0)
+            top: safeParseFloat(topMargin, 0.5),
+            right: safeParseFloat(rightMargin, 0.5),
+            bottom: safeParseFloat(bottomMargin, 0.5),
+            left: safeParseFloat(leftMargin, 0.5)
         };
     }
 
@@ -587,7 +587,7 @@ class CVEditor {
         if (pageSizeSelect) {
             return pageSizeSelect.value;
         }
-        return 'letter'; // Default: US Letter (8.5" x 11")
+        return 'a4'; // Default: A4 (210mm x 297mm) - international standard
     }
 
     /**
@@ -1452,8 +1452,8 @@ function updatePageBreaks() {
 
     // Calculate page breaks using the PageBreakCalculator module
     const breakPositions = window.PageBreakCalculator.calculatePageBreaks(
-        documentStyles.pageSize || 'letter',
-        documentStyles.margins || {top: 1.0, right: 1.0, bottom: 1.0, left: 1.0},
+        documentStyles.pageSize || 'a4',
+        documentStyles.margins || {top: 0.5, right: 0.5, bottom: 0.5, left: 0.5},
         editorContent
     );
 

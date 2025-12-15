@@ -67,11 +67,11 @@ function calculatePageBreaks(pageSize, margins, contentElement) {
     }
 
     // Get page dimensions
-    const pageDims = PAGE_DIMENSIONS[pageSize.toLowerCase()] || PAGE_DIMENSIONS.letter;
+    const pageDims = PAGE_DIMENSIONS[pageSize.toLowerCase()] || PAGE_DIMENSIONS.a4;
 
     // Convert margin inches to pixels (96 DPI)
-    const topMarginPx = (margins.top || 1.0) * DPI;
-    const bottomMarginPx = (margins.bottom || 1.0) * DPI;
+    const topMarginPx = (margins.top || 0.5) * DPI;
+    const bottomMarginPx = (margins.bottom || 0.5) * DPI;
 
     // Calculate available content height per page
     const availableHeight = pageDims.heightPx - topMarginPx - bottomMarginPx;
