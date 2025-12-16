@@ -208,8 +208,8 @@ class TestRequestValidation:
             headers=auth_headers,
         )
         # Route validation returns 400, but if it passes validation,
-        # store might error out (500) due to internal issues
-        assert response.status_code in (400, 500)
+        # store might error out (500/503) due to internal issues or service unavailability
+        assert response.status_code in (400, 500, 503)
 
     def test_rollback_roles_requires_doc_id(self, client, auth_headers):
         """POST /api/master-cv/rollback for roles requires doc_id."""
@@ -270,9 +270,9 @@ class TestResponseStructure:
         if response.status_code == 200:
             data = response.json()
             assert "success" in data
-            assert "entries" in data
-            assert "total" in data
-            assert isinstance(data["entries"], list)
+            assert "history" in data
+            assert "count" in data
+            assert isinstance(data["history"], list)
 
     def test_stats_response_structure(self, client, auth_headers):
         """GET /api/master-cv/stats returns expected fields."""
