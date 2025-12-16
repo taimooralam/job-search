@@ -772,7 +772,8 @@ async def health_check() -> HealthResponse:
 
 async def _check_mongodb() -> ConnectionStatus:
     """Ping MongoDB and measure latency."""
-    from motor.motor_asyncio import AsyncIOMotorClient
+    from pymongo import MongoClient
+    from pymongo.errors import ServerSelectionTimeoutError
 
     if not settings.mongodb_uri:
         return ConnectionStatus(
@@ -780,17 +781,29 @@ async def _check_mongodb() -> ConnectionStatus:
             error="MongoDB URI not configured"
         )
 
-    try:
+    def _ping_mongodb():
+        """Synchronous MongoDB ping (run in executor)."""
         start = time.time()
-        client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
-        await client.admin.command('ping')
+        client = MongoClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
         latency_ms = (time.time() - start) * 1000
         client.close()
+        return latency_ms
+
+    try:
+        # Run synchronous pymongo call in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        latency_ms = await loop.run_in_executor(None, _ping_mongodb)
 
         return ConnectionStatus(
             status="healthy",
             latency_ms=round(latency_ms, 2),
             details={"database": settings.mongo_db_name or "jobs"}
+        )
+    except ServerSelectionTimeoutError:
+        return ConnectionStatus(
+            status="unhealthy",
+            error="Connection timeout"
         )
     except Exception as e:
         return ConnectionStatus(

@@ -1000,3 +1000,131 @@ class TestContextMenuBatchIntegration:
         context = call_args[1]
         assert len(context["jobs"]) == 1
         assert context["jobs"][0]["title"] == job_title
+
+
+# ===== TESTS: GET /partials/batch-job-row/<job_id> =====
+
+class TestBatchJobRowSinglePartial:
+    """Tests for GET /partials/batch-job-row/<job_id> HTMX partial."""
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_returns_single_job_row(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should return single job row partial for HTMX refresh."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        job = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "title": "Senior Backend Engineer",
+            "company": "Tech Corp",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            "extracted_jd": {"title": "Senior Backend Engineer"},  # JD extracted
+            "company_research": {"about": "Tech company"},  # Research done
+            "generated_cv": "<html>CV</html>",  # CV generated
+        }
+
+        mock_collection.find_one.return_value = job
+        mock_render_template.return_value = "<tbody>...</tbody>"
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-row/507f1f77bcf86cd799439011")
+
+        # Assert
+        assert response.status_code == 200
+        mock_collection.find_one.assert_called_once()
+        mock_render_template.assert_called_once()
+
+        # Verify correct template is rendered
+        call_args = mock_render_template.call_args
+        template_name = call_args[0][0]
+        assert template_name == "partials/batch_job_single_row.html"
+
+        # Verify context contains job and statuses
+        context = call_args[1]
+        assert "job" in context
+        assert context["job"]["_id"] == job["_id"]
+        assert "statuses" in context
+
+    @patch("frontend.app.get_collection")
+    def test_returns_404_when_job_not_found(
+        self, mock_get_collection, authenticated_client
+    ):
+        """Should return 404 when job doesn't exist."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+        mock_collection.find_one.return_value = None
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-row/507f1f77bcf86cd799439011")
+
+        # Assert
+        assert response.status_code == 404
+
+    @patch("frontend.app.get_collection")
+    def test_returns_404_for_invalid_objectid(
+        self, mock_get_collection, authenticated_client
+    ):
+        """Should return 404 for invalid ObjectId format."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-row/invalid-id")
+
+        # Assert
+        assert response.status_code == 404
+
+    def test_requires_authentication(self, client):
+        """Should require authentication."""
+        # Act
+        response = client.get("/partials/batch-job-row/507f1f77bcf86cd799439011")
+
+        # Assert
+        assert response.status_code in [302, 401]
+
+    @patch("frontend.app.get_collection")
+    @patch("frontend.app.render_template")
+    def test_renders_progress_badges_correctly(
+        self, mock_render_template, mock_get_collection, authenticated_client
+    ):
+        """Should pass job with progress data to template for badge rendering."""
+        # Arrange
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+
+        # Job with all pipeline stages completed
+        job = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "title": "Senior Backend Engineer",
+            "company": "Tech Corp",
+            "status": "under processing",
+            "batch_added_at": datetime.utcnow(),
+            "extracted_jd": {"title": "Senior Backend Engineer"},
+            "company_research": {"about": "A great company"},
+            "generated_cv": "<html>CV content</html>",
+        }
+
+        mock_collection.find_one.return_value = job
+        mock_render_template.return_value = "<tbody>...</tbody>"
+
+        # Act
+        response = authenticated_client.get("/partials/batch-job-row/507f1f77bcf86cd799439011")
+
+        # Assert
+        assert response.status_code == 200
+
+        # Verify job with progress data is passed to template
+        call_args = mock_render_template.call_args
+        context = call_args[1]
+
+        # Template receives the job and can check has_jd, has_research, has_cv
+        assert context["job"]["extracted_jd"] is not None
+        assert context["job"]["company_research"] is not None
+        assert context["job"]["generated_cv"] is not None
