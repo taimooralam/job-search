@@ -130,34 +130,16 @@ jobs:
       fail-fast: false
       matrix:
         service-group:
-          # Split runner-api tests into ~5 tests each for parallel execution
-          - name: runner-api-1
-            paths: tests/runner/test_runner_api.py -k "health_check or run_job_requires or run_job_with_invalid or run_job_with_valid or run_job_with_profile"
-          - name: runner-api-2
-            paths: tests/runner/test_runner_api.py -k "bulk_run_requires or bulk_run_with_auth or get_status or stream_logs"
-          - name: runner-api-3
-            paths: tests/runner/test_runner_api.py -k "get_artifact or concurrency_limit or missing_job_id or empty_bulk"
-          - name: runner-api-4
-            paths: tests/runner/test_runner_api.py -k "firecrawl"
-          - name: executor
-            paths: tests/runner/test_executor.py
-          # NOTE: runner-integration requires MongoDB service - run locally only
-          # - name: runner-integration
-          #   paths: tests/runner/test_integration.py
-          - name: pdf-service
-            paths: tests/pdf_service/
-          - name: pdf-integration
-            paths: tests/runner/test_pdf_integration.py
-          - name: websocket-auth
-            paths: tests/runner/test_websocket_auth.py
-          - name: websocket-keepalive
-            paths: tests/runner/test_websocket_keepalive.py
-          - name: master-cv-api
-            paths: tests/runner/test_master_cv_api_comprehensive.py
-          - name: master-cv-routes
-            paths: tests/runner/test_master_cv_routes.py
-          - name: outreach-model
-            paths: tests/runner/test_outreach_request_model.py
+          # Consolidated groups to reduce CI setup overhead (~1-2 min per job)
+          # Each group runs multiple fast test files together with -n auto
+          - name: runner-api
+            paths: tests/runner/test_runner_api.py tests/runner/test_executor.py
+          - name: pdf
+            paths: tests/pdf_service/ tests/runner/test_pdf_integration.py
+          - name: websocket
+            paths: tests/runner/test_websocket_auth.py tests/runner/test_websocket_keepalive.py tests/runner/test_cross_runner_events.py
+          - name: master-cv
+            paths: tests/runner/test_master_cv_api_comprehensive.py tests/runner/test_master_cv_routes.py tests/runner/test_outreach_request_model.py
 
     steps:
       - uses: actions/checkout@v4
