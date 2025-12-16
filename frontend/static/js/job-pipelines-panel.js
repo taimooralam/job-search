@@ -278,6 +278,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Check if any operation has been run (has any status, including completed/failed)
+         * @returns {boolean}
+         */
+        hasAnyOperations() {
+            return PIPELINES_PANEL_CONFIG.operations.some(op => {
+                const opStatus = this.operations[op];
+                return opStatus && opStatus.status;
+            });
+        },
+
+        /**
          * Get human-readable label for an operation
          * @param {string} operation - Operation name
          * @returns {string}
