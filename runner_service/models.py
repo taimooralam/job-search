@@ -240,6 +240,10 @@ class QueueOperationResponse(BaseModel):
         None,
         description="Estimated wait time in seconds (based on queue position)"
     )
+    run_id: Optional[str] = Field(
+        None,
+        description="Operation run ID for SSE log streaming via /api/runner/operations/{run_id}/logs"
+    )
     error: Optional[str] = Field(None, description="Error message if queuing failed")
 
 

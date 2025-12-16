@@ -291,6 +291,7 @@ document.addEventListener('alpine:init', () => {
                         timestamp: new Date().toISOString(),
                         queued: true,
                         queue_id: result.queue_id,
+                        run_id: result.run_id,
                         position: result.position
                     };
 
@@ -306,12 +307,30 @@ document.addEventListener('alpine:init', () => {
                         pipelinesStore.operations[action] = {
                             status: 'pending',
                             queue_id: result.queue_id,
-                            run_id: null,
+                            run_id: result.run_id || null,
                             position: result.position,
                             started_at: null,
                             completed_at: null,
                             error: null
                         };
+                    }
+
+                    // If run_id is returned, connect to SSE for log streaming
+                    if (result.run_id) {
+                        const jobTitle = options.jobTitle || 'Unknown Job';
+
+                        // Dispatch CLI start event to create a tab in CLI panel
+                        window.dispatchEvent(new CustomEvent('cli:start-run', {
+                            detail: {
+                                runId: result.run_id,
+                                jobId,
+                                jobTitle,
+                                action: action.replace('-', '_')
+                            }
+                        }));
+
+                        // Connect to SSE for log streaming
+                        this._connectToOperationLogs(result.run_id, action, jobId);
                     }
 
                     return result;
@@ -759,6 +778,107 @@ document.addEventListener('alpine:init', () => {
             };
 
             poll();
+        },
+
+        /**
+         * Connect to SSE stream for operation logs (used by queueExecution)
+         *
+         * This method connects to the log streaming endpoint after an operation
+         * has been queued. Unlike executeWithSSE() which waits for completion,
+         * this is fire-and-forget - logs are streamed to CLI panel but we don't
+         * block on completion (the queue handles that).
+         *
+         * @param {string} runId - The operation run ID from the queue response
+         * @param {string} action - Action name (e.g., 'research-company')
+         * @param {string} jobId - MongoDB job ID
+         */
+        _connectToOperationLogs(runId, action, jobId) {
+            const logStreamUrl = `/api/runner/operations/${runId}/logs`;
+            console.log(`[${action}] Connecting to SSE for queued operation: ${logStreamUrl}`);
+
+            let eventSource;
+            try {
+                eventSource = new EventSource(logStreamUrl);
+                console.log(`[${action}] EventSource created for queued op, readyState: ${eventSource.readyState}`);
+            } catch (e) {
+                console.error(`[${action}] Failed to create EventSource for queued operation:`, e);
+                // Logs are persisted on server, user can fetch via status endpoint
+                return;
+            }
+
+            // Log when SSE connection opens
+            eventSource.onopen = () => {
+                console.log(`[${action}] SSE connection opened for queued op, readyState: ${eventSource.readyState}`);
+            };
+
+            // Handle regular log messages
+            eventSource.onmessage = (event) => {
+                console.log(`[${action}] Queued log: ${event.data}`);
+                const logType = window.cliDetectLogType ? window.cliDetectLogType(event.data) : 'info';
+                window.dispatchEvent(new CustomEvent('cli:log', {
+                    detail: {
+                        runId: runId,
+                        text: event.data,
+                        logType
+                    }
+                }));
+            };
+
+            // Handle layer status updates
+            eventSource.addEventListener('layer_status', (event) => {
+                try {
+                    const layerStatus = JSON.parse(event.data);
+                    console.log(`[${action}] Queued layer status:`, layerStatus);
+                    window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                        detail: {
+                            runId: runId,
+                            layerStatus: layerStatus
+                        }
+                    }));
+                } catch (e) {
+                    console.error('Failed to parse layer_status:', e);
+                }
+            });
+
+            // Handle completion/failure
+            eventSource.addEventListener('end', (event) => {
+                const status = event.data;
+                console.log(`[${action}] Queued operation ended with status: ${status}`);
+
+                eventSource.close();
+
+                // Dispatch CLI complete event
+                window.dispatchEvent(new CustomEvent('cli:complete', {
+                    detail: {
+                        runId: runId,
+                        status: status === 'completed' ? 'success' : 'error',
+                        error: status !== 'completed' ? `Operation ${status}` : null
+                    }
+                }));
+
+                // If completed successfully, trigger UI refresh
+                if (status === 'completed') {
+                    window.dispatchEvent(new CustomEvent('ui:refresh-job', {
+                        detail: {
+                            jobId,
+                            sections: this._getRefreshSections(action)
+                        }
+                    }));
+
+                    // Dispatch custom event for other listeners
+                    document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
+                        detail: { action, jobId, result: { success: true } }
+                    }));
+                }
+            });
+
+            // Handle SSE errors - just close, logs are persisted
+            eventSource.onerror = (err) => {
+                console.warn(`[${action}] SSE error for queued operation, closing connection:`, err);
+                eventSource.close();
+                // Don't dispatch error - logs are persisted on server
+                // User can still see logs via the status endpoint or by refreshing
+            };
         },
 
         /**

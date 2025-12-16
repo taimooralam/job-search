@@ -1661,6 +1661,7 @@ async def queue_operation(
             status="pending",
             position=position,
             estimated_wait_seconds=estimated_wait,
+            run_id=run_id,
         )
 
     except Exception as e:
