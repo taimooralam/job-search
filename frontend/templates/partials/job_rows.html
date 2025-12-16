@@ -83,10 +83,10 @@
                            onchange="toggleRowSelection(this)">
                 </td>
 
-                <!-- Created At -->
+                <!-- Created At (DD/MM format) -->
                 <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile">
                     {% if job.createdAt %}
-                        {{ job.createdAt[:10] }}
+                        {{ job.createdAt[8:10] }}/{{ job.createdAt[5:7] }}
                     {% else %}
                         <span class="theme-text-muted">-</span>
                     {% endif %}
@@ -94,7 +94,7 @@
 
                 <!-- Company -->
                 <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
-                    <div class="text-sm font-medium theme-text-primary">
+                    <div class="text-sm font-semibold theme-text-primary">
                         {{ job.company or '-' }}
                     </div>
                     {% if job.auto_discovered %}
@@ -114,9 +114,9 @@
 
                 <!-- Role/Title -->
                 <td class="px-2 sm:px-4 py-3">
-                    <div class="text-sm theme-text-primary max-w-[150px] sm:max-w-xs truncate" title="{{ job.title or '' }}">
+                    <div class="text-sm font-medium theme-text-primary max-w-[150px] sm:max-w-xs truncate" title="{{ job.title or '' }}">
                         {% if job_url %}
-                        <a href="{{ job_url }}" target="_blank" class="text-accent-500 hover:text-accent-400 hover:underline" onclick="event.stopPropagation()">
+                        <a href="{{ job_url }}" target="_blank" class="text-accent-500 hover:text-accent-400 hover:underline font-medium" onclick="event.stopPropagation()">
                             {{ job.title or '-' }}
                         </a>
                         {% else %}
@@ -125,12 +125,13 @@
                     </div>
                 </td>
 
-                <!-- Location (show last 25 chars if longer) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile" title="{{ job.location or '' }}">
-                    {% if job.location and job.location|length > 25 %}
-                        ...{{ job.location[-25:] }}
+                <!-- Location (2-letter country code) -->
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm theme-text-secondary hide-mobile location-col" title="{{ job.location or '' }}">
+                    {% set cc = job.country_code or '??' %}
+                    {% if cc == 'RMT' %}
+                        <span class="text-xs font-medium text-purple-600 dark:text-purple-400">rte</span>
                     {% else %}
-                        {{ job.location or '-' }}
+                        <span class="text-xs font-medium">{{ cc }}</span>
                     {% endif %}
                 </td>
 
@@ -158,12 +159,12 @@
                 </td>
 
                 <!-- Status -->
-                <td class="px-4 py-3 whitespace-nowrap" onclick="event.stopPropagation()">
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap status-col" onclick="event.stopPropagation()">
                     {% set status = job.status or 'not processed' %}
                     {% set status_class = status | replace(' ', '-') %}
                     <select class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
                             onchange="updateStatus('{{ job._id }}', this.value)"
-                            style="min-width: 130px;">
+                            style="max-width: 120px;">
                         {% for s in statuses %}
                         <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
                         {% endfor %}
@@ -225,12 +226,11 @@
                             </svg>
                         </a>
                         <button onclick="processJob('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
-                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
+                                class="inline-flex items-center justify-center w-7 h-7 text-sm rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
                                 title="Process job through pipeline">
-                            <svg class="h-3.5 w-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
-                            <span class="hidden sm:inline">Process</span>
                         </button>
                     </div>
                 </td>
