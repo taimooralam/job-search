@@ -432,7 +432,7 @@
                                    name="statuses"
                                    value="{{ status }}"
                                    class="filter-input status-checkbox h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500 focus:ring-offset-0 flex-shrink-0"
-                                   {% if status not in ['discarded', 'applied', 'interview scheduled'] %}checked{% endif %}
+                                   {% if status not in ['discarded', 'applied', 'interview scheduled', 'under processing'] %}checked{% endif %}
                                    onchange="updateStatusFilter()"
                                    hx-get="/partials/job-rows"
                                    hx-trigger="change"
@@ -879,7 +879,7 @@
 
     // Reset statuses to default (all checked except discarded, applied, interview scheduled)
     function resetStatusesToDefault() {
-        const excludedStatuses = ['discarded', 'applied', 'interview scheduled'];
+        const excludedStatuses = ['discarded', 'applied', 'interview scheduled', 'under processing'];
         document.querySelectorAll('.status-checkbox').forEach(checkbox => {
             checkbox.checked = !excludedStatuses.includes(checkbox.value);
         });

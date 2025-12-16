@@ -7,7 +7,7 @@
 {% if current_applied_only %}{% set _ = filter_params.append('applied_only=' ~ current_applied_only) %}{% endif %}
 {% set filter_query = ('&' ~ filter_params | join('&')) if filter_params else '' %}
 
-<table class="min-w-full theme-table">
+<table class="w-full table-fixed theme-table">
     <thead class="sticky-header">
         <tr>
             <!-- Select all checkbox -->
