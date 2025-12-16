@@ -29,6 +29,11 @@ class QueueWebSocket {
         // Queue for messages to send when connected
         this.messageQueue = [];
 
+        // Ping/pong tracking for connection health
+        this.lastPingTime = null;
+        this.lastPongTime = null;
+        this.pongTimeoutMs = 5000; // 5 seconds to receive pong
+
         // Connection history for debugging
         this.connectionHistory = [];
         this.maxHistoryLength = 20;
@@ -296,8 +301,20 @@ class QueueWebSocket {
                 this.emit('error', payload);
                 break;
 
+            case 'ping':
+                // Server-initiated ping, respond with pong
+                this._debug('Received server ping, sending pong');
+                this.send({ type: 'pong' });
+                break;
+
             case 'pong':
-                // Keepalive response, no action needed
+                // Keepalive response - track for timeout detection
+                this.lastPongTime = Date.now();
+                this._debug('Received pong', {
+                    lastPingTime: this.lastPingTime,
+                    lastPongTime: this.lastPongTime,
+                    roundTripMs: this.lastPingTime ? this.lastPongTime - this.lastPingTime : null
+                });
                 break;
 
             default:
@@ -346,15 +363,57 @@ class QueueWebSocket {
     }
 
     /**
+     * Force reconnection (close and re-establish connection)
+     */
+    reconnect() {
+        this._debug('Manual reconnect triggered');
+        this._recordHistory('manual_reconnect', {});
+
+        // Close existing connection if any
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+
+        this.isConnecting = false;
+        this.connect();
+    }
+
+    /**
      * Start ping interval for keepalive
      */
     startPingInterval() {
         this.stopPingInterval();
+
+        // Reset ping/pong tracking on fresh connection
+        this.lastPingTime = null;
+        this.lastPongTime = Date.now(); // Initialize to now to avoid false timeout on first ping
+
         this.pingInterval = setInterval(() => {
             if (this.ws?.readyState === WebSocket.OPEN) {
+                // Check if previous pong was received (timeout detection)
+                if (this.lastPingTime !== null && this.lastPongTime < this.lastPingTime) {
+                    const elapsed = Date.now() - this.lastPingTime;
+                    if (elapsed > this.pongTimeoutMs) {
+                        console.warn('[QueueWS] Pong timeout detected, reconnecting...');
+                        this._debug('Pong timeout', {
+                            lastPingTime: this.lastPingTime,
+                            lastPongTime: this.lastPongTime,
+                            elapsed,
+                            timeout: this.pongTimeoutMs
+                        });
+                        this._recordHistory('pong_timeout', { elapsed });
+                        this.reconnect();
+                        return;
+                    }
+                }
+
+                // Send new ping
+                this.lastPingTime = Date.now();
+                this._debug('Sending ping', { lastPingTime: this.lastPingTime });
                 this.send({ type: 'ping' });
             }
-        }, 30000); // Ping every 30 seconds
+        }, 15000); // Ping every 15 seconds
     }
 
     /**

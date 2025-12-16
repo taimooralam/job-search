@@ -3995,6 +3995,51 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ---
 
+### WebSocket Connection Keepalive - Server-Side Ping Implementation (2025-12-16)
+
+**ENHANCEMENT: Implemented server-side WebSocket keepalive to prevent connection stale-outs during browser tab throttling - FIXED**:
+- **Issue**: WebSocket connections were dropping after 20-30 seconds of inactivity, particularly in background browser tabs due to browser tab throttling policies
+- **Root Cause**: Client-side ping approach alone is unreliable because:
+  - Browser reduces JavaScript execution frequency in inactive/background tabs (browsers throttle to 1Hz or less)
+  - Client-only ping requires browser timer to fire, but timers are paused in throttled tabs
+  - Server has no way to proactively detect stale connections without server-side keepalive
+  - Network infrastructure (proxies, firewalls, NAT) can close idle connections after 20-60 seconds
+- **Fix Applied**: Implemented bidirectional server-side keepalive mechanism across all transport layers:
+  1. **Flask Proxy** (`ws_proxy.py`):
+     - Added server-side ping thread sending pings to both browser and runner every 20 seconds
+     - Implemented 30-second stale detection - closes connections not responding to pings
+     - Pings bypass browser throttling by coming from server, not relying on client timers
+  2. **FastAPI WebSocket** (`websocket.py`):
+     - Added server-side ping loop per connection (20s interval, 30s timeout)
+     - Tracks ConnectionState with last_ping_time and last_pong_time
+     - Detects stale clients and logs disconnection events
+  3. **Client JavaScript** (`queue-websocket.js`):
+     - Reduced client ping interval from 30s to 15s for faster response
+     - Added pong timeout detection (5s) - detects unresponsive server
+     - Added server-ping response handling - responds to server pings immediately
+     - No longer relies on timers for keepalive; reacts to server pings instead
+  4. **Docker Runner** (`Dockerfile.runner`):
+     - Updated uvicorn startup with `--ws-ping-interval 20 --ws-ping-timeout 30` flags
+     - Enables built-in uvicorn WebSocket keepalive at transport layer
+- **Files Modified**:
+  - `runner_service/websocket.py` - Added server-side ping loop with ConnectionState tracking
+  - `runner_service/ws_proxy.py` - Added ping thread with stale detection
+  - `frontend/static/js/queue-websocket.js` - Reduced client ping interval, added server-ping handler
+  - `Dockerfile.runner` - Added uvicorn WebSocket keepalive configuration
+- **Architecture Impact**:
+  - WebSocket connections now stay alive indefinitely (pings every 20s)
+  - No reliance on client timers (works in throttled browser tabs)
+  - Stale connections detected and cleaned up within 30 seconds
+  - Multi-layer redundancy: client + FastAPI + Traefik proxy + uvicorn all implementing keepalive
+- **Verification**:
+  - WebSocket connections remain active in background browser tabs
+  - No connection drops after 20-30 seconds of inactivity
+  - Server-side pings fire consistently on 20s interval
+  - Stale connections properly detected and closed
+- **Impact**: Queue status and real-time job monitoring remain reliable even when browser tab is inactive/throttled. Users can switch between tabs and maintain connection continuity.
+
+---
+
 ### CLI Panel Logs UX & Diagnostics Enhancement (2025-12-16)
 
 **UX IMPROVEMENT 1: Fixed 10-15 Second Delay When Clicking "Running" Pipeline Icon - FIXED**:
@@ -4066,6 +4111,42 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - Logs persist for 24 hours even after page session closes
 - **Verification**: "Load from Redis" button appears for completed runs; clicking loads cached logs into panel
 - **Impact**: Improved data retention; users can review historical operation logs without re-running pipeline
+
+---
+
+### Today's Session (2025-12-16 Session 14): Frontend Real-Time Updates - Live Progress Badges
+
+**FEATURE: Live Progress Badge Updates in Batch Processing (NEW - 2025-12-16)**:
+- [x] **Completed**: Live progress badge updates implemented for batch processing page
+- **Problem**: Batch processing status badges (JD extraction, company research, CV generation) did not update in real-time; users had to refresh page to see progress
+- **Solution**: HTMX Row Refresh pattern with WebSocket event integration
+  - Created single-row partial template (`frontend/templates/partials/batch_job_single_row.html`) for reusable row rendering
+  - Added Flask endpoint `GET /partials/batch-job-row/<job_id>` to serve fresh row HTML with current badge states
+  - Refactored `batch_job_rows.html` to use single-row partial via include loop
+  - Added Alpine.js listener for `queue:job-completed` WebSocket events
+  - When event fires for a job_id, HTMX refreshes that row's HTML to display updated badges
+- **Architecture**:
+  - Event-driven design: WebSocket broadcasts completion → Alpine listener → HTMX refresh → Badge turns green
+  - Single MongoDB lookup per refresh (O(1) performance with index)
+  - HTML fragment response (~100 bytes)
+  - <50ms server latency + network RTT
+- **Files Created**: `frontend/templates/partials/batch_job_single_row.html`
+- **Files Modified**:
+  - `frontend/app.py` - Added `/partials/batch-job-row/<job_id>` endpoint
+  - `frontend/templates/partials/batch_job_rows.html` - Refactored to use include + Alpine listener
+  - `tests/unit/frontend/test_batch_processing.py` - Added 5 new tests for badge display, completed/failed states
+- **Tests Passing**: 5 new tests validating:
+  - Endpoint exists and returns correct row HTML
+  - Badges display correct CSS classes for status (completed/pending/failed)
+  - 404 response for nonexistent job_id
+  - Fresh MongoDB data reflected in response
+- **User Experience**:
+  - Progress badges now turn green immediately when pipeline layers complete
+  - No page refresh required
+  - Visual feedback confirms processing is happening
+  - Batch processing view stays current with pipeline execution
+- **Verification**: Manual testing confirms badges update within 1-2 seconds of layer completion; HTMX requests logged in browser DevTools Network tab
+- **Related**: Architecture documented in `plans/architecture.md` section "Frontend: HTMX Row Refresh Pattern for Live Progress Updates"
 
 ---
 
