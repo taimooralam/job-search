@@ -17,6 +17,7 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from fastapi import WebSocket
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 
 # =============================================================================
@@ -224,24 +225,46 @@ class TestWebSocketEndpoint:
         mock_ws_mgr.run_connection = AsyncMock()
         return mock_ws_mgr
 
-    def test_websocket_accepts_valid_auth(self, client, mock_settings, mocker):
+    @pytest.mark.asyncio
+    async def test_websocket_accepts_valid_auth(self, mocker):
         """Should accept WebSocket connection with valid Bearer token when Redis configured."""
-        # Mock the global _ws_manager as not None (Redis configured)
+        from runner_service.app import queue_websocket
+        from fastapi import WebSocket
+
+        # Create mock WebSocket with valid auth
+        mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = {"authorization": "Bearer test-secret-key-1234"}  # Valid auth
+        mock_ws.client = MagicMock()
+        mock_ws.client.host = "127.0.0.1"
+        mock_ws.url = MagicMock()
+        mock_ws.url.path = "/ws/queue"
+        mock_ws.accept = AsyncMock()
+        mock_ws.send_json = AsyncMock()
+        mock_ws.close = AsyncMock()
+
+        # Mock settings
+        mock_settings = mocker.patch("runner_service.app.settings")
+        mock_settings.auth_required = True
+        mock_settings.runner_api_secret = "test-secret-key-1234"
+
+        # Mock _ws_manager with run_connection that raises WebSocketDisconnect
+        # (simulating normal connection termination)
         mock_ws_manager = AsyncMock()
-        mock_ws_manager.run_connection = AsyncMock()
+        mock_ws_manager.run_connection = AsyncMock(side_effect=WebSocketDisconnect(code=1000))
         mocker.patch("runner_service.app._ws_manager", mock_ws_manager)
 
-        # Attempt WebSocket connection with valid auth
-        with client.websocket_connect(
-            "/ws/queue",
-            headers={"Authorization": "Bearer test-secret-key-1234"}
-        ) as websocket:
-            # Connection should be accepted and run_connection should be called
-            # The connection will close immediately since it's a test, but it shouldn't return 403
-            pass
+        # Call the endpoint - it should call run_connection without sending error first
+        try:
+            await queue_websocket(mock_ws)
+        except WebSocketDisconnect:
+            pass  # Expected - mock raises this to terminate
 
-        # Verify run_connection was called (indicates successful auth)
-        mock_ws_manager.run_connection.assert_called_once()
+        # Verify run_connection was called (indicates successful auth and Redis configured)
+        mock_ws_manager.run_connection.assert_called_once_with(mock_ws)
+        # Verify accept was NOT called directly (run_connection handles that)
+        mock_ws.accept.assert_not_called()
+        # Verify no error was sent
+        mock_ws.send_json.assert_not_called()
 
     def test_websocket_rejects_missing_auth(self, client, mock_settings, mocker):
         """Should close WebSocket with code 1008 when Authorization header missing."""
@@ -311,7 +334,8 @@ class TestWebSocketEndpoint:
             # Connection should close gracefully with 1011
             pass
 
-    def test_websocket_sends_json_error_before_close_on_auth_failure(self, mocker):
+    @pytest.mark.asyncio
+    async def test_websocket_sends_json_error_before_close_on_auth_failure(self, mocker):
         """Should send JSON error message before closing on authentication failure."""
         from runner_service.app import queue_websocket
         from fastapi import WebSocket
@@ -334,9 +358,8 @@ class TestWebSocketEndpoint:
         # Mock _ws_manager as not None
         mocker.patch("runner_service.app._ws_manager", AsyncMock())
 
-        # Call the endpoint
-        import asyncio
-        asyncio.run(queue_websocket(mock_ws))
+        # Call the endpoint directly as an async function
+        await queue_websocket(mock_ws)
 
         # Verify the sequence of calls
         mock_ws.accept.assert_called_once()  # MUST accept before close
@@ -351,7 +374,8 @@ class TestWebSocketEndpoint:
         # Verify close was called with correct code
         mock_ws.close.assert_called_once_with(code=1008, reason="Authentication failed")
 
-    def test_websocket_sends_json_error_before_close_on_redis_missing(self, mocker):
+    @pytest.mark.asyncio
+    async def test_websocket_sends_json_error_before_close_on_redis_missing(self, mocker):
         """Should send JSON error message before closing when Redis not configured."""
         from runner_service.app import queue_websocket
         from fastapi import WebSocket
@@ -375,9 +399,8 @@ class TestWebSocketEndpoint:
         # Mock _ws_manager as None (Redis not configured)
         mocker.patch("runner_service.app._ws_manager", None)
 
-        # Call the endpoint
-        import asyncio
-        asyncio.run(queue_websocket(mock_ws))
+        # Call the endpoint directly as an async function
+        await queue_websocket(mock_ws)
 
         # Verify the sequence of calls
         mock_ws.accept.assert_called_once()  # MUST accept before close
@@ -392,7 +415,8 @@ class TestWebSocketEndpoint:
         # Verify close was called with correct code
         mock_ws.close.assert_called_once_with(code=1011, reason="Queue not configured")
 
-    def test_websocket_accept_called_before_close_prevents_403(self, mocker):
+    @pytest.mark.asyncio
+    async def test_websocket_accept_called_before_close_prevents_403(self, mocker):
         """Critical test: WebSocket MUST call accept() before close() to avoid HTTP 403."""
         from runner_service.app import queue_websocket
         from fastapi import WebSocket
@@ -428,17 +452,31 @@ class TestWebSocketEndpoint:
         # Mock _ws_manager
         mocker.patch("runner_service.app._ws_manager", AsyncMock())
 
-        # Call the endpoint
-        import asyncio
-        asyncio.run(queue_websocket(mock_ws))
+        # Call the endpoint directly as an async function
+        await queue_websocket(mock_ws)
 
         # CRITICAL: Verify accept() is called BEFORE close()
         assert call_order == ["accept", "send_json", "close"], \
             "WebSocket MUST call accept() before close() to avoid HTTP 403 Forbidden"
 
-    def test_websocket_allows_connection_when_auth_not_required_in_development(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_websocket_allows_connection_when_auth_not_required_in_development(self, mocker):
         """Should allow WebSocket connection without auth when auth_required=False."""
-        # Mock settings with auth not required - MUST mock both app and auth module settings
+        from runner_service.app import queue_websocket
+        from fastapi import WebSocket
+
+        # Create mock WebSocket WITHOUT auth header (development mode)
+        mock_ws = AsyncMock(spec=WebSocket)
+        mock_ws.headers = {}  # No auth header
+        mock_ws.client = MagicMock()
+        mock_ws.client.host = "127.0.0.1"
+        mock_ws.url = MagicMock()
+        mock_ws.url.path = "/ws/queue"
+        mock_ws.accept = AsyncMock()
+        mock_ws.send_json = AsyncMock()
+        mock_ws.close = AsyncMock()
+
+        # Mock settings with auth NOT required - MUST mock both app and auth module settings
         mock_app_settings = mocker.patch("runner_service.app.settings")
         mock_app_settings.auth_required = False
         mock_app_settings.redis_url = "redis://localhost:6379"
@@ -447,15 +485,21 @@ class TestWebSocketEndpoint:
         mock_auth_settings = mocker.patch("runner_service.auth.settings")
         mock_auth_settings.auth_required = False
 
-        # Mock _ws_manager as not None
+        # Mock _ws_manager with run_connection that raises WebSocketDisconnect
+        # (simulating normal connection termination)
         mock_ws_manager = AsyncMock()
-        mock_ws_manager.run_connection = AsyncMock()
+        mock_ws_manager.run_connection = AsyncMock(side_effect=WebSocketDisconnect(code=1000))
         mocker.patch("runner_service.app._ws_manager", mock_ws_manager)
 
-        # Attempt WebSocket connection WITHOUT auth header
-        with client.websocket_connect("/ws/queue") as websocket:
-            # Connection should be accepted in development mode
-            pass
+        # Call the endpoint - should allow connection without auth in development mode
+        try:
+            await queue_websocket(mock_ws)
+        except WebSocketDisconnect:
+            pass  # Expected - mock raises this to terminate
 
         # Verify run_connection was called (indicates successful connection)
-        mock_ws_manager.run_connection.assert_called_once()
+        mock_ws_manager.run_connection.assert_called_once_with(mock_ws)
+        # Verify accept was NOT called directly (run_connection handles that)
+        mock_ws.accept.assert_not_called()
+        # Verify no error was sent
+        mock_ws.send_json.assert_not_called()
