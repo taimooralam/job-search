@@ -4,6 +4,8 @@ FastAPI runner service for the job pipeline.
 Provides endpoints for kicking off jobs, checking status, streaming logs,
 and artifact retrieval. Concurrency is guarded via an asyncio semaphore
 to keep the number of simultaneous runs under control (default 3).
+
+Supports multi-instance deployment with cross-runner WebSocket events via Redis Pub/Sub.
 """
 
 import asyncio
