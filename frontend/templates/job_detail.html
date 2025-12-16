@@ -1485,7 +1485,12 @@
                 <div class="p-2 bg-white border border-indigo-200 rounded-lg text-xs">
                     <div class="flex justify-between items-start">
                         <div>
-                            <div class="font-medium text-gray-900">{{ contact.name or contact.contact_name }}</div>
+                            <div class="font-medium text-gray-900">
+                                {{ contact.name or contact.contact_name }}
+                                {% if contact.is_synthetic %}
+                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded">Placeholder</span>
+                                {% endif %}
+                            </div>
                             <div class="text-gray-500">{{ contact.role or contact.contact_role }}</div>
                         </div>
                         {% if contact.linkedin_url %}
@@ -1562,7 +1567,12 @@
                 <div class="p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
                     <div class="flex justify-between items-start">
                         <div>
-                            <div class="font-medium text-gray-900">{{ contact.name or contact.contact_name }}</div>
+                            <div class="font-medium text-gray-900">
+                                {{ contact.name or contact.contact_name }}
+                                {% if contact.is_synthetic %}
+                                <span class="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded">Placeholder</span>
+                                {% endif %}
+                            </div>
                             <div class="text-gray-500">{{ contact.role or contact.contact_role }}</div>
                         </div>
                         {% if contact.linkedin_url %}
