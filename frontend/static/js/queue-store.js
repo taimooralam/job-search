@@ -79,6 +79,80 @@ document.addEventListener('alpine:init', () => {
 
             this.connecting = true;
 
+            // Try RxJS observables first, fall back to legacy event handlers
+            if (this._initRxJS()) {
+                console.log('[QueueStore] Initialized with RxJS observables');
+            } else {
+                this._initLegacyEventHandlers();
+                console.log('[QueueStore] Initialized with legacy event handlers');
+            }
+
+            // Connect
+            window.queueWebSocket.connect();
+        },
+
+        /**
+         * Initialize using RxJS observables from queue-websocket.js
+         * @returns {boolean} true if RxJS init succeeded
+         * @private
+         */
+        _initRxJS() {
+            // Check if RxUtils and WebSocket observables are available
+            if (typeof window.RxUtils === 'undefined') return false;
+            if (!window.queueWebSocket?.connected$) return false;
+
+            const { merge, tap, takeUntil, map, filter, catchError, EMPTY } = window.RxUtils;
+            const ws = window.queueWebSocket;
+
+            // Store reference for cleanup
+            this._rxjsDestroy$ = new window.RxUtils.Subject();
+
+            // Subscribe to connection state
+            ws.connected$.pipe(
+                tap(connected => {
+                    this.connected = connected;
+                    this.connecting = false;
+                    if (connected) this.error = null;
+                }),
+                takeUntil(this._rxjsDestroy$)
+            ).subscribe();
+
+            // Subscribe to typed message streams
+            merge(
+                // Queue state updates
+                ws.queueState$.pipe(
+                    tap(msg => this.updateState(msg.payload))
+                ),
+                // Individual queue updates
+                ws.queueUpdate$.pipe(
+                    tap(msg => this.handleUpdate(msg.payload))
+                ),
+                // Action results
+                ws.actionResult$.pipe(
+                    tap(msg => this.handleActionResult(msg.payload))
+                ),
+                // Errors
+                ws.error$.pipe(
+                    tap(msg => {
+                        this.error = msg.payload?.message || 'Connection error';
+                    })
+                )
+            ).pipe(
+                takeUntil(this._rxjsDestroy$),
+                catchError(err => {
+                    console.error('[QueueStore] RxJS stream error:', err);
+                    return EMPTY;
+                })
+            ).subscribe();
+
+            return true;
+        },
+
+        /**
+         * Initialize using legacy .on() event handlers
+         * @private
+         */
+        _initLegacyEventHandlers() {
             // Set up event handlers
             window.queueWebSocket.on('connected', () => {
                 this.connected = true;
@@ -106,9 +180,6 @@ document.addEventListener('alpine:init', () => {
             window.queueWebSocket.on('action_result', (result) => {
                 this.handleActionResult(result);
             });
-
-            // Connect
-            window.queueWebSocket.connect();
         },
 
         // Update full state (with transition detection for missed events)
