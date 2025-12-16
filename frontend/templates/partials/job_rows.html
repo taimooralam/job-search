@@ -113,8 +113,8 @@
                 </td>
 
                 <!-- Role/Title -->
-                <td class="px-2 sm:px-4 py-3">
-                    <div class="text-sm font-medium theme-text-primary max-w-[150px] sm:max-w-xs truncate" title="{{ job.title or '' }}">
+                <td class="px-2 sm:px-4 py-3 role-col">
+                    <div class="text-sm font-semibold theme-text-primary truncate" title="{{ job.title or '' }}">
                         {% if job_url %}
                         <a href="{{ job_url }}" target="_blank" class="text-accent-500 hover:text-accent-400 hover:underline font-medium" onclick="event.stopPropagation()">
                             {{ job.title or '-' }}
@@ -178,7 +178,7 @@
                 </td>
 
                 <!-- Score (Editable - GAP-067) -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile" onclick="event.stopPropagation()">
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile score-col" onclick="event.stopPropagation()">
                     <div class="editable-score-container" data-job-id="{{ job._id }}">
                         <!-- Display mode -->
                         <span class="score-display cursor-pointer hover:ring-2 hover:ring-accent-400 hover:ring-offset-1 rounded-full transition-all"
