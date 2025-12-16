@@ -1799,6 +1799,227 @@ The application uses Alpine.js with community plugins for enhanced UI functional
 
 **Plugin Registry**: Each loaded plugin registers directives with Alpine during script execution. Alpine initialization fails silently if plugins missing.
 
+### RxJS Integration & Reactive Programming (NEW - 2025-12-16)
+
+**Overview**: CDN-based RxJS integration for managing complex asynchronous patterns with Observables. Eliminates callback hell and improves code maintainability without requiring build step.
+
+**RxJS Library** (`frontend/templates/base.html`):
+- **Source**: `unpkg.com/rxjs@7` CDN
+- **Loading**: Scripts load before Alpine.js initialization
+- **Global Access**: RxJS operators available via `window.rxjs` namespace
+- **Zero Build**: No build step required; operators accessible from browser console
+
+**Utility Functions** (`frontend/static/js/rxjs-utils.js` - NEW):
+
+Convenience layer re-exporting core operators and providing common patterns:
+
+1. **Operator Re-exports**:
+   - Core: `Subject`, `BehaviorSubject`, `Observable`
+   - Creation: `timer`, `interval`, `of`, `from`, `merge`, `concat`
+   - Combination: `race`, `combineLatest`, `zip`, `withLatestFrom`
+   - Transformation: `map`, `switchMap`, `mergeMap`, `concatMap`, `tap`
+   - Filtering: `filter`, `debounceTime`, `distinctUntilChanged`, `throttleTime`
+   - Utility: `takeUntil`, `catchError`, `finalize`, `startWith`, `shareReplay`
+
+2. **Utility Functions**:
+   - `exponentialBackoff(initialDelay, maxDelay)` - Backoff strategy for reconnection (500ms → 1s → 2s → 5s → 30s with ±10% jitter)
+   - `createWebSocket(url, options)` - WebSocket wrapper with error handling
+   - `createDebouncedSave(source$, delayMs)` - Debounced persistence (500ms default)
+   - `createPendingBuffer(source$)` - Buffers events during disconnection, flushes on reconnect
+   - `createInterval(delayMs)` - Typed timer observable
+   - `createMessageRouter(source$)` - Routes messages by type to handlers
+
+**WebSocket Reconnection Pattern** (`frontend/static/js/queue-websocket.js`):
+
+Observables used for connection management:
+
+```javascript
+// Connection lifecycle with exponential backoff
+this.connected$ = new BehaviorSubject(false);
+this.message$ = new Subject();
+this.error$ = new Subject();
+
+// Ping/pong keepalive observable
+interval(30000) // Ping every 30s
+  .pipe(
+    race(this.pongReceived$, timer(60000)), // Pong or 60s timeout
+    switchMap(() => this.reconnect()), // Reconnect on timeout
+    exponentialBackoff(500, 30000), // Backoff strategy
+    tap(connected => this.connected$.next(connected)),
+    catchError(err => this.error$.next(err))
+  )
+  .subscribe();
+
+// Cleanup on disconnect
+disconnect() {
+  this.subscription?.unsubscribe();
+  this.connected$.complete();
+  this.message$.complete();
+}
+```
+
+**RxJS Subjects in Queue WebSocket**:
+- `message$` (Subject) - Emits received WebSocket messages
+- `connected$` (BehaviorSubject<boolean>) - Current connection state (true/false)
+- `queueState$` (Subject) - Typed queue state updates
+- `queueUpdate$` (Subject) - Individual queue item changes
+- `actionResult$` (Subject) - Operation success/failure results
+- `error$` (Subject) - Connection and protocol errors
+
+**Debounced Save Pattern** (`frontend/static/js/cli-panel.js`):
+
+Observable chain for persistence:
+
+```javascript
+// Debounced saves to sessionStorage
+this.saveState$ = new Subject();
+this.destroy$ = new Subject();
+
+this.saveState$
+  .pipe(
+    debounceTime(500), // Wait 500ms for silence
+    distinctUntilChanged(), // Skip if state unchanged
+    takeUntil(this.destroy$), // Cleanup on component destroy
+    tap(() => this._saveToSessionStorage())
+  )
+  .subscribe();
+
+// Signal save on every change
+storeChange() {
+  this.saveState$.next();
+}
+
+// Cleanup
+ngOnDestroy() {
+  this.destroy$.next();
+  this.destroy$.complete();
+}
+```
+
+**RxJS Subjects in CLI Panel**:
+- `runCreated$` (Subject) - Emits when new pipeline run created
+- `saveState$` (Subject) - Source stream for debounced saves
+- `destroy$` (Subject) - Signals component cleanup/destruction
+
+**Pending Logs Buffer** (`frontend/static/js/cli-panel.js`):
+
+RxJS `race()` operator waits for run creation or timeout:
+
+```javascript
+// Queue pending log until run appears
+race(
+  runCreated$.pipe(filter(id => id === expectedRunId)),
+  timer(30000) // Wait 30 seconds max
+)
+.pipe(
+  takeUntil(this.destroy$),
+  catchError(() => []) // Timeout = empty
+)
+.subscribe(runId => {
+  if (runId) this._replayPendingLogs(runId);
+});
+```
+
+**State Synchronization** (`frontend/static/js/queue-store.js`):
+
+Alpine.js store already using RxJS:
+- Subjects for WebSocket message streams
+- Falls back to legacy `.on()` event handlers if RxJS unavailable (graceful degradation)
+- Demonstrates integration point for future full RxJS migration
+
+**Integration Points**:
+
+1. **Base Template** (`frontend/templates/base.html`):
+   - RxJS CDN script (before Alpine.js)
+   - rxjs-utils.js inclusion
+   - Makes operators available to all scripts
+
+2. **WebSocket Manager** (`frontend/static/js/queue-websocket.js`):
+   - Uses Observables for message streams
+   - Ping/pong keepalive via `interval()` + `race()` + `switchMap()`
+   - Exponential backoff on reconnection
+
+3. **CLI Panel** (`frontend/static/js/cli-panel.js`):
+   - Debounced saves via `debounceTime()` + `distinctUntilChanged()`
+   - Pending logs buffer using `race()` between creation and timeout
+   - Cleanup via `takeUntil(destroy$)`
+
+4. **Queue Store** (`frontend/static/js/queue-store.js`):
+   - Subjects for typed message parsing
+   - Optional RxJS - falls back to callbacks
+
+**Design Principles**:
+
+1. **Composability**: Complex patterns built from simple operators
+   ```javascript
+   // Ping logic: interval → race → switchMap → exponentialBackoff
+   ```
+
+2. **Declarative**: Code expresses intent, not mechanics
+   ```javascript
+   // "Debounce saves for 500ms, skipping duplicates" (RxJS)
+   // vs. "Set timeout, cancel if new change, check equality" (callbacks)
+   ```
+
+3. **Error Handling**: Observable chains propagate errors predictably
+   ```javascript
+   .pipe(
+     switchMap(() => unreliableOperation()),
+     catchError(err => fallbackObservable(err))
+   )
+   ```
+
+4. **Memory Safe**: Subscriptions explicitly managed
+   ```javascript
+   takeUntil(destroy$) // Auto-unsubscribe on component cleanup
+   ```
+
+5. **Backward Compatible**: Runs alongside Alpine.js; optional in existing code
+   ```javascript
+   // Graceful fallback to .on() event handlers if RxJS unavailable
+   ```
+
+**Deferred Work**:
+
+1. **UI Interaction Handlers**: Form submissions, button clicks (not yet reactive)
+2. **SSE Stream Management**: Pipeline operation streaming (currently EventSource, could be Observable)
+3. **Batch Processing Progress**: Real-time badge updates (currently polling-based)
+4. **Full State Management**: Consider Zustand or Pinia as alternative to hand-rolled Alpine stores
+
+**Browser Compatibility**:
+- All modern browsers (Chrome, Firefox, Safari, Edge)
+- Polyfill-free; RxJS v7 uses native Promise and Symbol
+- Works in browser console for real-time debugging
+
+**Testing Strategy**:
+
+Observable patterns are deterministic and replay-able:
+
+```javascript
+// Mock observable source
+const mockMessage$ = of({ type: 'pong' });
+
+// Test reconnection logic
+reconnectLogic(mockMessage$)
+  .pipe(take(1)) // Take one emission
+  .subscribe(connected => {
+    expect(connected).toBe(true);
+  });
+```
+
+**Performance Considerations**:
+
+1. **Lazy Initialization**: Observables don't execute until subscribed
+2. **Memory**: `shareReplay()` caches values to avoid redundant subscriptions
+3. **Unsubscribe**: `takeUntil(destroy$)` prevents memory leaks
+4. **Backpressure**: Operators buffer/drop events based on strategy (`debounceTime`, `throttleTime`, `sample`)
+
+**Future Path**:
+
+- Progressive migration of event handlers to RxJS
+- Potential framework upgrade to Vue 3 Composition API (uses RxJS patterns)
+- Full state management with RxJS stores (e.g., NGXS, Akita patterns)
+
 ### Live Status Badges (Real-Time Pipeline Status)
 
 **Component**: `frontend/static/js/live-status-badge.js`

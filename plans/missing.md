@@ -3599,6 +3599,30 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ### Annotation System Enhancements
 - [x] Delete annotation from popover (2025-12-11): Added delete button to annotation popover for editing existing annotations, with visibility controls and confirmation handling
+- [x] Annotation Panel UX Improvements (2025-12-16): Redesigned annotation editor with collapsible fields and smart text selection
+  - **Feature 1: Collapsible Text Fields**
+    - Reframe Note, Strategic Note, and ATS Keywords fields now hidden by default
+    - Click-to-expand with visual chevron icon (rotates to indicate state)
+    - Auto-expands when editing annotation with existing content
+    - CSS transitions for smooth expand/collapse animations
+    - Reduces visual clutter while preserving quick access to all fields
+  - **Feature 2: Compact Action Buttons**
+    - Buttons shrunk to text-xs size with right alignment
+    - Shortened labels: "Save" instead of "Add Annotation", "Clear" instead of "Clear Selection"
+    - Reduced button spacing improves layout density
+  - **Feature 3: Smart Sentence Selection**
+    - New interaction pattern for JD annotation viewer text selection
+    - First click: Auto-selects complete sentence containing click point
+    - Subsequent clicks: Toggle popover visibility (show/hide)
+    - Right-click: Clear smart selection, enable manual text selection mode
+    - Escape key: Close popover and clear selection
+    - Drag-to-select: Manual text selection still works, overrides smart selection
+    - Improves annotation workflow by reducing need for manual text selection
+  - **Files Modified**:
+    - `frontend/templates/partials/job_detail/_annotation_popover.html` - Collapsible fields structure, compact buttons
+    - `frontend/static/js/jd-annotation.js` - Added `togglePopoverField()`, `handleSmartSentenceClick()`, `findSentenceBounds()`, smart selection state management
+    - `frontend/static/css/jd-annotation.css` - Chevron rotation animations, expand/collapse transitions
+  - **Impact**: Annotation workflow now more efficient with smart sentence selection and cleaner UI; reduced cognitive load from always-visible fields
 
 ### Master CV API Vercel Deployment Fix
 - [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.
@@ -4319,6 +4343,121 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - Tooltip rendering and positioning
 
 - **Impact**: Improved perceived performance; detail page feels instant for most user workflows; reduced server load through client-side caching; users see quick context via tooltips without page navigation
+
+---
+
+### RxJS-Lite Integration & Reactive Event Handling (2025-12-16)
+
+**FEATURE: Reactive Programming Foundation with RxJS Operators - IMPLEMENTED (2025-12-16)**:
+- [x] **Completed**: Four-phase RxJS integration foundation for reactive event handling across frontend
+- **Overview**: Introduced RxJS (CDN-based) for managing complex asynchronous patterns with Observables, eliminating callback hell and improving code maintainability
+- **Problem Addressed**: Frontend had scattered callback-based event handling (manual ping intervals, debounced saves with setTimeout, SSE reconnection logic); difficult to compose and test; prone to timing bugs and memory leaks
+
+#### Phase 1: Setup & Foundation
+- **RxJS CDN Integration** (`frontend/templates/base.html`):
+  - Added RxJS `v7` library from `unpkg.com/rxjs@7` CDN
+  - Scripts load before Alpine.js to ensure RxJS available globally
+  - No build step required; reactive operators accessible from `window.rxjs` namespace
+- **New File**: `frontend/static/js/rxjs-utils.js` (utilities and helper functions)
+  - Re-exports core RxJS operators for convenience: `Subject`, `BehaviorSubject`, `timer`, `interval`, `race`, `switchMap`, `debounceTime`, `distinctUntilChanged`, etc.
+  - Utility function `exponentialBackoff(initialDelay, maxDelay)` - creates backoff strategy for reconnection
+  - Helper functions for common patterns:
+    - `createWebSocket(url, options)` - wraps WebSocket creation with error handling
+    - `createDebouncedSave(source$, delayMs)` - debounces save operations
+    - `createPendingBuffer(source$)` - buffers events while disconnected, flushes when reconnected
+    - `createInterval(delayMs)` - creates typed timer interval
+    - `createMessageRouter(source$)` - routes messages by type to handlers
+
+#### Phase 2: WebSocket Reconnection with Exponential Backoff
+- **File**: `frontend/static/js/queue-websocket.js` (QueueWebSocket class)
+- **RxJS Subjects Added**:
+  - `message$` (Subject) - emits received WebSocket messages
+  - `connected$` (BehaviorSubject<boolean>) - tracks connection state (true=connected, false=disconnected)
+  - `queueState$` (Subject) - typed queue state updates
+  - `queueUpdate$` (Subject) - queue item updates
+  - `actionResult$` (Subject) - operation success/failure
+  - `error$` (Subject) - connection and protocol errors
+- **Implementation**:
+  - Replaced manual `setInterval()` ping/pong logic with RxJS `interval()` operator
+  - Created observable chain: `interval(30s) → race(pongReceived$, 60s timeout) → switchMap(reconnect)`
+  - Exponential backoff on reconnect: 500ms → 1s → 2s → 5s → max 30s (with jitter ±10%)
+  - Proper cleanup: `unsubscribe()` called in `disconnect()` method to prevent memory leaks
+- **Benefits**: Ping logic now declarative and composable; easy to test; automatic backoff prevents thundering herd on server restart
+
+#### Phase 3: Pending Logs Buffer with Debounced Save
+- **File**: `frontend/static/js/cli-panel.js` (cliPanelStore Alpine.js component)
+- **RxJS Subjects Added**:
+  - `runCreated$` (Subject) - emits when new pipeline run created
+  - `destroy$` (Subject) - signals component cleanup
+  - `saveState$` (Subject) - source stream for debounced saves
+- **Implementation**:
+  - `_setupDebouncedSaveRxJS()` creates observable: `saveState$ → debounceTime(500ms) → distinctUntilChanged() → save to sessionStorage`
+  - `_queuePendingLog()` uses `race()` between run creation within 30s timeout - waits for `runCreated$` emission or aborts
+  - Automatic subscription cleanup on component destroy via `destroy$` and `takeUntil(destroy$)`
+  - Replaces callback-based saves with declarative, composable RxJS operators
+- **Benefits**: Pending logs no longer lost during page navigation; save debouncing eliminates excessive sessionStorage writes; clean separation of concerns between log streaming and persistence
+
+#### Phase 4: State Synchronization with WebSocket Observables
+- **File**: `frontend/static/js/queue-store.js` (Alpine.js store)
+- **RxJS Integration**: Already had `_initRxJS()` method creating subjects for WebSocket message streams
+  - Uses WebSocket observables for typed message parsing
+  - Falls back to legacy `.on()` event handlers if RxJS unavailable (graceful degradation)
+  - Demonstrates integration point for future full RxJS migration
+- **Benefits**: Typed message streams enable robust error handling; backward compatible with existing code
+
+#### Deferred Alternatives (Documented for Future Reference)
+- **Plan A: Full Vue 3 + RxJS Migration** (`plans/rxjs-option-a-full-migration.md`)
+  - Would replace Alpine.js with Vue 3 Composition API
+  - Full TypeScript support with reactive ref/computed
+  - Single-file components with scoped styles
+  - Deferred: Too disruptive to existing Alpine.js templates
+- **Plan B: Zustand + Immer Alternative** (`plans/rxjs-option-b-zustand-immer.md`)
+  - Lightweight state management as RxJS alternative
+  - Immutable updates with Immer
+  - Simpler mental model than Observables
+  - Deferred: RxJS chosen for composability benefits
+
+#### Files Created/Modified
+- **Created**:
+  - `frontend/static/js/rxjs-utils.js` - Utility functions and re-exports (~150 lines)
+  - `plans/rxjs-option-a-full-migration.md` - Vue 3 migration plan (deferred)
+  - `plans/rxjs-option-b-zustand-immer.md` - Zustand alternative (deferred)
+- **Modified**:
+  - `frontend/templates/base.html` - Added RxJS CDN scripts
+  - `frontend/static/js/queue-websocket.js` - RxJS subjects and observables
+  - `frontend/static/js/cli-panel.js` - RxJS debounced save and pending buffer
+  - `frontend/static/js/queue-store.js` - Already had RxJS integration (no changes)
+
+#### Architecture Benefits
+- **Composability**: Complex async patterns built from simple operators (map, filter, debounce, etc.)
+- **Error Handling**: Observable chains propagate errors predictably through `catchError()` operator
+- **Memory Management**: Subscriptions explicitly managed; unsubscribe prevents memory leaks
+- **Testability**: Observables deterministic and replay-able; easy to mock in unit tests
+- **Maintainability**: Declarative code explains intent; imperative callbacks easier to misunderstand
+- **Reusability**: Operators combine - `exponentialBackoff()` used in multiple reconnection scenarios
+
+#### Current State & Future Work
+- **Phase 1-4**: Complete - RxJS foundation laid, WebSocket and logging scenarios reactive
+- **Next Steps**: Progressive migration of remaining event handlers
+  - UI interaction handlers (form submissions, button clicks)
+  - SSE stream management in pipeline-actions.js
+  - Batch processing progress updates
+  - Full state management refactor (deferred, requires architecture review)
+- **No Breaking Changes**: RxJS runs alongside Alpine.js; optional in existing code; graceful fallback to callbacks
+
+#### Verification
+- RxJS library loads successfully; `window.rxjs` available in browser console
+- WebSocket reconnection uses exponential backoff observable chain
+- Pending logs debounced saves triggered at correct intervals
+- No memory leaks: subscriptions cleaned up on component destroy
+- Observable subjects typed and emit correct message structures
+
+#### Impact
+- Stronger foundation for real-time features; reduces complexity of async code
+- Ping/pong and reconnection now robust and testable
+- Debounced saves prevent excessive storage operations
+- Opens path to reactive programming patterns throughout application
+- Prepares codebase for future framework upgrades (Vue 3, Angular, etc.)
 
 ---
 
