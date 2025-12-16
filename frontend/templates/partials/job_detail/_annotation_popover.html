@@ -212,65 +212,86 @@
         </div>
     </div>
 
-    {# Reframe Note (for gaps and tangential) #}
-    <div class="mb-3" id="popover-reframe-container">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
-            Reframe Note
-            <span class="text-gray-400 font-normal">(how to position your experience)</span>
-        </label>
-        <textarea id="popover-reframe-note"
-                  class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows="2"
-                  placeholder="e.g., 'While I haven't used X directly, my experience with Y demonstrates similar...'"></textarea>
-    </div>
-
-    {# Strategic Note for LLM #}
-    <div class="mb-3" id="popover-strategic-container">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
-            Strategic Note
-            <span class="text-gray-400 font-normal">(LLM guidance for all layers)</span>
-        </label>
-        <textarea id="popover-strategic-note"
-                  class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows="2"
-                  placeholder="e.g., 'Emphasize Linux passion throughout CV and cover letter'"></textarea>
-        <p class="text-xs text-gray-400 mt-1">This note will influence CV generation, cover letters, and outreach messaging.</p>
-    </div>
-
-    {# Keywords #}
-    <div class="mb-4">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">
-            ATS Keywords
-            <span class="text-gray-400 font-normal">(comma separated)</span>
-        </label>
-        <input type="text"
-               id="popover-keywords"
-               class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-               placeholder="e.g., Kubernetes, K8s, container orchestration">
-    </div>
-
-    {# Actions #}
-    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-        <div class="flex items-center gap-2">
-            <button onclick="hideAnnotationPopover()"
-                    class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition">
-                Cancel
-            </button>
-            {# Delete button - only shown when editing existing annotation #}
-            <button onclick="deleteAnnotationFromPopover()"
-                    id="popover-delete-btn"
-                    class="hidden px-3 py-1.5 text-sm font-medium rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 transition
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    title="Delete this annotation">
-                Delete
-            </button>
+    {# Reframe Note (collapsible) #}
+    <div class="mb-2" id="popover-reframe-container">
+        <button type="button"
+                onclick="togglePopoverField('reframe')"
+                class="w-full flex items-center justify-between text-xs font-medium text-gray-500 uppercase py-1.5 hover:text-gray-700 hover:bg-gray-50 rounded transition">
+            <span class="flex items-center gap-1">
+                <svg class="w-3 h-3 transition-transform duration-200" id="reframe-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                Reframe Note <span class="text-gray-400 font-normal">(positioning tip)</span>
+            </span>
+        </button>
+        <div id="reframe-content" class="hidden mt-1">
+            <textarea id="popover-reframe-note"
+                      class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      rows="2"
+                      placeholder="e.g., 'While I haven't used X directly, my experience with Y demonstrates similar...'"></textarea>
         </div>
+    </div>
+
+    {# Strategic Note (collapsible) #}
+    <div class="mb-2" id="popover-strategic-container">
+        <button type="button"
+                onclick="togglePopoverField('strategic')"
+                class="w-full flex items-center justify-between text-xs font-medium text-gray-500 uppercase py-1.5 hover:text-gray-700 hover:bg-gray-50 rounded transition">
+            <span class="flex items-center gap-1">
+                <svg class="w-3 h-3 transition-transform duration-200" id="strategic-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                Strategic Note <span class="text-gray-400 font-normal">(LLM guidance)</span>
+            </span>
+        </button>
+        <div id="strategic-content" class="hidden mt-1">
+            <textarea id="popover-strategic-note"
+                      class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      rows="2"
+                      placeholder="e.g., 'Emphasize Linux passion throughout CV and cover letter'"></textarea>
+            <p class="text-xs text-gray-400 mt-1">Influences CV, cover letters, and outreach.</p>
+        </div>
+    </div>
+
+    {# ATS Keywords (collapsible) #}
+    <div class="mb-3" id="popover-keywords-container">
+        <button type="button"
+                onclick="togglePopoverField('keywords')"
+                class="w-full flex items-center justify-between text-xs font-medium text-gray-500 uppercase py-1.5 hover:text-gray-700 hover:bg-gray-50 rounded transition">
+            <span class="flex items-center gap-1">
+                <svg class="w-3 h-3 transition-transform duration-200" id="keywords-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                ATS Keywords <span class="text-gray-400 font-normal">(comma separated)</span>
+            </span>
+        </button>
+        <div id="keywords-content" class="hidden mt-1">
+            <input type="text"
+                   id="popover-keywords"
+                   class="w-full text-sm border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                   placeholder="e.g., Kubernetes, K8s, container orchestration">
+        </div>
+    </div>
+
+    {# Actions - Compact, right-aligned #}
+    <div class="flex items-center justify-end gap-2 pt-1.5 mt-1 border-t border-gray-100">
+        {# Delete button - only shown when editing existing annotation #}
+        <button onclick="deleteAnnotationFromPopover()"
+                id="popover-delete-btn"
+                class="hidden px-2 py-1 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition"
+                title="Delete this annotation">
+            Delete
+        </button>
+        <button onclick="hideAnnotationPopover()"
+                class="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 transition">
+            Cancel
+        </button>
         <button onclick="saveAnnotationFromPopover()"
                 id="popover-save-btn"
-                class="px-4 py-1.5 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
-                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-2.5 py-1 text-xs font-medium rounded bg-indigo-600 text-white hover:bg-indigo-700 transition
+                       disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled>
-            Add Annotation
+            Save
         </button>
     </div>
 </div>

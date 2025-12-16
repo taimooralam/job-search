@@ -319,6 +319,41 @@ section[data-section-type="about_role"] {
 }
 
 /* ============================================================================
+   Collapsible Field Styles
+   ============================================================================ */
+
+/* Chevron rotation transition */
+#reframe-chevron,
+#strategic-chevron,
+#keywords-chevron {
+    transition: transform 0.2s ease;
+}
+
+/* Content expand/collapse - smooth appearance */
+#reframe-content,
+#strategic-content,
+#keywords-content {
+    transition: opacity 0.15s ease;
+}
+
+#reframe-content:not(.hidden),
+#strategic-content:not(.hidden),
+#keywords-content:not(.hidden) {
+    animation: fieldExpand 0.15s ease-out;
+}
+
+@keyframes fieldExpand {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
    Annotation List Styles
    ============================================================================ */
 

@@ -330,20 +330,123 @@ class AnnotationManager {
      * Set up event listeners
      */
     setupEventListeners() {
-        // Text selection in JD viewer
         const jdViewer = document.getElementById('jd-processed-content');
         if (jdViewer) {
-            jdViewer.addEventListener('mouseup', (e) => this.handleTextSelection(e));
+            // Track state for smart selection:
+            // - First click: select sentence
+            // - Subsequent clicks: toggle popover
+            // - Right-click: clear selection, enable manual selection mode
+            this.smartSelectionState = {
+                hasSentenceSelected: false,
+                lastSelectedSentence: null
+            };
+
+            // Left click handler
+            jdViewer.addEventListener('click', (e) => {
+                // Skip if clicking on existing annotation highlights
+                if (e.target.closest('.annotation-highlight')) return;
+
+                const popover = document.getElementById('annotation-popover');
+                const isPopoverVisible = popover && !popover.classList.contains('hidden');
+
+                // If we already have a sentence selected
+                if (this.smartSelectionState.hasSentenceSelected) {
+                    // Toggle popover visibility
+                    if (isPopoverVisible) {
+                        hideAnnotationPopover();
+                    } else {
+                        // Re-show popover with the same selection
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            const rect = range.getBoundingClientRect();
+                            const selectedText = selection.toString().trim();
+                            if (selectedText.length >= 3) {
+                                this.showAnnotationPopover(rect, selectedText);
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // First click - select the sentence
+                this.handleSmartSentenceClick(e);
+            });
+
+            // Right-click handler - reset to manual selection mode
+            jdViewer.addEventListener('contextmenu', (e) => {
+                // Skip if clicking on existing annotation highlights
+                if (e.target.closest('.annotation-highlight')) return;
+
+                // Clear selection and reset state
+                window.getSelection().removeAllRanges();
+                this.smartSelectionState.hasSentenceSelected = false;
+                this.smartSelectionState.lastSelectedSentence = null;
+                hideAnnotationPopover();
+
+                // Don't prevent default - allow normal context menu
+                // The user can now manually select text
+            });
+
+            // Also handle manual drag selection
+            let mouseDownPos = null;
+            let isDragging = false;
+
+            jdViewer.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.annotation-highlight')) return;
+                if (e.button !== 0) return; // Only track left mouse button
+
+                mouseDownPos = { x: e.clientX, y: e.clientY };
+                isDragging = false;
+            });
+
+            jdViewer.addEventListener('mousemove', (e) => {
+                if (mouseDownPos) {
+                    const dx = Math.abs(e.clientX - mouseDownPos.x);
+                    const dy = Math.abs(e.clientY - mouseDownPos.y);
+                    if (dx > 5 || dy > 5) {
+                        isDragging = true;
+                        // User is manually selecting - reset smart selection state
+                        this.smartSelectionState.hasSentenceSelected = false;
+                    }
+                }
+            });
+
+            jdViewer.addEventListener('mouseup', (e) => {
+                if (e.target.closest('.annotation-highlight')) {
+                    mouseDownPos = null;
+                    return;
+                }
+
+                // If user dragged to select text manually, use that selection
+                if (isDragging) {
+                    const selection = window.getSelection();
+                    const selectedText = selection.toString().trim();
+                    if (selectedText.length >= 3) {
+                        this.handleTextSelection(e);
+                        this.smartSelectionState.hasSentenceSelected = true;
+                        this.smartSelectionState.lastSelectedSentence = selectedText;
+                    }
+                }
+
+                mouseDownPos = null;
+                isDragging = false;
+            });
         }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 hideAnnotationPopover();
+                // Also clear smart selection state
+                if (this.smartSelectionState) {
+                    this.smartSelectionState.hasSentenceSelected = false;
+                    window.getSelection().removeAllRanges();
+                }
             }
         });
 
-        // Click outside popover to close - use mousedown for better UX
+        // Click outside popover to close (but not clear selection)
         document.addEventListener('mousedown', (e) => {
             const popover = document.getElementById('annotation-popover');
             if (!popover || popover.classList.contains('hidden')) return;
@@ -354,9 +457,126 @@ class AnnotationManager {
             // If clicking on an annotation highlight, let the click handler manage it
             if (e.target.closest('.annotation-highlight')) return;
 
-            // Close popover for any other click
+            // If clicking inside JD viewer, let the viewer handlers manage it
+            const jdViewer = document.getElementById('jd-processed-content');
+            if (jdViewer && jdViewer.contains(e.target)) return;
+
+            // Close popover for clicks outside
             hideAnnotationPopover();
         });
+    }
+
+    /**
+     * Handle smart sentence selection on click
+     * First click: selects the complete sentence containing the click point
+     */
+    handleSmartSentenceClick(event) {
+        // Get the text node at click position
+        const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+        if (!range || !range.startContainer) return;
+
+        // Only work with text nodes
+        const textNode = range.startContainer;
+        if (textNode.nodeType !== Node.TEXT_NODE) return;
+
+        const fullText = textNode.textContent;
+        const clickOffset = range.startOffset;
+
+        // Find sentence boundaries
+        const sentenceBounds = this.findSentenceBounds(fullText, clickOffset);
+        if (!sentenceBounds) return;
+
+        // Extract the sentence
+        const sentence = fullText.substring(sentenceBounds.start, sentenceBounds.end).trim();
+
+        // Skip if too short
+        if (sentence.length < 5) return;
+
+        // Create a range for the sentence and select it
+        const sentenceRange = document.createRange();
+        sentenceRange.setStart(textNode, sentenceBounds.start);
+        sentenceRange.setEnd(textNode, sentenceBounds.end);
+
+        // Select the sentence visually
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(sentenceRange);
+
+        // Update smart selection state
+        this.smartSelectionState.hasSentenceSelected = true;
+        this.smartSelectionState.lastSelectedSentence = sentence;
+
+        // Get position for popover
+        const rect = sentenceRange.getBoundingClientRect();
+
+        // Store selection state
+        this.popoverState.selectedText = sentence;
+        this.popoverState.selectedRange = sentenceRange.cloneRange();
+
+        // Reset popover state
+        this.popoverState.relevance = null;
+        this.popoverState.requirement = null;
+        this.popoverState.passion = 'neutral';
+        this.popoverState.identity = 'peripheral';
+        this.popoverState.starIds = [];
+        this.popoverState.reframeNote = '';
+        this.popoverState.keywords = '';
+        this.popoverState.hasExplicitRelevance = false;
+        this.popoverState.hasExplicitRequirement = false;
+        this.popoverState.hasExplicitPassion = false;
+        this.popoverState.hasExplicitIdentity = false;
+
+        // Show popover
+        this.showAnnotationPopover(rect, sentence);
+    }
+
+    /**
+     * Find sentence boundaries around a position in text
+     * Returns { start, end } indices or null if not found
+     */
+    findSentenceBounds(text, position) {
+        if (!text || position < 0 || position > text.length) return null;
+
+        // Sentence terminators: . ! ? and also consider line breaks as boundaries
+        const sentenceEndPattern = /[.!?](?:\s|$)|[\n\r]+/g;
+
+        // Find the start of the sentence (look backward)
+        let start = 0;
+        let match;
+        sentenceEndPattern.lastIndex = 0;
+
+        while ((match = sentenceEndPattern.exec(text)) !== null) {
+            if (match.index >= position) break;
+            start = match.index + match[0].length;
+        }
+
+        // Trim leading whitespace
+        while (start < position && /\s/.test(text[start])) {
+            start++;
+        }
+
+        // Find the end of the sentence (look forward)
+        sentenceEndPattern.lastIndex = position;
+        match = sentenceEndPattern.exec(text);
+
+        let end;
+        if (match) {
+            end = match.index + 1;
+            if (/^[\n\r\s]+$/.test(match[0])) {
+                end = match.index;
+            }
+        } else {
+            end = text.length;
+        }
+
+        // Trim trailing whitespace
+        while (end > start && /\s/.test(text[end - 1])) {
+            end--;
+        }
+
+        if (end <= start) return null;
+
+        return { start, end };
     }
 
     /**
@@ -523,22 +743,25 @@ class AnnotationManager {
             this.popoverState.starIds = annotation.star_ids;
         }
 
-        // Set reframe note
+        // Set reframe note and auto-expand if has content
         const reframeEl = document.getElementById('popover-reframe-note');
         if (reframeEl && annotation.reframe_note) {
             reframeEl.value = annotation.reframe_note;
+            this.expandPopoverField('reframe');
         }
 
-        // Set strategic note
+        // Set strategic note and auto-expand if has content
         const strategicEl = document.getElementById('popover-strategic-note');
         if (strategicEl && annotation.strategic_note) {
             strategicEl.value = annotation.strategic_note;
+            this.expandPopoverField('strategic');
         }
 
-        // Set keywords
+        // Set keywords and auto-expand if has content
         const keywordsEl = document.getElementById('popover-keywords');
-        if (keywordsEl && annotation.suggested_keywords) {
+        if (keywordsEl && annotation.suggested_keywords && annotation.suggested_keywords.length > 0) {
             keywordsEl.value = annotation.suggested_keywords.join(', ');
+            this.expandPopoverField('keywords');
         }
 
         // Store state
@@ -550,6 +773,36 @@ class AnnotationManager {
         this.popoverState.reframeNote = annotation.reframe_note || '';
         this.popoverState.strategicNote = annotation.strategic_note || '';
         this.popoverState.keywords = annotation.suggested_keywords?.join(', ') || '';
+    }
+
+    /**
+     * Expand a collapsible popover field
+     */
+    expandPopoverField(field) {
+        const content = document.getElementById(`${field}-content`);
+        const chevron = document.getElementById(`${field}-chevron`);
+
+        if (content) {
+            content.classList.remove('hidden');
+        }
+        if (chevron) {
+            chevron.style.transform = 'rotate(90deg)';
+        }
+    }
+
+    /**
+     * Collapse a collapsible popover field
+     */
+    collapsePopoverField(field) {
+        const content = document.getElementById(`${field}-content`);
+        const chevron = document.getElementById(`${field}-chevron`);
+
+        if (content) {
+            content.classList.add('hidden');
+        }
+        if (chevron) {
+            chevron.style.transform = 'rotate(0deg)';
+        }
     }
 
     /**
@@ -582,6 +835,11 @@ class AnnotationManager {
         if (reframeEl) reframeEl.value = '';
         if (keywordsEl) keywordsEl.value = '';
         if (strategicEl) strategicEl.value = '';
+
+        // Collapse all expandable fields
+        this.collapsePopoverField('reframe');
+        this.collapsePopoverField('strategic');
+        this.collapsePopoverField('keywords');
 
         // Reset editing state
         this.editingAnnotationId = null;
@@ -1941,6 +2199,31 @@ function closeAnnotationPanel() {
 function hideAnnotationPopover() {
     const popover = document.getElementById('annotation-popover');
     if (popover) popover.classList.add('hidden');
+}
+
+/**
+ * Toggle collapsible popover field visibility
+ * Used for Reframe Note, Strategic Note, and ATS Keywords fields
+ */
+function togglePopoverField(field) {
+    const content = document.getElementById(`${field}-content`);
+    const chevron = document.getElementById(`${field}-chevron`);
+
+    if (!content) return;
+
+    if (content.classList.contains('hidden')) {
+        // Expand
+        content.classList.remove('hidden');
+        if (chevron) {
+            chevron.style.transform = 'rotate(90deg)';
+        }
+    } else {
+        // Collapse
+        content.classList.add('hidden');
+        if (chevron) {
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    }
 }
 
 /**
