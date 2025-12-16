@@ -49,6 +49,8 @@ class OperationState:
     error: Optional[str] = None
     # Event for reactive SSE streaming - set when new logs are appended
     log_event: Optional[asyncio.Event] = None
+    # LangSmith trace URL for debugging
+    langsmith_url: Optional[str] = None
 
 
 # Global operation state storage (in-memory, similar to _runs in app.py)
@@ -402,6 +404,7 @@ async def _persist_operation_meta_to_redis(run_id: str, state: OperationState) -
             "started_at": state.started_at.isoformat(),
             "updated_at": state.updated_at.isoformat(),
             "error": state.error or "",
+            "langsmith_url": state.langsmith_url or "",
         }
         await redis.hset(key, mapping=meta)
 
@@ -505,6 +508,7 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
             logs=[log if isinstance(log, str) else log.decode() for log in logs],
             layer_status=layer_status,
             error=meta.get("error") or None,
+            langsmith_url=meta.get("langsmith_url") or None,
         )
 
         # Cache in memory for faster subsequent access

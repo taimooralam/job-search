@@ -535,6 +535,31 @@ def get_operation_status(run_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/operations/<run_id>/logs/redis", methods=["GET"])
+def get_operation_redis_logs(run_id: str):
+    """
+    Get operation logs from Redis persistence.
+
+    Fetches logs from Redis cache (24h TTL) for completed runs.
+    Useful when in-memory logs are unavailable after service restart.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/api/jobs/operations/{run_id}/logs/redis",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # =============================================================================
 # Queue Management Routes (Redis-backed real-time queue)
 # =============================================================================
