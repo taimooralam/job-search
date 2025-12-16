@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 import requests
 from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import ConfigurationError, ServerSelectionTimeoutError
 
@@ -2363,6 +2363,31 @@ def batch_job_rows_partial():
         statuses=JOB_STATUSES,
         current_sort=sort_field,
         current_direction=sort_direction,
+    )
+
+
+@app.route("/partials/batch-job-row/<job_id>")
+@login_required
+def batch_job_row_partial(job_id: str):
+    """
+    HTMX partial: Return single batch job row for live refresh.
+
+    Used when queue:job-completed event fires to update JD/RS/CV badges
+    without refreshing the entire table.
+    """
+    collection = get_collection()
+    try:
+        job = collection.find_one({"_id": ObjectId(job_id)})
+    except Exception:
+        abort(404)
+
+    if not job:
+        abort(404)
+
+    return render_template(
+        "partials/batch_job_single_row.html",
+        job=job,
+        statuses=JOB_STATUSES,
     )
 
 
