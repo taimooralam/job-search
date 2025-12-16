@@ -3364,6 +3364,19 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Verification**: Error no longer appears in browser console; CLI panel logs stream continuously during pipeline execution; batch job rows expand/collapse smoothly
   - **Commit**: `d924b2dd` - fix(frontend): resolve Alpine.js error causing pipeline logs to stop
 
+**BUG FIX 12: CLI Panel runId Validation - FIXED (2025-12-16)**:
+- **Issue**: "TypeError: can't access property 'after', v is undefined" crash in `cli-panel.js` when processing runs without valid runId
+- **Root Cause**: `fetchRunLogs()` and `_addUnavailableRunPlaceholder()` methods didn't validate runId before adding to runOrder array; undefined values corrupted Alpine.js reactive state causing DOM diffing to fail
+- **Fix Applied**: Added guard clauses in `cli-panel.js` to validate runId before processing:
+  - `fetchRunLogs(run_id)`: Check `if (!run_id)` before accessing run object
+  - `_addUnavailableRunPlaceholder(run_id)`: Check `if (!run_id)` before pushing to runOrder array
+  - Follows existing defensive patterns in `startRun()` and `closeRun()` methods
+- **Files Modified**:
+  - `frontend/static/js/cli-panel.js` - Added runId validation guards (2 locations)
+- **Impact**: CLI panel no longer crashes when processing incomplete run metadata; defensive programming prevents undefined values from corrupting reactive state
+- **Verification**: No TypeError in console; CLI panel handles edge cases gracefully; logs display correctly during pipeline execution
+- **Commit**: `ccfa5b91` - fix(cli-panel): add guard clauses for undefined runId in fetchRunLogs
+
 ### Job Detail Page UI/UX Fixes (2025-12-15)
 
 **BUG FIX 13: Pipelines Panel Z-index Issue - FIXED**:
