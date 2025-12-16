@@ -94,10 +94,10 @@
         </td>
 
         <!-- Progress indicators -->
-        <!-- MongoDB field names: extracted_jd (pipeline), company_research, generated_cv -->
+        <!-- MongoDB field names: extracted_jd (pipeline), company_research, cv_text/cv_editor_state -->
         {% set has_jd = job.extracted_jd or job.processed_jd %}
         {% set has_research = job.company_research or job.role_skills %}
-        {% set has_cv = job.generated_cv or job.cv_output %}
+        {% set has_cv = job.generated_cv or job.cv_output or job.cv_text or job.cv_editor_state %}
         <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
             <div class="flex items-center gap-1.5">
                 <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs

@@ -2509,6 +2509,99 @@ Pipeline (Markdown) ──► MongoDB cv_text
 
 ---
 
+## MongoDB Persistence Layer (ENHANCED - 2025-12-16)
+
+### Overview
+
+The persistence layer saves pipeline results to MongoDB while maintaining data integrity. Boolean flags (`processed_jd`, `has_research`, `generated_cv`) indicate **data presence**, not pipeline completion status.
+
+### Boolean Flag Logic (UPDATED 2025-12-16)
+
+**Core Principle**: Flags reflect WHAT DATA IS PRESENT in MongoDB, enabling reliable UI indicators.
+
+```python
+# runner_service/persistence.py
+
+def _set_boolean_flags(job_dict, state):
+    """Set flags based on DATA PRESENCE, not pipeline completion."""
+
+    # processed_jd: TRUE if JD was processed by layers 1.4 or 1.5
+    job_dict['processed_jd'] = bool(
+        state.get('processed_jd') or state.get('extracted_jd')
+    )
+
+    # has_research: TRUE if company research completed
+    job_dict['has_research'] = bool(
+        state.get('company_research') or state.get('role_skills')
+    )
+
+    # generated_cv: TRUE if CV data exists (pipeline-generated or manually edited)
+    job_dict['generated_cv'] = bool(
+        state.get('cv_text') or state.get('cv_editor_state')
+    )
+```
+
+### Why This Matters
+
+**Old Approach (Flawed)**:
+- Flags set on pipeline layer COMPLETION
+- Example: `processed_jd = True` when Layer 1 finished, even if data missing
+- Problem: Indicators showed wrong status for partial pipelines or manual edits
+
+**New Approach (Fixed)**:
+- Flags set when DATA ACTUALLY EXISTS in state
+- Example: `processed_jd = True` only when `processed_jd` or `extracted_jd` field has content
+- Benefit: Indicators accurate whether data came from pipeline or manual editing
+
+### Data Sources
+
+**JD Processing**:
+- `processed_jd`: HTML sections from Layer 1.4 (JD Processor)
+- `extracted_jd`: Structured intelligence from Layer 1.5 (JD Extractor)
+- Flag set: `processed_jd` OR `extracted_jd` exists
+
+**Company Research**:
+- `company_research`: Dict from Layer 3 research
+- `role_skills`: Dict from role-specific research
+- Flag set: `company_research` OR `role_skills` exists
+
+**CV Generation**:
+- `cv_text`: Markdown CV from pipeline (Layer 6)
+- `cv_editor_state`: TipTap JSON from manual CV editor
+- Flag set: `cv_text` OR `cv_editor_state` exists
+
+### UI Impact
+
+**Batch Processing Table** (`frontend/templates/partials/batch_job_single_row.html`):
+```html
+<!-- CV Badge: checks data presence, not just flag -->
+{% if job.get('cv_text') or job.get('cv_editor_state') or job.get('generated_cv') %}
+  <span class="badge badge-success">CV</span>
+{% endif %}
+```
+
+**Benefits**:
+- Accurate status display in all workflows
+- No false negatives when data from manual editing
+- No false positives from incomplete pipelines
+- Consistent behavior across UI layers
+
+### Testing Coverage
+
+**`tests/unit/test_persistence.py`** (14 new tests):
+- `test_processed_jd_flag_set_with_processed_jd_data`
+- `test_processed_jd_flag_set_with_extracted_jd_data`
+- `test_processed_jd_flag_unset_without_jd_data`
+- `test_has_research_flag_set_with_company_research_data`
+- `test_has_research_flag_set_with_role_skills_data`
+- `test_has_research_flag_unset_without_research_data`
+- `test_generated_cv_flag_set_with_cv_text_data`
+- `test_generated_cv_flag_set_with_cv_editor_state_data`
+- `test_generated_cv_flag_unset_without_cv_data`
+- Plus 5 edge cases: empty state, partial data, hybrid sources, null values, multiple sources
+
+---
+
 ## E2E Annotation Integration (Complete - 11 Phases, 2025-12-10)
 
 ### Overview

@@ -177,11 +177,68 @@ sudo ./svc.sh status
 - Confirm runner shows as "Idle"
 
 ### Phase 4: Update CI Workflow (5 min)
-**Goal:** Configure deploy job to use self-hosted runner.
+**Goal:** Configure build AND deploy jobs to use self-hosted runner (Option D).
+
+**Why Option D (Tests on GitHub, Build+Deploy on VPS)?**
+- Tests (31 matrix jobs) benefit enormously from GitHub's parallelism (90+ min sequential vs ~3 min parallel)
+- Build has only 2 matrix jobs - acceptable to run sequentially (~10 min vs ~5 min)
+- Deploy fixes GAP-097 reliability issue (no SSH timeouts)
+- Single self-hosted runner is sufficient since build runs after tests complete
 
 **File:** `.github/workflows/runner-ci.yml`
 
 ```yaml
+# KEEP test-unit and test-services on ubuntu-latest (unchanged)
+# These 31 matrix jobs benefit from GitHub's parallelism
+
+# CHANGE build job to self-hosted
+build:
+  needs: [test-unit, test-services]
+  runs-on: self-hosted  # Changed from ubuntu-latest
+  if: github.ref == 'refs/heads/main'
+  permissions:
+    contents: read
+    packages: write
+  strategy:
+    fail-fast: false
+    matrix:
+      image:
+        - name: runner
+          dockerfile: Dockerfile.runner
+          image_name: runner
+        - name: pdf-service
+          dockerfile: Dockerfile.pdf-service
+          image_name: pdf-service
+
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract image metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}/${{ matrix.image.image_name }}
+        tags: |
+          type=raw,value=latest
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push ${{ matrix.image.name }} image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./${{ matrix.image.dockerfile }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+# CHANGE deploy job to self-hosted
 deploy:
   needs: build
   runs-on: self-hosted  # Changed from ubuntu-latest
@@ -201,6 +258,8 @@ deploy:
         curl -f http://localhost:8000/health
 ```
 
+**Note:** Build will run matrix jobs sequentially on single runner (~10 min total vs ~5 min parallel).
+
 ### Phase 5: Validation (10 min)
 **Goal:** Confirm everything works.
 
@@ -218,7 +277,7 @@ deploy:
 | File | Location | Change |
 |------|----------|--------|
 | `docker-compose.runner.yml` | VPS: `/root/job-runner/` | Add deploy.replicas: 3 |
-| `runner-ci.yml` | Local: `.github/workflows/` | Change deploy job to self-hosted |
+| `runner-ci.yml` | Local: `.github/workflows/` | Change **build AND deploy** jobs to self-hosted (Option D) |
 | `missing.md` | Local: `plans/` | Mark GAP-097 as complete |
 
 ---

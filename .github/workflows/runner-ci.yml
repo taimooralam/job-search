@@ -195,10 +195,12 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
-  # Docker builds run in parallel using matrix strategy
+  # Docker builds - run on self-hosted VPS runner (Option D)
+  # Note: Matrix jobs will run sequentially on single runner (~10 min vs ~5 min parallel)
+  # Trade-off is acceptable since tests still run in parallel on GitHub-hosted runners
   build:
     needs: [test-unit, test-services]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Changed from ubuntu-latest (GAP-097)
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -242,9 +244,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+  # Deploy - runs on self-hosted VPS runner (GAP-097 fix)
+  # No SSH needed since runner has direct local access to Docker and filesystem
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Changed from ubuntu-latest (GAP-097)
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -252,108 +256,65 @@ jobs:
 
       - name: Wait for GHCR manifest propagation
         run: |
-          echo "Waiting 90 seconds for GHCR to propagate image manifests..."
-          echo "Large images (1.27GB PDF service) need extra time for manifest indexing"
-          sleep 90
+          echo "Waiting 60 seconds for GHCR to propagate image manifests..."
+          echo "Reduced from 90s since we're local and have faster access"
+          sleep 60
 
-      - name: Copy deployment files to VPS (with retry)
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 4
-          max_attempts: 5
-          retry_wait_seconds: 45
-          command: |
-            # Install SSH client
-            which ssh || sudo apt-get update && sudo apt-get install -y openssh-client
+      - name: Copy deployment files locally
+        run: |
+          # Copy compose file to job-runner directory (runner is on VPS)
+          # github-runner user has access to /root/job-runner via chmod 711 /root
+          cp docker-compose.runner.yml /root/job-runner/
 
-            # Setup SSH key
-            mkdir -p ~/.ssh
-            echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-            chmod 600 ~/.ssh/deploy_key
+          # Copy data directory
+          mkdir -p /root/job-runner/data
+          cp -r data/master-cv /root/job-runner/data/
 
-            # Add host to known_hosts (try multiple key types)
-            ssh-keyscan -t ed25519,rsa -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "✅ Files copied locally"
 
-            # Test connectivity before attempting transfer
-            echo "Testing TCP connectivity to VPS port 22..."
-            timeout 60 bash -c "until nc -z -w 5 ${{ secrets.VPS_HOST }} 22; do echo 'Waiting for port 22...'; sleep 5; done"
-            echo "✅ Port 22 reachable"
+      - name: Deploy services
+        run: |
+          cd /root/job-runner
 
-            # Copy files using scp (60s connection timeout, increased for network variability)
-            # Note: master-cv.md removed - now using MongoDB for CV data
-            scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-              docker-compose.runner.yml \
-              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/
+          # Pull latest images (runner + pdf-service) with retry logic
+          echo "Pulling latest Docker images from GHCR..."
+          MAX_RETRIES=3
+          RETRY_DELAY=10
 
-            # Copy data directory
-            scp -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -r \
-              data/master-cv \
-              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/root/job-runner/data/
-
-      - name: Deploy to VPS (with retry)
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 6
-          max_attempts: 5
-          retry_wait_seconds: 45
-          command: |
-            # Setup SSH key
-            mkdir -p ~/.ssh
-            echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-            chmod 600 ~/.ssh/deploy_key
-
-            # Test connectivity before attempting SSH
-            echo "Testing TCP connectivity to VPS port 22..."
-            timeout 60 bash -c "until nc -z -w 5 ${{ secrets.VPS_HOST }} 22; do echo 'Waiting for port 22...'; sleep 5; done"
-            echo "✅ Port 22 reachable"
-
-            # Execute deployment script via SSH (60s connection timeout, increased for network variability)
-            ssh -v -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 \
-              ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'DEPLOY_SCRIPT'
-
-            cd /root/job-runner
-
-            # Pull latest images (runner + pdf-service) with retry logic
-            echo "Pulling latest Docker images from GHCR..."
-            MAX_RETRIES=3
-            RETRY_DELAY=10
-
-            for i in $(seq 1 $MAX_RETRIES); do
-              echo "Pull attempt $i of $MAX_RETRIES..."
-              if docker compose -f docker-compose.runner.yml pull; then
-                echo "✅ Successfully pulled images"
-                break
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Pull attempt $i of $MAX_RETRIES..."
+            if docker compose -f docker-compose.runner.yml pull; then
+              echo "✅ Successfully pulled images"
+              break
+            else
+              if [ $i -lt $MAX_RETRIES ]; then
+                echo "⚠️  Pull failed, waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+                RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
               else
-                if [ $i -lt $MAX_RETRIES ]; then
-                  echo "⚠️  Pull failed, waiting ${RETRY_DELAY}s before retry..."
-                  sleep $RETRY_DELAY
-                  RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
-                else
-                  echo "❌ Failed to pull images after $MAX_RETRIES attempts"
-                  exit 1
-                fi
+                echo "❌ Failed to pull images after $MAX_RETRIES attempts"
+                exit 1
               fi
-            done
+            fi
+          done
 
-            # Restart services
-            docker compose -f docker-compose.runner.yml up -d --remove-orphans
+          # Restart services
+          docker compose -f docker-compose.runner.yml up -d --remove-orphans
 
-            # Clean up old images
-            docker system prune -f
+          # Clean up old images
+          docker system prune -f
 
-            # Wait for services to start (PDF service may take longer due to Playwright)
-            echo "Waiting for services to start..."
-            sleep 20
+          # Wait for services to start (PDF service may take longer due to Playwright)
+          echo "Waiting for services to start..."
+          sleep 20
 
-            # Check runner health
-            echo "Checking runner health..."
-            curl -f http://localhost:8000/health || exit 1
+          # Check runner health
+          echo "Checking runner health..."
+          curl -f http://localhost:8000/health || exit 1
 
-            # Check PDF service health via runner's network
-            echo "Checking PDF service health..."
-            docker exec job-runner-runner-1 curl -f http://pdf-service:8001/health || echo "Warning: PDF service health check failed"
+          # Check PDF service health via runner's network
+          echo "Checking PDF service health..."
+          docker exec job-runner-runner-1 curl -f http://pdf-service:8001/health || echo "Warning: PDF service health check failed"
 
-            # Show container status
-            docker compose -f docker-compose.runner.yml ps
-
-            DEPLOY_SCRIPT
+          # Show container status
+          docker compose -f docker-compose.runner.yml ps

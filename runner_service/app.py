@@ -1089,6 +1089,9 @@ async def startup_queue_manager():
         _queue_manager = QueueManager(settings.redis_url)
         await _queue_manager.connect()
 
+        # Start cross-runner event listener for multi-instance WebSocket support
+        await _queue_manager.start_event_listener()
+
         _ws_manager = QueueWebSocketManager(_queue_manager)
 
         # Subscribe to queue events for WebSocket broadcasting

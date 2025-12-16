@@ -79,6 +79,7 @@ def persist_run_to_mongo(
             update_doc["$set"]["artifact_urls"] = artifacts
 
         # Add pipeline results if provided (pain_points, fit_score, contacts, etc.)
+        # Persist state fields when completed to capture final results
         if pipeline_state and status == "completed":
             # Extract relevant fields from pipeline state
             state_fields = {
@@ -106,15 +107,31 @@ def persist_run_to_mongo(
                 if value is not None:
                     update_doc["$set"][key] = value
 
-            # Add boolean progress flags for UI indicators (JD/RS/CV)
-            # These allow the frontend to show progress without checking nested objects
-            update_doc["$set"]["processed_jd"] = bool(
+        # Add boolean progress flags for UI indicators (JD/RS/CV)
+        # These flags are set based on DATA PRESENCE, not just completion status.
+        # This ensures the frontend indicators stay in sync with actual data,
+        # even during intermediate pipeline states or partial completions.
+        if pipeline_state:
+            # Check if JD was processed (Layer 1-4 outputs)
+            has_jd_data = bool(
                 pipeline_state.get("pain_points") or pipeline_state.get("strategic_needs")
             )
-            update_doc["$set"]["has_research"] = bool(
+            if has_jd_data:
+                update_doc["$set"]["processed_jd"] = True
+
+            # Check if research was completed (Layer 5 outputs)
+            has_research_data = bool(
                 pipeline_state.get("company_research") or pipeline_state.get("role_research")
             )
-            update_doc["$set"]["generated_cv"] = bool(pipeline_state.get("cv_text"))
+            if has_research_data:
+                update_doc["$set"]["has_research"] = True
+
+            # Check if CV was generated (Layer 6 outputs)
+            has_cv_data = bool(
+                pipeline_state.get("cv_text") or pipeline_state.get("cv_editor_state")
+            )
+            if has_cv_data:
+                update_doc["$set"]["generated_cv"] = True
 
         # Update level-2 collection (processed jobs) using _id
         result = db["level-2"].update_one(

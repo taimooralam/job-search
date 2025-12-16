@@ -58,6 +58,8 @@ class QueueManager:
         self._pubsub = None
         self._subscribers: List[Callable[[Dict], Coroutine[Any, Any, None]]] = []
         self._connected = False
+        self._listener_task: Optional[asyncio.Task] = None
+        self._instance_id = uuid.uuid4().hex[:8]  # Unique ID to identify this runner instance
 
     async def connect(self) -> None:
         """Establish Redis connection."""
@@ -77,7 +79,26 @@ class QueueManager:
             raise
 
     async def disconnect(self) -> None:
-        """Close Redis connection."""
+        """Close Redis connection and cleanup resources."""
+        # Cancel listener task
+        if self._listener_task and not self._listener_task.done():
+            self._listener_task.cancel()
+            try:
+                await self._listener_task
+            except asyncio.CancelledError:
+                pass
+            self._listener_task = None
+
+        # Close pubsub
+        if self._pubsub:
+            try:
+                await self._pubsub.unsubscribe(self.EVENTS_CHANNEL)
+                await self._pubsub.close()
+            except Exception as e:
+                logger.warning(f"Error closing pubsub: {e}")
+            self._pubsub = None
+
+        # Close main connection
         if self._redis:
             await self._redis.close()
             self._redis = None
@@ -88,6 +109,65 @@ class QueueManager:
     def is_connected(self) -> bool:
         """Check if connected to Redis."""
         return self._connected and self._redis is not None
+
+    async def start_event_listener(self) -> None:
+        """
+        Start Redis Pub/Sub listener for cross-runner event propagation.
+
+        Events published by THIS runner are ignored (already handled locally).
+        Events from OTHER runners are forwarded to local subscribers.
+
+        This enables WebSocket clients connected to any runner instance to
+        receive real-time updates for jobs running on any other runner.
+        """
+        if not self._redis:
+            logger.warning("Cannot start event listener: Redis not connected")
+            return
+
+        if self._listener_task and not self._listener_task.done():
+            logger.info(f"[{self._instance_id}] Event listener already running")
+            return
+
+        self._pubsub = self._redis.pubsub()
+        await self._pubsub.subscribe(self.EVENTS_CHANNEL)
+
+        self._listener_task = asyncio.create_task(self._event_listener_loop())
+        logger.info(f"[{self._instance_id}] Started cross-runner event listener")
+
+    async def _event_listener_loop(self) -> None:
+        """Background task that listens for events from other runners."""
+        try:
+            async for message in self._pubsub.listen():
+                if message["type"] != "message":
+                    continue
+
+                try:
+                    event = json.loads(message["data"])
+
+                    # Skip events from THIS runner (already handled locally in _publish_event)
+                    if event.get("source_instance") == self._instance_id:
+                        continue
+
+                    logger.debug(
+                        f"[{self._instance_id}] Received event from {event.get('source_instance')}: "
+                        f"{event.get('action')}"
+                    )
+
+                    # Forward to local subscribers (WebSocket broadcast)
+                    for callback in self._subscribers:
+                        try:
+                            await callback(event)
+                        except Exception as e:
+                            logger.error(f"Subscriber callback error for cross-runner event: {e}")
+
+                except json.JSONDecodeError:
+                    logger.warning("Received invalid JSON from pub/sub channel")
+
+        except asyncio.CancelledError:
+            logger.info(f"[{self._instance_id}] Event listener cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"[{self._instance_id}] Event listener error: {e}")
 
     async def enqueue(
         self,
@@ -675,6 +755,7 @@ class QueueManager:
             "action": action,
             "item": item.to_dict(),
             "timestamp": datetime.utcnow().isoformat(),
+            "source_instance": self._instance_id,  # Identifies which runner published this
         }
 
         # Publish to Redis pub/sub for multi-instance support
@@ -687,7 +768,7 @@ class QueueManager:
             except Exception as e:
                 logger.warning(f"Failed to publish to Redis pub/sub: {e}")
 
-        # Call local subscribers
+        # Call local subscribers (for events from THIS runner)
         for callback in self._subscribers:
             try:
                 await callback(event)
