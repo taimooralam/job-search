@@ -146,6 +146,16 @@ jobs:
             paths: tests/pdf_service/
           - name: pdf-integration
             paths: tests/runner/test_pdf_integration.py
+          - name: websocket-auth
+            paths: tests/runner/test_websocket_auth.py
+          - name: websocket-keepalive
+            paths: tests/runner/test_websocket_keepalive.py
+          - name: master-cv-api
+            paths: tests/runner/test_master_cv_api_comprehensive.py
+          - name: master-cv-routes
+            paths: tests/runner/test_master_cv_routes.py
+          - name: outreach-model
+            paths: tests/runner/test_outreach_request_model.py
 
     steps:
       - uses: actions/checkout@v4
