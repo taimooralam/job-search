@@ -497,6 +497,12 @@ document.addEventListener('alpine:init', () => {
          * @returns {Promise<boolean>} - True if logs were fetched successfully
          */
         async fetchRunLogs(runId, jobId, jobTitle = null) {
+            // Guard against undefined/null runId
+            if (!runId) {
+                console.error('[CLI] fetchRunLogs called with undefined/null runId');
+                return false;
+            }
+
             // If already in memory, just switch to it
             if (this.runs[runId]) {
                 this.activeRunId = runId;
@@ -569,6 +575,12 @@ document.addEventListener('alpine:init', () => {
          * @private
          */
         _addUnavailableRunPlaceholder(runId, jobId, jobTitle) {
+            // Guard against undefined/null runId
+            if (!runId) {
+                console.error('[CLI] _addUnavailableRunPlaceholder called with undefined/null runId');
+                return;
+            }
+
             const now = Date.now();
             this.runs[runId] = {
                 jobId,
@@ -597,7 +609,9 @@ document.addEventListener('alpine:init', () => {
                 completedAt: null
             };
 
-            this.runOrder.unshift(runId);
+            if (runId && !this.runOrder.includes(runId)) {
+                this.runOrder.unshift(runId);
+            }
             this.activeRunId = runId;
             this.expanded = true;
             this._saveStateImmediate();
