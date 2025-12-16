@@ -66,8 +66,10 @@ jobs:
             paths: tests/unit/test_layer6_v2_achievement_mapper.py
           - name: layer6-v2-cvloader
             paths: tests/unit/test_layer6_v2_cv_loader.py
-          - name: layer6-v2-orchestrator
-            paths: tests/unit/test_layer6_v2_orchestrator.py
+          - name: layer6-v2-orchestrator-1
+            paths: tests/unit/test_layer6_v2_orchestrator.py -k "initializes_with_defaults or initializes_with_custom or builds_default or assembles or builds_reasoning_for or builds_reasoning_with or generate_produces"
+          - name: layer6-v2-orchestrator-2
+            paths: tests/unit/test_layer6_v2_orchestrator.py -k "handles_generation or node_calls or logs_qa or logs_grade or handles_empty or handles_missing or handles_none"
           - name: layer6-v2-stitcher
             paths: tests/unit/test_layer6_v2_stitcher.py
           - name: layer7
@@ -128,15 +130,15 @@ jobs:
       fail-fast: false
       matrix:
         service-group:
-          # Split runner-api tests for parallel execution (~5min -> ~1.5min each)
-          - name: runner-api-auth
-            paths: tests/runner/test_runner_api.py -k "auth or requires"
-          - name: runner-api-job
-            paths: tests/runner/test_runner_api.py -k "run_job or bulk_run or missing_job or empty_bulk"
-          - name: runner-api-status
-            paths: tests/runner/test_runner_api.py -k "status or logs or artifact"
-          - name: runner-api-other
-            paths: tests/runner/test_runner_api.py -k "health or concurrency or firecrawl"
+          # Split runner-api tests into ~5 tests each for parallel execution
+          - name: runner-api-1
+            paths: tests/runner/test_runner_api.py -k "health_check or run_job_requires or run_job_with_invalid or run_job_with_valid or run_job_with_profile"
+          - name: runner-api-2
+            paths: tests/runner/test_runner_api.py -k "bulk_run_requires or bulk_run_with_auth or get_status or stream_logs"
+          - name: runner-api-3
+            paths: tests/runner/test_runner_api.py -k "get_artifact or concurrency_limit or missing_job_id or empty_bulk"
+          - name: runner-api-4
+            paths: tests/runner/test_runner_api.py -k "firecrawl"
           - name: executor
             paths: tests/runner/test_executor.py
           # NOTE: runner-integration requires MongoDB service - run locally only
@@ -195,27 +197,37 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
-  # Docker builds - run on self-hosted VPS runner (Option D)
-  # Note: Matrix jobs will run sequentially on single runner (~10 min vs ~5 min parallel)
-  # Trade-off is acceptable since tests still run in parallel on GitHub-hosted runners
-  build:
-    needs: [test-unit, test-services]
-    runs-on: self-hosted  # Changed from ubuntu-latest (GAP-097)
+  # Detect which services changed to enable conditional builds
+  changes:
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    outputs:
+      runner: ${{ steps.filter.outputs.runner }}
+      pdf-service: ${{ steps.filter.outputs.pdf-service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            runner:
+              - 'runner_service/**'
+              - 'src/**'
+              - 'scripts/**'
+              - 'Dockerfile.runner'
+              - 'requirements.txt'
+            pdf-service:
+              - 'pdf_service/**'
+              - 'Dockerfile.pdf-service'
+
+  # Build runner image - only if runner files changed
+  build-runner:
+    needs: [test-unit, test-services, changes]
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.runner == 'true'
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        image:
-          - name: runner
-            dockerfile: Dockerfile.runner
-            image_name: runner
-          - name: pdf-service
-            dockerfile: Dockerfile.pdf-service
-            image_name: pdf-service
-
     steps:
       - uses: actions/checkout@v4
 
@@ -230,16 +242,52 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image.image_name }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/runner
           tags: |
             type=raw,value=latest
             type=sha,prefix={{branch}}-
 
-      - name: Build and push ${{ matrix.image.name }} image
+      - name: Build and push runner image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./${{ matrix.image.dockerfile }}
+          file: ./Dockerfile.runner
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # Build PDF service image - only if pdf_service files changed
+  build-pdf-service:
+    needs: [test-unit, test-services, changes]
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main' && needs.changes.outputs.pdf-service == 'true'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/pdf-service
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push pdf-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.pdf-service
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -247,9 +295,13 @@ jobs:
   # Deploy - runs on self-hosted VPS runner (GAP-097 fix)
   # No SSH needed since runner has direct local access to Docker and filesystem
   deploy:
-    needs: build
-    runs-on: self-hosted  # Changed from ubuntu-latest (GAP-097)
-    if: github.ref == 'refs/heads/main'
+    needs: [build-runner, build-pdf-service, changes]
+    runs-on: self-hosted
+    # Run if on main AND at least one build job ran (not skipped)
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      (needs.build-runner.result == 'success' || needs.build-pdf-service.result == 'success')
 
     steps:
       - uses: actions/checkout@v4
