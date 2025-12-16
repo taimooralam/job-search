@@ -68,6 +68,10 @@ class ContactCreate(BaseModel):
         default=True,
         description="True = primary_contacts, False = secondary_contacts",
     )
+    is_synthetic: bool = Field(
+        default=False,
+        description="True if synthetic placeholder contact",
+    )
 
     @field_validator("linkedin_url")
     @classmethod
@@ -109,6 +113,7 @@ class ContactInfo(BaseModel):
     linkedin_url: str
     contact_type: str = "peer"
     why_relevant: str = ""
+    is_synthetic: bool = False
     # Outreach messages if already generated
     linkedin_connection_message: Optional[str] = None
     linkedin_inmail: Optional[str] = None
@@ -319,6 +324,7 @@ def _contact_to_info(contact: dict) -> ContactInfo:
         linkedin_url=contact.get("linkedin_url", ""),
         contact_type=contact.get("contact_type", "peer"),
         why_relevant=contact.get("why_relevant", ""),
+        is_synthetic=contact.get("is_synthetic", False),
         linkedin_connection_message=contact.get("linkedin_connection_message"),
         linkedin_inmail=contact.get("linkedin_inmail"),
         email_body=contact.get("email_body"),
@@ -428,6 +434,7 @@ async def add_contacts(
                     "linkedin_url": contact.linkedin_url,
                     "contact_type": contact.contact_type,
                     "why_relevant": contact.why_relevant,
+                    "is_synthetic": contact.is_synthetic,
                     "recent_signals": [],
                     # Initialize empty outreach fields
                     "linkedin_connection_message": "",

@@ -116,6 +116,9 @@ class Contact(TypedDict):
     # Legacy field (backward compatibility)
     linkedin_message: str          # Deprecated: Use linkedin_connection_message or linkedin_inmail
 
+    # Synthetic contact flag
+    is_synthetic: bool             # True if synthetic placeholder contact (no real person found)
+
 
 class OutreachPackage(TypedDict):
     """

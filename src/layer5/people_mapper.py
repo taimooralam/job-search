@@ -268,6 +268,7 @@ class ContactModel(BaseModel):
     linkedin_url: str = Field(..., description="LinkedIn profile or company people page")
     why_relevant: str = Field(..., min_length=20, description="Specific reason this contact matters")
     recent_signals: List[str] = Field(default_factory=list, description="Recent posts, promotions, projects")
+    is_synthetic: bool = Field(default=False, description="True if synthetic placeholder contact")
 
     @field_validator('name')
     @classmethod
@@ -1076,7 +1077,8 @@ class PeopleMapper:
                 "role": template["role"],
                 "linkedin_url": f"{company_url}/people",
                 "why_relevant": template["why"],
-                "recent_signals": []
+                "recent_signals": [],
+                "is_synthetic": True
             })
 
         secondary_contacts = []
@@ -1086,7 +1088,8 @@ class PeopleMapper:
                 "role": template["role"],
                 "linkedin_url": f"{company_url}/people",
                 "why_relevant": template["why"],
-                "recent_signals": []
+                "recent_signals": [],
+                "is_synthetic": True
             })
 
         return {
