@@ -164,6 +164,8 @@ document.addEventListener('alpine:init', () => {
         _saveTimeout: null,
         _initialized: false,
         _pendingLogs: {}, // Buffer for logs arriving before run exists: { runId: { logs: [], timer: null } }
+        _rxjsAvailable: false, // Set in init()
+        _rxjsSubjects: null, // RxJS subjects for reactive streams
 
         /**
          * Initialize the CLI store - restore from sessionStorage
@@ -244,7 +246,59 @@ document.addEventListener('alpine:init', () => {
             this._setupEventListeners();
             this._setupKeyboardShortcut();
 
-            console.log('[CLI] Initialized');
+            // Initialize RxJS integration
+            this._initRxJS();
+
+            console.log('[CLI] Initialized', this._rxjsAvailable ? '(with RxJS)' : '(legacy mode)');
+        },
+
+        /**
+         * Initialize RxJS subjects for reactive log buffering
+         * @private
+         */
+        _initRxJS() {
+            this._rxjsAvailable = typeof window.RxUtils !== 'undefined';
+
+            if (!this._rxjsAvailable) {
+                cliDebug('RxUtils not available, using legacy pending logs implementation');
+                return;
+            }
+
+            const { Subject, BehaviorSubject } = window.RxUtils;
+
+            this._rxjsSubjects = {
+                runCreated$: new Subject(),  // Emits when a run is created
+                destroy$: new Subject(),     // Cleanup signal
+                saveState$: new Subject()    // Debounced save trigger
+            };
+
+            // Set up debounced save using RxJS
+            this._setupDebouncedSaveRxJS();
+
+            cliDebug('RxJS subjects initialized');
+        },
+
+        /**
+         * Set up debounced save using RxJS debounceTime operator
+         * @private
+         */
+        _setupDebouncedSaveRxJS() {
+            if (!this._rxjsAvailable || !this._rxjsSubjects) return;
+
+            const { debounceTime, tap, takeUntil, catchError, EMPTY } = window.RxUtils;
+
+            this._rxjsSubjects.saveState$.pipe(
+                debounceTime(SAVE_DEBOUNCE_MS),
+                tap(() => {
+                    cliDebug('Debounced save triggered (RxJS)');
+                    this._saveStateImmediate();
+                }),
+                takeUntil(this._rxjsSubjects.destroy$),
+                catchError(err => {
+                    console.error('[CLI] RxJS save error:', err);
+                    return EMPTY;
+                })
+            ).subscribe();
         },
 
         /**
@@ -765,7 +819,13 @@ document.addEventListener('alpine:init', () => {
             // Expand panel to show logs
             this.expanded = true;
 
+            // Emit to RxJS runCreated$ subject (triggers race() in _queuePendingLog)
+            if (this._rxjsAvailable && this._rxjsSubjects?.runCreated$) {
+                this._rxjsSubjects.runCreated$.next({ runId, jobId });
+            }
+
             // Replay any pending logs that arrived before this run was created (race condition fix)
+            // Note: In RxJS mode, this may be triggered by the race() subscription instead
             this._replayPendingLogs(runId);
 
             // Cleanup old runs
@@ -1178,15 +1238,44 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Queue a log for a run that doesn't exist yet (handles race condition)
+         *
+         * Uses RxJS timer when available for cleaner timeout handling.
          * @private
          */
         _queuePendingLog(runId, logData) {
             if (!this._pendingLogs[runId]) {
-                this._pendingLogs[runId] = { logs: [], timer: null };
+                this._pendingLogs[runId] = { logs: [], timer: null, subscription: null };
+
                 // Set timeout to auto-fetch logs from API if run never appears
-                this._pendingLogs[runId].timer = setTimeout(() => {
-                    this._handlePendingLogsTimeout(runId);
-                }, PENDING_LOGS_TIMEOUT_MS);
+                if (this._rxjsAvailable && this._rxjsSubjects) {
+                    // Use RxJS timer with takeUntil for automatic cleanup
+                    const { timer, race, first, tap, takeUntil } = window.RxUtils;
+
+                    this._pendingLogs[runId].subscription = race(
+                        // Wait for run to be created
+                        this._rxjsSubjects.runCreated$.pipe(
+                            first(event => event.runId === runId),
+                            tap(() => {
+                                cliDebug(`Run ${runId} created, replaying pending logs (RxJS)`);
+                                this._replayPendingLogs(runId);
+                            })
+                        ),
+                        // Or timeout after PENDING_LOGS_TIMEOUT_MS
+                        timer(PENDING_LOGS_TIMEOUT_MS).pipe(
+                            tap(() => {
+                                cliDebug(`Pending logs timeout for ${runId} (RxJS)`);
+                                this._handlePendingLogsTimeout(runId);
+                            })
+                        )
+                    ).pipe(
+                        takeUntil(this._rxjsSubjects.destroy$)
+                    ).subscribe();
+                } else {
+                    // Legacy setTimeout implementation
+                    this._pendingLogs[runId].timer = setTimeout(() => {
+                        this._handlePendingLogsTimeout(runId);
+                    }, PENDING_LOGS_TIMEOUT_MS);
+                }
             }
             this._pendingLogs[runId].logs.push({
                 ts: Date.now(),
@@ -1198,6 +1287,8 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Replay pending logs when run is created
+         *
+         * Cleans up both legacy setTimeout and RxJS subscriptions.
          * @private
          */
         _replayPendingLogs(runId) {
@@ -1206,9 +1297,14 @@ document.addEventListener('alpine:init', () => {
 
             cliDebug(`Replaying ${pending.logs.length} pending logs for ${runId}`);
 
-            // Clear the timeout
+            // Clear the legacy timeout
             if (pending.timer) {
                 clearTimeout(pending.timer);
+            }
+
+            // Unsubscribe RxJS subscription if exists
+            if (pending.subscription) {
+                pending.subscription.unsubscribe();
             }
 
             // Use spread for Alpine.js reactivity
@@ -1292,8 +1388,17 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Save state to sessionStorage (debounced)
+         *
+         * Uses RxJS debounceTime when available, otherwise falls back to setTimeout.
          */
         _saveState() {
+            // Use RxJS debounced save if available
+            if (this._rxjsAvailable && this._rxjsSubjects?.saveState$) {
+                this._rxjsSubjects.saveState$.next();
+                return;
+            }
+
+            // Legacy debounce implementation
             if (this._saveTimeout) {
                 clearTimeout(this._saveTimeout);
             }

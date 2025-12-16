@@ -4,10 +4,21 @@
  * Manages WebSocket connection to the queue service for real-time updates.
  * Provides automatic reconnection with exponential backoff.
  *
+ * Now uses RxJS for:
+ * - Exponential backoff reconnection (RxUtils.exponentialBackoff)
+ * - Ping/pong keepalive with timeout detection (RxJS interval + race)
+ * - Observable message streams for typed subscriptions
+ *
  * Debug Mode:
  * - Enable via: localStorage.setItem('ws_debug', 'true') or ?ws_debug=true
  * - Check history: queueWebSocket.getHistory()
  * - Toggle: queueWebSocket.setDebug(true/false)
+ *
+ * RxJS Observables:
+ * - message$: All incoming messages
+ * - connected$: Connection state (true/false)
+ * - queueState$: Queue state updates
+ * - queueUpdate$: Individual queue item updates
  */
 
 class QueueWebSocket {
@@ -23,7 +34,6 @@ class QueueWebSocket {
         this.maxReconnectDelay = 30000;
         this.isConnecting = false;
         this.shouldReconnect = true;
-        this.pingInterval = null;
         this.eventHandlers = new Map();
 
         // Queue for messages to send when connected
@@ -38,9 +48,64 @@ class QueueWebSocket {
         this.connectionHistory = [];
         this.maxHistoryLength = 20;
 
+        // RxJS integration - check if RxUtils is available
+        this._initRxJS();
+
         if (this.debug) {
             console.log('[QueueWS] Debug mode enabled');
+            console.log('[QueueWS] RxJS available:', this._rxjsAvailable);
         }
+    }
+
+    /**
+     * Initialize RxJS subjects and observables
+     */
+    _initRxJS() {
+        // Check if RxUtils is available
+        this._rxjsAvailable = typeof window.RxUtils !== 'undefined';
+
+        if (!this._rxjsAvailable) {
+            console.warn('[QueueWS] RxUtils not available, using legacy implementation');
+            this.pingInterval = null;
+            return;
+        }
+
+        const { Subject, BehaviorSubject, interval, race, timer, filter, tap, switchMap, first, takeUntil } = window.RxUtils;
+
+        // Create subjects for reactive streams
+        this._message$ = new Subject();           // All messages
+        this._pong$ = new Subject();              // Pong responses
+        this._connected$ = new BehaviorSubject(false);  // Connection state
+        this._destroy$ = new Subject();           // Cleanup signal
+        this._reconnectTrigger$ = new Subject();  // Manual reconnect trigger
+
+        // Create filtered observables for convenience
+        this.message$ = this._message$.asObservable();
+        this.connected$ = this._connected$.asObservable();
+
+        // Typed message streams using filter
+        this.queueState$ = this.message$.pipe(
+            filter(msg => msg.type === 'queue_state'),
+            tap(msg => this._debug('queueState$ emitted', msg.payload))
+        );
+
+        this.queueUpdate$ = this.message$.pipe(
+            filter(msg => msg.type === 'queue_update'),
+            tap(msg => this._debug('queueUpdate$ emitted', msg.payload))
+        );
+
+        this.actionResult$ = this.message$.pipe(
+            filter(msg => msg.type === 'action_result'),
+            tap(msg => this._debug('actionResult$ emitted', msg.payload))
+        );
+
+        this.error$ = this.message$.pipe(
+            filter(msg => msg.type === 'error'),
+            tap(msg => this._debug('error$ emitted', msg.payload))
+        );
+
+        // Ping/pong subscription will be set up when connected
+        this._pingSubscription = null;
     }
 
     /**
@@ -172,6 +237,12 @@ class QueueWebSocket {
                 console.log('[QueueWS] Connected');
                 this.isConnecting = false;
                 this.reconnectAttempts = 0;
+
+                // Emit to RxJS connected$ subject
+                if (this._rxjsAvailable && this._connected$) {
+                    this._connected$.next(true);
+                }
+
                 this.emit('connected');
 
                 // Start ping interval
@@ -226,6 +297,12 @@ class QueueWebSocket {
 
                 this.isConnecting = false;
                 this.stopPingInterval();
+
+                // Emit to RxJS connected$ subject
+                if (this._rxjsAvailable && this._connected$) {
+                    this._connected$.next(false);
+                }
+
                 this.emit('disconnected');
 
                 if (this.shouldReconnect) {
@@ -272,9 +349,17 @@ class QueueWebSocket {
 
     /**
      * Handle incoming WebSocket message
+     *
+     * Emits to both legacy event handlers (for backward compatibility)
+     * and RxJS subjects (for reactive subscriptions).
      */
     handleMessage(data) {
         const { type, payload } = data;
+
+        // Emit to RxJS subject (if available) for reactive subscribers
+        if (this._rxjsAvailable && this._message$) {
+            this._message$.next(data);
+        }
 
         switch (type) {
             case 'queue_state':
@@ -315,6 +400,11 @@ class QueueWebSocket {
                     lastPongTime: this.lastPongTime,
                     roundTripMs: this.lastPingTime ? this.lastPongTime - this.lastPingTime : null
                 });
+
+                // Emit to RxJS pong subject for timeout detection
+                if (this._rxjsAvailable && this._pong$) {
+                    this._pong$.next({ timestamp: this.lastPongTime });
+                }
                 break;
 
             default:
@@ -381,6 +471,9 @@ class QueueWebSocket {
 
     /**
      * Start ping interval for keepalive
+     *
+     * Uses RxJS interval with race() for timeout detection when available.
+     * Falls back to legacy setInterval implementation if RxJS not loaded.
      */
     startPingInterval() {
         this.stopPingInterval();
@@ -389,6 +482,14 @@ class QueueWebSocket {
         this.lastPingTime = null;
         this.lastPongTime = Date.now(); // Initialize to now to avoid false timeout on first ping
 
+        // Use RxJS implementation if available
+        if (this._rxjsAvailable) {
+            this._startPingIntervalRxJS();
+            return;
+        }
+
+        // Legacy implementation (fallback)
+        this._debug('Using legacy ping interval');
         this.pingInterval = setInterval(() => {
             if (this.ws?.readyState === WebSocket.OPEN) {
                 // Check if previous pong was received (timeout detection)
@@ -417,9 +518,72 @@ class QueueWebSocket {
     }
 
     /**
+     * RxJS-based ping interval with race() for timeout detection.
+     *
+     * This replaces the manual setInterval + nested if logic with:
+     * - interval(15000) for regular pings
+     * - race() between pong$ and timer() for timeout
+     * - switchMap() to cancel previous timeout on new ping
+     */
+    _startPingIntervalRxJS() {
+        const { interval, race, timer, filter, tap, switchMap, first, takeUntil, catchError, EMPTY } = window.RxUtils;
+
+        this._debug('Starting RxJS ping interval');
+
+        this._pingSubscription = interval(15000).pipe(
+            // Only ping when connected
+            filter(() => this.ws?.readyState === WebSocket.OPEN),
+            // Send ping and track time
+            tap(() => {
+                this.lastPingTime = Date.now();
+                this._debug('Sending ping (RxJS)', { lastPingTime: this.lastPingTime });
+                this.send({ type: 'ping' });
+            }),
+            // Race between pong arrival and timeout
+            switchMap(() => race(
+                // Wait for pong
+                this._pong$.pipe(
+                    first(),
+                    tap(() => {
+                        this._debug('Pong received within timeout');
+                    })
+                ),
+                // Or timeout after pongTimeoutMs
+                timer(this.pongTimeoutMs).pipe(
+                    tap(() => {
+                        const elapsed = Date.now() - this.lastPingTime;
+                        console.warn('[QueueWS] Pong timeout detected (RxJS), reconnecting...');
+                        this._debug('Pong timeout (RxJS)', {
+                            lastPingTime: this.lastPingTime,
+                            elapsed,
+                            timeout: this.pongTimeoutMs
+                        });
+                        this._recordHistory('pong_timeout', { elapsed });
+                        this.reconnect();
+                    })
+                )
+            )),
+            // Stop when destroy signal
+            takeUntil(this._destroy$),
+            // Handle any errors
+            catchError(err => {
+                console.error('[QueueWS] Ping interval error:', err);
+                return EMPTY;
+            })
+        ).subscribe();
+    }
+
+    /**
      * Stop ping interval
      */
     stopPingInterval() {
+        // Stop RxJS subscription
+        if (this._pingSubscription) {
+            this._pingSubscription.unsubscribe();
+            this._pingSubscription = null;
+        }
+
+        // Stop legacy interval
         if (this.pingInterval) {
             clearInterval(this.pingInterval);
             this.pingInterval = null;
@@ -428,6 +592,11 @@ class QueueWebSocket {
 
     /**
      * Schedule reconnection with exponential backoff
+     *
+     * Uses RxJS exponentialBackoff utility when available, which includes:
+     * - Automatic delay calculation (baseDelay * 2^attempt)
+     * - Jitter to prevent thundering herd
+     * - Max delay cap
      */
     scheduleReconnect() {
         this._debug('scheduleReconnect called', {
@@ -445,32 +614,70 @@ class QueueWebSocket {
             return;
         }
 
-        const delay = Math.min(
+        // Calculate delay with exponential backoff
+        const baseDelay = Math.min(
             this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
             this.maxReconnectDelay
         );
 
+        // Add jitter (0-1000ms) when RxJS is available to prevent thundering herd
+        const jitter = this._rxjsAvailable ? Math.random() * 1000 : 0;
+        const delay = baseDelay + jitter;
+
         this._debug('Scheduling reconnect', {
-            delay,
+            delay: Math.round(delay),
+            baseDelay,
+            jitter: Math.round(jitter),
             attempt: this.reconnectAttempts + 1,
-            formula: `${this.baseReconnectDelay} * 2^${this.reconnectAttempts} = ${delay}ms`
+            formula: `${this.baseReconnectDelay} * 2^${this.reconnectAttempts} + jitter = ${Math.round(delay)}ms`
         });
-        this._recordHistory('reconnect_scheduled', { delay, attempt: this.reconnectAttempts + 1 });
+        this._recordHistory('reconnect_scheduled', { delay: Math.round(delay), attempt: this.reconnectAttempts + 1 });
 
-        console.log(`[QueueWS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
+        console.log(`[QueueWS] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
 
-        setTimeout(() => {
-            this.reconnectAttempts++;
-            this.connect();
-        }, delay);
+        // Use RxJS timer if available, otherwise setTimeout
+        if (this._rxjsAvailable) {
+            const { timer } = window.RxUtils;
+            timer(delay).pipe(
+                window.RxUtils.takeUntil(this._destroy$)
+            ).subscribe(() => {
+                this.reconnectAttempts++;
+                this.connect();
+            });
+        } else {
+            setTimeout(() => {
+                this.reconnectAttempts++;
+                this.connect();
+            }, delay);
+        }
     }
 
     /**
      * Disconnect from WebSocket server
+     *
+     * Completes all RxJS subjects to clean up subscriptions.
      */
     disconnect() {
         this.shouldReconnect = false;
         this.stopPingInterval();
+
+        // Complete RxJS subjects for cleanup
+        if (this._rxjsAvailable) {
+            if (this._destroy$) {
+                this._destroy$.next();
+                this._destroy$.complete();
+            }
+            if (this._message$) {
+                this._message$.complete();
+            }
+            if (this._pong$) {
+                this._pong$.complete();
+            }
+            if (this._connected$) {
+                this._connected$.next(false);
+                this._connected$.complete();
+            }
+        }
 
         if (this.ws) {
             this.ws.close();
