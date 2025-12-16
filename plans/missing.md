@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-15 (Alpine.js Version Pinning & Pipeline Console Stability Fix)
+**Last Updated**: 2025-12-16 (Contact Transparency: is_synthetic Flag)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,42 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-16 Session 15): Contact Transparency Enhancement
+
+**ENHANCEMENT: Contact Transparency with is_synthetic Flag - COMPLETED**:
+- **Feature**: Added `is_synthetic: bool` field to Contact model to distinguish real discovered contacts from synthetic placeholders
+- **Backend Implementation** (`src/common/state.py`):
+  - New Contact field: `is_synthetic: bool` - True if synthetic placeholder contact (no real person found)
+  - Set to `False` when FireCrawl contact discovery succeeds (`DISABLE_FIRECRAWL_OUTREACH=false`)
+  - Set to `True` when using synthetic fallback contacts (default behavior)
+  - Applies to both direct employer contacts and agency recruiter contacts
+- **Backend Updates** (`src/layer5/people_mapper.py`):
+  - Real discovered contacts from FireCrawl: `is_synthetic=False`
+  - Synthetic employer contacts (4 primary + 4 secondary): `is_synthetic=True`
+  - Synthetic recruiter contacts for agencies: `is_synthetic=True`
+- **Frontend Implementation** (`frontend/static/js/master-cv-editor.js`):
+  - Contact cards now display amber "Placeholder" badge for `is_synthetic=True`
+  - Visual clarity for users distinguishing real vs template contacts
+  - Badge styling: amber color, clear label
+- **API Integration** (`runner_service/routes/contacts.py`):
+  - `/contacts` endpoint includes `is_synthetic` field in response JSON
+  - MongoDB contact documents include `is_synthetic` field
+  - Contacts API (read/create/update) properly handles synthetic flag
+- **Configuration** (`DISABLE_FIRECRAWL_OUTREACH` flag):
+  - When `true` (default): All contacts are synthetic (`is_synthetic=True`), reduced API costs
+  - When `false`: Real contacts discovered via FireCrawl (`is_synthetic=False`), higher costs but real data
+  - Provides transparency about contact data source
+- **Files Modified**:
+  - `src/common/state.py` - Added `is_synthetic: bool` field to Contact TypedDict
+  - `src/layer5/people_mapper.py` - Set `is_synthetic` appropriately for discovered and synthetic contacts
+  - `runner_service/routes/contacts.py` - Contacts API includes/handles `is_synthetic` field
+  - `frontend/static/js/master-cv-editor.js` - Contact card rendering with "Placeholder" badge
+  - `plans/architecture.md` - Documented Contact model update and DISABLE_FIRECRAWL_OUTREACH behavior
+- **Impact**: Users now have clear visibility into whether contacts are real discovered persons or synthetic placeholders, improving transparency around outreach data quality
+- **Documentation**: Updated `plans/architecture.md` Contact TypedDict, Layer 5 People Mapper section, and Configuration section
 
 ---
 

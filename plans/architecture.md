@@ -131,10 +131,14 @@ def some_llm_operation():
   - **FireCrawl Enabled** (default disabled): SEO-style LinkedIn queries + top-4 contact filtering
     - Scoring: Authority > Role relevance > Engagement recency > Accessibility
     - Cost impact: 80% reduction in API calls (4 vs 20 contacts)
-  - **FireCrawl Disabled**: Synthetic contacts (4 primary + 4 secondary)
+    - Real contacts: `is_synthetic=False`
+  - **FireCrawl Disabled** (default via `DISABLE_FIRECRAWL_OUTREACH=true`): Synthetic contacts (4 primary + 4 secondary)
+    - Synthetic contacts: `is_synthetic=True` to distinguish from real discovered contacts
+    - Frontend displays amber "Placeholder" badge for transparency
+    - Reduces API costs while maintaining complete outreach package templates
 - **Recruitment Agencies** (NEW - 2025-12-08):
   - Limited contact count: 2 recruiter contacts maximum (vs 6+6 for employers)
-  - Synthetic recruiter-specific contact generation
+  - Synthetic recruiter-specific contact generation (`is_synthetic=True`)
   - Reduces LLM calls and outreach cost
   - Method: `_generate_agency_recruiter_contacts()`
 - Outreach: LinkedIn messages (150-550 chars), email (95-205 word body)
@@ -646,7 +650,7 @@ class JobState(TypedDict):
     errors: List[str]
 ```
 
-**Contact** (`src/common/state.py` - NEW 2025-12-08):
+**Contact** (`src/common/state.py` - UPDATED 2025-12-16):
 ```python
 class Contact(TypedDict):
     name: str
@@ -658,6 +662,7 @@ class Contact(TypedDict):
     linkedin_inmail_subject: str  # InMail subject line (NEW)
     email: str
     already_applied_frame: bool  # For pre-applied positions (NEW)
+    is_synthetic: bool  # True if synthetic placeholder contact (no real person found) (NEW 2025-12-16)
 ```
 
 **OutreachPackage** (`src/common/state.py` - UPDATED 2025-12-08):
@@ -691,7 +696,9 @@ class PlannedAnswer(TypedDict):
 
 ### Feature Flags (`src/common/config.py`)
 - `ENABLE_STAR_SELECTOR`: Use STAR selection (default: false)
-- `DISABLE_FIRECRAWL_OUTREACH`: Use synthetic contacts (default: true)
+- `DISABLE_FIRECRAWL_OUTREACH`: Use synthetic contacts instead of real contact discovery (default: true)
+  - When `true`: Generates synthetic placeholder contacts with `is_synthetic=True`, frontend displays amber "Placeholder" badge
+  - When `false`: Discovers real contacts via FireCrawl with `is_synthetic=False`, higher API costs but real contact data
 - `ENABLE_REMOTE_PUBLISHING`: Upload to Google Drive/Sheets (default: false)
 - `ENABLE_RATE_LIMITING`: Enforce rate limits (default: true)
 - `ENABLE_ALERTING`: Send alerts to Slack (default: true)
