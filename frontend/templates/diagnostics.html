@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}System Diagnostics - Job Search Manager{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="/" class="btn btn-ghost btn-sm">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back
+            </a>
+            <div>
+                <h1 class="text-xl font-bold theme-text-primary">System Diagnostics</h1>
+                <p class="text-sm theme-text-secondary">Comprehensive system health and status monitoring</p>
+            </div>
+        </div>
+        <button
+            class="btn btn-secondary flex items-center gap-2"
+            hx-get="/partials/diagnostics-data"
+            hx-target="#diagnostics-container"
+            hx-swap="innerHTML"
+            hx-indicator="#refresh-spinner">
+            <svg id="refresh-spinner" class="htmx-indicator w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Refresh</span>
+        </button>
+    </div>
+
+    <!-- Diagnostics Data Container (HTMX auto-refresh) -->
+    <div id="diagnostics-container"
+         hx-get="/partials/diagnostics-data"
+         hx-trigger="load, every 30s"
+         hx-swap="innerHTML">
+        <!-- Loading skeleton shown until first data load -->
+        <div class="space-y-4">
+            <!-- System Info Skeleton -->
+            <div class="panel p-3">
+                <div class="h-5 w-64 skeleton rounded"></div>
+            </div>
+
+            <!-- Connection Status Skeleton -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {% for _ in range(3) %}
+                <div class="panel p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="h-4 w-20 skeleton rounded"></div>
+                        <div class="h-4 w-16 skeleton rounded"></div>
+                    </div>
+                    <div class="h-3 w-24 skeleton rounded mt-2"></div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Credits & Capacity Skeleton -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for _ in range(3) %}
+                <div class="panel p-4">
+                    <div class="h-4 w-28 skeleton rounded mb-3"></div>
+                    <div class="h-2 w-full skeleton rounded mb-2"></div>
+                    <div class="h-3 w-20 skeleton rounded"></div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Panels Skeleton -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for _ in range(2) %}
+                <div class="panel p-4">
+                    <div class="h-4 w-32 skeleton rounded mb-4"></div>
+                    <div class="space-y-2">
+                        {% for _ in range(3) %}
+                        <div class="h-10 skeleton rounded"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
