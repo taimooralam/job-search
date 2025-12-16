@@ -1112,32 +1112,33 @@
                 return;
             }
 
-            // Check status of each job via the CLI store if available
-            const cliStore = window.Alpine?.store('cli');
-            if (cliStore) {
+            // Check status of each job via the queue store
+            const queueStore = window.Alpine?.store('queue');
+            if (queueStore) {
                 let runningCount = 0;
                 let completeCount = 0;
 
-                // OPTIMIZATION: Build lookup Map ONCE outside the loop (O(n) instead of O(n*n))
-                const runs = Object.values(cliStore.runs || {});
-                const runsByJobId = new Map(runs.map(r => [r.jobId, r]));
+                // Build lookup sets for O(1) checks
+                const runningIds = new Set(queueStore.running.map(i => i.job_id));
+                const pendingIds = new Set(queueStore.pending.map(i => i.job_id));
+                const failedIds = new Set(queueStore.failed.map(i => i.job_id));
+                const historyIds = new Set(queueStore.history.map(i => i.job_id));
 
                 batchOperationState.jobStatuses.forEach((job, jobId) => {
-                    // O(1) lookup instead of O(n) find()
-                    const jobRun = runsByJobId.get(jobId);
-
-                    if (jobRun) {
-                        if (jobRun.status === 'running') {
-                            job.status = 'running';
-                            runningCount++;
-                        } else if (jobRun.status === 'success') {
-                            job.status = 'success';
-                            completeCount++;
-                        } else if (jobRun.status === 'error') {
-                            job.status = 'error';
-                            completeCount++;
-                        }
+                    if (runningIds.has(jobId)) {
+                        job.status = 'running';
+                        runningCount++;
+                    } else if (historyIds.has(jobId)) {
+                        // In history = completed successfully
+                        job.status = 'success';
+                        completeCount++;
+                    } else if (failedIds.has(jobId)) {
+                        job.status = 'error';
+                        completeCount++;
+                    } else if (pendingIds.has(jobId)) {
+                        job.status = 'queued';
                     }
+                    // If not found anywhere, keep current status (might still be initializing)
                 });
 
                 BatchDebug.log('PROGRESS', `Poll update: ${completeCount}/${batchOperationState.totalJobs} complete, ${runningCount} running`);
@@ -1153,7 +1154,7 @@
                     completeBatchOperation();
                 }
             } else {
-                BatchDebug.warn('PROGRESS', 'CLI store not available for polling');
+                BatchDebug.warn('PROGRESS', 'Queue store not available for polling');
             }
         }, 2000);
     }
