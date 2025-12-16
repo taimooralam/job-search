@@ -1031,7 +1031,8 @@ class PeopleMapper:
                 "role": template["role"],
                 "linkedin_url": f"{agency_url}/people",
                 "why_relevant": template["why"],
-                "recent_signals": []
+                "recent_signals": [],
+                "is_synthetic": True
             })
 
         return {

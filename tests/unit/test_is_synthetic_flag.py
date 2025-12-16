@@ -462,13 +462,10 @@ class TestSyntheticContactEndToEnd:
         # Should have agency contacts
         assert len(result["primary_contacts"]) > 0
 
-        # BUG: Agency contacts currently do NOT have is_synthetic=True
-        # This test documents the current behavior
+        # Agency contacts should have is_synthetic=True (fixed)
         for contact in result["primary_contacts"]:
-            # Field is missing (defaults to False) - this is the BUG
             is_synthetic = contact.get("is_synthetic", False)
-            # TODO: This should be True once bug is fixed
-            assert is_synthetic is False, "BUG: Agency contacts should have is_synthetic=True but currently don't"
+            assert is_synthetic is True, "Agency contacts should have is_synthetic=True"
 
 
 # ===== TESTS: Backward Compatibility =====
