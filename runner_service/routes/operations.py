@@ -768,6 +768,10 @@ class OperationStatusResponse(BaseModel):
     result: Optional[Dict[str, Any]] = Field(default=None)
     error: Optional[str] = Field(default=None)
     logs: List[str] = Field(default_factory=list, description="Accumulated log lines")
+    langsmith_url: Optional[str] = Field(default=None, description="LangSmith trace URL for debugging")
+    job_id: Optional[str] = Field(default=None, description="Associated job ID")
+    started_at: Optional[str] = Field(default=None, description="Run start time (ISO format)")
+    operation: Optional[str] = Field(default=None, description="Operation type")
 
 
 @router.post(
@@ -1296,6 +1300,52 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
         result=state.result,
         error=state.error,
         logs=state.logs,  # Include accumulated logs for polling fallback
+        langsmith_url=state.langsmith_url,
+        job_id=state.job_id,
+        started_at=state.started_at.isoformat() if state.started_at else None,
+        operation=state.operation,
+    )
+
+
+@router.get(
+    "/operations/{run_id}/logs/redis",
+    response_model=OperationStatusResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Get operation logs from Redis",
+    description="Fetch logs from Redis persistence (24h TTL) for completed runs",
+)
+async def get_operation_redis_logs(run_id: str) -> OperationStatusResponse:
+    """
+    Fetch operation logs from Redis persistence.
+
+    This endpoint is used when in-memory logs are unavailable but Redis
+    cache still has them. Logs persist in Redis for 24 hours after completion.
+
+    Useful for:
+    - Viewing logs after runner service restart
+    - Refreshing logs for completed runs
+    - Recovering logs when in-memory buffer is cleared
+    """
+    # Only try Redis - don't fall back to in-memory
+    state = await get_operation_state_from_redis(run_id)
+
+    if not state:
+        raise HTTPException(
+            status_code=404,
+            detail="Logs not found in Redis. They may have expired (24h TTL) or were never persisted.",
+        )
+
+    return OperationStatusResponse(
+        run_id=run_id,
+        status=state.status,
+        layer_status=state.layer_status,
+        result=state.result,
+        error=state.error,
+        logs=state.logs,
+        langsmith_url=state.langsmith_url,
+        job_id=state.job_id,
+        started_at=state.started_at.isoformat() if state.started_at else None,
+        operation=state.operation,
     )
 
 

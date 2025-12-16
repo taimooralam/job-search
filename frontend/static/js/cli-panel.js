@@ -281,6 +281,15 @@ document.addEventListener('alpine:init', () => {
                 this.completeRun(e.detail);
             });
 
+            // Fetch logs for an existing run (from pipelines panel click)
+            window.addEventListener('cli:fetch-logs', (e) => {
+                const { runId, jobId, action } = e.detail;
+                if (runId) {
+                    cliDebug('Received cli:fetch-logs event', { runId, jobId, action });
+                    this.fetchRunLogs(runId, jobId);
+                }
+            });
+
             // Queue events for integration with WebSocket queue
             window.addEventListener('queue:job-started', (e) => {
                 this._handleQueueJobStarted(e.detail);
@@ -537,7 +546,9 @@ document.addEventListener('alpine:init', () => {
                     layerStatus: data.layer_status || {},
                     startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
                     completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
-                    error: data.error || null
+                    error: data.error || null,
+                    langsmithUrl: data.langsmith_url || null,
+                    fromRedis: false
                 };
 
                 // Add error log if present
@@ -566,6 +577,90 @@ document.addEventListener('alpine:init', () => {
             } catch (err) {
                 console.error('[CLI] Failed to fetch run logs:', err);
                 this._addUnavailableRunPlaceholder(runId, jobId, jobTitle);
+                return false;
+            }
+        },
+
+        /**
+         * Load logs from Redis persistence for completed runs
+         * Redis stores logs for 24 hours after completion
+         * @param {string} runId - The run ID
+         * @param {string} jobId - The job ID
+         * @param {string} jobTitle - Optional job title
+         * @returns {Promise<boolean>} - True if logs were loaded successfully
+         */
+        async loadRedisLogs(runId, jobId, jobTitle = null) {
+            // Guard against undefined/null runId
+            if (!runId) {
+                console.error('[CLI] loadRedisLogs called with undefined/null runId');
+                return false;
+            }
+
+            try {
+                // Show loading toast
+                if (typeof showToast === 'function') {
+                    showToast('Loading logs from Redis...', 'info');
+                }
+
+                const response = await fetch(`/api/runner/operations/${runId}/logs/redis`);
+
+                if (!response.ok) {
+                    console.warn(`[CLI] Redis logs not available for run ${runId}: ${response.status}`);
+                    if (typeof showToast === 'function') {
+                        if (response.status === 404) {
+                            showToast('Logs expired or unavailable (24h TTL)', 'error');
+                        } else {
+                            showToast(`Failed to load Redis logs: ${response.status}`, 'error');
+                        }
+                    }
+                    return false;
+                }
+
+                const data = await response.json();
+
+                // Update or create run entry with Redis data
+                this.runs[runId] = {
+                    jobId: jobId || data.job_id,
+                    jobTitle: this._truncateTitle(jobTitle || data.job_title || `Job ${(jobId || data.job_id)?.slice(-6) || 'Unknown'}`),
+                    action: data.operation || 'pipeline',
+                    status: data.status === 'completed' ? 'success' : (data.status || 'unknown'),
+                    logs: (data.logs || []).map(log => ({
+                        ts: Date.now(),
+                        type: 'info',
+                        text: typeof log === 'string' ? log : log.text || JSON.stringify(log)
+                    })),
+                    layerStatus: data.layer_status || {},
+                    startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
+                    completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
+                    error: data.error || null,
+                    langsmithUrl: data.langsmith_url || null,
+                    fromRedis: true  // Mark as loaded from Redis
+                };
+
+                // Add to run order if not present
+                if (!this.runOrder.includes(runId)) {
+                    this.runOrder.unshift(runId);
+                }
+
+                // Switch to the tab
+                this.activeRunId = runId;
+                this.expanded = true;
+
+                // Save state
+                this._saveStateImmediate();
+
+                if (typeof showToast === 'function') {
+                    showToast('Logs loaded from Redis cache', 'success');
+                }
+
+                cliDebug('Loaded logs from Redis', { runId, logCount: data.logs?.length || 0 });
+                return true;
+
+            } catch (err) {
+                console.error('[CLI] Failed to load Redis logs:', err);
+                if (typeof showToast === 'function') {
+                    showToast(`Failed to load Redis logs: ${err.message}`, 'error');
+                }
                 return false;
             }
         },
