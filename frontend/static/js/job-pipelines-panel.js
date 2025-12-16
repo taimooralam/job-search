@@ -206,12 +206,17 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            // If no run_id, show a helpful message instead of silently failing
+            // If no run_id, show a context-aware message
             if (!opStatus.run_id) {
-                console.log(`[Pipelines Panel] No run_id for ${operation}`);
+                console.log(`[Pipelines Panel] No run_id for ${operation}, status: ${opStatus.status}`);
                 if (typeof showToast === 'function') {
                     const label = PIPELINES_PANEL_CONFIG.labels[operation] || operation;
-                    showToast(`Logs not available for ${label}`, 'info');
+                    if (opStatus.status === 'pending') {
+                        const position = opStatus.position ? ` (#${opStatus.position} in queue)` : '';
+                        showToast(`${label} is queued${position} - logs available when it starts`, 'info');
+                    } else {
+                        showToast(`Logs not available for ${label}`, 'info');
+                    }
                 }
                 return;
             }
