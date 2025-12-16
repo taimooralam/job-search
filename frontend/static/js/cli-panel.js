@@ -23,6 +23,7 @@ const CLI_STORAGE_KEY = 'cli_state';
 const MAX_RUNS = 10;
 const MAX_LOGS_PER_RUN = 500;
 const SAVE_DEBOUNCE_MS = 2000;
+const PENDING_LOGS_TIMEOUT_MS = 5000; // How long to wait for run to be created before fetching from API
 
 // Debug mode - enabled via localStorage or URL param
 const CLI_DEBUG = localStorage.getItem('cli_debug') === 'true' ||
@@ -162,6 +163,7 @@ document.addEventListener('alpine:init', () => {
         // Internal
         _saveTimeout: null,
         _initialized: false,
+        _pendingLogs: {}, // Buffer for logs arriving before run exists: { runId: { logs: [], timer: null } }
 
         /**
          * Initialize the CLI store - restore from sessionStorage
@@ -752,9 +754,9 @@ document.addEventListener('alpine:init', () => {
                 completedAt: null
             };
 
-            // Add to front of run order (prevent duplicates)
+            // Add to front of run order using spread for reactivity (prevent duplicates)
             if (!this.runOrder.includes(runId)) {
-                this.runOrder.unshift(runId);
+                this.runOrder = [runId, ...this.runOrder];
             }
 
             // Switch to new run
@@ -762,6 +764,9 @@ document.addEventListener('alpine:init', () => {
 
             // Expand panel to show logs
             this.expanded = true;
+
+            // Replay any pending logs that arrived before this run was created (race condition fix)
+            this._replayPendingLogs(runId);
 
             // Cleanup old runs
             this._cleanup();
@@ -777,17 +782,19 @@ document.addEventListener('alpine:init', () => {
         appendLog(detail) {
             const { runId, text, logType = 'info' } = detail;
 
+            // Queue instead of drop if run doesn't exist yet (race condition fix)
             if (!this.runs[runId]) {
-                console.warn('[CLI] Unknown runId:', runId);
+                console.warn('[CLI] Run not found, queuing log for:', runId);
+                this._queuePendingLog(runId, { text, logType });
                 return;
             }
 
-            // Add log entry
-            this.runs[runId].logs.push({
+            // Use spread for Alpine.js reactivity (not .push() which mutates in place)
+            this.runs[runId].logs = [...this.runs[runId].logs, {
                 ts: Date.now(),
                 type: logType,
                 text
-            });
+            }];
 
             // Trim if too many logs
             if (this.runs[runId].logs.length > MAX_LOGS_PER_RUN) {
@@ -1167,6 +1174,109 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             });
+        },
+
+        /**
+         * Queue a log for a run that doesn't exist yet (handles race condition)
+         * @private
+         */
+        _queuePendingLog(runId, logData) {
+            if (!this._pendingLogs[runId]) {
+                this._pendingLogs[runId] = { logs: [], timer: null };
+                // Set timeout to auto-fetch logs from API if run never appears
+                this._pendingLogs[runId].timer = setTimeout(() => {
+                    this._handlePendingLogsTimeout(runId);
+                }, PENDING_LOGS_TIMEOUT_MS);
+            }
+            this._pendingLogs[runId].logs.push({
+                ts: Date.now(),
+                type: logData.logType || 'info',
+                text: logData.text
+            });
+            cliDebug(`Queued pending log for ${runId}, count: ${this._pendingLogs[runId].logs.length}`);
+        },
+
+        /**
+         * Replay pending logs when run is created
+         * @private
+         */
+        _replayPendingLogs(runId) {
+            const pending = this._pendingLogs[runId];
+            if (!pending || !pending.logs.length) return;
+
+            cliDebug(`Replaying ${pending.logs.length} pending logs for ${runId}`);
+
+            // Clear the timeout
+            if (pending.timer) {
+                clearTimeout(pending.timer);
+            }
+
+            // Use spread for Alpine.js reactivity
+            this.runs[runId].logs = [...this.runs[runId].logs, ...pending.logs];
+
+            // Trim if needed
+            if (this.runs[runId].logs.length > MAX_LOGS_PER_RUN) {
+                this.runs[runId].logs = this.runs[runId].logs.slice(-MAX_LOGS_PER_RUN);
+            }
+
+            // Clean up
+            delete this._pendingLogs[runId];
+
+            // Save state and scroll
+            this._saveState();
+            this._autoScroll();
+        },
+
+        /**
+         * Handle timeout for pending logs - attempt to fetch from API
+         * @private
+         */
+        async _handlePendingLogsTimeout(runId) {
+            const pending = this._pendingLogs[runId];
+            if (!pending) return;
+
+            console.warn(`[CLI] Pending logs timeout for ${runId}, fetching from API`);
+
+            // Clean up pending logs
+            delete this._pendingLogs[runId];
+
+            // Try to fetch logs from API
+            try {
+                const response = await fetch(`/api/runner/operations/${runId}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Create run entry from API data
+                    this.runs[runId] = {
+                        jobId: data.job_id || null,
+                        jobTitle: this._truncateTitle(data.job_title || `Run ${runId.slice(-8)}`),
+                        action: data.operation || 'pipeline',
+                        status: data.status === 'completed' ? 'success' : (data.status || 'running'),
+                        logs: (data.logs || []).map(log => ({
+                            ts: Date.now(),
+                            type: typeof log === 'string' ? (window.cliDetectLogType?.(log) || 'info') : 'info',
+                            text: typeof log === 'string' ? log : JSON.stringify(log)
+                        })),
+                        layerStatus: data.layer_status || {},
+                        startedAt: data.started_at ? new Date(data.started_at).getTime() : Date.now(),
+                        completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
+                        error: data.error || null
+                    };
+
+                    // Add to run order using spread for reactivity
+                    if (!this.runOrder.includes(runId)) {
+                        this.runOrder = [runId, ...this.runOrder];
+                    }
+
+                    this.activeRunId = runId;
+                    this._cleanup();
+                    this._saveStateImmediate();
+
+                    cliDebug(`Recovered run ${runId} from API with ${this.runs[runId].logs.length} logs`);
+                }
+            } catch (err) {
+                console.error(`[CLI] Failed to recover run ${runId} from API:`, err);
+            }
         },
 
         /**
