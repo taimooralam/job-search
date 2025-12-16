@@ -20,6 +20,56 @@
 
 ---
 
+### Today's Session (2025-12-16 Session 14): System Diagnostics & Health Monitoring
+
+**NEW FEATURE: System Diagnostics & Health Monitoring Dashboard - IMPLEMENTED**:
+- **Feature**: Comprehensive system health monitoring interface providing single-pane-of-glass visibility into all critical services
+- **Backend Implementation** (`runner_service/app.py` lines 773-1070):
+  - New `/diagnostics` endpoint that performs parallel health checks for all system components
+  - Pydantic models in `runner_service/models.py`: `ConnectionStatus`, `SystemHealthStatus`, `CircuitBreakerSummary`, `RateLimitSummary`, `CapacityMetrics`, `AlertEntry`
+  - Concurrent checks for: MongoDB, Redis, PDF service, FireCrawl API, OpenRouter API
+  - Circuit breaker state aggregation (closed/open/half-open)
+  - Rate limit status by provider with quota tracking
+  - System capacity metrics (active operations, queue depth, memory utilization, uptime)
+  - Alert history (last 20 recent events with severity levels)
+  - Composite health score: "healthy" | "degraded" | "unhealthy"
+- **Frontend Implementation** (`frontend/app.py`):
+  - New route: `GET /diagnostics` - Full diagnostics page
+  - New HTMX endpoint: `GET /partials/diagnostics-data` - Auto-refreshing partial
+  - Fetches every 30 seconds for real-time visibility without full page reloads
+- **Frontend UI** (`frontend/templates/`):
+  - New page: `diagnostics.html` with header, health score card, service status grid, circuit breaker panel, rate limit section, capacity metrics, alert timeline
+  - New partial: `partials/diagnostics_data.html` - HTMX-driven auto-refresh container
+  - Updated `base.html` - Added "System Diagnostics" navigation link
+- **Health Thresholds**:
+  - Connection latency: <50ms (healthy), 50-500ms (degraded), >500ms (unhealthy)
+  - Queue depth: 0-5 (healthy), 6-20 (degraded), >20 (unhealthy)
+  - Memory utilization: <60% (healthy), 60-80% (degraded), >80% (unhealthy)
+  - Active operations: 0-10 (healthy), 11-20 (degraded), >20 (unhealthy)
+- **Status Logic**:
+  - Unhealthy: Any critical service disconnected
+  - Degraded: Any circuit breaker open, memory >80%, or queue depth >20
+  - Healthy: All services connected, all breakers closed, normal utilization
+- **Performance**: Backend completes in <2 seconds (parallel async checks), minimal 2-3KB data transfer per refresh
+- **Use Cases**:
+  1. Operator dashboard - Real-time system health at a glance
+  2. Troubleshooting - Identify failing services during pipeline issues
+  3. Capacity planning - Track resource utilization trends
+  4. Alert management - Review recent service issues and resolutions
+  5. Budget monitoring - Check FireCrawl/OpenRouter credit consumption
+- **Files Created**:
+  - `runner_service/app.py` - New `/diagnostics` endpoint section
+  - `runner_service/models.py` - 6 new Pydantic diagnostic models
+  - `frontend/templates/diagnostics.html` - Full page template
+  - `frontend/templates/partials/diagnostics_data.html` - HTMX partial
+- **Files Modified**:
+  - `frontend/app.py` - Added `/diagnostics` and `/partials/diagnostics-data` routes
+  - `frontend/templates/base.html` - Added diagnostics navigation link
+- **Impact**: Operators now have complete visibility into system health without manual debugging. Service issues are surfaced immediately with clear, actionable information. Auto-refresh via HTMX ensures current data without page reloads.
+- **Documentation**: Updated `plans/architecture.md` with comprehensive diagnostics section documenting architecture, models, endpoints, thresholds, and use cases
+
+---
+
 ### Today's Session (2025-12-14 Session 12): WebSocket Authentication 403 Fix + Real-Time Queue
 
 **BUG FIX 12: WebSocket 403 Forbidden error during real-time queue connection - FIXED**:
@@ -365,6 +415,7 @@ truncated_profile = candidate_profile[:1500]
 - **Bulk "Mark as Applied"**: Select multiple jobs → click "Mark Applied" → updates status for all
 - **Identity-Based Persona Generation** (2025-12-10): Transform identity annotations into coherent persona statements injected into CV, cover letter, and outreach
 - **Dynamic Location Filter by Date Range** (2025-12-12): Location dropdown now dynamically updates based on selected date range, showing only locations for jobs within the filtered time window
+- **System Diagnostics & Health Monitoring** (2025-12-16): Comprehensive single-pane-of-glass system health dashboard showing MongoDB/Redis/PDF service connections, circuit breaker states, rate limit status, capacity metrics, and alert history with auto-refresh every 30 seconds via HTMX
 
 ### Today's Fixes (2025-12-10) Session 3
 

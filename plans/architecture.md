@@ -1033,6 +1033,277 @@ Queue Item (Redis)
 
 **Impact**: Jobs no longer get stuck in queue; failed operations properly recorded; operators have administrative recovery tools. Queue stays clean through automatic stale item cleanup.
 
+### System Diagnostics & Health Monitoring (NEW - 2025-12-16)
+
+**Purpose**: Provide comprehensive system health visibility with single-pane-of-glass monitoring for all critical services, connections, and resource metrics.
+
+**Location**:
+- Backend: `runner_service/app.py` - `/diagnostics` endpoint (lines 773-1070)
+- Backend: `runner_service/models.py` - Pydantic diagnostic models
+- Frontend: `frontend/app.py` - `/diagnostics` route and `/partials/diagnostics-data` HTMX endpoint
+- Frontend: `frontend/templates/diagnostics.html` - Diagnostics page template
+- Frontend: `frontend/templates/partials/diagnostics_data.html` - Auto-refreshing data partial
+
+**Architecture - Health Assessment Pipeline**:
+
+```
+GET /diagnostics (Backend)
+    │
+    ├─ MongoDB Connection Check
+    │  └─ Ping latency, database accessibility
+    │
+    ├─ Redis Queue Connection Check
+    │  └─ Queue service availability, ping latency
+    │
+    ├─ PDF Service Health Check
+    │  └─ PDF generation service latency
+    │
+    ├─ External API Status (FireCrawl & OpenRouter)
+    │  ├─ FireCrawl: Credit balance check
+    │  └─ OpenRouter: Credit balance & provider availability
+    │
+    ├─ Circuit Breaker Summary
+    │  └─ Per-service circuit breaker states
+    │
+    ├─ Rate Limit Status
+    │  └─ Per-provider rate limit counters and window resets
+    │
+    ├─ Runner Capacity Metrics
+    │  ├─ Active operation count
+    │  ├─ Queue depth
+    │  └─ Memory and resource utilization
+    │
+    ├─ Alert History
+    │  └─ Recent 20 alerts with timestamps and severity
+    │
+    └─ Overall Health Score
+       └─ Composite: "healthy" | "degraded" | "unhealthy"
+```
+
+**Backend Models** (`runner_service/models.py`):
+
+```python
+class ConnectionStatus(BaseModel):
+    name: str              # "MongoDB", "Redis", "PDF Service", etc.
+    status: str            # "connected" | "disconnected" | "slow" | "unknown"
+    latency_ms: Optional[float]
+    details: Optional[str]
+    last_check: datetime
+
+class SystemHealthStatus(BaseModel):
+    overall_status: str    # "healthy" | "degraded" | "unhealthy"
+    checked_at: datetime
+    connections: List[ConnectionStatus]
+    circuit_breakers: CircuitBreakerSummary
+    rate_limits: RateLimitSummary
+    capacity: CapacityMetrics
+    alerts: List[AlertEntry]
+
+class CircuitBreakerSummary(BaseModel):
+    total: int
+    open_count: int
+    half_open_count: int
+    by_service: Dict[str, str]  # {"MongoDB": "closed", "FireCrawl": "open"}
+
+class RateLimitSummary(BaseModel):
+    by_provider: Dict[str, Dict]  # {"openrouter": {...}, "firecrawl": {...}}
+
+class CapacityMetrics(BaseModel):
+    active_operations: int
+    queue_depth: int
+    estimated_memory_mb: float
+    uptime_seconds: int
+
+class AlertEntry(BaseModel):
+    timestamp: datetime
+    severity: str          # "info" | "warning" | "critical"
+    service: str
+    message: str
+    resolved: bool
+```
+
+**API Endpoint** (`runner_service/app.py`):
+
+```python
+GET /diagnostics
+
+Response (200 OK):
+{
+  "overall_status": "degraded",
+  "checked_at": "2025-12-16T12:34:56Z",
+  "connections": [
+    {
+      "name": "MongoDB",
+      "status": "connected",
+      "latency_ms": 8.5,
+      "details": "Connection pool healthy",
+      "last_check": "2025-12-16T12:34:56Z"
+    },
+    {
+      "name": "Redis",
+      "status": "connected",
+      "latency_ms": 2.1,
+      "details": null,
+      "last_check": "2025-12-16T12:34:56Z"
+    },
+    {
+      "name": "PDF Service",
+      "status": "slow",
+      "latency_ms": 3200,
+      "details": "Latency exceeded threshold (1000ms)",
+      "last_check": "2025-12-16T12:34:56Z"
+    }
+  ],
+  "circuit_breakers": {
+    "total": 8,
+    "open_count": 1,
+    "half_open_count": 0,
+    "by_service": {
+      "MongoDB": "closed",
+      "FireCrawl": "open",
+      "OpenRouter": "closed",
+      "PDF_Service": "closed"
+    }
+  },
+  "rate_limits": {
+    "by_provider": {
+      "openrouter": {
+        "current_requests": 15,
+        "limit": 30,
+        "window_resets_at": "2025-12-16T13:00:00Z"
+      },
+      "firecrawl": {
+        "current_credits": 45,
+        "daily_limit": 100,
+        "resets_at": "2025-12-17T00:00:00Z"
+      }
+    }
+  },
+  "capacity": {
+    "active_operations": 3,
+    "queue_depth": 7,
+    "estimated_memory_mb": 512.4,
+    "uptime_seconds": 86400
+  },
+  "alerts": [
+    {
+      "timestamp": "2025-12-16T12:30:00Z",
+      "severity": "critical",
+      "service": "FireCrawl",
+      "message": "API circuit breaker opened after 5 consecutive failures",
+      "resolved": false
+    },
+    {
+      "timestamp": "2025-12-16T12:00:00Z",
+      "severity": "warning",
+      "service": "PDF_Service",
+      "message": "Response time exceeded SLA (3200ms > 1000ms)",
+      "resolved": false
+    }
+  ]
+}
+```
+
+**Frontend Diagnostics Page** (`frontend/templates/diagnostics.html`):
+
+- **Header**: Current timestamp with "Last checked" indicator
+- **Health Score Card**: Large status badge (Green/Yellow/Red) with overall status
+- **Connection Cards**: Grid of service status indicators with latency metrics
+- **Circuit Breaker Panel**: Collapsed by default, shows state for all breakers
+- **Rate Limit Section**: Per-provider quotas with progress bars
+- **Capacity Metrics**: System resource utilization gauge
+- **Alert Timeline**: Chronological list of recent events with severity colors
+- **Auto-Refresh**: HTMX polls `/partials/diagnostics-data` every 30 seconds
+
+**HTMX Integration** (`frontend/app.py`):
+
+```python
+GET /diagnostics
+# Renders full page template with diagnostics.html
+
+GET /partials/diagnostics-data
+# Returns auto-refreshing partial (diagnostics_data.html)
+# Fetched every 30 seconds via HTMX: hx-trigger="load, every 30s"
+# Supports partial updates without full page reload
+```
+
+**Health Thresholds**:
+
+| Metric | Healthy | Degraded | Unhealthy |
+|--------|---------|----------|-----------|
+| Connection latency | <50ms | 50-500ms | >500ms |
+| Queue depth | 0-5 | 6-20 | >20 |
+| Circuit breaker state | All closed | Any half-open | Any open |
+| Memory utilization | <60% | 60-80% | >80% |
+| Active operations | 0-10 | 11-20 | >20 |
+
+**Status Determination Logic**:
+
+```
+if any critical_service_disconnected:
+    status = "unhealthy"
+elif any_circuit_breaker_open or memory_util > 80% or queue_depth > 20:
+    status = "degraded"
+else:
+    status = "healthy"
+```
+
+**Files Modified/Created**:
+
+1. **`runner_service/app.py`** (NEW section, lines 773-1070):
+   - `/diagnostics` endpoint implementation
+   - Health check orchestration logic
+
+2. **`runner_service/models.py`** (NEW):
+   - `ConnectionStatus` model
+   - `SystemHealthStatus` model
+   - `CircuitBreakerSummary` model
+   - `RateLimitSummary` model
+   - `CapacityMetrics` model
+   - `AlertEntry` model
+
+3. **`frontend/app.py`** (NEW routes):
+   - `GET /diagnostics` - Full diagnostics page
+   - `GET /partials/diagnostics-data` - HTMX auto-refresh partial
+
+4. **`frontend/templates/diagnostics.html`** (NEW):
+   - Full page template with layout
+
+5. **`frontend/templates/partials/diagnostics_data.html`** (NEW):
+   - Auto-refreshing data partial for HTMX
+
+6. **`frontend/templates/base.html`** (MODIFIED):
+   - Added navigation link to diagnostics page
+
+**Navigation**:
+
+- New link in top navigation bar: "System Diagnostics"
+- Accessible to all authenticated users
+- URL: `/diagnostics`
+
+**Use Cases**:
+
+1. **Operator Dashboard**: Monitor real-time system health at a glance
+2. **Troubleshooting**: Identify which services are failing when pipeline stops working
+3. **Capacity Planning**: Track resource utilization trends
+4. **Alert Management**: Review recent service issues and resolutions
+5. **API Budget Monitoring**: Check FireCrawl/OpenRouter credit consumption
+
+**Performance**:
+
+- Backend check completes in <2 seconds (parallel health checks via asyncio)
+- Frontend auto-refresh every 30 seconds to balance freshness and server load
+- Minimal data transfer (~2-3 KB per refresh)
+
+**Related Features**:
+
+- Budget monitoring dashboard (existing)
+- Alert system with Slack integration (existing)
+- Circuit breaker pattern for API resilience (existing)
+- Real-time queue status via WebSocket (existing)
+
+**Impact**: Operators now have complete visibility into system health without manual debugging. Service issues are surfaced immediately with clear, actionable information.
+
 ---
 
 ## Frontend Architecture
