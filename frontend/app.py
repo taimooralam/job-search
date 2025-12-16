@@ -111,6 +111,17 @@ else:
     if _ws_import_error:
         print(f"   Import errors: {_ws_import_error}")
 
+# Import country code extraction service
+try:
+    from frontend.country_codes import get_country_code_sync
+except ImportError:
+    try:
+        from country_codes import get_country_code_sync
+    except ImportError:
+        # Fallback: no-op function if module not available
+        def get_country_code_sync(location: str) -> str:
+            return "??"
+
 # Session configuration
 flask_secret_key = os.getenv("FLASK_SECRET_KEY")
 
@@ -349,6 +360,10 @@ def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
             job.get("jobDescription") or
             ""
         )
+
+    # Extract country code from location if not already cached
+    if not result.get("country_code"):
+        result["country_code"] = get_country_code_sync(result.get("location", ""))
 
     return result
 
@@ -600,6 +615,9 @@ def list_jobs():
         "company": 1,
         "status": 1,
         "score": 1,
+        "country_code": 1,  # Cached country code from location
+        "auto_discovered": 1,  # Auto-discovery badge
+        "source": 1,  # Job source (indeed_auto, himalayas_auto, etc.)
     }
 
     # GAP-007: Use aggregation pipeline for date filtering to handle mixed types
@@ -2346,6 +2364,80 @@ def batch_job_rows_partial():
         current_sort=sort_field,
         current_direction=sort_direction,
     )
+
+
+# =============================================================================
+# Diagnostics Page (Production Debugging)
+# =============================================================================
+
+
+@app.route("/diagnostics")
+@login_required
+def diagnostics_page():
+    """
+    Diagnostics page for viewing comprehensive system health.
+
+    Provides visual dashboard for:
+    - Connection status (MongoDB, Redis, PDF Service)
+    - API credits (FireCrawl, OpenRouter)
+    - Circuit breaker status
+    - Queue status
+    - Recent alerts
+    """
+    return render_template("diagnostics.html")
+
+
+@app.route("/partials/diagnostics-data")
+@login_required
+def get_diagnostics_data():
+    """
+    HTMX partial: Fetch diagnostics data from runner service.
+
+    Returns rendered partial template with all diagnostic info.
+    Auto-refreshed every 30 seconds by the diagnostics page.
+    """
+    runner_url = os.getenv("RUNNER_URL", "http://localhost:8000")
+    runner_secret = os.getenv("RUNNER_API_SECRET", "")
+
+    try:
+        response = requests.get(
+            f"{runner_url}/diagnostics",
+            headers={"Authorization": f"Bearer {runner_secret}"},
+            timeout=15  # Allow more time for comprehensive diagnostics
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            return render_template(
+                "partials/diagnostics_data.html",
+                diagnostics=data,
+                error=None
+            )
+        else:
+            return render_template(
+                "partials/diagnostics_data.html",
+                diagnostics=None,
+                error=f"Runner service returned HTTP {response.status_code}"
+            )
+
+    except requests.exceptions.Timeout:
+        return render_template(
+            "partials/diagnostics_data.html",
+            diagnostics=None,
+            error="Runner service timeout (>15s)"
+        )
+    except requests.exceptions.ConnectionError:
+        return render_template(
+            "partials/diagnostics_data.html",
+            diagnostics=None,
+            error="Cannot connect to runner service"
+        )
+    except Exception as e:
+        return render_template(
+            "partials/diagnostics_data.html",
+            diagnostics=None,
+            error=str(e)
+        )
 
 
 @app.route("/job/<job_id>")

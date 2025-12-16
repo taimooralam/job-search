@@ -263,3 +263,113 @@ class JobQueueStatusResponse(BaseModel):
         ...,
         description="Queue status for each operation type. None if never queued."
     )
+
+
+# === Diagnostics Models ===
+
+
+class ConnectionStatus(BaseModel):
+    """Status for a service connection (MongoDB, Redis, PDF service)."""
+
+    status: str = Field(..., description="Connection status: healthy, unhealthy, unknown")
+    latency_ms: Optional[float] = Field(None, description="Round-trip latency in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if connection failed")
+    details: Optional[Dict[str, str]] = Field(None, description="Additional connection details")
+
+
+class SystemHealthStatus(BaseModel):
+    """Overall system health assessment."""
+
+    status: str = Field(..., description="Overall status: healthy, degraded, unhealthy")
+    issues: List[str] = Field(default_factory=list, description="Critical issues requiring attention")
+    warnings: List[str] = Field(default_factory=list, description="Warnings that may need attention")
+
+
+class CircuitBreakerSummary(BaseModel):
+    """Summary of circuit breaker states across all services."""
+
+    total: int = Field(..., description="Total number of circuit breakers")
+    closed: int = Field(..., description="Breakers in closed (healthy) state")
+    open: int = Field(..., description="Breakers in open (failing) state")
+    half_open: int = Field(..., description="Breakers in half-open (recovering) state")
+    by_service: Dict[str, Dict[str, str]] = Field(
+        default_factory=dict, description="Per-service circuit breaker details"
+    )
+
+
+class RateLimitSummary(BaseModel):
+    """Summary of rate limit status across all providers."""
+
+    total_requests: int = Field(..., description="Total requests made across all providers")
+    total_waits: int = Field(..., description="Total times we had to wait due to rate limits")
+    by_provider: Dict[str, Dict[str, float]] = Field(
+        default_factory=dict, description="Per-provider rate limit stats"
+    )
+
+
+class CapacityMetrics(BaseModel):
+    """Runner capacity and queue metrics."""
+
+    active_runs: int = Field(..., description="Currently executing pipeline runs")
+    max_concurrency: int = Field(..., description="Maximum concurrent runs allowed")
+    capacity_percent: float = Field(..., description="Percentage of capacity in use (0-100)")
+    queue_depth: int = Field(..., description="Number of jobs waiting in queue")
+    queue_running: int = Field(..., description="Number of jobs currently running from queue")
+    queue_failed: int = Field(..., description="Number of failed jobs in queue")
+
+
+class AlertEntry(BaseModel):
+    """Single alert entry from alert history."""
+
+    alert_id: str = Field(..., description="Unique alert identifier (MD5 hash)")
+    level: str = Field(..., description="Alert level: info, warning, error, critical")
+    message: str = Field(..., description="Alert message")
+    source: str = Field(..., description="Component that raised the alert")
+    timestamp: datetime = Field(..., description="When the alert was raised")
+    metadata: Dict[str, str] = Field(default_factory=dict, description="Additional context")
+
+
+class DiagnosticsResponse(BaseModel):
+    """Comprehensive diagnostics response for system health monitoring.
+
+    This endpoint aggregates all diagnostic information for production debugging:
+    - Service connections (MongoDB, Redis, PDF service)
+    - API credit status (FireCrawl, OpenRouter)
+    - Circuit breaker states
+    - Rate limit status
+    - Recent alerts
+    - Capacity metrics
+    """
+
+    # System info
+    timestamp: datetime = Field(..., description="Response timestamp")
+    uptime_seconds: float = Field(..., description="Service uptime in seconds")
+    version: str = Field(..., description="Service version")
+    environment: str = Field(..., description="Environment: development, staging, production")
+
+    # Connection status
+    mongodb: ConnectionStatus = Field(..., description="MongoDB connection status")
+    redis: ConnectionStatus = Field(..., description="Redis queue connection status")
+    pdf_service: ConnectionStatus = Field(..., description="PDF service connection status")
+
+    # API credits
+    firecrawl_credits: Optional[FireCrawlCreditsResponse] = Field(
+        None, description="FireCrawl API credit status"
+    )
+    openrouter_credits: Optional[OpenRouterCreditsResponse] = Field(
+        None, description="OpenRouter API credit status"
+    )
+
+    # System metrics
+    system_health: SystemHealthStatus = Field(..., description="Overall system health")
+    circuit_breakers: CircuitBreakerSummary = Field(..., description="Circuit breaker summary")
+    rate_limits: RateLimitSummary = Field(..., description="Rate limit summary")
+    capacity: CapacityMetrics = Field(..., description="Runner capacity metrics")
+
+    # Alerts
+    recent_alerts: List[AlertEntry] = Field(
+        default_factory=list, description="Recent alerts (last 20)"
+    )
+    alert_stats: Dict[str, int] = Field(
+        default_factory=dict, description="Alert statistics by level"
+    )

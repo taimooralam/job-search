@@ -9,6 +9,7 @@ to keep the number of simultaneous runs under control (default 3).
 import asyncio
 import logging
 import os
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -21,6 +22,11 @@ from pydantic import BaseModel
 from io import BytesIO
 
 from .models import (
+    AlertEntry,
+    CapacityMetrics,
+    CircuitBreakerSummary,
+    ConnectionStatus,
+    DiagnosticsResponse,
     FireCrawlCreditsResponse,
     HealthResponse,
     LayerProgress,
@@ -29,10 +35,12 @@ from .models import (
     OpenRouterCreditsResponse,
     PipelineProgressResponse,
     PIPELINE_LAYERS,
+    RateLimitSummary,
     RunBulkRequest,
     RunJobRequest,
     RunResponse,
     StatusResponse,
+    SystemHealthStatus,
 )
 from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
@@ -91,6 +99,9 @@ class RunState:
 _runs: Dict[str, RunState] = {}
 _processes: Dict[str, asyncio.subprocess.Process] = {}  # Track subprocesses for cancellation
 _semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
+
+# Service uptime tracking for diagnostics
+_service_start_time = time.time()
 
 # Queue management (Redis-backed, optional)
 _queue_manager: Optional["QueueManager"] = None
@@ -751,6 +762,297 @@ async def health_check() -> HealthResponse:
         timestamp=datetime.utcnow(),
         pdf_service_status=pdf_service_status,
         pdf_service_error=pdf_service_error,
+    )
+
+
+# =============================================================================
+# Diagnostics Endpoint (Production Debugging)
+# =============================================================================
+
+
+async def _check_mongodb() -> ConnectionStatus:
+    """Ping MongoDB and measure latency."""
+    from motor.motor_asyncio import AsyncIOMotorClient
+
+    if not settings.mongodb_uri:
+        return ConnectionStatus(
+            status="unknown",
+            error="MongoDB URI not configured"
+        )
+
+    try:
+        start = time.time()
+        client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
+        await client.admin.command('ping')
+        latency_ms = (time.time() - start) * 1000
+        client.close()
+
+        return ConnectionStatus(
+            status="healthy",
+            latency_ms=round(latency_ms, 2),
+            details={"database": settings.mongo_db_name or "jobs"}
+        )
+    except Exception as e:
+        return ConnectionStatus(
+            status="unhealthy",
+            error=str(e)
+        )
+
+
+def _check_redis() -> ConnectionStatus:
+    """Check Redis connection via queue manager."""
+    global _queue_manager
+
+    if not _queue_manager:
+        return ConnectionStatus(
+            status="unknown",
+            details={"reason": "Queue manager not initialized (Redis not configured)"}
+        )
+
+    if _queue_manager.is_connected:
+        return ConnectionStatus(
+            status="healthy",
+            details={"configured": "true"}
+        )
+    else:
+        return ConnectionStatus(
+            status="unhealthy",
+            error="Redis connection lost"
+        )
+
+
+async def _check_pdf_service() -> ConnectionStatus:
+    """Check PDF service health with latency measurement."""
+    import httpx
+
+    pdf_url = settings.pdf_service_url
+
+    try:
+        start = time.time()
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{pdf_url}/health")
+            latency_ms = (time.time() - start) * 1000
+
+            if response.status_code == 200:
+                return ConnectionStatus(
+                    status="healthy",
+                    latency_ms=round(latency_ms, 2),
+                    details={"url": pdf_url}
+                )
+            else:
+                return ConnectionStatus(
+                    status="unhealthy",
+                    latency_ms=round(latency_ms, 2),
+                    error=f"HTTP {response.status_code}"
+                )
+    except httpx.TimeoutException:
+        return ConnectionStatus(
+            status="unhealthy",
+            error="Connection timeout"
+        )
+    except Exception as e:
+        return ConnectionStatus(
+            status="unhealthy",
+            error=str(e)
+        )
+
+
+async def _get_capacity_metrics() -> CapacityMetrics:
+    """Get current capacity metrics from semaphore and queue."""
+    global _queue_manager
+
+    active_runs = MAX_CONCURRENCY - _semaphore._value
+
+    queue_depth = 0
+    queue_running = 0
+    queue_failed = 0
+
+    if _queue_manager and _queue_manager.is_connected:
+        try:
+            state = await _queue_manager.get_state()
+            queue_depth = state.stats.get("total_pending", 0)
+            queue_running = state.stats.get("total_running", 0)
+            queue_failed = state.stats.get("total_failed", 0)
+        except Exception as e:
+            logger.warning(f"Failed to get queue state for diagnostics: {e}")
+
+    return CapacityMetrics(
+        active_runs=active_runs,
+        max_concurrency=MAX_CONCURRENCY,
+        capacity_percent=round((active_runs / MAX_CONCURRENCY) * 100, 1) if MAX_CONCURRENCY > 0 else 0,
+        queue_depth=queue_depth,
+        queue_running=queue_running,
+        queue_failed=queue_failed,
+    )
+
+
+async def _get_firecrawl_credits_safe() -> Optional[FireCrawlCreditsResponse]:
+    """Get FireCrawl credits, returning None on error."""
+    try:
+        return await get_firecrawl_credits()
+    except Exception as e:
+        logger.warning(f"Failed to get FireCrawl credits for diagnostics: {e}")
+        return None
+
+
+async def _get_openrouter_credits_safe() -> Optional[OpenRouterCreditsResponse]:
+    """Get OpenRouter credits, returning None on error."""
+    try:
+        return await get_openrouter_credits()
+    except Exception as e:
+        logger.warning(f"Failed to get OpenRouter credits for diagnostics: {e}")
+        return None
+
+
+@app.get("/diagnostics", response_model=DiagnosticsResponse)
+async def get_diagnostics() -> DiagnosticsResponse:
+    """
+    Comprehensive diagnostics endpoint for production debugging.
+
+    Aggregates all diagnostic information in a single call:
+    - Connection status (MongoDB, Redis, PDF service)
+    - API credits (FireCrawl, OpenRouter)
+    - Circuit breaker states
+    - Rate limit status
+    - Recent alerts
+    - Capacity metrics
+    - System health
+
+    Note: This endpoint is heavier than /health - use for admin dashboards,
+    not container orchestration probes.
+    """
+    now = datetime.utcnow()
+
+    # 1. Check connections (run in parallel)
+    mongodb_task = asyncio.create_task(_check_mongodb())
+    pdf_task = asyncio.create_task(_check_pdf_service())
+    redis_status = _check_redis()  # Sync check
+
+    mongodb_status = await mongodb_task
+    pdf_status = await pdf_task
+
+    # 2. Get API credits (run in parallel)
+    firecrawl_task = asyncio.create_task(_get_firecrawl_credits_safe())
+    openrouter_task = asyncio.create_task(_get_openrouter_credits_safe())
+
+    firecrawl_credits = await firecrawl_task
+    openrouter_credits = await openrouter_task
+
+    # 3. Get metrics from common infrastructure
+    system_health_status = SystemHealthStatus(status="healthy", issues=[], warnings=[])
+    circuit_breaker_summary = CircuitBreakerSummary(
+        total=0, closed=0, open=0, half_open=0, by_service={}
+    )
+    rate_limit_summary = RateLimitSummary(
+        total_requests=0, total_waits=0, by_provider={}
+    )
+
+    try:
+        from src.common.metrics import get_metrics_collector
+        collector = get_metrics_collector()
+        snapshot = collector.get_snapshot()
+
+        # System health
+        system_health_status = SystemHealthStatus(
+            status=snapshot.system_health.status,
+            issues=list(snapshot.system_health.issues) if snapshot.system_health.issues else [],
+            warnings=list(snapshot.system_health.warnings) if snapshot.system_health.warnings else [],
+        )
+
+        # Circuit breakers
+        cb = snapshot.circuit_breakers
+        circuit_breaker_summary = CircuitBreakerSummary(
+            total=cb.total_breakers,
+            closed=cb.closed_breakers,
+            open=cb.open_breakers,
+            half_open=cb.half_open_breakers,
+            by_service={k: {"state": str(v.get("state", "unknown"))} for k, v in cb.by_service.items()},
+        )
+
+        # Rate limits
+        rl = snapshot.rate_limits
+        rate_limit_summary = RateLimitSummary(
+            total_requests=rl.total_requests,
+            total_waits=rl.total_waits,
+            by_provider={
+                k: {
+                    "requests_today": v.get("requests_today", 0),
+                    "daily_limit": v.get("daily_limit", 0),
+                    "remaining_daily": v.get("remaining_daily", 0),
+                    "requests_this_minute": v.get("requests_this_minute", 0),
+                }
+                for k, v in rl.by_provider.items()
+            },
+        )
+    except Exception as e:
+        logger.warning(f"Failed to get metrics snapshot for diagnostics: {e}")
+        system_health_status.warnings.append(f"Metrics unavailable: {str(e)}")
+
+    # 4. Get capacity metrics
+    capacity = await _get_capacity_metrics()
+
+    # 5. Get recent alerts
+    recent_alerts: List[AlertEntry] = []
+    alert_stats: Dict[str, int] = {}
+
+    try:
+        from src.common.alerting import get_alert_manager
+        manager = get_alert_manager()
+        alerts = manager.get_history(limit=20)
+        recent_alerts = [
+            AlertEntry(
+                alert_id=a.alert_id,
+                level=a.level.value if hasattr(a.level, 'value') else str(a.level),
+                message=a.message,
+                source=a.source,
+                timestamp=a.timestamp,
+                metadata={k: str(v) for k, v in (a.metadata or {}).items()},
+            )
+            for a in alerts
+        ]
+        stats = manager.get_stats()
+        alert_stats = {k: v for k, v in stats.items() if isinstance(v, int)}
+    except Exception as e:
+        logger.warning(f"Failed to get alerts for diagnostics: {e}")
+
+    # 6. Build overall health status based on connection checks
+    if mongodb_status.status != "healthy" or redis_status.status == "unhealthy":
+        system_health_status.status = "unhealthy"
+        if mongodb_status.status != "healthy":
+            system_health_status.issues.append(f"MongoDB: {mongodb_status.error or 'not healthy'}")
+        if redis_status.status == "unhealthy":
+            system_health_status.issues.append(f"Redis: {redis_status.error or 'not healthy'}")
+    elif pdf_status.status != "healthy" or circuit_breaker_summary.open > 0:
+        if system_health_status.status == "healthy":
+            system_health_status.status = "degraded"
+        if pdf_status.status != "healthy":
+            system_health_status.warnings.append(f"PDF Service: {pdf_status.error or 'not healthy'}")
+        if circuit_breaker_summary.open > 0:
+            system_health_status.warnings.append(f"{circuit_breaker_summary.open} circuit breaker(s) open")
+
+    # Get version (try to import, fallback to settings)
+    try:
+        from version import __version__
+        version = __version__
+    except ImportError:
+        version = "unknown"
+
+    return DiagnosticsResponse(
+        timestamp=now,
+        uptime_seconds=round(time.time() - _service_start_time, 1),
+        version=version,
+        environment=settings.environment,
+        mongodb=mongodb_status,
+        redis=redis_status,
+        pdf_service=pdf_status,
+        firecrawl_credits=firecrawl_credits,
+        openrouter_credits=openrouter_credits,
+        system_health=system_health_status,
+        circuit_breakers=circuit_breaker_summary,
+        rate_limits=rate_limit_summary,
+        capacity=capacity,
+        recent_alerts=recent_alerts,
+        alert_stats=alert_stats,
     )
 
 

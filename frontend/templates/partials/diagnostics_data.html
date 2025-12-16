@@ -1,0 +1,386 @@
+{% if error %}
+<!-- Error State -->
+<div class="panel p-4 border-l-4 border-red-500">
+    <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="font-medium">Diagnostics Error</span>
+    </div>
+    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+    <p class="mt-2 text-xs theme-text-tertiary">Check that the runner service is running and RUNNER_API_SECRET is configured.</p>
+</div>
+
+{% elif diagnostics %}
+<div class="space-y-4">
+    <!-- System Info Bar -->
+    <div class="panel p-3 flex flex-wrap items-center gap-4 text-sm">
+        <div class="flex items-center gap-2">
+            <span class="theme-text-tertiary">Version:</span>
+            <span class="font-mono theme-text-primary">{{ diagnostics.version }}</span>
+        </div>
+        <div class="h-4 w-px theme-bg-tertiary"></div>
+        <div class="flex items-center gap-2">
+            <span class="theme-text-tertiary">Environment:</span>
+            {% if diagnostics.environment == 'production' %}
+            <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                production
+            </span>
+            {% elif diagnostics.environment == 'staging' %}
+            <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                staging
+            </span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                {{ diagnostics.environment }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="h-4 w-px theme-bg-tertiary"></div>
+        <div class="flex items-center gap-2">
+            <span class="theme-text-tertiary">Uptime:</span>
+            <span class="font-mono theme-text-primary">
+                {% set hours = (diagnostics.uptime_seconds // 3600)|int %}
+                {% set minutes = ((diagnostics.uptime_seconds % 3600) // 60)|int %}
+                {{ hours }}h {{ minutes }}m
+            </span>
+        </div>
+        <div class="ml-auto text-xs theme-text-muted">
+            {{ diagnostics.timestamp[:19]|replace('T', ' ') }} UTC
+        </div>
+    </div>
+
+    <!-- Connection Status Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- MongoDB -->
+        {% set mongo = diagnostics.mongodb %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold theme-text-secondary">MongoDB</h3>
+                <span class="flex items-center gap-1.5">
+                    {% if mongo.status == 'healthy' %}
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-xs text-green-600 dark:text-green-400">healthy</span>
+                    {% elif mongo.status == 'unknown' %}
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="text-xs theme-text-tertiary">unknown</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-600 dark:text-red-400">unhealthy</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if mongo.latency_ms %}
+            <p class="text-xs theme-text-tertiary">Latency: {{ "%.1f"|format(mongo.latency_ms) }}ms</p>
+            {% endif %}
+            {% if mongo.details and mongo.details.database %}
+            <p class="text-xs theme-text-muted">DB: {{ mongo.details.database }}</p>
+            {% endif %}
+            {% if mongo.error %}
+            <p class="text-xs text-red-500 mt-1 truncate" title="{{ mongo.error }}">{{ mongo.error[:40] }}{% if mongo.error|length > 40 %}...{% endif %}</p>
+            {% endif %}
+        </div>
+
+        <!-- Redis -->
+        {% set redis = diagnostics.redis %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold theme-text-secondary">Redis Queue</h3>
+                <span class="flex items-center gap-1.5">
+                    {% if redis.status == 'healthy' %}
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-xs text-green-600 dark:text-green-400">healthy</span>
+                    {% elif redis.status == 'unknown' %}
+                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                    <span class="text-xs theme-text-tertiary">unknown</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-600 dark:text-red-400">unhealthy</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if redis.details and redis.details.reason %}
+            <p class="text-xs theme-text-tertiary">{{ redis.details.reason }}</p>
+            {% elif redis.status == 'healthy' %}
+            <p class="text-xs theme-text-tertiary">Connected</p>
+            {% endif %}
+            {% if redis.error %}
+            <p class="text-xs text-red-500 mt-1">{{ redis.error[:40] }}{% if redis.error|length > 40 %}...{% endif %}</p>
+            {% endif %}
+        </div>
+
+        <!-- PDF Service -->
+        {% set pdf = diagnostics.pdf_service %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold theme-text-secondary">PDF Service</h3>
+                <span class="flex items-center gap-1.5">
+                    {% if pdf.status == 'healthy' %}
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-xs text-green-600 dark:text-green-400">healthy</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-600 dark:text-red-400">unhealthy</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if pdf.latency_ms %}
+            <p class="text-xs theme-text-tertiary">Latency: {{ "%.1f"|format(pdf.latency_ms) }}ms</p>
+            {% endif %}
+            {% if pdf.error %}
+            <p class="text-xs text-red-500 mt-1">{{ pdf.error[:40] }}{% if pdf.error|length > 40 %}...{% endif %}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- API Credits & Capacity Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- FireCrawl Credits -->
+        {% if diagnostics.firecrawl_credits %}
+        {% set fc = diagnostics.firecrawl_credits %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">FireCrawl Credits</h3>
+                {% if fc.status == 'healthy' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ fc.status }}</span>
+                {% elif fc.status == 'warning' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{{ fc.status }}</span>
+                {% elif fc.status == 'critical' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{{ fc.status }}</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{{ fc.status }}</span>
+                {% endif %}
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="theme-text-tertiary">Daily Used</span>
+                    <span class="theme-text-primary">{{ fc.used_today }} / {{ fc.daily_limit }}</span>
+                </div>
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    {% if fc.used_percent >= 90 %}
+                    <div class="h-full rounded-full bg-red-500" style="width: {{ fc.used_percent }}%"></div>
+                    {% elif fc.used_percent >= 80 %}
+                    <div class="h-full rounded-full bg-yellow-500" style="width: {{ fc.used_percent }}%"></div>
+                    {% else %}
+                    <div class="h-full rounded-full bg-green-500" style="width: {{ fc.used_percent }}%"></div>
+                    {% endif %}
+                </div>
+                <p class="text-xs theme-text-tertiary">{{ fc.remaining }} remaining ({{ "%.1f"|format(fc.used_percent) }}% used)</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="panel p-4">
+            <h3 class="text-sm font-semibold theme-text-secondary mb-2">FireCrawl Credits</h3>
+            <p class="text-xs theme-text-tertiary">Not available</p>
+        </div>
+        {% endif %}
+
+        <!-- OpenRouter Credits -->
+        {% if diagnostics.openrouter_credits %}
+        {% set or = diagnostics.openrouter_credits %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">OpenRouter Credits</h3>
+                {% if or.status == 'healthy' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ or.status }}</span>
+                {% elif or.status == 'warning' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{{ or.status }}</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{{ or.status }}</span>
+                {% endif %}
+            </div>
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                ${{ "%.2f"|format(or.credits_remaining) }}
+            </div>
+            <p class="text-xs theme-text-tertiary">remaining balance</p>
+            {% if or.error %}
+            <p class="text-xs text-red-500 mt-1">{{ or.error }}</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="panel p-4">
+            <h3 class="text-sm font-semibold theme-text-secondary mb-2">OpenRouter Credits</h3>
+            <p class="text-xs theme-text-tertiary">Not available</p>
+        </div>
+        {% endif %}
+
+        <!-- Capacity Metrics -->
+        {% set cap = diagnostics.capacity %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">Runner Capacity</h3>
+                <span class="text-xs theme-text-tertiary">{{ cap.active_runs }}/{{ cap.max_concurrency }}</span>
+            </div>
+            <div class="space-y-2">
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    {% if cap.capacity_percent >= 100 %}
+                    <div class="h-full rounded-full bg-red-500" style="width: 100%"></div>
+                    {% elif cap.capacity_percent >= 75 %}
+                    <div class="h-full rounded-full bg-yellow-500" style="width: {{ cap.capacity_percent }}%"></div>
+                    {% else %}
+                    <div class="h-full rounded-full bg-blue-500" style="width: {{ cap.capacity_percent }}%"></div>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between text-xs theme-text-tertiary">
+                    <span>Queue: {{ cap.queue_depth }} pending</span>
+                    <span>{{ cap.queue_running }} running</span>
+                    {% if cap.queue_failed > 0 %}
+                    <span class="text-red-500">{{ cap.queue_failed }} failed</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Circuit Breakers & Rate Limits Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Circuit Breakers -->
+        {% set cb = diagnostics.circuit_breakers %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">Circuit Breakers</h3>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        {{ cb.closed }}
+                    </span>
+                    {% if cb.half_open > 0 %}
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                        {{ cb.half_open }}
+                    </span>
+                    {% endif %}
+                    {% if cb.open > 0 %}
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        {{ cb.open }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% if cb.by_service %}
+            <div class="space-y-2 max-h-40 overflow-y-auto">
+                {% for service, data in cb.by_service.items() %}
+                <div class="flex items-center justify-between text-xs p-2 rounded theme-bg-secondary">
+                    <span class="font-medium theme-text-primary truncate" title="{{ service }}">{{ service }}</span>
+                    {% if data.state == 'closed' %}
+                    <span class="px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">closed</span>
+                    {% elif data.state == 'half_open' %}
+                    <span class="px-2 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">half_open</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{{ data.state }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs theme-text-tertiary">No circuit breakers registered</p>
+            {% endif %}
+        </div>
+
+        <!-- Rate Limits -->
+        {% set rl = diagnostics.rate_limits %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">Rate Limits</h3>
+                <span class="text-xs theme-text-tertiary">{{ "{:,}".format(rl.total_requests) }} requests</span>
+            </div>
+            {% if rl.by_provider %}
+            <div class="space-y-2 max-h-40 overflow-y-auto">
+                {% for provider, data in rl.by_provider.items() %}
+                <div class="text-xs p-2 rounded theme-bg-secondary">
+                    <div class="flex justify-between mb-1">
+                        <span class="font-medium theme-text-primary">{{ provider }}</span>
+                        {% if data.remaining_daily is defined and data.daily_limit is defined and data.daily_limit > 0 %}
+                        <span class="{% if data.remaining_daily < 50 %}text-yellow-600 dark:text-yellow-400{% else %}theme-text-tertiary{% endif %}">
+                            {{ data.remaining_daily|int }}/{{ data.daily_limit|int }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if data.requests_this_minute is defined %}
+                    <span class="theme-text-muted">{{ data.requests_this_minute|int }}/min</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs theme-text-tertiary">No rate limiters registered</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- System Health & Recent Alerts -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- System Health -->
+        {% set health = diagnostics.system_health %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">System Health</h3>
+                {% if health.status == 'healthy' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ health.status }}</span>
+                {% elif health.status == 'degraded' %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">{{ health.status }}</span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">{{ health.status }}</span>
+                {% endif %}
+            </div>
+            {% if health.issues %}
+            <div class="space-y-1 mb-2">
+                {% for issue in health.issues %}
+                <div class="flex items-start gap-2 text-xs text-red-600 dark:text-red-400">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>{{ issue }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if health.warnings %}
+            <div class="space-y-1">
+                {% for warning in health.warnings %}
+                <div class="flex items-start gap-2 text-xs text-yellow-600 dark:text-yellow-400">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>{{ warning }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if not health.issues and not health.warnings %}
+            <p class="text-xs theme-text-tertiary">All systems operating normally</p>
+            {% endif %}
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold theme-text-secondary">Recent Alerts</h3>
+                {% if diagnostics.alert_stats and diagnostics.alert_stats.history_count %}
+                <span class="text-xs theme-text-tertiary">{{ diagnostics.alert_stats.history_count }} total</span>
+                {% endif %}
+            </div>
+            {% if diagnostics.recent_alerts %}
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+                {% for alert in diagnostics.recent_alerts[:10] %}
+                <div class="text-xs p-2 rounded border-l-2
+                    {% if alert.level == 'critical' %}border-red-500 bg-red-50 dark:bg-red-900/20
+                    {% elif alert.level == 'error' %}border-orange-500 bg-orange-50 dark:bg-orange-900/20
+                    {% elif alert.level == 'warning' %}border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20
+                    {% else %}border-blue-500 bg-blue-50 dark:bg-blue-900/20{% endif %}">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-medium theme-text-primary">{{ alert.source }}</span>
+                        <span class="theme-text-muted">{{ alert.timestamp[:16]|replace('T', ' ') }}</span>
+                    </div>
+                    <p class="theme-text-secondary truncate" title="{{ alert.message }}">{{ alert.message[:60] }}{% if alert.message|length > 60 %}...{% endif %}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs theme-text-tertiary">No recent alerts</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}

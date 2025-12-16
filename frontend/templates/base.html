@@ -1712,6 +1712,24 @@
         details summary::marker {
             display: none;
         }
+
+        /* Scoped CSS for jobs list table (#job-table-container) - DO NOT affect batch page */
+        #job-table-container .theme-table td.status-col {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #job-table-container .theme-table td.status-col select {
+            width: 100%;
+            max-width: 120px;
+        }
+
+        #job-table-container .theme-table td.location-col {
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 
     <!-- Pipeline Actions CSS -->
@@ -1801,6 +1819,19 @@
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                            </svg>
+                        </a>
+
+                        <!-- Diagnostics Button -->
+                        <a
+                            href="/diagnostics"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                            style="background-color: var(--bg-hover); color: var(--text-secondary);"
+                            title="System Diagnostics"
+                            aria-label="System Diagnostics"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                             </svg>
                         </a>
 
