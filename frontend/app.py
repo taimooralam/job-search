@@ -618,6 +618,8 @@ def list_jobs():
         "country_code": 1,  # Cached country code from location
         "auto_discovered": 1,  # Auto-discovery badge
         "source": 1,  # Job source (indeed_auto, himalayas_auto, etc.)
+        "description": 1,  # For hover preview tooltip (truncated client-side)
+        "fit_score": 1,  # For hover preview tooltip
     }
 
     # GAP-007: Use aggregation pipeline for date filtering to handle mixed types

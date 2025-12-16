@@ -74,6 +74,7 @@
             <tr class="job-row cursor-pointer"
                 data-job-id="{{ job._id }}"
                 onclick="navigateToJob(event, '{{ job._id }}')"
+                onmouseenter="prefetchJobOnHover('{{ job._id }}')"
                 oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}'); return false;">
                 <!-- Checkbox -->
                 <td class="px-4 py-3" onclick="event.stopPropagation()">
@@ -112,9 +113,20 @@
                     {% endif %}
                 </td>
 
-                <!-- Role/Title -->
+                <!-- Role/Title with preview tooltip -->
+                {% set desc_preview = (job.description or '')[:200] %}
+                {% set tooltip_text = job.title or '' %}
+                {% if desc_preview %}
+                    {% set tooltip_text = tooltip_text ~ '\n\n' ~ desc_preview ~ ('...' if (job.description or '')|length > 200 else '') %}
+                {% endif %}
+                {% if job.fit_score is defined and job.fit_score %}
+                    {% set fit_val = job.fit_score if job.fit_score is number else job.fit_score.score %}
+                    {% if fit_val %}
+                        {% set tooltip_text = tooltip_text ~ '\n\nFit Score: ' ~ fit_val ~ '%' %}
+                    {% endif %}
+                {% endif %}
                 <td class="px-2 sm:px-4 py-3 role-col">
-                    <div class="text-sm font-semibold theme-text-primary truncate" title="{{ job.title or '' }}">
+                    <div class="text-sm font-semibold theme-text-primary truncate" title="{{ tooltip_text }}">
                         {% if job_url %}
                         <a href="{{ job_url }}" target="_blank" class="text-accent-500 hover:text-accent-400 hover:underline font-medium" onclick="event.stopPropagation()">
                             {{ job.title or '-' }}

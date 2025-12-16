@@ -1810,6 +1810,23 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Prefetch data cleanup - remove used prefetch from sessionStorage #}
+<script>
+    (function() {
+        const jobId = "{{ job._id }}";
+        const prefetchKey = `prefetch_job_${jobId}`;
+        const prefetched = sessionStorage.getItem(prefetchKey);
+        if (prefetched) {
+            // Track that we used a prefetch (for analytics/debugging)
+            console.debug(`[Prefetch] Used cached data for job ${jobId}`);
+            // Clean up sessionStorage
+            sessionStorage.removeItem(prefetchKey);
+            // Store prefetch data for potential use by JS components
+            window.PREFETCHED_JOB_DATA = JSON.parse(prefetched);
+        }
+    })();
+</script>
+
 {# Job Pipelines Panel - must load before pipeline-actions.js for queue integration #}
 <script src="/static/js/job-pipelines-panel.js"></script>
 

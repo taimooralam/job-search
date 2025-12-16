@@ -2227,6 +2227,68 @@
             }
         });
 
+        // ============================================================================
+        // Job Prefetch System - Reduces detail page load latency
+        // ============================================================================
+
+        const jobPrefetchCache = new Map();
+        const PREFETCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        const PREFETCH_CACHE_MAX = 20;
+        const PREFETCH_DEBOUNCE_MS = 150;
+
+        let prefetchTimeout = null;
+        const prefetchingJobIds = new Set();
+
+        /**
+         * Prefetch job data when user hovers over a row
+         * @param {string} jobId - The job ID to prefetch
+         */
+        function prefetchJobOnHover(jobId) {
+            // Debounce rapid hover events
+            clearTimeout(prefetchTimeout);
+            prefetchTimeout = setTimeout(() => {
+                // Skip if already cached with valid TTL
+                if (jobPrefetchCache.has(jobId)) {
+                    const cached = jobPrefetchCache.get(jobId);
+                    if (Date.now() - cached.timestamp < PREFETCH_CACHE_TTL) return;
+                }
+
+                // Skip if already prefetching this job
+                if (prefetchingJobIds.has(jobId)) return;
+
+                prefetchingJobIds.add(jobId);
+
+                fetch(`/api/jobs/${jobId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        // Evict oldest entry if at capacity (LRU eviction)
+                        if (jobPrefetchCache.size >= PREFETCH_CACHE_MAX) {
+                            const oldest = [...jobPrefetchCache.entries()]
+                                .sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0];
+                            jobPrefetchCache.delete(oldest);
+                        }
+                        jobPrefetchCache.set(jobId, { data, timestamp: Date.now() });
+                    })
+                    .catch(e => console.debug('Job prefetch failed (non-critical):', e))
+                    .finally(() => prefetchingJobIds.delete(jobId));
+            }, PREFETCH_DEBOUNCE_MS);
+        }
+
+        /**
+         * Get prefetched job data from cache if available
+         * @param {string} jobId - The job ID to retrieve
+         * @returns {object|null} - Cached job data or null
+         */
+        function getPrefetchedJob(jobId) {
+            if (!jobPrefetchCache.has(jobId)) return null;
+            const cached = jobPrefetchCache.get(jobId);
+            if (Date.now() - cached.timestamp > PREFETCH_CACHE_TTL) {
+                jobPrefetchCache.delete(jobId);
+                return null;
+            }
+            return cached.data;
+        }
+
         // Navigate to job detail page
         function navigateToJob(event, jobId) {
             // Don't navigate if clicking on interactive elements
@@ -2240,6 +2302,17 @@
             // Check if clicking inside a link or button
             if (target.closest('a') || target.closest('button') || target.closest('select')) {
                 return;
+            }
+
+            // Check for prefetched data and store in sessionStorage for detail page
+            const prefetched = getPrefetchedJob(jobId);
+            if (prefetched) {
+                try {
+                    sessionStorage.setItem(`prefetch_job_${jobId}`, JSON.stringify(prefetched));
+                } catch (e) {
+                    // sessionStorage might be full or disabled, continue anyway
+                    console.debug('Could not store prefetched data:', e);
+                }
             }
 
             // Navigate to job detail page
