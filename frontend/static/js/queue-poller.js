@@ -30,8 +30,8 @@
             this.idleInterval = options.idleInterval || 30000;     // 30s when idle
             this.errorInterval = options.errorInterval || 5000;    // 5s on error
 
-            // Endpoint
-            this.endpoint = options.endpoint || '/queue/state';
+            // Endpoint (proxied through Flask to runner service)
+            this.endpoint = options.endpoint || '/api/runner/queue/state';
 
             // State tracking
             this.polling = false;
