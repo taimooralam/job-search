@@ -13,6 +13,7 @@ function liveStatusBadge(jobId) {
         runId: null,         // Run ID (for running)
         error: null,         // Error message (for failed)
         fadeOut: false,      // For completed animation
+        _syntheticStatus: false, // Track if status came from event (vs store)
 
         init() {
             // Check current queue state
@@ -24,6 +25,7 @@ function liveStatusBadge(jobId) {
                     this.status = 'running';
                     this.runId = e.detail.runId;
                     this.position = null;
+                    this._syntheticStatus = true; // Mark as event-driven update
                 }
             });
 
@@ -35,15 +37,19 @@ function liveStatusBadge(jobId) {
                         this.status = 'running';  // Show running for both queued and running
                         this.runId = e.detail.runId || null;
                         this.position = null;
+                        this._syntheticStatus = true; // Mark as event-driven update
                     } else if (status === 'pending') {
                         this.status = 'pending';
                         this.position = e.detail.position || null;
+                        this._syntheticStatus = true;
                     } else if (status === 'completed') {
                         this.status = 'completed';
                         this.runId = null;
+                        this._syntheticStatus = false; // Clear on completion
                     } else if (status === 'failed') {
                         this.status = 'failed';
                         this.error = e.detail.error || null;
+                        this._syntheticStatus = false; // Clear on failure
                     }
                 }
             });
@@ -52,6 +58,7 @@ function liveStatusBadge(jobId) {
                 if (e.detail.jobId === this.jobId) {
                     this.status = 'completed';
                     this.runId = null;
+                    this._syntheticStatus = false; // Clear on completion
                     // Fade out after 5 seconds
                     setTimeout(() => {
                         this.fadeOut = true;
@@ -68,6 +75,7 @@ function liveStatusBadge(jobId) {
                     this.status = 'failed';
                     this.error = e.detail.error;
                     this.runId = null;
+                    this._syntheticStatus = false; // Clear on failure
                 }
             });
 
@@ -87,17 +95,20 @@ function liveStatusBadge(jobId) {
             const queueItem = Alpine.store('queue').getItemByJobId(this.jobId);
 
             if (queueItem) {
+                // Store has this job - use authoritative data
                 this.status = queueItem.queueStatus;
                 this.runId = queueItem.run_id;
                 this.error = queueItem.error;
+                this._syntheticStatus = false; // Store is authoritative
 
                 if (queueItem.queueStatus === 'pending') {
                     this.position = Alpine.store('queue').getPosition(this.jobId);
                 } else {
                     this.position = null;
                 }
-            } else if (this.status !== 'completed') {
-                // Only clear if not in completed fade-out state
+            } else if (this.status !== 'completed' && !this._syntheticStatus) {
+                // Only clear if not in completed fade-out state AND no synthetic status
+                // This prevents race condition where event sets status but store hasn't polled yet
                 if (!this.fadeOut) {
                     this.status = null;
                     this.position = null;
