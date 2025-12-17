@@ -364,6 +364,35 @@ def some_llm_operation():
   - `frontend/templates/partials/job_detail/_annotation_popover.html`: UI label update (Cancel → Discard)
 - **Impact**: Workflow optimization - users save valid annotations with minimal interaction; explicit "Discard" clarifies intent
 
+**Annotation Selected Text Editing & Textarea Support** (ENHANCED - 2025-12-17):
+- **Feature**: Selected text in popover is now editable via textarea, enabling pruning/refinement before annotation
+- **Dual-Text Storage Architecture**:
+  - `original_text`: Immutable original JD text for highlighting and reference
+  - `text`: Mutable user-edited text for LLM prompts (can be pruned or rephrased)
+- **Smart Selection Logic** (`isClickInsideSelection()` helper):
+  - Click inside current selection: Toggle popover visibility (show/hide)
+  - Click outside current selection: Select new sentence and open popover
+  - Subsequent clicks: Switch between rapid annotation of multiple sentences
+- **Text Sync Implementation**:
+  - `oninput` handler on textarea syncs edits to `this.popoverState.selectedText` in real-time
+  - `createAnnotationFromPopover()` saves both original_text and edited text to MongoDB
+- **Files Modified**:
+  - `frontend/static/js/jd-annotation.js`: Added `isClickInsideSelection()`, textarea sync handler
+  - `frontend/templates/partials/job_detail/_annotation_popover.html`: Changed selected text from `<p>` to editable `<textarea>`
+- **Impact**: Users can rapidly annotate multiple sentences while refining text selections; dual storage supports both accurate highlighting and customized LLM input
+
+**Modal & Panel Scroll Containment** (NEW - 2025-12-17):
+- **Feature**: Prevents scroll bleed-through when scrolling inside modals and panels (user scrolls inside popover/panel → only that element scrolls, page doesn't scroll)
+- **CSS Implementation**: `overscroll-behavior: contain` on all scrollable container classes
+- **Affected Components**:
+  - Annotation popover scroll region (selected text and field overflow)
+  - JD annotation panel scroll area (annotation list)
+  - CV editor panel scroll body
+  - CLI panel log container (prevents page scroll during operation monitoring)
+  - Add contacts modal body (prevents page scroll during contact import)
+- **Browser Support**: Works in all modern browsers; graceful degradation for older browsers
+- **Impact**: Improved UX during annotation workflow; users don't accidentally scroll entire page when interacting with modal/panel content
+
 **CV Styling & Display** (Updated - 2025-12-08):
 
 **Name & Contact Formatting**:
@@ -1744,12 +1773,14 @@ sessionStorage restored on next page load → logs persist
 
 - **Multi-Run Tabs**: Support up to 10 concurrent pipeline runs with individual tabs
 - **Real-time Logs**: SSE streaming with auto-scroll and timestamp tracking
+- **SSE Metadata (2025-12-17)**: Each log entry includes full job context (jobTitle, company, status) from operation metadata for richer context without separate lookups
 - **Color-Coded Output**: Error (red), warning (yellow), success (green)
 - **Layer Progress**: Footer showing which layers are pending/executing/complete
 - **Persistence**: sessionStorage keeps logs across page navigation
 - **Keyboard Shortcut**: Ctrl+` (backtick) toggles panel visibility
 - **Toast Notifications**: Alerts when panel is collapsed and new logs arrive
 - **Copy & Clear**: Buttons to copy all logs to clipboard or clear current run
+- **Scroll Containment (2025-12-17)**: `overscroll-behavior: contain` prevents scroll bleed-through to page when scrolling within log container
 
 **Keyboard Shortcuts**:
 - `Ctrl+`` (backtick) - Toggle CLI panel visibility
