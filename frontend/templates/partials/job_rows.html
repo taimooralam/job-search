@@ -18,23 +18,24 @@
                        class="h-4 w-4 rounded theme-border text-accent-500 focus:ring-accent-500">
             </th>
 
+            {# Column widths: narrow for metadata, wider for role/company #}
             {% set sort_fields = [
-                ('createdAt', 'Created', 'hide-mobile'),
-                ('company', 'Company', ''),
-                ('title', 'Role/Title', ''),
-                ('location', 'Location', 'hide-mobile'),
-                ('url', 'URL', 'hide-mobile'),
-                ('jobId', 'Job ID', 'hide-mobile'),
-                ('status', 'Status', ''),
-                ('pipeline', 'Pipeline', 'hide-mobile'),
-                ('score', 'Score', 'hide-mobile')
+                ('createdAt', 'Created', 'hide-mobile', 'w-[70px]'),
+                ('company', 'Company', '', 'w-[140px]'),
+                ('title', 'Role/Title', '', ''),
+                ('location', 'Location', 'hide-mobile', 'w-[50px]'),
+                ('url', 'URL', 'hide-mobile', 'w-[100px]'),
+                ('jobId', 'Job ID', 'hide-mobile', 'w-[90px]'),
+                ('status', 'Status', '', 'w-[100px]'),
+                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[80px]'),
+                ('score', 'Score', 'hide-mobile', 'w-[60px]')
             ] %}
 
-            {% for field, label, css_class in sort_fields %}
+            {% for field, label, css_class, width_class in sort_fields %}
             {% set is_active = current_sort == field %}
             {% set new_direction = 'asc' if (is_active and current_direction == 'desc') else 'desc' %}
             <th scope="col"
-                class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ 'sort-active' if is_active }} {{ css_class }}"
+                class="px-2 sm:px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider cursor-pointer hover:theme-bg-hover {{ 'sort-active' if is_active }} {{ css_class }} {{ width_class }}"
                 hx-get="/partials/job-rows?sort={{ field }}&direction={{ new_direction }}&query={{ current_query }}&page_size={{ current_page_size }}{{ filter_query }}"
                 hx-target="#job-table-container"
                 hx-indicator=".htmx-indicator">
@@ -62,7 +63,7 @@
             {% endfor %}
 
             <!-- Actions column -->
-            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider">
+            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[90px]">
                 Actions
             </th>
         </tr>
@@ -125,7 +126,7 @@
                         {% set tooltip_text = tooltip_text ~ '\n\nFit Score: ' ~ fit_val ~ '%' %}
                     {% endif %}
                 {% endif %}
-                <td class="px-2 sm:px-4 py-3 role-col">
+                <td class="px-2 sm:px-4 py-3 role-col overflow-hidden">
                     <div class="text-sm font-semibold theme-text-primary truncate" title="{{ tooltip_text }}">
                         {% if job_url %}
                         <a href="{{ job_url }}" target="_blank" class="text-accent-500 hover:text-accent-400 hover:underline font-medium" onclick="event.stopPropagation()">
