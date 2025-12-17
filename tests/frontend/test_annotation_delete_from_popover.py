@@ -182,16 +182,16 @@ class TestDeleteButtonBehavior:
         assert 'annotationManager.deleteAnnotation' in delete_function_section
 
     def test_delete_function_hides_popover_after_deletion(self):
-        """Function should hide the popover after successful deletion."""
+        """Function should hide the popover after successful deletion (no save)."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should call hideAnnotationPopover
+        # Assert - Should call hideAnnotationPopover with save: false (no auto-save after delete)
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
-        assert 'hideAnnotationPopover()' in delete_function_section
+        assert 'hideAnnotationPopover({ save: false })' in delete_function_section
 
     def test_delete_function_exported_to_window(self):
         """Function should be exported to window for HTML onclick handlers."""
@@ -266,7 +266,8 @@ class TestShowAnnotationPopoverIntegration:
             js_content = f.read()
 
         # Assert - Function should check for editingAnnotation parameter
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         assert 'editingAnnotation' in show_popover_section
@@ -279,7 +280,8 @@ class TestShowAnnotationPopoverIntegration:
             js_content = f.read()
 
         # Assert - Should remove 'hidden' class when editing
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         # Find delete button logic
@@ -295,7 +297,8 @@ class TestShowAnnotationPopoverIntegration:
             js_content = f.read()
 
         # Assert - Should add 'hidden' class when not editing
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         # Find delete button logic
@@ -311,7 +314,8 @@ class TestShowAnnotationPopoverIntegration:
             js_content = f.read()
 
         # Assert - Should store editingAnnotationId
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         assert 'this.editingAnnotationId' in show_popover_section
@@ -409,17 +413,20 @@ class TestDeleteAnnotationMethod:
 class TestUserExperience:
     """Tests for user experience aspects of delete functionality."""
 
-    def test_delete_button_positioned_near_cancel(self):
-        """Delete button should be positioned near cancel button for easy access."""
+    def test_delete_button_positioned_near_discard(self):
+        """Delete button should be positioned near discard button for easy access."""
         # Arrange - Read the template file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/templates/partials/job_detail/_annotation_popover.html', 'r') as f:
             template_content = f.read()
 
-        # Assert - Delete button should be in actions section
-        actions_start = template_content.find('Cancel')
-        actions_section = template_content[actions_start:actions_start+1000]
+        # Assert - Delete button should be in same actions section as Discard button
+        # Find the actions section by looking for the comment or container
+        actions_start = template_content.find('Actions - Compact')
+        actions_section = template_content[actions_start:actions_start+1500]
 
+        # Both buttons should be in the actions section
         assert 'popover-delete-btn' in actions_section
+        assert 'Discard' in actions_section
 
     def test_delete_button_has_hover_effect(self):
         """Delete button should have hover effect for better UX."""
@@ -452,7 +459,8 @@ class TestUserExperience:
             js_content = f.read()
 
         # Assert - Should update title based on mode
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         assert 'popover-title' in show_popover_section
@@ -466,7 +474,8 @@ class TestUserExperience:
             js_content = f.read()
 
         # Assert - Should update button text
-        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText')
+        # Search for method definition (with third parameter), not method call
+        show_popover_start = js_content.find('showAnnotationPopover(rect, selectedText, editingAnnotation')
         show_popover_section = js_content[show_popover_start:show_popover_start+3000]
 
         assert 'popover-save-btn' in show_popover_section
