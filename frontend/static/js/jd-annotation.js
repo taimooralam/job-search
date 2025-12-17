@@ -471,15 +471,23 @@ class AnnotationManager {
      * First click: selects the complete sentence containing the click point
      */
     handleSmartSentenceClick(event) {
+        console.log('[SmartSelect] Click detected at', event.clientX, event.clientY);
+
         // Get the text node at click position
         const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-        if (!range || !range.startContainer) return;
+        if (!range || !range.startContainer) {
+            console.log('[SmartSelect] No range or startContainer found');
+            return;
+        }
+
+        console.log('[SmartSelect] Range startContainer:', range.startContainer, 'nodeType:', range.startContainer.nodeType);
 
         // Handle both text nodes and element nodes (when clicking on styled text)
         let textNode = range.startContainer;
         let clickOffset = range.startOffset;
 
         if (textNode.nodeType !== Node.TEXT_NODE) {
+            console.log('[SmartSelect] Not a text node, using TreeWalker');
             // If we clicked on an element, find the first text node inside it
             const walker = document.createTreeWalker(
                 textNode,
@@ -488,21 +496,34 @@ class AnnotationManager {
                 false
             );
             textNode = walker.nextNode();
-            if (!textNode) return;
+            if (!textNode) {
+                console.log('[SmartSelect] TreeWalker found no text node');
+                return;
+            }
             clickOffset = 0; // Start from beginning of found text node
+            console.log('[SmartSelect] TreeWalker found text node:', textNode.textContent.substring(0, 50));
         }
 
         const fullText = textNode.textContent;
+        console.log('[SmartSelect] Full text:', fullText.substring(0, 100), '... offset:', clickOffset);
 
         // Find sentence boundaries
         const sentenceBounds = this.findSentenceBounds(fullText, clickOffset);
-        if (!sentenceBounds) return;
+        if (!sentenceBounds) {
+            console.log('[SmartSelect] No sentence bounds found');
+            return;
+        }
+        console.log('[SmartSelect] Sentence bounds:', sentenceBounds);
 
         // Extract the sentence
         const sentence = fullText.substring(sentenceBounds.start, sentenceBounds.end).trim();
+        console.log('[SmartSelect] Extracted sentence:', sentence.substring(0, 80), '... length:', sentence.length);
 
         // Skip if too short
-        if (sentence.length < 5) return;
+        if (sentence.length < 5) {
+            console.log('[SmartSelect] Sentence too short, skipping');
+            return;
+        }
 
         // Create a range for the sentence and select it
         const sentenceRange = document.createRange();
@@ -539,6 +560,7 @@ class AnnotationManager {
         this.popoverState.hasExplicitIdentity = false;
 
         // Show popover
+        console.log('[SmartSelect] Showing popover for sentence');
         this.showAnnotationPopover(rect, sentence);
     }
 
