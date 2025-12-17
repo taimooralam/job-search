@@ -348,15 +348,18 @@ class AnnotationManager {
 
                 const popover = document.getElementById('annotation-popover');
                 const isPopoverVisible = popover && !popover.classList.contains('hidden');
+                const selection = window.getSelection();
 
-                // If we already have a sentence selected
-                if (this.smartSelectionState.hasSentenceSelected) {
-                    // Toggle popover visibility
+                // Check if click is within current selection
+                const clickedInsideSelection = this.isClickInsideSelection(e, selection);
+
+                // If we already have a sentence selected AND clicked inside it
+                if (this.smartSelectionState.hasSentenceSelected && clickedInsideSelection) {
+                    // Toggle popover visibility for SAME selection
                     if (isPopoverVisible) {
                         hideAnnotationPopover();
                     } else {
                         // Re-show popover with the same selection
-                        const selection = window.getSelection();
                         if (selection.rangeCount > 0) {
                             const range = selection.getRangeAt(0);
                             const rect = range.getBoundingClientRect();
@@ -369,7 +372,13 @@ class AnnotationManager {
                     return;
                 }
 
-                // First click - select the sentence
+                // Click OUTSIDE current selection OR no selection yet
+                // -> Reset state and select new sentence
+                this.smartSelectionState.hasSentenceSelected = false;
+                this.smartSelectionState.lastSelectedSentence = null;
+                hideAnnotationPopover();
+
+                // Select the sentence at the new click location
                 this.handleSmartSentenceClick(e);
             });
 
@@ -464,6 +473,30 @@ class AnnotationManager {
             // Close popover for clicks outside
             hideAnnotationPopover();
         });
+    }
+
+    /**
+     * Check if a click event occurred inside the current text selection
+     * @param {MouseEvent} event - The click event
+     * @param {Selection} selection - The window selection object
+     * @returns {boolean} True if click is inside the selection's bounding rect
+     */
+    isClickInsideSelection(event, selection) {
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            return false;
+        }
+
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        // Add small padding for easier clicking (5px)
+        const padding = 5;
+        return (
+            event.clientX >= rect.left - padding &&
+            event.clientX <= rect.right + padding &&
+            event.clientY >= rect.top - padding &&
+            event.clientY <= rect.bottom + padding
+        );
     }
 
     /**
@@ -698,9 +731,15 @@ class AnnotationManager {
             }
         }
 
-        // Update selected text display
+        // Update selected text display (textarea uses .value instead of .textContent)
         const textEl = document.getElementById('popover-selected-text');
-        if (textEl) textEl.textContent = selectedText;
+        if (textEl) {
+            textEl.value = selectedText;
+            // Add input handler to sync edits back to popoverState
+            textEl.oninput = () => {
+                this.popoverState.selectedText = textEl.value.trim();
+            };
+        }
 
         // Reset form state first
         this.resetPopoverForm();
