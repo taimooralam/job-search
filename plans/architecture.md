@@ -5299,18 +5299,28 @@ cv_state = 'green' if has_cv_edited else ('orange' if has_cv_generated else 'gra
   - Real contacts get priority (visual distinction)
 
 **Sidebar 3: CV Editor Panel** (`_cv_sidebar_content.html`):
-- **Display**: Generated/edited CV with export options
+- **Display**: Full-featured TipTap rich text editor for CV editing directly from batch view
 - **Content**:
-  - CV content preview (markdown or HTML)
-  - If `cv_editor_state` exists: Show TipTap editor state rendered as HTML
-  - Export buttons:
-    - "Export as DOCX" - `/api/jobs/{job_id}/export-cv/docx`
-    - "Export as PDF" - `/api/jobs/{job_id}/export-cv/pdf`
-    - "Export as Markdown" - `/api/jobs/{job_id}/export-cv/markdown`
-  - Copy-to-clipboard button for quick copying
+  - Job info header (title, company)
+  - Undo/Redo buttons (enabled/disabled based on editor state)
+  - Toolbar with full formatting options:
+    - **Font Controls**: Family selector (sans-serif, serif, monospace), size buttons (sm, base, lg, xl, 2xl)
+    - **Text Formatting**: Bold, Italic, Underline buttons
+    - **Structure**: Heading buttons (h1, h2, h3), Bullet list, Numbered list
+    - **Alignment**: Left, Center, Right, Justify buttons
+  - Save indicator: Shows "Saved" or "Unsaved changes" status
+  - TipTap editor instance: Full content editing with auto-save via CVEditor class
+  - CV Tailoring Rationale section: Display of job-specific tailoring notes
+  - Export button: "Export as PDF" with `/api/jobs/{job_id}/export-cv/pdf`
 - **Interactions**:
-  - Export buttons trigger downloads
-  - Copy button shows brief "Copied!" toast
+  - Full TipTap editor is active and editable (unlike job detail sidebars which are read-only)
+  - Editor changes auto-save to `cv_editor_state` in MongoDB
+  - Toolbar buttons reflect current selection (bold, italic, heading level, etc.)
+  - Export button triggers PDF download
+- **Technical**:
+  - Uses CVEditor class from `cv-editor.js` (reused from job detail page)
+  - Initialization in `batch-sidebars.js` with error handling
+  - Overrides `updateSaveIndicator()` and `updateToolbarState()` for batch-specific styling
 
 #### 3. Application URL Quick Entry
 

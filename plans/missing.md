@@ -82,6 +82,36 @@
 - **Impact**: Users can now efficiently manage all batch job data (JD annotations, contacts, CV) from a single view. Tri-state colors provide immediate visibility into data completeness. Interactive sidebars allow quick context switching without leaving batch view. URL quick entry streamlines job tracking.
 - **Documentation**: Updated `plans/architecture.md` with new Batch Page UI Architecture section
 
+**BUG FIX: CV Editor Sidebar - Full TipTap Integration (2025-12-17) - COMPLETED**:
+- **Issue**: Batch page CV sidebar was showing "Failed to load content" error due to missing TipTap editor initialization
+- **Root Cause**:
+  - `_cv_sidebar_content.html` used basic textarea instead of full TipTap editor
+  - `batch-sidebars.js` lacked proper TipTap initialization
+  - `cv-editor.js` (CVEditor class) wasn't included in batch_processing.html
+- **Solution**:
+  - **Enhanced `_cv_sidebar_content.html`**: Replaced textarea with full TipTap toolbar:
+    - Font family selector (sans-serif, serif, monospace)
+    - Font size controls (sm, base, lg, xl, 2xl)
+    - Text formatting: bold, italic, underline
+    - Headings: h1-h3
+    - Lists: bullet list, numbered list
+    - Text alignment: left, center, right, justify
+    - Undo/Redo buttons
+    - Save indicator
+    - Export PDF button
+    - CV tailoring rationale section
+  - **Enhanced `batch-sidebars.js`**:
+    - Added proper TipTap initialization on CV sidebar open
+    - CVEditor class reuse with error handling
+    - Override methods: `updateSaveIndicator()`, `updateToolbarState()`
+    - Error display via `showBatchCVEditorError()`
+  - **Updated `batch_processing.html`**: Added `cv-editor.js` script before `batch-sidebars.js` to ensure CVEditor class availability
+- **Files Modified**:
+  - `frontend/templates/partials/batch/_cv_sidebar_content.html` - Complete rewrite with full TipTap editor
+  - `frontend/static/js/batch-sidebars.js` - Added TipTap initialization and error handling
+  - `frontend/templates/batch_processing.html` - Added cv-editor.js script inclusion
+- **Result**: CV sidebar now displays full-featured TipTap editor with all formatting options; users can edit CV directly from batch page
+
 ---
 
 ### Today's Session (2025-12-16 Session 15): Contact Transparency Enhancement
