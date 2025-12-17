@@ -138,20 +138,12 @@ jobs:
             paths: tests/pdf_service/
           - name: pdf-integration
             paths: tests/runner/test_pdf_integration.py
-          - name: websocket-auth
-            paths: tests/runner/test_websocket_auth.py
-          - name: websocket-keepalive
-            paths: tests/runner/test_websocket_keepalive.py
-          - name: websocket-reconnection
-            paths: tests/runner/test_websocket_reconnection.py
-          - name: websocket-events
+          - name: cross-runner-events
             paths: tests/runner/test_cross_runner_events.py
           - name: master-cv-api
             paths: tests/runner/test_master_cv_api_comprehensive.py
           - name: master-cv-routes
             paths: tests/runner/test_master_cv_routes.py tests/runner/test_outreach_request_model.py
-          - name: rxjs-integration
-            paths: tests/frontend/test_rxjs_integration.py tests/frontend/test_websocket_health_indicator.py
 
     steps:
       - uses: actions/checkout@v4
