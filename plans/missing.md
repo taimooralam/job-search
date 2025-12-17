@@ -3639,6 +3639,17 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Verification**: Panel opens correctly on first sentence selection; clicking different sentences opens panel for new selection; toggling on same selection still works; selected text is editable in popover
   - **Impact**: Annotation workflow now seamless - users can rapidly select and annotate multiple sentences without panel visibility issues
   - **Commit**: `7403534f` - fix(annotation): repair panel visibility regression on subsequent sentence clicks
+- [x] Annotation edit text persistence fix (2025-12-17): Fixed bug where edited text in annotation textarea was not being saved when editing existing annotations.
+  - **Bug**: When editing an existing annotation and modifying the selected text in the textarea (pruning or refining the selection), the edited text was not persisted. Only the original text was preserved on save.
+  - **Root Cause**: In `createAnnotationFromPopover()` edit path, the function was not syncing textarea edits back to `this.popoverState.selectedText` before saving. The textarea value changes were not reflected in the annotation's target.text field.
+  - **Fix Applied**:
+    1. Added `oninput` event handler to textarea element (`popover-selected-text`)
+    2. Handler syncs textarea value changes to `this.popoverState.selectedText` in real-time: `textEl.oninput = () => { this.popoverState.selectedText = textEl.value.trim(); };`
+    3. In `createAnnotationFromPopover()` edit path (line 1069), target.text now correctly uses the updated `this.popoverState.selectedText` from textarea
+  - **Files Modified**:
+    - `frontend/static/js/jd-annotation.js` - Added oninput handler at line 739-741 to sync textarea edits
+  - **Verification**: Edit existing annotation, modify text in textarea, save - edited text now persists correctly
+  - **Impact**: Users can now refine/prune selected text when editing annotations; changes are saved as expected
 
 ### Master CV API Vercel Deployment Fix
 - [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.
