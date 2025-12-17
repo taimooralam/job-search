@@ -32,6 +32,13 @@ services:
       - "traefik.http.routers.runner.tls.certresolver=mytlschallenge"
       # Service configuration - point to container port 8000
       - "traefik.http.services.runner.loadbalancer.server.port=8000"
+      # WebSocket support - disable response buffering and extend timeouts
+      - "traefik.http.services.runner.loadbalancer.responseforwarding.flushinterval=100ms"
+      - "traefik.http.services.runner.loadbalancer.passhostheader=true"
+      # Middleware for WebSocket timeouts (10 minutes for long operations like CV generation)
+      - "traefik.http.middlewares.runner-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      # Apply headers middleware to router
+      - "traefik.http.routers.runner.middlewares=runner-headers"
       # Redirect middleware
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
