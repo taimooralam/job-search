@@ -187,28 +187,135 @@ jobs:
           ENVIRONMENT: development
           MONGODB_URI: mongodb://localhost:27017/test
 
-  # Detect which services changed to enable conditional builds
+  # Detect which services changed and compare against deployed version
   changes:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     outputs:
       runner: ${{ steps.filter.outputs.runner }}
       pdf-service: ${{ steps.filter.outputs.pdf-service }}
+      runner_deployed_sha: ${{ steps.deployed.outputs.runner_sha }}
+      pdf_deployed_sha: ${{ steps.deployed.outputs.pdf_sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            runner:
-              - 'runner_service/**'
-              - 'src/**'
-              - 'scripts/**'
-              - 'Dockerfile.runner'
-              - 'requirements.txt'
-            pdf-service:
-              - 'pdf_service/**'
-              - 'Dockerfile.pdf-service'
+          fetch-depth: 0  # Full history for git log comparison
+
+      - name: Get deployed versions from running containers
+        id: deployed
+        run: |
+          # Get runner service deployed SHA from container image tag
+          RUNNER_IMAGE=$(docker inspect job-runner-runner-1 --format '{{.Config.Image}}' 2>/dev/null || echo "none")
+          if [[ "$RUNNER_IMAGE" == *"main-"* ]]; then
+            RUNNER_SHA=$(echo "$RUNNER_IMAGE" | grep -oP 'main-\K[a-f0-9]+' | head -1)
+          else
+            RUNNER_SHA="unknown"
+          fi
+          echo "runner_sha=$RUNNER_SHA" >> $GITHUB_OUTPUT
+          echo "📦 Runner deployed: $RUNNER_SHA"
+
+          # Get PDF service deployed SHA
+          PDF_IMAGE=$(docker inspect job-runner-pdf-service-1 --format '{{.Config.Image}}' 2>/dev/null || echo "none")
+          if [[ "$PDF_IMAGE" == *"main-"* ]]; then
+            PDF_SHA=$(echo "$PDF_IMAGE" | grep -oP 'main-\K[a-f0-9]+' | head -1)
+          else
+            PDF_SHA="unknown"
+          fi
+          echo "pdf_sha=$PDF_SHA" >> $GITHUB_OUTPUT
+          echo "📦 PDF Service deployed: $PDF_SHA"
+
+      - name: Show changes since last deployment
+        run: |
+          echo "## 🔄 Changes since last deployment"
+          echo ""
+
+          # Runner service changes
+          RUNNER_SHA="${{ steps.deployed.outputs.runner_sha }}"
+          if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
+            echo "### Runner Service (deployed: $RUNNER_SHA)"
+            COMMITS=$(git log --oneline ${RUNNER_SHA}..HEAD -- runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | head -20)
+            if [[ -n "$COMMITS" ]]; then
+              echo "\`\`\`"
+              echo "$COMMITS"
+              echo "\`\`\`"
+            else
+              echo "✅ No changes since deployment"
+            fi
+          else
+            echo "### Runner Service"
+            echo "⚠️ Could not determine deployed version"
+          fi
+          echo ""
+
+          # PDF service changes
+          PDF_SHA="${{ steps.deployed.outputs.pdf_sha }}"
+          if [[ "$PDF_SHA" != "unknown" && "$PDF_SHA" != "" ]]; then
+            echo "### PDF Service (deployed: $PDF_SHA)"
+            COMMITS=$(git log --oneline ${PDF_SHA}..HEAD -- pdf_service/ Dockerfile.pdf-service 2>/dev/null | head -20)
+            if [[ -n "$COMMITS" ]]; then
+              echo "\`\`\`"
+              echo "$COMMITS"
+              echo "\`\`\`"
+            else
+              echo "✅ No changes since deployment"
+            fi
+          else
+            echo "### PDF Service"
+            echo "⚠️ Could not determine deployed version"
+          fi
+
+      - name: Detect changes since deployment
+        id: filter
+        run: |
+          # Compare against deployed version, not just previous commit
+          RUNNER_SHA="${{ steps.deployed.outputs.runner_sha }}"
+          PDF_SHA="${{ steps.deployed.outputs.pdf_sha }}"
+
+          # Check runner changes since deployment
+          if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
+            RUNNER_CHANGES=$(git diff --name-only ${RUNNER_SHA}..HEAD -- \
+              runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | wc -l)
+            if [[ $RUNNER_CHANGES -gt 0 ]]; then
+              echo "runner=true" >> $GITHUB_OUTPUT
+              echo "🔄 Runner: $RUNNER_CHANGES files changed since $RUNNER_SHA"
+            else
+              echo "runner=false" >> $GITHUB_OUTPUT
+              echo "✅ Runner: No changes since $RUNNER_SHA"
+            fi
+          else
+            # Unknown deployed version - check against previous commit as fallback
+            RUNNER_CHANGES=$(git diff --name-only HEAD~1..HEAD -- \
+              runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | wc -l)
+            if [[ $RUNNER_CHANGES -gt 0 ]]; then
+              echo "runner=true" >> $GITHUB_OUTPUT
+              echo "🔄 Runner: $RUNNER_CHANGES files changed (unknown deployed version)"
+            else
+              echo "runner=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          # Check PDF service changes since deployment
+          if [[ "$PDF_SHA" != "unknown" && "$PDF_SHA" != "" ]]; then
+            PDF_CHANGES=$(git diff --name-only ${PDF_SHA}..HEAD -- \
+              pdf_service/ Dockerfile.pdf-service 2>/dev/null | wc -l)
+            if [[ $PDF_CHANGES -gt 0 ]]; then
+              echo "pdf-service=true" >> $GITHUB_OUTPUT
+              echo "🔄 PDF Service: $PDF_CHANGES files changed since $PDF_SHA"
+            else
+              echo "pdf-service=false" >> $GITHUB_OUTPUT
+              echo "✅ PDF Service: No changes since $PDF_SHA"
+            fi
+          else
+            # Unknown deployed version - check against previous commit as fallback
+            PDF_CHANGES=$(git diff --name-only HEAD~1..HEAD -- \
+              pdf_service/ Dockerfile.pdf-service 2>/dev/null | wc -l)
+            if [[ $PDF_CHANGES -gt 0 ]]; then
+              echo "pdf-service=true" >> $GITHUB_OUTPUT
+              echo "🔄 PDF Service: $PDF_CHANGES files changed (unknown deployed version)"
+            else
+              echo "pdf-service=false" >> $GITHUB_OUTPUT
+            fi
+          fi
 
   # Build runner image - only if runner files changed
   build-runner:
