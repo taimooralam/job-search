@@ -475,12 +475,24 @@ class AnnotationManager {
         const range = document.caretRangeFromPoint(event.clientX, event.clientY);
         if (!range || !range.startContainer) return;
 
-        // Only work with text nodes
-        const textNode = range.startContainer;
-        if (textNode.nodeType !== Node.TEXT_NODE) return;
+        // Handle both text nodes and element nodes (when clicking on styled text)
+        let textNode = range.startContainer;
+        let clickOffset = range.startOffset;
+
+        if (textNode.nodeType !== Node.TEXT_NODE) {
+            // If we clicked on an element, find the first text node inside it
+            const walker = document.createTreeWalker(
+                textNode,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            textNode = walker.nextNode();
+            if (!textNode) return;
+            clickOffset = 0; // Start from beginning of found text node
+        }
 
         const fullText = textNode.textContent;
-        const clickOffset = range.startOffset;
 
         // Find sentence boundaries
         const sentenceBounds = this.findSentenceBounds(fullText, clickOffset);

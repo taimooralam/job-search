@@ -2,13 +2,13 @@
 {# This floating popover enables quick annotation creation #}
 
 <div id="annotation-popover"
-     class="fixed z-[60] hidden bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80"
+     class="fixed z-[60] hidden bg-white rounded-lg shadow-xl border border-gray-200 p-3 w-72"
      role="dialog"
      aria-labelledby="popover-title"
      style="max-height: 80vh; overflow-y: auto;">
 
     {# Header #}
-    <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+    <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-gray-100">
         <h3 id="popover-title" class="text-sm font-semibold text-gray-900">Create Annotation</h3>
         <button onclick="hideAnnotationPopover()"
                 class="text-gray-400 hover:text-gray-600 p-1"
@@ -20,14 +20,14 @@
     </div>
 
     {# Selected Text Preview #}
-    <div class="mb-3">
+    <div class="mb-2">
         <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Selected Text</label>
-        <p id="popover-selected-text" class="text-sm text-gray-800 bg-yellow-50 p-2 rounded border border-yellow-200 line-clamp-3"></p>
+        <p id="popover-selected-text" class="text-sm text-gray-800 bg-yellow-50 p-1.5 rounded border border-yellow-200 line-clamp-2"></p>
     </div>
 
     {# Relevance Level #}
-    <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Match Strength</label>
+    <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Match Strength</label>
         <div class="grid grid-cols-5 gap-1">
             <button type="button"
                     onclick="setPopoverRelevance('core_strength')"
@@ -73,8 +73,8 @@
     </div>
 
     {# Requirement Type #}
-    <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Requirement Type</label>
+    <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Requirement Type</label>
         <div class="flex gap-2">
             <button type="button"
                     onclick="setPopoverRequirement('must_have')"
@@ -104,11 +104,8 @@
     </div>
 
     {# Passion Level - How excited are you about this aspect? #}
-    <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">
-            Your Passion Level
-            <span class="text-gray-400 font-normal">(how excited are you about this?)</span>
-        </label>
+    <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Passion Level</label>
         <div class="flex flex-wrap gap-1">
             <button type="button"
                     onclick="setPopoverPassion('love_it')"
@@ -154,11 +151,8 @@
     </div>
 
     {# Identity Level - Does this define who you are professionally? #}
-    <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">
-            Professional Identity
-            <span class="text-gray-400 font-normal">(use in introductions?)</span>
-        </label>
+    <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Identity</label>
         <div class="flex flex-wrap gap-1">
             <button type="button"
                     onclick="setPopoverIdentity('core_identity')"
@@ -204,9 +198,9 @@
     </div>
 
     {# STAR Story Links #}
-    <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-500 uppercase mb-2">Link STAR Stories</label>
-        <div id="popover-star-selector" class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
+    <div class="mb-2">
+        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Link STAR Stories</label>
+        <div id="popover-star-selector" class="max-h-24 overflow-y-auto border border-gray-200 rounded p-1.5 bg-gray-50 text-xs">
             {# STAR checkboxes populated by JS #}
             <p class="text-xs text-gray-400 italic">Loading STAR stories...</p>
         </div>
@@ -254,7 +248,7 @@
     </div>
 
     {# ATS Keywords (collapsible) #}
-    <div class="mb-3" id="popover-keywords-container">
+    <div class="mb-2" id="popover-keywords-container">
         <button type="button"
                 onclick="togglePopoverField('keywords')"
                 class="w-full flex items-center justify-between text-xs font-medium text-gray-500 uppercase py-1.5 hover:text-gray-700 hover:bg-gray-50 rounded transition">
