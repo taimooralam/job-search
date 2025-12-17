@@ -2393,6 +2393,78 @@ def batch_job_row_partial(job_id: str):
     )
 
 
+@app.route("/partials/batch-annotation/<job_id>")
+@login_required
+def batch_annotation_partial(job_id: str):
+    """
+    HTMX partial: Return JD annotation content for batch sidebar.
+
+    Displays the JD with annotation highlights and a list of annotations
+    in a read-only view within the batch page sidebar.
+    """
+    collection = get_collection()
+    try:
+        job = collection.find_one({"_id": ObjectId(job_id)})
+    except Exception:
+        abort(404)
+
+    if not job:
+        abort(404)
+
+    return render_template(
+        "partials/batch/_annotation_sidebar_content.html",
+        job=job,
+    )
+
+
+@app.route("/partials/batch-contacts/<job_id>")
+@login_required
+def batch_contacts_partial(job_id: str):
+    """
+    HTMX partial: Return contacts content for batch sidebar.
+
+    Displays primary and secondary contacts with action buttons
+    for generating outreach messages.
+    """
+    collection = get_collection()
+    try:
+        job = collection.find_one({"_id": ObjectId(job_id)})
+    except Exception:
+        abort(404)
+
+    if not job:
+        abort(404)
+
+    return render_template(
+        "partials/batch/_contacts_sidebar_content.html",
+        job=job,
+    )
+
+
+@app.route("/partials/batch-cv/<job_id>")
+@login_required
+def batch_cv_partial(job_id: str):
+    """
+    HTMX partial: Return CV editor content for batch sidebar.
+
+    Displays the generated/edited CV with export options.
+    If TipTap editor state exists, it can be used for editing.
+    """
+    collection = get_collection()
+    try:
+        job = collection.find_one({"_id": ObjectId(job_id)})
+    except Exception:
+        abort(404)
+
+    if not job:
+        abort(404)
+
+    return render_template(
+        "partials/batch/_cv_sidebar_content.html",
+        job=job,
+    )
+
+
 # =============================================================================
 # Diagnostics Page (Production Debugging)
 # =============================================================================

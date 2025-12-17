@@ -365,11 +365,16 @@
         </button>
     </div>
 </div>
+
+{# Batch Page Sidebars - for JD annotations, contacts, and CV editor #}
+{% include 'partials/batch/_batch_sidebars.html' %}
 {% endblock %}
 
 {% block extra_js %}
 <!-- BatchDebug utility - must load before batch-specific scripts -->
 <script src="{{ url_for('static', filename='js/batch-debug.js') }}"></script>
+<!-- Batch Sidebars - manages JD annotation, contacts, and CV editor panels -->
+<script src="{{ url_for('static', filename='js/batch-sidebars.js') }}"></script>
 <style>
 /* Expanded row styling for batch processing table */
 .expanded-detail-row {

@@ -38,19 +38,69 @@
             </div>
         </td>
 
-        <!-- Role/Title -->
-        <td class="px-2 sm:px-4 py-3 cursor-pointer"
+        <!-- Role/Title with Application URL Quick Entry -->
+        <td class="px-2 sm:px-4 py-3 cursor-pointer group"
             onclick="navigateToBatchJob(event, '{{ job._id }}')">
-            <div class="text-sm theme-text-primary max-w-[200px] truncate" title="{{ job.title or '' }}">
-                {% if job_url %}
-                <a href="{{ job_url }}" target="_blank"
-                   class="text-accent-500 hover:text-accent-400 hover:underline no-navigate"
-                   onclick="event.stopPropagation()">
+            <div class="flex items-center gap-1.5">
+                <div class="text-sm theme-text-primary max-w-[180px] truncate" title="{{ job.title or '' }}">
+                    {% if job_url %}
+                    <a href="{{ job_url }}" target="_blank"
+                       class="text-accent-500 hover:text-accent-400 hover:underline no-navigate"
+                       onclick="event.stopPropagation()">
+                        {{ job.title or '-' }}
+                    </a>
+                    {% else %}
                     {{ job.title or '-' }}
-                </a>
-                {% else %}
-                {{ job.title or '-' }}
-                {% endif %}
+                    {% endif %}
+                </div>
+                <!-- Application URL Quick Entry -->
+                <div class="relative no-navigate flex-shrink-0"
+                     x-data="{ showPopover: false, url: '{{ (app_url or '') | e }}', saving: false }"
+                     onclick="event.stopPropagation()">
+                    <button @click="showPopover = !showPopover"
+                            class="p-1 rounded transition-all
+                                   {% if app_url %}text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30
+                                   {% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover{% endif %}"
+                            title="{{ 'Application URL: ' ~ app_url if app_url else 'Set application URL' }}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                        </svg>
+                    </button>
+                    <!-- Popover -->
+                    <div x-show="showPopover"
+                         x-cloak
+                         @click.away="showPopover = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="transform opacity-0 scale-95"
+                         x-transition:enter-end="transform opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="transform opacity-100 scale-100"
+                         x-transition:leave-end="transform opacity-0 scale-95"
+                         class="absolute left-0 top-full mt-1 w-72 p-3 rounded-lg shadow-xl theme-bg-card border theme-border z-50">
+                        <label class="block text-xs font-medium theme-text-secondary mb-1.5">Application URL</label>
+                        <div class="flex gap-2">
+                            <input type="url"
+                                   x-model="url"
+                                   class="flex-1 px-2 py-1.5 text-sm rounded border theme-border theme-bg-secondary theme-text-primary focus:ring-2 focus:ring-accent-500 focus:border-accent-500"
+                                   placeholder="https://..."
+                                   @keydown.enter="saving = true; saveBatchJobUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; })"
+                                   @keydown.escape="showPopover = false">
+                            <button @click="saving = true; saveBatchJobUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; })"
+                                    :disabled="saving"
+                                    class="px-2.5 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-medium transition flex items-center gap-1">
+                                <template x-if="saving">
+                                    <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                </template>
+                                <span x-text="saving ? '' : 'Save'"></span>
+                            </button>
+                        </div>
+                        <p class="text-xs theme-text-tertiary mt-1.5">Press Enter to save, Escape to cancel</p>
+                    </div>
+                </div>
             </div>
         </td>
 
@@ -93,29 +143,52 @@
             </select>
         </td>
 
-        <!-- Progress indicators -->
-        <!-- MongoDB field names: extracted_jd (pipeline), company_research, cv_text/cv_editor_state -->
-        {% set has_jd = job.extracted_jd or job.processed_jd %}
+        <!-- Progress indicators with tri-state colors -->
+        <!-- JD: gray=none, orange=extracted (no annotations), green=has annotations -->
+        <!-- RS: gray=none, orange=has research (no contacts), green=has contacts -->
+        <!-- CV: gray=none, orange=generated (not edited), green=edited in CV editor -->
+        {% set has_jd_extraction = job.extracted_jd or job.processed_jd %}
+        {% set jd_annotations_list = (job.jd_annotations.annotations if job.jd_annotations else []) %}
+        {% set has_jd_annotations = jd_annotations_list | length > 0 %}
+        {% set jd_state = 'green' if has_jd_annotations else ('orange' if has_jd_extraction else 'gray') %}
+
         {% set has_research = job.company_research or job.role_skills %}
-        {% set has_cv = job.generated_cv or job.cv_output or job.cv_text or job.cv_editor_state %}
+        {% set primary_contacts = job.primary_contacts if job.primary_contacts else [] %}
+        {% set secondary_contacts = job.secondary_contacts if job.secondary_contacts else [] %}
+        {% set has_contacts = (primary_contacts | length > 0) or (secondary_contacts | length > 0) %}
+        {% set rs_state = 'green' if has_contacts else ('orange' if has_research else 'gray') %}
+
+        {% set has_cv_generated = job.generated_cv or job.cv_output or job.cv_text %}
+        {% set has_cv_edited = job.cv_editor_state is defined and job.cv_editor_state %}
+        {% set cv_state = 'green' if has_cv_edited else ('orange' if has_cv_generated else 'gray') %}
+
         <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
             <div class="flex items-center gap-1.5">
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                             {% if has_jd %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                <!-- JD Badge -->
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                             {% if jd_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800
+                             {% elif jd_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300
                              {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                      title="JD {{ 'Extracted' if has_jd else 'Not extracted' }}">
+                      title="JD: {{ 'Annotated' if jd_state == 'green' else ('Extracted' if jd_state == 'orange' else 'Not extracted') }}"
+                      {% if jd_state == 'green' %}onclick="openBatchAnnotationPanel('{{ job._id }}')"{% endif %}>
                     JD
                 </span>
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                             {% if has_research %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                <!-- RS Badge -->
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                             {% if rs_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800
+                             {% elif rs_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300
                              {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                      title="Research {{ 'Complete' if has_research else 'Not done' }}">
+                      title="Research: {{ 'Has contacts' if rs_state == 'green' else ('Researched' if rs_state == 'orange' else 'Not researched') }}"
+                      {% if rs_state == 'green' %}onclick="openBatchContactsSidebar('{{ job._id }}')"{% endif %}>
                     RS
                 </span>
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs
-                             {% if has_cv %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                <!-- CV Badge -->
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                             {% if cv_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800
+                             {% elif cv_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300
                              {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
-                      title="CV {{ 'Generated' if has_cv else 'Not generated' }}">
+                      title="CV: {{ 'Edited' if cv_state == 'green' else ('Generated' if cv_state == 'orange' else 'Not generated') }}"
+                      {% if cv_state == 'green' %}onclick="openBatchCVEditor('{{ job._id }}')"{% endif %}>
                     CV
                 </span>
             </div>
@@ -224,7 +297,7 @@
                 <!-- Extraction status -->
                 <div>
                     <label class="block text-xs font-medium theme-text-tertiary uppercase mb-1">JD Extraction</label>
-                    {% if has_jd %}
+                    {% if has_jd_extraction %}
                     <span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
