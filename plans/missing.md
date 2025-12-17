@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-17 (Annotation Panel Selection Regression Bug Fix)
+**Last Updated**: 2025-12-17 (Annotation Popover Auto-Save UX Improvement)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3650,6 +3650,23 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `frontend/static/js/jd-annotation.js` - Added oninput handler at line 739-741 to sync textarea edits
   - **Verification**: Edit existing annotation, modify text in textarea, save - edited text now persists correctly
   - **Impact**: Users can now refine/prune selected text when editing annotations; changes are saved as expected
+  - **Commit**: `acd03f2e` - fix(annotation): fix textarea text not saving when editing annotations
+
+- [x] Annotation popover auto-save on click-outside (2025-12-17): Added UX improvement to auto-save valid annotations when clicking outside popover, reducing friction in annotation workflow.
+  - **Feature**: When user clicks outside annotation popover, if valid configuration exists, annotation auto-saves. Escape key and "Discard" button explicitly discard without saving.
+  - **Implementation Details**:
+    1. Added `canSaveAnnotation()` validation method to check if annotation has required fields before save
+    2. Added `_hidePopover()` private function to handle popover visibility with save parameter
+    3. Updated `hideAnnotationPopover({ save: true/false })` method signature to accept configuration object
+    4. Renamed "Cancel" button to "Discard" to clarify it discards changes (not just closes)
+    5. Added click-outside detection that calls `hideAnnotationPopover({ save: true })`
+    6. Escape key triggers `hideAnnotationPopover({ save: false })` for explicit discard
+  - **Files Modified**:
+    - `frontend/static/js/jd-annotation.js` - Added canSaveAnnotation() method, _hidePopover() function, updated hideAnnotationPopover() signature
+    - `frontend/templates/partials/job_detail/_annotation_popover.html` - Renamed "Cancel" to "Discard" button
+  - **Verification**: Click outside popover with valid annotation - auto-saves. Click "Discard" or press Escape - discards without saving.
+  - **Impact**: Reduced cognitive load - users don't need to explicitly click "Save" for valid annotations; workflow is more intuitive
+  - **Commit**: `dfd5f7dd` - feat(annotation): add auto-save when clicking outside popover
 
 ### Master CV API Vercel Deployment Fix
 - [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.

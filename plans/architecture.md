@@ -349,6 +349,21 @@ def some_llm_operation():
   - `setPopoverIdentity(level)`: Updates annotation with identity_level
 - Real-time annotation storage and aggregation
 
+**Annotation Popover Auto-Save on Click-Outside** (NEW - 2025-12-17):
+- **UX Improvement**: Auto-saves valid annotations when clicking outside popover to reduce friction
+- **Behavior**:
+  - Click outside popover: Auto-saves if `canSaveAnnotation()` validates required fields
+  - Escape key: Triggers `hideAnnotationPopover({ save: false })` to discard without saving
+  - "Discard" button: Explicitly discards changes without saving (renamed from "Cancel")
+- **Implementation Methods in `jd-annotation.js`**:
+  - `canSaveAnnotation()`: Validates if annotation has required fields (category, selectedText)
+  - `_hidePopover()`: Private function handling popover visibility with save parameter
+  - `hideAnnotationPopover({ save: true/false })`: Updated signature accepting config object
+- **Files Modified**:
+  - `frontend/static/js/jd-annotation.js`: Added validation and auto-save logic
+  - `frontend/templates/partials/job_detail/_annotation_popover.html`: UI label update (Cancel → Discard)
+- **Impact**: Workflow optimization - users save valid annotations with minimal interaction; explicit "Discard" clarifies intent
+
 **CV Styling & Display** (Updated - 2025-12-08):
 
 **Name & Contact Formatting**:
