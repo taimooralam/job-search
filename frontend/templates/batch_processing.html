@@ -947,6 +947,18 @@
                     BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
                     updateJobProgress(run.job_id, 'queued');
 
+                    // Immediately dispatch event so live status badges update
+                    // This ensures the PIPELINE column shows "Running" right away
+                    document.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                        detail: {
+                            jobId: run.job_id,
+                            status: 'running',
+                            runId: run.run_id,
+                            operation: operation
+                        }
+                    }));
+                    BatchDebug.log('QUEUE', `Dispatched queue:job-status-changed for ${run.job_id}`);
+
                     // Connect SSE stream for the first job to get real-time logs
                     // Note: For true bulk SSE, we'd need a bulk log stream endpoint
                     if (run.run_id && result.runs.indexOf(run) === 0) {

@@ -27,6 +27,27 @@ function liveStatusBadge(jobId) {
                 }
             });
 
+            // Listen for batch operation status changes (dispatched by batch_processing.html)
+            window.addEventListener('queue:job-status-changed', (e) => {
+                if (e.detail.jobId === this.jobId) {
+                    const status = e.detail.status;
+                    if (status === 'running' || status === 'queued') {
+                        this.status = 'running';  // Show running for both queued and running
+                        this.runId = e.detail.runId || null;
+                        this.position = null;
+                    } else if (status === 'pending') {
+                        this.status = 'pending';
+                        this.position = e.detail.position || null;
+                    } else if (status === 'completed') {
+                        this.status = 'completed';
+                        this.runId = null;
+                    } else if (status === 'failed') {
+                        this.status = 'failed';
+                        this.error = e.detail.error || null;
+                    }
+                }
+            });
+
             window.addEventListener('queue:job-completed', (e) => {
                 if (e.detail.jobId === this.jobId) {
                     this.status = 'completed';
