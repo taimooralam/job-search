@@ -82,8 +82,9 @@
                 <div class="annotation-card p-3 rounded-lg border theme-border theme-bg-card hover:theme-bg-hover transition"
                      data-annotation-id="{{ annotation.id or loop.index0 }}">
                     {# Annotated text preview #}
+                    {% set ann_text = annotation.text or annotation.selected_text or '' %}
                     <div class="text-sm theme-text-primary mb-2 line-clamp-2 font-medium">
-                        "{{ annotation.text[:100] }}{% if annotation.text | length > 100 %}...{% endif %}"
+                        "{{ ann_text[:100] }}{% if ann_text | length > 100 %}...{% endif %}"
                     </div>
 
                     {# Annotation metadata #}
@@ -135,9 +136,10 @@
                     </div>
 
                     {# Notes preview #}
-                    {% if annotation.strategic_note %}
+                    {% set strat_note = annotation.strategic_note or '' %}
+                    {% if strat_note %}
                     <div class="text-xs theme-text-secondary mt-2 p-2 rounded bg-gray-50 dark:bg-gray-800/50">
-                        <span class="font-medium">Strategy:</span> {{ annotation.strategic_note[:80] }}{% if annotation.strategic_note | length > 80 %}...{% endif %}
+                        <span class="font-medium">Strategy:</span> {{ strat_note[:80] }}{% if strat_note | length > 80 %}...{% endif %}
                     </div>
                     {% endif %}
 
