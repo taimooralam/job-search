@@ -41,6 +41,7 @@ class QueueManager:
     HISTORY_KEY = "queue:history"
     ITEM_PREFIX = "queue:item:"
     EVENTS_CHANNEL = "queue:events"
+    VERSION_KEY = "queue:version"  # State version counter for polling
 
     # Limits
     HISTORY_LIMIT = 100
@@ -743,6 +744,39 @@ class QueueManager:
         if callback in self._subscribers:
             self._subscribers.remove(callback)
 
+    async def get_state_version(self) -> str:
+        """
+        Get current state version for change detection.
+
+        Returns:
+            String version number (or "0" if not set)
+        """
+        if not self._redis:
+            return "0"
+        try:
+            version = await self._redis.get(self.VERSION_KEY)
+            return version or "0"
+        except Exception:
+            return "0"
+
+    async def _increment_version(self) -> str:
+        """
+        Increment the state version counter.
+
+        Called on every state change to allow polling clients to detect changes.
+
+        Returns:
+            New version number
+        """
+        if not self._redis:
+            return "0"
+        try:
+            version = await self._redis.incr(self.VERSION_KEY)
+            return str(version)
+        except Exception as e:
+            logger.warning(f"Failed to increment state version: {e}")
+            return "0"
+
     async def _publish_event(self, action: str, item: QueueItem) -> None:
         """
         Publish queue event to all subscribers.
@@ -751,11 +785,15 @@ class QueueManager:
             action: Event action (added, started, completed, failed, etc.)
             item: Queue item involved
         """
+        # Increment version on every state change (for polling clients)
+        new_version = await self._increment_version()
+
         event = {
             "action": action,
             "item": item.to_dict(),
             "timestamp": datetime.utcnow().isoformat(),
             "source_instance": self._instance_id,  # Identifies which runner published this
+            "state_version": new_version,  # Include version for polling sync
         }
 
         # Publish to Redis pub/sub for multi-instance support
