@@ -279,6 +279,7 @@ body {
 .cli-logs {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
     background-color: #0f172a; /* slate-900 */
     padding: 0.75rem 1rem;
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;

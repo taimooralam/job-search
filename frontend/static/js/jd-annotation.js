@@ -1064,6 +1064,11 @@ class AnnotationManager {
             if (index !== -1) {
                 this.annotations[index] = {
                     ...this.annotations[index],
+                    target: {
+                        ...this.annotations[index].target,
+                        text: this.popoverState.selectedText,
+                        char_end: this.popoverState.selectedText.length
+                    },
                     relevance: this.popoverState.relevance,
                     requirement_type: this.popoverState.requirement || 'neutral',
                     passion: this.popoverState.passion || 'neutral',

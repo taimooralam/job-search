@@ -201,7 +201,7 @@
     {# Main Content Area - Split View #}
     <div class="flex-1 flex overflow-hidden">
         {# Left: JD Viewer (Read-only with selection) #}
-        <div id="jd-viewer-container" class="flex-1 overflow-y-auto p-4 bg-gray-50">
+        <div id="jd-viewer-container" class="flex-1 overflow-y-auto p-4 bg-gray-50" style="overscroll-behavior: contain;">
             <div id="jd-viewer-content"
                  class="bg-white border border-gray-200 rounded-lg shadow-inner p-6 min-h-full prose max-w-none"
                  style="font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6;">
@@ -230,7 +230,7 @@
         </div>
 
         {# Right: Annotation List Sidebar #}
-        <div id="annotation-list-container" class="w-80 border-l border-gray-200 bg-white overflow-y-auto hidden lg:block">
+        <div id="annotation-list-container" class="w-80 border-l border-gray-200 bg-white overflow-y-auto hidden lg:block" style="overscroll-behavior: contain;">
             {% include 'partials/job_detail/_annotation_list.html' %}
         </div>
     </div>
