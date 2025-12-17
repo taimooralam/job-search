@@ -373,6 +373,8 @@
 {% block extra_js %}
 <!-- BatchDebug utility - must load before batch-specific scripts -->
 <script src="{{ url_for('static', filename='js/batch-debug.js') }}"></script>
+<!-- CV Editor - TipTap based rich text editor (needed for batch CV sidebar) -->
+<script src="{{ url_for('static', filename='js/cv-editor.js') }}"></script>
 <!-- Batch Sidebars - manages JD annotation, contacts, and CV editor panels -->
 <script src="{{ url_for('static', filename='js/batch-sidebars.js') }}"></script>
 <style>

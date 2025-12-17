@@ -187,33 +187,117 @@ document.addEventListener('keydown', (e) => {
 });
 
 /**
- * Initialize batch CV editor (TipTap) - placeholder for now
- * Will reuse CVEditor class from cv-editor.js
+ * Initialize batch CV editor (TipTap)
+ * Reuses CVEditor class from cv-editor.js with batch-specific enhancements
  */
 let batchCVEditorInstance = null;
 
-function initBatchCVEditor(jobId) {
+async function initBatchCVEditor(jobId) {
     const container = document.getElementById('batch-cv-editor-container');
     if (!container) {
         console.log('CV editor container not found, editor will be read-only');
         return;
     }
 
-    // Reuse CVEditor class from cv-editor.js if available
-    if (typeof CVEditor !== 'undefined') {
-        try {
-            batchCVEditorInstance = new CVEditor(jobId, container);
-            batchCVEditorInstance.init();
-
-            // Show save indicator on changes
-            const saveIndicator = document.getElementById('batch-cv-save-indicator');
-            if (saveIndicator) {
-                saveIndicator.classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error('Error initializing CV editor:', error);
-        }
+    // Check if CVEditor class is available
+    if (typeof CVEditor === 'undefined') {
+        console.error('CVEditor class not available. Make sure cv-editor.js is loaded.');
+        showBatchCVEditorError('CV editor library not loaded');
+        return;
     }
+
+    // Check if TipTap library is available
+    if (typeof window.tiptap === 'undefined' || !window.tiptap.Editor) {
+        console.error('TipTap library not loaded');
+        showBatchCVEditorError('TipTap library not loaded. Check browser extensions or network.');
+        return;
+    }
+
+    try {
+        // Create editor instance
+        batchCVEditorInstance = new CVEditor(jobId, container);
+
+        // Override updateSaveIndicator to use batch-specific indicator
+        const originalUpdateSaveIndicator = batchCVEditorInstance.updateSaveIndicator.bind(batchCVEditorInstance);
+        batchCVEditorInstance.updateSaveIndicator = (status) => {
+            // Call original (for screen reader announcements)
+            originalUpdateSaveIndicator(status);
+
+            // Also update batch-specific indicator
+            if (typeof updateBatchCVSaveIndicator === 'function') {
+                updateBatchCVSaveIndicator(status);
+            }
+        };
+
+        // Override updateToolbarState to use batch-specific toolbar
+        const originalUpdateToolbarState = batchCVEditorInstance.updateToolbarState.bind(batchCVEditorInstance);
+        batchCVEditorInstance.updateToolbarState = () => {
+            // Call original
+            originalUpdateToolbarState();
+
+            // Also update batch-specific toolbar
+            if (typeof updateBatchCVToolbarState === 'function') {
+                updateBatchCVToolbarState();
+            }
+        };
+
+        // Initialize the editor
+        await batchCVEditorInstance.init();
+
+        // Show save indicator
+        const saveIndicator = document.getElementById('batch-cv-save-indicator');
+        if (saveIndicator) {
+            saveIndicator.classList.remove('hidden');
+        }
+
+        console.log('Batch CV editor initialized successfully');
+
+    } catch (error) {
+        console.error('Error initializing batch CV editor:', error);
+        showBatchCVEditorError(error.message || 'Failed to initialize CV editor');
+    }
+}
+
+/**
+ * Show error state in batch CV editor container
+ */
+function showBatchCVEditorError(message) {
+    const container = document.getElementById('batch-cv-editor-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-96 p-8 text-center">
+            <div class="text-red-500 mb-4">
+                <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold theme-text-primary mb-2">Failed to Load CV Editor</h3>
+            <p class="theme-text-secondary text-sm mb-4 max-w-sm">${escapeHtml(message)}</p>
+            <div class="text-xs theme-text-tertiary">
+                <p class="mb-2">Common causes:</p>
+                <ul class="list-disc list-inside text-left">
+                    <li>Browser extension blocking CDN scripts</li>
+                    <li>Network connectivity issues</li>
+                    <li>Try refreshing the page</li>
+                </ul>
+            </div>
+            <button onclick="closeBatchSidebar()"
+                    class="mt-4 px-4 py-2 text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-lg transition">
+                Close
+            </button>
+        </div>
+    `;
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function cleanupBatchCVEditor() {

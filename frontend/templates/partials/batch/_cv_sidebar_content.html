@@ -1,85 +1,249 @@
 {# CV Editor sidebar content - loaded via HTMX/fetch #}
-{# Displays CV in a read/edit view with TipTap editor #}
+{# Full TipTap CV editor replicating the job detail page experience #}
 
 {% set cv_content = job.cv_editor_state or job.cv_text or job.generated_cv or job.cv_output or '' %}
 {% set has_cv = cv_content | length > 0 %}
 
 <div class="h-full flex flex-col">
-    {# Job info header #}
-    <div class="px-4 py-3 border-b theme-border theme-bg-card flex-shrink-0">
-        <div class="flex items-center justify-between">
+    {# Header with job info and actions #}
+    <div class="flex items-center justify-between px-4 py-3 border-b theme-border theme-bg-card flex-shrink-0">
+        <div class="flex items-center space-x-2">
             <div>
-                <h3 class="font-medium theme-text-primary">{{ job.title or 'Untitled Position' }}</h3>
-                <p class="text-sm theme-text-secondary">{{ job.company or 'Unknown Company' }}</p>
+                <h3 class="font-medium theme-text-primary text-sm">{{ job.title or 'Untitled Position' }}</h3>
+                <p class="text-xs theme-text-secondary">{{ job.company or 'Unknown Company' }}</p>
             </div>
-            {% if has_cv %}
-            <div class="flex items-center gap-2">
-                <button onclick="exportBatchCV('pdf')"
-                        class="px-3 py-1.5 text-xs font-medium bg-accent-600 hover:bg-accent-700 text-white rounded transition flex items-center gap-1.5"
-                        title="Export as PDF">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            {# Undo/Redo Buttons #}
+            <div class="hidden sm:flex items-center gap-1" role="group" aria-label="Edit history">
+                <button id="batch-cv-undo-btn"
+                        onclick="if(batchCVEditorInstance && batchCVEditorInstance.editor) batchCVEditorInstance.editor.chain().focus().undo().run()"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Undo (Ctrl+Z)"
+                        title="Undo (Ctrl+Z)"
+                        disabled>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
                     </svg>
-                    Export PDF
+                </button>
+                <button id="batch-cv-redo-btn"
+                        onclick="if(batchCVEditorInstance && batchCVEditorInstance.editor) batchCVEditorInstance.editor.chain().focus().redo().run()"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Redo (Ctrl+Shift+Z)"
+                        title="Redo (Ctrl+Shift+Z)"
+                        disabled>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"/>
+                    </svg>
                 </button>
             </div>
-            {% endif %}
+
+            <div class="hidden sm:block w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
+
+            {# Save Indicator #}
+            <span id="batch-cv-save-indicator"
+                  class="text-xs theme-text-tertiary hidden"
+                  role="status"
+                  aria-live="polite">
+                <span class="text-green-500">● Saved</span>
+            </span>
+
+            {# Export PDF Button #}
+            <button onclick="exportBatchCVToPDF()"
+                    class="inline-flex items-center px-2 py-1 text-xs font-medium
+                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    aria-label="Export CV as PDF"
+                    title="Export PDF">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                PDF
+            </button>
         </div>
     </div>
 
-    {# CV Content #}
     {% if has_cv %}
-    <div class="flex-1 overflow-y-auto p-4" style="overscroll-behavior: contain;">
-        {# If we have editor state (JSON), we could initialize TipTap here #}
-        {# For now, display as formatted content #}
-        {% if job.cv_editor_state %}
-        {# TipTap editor container #}
+    {# Toolbar #}
+    <div class="px-3 py-2 border-b theme-border theme-bg-secondary cv-toolbar flex-shrink-0"
+         role="toolbar"
+         aria-label="Text formatting controls">
+        <div class="flex flex-wrap items-center gap-1.5">
+            {# Font Group #}
+            <div class="flex gap-1">
+                <label for="batch-cv-font-family" class="sr-only">Font family</label>
+                <select id="batch-cv-font-family" onchange="applyBatchCVFormat('fontFamily', this.value)"
+                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-28">
+                    <optgroup label="Serif">
+                        <option value="Crimson Text">Crimson Text</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Source Serif Pro">Source Serif Pro</option>
+                    </optgroup>
+                    <optgroup label="Sans-Serif">
+                        <option value="Inter" selected>Inter</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Lato">Lato</option>
+                    </optgroup>
+                </select>
+                <label for="batch-cv-font-size" class="sr-only">Font size</label>
+                <select id="batch-cv-font-size" onchange="applyBatchCVFormat('fontSize', this.value)"
+                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-14">
+                    <option value="9pt">9pt</option>
+                    <option value="10pt">10pt</option>
+                    <option value="11pt" selected>11pt</option>
+                    <option value="12pt">12pt</option>
+                    <option value="14pt">14pt</option>
+                </select>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# Formatting Group #}
+            <div class="flex gap-0.5" role="group" aria-label="Text formatting">
+                <button onclick="applyBatchCVFormat('bold')" data-format="bold"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-xs transition border border-transparent"
+                        aria-label="Bold (Ctrl+B)"
+                        aria-pressed="false"
+                        title="Bold">B</button>
+                <button onclick="applyBatchCVFormat('italic')" data-format="italic"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 italic text-xs transition border border-transparent"
+                        aria-label="Italic (Ctrl+I)"
+                        aria-pressed="false"
+                        title="Italic">I</button>
+                <button onclick="applyBatchCVFormat('underline')" data-format="underline"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 underline text-xs transition border border-transparent"
+                        aria-label="Underline (Ctrl+U)"
+                        aria-pressed="false"
+                        title="Underline">U</button>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# Heading Group #}
+            <div class="flex gap-0.5" role="group" aria-label="Heading levels">
+                <button onclick="applyBatchCVFormat('heading', 1)" data-heading="1"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-[10px] font-bold transition border border-transparent"
+                        aria-label="Heading 1"
+                        aria-pressed="false"
+                        title="Heading 1">H1</button>
+                <button onclick="applyBatchCVFormat('heading', 2)" data-heading="2"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-[10px] font-bold transition border border-transparent"
+                        aria-label="Heading 2"
+                        aria-pressed="false"
+                        title="Heading 2">H2</button>
+                <button onclick="applyBatchCVFormat('heading', 3)" data-heading="3"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-[10px] font-bold transition border border-transparent"
+                        aria-label="Heading 3"
+                        aria-pressed="false"
+                        title="Heading 3">H3</button>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# List Group #}
+            <div class="flex gap-0.5" role="group" aria-label="List formatting">
+                <button onclick="applyBatchCVFormat('bulletList')" data-format="bulletList"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Bullet list"
+                        aria-pressed="false"
+                        title="Bullet List">
+                    <span aria-hidden="true">•</span>
+                </button>
+                <button onclick="applyBatchCVFormat('orderedList')" data-format="orderedList"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Numbered list"
+                        aria-pressed="false"
+                        title="Numbered List">
+                    <span aria-hidden="true">1.</span>
+                </button>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# Alignment Group #}
+            <div class="flex gap-0.5" role="group" aria-label="Text alignment">
+                <button onclick="applyBatchCVFormat('textAlign', 'left')" data-align="left"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Align left"
+                        aria-pressed="true"
+                        title="Align Left">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/>
+                    </svg>
+                </button>
+                <button onclick="applyBatchCVFormat('textAlign', 'center')" data-align="center"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Align center"
+                        aria-pressed="false"
+                        title="Align Center">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"/>
+                    </svg>
+                </button>
+                <button onclick="applyBatchCVFormat('textAlign', 'right')" data-align="right"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Align right"
+                        aria-pressed="false"
+                        title="Align Right">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# Editor Content Area #}
+    <div class="flex-1 overflow-y-auto p-4 theme-bg-secondary" style="overscroll-behavior: contain;">
         <div id="batch-cv-editor-container"
-             class="prose prose-sm dark:prose-invert max-w-none theme-bg-card rounded-lg shadow-sm border theme-border p-6 min-h-[400px]"
+             class="bg-white dark:bg-gray-800 border theme-border rounded-lg shadow-inner
+                    min-h-full mx-auto prose prose-sm dark:prose-invert max-w-none"
+             style="max-width: 8.5in; min-height: 11in;"
              data-job-id="{{ job._id }}"
-             data-cv-state="{{ job.cv_editor_state | tojson | e }}">
-            {# Editor will be initialized by JS #}
-            <div class="flex items-center justify-center h-32">
-                <svg class="animate-spin h-6 w-6 text-accent-500" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
+             data-has-state="{{ 'true' if job.cv_editor_state else 'false' }}">
+            {# Loading state - TipTap editor renders here #}
+            <div id="batch-cv-editor-loading" class="flex flex-col items-center justify-center h-96 p-8">
+                <div class="w-full max-w-md space-y-4 animate-pulse">
+                    <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                    <div class="space-y-2 mt-6">
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center mt-6 text-indigo-600 dark:text-indigo-400">
+                    <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="text-sm font-medium">Loading CV editor...</span>
+                </div>
             </div>
         </div>
-        {% else %}
-        {# Display CV as HTML/markdown #}
-        <div class="prose prose-sm dark:prose-invert max-w-none theme-bg-card rounded-lg shadow-sm border theme-border p-6">
-            {% if cv_content is string and cv_content.startswith('{') %}
-            {# JSON content - try to render as TipTap #}
-            <div id="batch-cv-editor-container"
-                 class="min-h-[400px]"
-                 data-job-id="{{ job._id }}"
-                 data-cv-state="{{ cv_content | e }}">
-            </div>
-            {% else %}
-            {# Plain text or markdown - render with basic formatting #}
-            <div class="cv-content whitespace-pre-wrap">{{ cv_content }}</div>
-            {% endif %}
-        </div>
-        {% endif %}
 
         {# CV Reasoning if available #}
         {% if job.cv_reasoning %}
-        <div class="mt-4 p-4 rounded-lg border theme-border theme-bg-secondary">
+        <div class="mt-4 p-3 rounded-lg border theme-border theme-bg-card">
             <h4 class="text-xs font-semibold theme-text-tertiary uppercase tracking-wide mb-2 flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                 </svg>
                 CV Tailoring Rationale
             </h4>
-            <p class="text-sm theme-text-secondary">{{ job.cv_reasoning }}</p>
+            <p class="text-xs theme-text-secondary">{{ job.cv_reasoning }}</p>
         </div>
         {% endif %}
     </div>
     {% else %}
     {# No CV state #}
     <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <svg class="h-20 w-20 theme-text-tertiary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="h-16 w-16 theme-text-tertiary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
         <h3 class="font-medium theme-text-primary mb-2">No CV Generated Yet</h3>
@@ -98,32 +262,162 @@
 </div>
 
 <script>
-// Initialize TipTap editor if container exists and CVEditor is available
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('batch-cv-editor-container');
-    if (container && typeof CVEditor !== 'undefined') {
-        const jobId = container.dataset.jobId;
-        const cvState = container.dataset.cvState;
+/**
+ * Batch CV Editor - wrapper functions that delegate to batchCVEditorInstance
+ * These are defined inline since they're specific to this sidebar context
+ */
 
-        if (jobId && cvState) {
-            try {
-                const editor = new CVEditor(jobId, container);
-                editor.init();
-            } catch (e) {
-                console.error('Failed to initialize CV editor:', e);
-            }
-        }
+/**
+ * Apply formatting command to batch CV editor
+ */
+function applyBatchCVFormat(command, value = null) {
+    if (batchCVEditorInstance && batchCVEditorInstance.applyFormat) {
+        batchCVEditorInstance.applyFormat(command, value);
     }
-});
+}
 
-// Export function placeholder
-function exportBatchCV(format) {
-    if (!currentBatchJobId) {
-        console.error('No job ID set');
+/**
+ * Export batch CV to PDF
+ */
+async function exportBatchCVToPDF() {
+    if (!batchCVEditorInstance) {
+        if (typeof showToast === 'function') {
+            showToast('CV editor not initialized', 'error');
+        }
         return;
     }
 
-    // Open export in new tab/trigger download
-    window.open(`/api/jobs/${currentBatchJobId}/export-cv?format=${format}`, '_blank');
+    try {
+        // Show loading state
+        if (typeof showToast === 'function') {
+            showToast('Generating PDF...', 'info');
+        }
+
+        // Save first to ensure latest content
+        await batchCVEditorInstance.save();
+
+        // Call PDF generation endpoint
+        const response = await fetch(`/api/jobs/${batchCVEditorInstance.jobId}/cv-editor/pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'PDF generation failed');
+        }
+
+        // Download the PDF file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'CV.pdf';
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        if (typeof showToast === 'function') {
+            showToast('PDF downloaded successfully!', 'success');
+        }
+
+    } catch (error) {
+        console.error('PDF export failed:', error);
+        if (typeof showToast === 'function') {
+            showToast(`PDF export failed: ${error.message}`, 'error');
+        }
+    }
+}
+
+/**
+ * Update toolbar button states based on current selection
+ */
+function updateBatchCVToolbarState() {
+    if (!batchCVEditorInstance || !batchCVEditorInstance.editor) return;
+
+    const editor = batchCVEditorInstance.editor;
+
+    // Update alignment buttons
+    const alignments = ['left', 'center', 'right'];
+    alignments.forEach(align => {
+        const btn = document.querySelector(`#batch-cv-content button[data-align="${align}"]`);
+        if (btn) {
+            const isActive = editor.isActive({ textAlign: align });
+            btn.classList.toggle('bg-indigo-100', isActive);
+            btn.classList.toggle('dark:bg-indigo-900', isActive);
+            btn.setAttribute('aria-pressed', isActive.toString());
+        }
+    });
+
+    // Update formatting buttons
+    ['bold', 'italic', 'underline', 'bulletList', 'orderedList'].forEach(format => {
+        const btn = document.querySelector(`#batch-cv-content button[data-format="${format}"]`);
+        if (btn) {
+            const isActive = editor.isActive(format);
+            btn.classList.toggle('bg-gray-300', isActive);
+            btn.classList.toggle('dark:bg-gray-600', isActive);
+            btn.setAttribute('aria-pressed', isActive.toString());
+        }
+    });
+
+    // Update heading buttons
+    [1, 2, 3].forEach(level => {
+        const btn = document.querySelector(`#batch-cv-content button[data-heading="${level}"]`);
+        if (btn) {
+            const isActive = editor.isActive('heading', { level });
+            btn.classList.toggle('bg-gray-300', isActive);
+            btn.classList.toggle('dark:bg-gray-600', isActive);
+            btn.setAttribute('aria-pressed', isActive.toString());
+        }
+    });
+
+    // Update undo/redo buttons
+    const undoBtn = document.getElementById('batch-cv-undo-btn');
+    const redoBtn = document.getElementById('batch-cv-redo-btn');
+
+    if (undoBtn) {
+        const canUndo = editor.can().undo();
+        undoBtn.disabled = !canUndo;
+    }
+
+    if (redoBtn) {
+        const canRedo = editor.can().redo();
+        redoBtn.disabled = !canRedo;
+    }
+}
+
+/**
+ * Update save indicator in batch CV sidebar
+ */
+function updateBatchCVSaveIndicator(status) {
+    const indicator = document.getElementById('batch-cv-save-indicator');
+    if (!indicator) return;
+
+    indicator.classList.remove('hidden');
+
+    const states = {
+        unsaved: { icon: '○', text: 'Unsaved', class: 'text-gray-500' },
+        saving: { icon: '◐', text: 'Saving...', class: 'text-blue-500 animate-pulse' },
+        saved: { icon: '●', text: 'Saved', class: 'text-green-500' },
+        error: { icon: '⚠️', text: 'Error', class: 'text-red-500' }
+    };
+
+    const state = states[status] || states.saved;
+    indicator.innerHTML = `<span class="${state.class}">${state.icon} ${state.text}</span>`;
 }
 </script>
