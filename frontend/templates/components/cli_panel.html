@@ -166,6 +166,16 @@
                                    target="_blank"
                                    x-text="`/api/runner/operations/${$store.cli.activeRunId}/status`"></a>
                             </div>
+                            <!-- Job Title -->
+                            <div class="cli-diag-row" x-show="$store.cli.runs[$store.cli.activeRunId]?.jobTitle">
+                                <span class="cli-diag-label">Job:</span>
+                                <span class="cli-diag-value font-medium" x-text="$store.cli.runs[$store.cli.activeRunId]?.jobTitle"></span>
+                            </div>
+                            <!-- Company -->
+                            <div class="cli-diag-row" x-show="$store.cli.runs[$store.cli.activeRunId]?.company && $store.cli.runs[$store.cli.activeRunId]?.company !== 'Unknown Company'">
+                                <span class="cli-diag-label">Company:</span>
+                                <span class="cli-diag-value" x-text="$store.cli.runs[$store.cli.activeRunId]?.company"></span>
+                            </div>
                             <!-- Job ID -->
                             <div class="cli-diag-row" x-show="$store.cli.runs[$store.cli.activeRunId]?.jobId">
                                 <span class="cli-diag-label">Job ID:</span>

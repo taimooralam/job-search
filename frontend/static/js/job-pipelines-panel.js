@@ -224,11 +224,15 @@ document.addEventListener('alpine:init', () => {
             console.log(`[Pipelines Panel] Opening logs for ${operation} (run: ${opStatus.run_id})`);
 
             // Dispatch event to CLI panel to show logs
+            // Pass full metadata including status so CLI panel can decide whether to stream
             window.dispatchEvent(new CustomEvent('cli:fetch-logs', {
                 detail: {
                     runId: opStatus.run_id,
                     jobId: this.jobId,
-                    action: operation.replace('-', '_')
+                    jobTitle: this._getJobTitle(),
+                    company: this._getCompany(),
+                    action: operation.replace('-', '_'),
+                    status: opStatus.status  // 'pending', 'running', 'completed', 'failed'
                 }
             }));
         },
@@ -435,6 +439,44 @@ document.addEventListener('alpine:init', () => {
                     this._loadInitialStatus();
                 }
             }, PIPELINES_PANEL_CONFIG.pollIntervalMs);
+        },
+
+        /**
+         * Get job title from page context
+         * @returns {string} Job title or default
+         */
+        _getJobTitle() {
+            // Try to get from data attribute on body/page element
+            const pageEl = document.querySelector('[data-job-title]');
+            if (pageEl) return pageEl.dataset.jobTitle;
+
+            // Try to get from page heading
+            const heading = document.querySelector('h1.job-title, .job-header h1, [data-testid="job-title"]');
+            if (heading) return heading.textContent?.trim() || 'Unknown Job';
+
+            // Try to get from document title (often "Job Title - Company | Site")
+            const title = document.title;
+            if (title && title.includes('|')) {
+                return title.split('|')[0].trim();
+            }
+
+            return 'Unknown Job';
+        },
+
+        /**
+         * Get company name from page context
+         * @returns {string} Company name or default
+         */
+        _getCompany() {
+            // Try to get from data attribute on body/page element
+            const pageEl = document.querySelector('[data-company]');
+            if (pageEl) return pageEl.dataset.company;
+
+            // Try to get from company element
+            const companyEl = document.querySelector('.company-name, [data-testid="company-name"]');
+            if (companyEl) return companyEl.textContent?.trim() || 'Unknown Company';
+
+            return 'Unknown Company';
         },
 
         /**

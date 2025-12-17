@@ -339,10 +339,10 @@ document.addEventListener('alpine:init', () => {
 
             // Fetch logs for an existing run (from pipelines panel click)
             window.addEventListener('cli:fetch-logs', (e) => {
-                const { runId, jobId, action } = e.detail;
+                const { runId, jobId, jobTitle, company, action, status } = e.detail;
                 if (runId) {
-                    cliDebug('Received cli:fetch-logs event', { runId, jobId, action });
-                    this.fetchRunLogs(runId, jobId);
+                    cliDebug('Received cli:fetch-logs event', { runId, jobId, jobTitle, company, action, status });
+                    this.fetchRunLogs(runId, jobId, jobTitle, company, status);
                 }
             });
 
@@ -559,20 +559,28 @@ document.addEventListener('alpine:init', () => {
          * @param {string} runId - The run ID
          * @param {string} jobId - The job ID
          * @param {string} jobTitle - Optional job title
+         * @param {string} company - Optional company name
+         * @param {string} opStatus - Optional operation status ('pending', 'running', 'completed', 'failed')
          * @returns {Promise<boolean>} - True if logs were fetched successfully
          */
-        async fetchRunLogs(runId, jobId, jobTitle = null) {
+        async fetchRunLogs(runId, jobId, jobTitle = null, company = null, opStatus = null) {
             // Guard against undefined/null runId
             if (!runId) {
                 console.error('[CLI] fetchRunLogs called with undefined/null runId');
                 return false;
             }
 
-            // If already in memory, just switch to it
+            // If already in memory with SSE subscription, just switch to it
             if (this.runs[runId]) {
                 this.activeRunId = runId;
                 this.expanded = true;
                 this._saveState();
+
+                // If operation is running but no SSE subscription, start one
+                if ((opStatus === 'running' || this.runs[runId].status === 'running') && !this.runs[runId]._eventSource) {
+                    this.subscribeToLogs(runId);
+                }
+
                 return true;
             }
 
@@ -592,11 +600,12 @@ document.addEventListener('alpine:init', () => {
                 this.runs[runId] = {
                     jobId,
                     jobTitle: this._truncateTitle(jobTitle || data.job_title || `Job ${jobId?.slice(-6) || 'Unknown'}`),
+                    company: company || 'Unknown Company',
                     action: data.operation || 'pipeline',
                     status: data.status === 'completed' ? 'success' : (data.status || 'unknown'),
                     logs: (data.logs || []).map(log => ({
                         ts: Date.now(),
-                        type: 'info',
+                        type: typeof log === 'string' ? (window.cliDetectLogType?.(log) || 'info') : 'info',
                         text: typeof log === 'string' ? log : log.text || JSON.stringify(log)
                     })),
                     layerStatus: data.layer_status || {},
@@ -604,7 +613,8 @@ document.addEventListener('alpine:init', () => {
                     completedAt: data.completed_at ? new Date(data.completed_at).getTime() : null,
                     error: data.error || null,
                     langsmithUrl: data.langsmith_url || null,
-                    fromRedis: false
+                    fromRedis: false,
+                    _eventSource: null  // Will be set if we subscribe to SSE
                 };
 
                 // Add error log if present
@@ -629,12 +639,237 @@ document.addEventListener('alpine:init', () => {
                 // Save immediately
                 this._saveStateImmediate();
 
+                // If operation is running, subscribe to SSE for real-time updates
+                if (opStatus === 'running' || data.status === 'running' || data.status === 'queued') {
+                    cliDebug(`Operation ${runId} is ${opStatus || data.status}, subscribing to SSE`);
+                    this.subscribeToLogs(runId);
+                }
+
                 return true;
             } catch (err) {
                 console.error('[CLI] Failed to fetch run logs:', err);
                 this._addUnavailableRunPlaceholder(runId, jobId, jobTitle);
                 return false;
             }
+        },
+
+        /**
+         * Subscribe to real-time log streaming via SSE (Server-Sent Events)
+         * @param {string} runId - The run ID to subscribe to
+         */
+        subscribeToLogs(runId) {
+            // Guard against undefined/null runId
+            if (!runId) {
+                console.error('[CLI] subscribeToLogs called with undefined/null runId');
+                return;
+            }
+
+            // Don't subscribe if run doesn't exist
+            if (!this.runs[runId]) {
+                console.warn(`[CLI] Cannot subscribe to logs - run ${runId} not found`);
+                return;
+            }
+
+            // Don't create duplicate subscriptions
+            if (this.runs[runId]._eventSource) {
+                cliDebug(`Already subscribed to SSE for ${runId}`);
+                return;
+            }
+
+            const url = `/api/runner/operations/${runId}/logs`;
+            cliDebug(`Subscribing to SSE logs: ${url}`);
+
+            try {
+                const eventSource = new EventSource(url);
+                this.runs[runId]._eventSource = eventSource;
+
+                // Handle standard log messages (data-only events)
+                eventSource.onmessage = (event) => {
+                    if (!this.runs[runId]) {
+                        eventSource.close();
+                        return;
+                    }
+
+                    const text = event.data;
+                    const logType = window.cliDetectLogType?.(text) || 'info';
+
+                    // Use spread for Alpine.js reactivity
+                    this.runs[runId].logs = [...this.runs[runId].logs, {
+                        ts: Date.now(),
+                        type: logType,
+                        text
+                    }];
+
+                    // Trim if too many logs
+                    if (this.runs[runId].logs.length > MAX_LOGS_PER_RUN) {
+                        this.runs[runId].logs = this.runs[runId].logs.slice(-MAX_LOGS_PER_RUN);
+                    }
+
+                    // Auto-scroll if at bottom
+                    this._autoScroll();
+
+                    // Debounced save
+                    this._saveState();
+                };
+
+                // Handle layer_status events
+                eventSource.addEventListener('layer_status', (event) => {
+                    if (!this.runs[runId]) {
+                        eventSource.close();
+                        return;
+                    }
+
+                    try {
+                        const layerStatus = JSON.parse(event.data);
+                        this.runs[runId].layerStatus = {
+                            ...this.runs[runId].layerStatus,
+                            ...layerStatus
+                        };
+                        cliDebug(`Layer status update for ${runId}:`, layerStatus);
+                    } catch (e) {
+                        console.warn('[CLI] Failed to parse layer_status:', e);
+                    }
+                });
+
+                // Handle result events (final operation result)
+                eventSource.addEventListener('result', (event) => {
+                    if (!this.runs[runId]) {
+                        eventSource.close();
+                        return;
+                    }
+
+                    try {
+                        const result = JSON.parse(event.data);
+                        this.runs[runId].result = result;
+                        cliDebug(`Result for ${runId}:`, result);
+                    } catch (e) {
+                        console.warn('[CLI] Failed to parse result:', e);
+                    }
+                });
+
+                // Handle end event (stream complete)
+                eventSource.addEventListener('end', (event) => {
+                    const finalStatus = event.data;  // 'completed' or 'failed'
+                    cliDebug(`SSE stream ended for ${runId}: ${finalStatus}`);
+
+                    if (this.runs[runId]) {
+                        // Map backend status to CLI status
+                        this.runs[runId].status = finalStatus === 'completed' ? 'success' : 'error';
+                        this.runs[runId].completedAt = Date.now();
+
+                        // Clean up EventSource reference
+                        this.runs[runId]._eventSource = null;
+
+                        // Save state
+                        this._saveStateImmediate();
+
+                        // Show toast if panel is collapsed
+                        if (!this.expanded && typeof showToast === 'function') {
+                            const jobTitle = this.runs[runId].jobTitle;
+                            if (finalStatus === 'completed') {
+                                showToast(`Pipeline completed: ${jobTitle}`, 'success');
+                            } else {
+                                showToast(`Pipeline failed: ${jobTitle}`, 'error');
+                            }
+                        }
+                    }
+
+                    eventSource.close();
+                });
+
+                // Handle errors - fall back to polling
+                eventSource.onerror = (event) => {
+                    console.warn(`[CLI] SSE error for ${runId}, falling back to polling`);
+
+                    if (this.runs[runId]) {
+                        this.runs[runId]._eventSource = null;
+                    }
+
+                    eventSource.close();
+
+                    // Fall back to periodic polling for this run
+                    this._startPollingFallback(runId);
+                };
+
+                cliDebug(`SSE subscription established for ${runId}`);
+
+            } catch (err) {
+                console.error('[CLI] Failed to create EventSource:', err);
+                // Fall back to polling
+                this._startPollingFallback(runId);
+            }
+        },
+
+        /**
+         * Start polling fallback when SSE fails
+         * @param {string} runId - The run ID to poll
+         */
+        _startPollingFallback(runId) {
+            if (!runId || !this.runs[runId]) return;
+
+            // Don't start multiple polling intervals
+            if (this.runs[runId]._pollingInterval) return;
+
+            cliDebug(`Starting polling fallback for ${runId}`);
+
+            const pollInterval = setInterval(async () => {
+                if (!this.runs[runId] || this.runs[runId].status !== 'running') {
+                    clearInterval(pollInterval);
+                    if (this.runs[runId]) {
+                        this.runs[runId]._pollingInterval = null;
+                    }
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/runner/operations/${runId}/status`);
+                    if (!response.ok) {
+                        console.warn(`[CLI] Polling failed for ${runId}: ${response.status}`);
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    // Update logs (only add new ones)
+                    const existingCount = this.runs[runId].logs.length;
+                    const newLogs = (data.logs || []).slice(existingCount);
+
+                    if (newLogs.length > 0) {
+                        for (const log of newLogs) {
+                            const text = typeof log === 'string' ? log : log.text || JSON.stringify(log);
+                            this.runs[runId].logs = [...this.runs[runId].logs, {
+                                ts: Date.now(),
+                                type: window.cliDetectLogType?.(text) || 'info',
+                                text
+                            }];
+                        }
+                        this._autoScroll();
+                    }
+
+                    // Update layer status
+                    if (data.layer_status) {
+                        this.runs[runId].layerStatus = {
+                            ...this.runs[runId].layerStatus,
+                            ...data.layer_status
+                        };
+                    }
+
+                    // Check if completed
+                    if (data.status === 'completed' || data.status === 'failed') {
+                        this.runs[runId].status = data.status === 'completed' ? 'success' : 'error';
+                        this.runs[runId].completedAt = Date.now();
+                        this.runs[runId].error = data.error || null;
+                        clearInterval(pollInterval);
+                        this.runs[runId]._pollingInterval = null;
+                        this._saveStateImmediate();
+                    }
+
+                } catch (err) {
+                    console.error(`[CLI] Polling error for ${runId}:`, err);
+                }
+            }, 2000);  // Poll every 2 seconds
+
+            this.runs[runId]._pollingInterval = pollInterval;
         },
 
         /**
@@ -770,10 +1005,10 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Start a new pipeline run
-         * @param {Object} detail - { runId, jobId, jobTitle, action }
+         * @param {Object} detail - { runId, jobId, jobTitle, company, action }
          */
         startRun(detail) {
-            const { runId, jobId, jobTitle, action } = detail;
+            const { runId, jobId, jobTitle, company, action } = detail;
 
             // Guard against undefined runId
             if (!runId) {
@@ -782,8 +1017,8 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            cliDebug('Starting run:', { runId, jobId, jobTitle, action });
-            console.log('[CLI] Starting run:', { runId, jobId, jobTitle, action });
+            cliDebug('Starting run:', { runId, jobId, jobTitle, company, action });
+            console.log('[CLI] Starting run:', { runId, jobId, jobTitle, company, action });
 
             // Check if already exists (prevent duplicates)
             if (this.runs[runId]) {
@@ -800,12 +1035,15 @@ document.addEventListener('alpine:init', () => {
             this.runs[runId] = {
                 jobId,
                 jobTitle: this._truncateTitle(jobTitle),
+                company: company || 'Unknown Company',
                 action,
                 status: 'running',
                 logs: [],
                 layerStatus: {},
                 startedAt: Date.now(),
-                completedAt: null
+                completedAt: null,
+                _eventSource: null,
+                _pollingInterval: null
             };
 
             // Add to front of run order using spread for reactivity (prevent duplicates)
@@ -946,6 +1184,20 @@ document.addEventListener('alpine:init', () => {
             }
 
             cliDebug('Closing run:', runId);
+
+            // Clean up SSE EventSource if present
+            if (this.runs[runId]?._eventSource) {
+                try {
+                    this.runs[runId]._eventSource.close();
+                } catch (e) {
+                    // Ignore close errors
+                }
+            }
+
+            // Clean up polling interval if present
+            if (this.runs[runId]?._pollingInterval) {
+                clearInterval(this.runs[runId]._pollingInterval);
+            }
 
             // Remove from runs
             delete this.runs[runId];
