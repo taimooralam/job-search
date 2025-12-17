@@ -473,19 +473,35 @@ class AnnotationManager {
     handleSmartSentenceClick(event) {
         console.log('[SmartSelect] Click detected at', event.clientX, event.clientY);
 
-        // Get the text node at click position
-        const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-        if (!range || !range.startContainer) {
-            console.log('[SmartSelect] No range or startContainer found');
+        // Get the text node at click position - cross-browser support
+        let textNode, clickOffset;
+
+        if (document.caretRangeFromPoint) {
+            // Chrome, Safari, Edge
+            const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+            if (!range || !range.startContainer) {
+                console.log('[SmartSelect] No range or startContainer found');
+                return;
+            }
+            textNode = range.startContainer;
+            clickOffset = range.startOffset;
+        } else if (document.caretPositionFromPoint) {
+            // Firefox
+            const pos = document.caretPositionFromPoint(event.clientX, event.clientY);
+            if (!pos || !pos.offsetNode) {
+                console.log('[SmartSelect] No caret position found (Firefox)');
+                return;
+            }
+            textNode = pos.offsetNode;
+            clickOffset = pos.offset;
+        } else {
+            console.log('[SmartSelect] Browser does not support caret position APIs');
             return;
         }
 
-        console.log('[SmartSelect] Range startContainer:', range.startContainer, 'nodeType:', range.startContainer.nodeType);
+        console.log('[SmartSelect] Text node:', textNode, 'nodeType:', textNode.nodeType);
 
         // Handle both text nodes and element nodes (when clicking on styled text)
-        let textNode = range.startContainer;
-        let clickOffset = range.startOffset;
-
         if (textNode.nodeType !== Node.TEXT_NODE) {
             console.log('[SmartSelect] Not a text node, using TreeWalker');
             // If we clicked on an element, find the first text node inside it
