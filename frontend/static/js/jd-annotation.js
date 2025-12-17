@@ -593,6 +593,7 @@ class AnnotationManager {
 
         // Store selection state
         this.popoverState.selectedText = sentence;
+        this.popoverState.originalText = sentence;  // Original JD text for highlighting
         this.popoverState.selectedRange = sentenceRange.cloneRange();
 
         // Reset popover state
@@ -679,6 +680,7 @@ class AnnotationManager {
 
         // Store selection state
         this.popoverState.selectedText = selectedText;
+        this.popoverState.originalText = selectedText;  // Original JD text for highlighting
         this.popoverState.selectedRange = range.cloneRange();
 
         // Reset popover state
@@ -1055,6 +1057,12 @@ class AnnotationManager {
         const reframeEl = document.getElementById('popover-reframe-note');
         const keywordsEl = document.getElementById('popover-keywords');
         const strategicEl = document.getElementById('popover-strategic-note');
+        const textEl = document.getElementById('popover-selected-text');
+
+        // Read text directly from textarea (more reliable than oninput handler)
+        const editedText = textEl?.value?.trim() || this.popoverState.selectedText;
+        // Keep original text for highlighting (if user edited, original is different)
+        const originalText = this.popoverState.originalText || this.popoverState.selectedText;
 
         const isEditing = !!this.editingAnnotationId;
 
@@ -1062,12 +1070,16 @@ class AnnotationManager {
             // Update existing annotation
             const index = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
             if (index !== -1) {
+                // Preserve original_text for highlighting if it exists, otherwise use current target.text
+                const existingOriginalText = this.annotations[index].target?.original_text ||
+                                              this.annotations[index].target?.text;
                 this.annotations[index] = {
                     ...this.annotations[index],
                     target: {
                         ...this.annotations[index].target,
-                        text: this.popoverState.selectedText,
-                        char_end: this.popoverState.selectedText.length
+                        text: editedText,  // User's edited text for display
+                        original_text: existingOriginalText,  // Original JD text for highlighting
+                        char_end: editedText.length
                     },
                     relevance: this.popoverState.relevance,
                     requirement_type: this.popoverState.requirement || 'neutral',
@@ -1086,10 +1098,11 @@ class AnnotationManager {
             const annotation = {
                 id: this.generateId(),
                 target: {
-                    text: this.popoverState.selectedText,
+                    text: editedText,  // User's edited text for display
+                    original_text: originalText,  // Original JD text for highlighting
                     section: this.getSelectedSection(),
                     char_start: 0, // Would need more complex DOM tracking
-                    char_end: this.popoverState.selectedText.length
+                    char_end: editedText.length
                 },
                 annotation_type: 'skill_match',
                 relevance: this.popoverState.relevance,
@@ -1422,7 +1435,8 @@ class AnnotationManager {
         // Apply highlights for each annotation
         let highlightCount = 0;
         activeAnnotations.forEach(annotation => {
-            const targetText = annotation.target?.text;
+            // Use original_text for highlighting (matches JD), fallback to text
+            const targetText = annotation.target?.original_text || annotation.target?.text;
             const relevance = annotation.relevance || 'relevant';
 
             if (targetText && targetText.length > 0) {
