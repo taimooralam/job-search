@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-16 (Contact Transparency: is_synthetic Flag)
+**Last Updated**: 2025-12-17 (Annotation Panel Selection Regression Bug Fix)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -3623,6 +3623,22 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
     - `frontend/static/js/jd-annotation.js` - Added `togglePopoverField()`, `handleSmartSentenceClick()`, `findSentenceBounds()`, smart selection state management
     - `frontend/static/css/jd-annotation.css` - Chevron rotation animations, expand/collapse transitions
   - **Impact**: Annotation workflow now more efficient with smart sentence selection and cleaner UI; reduced cognitive load from always-visible fields
+- [x] Annotation panel selection regression fix (2025-12-17): Fixed bug where annotation panel did not appear on subsequent sentence clicks
+  - **Bug**: After selecting a sentence and closing the annotation panel, subsequent clicks to select different sentences failed to open panel. Panel remained hidden even though sentences were being selected.
+  - **Root Cause**: State management issue with `hasSentenceSelected=true` flag. After first selection, click handler entered toggle branch (toggle visibility) instead of selecting new sentence. When clicking outside selection, state was never reset, causing subsequent new selections to be treated as toggle attempts.
+  - **Fix Applied**:
+    1. Added `isClickInsideSelection()` helper method to detect if click occurred within existing selection bounds
+    2. Modified click handler logic:
+       - If clicking inside current selection: toggle panel visibility (existing behavior)
+       - If clicking outside selection: clear selection state and select new sentence (fixed)
+       - Properly resets `hasSentenceSelected` flag when moving to new sentence
+    3. Enhanced interaction: Selected text is now editable (changed from `<p>` to `<textarea>`) enabling pruning/refinement of selections before annotation
+  - **Files Modified**:
+    - `frontend/static/js/jd-annotation.js` - Added `isClickInsideSelection()`, updated click handler logic to reset state on new selection
+    - `frontend/templates/partials/job_detail/_annotation_popover.html` - Changed selected text container from `<p>` to `<textarea>` for editing capability
+  - **Verification**: Panel opens correctly on first sentence selection; clicking different sentences opens panel for new selection; toggling on same selection still works; selected text is editable in popover
+  - **Impact**: Annotation workflow now seamless - users can rapidly select and annotate multiple sentences without panel visibility issues
+  - **Commit**: `7403534f` - fix(annotation): repair panel visibility regression on subsequent sentence clicks
 
 ### Master CV API Vercel Deployment Fix
 - [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.
