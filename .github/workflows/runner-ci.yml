@@ -124,22 +124,30 @@ jobs:
           MONGODB_URI: mongodb://localhost:27017/test
 
   # Service-specific tests run in parallel with matrix
+  # Split into fine-grained groups for maximum parallelization (~1-2 min each)
   test-services:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         service-group:
-          # Consolidated groups to reduce CI setup overhead (~1-2 min per job)
-          # Each group runs multiple fast test files together with -n auto
+          # Each large test file gets its own job for parallel execution
           - name: runner-api
             paths: tests/runner/test_runner_api.py tests/runner/test_executor.py
-          - name: pdf
-            paths: tests/pdf_service/ tests/runner/test_pdf_integration.py
-          - name: websocket
-            paths: tests/runner/test_websocket_auth.py tests/runner/test_websocket_keepalive.py tests/runner/test_cross_runner_events.py
-          - name: master-cv
-            paths: tests/runner/test_master_cv_api_comprehensive.py tests/runner/test_master_cv_routes.py tests/runner/test_outreach_request_model.py
+          - name: pdf-service
+            paths: tests/pdf_service/
+          - name: pdf-integration
+            paths: tests/runner/test_pdf_integration.py
+          - name: websocket-auth
+            paths: tests/runner/test_websocket_auth.py
+          - name: websocket-keepalive
+            paths: tests/runner/test_websocket_keepalive.py
+          - name: websocket-events
+            paths: tests/runner/test_cross_runner_events.py
+          - name: master-cv-api
+            paths: tests/runner/test_master_cv_api_comprehensive.py
+          - name: master-cv-routes
+            paths: tests/runner/test_master_cv_routes.py tests/runner/test_outreach_request_model.py
 
     steps:
       - uses: actions/checkout@v4
