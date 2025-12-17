@@ -117,17 +117,19 @@ class TestDeleteButtonBehavior:
         assert 'function deleteAnnotationFromPopover()' in js_content
 
     def test_delete_function_checks_annotation_manager(self):
-        """Function should check if annotationManager exists before proceeding."""
+        """Function should check if manager exists before proceeding."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should have early return if manager doesn't exist
+        # Assert - Should use getActiveAnnotationManager() and have early return if manager doesn't exist
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
-        assert 'if (!annotationManager)' in delete_function_section or \
-               'if(!annotationManager)' in delete_function_section
+        # Now uses getActiveAnnotationManager() helper
+        assert 'getActiveAnnotationManager' in delete_function_section
+        assert 'if (!manager)' in delete_function_section or \
+               'if(!manager)' in delete_function_section
 
     def test_delete_function_checks_editing_annotation_id(self):
         """Function should check if editingAnnotationId exists before deleting."""
@@ -135,10 +137,11 @@ class TestDeleteButtonBehavior:
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should check for editingAnnotationId
+        # Assert - Should check for editingAnnotationId via manager
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
+        # Uses manager.editingAnnotationId
         assert 'editingAnnotationId' in delete_function_section
         assert 'annotationId' in delete_function_section
 
@@ -169,17 +172,19 @@ class TestDeleteButtonBehavior:
         assert 'return' in delete_function_section
 
     def test_delete_function_calls_delete_annotation(self):
-        """Function should call annotationManager.deleteAnnotation() with correct ID."""
+        """Function should call manager.deleteAnnotation() with correct ID."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should call deleteAnnotation
+        # Assert - Should call deleteAnnotation via getActiveAnnotationManager()
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
         assert 'deleteAnnotation(' in delete_function_section
-        assert 'annotationManager.deleteAnnotation' in delete_function_section
+        # Now uses getActiveAnnotationManager() and assigns to 'manager'
+        assert 'manager.deleteAnnotation' in delete_function_section or \
+               'getActiveAnnotationManager' in delete_function_section
 
     def test_delete_function_hides_popover_after_deletion(self):
         """Function should hide the popover after successful deletion (no save)."""
@@ -207,20 +212,18 @@ class TestDeleteFunctionLogic:
     """Tests for the internal logic of deleteAnnotationFromPopover()."""
 
     def test_early_return_when_no_annotation_manager(self):
-        """Should return early if annotationManager is null/undefined."""
+        """Should return early if manager is null/undefined."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should have guard clause at start
+        # Assert - Should have guard clause at start using getActiveAnnotationManager()
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+500]
 
-        # First check should be for annotationManager
-        first_if = delete_function_section.find('if')
-        annotationManager_check = delete_function_section.find('annotationManager')
-
-        assert first_if < annotationManager_check < first_if + 100
+        # Should use getActiveAnnotationManager() helper and check if manager exists
+        assert 'getActiveAnnotationManager' in delete_function_section
+        assert '!manager' in delete_function_section or 'if (!manager)' in delete_function_section
 
     def test_early_return_when_no_editing_annotation(self):
         """Should return early and warn if no annotation is being edited."""

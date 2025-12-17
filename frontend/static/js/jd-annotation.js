@@ -40,8 +40,39 @@ const AUTOSAVE_DELAY = 3000; // 3 seconds
 // ============================================================================
 
 class AnnotationManager {
-    constructor(jobId) {
+    /**
+     * Create an AnnotationManager instance
+     * @param {string} jobId - The job ID to manage annotations for
+     * @param {Object} config - Configuration options with element IDs (for batch page support)
+     * @param {string} config.panelId - ID of the annotation panel element (default: 'jd-annotation-panel')
+     * @param {string} config.contentId - ID of the JD content element (default: 'jd-processed-content')
+     * @param {string} config.popoverId - ID of the popover element (default: 'annotation-popover')
+     * @param {string} config.listId - ID of the annotation list element (default: 'annotation-items')
+     * @param {string} config.loadingId - ID of the loading indicator element (default: 'jd-loading')
+     * @param {string} config.emptyId - ID of the empty state element (default: 'jd-empty')
+     * @param {string} config.saveIndicatorId - ID of the save indicator element (default: 'annotation-save-indicator')
+     * @param {string} config.overlayId - ID of the overlay element (default: 'jd-annotation-overlay')
+     */
+    constructor(jobId, config = {}) {
         this.jobId = jobId;
+        this.config = {
+            panelId: config.panelId || 'jd-annotation-panel',
+            contentId: config.contentId || 'jd-processed-content',
+            popoverId: config.popoverId || 'annotation-popover',
+            listId: config.listId || 'annotation-items',
+            loadingId: config.loadingId || 'jd-loading',
+            emptyId: config.emptyId || 'jd-empty',
+            saveIndicatorId: config.saveIndicatorId || 'annotation-save-indicator',
+            overlayId: config.overlayId || 'jd-annotation-overlay',
+            listContainerId: config.listContainerId || 'annotation-list',
+            listCountId: config.listCountId || 'annotation-list-count',
+            listEmptyId: config.listEmptyId || 'annotation-list-empty',
+            annotationCountId: config.annotationCountId || 'annotation-count',
+            activeAnnotationCountId: config.activeAnnotationCountId || 'active-annotation-count',
+            coverageBarId: config.coverageBarId || 'annotation-coverage-bar',
+            coveragePctId: config.coveragePctId || 'annotation-coverage-pct',
+            boostValueId: config.boostValueId || 'total-boost-value'
+        };
         this.annotations = [];
         this.processedJdHtml = null;
         this.settings = {
@@ -77,6 +108,41 @@ class AnnotationManager {
             isUserEdited: false,
             unavailable: false  // True when on Vercel (LangChain not available)
         };
+        // Track if destroyed
+        this._destroyed = false;
+    }
+
+    /**
+     * Clean up resources when the manager is no longer needed
+     * Call this when closing a sidebar or switching jobs in batch view
+     */
+    destroy() {
+        this._destroyed = true;
+
+        // Clear any pending save timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = null;
+        }
+
+        // Clear smart selection state
+        if (this.smartSelectionState) {
+            this.smartSelectionState.hasSentenceSelected = false;
+            this.smartSelectionState.lastSelectedSentence = null;
+        }
+
+        // Hide popover if visible
+        const popover = document.getElementById(this.config.popoverId);
+        if (popover) {
+            popover.classList.add('hidden');
+        }
+
+        // Clear selection
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        }
+
+        console.log('AnnotationManager destroyed for job:', this.jobId);
     }
 
     /**
@@ -184,9 +250,9 @@ class AnnotationManager {
      * Show raw JD with preserved whitespace formatting - ready for annotation
      */
     showRawJd(rawJd) {
-        const loadingEl = document.getElementById('jd-loading');
-        const emptyEl = document.getElementById('jd-empty');
-        const contentEl = document.getElementById('jd-processed-content');
+        const loadingEl = document.getElementById(this.config.loadingId);
+        const emptyEl = document.getElementById(this.config.emptyId);
+        const contentEl = document.getElementById(this.config.contentId);
 
         if (loadingEl) loadingEl.classList.add('hidden');
         if (emptyEl) emptyEl.classList.add('hidden');
@@ -223,9 +289,9 @@ class AnnotationManager {
      * Show empty state (hides loading, shows empty message)
      */
     showEmptyState() {
-        const loadingEl = document.getElementById('jd-loading');
-        const emptyEl = document.getElementById('jd-empty');
-        const contentEl = document.getElementById('jd-processed-content');
+        const loadingEl = document.getElementById(this.config.loadingId);
+        const emptyEl = document.getElementById(this.config.emptyId);
+        const contentEl = document.getElementById(this.config.contentId);
 
         if (loadingEl) loadingEl.classList.add('hidden');
         if (contentEl) contentEl.classList.add('hidden');
@@ -330,7 +396,7 @@ class AnnotationManager {
      * Set up event listeners
      */
     setupEventListeners() {
-        const jdViewer = document.getElementById('jd-processed-content');
+        const jdViewer = document.getElementById(this.config.contentId);
         if (jdViewer) {
             // Track state for smart selection:
             // - First click: select sentence
@@ -443,8 +509,9 @@ class AnnotationManager {
             });
         }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
+        // Store reference for cleanup
+        this._keydownHandler = (e) => {
+            if (this._destroyed) return;
             if (e.key === 'Escape') {
                 hideAnnotationPopover({ save: false, clearSelection: true });
                 // Also clear smart selection state
@@ -453,11 +520,13 @@ class AnnotationManager {
                     window.getSelection().removeAllRanges();
                 }
             }
-        });
+        };
+        document.addEventListener('keydown', this._keydownHandler);
 
         // Click outside popover to close (but not clear selection)
-        document.addEventListener('mousedown', (e) => {
-            const popover = document.getElementById('annotation-popover');
+        this._mousedownHandler = (e) => {
+            if (this._destroyed) return;
+            const popover = document.getElementById(this.config.popoverId);
             if (!popover || popover.classList.contains('hidden')) return;
 
             // If clicking inside the popover, don't close
@@ -467,12 +536,13 @@ class AnnotationManager {
             if (e.target.closest('.annotation-highlight')) return;
 
             // If clicking inside JD viewer, let the viewer handlers manage it
-            const jdViewer = document.getElementById('jd-processed-content');
-            if (jdViewer && jdViewer.contains(e.target)) return;
+            const jdViewerEl = document.getElementById(this.config.contentId);
+            if (jdViewerEl && jdViewerEl.contains(e.target)) return;
 
             // Close popover for clicks outside - auto-save if valid
             hideAnnotationPopover({ save: true });
-        });
+        };
+        document.addEventListener('mousedown', this._mousedownHandler);
     }
 
     /**
@@ -705,7 +775,7 @@ class AnnotationManager {
      * Show annotation popover at position
      */
     showAnnotationPopover(rect, selectedText, editingAnnotation = null) {
-        const popover = document.getElementById('annotation-popover');
+        const popover = document.getElementById(this.config.popoverId);
         if (!popover) return;
 
         // Store editing state
@@ -752,7 +822,7 @@ class AnnotationManager {
         }
 
         // Position popover - account for panel boundaries
-        const panel = document.getElementById('jd-annotation-panel');
+        const panel = document.getElementById(this.config.panelId);
         const panelRect = panel ? panel.getBoundingClientRect() : { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight };
 
         const popoverWidth = 320;
@@ -1196,8 +1266,8 @@ class AnnotationManager {
      * Render annotations in list
      */
     renderAnnotations() {
-        const container = document.getElementById('annotation-items');
-        const emptyState = document.getElementById('annotation-list-empty');
+        const container = document.getElementById(this.config.listId);
+        const emptyState = document.getElementById(this.config.listEmptyId);
 
         if (!container) return;
 
@@ -1213,7 +1283,7 @@ class AnnotationManager {
         container.innerHTML = filtered.map(ann => this.renderAnnotationItem(ann)).join('');
 
         // Update count
-        const countEl = document.getElementById('annotation-list-count');
+        const countEl = document.getElementById(this.config.listCountId);
         if (countEl) countEl.textContent = filtered.length;
     }
 
@@ -1439,7 +1509,7 @@ class AnnotationManager {
      * Apply highlights to JD content based on active annotations
      */
     applyHighlights() {
-        const contentEl = document.getElementById('jd-processed-content');
+        const contentEl = document.getElementById(this.config.contentId);
         if (!contentEl) {
             console.warn('applyHighlights: Content element not found');
             return;
@@ -1618,9 +1688,9 @@ class AnnotationManager {
      * Render processed JD HTML
      */
     renderProcessedJd() {
-        const loadingEl = document.getElementById('jd-loading');
-        const emptyEl = document.getElementById('jd-empty');
-        const contentEl = document.getElementById('jd-processed-content');
+        const loadingEl = document.getElementById(this.config.loadingId);
+        const emptyEl = document.getElementById(this.config.emptyId);
+        const contentEl = document.getElementById(this.config.contentId);
 
         if (loadingEl) loadingEl.classList.add('hidden');
         if (emptyEl) emptyEl.classList.add('hidden');
@@ -1636,8 +1706,8 @@ class AnnotationManager {
      */
     updateStats() {
         // Update annotation counts
-        const countEl = document.getElementById('annotation-count');
-        const activeCountEl = document.getElementById('active-annotation-count');
+        const countEl = document.getElementById(this.config.annotationCountId);
+        const activeCountEl = document.getElementById(this.config.activeAnnotationCountId);
 
         if (countEl) countEl.textContent = `${this.annotations.length} annotations`;
         if (activeCountEl) {
@@ -1966,8 +2036,8 @@ class AnnotationManager {
 
         const coverage = totalTarget > 0 ? Math.round((totalAnnotated / totalTarget) * 100) : 0;
 
-        const barEl = document.getElementById('annotation-coverage-bar');
-        const pctEl = document.getElementById('annotation-coverage-pct');
+        const barEl = document.getElementById(this.config.coverageBarId);
+        const pctEl = document.getElementById(this.config.coveragePctId);
 
         if (barEl) barEl.style.width = `${coverage}%`;
         if (pctEl) pctEl.textContent = `${coverage}%`;
@@ -2193,7 +2263,7 @@ class AnnotationManager {
      * Update boost preview
      */
     updateBoostPreview() {
-        const boostEl = document.getElementById('total-boost-value');
+        const boostEl = document.getElementById(this.config.boostValueId);
         if (!boostEl) return;
 
         // Calculate aggregate boost from active annotations
@@ -2228,7 +2298,7 @@ class AnnotationManager {
      * Update save indicator
      */
     updateSaveIndicator(status) {
-        const indicator = document.getElementById('annotation-save-indicator');
+        const indicator = document.getElementById(this.config.saveIndicatorId);
         if (!indicator) return;
 
         switch (status) {
@@ -2344,8 +2414,9 @@ function hideAnnotationPopover(options = {}) {
     const popover = document.getElementById('annotation-popover');
     if (!popover || popover.classList.contains('hidden')) return;
 
-    if (save && annotationManager?.canSaveAnnotation()) {
-        annotationManager.createAnnotationFromPopover();
+    const manager = getActiveAnnotationManager();
+    if (save && manager?.canSaveAnnotation()) {
+        manager.createAnnotationFromPopover();
         return; // createAnnotationFromPopover will call _hidePopover()
     }
 
@@ -2382,11 +2453,25 @@ function togglePopoverField(field) {
 }
 
 /**
+ * Get the active annotation manager (batch or job detail)
+ * Batch annotation manager takes priority when the batch sidebar is open
+ */
+function getActiveAnnotationManager() {
+    // Check for batch annotation manager first (set by batch-sidebars.js)
+    if (typeof batchAnnotationManager !== 'undefined' && batchAnnotationManager) {
+        return batchAnnotationManager;
+    }
+    // Fall back to job detail annotation manager
+    return annotationManager;
+}
+
+/**
  * Set quick annotation (from toolbar)
  */
 function setQuickAnnotation(relevance) {
-    if (annotationManager) {
-        annotationManager.setPopoverRelevance(relevance);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverRelevance(relevance);
     }
 }
 
@@ -2394,8 +2479,9 @@ function setQuickAnnotation(relevance) {
  * Set requirement type (from toolbar)
  */
 function setRequirementType(requirement) {
-    if (annotationManager) {
-        annotationManager.setPopoverRequirement(requirement);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverRequirement(requirement);
     }
 }
 
@@ -2403,8 +2489,9 @@ function setRequirementType(requirement) {
  * Set passion level (from toolbar)
  */
 function setQuickPassion(passion) {
-    if (annotationManager) {
-        annotationManager.setPopoverPassion(passion);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverPassion(passion);
     }
 }
 
@@ -2412,8 +2499,9 @@ function setQuickPassion(passion) {
  * Set identity level (from toolbar)
  */
 function setQuickIdentity(identity) {
-    if (annotationManager) {
-        annotationManager.setPopoverIdentity(identity);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverIdentity(identity);
     }
 }
 
@@ -2421,8 +2509,9 @@ function setQuickIdentity(identity) {
  * Set relevance in popover
  */
 function setPopoverRelevance(relevance) {
-    if (annotationManager) {
-        annotationManager.setPopoverRelevance(relevance);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverRelevance(relevance);
     }
 }
 
@@ -2430,8 +2519,9 @@ function setPopoverRelevance(relevance) {
  * Set requirement in popover
  */
 function setPopoverRequirement(requirement) {
-    if (annotationManager) {
-        annotationManager.setPopoverRequirement(requirement);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverRequirement(requirement);
     }
 }
 
@@ -2439,8 +2529,9 @@ function setPopoverRequirement(requirement) {
  * Set passion level in popover
  */
 function setPopoverPassion(passion) {
-    if (annotationManager) {
-        annotationManager.setPopoverPassion(passion);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverPassion(passion);
     }
 }
 
@@ -2448,8 +2539,9 @@ function setPopoverPassion(passion) {
  * Set identity level in popover
  */
 function setPopoverIdentity(identity) {
-    if (annotationManager) {
-        annotationManager.setPopoverIdentity(identity);
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.setPopoverIdentity(identity);
     }
 }
 
@@ -2457,8 +2549,9 @@ function setPopoverIdentity(identity) {
  * Save annotation from popover
  */
 function saveAnnotationFromPopover() {
-    if (annotationManager) {
-        annotationManager.createAnnotationFromPopover();
+    const manager = getActiveAnnotationManager();
+    if (manager) {
+        manager.createAnnotationFromPopover();
     }
 }
 
@@ -2466,9 +2559,10 @@ function saveAnnotationFromPopover() {
  * Delete annotation from popover (when editing existing annotation)
  */
 function deleteAnnotationFromPopover() {
-    if (!annotationManager) return;
+    const manager = getActiveAnnotationManager();
+    if (!manager) return;
 
-    const annotationId = annotationManager.editingAnnotationId;
+    const annotationId = manager.editingAnnotationId;
     if (!annotationId) {
         console.warn('No annotation being edited to delete');
         return;
@@ -2480,7 +2574,7 @@ function deleteAnnotationFromPopover() {
     }
 
     // Delete the annotation
-    annotationManager.deleteAnnotation(annotationId);
+    manager.deleteAnnotation(annotationId);
 
     // Hide the popover - no save needed since we just deleted
     hideAnnotationPopover({ save: false });

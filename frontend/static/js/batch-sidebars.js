@@ -9,6 +9,9 @@
 let currentBatchSidebar = null;
 let currentBatchJobId = null;
 
+// Batch annotation manager instance (separate from job detail page's annotationManager)
+let batchAnnotationManager = null;
+
 /**
  * Open JD Annotation sidebar for a job
  * @param {string} jobId - The job ID to load annotations for
@@ -105,6 +108,8 @@ async function openBatchSidebar(type, jobId) {
                 // Initialize type-specific functionality
                 if (type === 'cv') {
                     initBatchCVEditor(jobId);
+                } else if (type === 'annotation') {
+                    initBatchAnnotationManager(jobId);
                 }
             } else {
                 contentContainer.innerHTML = `
@@ -154,6 +159,11 @@ function closeBatchSidebar(animate = true) {
             // Clean up CV editor if it was open
             if (currentBatchSidebar === 'cv' && typeof cleanupBatchCVEditor === 'function') {
                 cleanupBatchCVEditor();
+            }
+
+            // Clean up annotation manager if it was open
+            if (currentBatchSidebar === 'annotation' && typeof cleanupBatchAnnotationManager === 'function') {
+                cleanupBatchAnnotationManager();
             }
         }
 
@@ -350,6 +360,118 @@ function cleanupBatchCVEditor() {
     const saveIndicator = document.getElementById('batch-cv-save-indicator');
     if (saveIndicator) {
         saveIndicator.classList.add('hidden');
+    }
+}
+
+// ============================================================================
+// Batch Annotation Manager Initialization
+// ============================================================================
+
+/**
+ * Initialize batch annotation manager for the annotation sidebar
+ * Uses batch-specific element IDs to avoid conflicts with job detail page
+ * @param {string} jobId - The job ID to load annotations for
+ */
+async function initBatchAnnotationManager(jobId) {
+    // Check if AnnotationManager class is available
+    if (typeof AnnotationManager === 'undefined') {
+        console.error('AnnotationManager class not available. Make sure jd-annotation.js is loaded.');
+        showBatchAnnotationError('Annotation manager not loaded');
+        return;
+    }
+
+    // Clean up any existing instance
+    cleanupBatchAnnotationManager();
+
+    try {
+        // Create annotation manager with batch-specific element IDs
+        batchAnnotationManager = new AnnotationManager(jobId, {
+            panelId: 'batch-annotation-sidebar',
+            contentId: 'batch-jd-processed-content',
+            popoverId: 'annotation-popover',  // Shared popover element
+            listId: 'batch-annotation-items',
+            loadingId: 'batch-jd-loading',
+            emptyId: 'batch-jd-empty',
+            saveIndicatorId: 'batch-annotation-save-indicator',
+            overlayId: 'batch-sidebar-overlay',
+            listContainerId: 'batch-annotation-list',
+            listCountId: 'batch-annotation-list-count',
+            listEmptyId: 'batch-annotation-list-empty',
+            annotationCountId: 'batch-annotation-count',
+            activeAnnotationCountId: 'batch-active-annotation-count',
+            coverageBarId: 'batch-annotation-coverage-bar',
+            coveragePctId: 'batch-annotation-coverage-pct',
+            boostValueId: 'batch-total-boost-value'
+        });
+
+        // Initialize the manager
+        await batchAnnotationManager.init();
+
+        console.log('Batch annotation manager initialized for job:', jobId);
+
+    } catch (error) {
+        console.error('Error initializing batch annotation manager:', error);
+        showBatchAnnotationError(error.message || 'Failed to initialize annotation manager');
+    }
+}
+
+/**
+ * Show error state in batch annotation content
+ */
+function showBatchAnnotationError(message) {
+    const contentEl = document.getElementById('batch-jd-processed-content');
+    const loadingEl = document.getElementById('batch-jd-loading');
+    const emptyEl = document.getElementById('batch-jd-empty');
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    if (contentEl) {
+        contentEl.classList.remove('hidden');
+        contentEl.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="text-red-500 mb-4">
+                    <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold theme-text-primary mb-2">Failed to Load Annotations</h3>
+                <p class="theme-text-secondary text-sm mb-4 max-w-sm">${escapeHtml(message)}</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Clean up batch annotation manager
+ */
+function cleanupBatchAnnotationManager() {
+    if (batchAnnotationManager) {
+        if (typeof batchAnnotationManager.destroy === 'function') {
+            batchAnnotationManager.destroy();
+        }
+        batchAnnotationManager = null;
+    }
+
+    // Hide any open popover
+    const popover = document.getElementById('annotation-popover');
+    if (popover) {
+        popover.classList.add('hidden');
+    }
+}
+
+/**
+ * Global filter function for annotations - works with both job detail and batch
+ * @param {string} filter - Filter type (all, core_strength, gap, must_have, etc.)
+ */
+window.filterAnnotations = function(filter) {
+    // Use batch annotation manager if available and in batch context
+    if (batchAnnotationManager && currentBatchSidebar === 'annotation') {
+        batchAnnotationManager.setFilter(filter);
+    } else if (typeof annotationManager !== 'undefined' && annotationManager) {
+        // Fall back to global annotation manager (job detail page)
+        annotationManager.setFilter(filter);
     }
 }
 
