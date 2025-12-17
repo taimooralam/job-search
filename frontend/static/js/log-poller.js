@@ -37,8 +37,8 @@
             this.pollInterval = options.pollInterval || 200;
             this.errorInterval = options.errorInterval || 1000;
 
-            // Endpoint base
-            this.endpointBase = options.endpointBase || '/api/logs';
+            // Endpoint base (proxied through Flask to runner service)
+            this.endpointBase = options.endpointBase || '/api/runner/logs';
 
             // State tracking
             this.polling = false;

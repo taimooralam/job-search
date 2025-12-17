@@ -590,6 +590,61 @@ def get_queue_state():
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/logs/<run_id>", methods=["GET"])
+def poll_logs(run_id: str):
+    """
+    Poll logs for a pipeline operation.
+
+    Proxies to runner service's /api/logs/{run_id} endpoint.
+    Supports ?since=N&limit=M query parameters for pagination.
+    """
+    try:
+        # Forward query parameters
+        params = {
+            "since": request.args.get("since", 0),
+            "limit": request.args.get("limit", 100),
+        }
+        response = requests.get(
+            f"{RUNNER_URL}/api/logs/{run_id}",
+            headers=get_headers(),
+            params=params,
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/logs/<run_id>/status", methods=["GET"])
+def get_log_status(run_id: str):
+    """
+    Get status for a pipeline operation (without logs).
+
+    Proxies to runner service's /api/logs/{run_id}/status endpoint.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/api/logs/{run_id}/status",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/queue/<queue_id>/retry", methods=["POST"])
 def retry_queue_item(queue_id: str):
     """

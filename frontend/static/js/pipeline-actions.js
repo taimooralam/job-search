@@ -1103,7 +1103,7 @@ document.addEventListener('alpine:init', () => {
          */
         async _fetchFinalResult(runId) {
             try {
-                const response = await fetch(`/api/logs/${runId}/status`);
+                const response = await fetch(`/api/runner/logs/${runId}/status`);
                 if (!response.ok) {
                     console.warn(`[pipeline-actions] Failed to fetch final result: ${response.status}`);
                     return null;
