@@ -4262,56 +4262,90 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ---
 
-### WebSocket Connection Keepalive - Server-Side Ping Implementation (2025-12-16, Refined 2025-12-17)
+### WebSocket to HTTP Polling Refactoring (2025-12-17)
 
-**ENHANCEMENT: Implemented server-side WebSocket keepalive to prevent connection stale-outs during browser tab throttling - FIXED**:
-- **Issue**: WebSocket connections were dropping after 20-30 seconds of inactivity, particularly in background browser tabs due to browser tab throttling policies
-- **Root Cause**: Client-side ping approach alone is unreliable because:
-  - Browser reduces JavaScript execution frequency in inactive/background tabs (browsers throttle to 1Hz or less)
-  - Client-only ping requires browser timer to fire, but timers are paused in throttled tabs
-  - Server has no way to proactively detect stale connections without server-side keepalive
-  - Network infrastructure (proxies, firewalls, NAT) can close idle connections after 20-60 seconds
-- **Fix Applied**: Implemented bidirectional server-side keepalive mechanism across all transport layers:
-  1. **Flask Proxy** (`ws_proxy.py`):
-     - Added server-side ping thread sending pings to both browser and runner every 20 seconds
-     - Implemented 120-second stale detection (increased from 30s) - closes connections not responding to pings
-     - Pings bypass browser throttling by coming from server, not relying on client timers
-  2. **FastAPI WebSocket** (`websocket.py`):
-     - Added server-side ping loop per connection (20s interval, 120s timeout - increased from 30s)
-     - Tracks ConnectionState with last_ping_time and last_pong_time
-     - Detects stale clients and logs disconnection events with connection ID
-  3. **Client JavaScript** (`queue-websocket.js`):
-     - Increased client pong timeout from 5s to 25s (accommodates longer-running CV generation operations)
-     - Added server-ping response handling - responds to server pings immediately
-     - No longer relies on timers for keepalive; reacts to server pings instead
-     - Maintains connection health state for UI display
-  4. **Docker Runner** (`Dockerfile.runner`):
-     - Updated uvicorn startup with `--ws-ping-interval 20 --ws-ping-timeout 120` flags (timeout increased)
-     - Enables built-in uvicorn WebSocket keepalive at transport layer
-  5. **UI Health Indicator** (NEW):
-     - Added connection health indicator to base.html showing real-time WebSocket status
-     - States: Connected (green), Reconnecting (yellow), Disconnected (red)
-     - Provides visual feedback for connection reliability during long-running operations
+**ARCHITECTURE REFACTOR: Replaced WebSocket + SSE with HTTP polling for improved reliability - COMPLETED**:
+- **Motivation**: WebSocket/SSE connections can drop during long operations (78s CV generation). HTTP polling is more reliable because each request returns full state - no connection to lose.
+- **Changes**:
+  1. **Replaced WebSocket Queue Status** with HTTP polling (QueuePoller.js):
+     - Polls `/queue/state` every 1 second when active
+     - Polls `/queue/state` every 30 seconds when idle (browser tab inactive)
+     - State version counter in QueueManager detects changes - only updates on diff
+     - No connection state to track; each poll returns full truth
+  2. **Replaced SSE Log Streaming** with HTTP polling (LogPoller.js):
+     - Polls `/api/logs/{run_id}` every 200ms for "live tail" feel
+     - Returns log lines since last `seen_idx`
+     - Automatic reconnection on failure (exponential backoff)
+     - No EventSource connection to drop during long operations
+  3. **Removed WebSocket Infrastructure**:
+     - Deleted `runner_service/queue/websocket.py` - No longer needed
+     - Deleted `runner_service/app.py` `/ws/queue` endpoint
+     - Deleted `frontend/ws_proxy.py` - Flask proxy no longer needed
+     - Deleted `frontend/static/js/queue-websocket.js` - Replaced by QueuePoller
+     - Deleted `frontend/static/js/rxjs-utils.js` - RxJS no longer used (was for WebSocket reconnection patterns)
+  4. **New Frontend Polling Infrastructure**:
+     - `QueuePoller` class: Manages /queue/state polling with exponential backoff and version tracking
+     - `LogPoller` class: Manages /api/logs/{run_id} polling with per-line deduplication
+     - Integrated into Alpine.js stores for reactive updates
+  5. **Configuration Removed**:
+     - `RUNNER_API_SECRET` - No longer needed (polling uses same CORS setup as other API calls)
+     - `--ws-ping-interval` and `--ws-ping-timeout` uvicorn flags - No WebSocket to keep alive
+- **Files Deleted**:
+  - `runner_service/queue/websocket.py`
+  - `frontend/ws_proxy.py`
+  - `frontend/static/js/queue-websocket.js`
+  - `frontend/static/js/rxjs-utils.js`
 - **Files Modified**:
-  - `runner_service/websocket.py` - Added server-side ping loop with ConnectionState tracking and connection IDs
-  - `runner_service/ws_proxy.py` - Increased stale timeout to 120s with enhanced logging
-  - `frontend/static/js/queue-websocket.js` - Increased pong timeout to 25s, added health state tracking
-  - `frontend/templates/base.html` - Added connection health indicator UI
-  - `Dockerfile.runner` - Updated uvicorn keepalive timeouts
-  - `tests/runner/test_websocket_keepalive.py` - Added tests for timeout values and health status
-- **Architecture Impact**:
-  - WebSocket connections now stay alive indefinitely (pings every 20s)
-  - No reliance on client timers (works in throttled browser tabs)
-  - Stale connections detected and cleaned up within 120 seconds
-  - Multi-layer redundancy: client + FastAPI + Traefik proxy + uvicorn all implementing keepalive
-  - Increased timeout values accommodate long-running CV generation without false disconnections
+  - `frontend/static/js/queue-poller.js` - NEW: HTTP polling for queue state
+  - `frontend/static/js/log-poller.js` - NEW: HTTP polling for operation logs
+  - `frontend/templates/base.html` - Replaced WebSocket connection indicator with polling status
+  - `frontend/app.py` - Removed `/ws` proxy routes
+  - `Dockerfile.runner` - Removed WebSocket-specific uvicorn flags
+  - `docker-compose.runner.yml` - Removed Traefik WebSocket path handling
+  - Multiple frontend templates - Replaced EventSource with polling subscriptions
+- **Reliability Improvements**:
+  - No connection drops during 78s CV generation operations
+  - Polling-based "full state on each request" eliminates sync issues
+  - Automatic reconnection with exponential backoff prevents thundering herd
+  - Browser tab throttling no longer affects updates (polling doesn't rely on timers)
+  - Simpler architecture: HTTP polling is more reliable than WebSocket during network issues
+- **Performance**:
+  - Queue polling: 1 req/sec active → ~1KB/req + latency
+  - Log polling: 200ms interval → 5 req/sec but lower bandwidth
+  - Version-based deduplication prevents unnecessary UI updates
+  - Idle polling at 30s interval reduces backend load when user inactive
+- **Testing**:
+  - `tests/unit/frontend/test_queue_poller.js` - Unit tests for polling logic, backoff, deduplication
+  - `tests/unit/frontend/test_log_poller.js` - Tests for log streaming, error recovery
+  - Removed `tests/runner/test_websocket_auth.py` - No longer applicable
+  - Removed `tests/runner/test_websocket_keepalive.py` - No longer applicable
+- **Files Modified**:
+  - `runner_service/persistence.py` - Removed WebSocket queue state broadcasting
+  - `runner_service/models.py` - Removed WebSocket response models
+  - Frontend state management - Replaced WebSocket subjects with polling subscriptions
 - **Verification**:
-  - WebSocket connections remain active in background browser tabs
-  - No connection drops during 60+ second CV generation operations
-  - Server-side pings fire consistently on 20s interval
-  - Stale connections properly detected and closed
-  - Connection health indicator reflects real-time status
-- **Impact**: Queue status and real-time job monitoring remain reliable even when browser tab is inactive/throttled or CV generation is long-running. Users get visual feedback on connection health during extended operations. Enhanced logging with connection IDs improves debugging. ✅ **COMPLETED 2025-12-17**
+  - Queue status updates visible during 78s CV generation without connection drops
+  - Logs stream continuously during long operations
+  - Polling resumes after network outage with exponential backoff
+  - Browser tab throttling does not affect polling (HTTP requests fired from server, not timers)
+  - No WebSocket errors in browser console
+- **Migration Notes**:
+  - Removed `RUNNER_API_SECRET` from environment variables (no longer needed)
+  - No longer need uvicorn WebSocket configuration
+  - QueueManager/LogPoller handle all real-time updates through polling
+  - Alert systems still functional (push notifications, email) - polling provides fallback
+- **Impact**: More reliable real-time updates during long operations. Simplified architecture. No WebSocket connection drops. Polling provides implicit reconnection with backoff. ✅ **COMPLETED 2025-12-17**
+
+---
+
+### (ARCHIVED) WebSocket Connection Keepalive - Server-Side Ping Implementation (2025-12-16, Refined 2025-12-17)
+
+**DEPRECATED**: This implementation was replaced by HTTP polling refactoring (2025-12-17). Original WebSocket keepalive work is retained here for historical reference.
+
+**Original Issue**: WebSocket connections were dropping after 20-30 seconds of inactivity in browser background tabs.
+**Original Solution**: Implemented bidirectional server-side keepalive across transport layers (FastAPI, Flask proxy, uvicorn, client).
+**Outcome**: Successfully prevented drops but complexity remained high. HTTP polling proved simpler and more reliable.
+**Status**: ✅ **ARCHIVED 2025-12-17** (replaced by polling)
 
 ---
 

@@ -898,239 +898,191 @@ answers = await generator.generate_answers(
 
 ---
 
-## Real-Time Communication (NEW - 2025-12-14)
+## Real-Time Communication (UPDATED - 2025-12-17)
 
-### WebSocket Authentication & Queue Status (NEW - 2025-12-14)
+### HTTP Polling for Real-Time Updates (NEW - 2025-12-17)
 
-**Purpose**: Provide real-time job processing queue status and authentication for WebSocket connections.
+**Purpose**: Provide reliable real-time queue status and operation logs using HTTP polling instead of WebSocket/SSE. Polling eliminates connection drops during long operations (78s CV generation).
 
 **Location**:
-- Backend: `runner_service/auth.py` - `verify_websocket_token()` function
-- Backend: `runner_service/app.py` - `/ws/queue` endpoint
-- Frontend: `frontend/websocket.py`, `frontend/static/js/queue-websocket.js`
+- Frontend: `frontend/static/js/queue-poller.js` - QueuePoller class for queue state polling
+- Frontend: `frontend/static/js/log-poller.js` - LogPoller class for operation log polling
+- Frontend: `frontend/app.py` - `/api/queue/state` endpoint (returns JSON queue state)
+- Backend: `runner_service/routes/queue.py` - `/queue/state` endpoint returning full queue state
 
-**Architecture - Authentication Flow**:
+**Key Insight**: HTTP polling is more reliable than WebSocket/SSE during long operations because:
+- Each poll returns full state - no connection to drop
+- No EventSource stream to disconnect during 78s CV generation
+- Browser tab throttling doesn't affect polling (HTTP requests from server, not timers)
+- Automatic reconnection with exponential backoff on failure
+- Simpler architecture, fewer failure modes
+
+**Architecture - Polling Pattern**:
 
 ```
-Client → WebSocket Connection Attempt
-         │
-         ├─ Headers: Authorization: Bearer <token>
-         │
-         ▼
-Server: /ws/queue endpoint receives connection
-         │
-         ├─ CRITICAL: Call accept() before close() (ASGI spec compliance)
-         │
-         ▼
-verify_websocket_token() validates Bearer token
-         │
-         ├─ Auth disabled (dev mode) → Allow
-         ├─ Missing header → Return error 1008
-         ├─ Invalid format → Return error 1008
-         ├─ Wrong token → Return error 1008
-         └─ Valid token → Send queue state
-         │
-         ▼
-Client receives initial queue state or error JSON
-         │
-         ▼
-Real-time queue updates via JSON messages
+Frontend Request Loop
+    │
+    ├─ QueuePoller (queue state)
+    │   ├─ Active: Poll /queue/state every 1 second
+    │   ├─ Idle: Poll /queue/state every 30 seconds
+    │   ├─ Failure: Exponential backoff (500ms → 1s → 2s → 5s → max 30s)
+    │   └─ State version counter prevents unnecessary UI updates
+    │
+    └─ LogPoller (operation logs)
+        ├─ Poll /api/logs/{run_id} every 200ms
+        ├─ Returns log lines since last seen_idx
+        ├─ Automatic reconnection on network error
+        └─ Per-line deduplication prevents duplicates
+
+Server Responses
+    │
+    ├─ Queue State Response (/queue/state):
+    │   ├─ { queue_id, job_id, status, created_at, progress, ... }
+    │   ├─ version: incrementing counter for change detection
+    │   └─ Full queue array on each poll
+    │
+    └─ Log Response (/api/logs/{run_id}):
+        ├─ { logs: [...], seen_idx: N }
+        ├─ Incremental - only new lines since last poll
+        └─ Auto-reconnects on 5xx errors
 ```
 
 **Key Components**:
 
-1. **verify_websocket_token()** (`runner_service/auth.py`):
-   - Takes FastAPI WebSocket instance
-   - Returns tuple: (is_valid: bool, error_message: Optional[str])
-   - Checks `Authorization` header for `Bearer <token>` format
-   - Compares token against `RUNNER_API_SECRET` environment variable
-   - Supports auth bypass via `AUTH_REQUIRED=false` (development)
-   - Error messages include helpful hints (e.g., "Bearer <token>" format)
+1. **QueuePoller** (`frontend/static/js/queue-poller.js`):
+   - Maintains active/idle state based on user activity
+   - Polls `/queue/state` endpoint at adaptive intervals:
+     - Active (user scrolling, clicking): 1 second
+     - Idle (no interaction for 60s): 30 seconds
+   - Version-based deduplication: Only updates UI if state.version changed
+   - Exponential backoff on network errors (prevents thundering herd)
+   - Integrated with Alpine.js for reactive updates
+   - Example usage:
+     ```javascript
+     const poller = new QueuePoller('/queue/state', {
+       activeInterval: 1000,
+       idleInterval: 30000,
+       onUpdate: (state) => { /* update Alpine store */ }
+     });
+     poller.start();
+     ```
 
-2. **WebSocket Endpoint** (`runner_service/app.py` - `/ws/queue`):
-   - **CRITICAL ASGI COMPLIANCE**: Always calls `await websocket.accept()` before `close()`
-     - Per ASGI spec, WebSocket must accept handshake before closing
-     - Without accept(), endpoint returns HTTP 403 Forbidden instead of proper close codes
-   - Flow:
-     1. Accept WebSocket (ASGI requirement)
-     2. Verify authentication
-     3. If auth fails: Send close frame with code 1008 (Policy Violation) + JSON error
-     4. If auth passes: Send initial queue state (JSON)
-     5. Maintain connection for real-time updates
-     6. If Redis unavailable: Send close code 1011 (Server Error) + error JSON
+2. **LogPoller** (`frontend/static/js/log-poller.js`):
+   - Polls `/api/logs/{run_id}` endpoint for operation logs
+   - 200ms interval provides "live tail" feel without overwhelming server
+   - Returns only new lines since `seen_idx` (incremental updates)
+   - Per-line deduplication (checks line_id) prevents duplicate renders
+   - Automatic reconnection with exponential backoff
+   - Example usage:
+     ```javascript
+     const logPoller = new LogPoller(`/api/logs/${run_id}`, {
+       interval: 200,
+       onLogs: (lines) => { /* add to CLI panel */ }
+     });
+     logPoller.start();
+     ```
 
-3. **Error Response Format**:
-   ```json
-   {
-     "error": "Missing Authorization header",
-     "code": 1008,
-     "timestamp": "2025-12-14T23:39:00Z"
-   }
-   ```
+3. **Queue State Endpoint** (`frontend/app.py` - `/api/queue/state`):
+   - Returns full queue state as JSON
+   - Response includes version counter for change detection
+   - Called by QueuePoller every 1-30 seconds
+   - Example response:
+     ```json
+     {
+       "version": 42,
+       "queue": [
+         { "queue_id": "abc", "job_id": "123", "status": "running", ... },
+         { "queue_id": "def", "job_id": "456", "status": "pending", ... }
+       ]
+     }
+     ```
+
+4. **Log State Endpoint** (`runner_service/routes/operations.py` - `/api/logs/{run_id}`):
+   - Returns incremental log updates
+   - Response format:
+     ```json
+     {
+       "logs": [
+         { "line_id": "uuid", "timestamp": "...", "message": "...", "level": "INFO" }
+       ],
+       "seen_idx": 45,
+       "done": false
+     }
+     ```
 
 **Configuration**:
 
-| Variable | Purpose | Default | Example |
-|----------|---------|---------|---------|
-| `RUNNER_API_SECRET` | Bearer token for WebSocket auth | (required) | `sk-abcd1234` |
-| `AUTH_REQUIRED` | Enable/disable auth (dev mode) | `true` | `false` |
-| `REDIS_URL` | Redis connection for queue state | (required) | `redis://localhost:6379` |
+| Parameter | Value | Purpose | Notes |
+|-----------|-------|---------|-------|
+| QueuePoller active interval | 1 second | Frequency when user active | Responsive feel |
+| QueuePoller idle interval | 30 seconds | Frequency when user idle | Reduce backend load |
+| QueuePoller idle timeout | 60 seconds | User inactivity threshold | Starts idle polling |
+| LogPoller interval | 200 ms | Log poll frequency | Live tail feel (5 req/sec) |
+| Backoff initial delay | 500 ms | First retry after failure | Exponential sequence |
+| Backoff max delay | 30 seconds | Max time between retries | Prevents thundering herd |
+
+**Data Flow - During Long Operation (e.g., 78s CV Generation)**:
+
+```
+t=0s: User clicks "Generate CV"
+     │
+     ├─ QueuePoller starts polling /queue/state (active)
+     │   Queue shows: [{ status: "pending" }]
+     │
+t=1s: Queue item moves to "running"
+     │   QueuePoller detects version change → updates UI
+     │   LogPoller starts polling /api/logs/{run_id}
+     │
+t=5s: CV generation starts
+     ├─ QueuePoller continues (1s interval) - still showing "running"
+     ├─ LogPoller streams logs (200ms interval) - logs appear in CLI
+     │
+t=45s: Long LLM processing (no log changes)
+     ├─ QueuePoller still running, version unchanged - no UI update
+     ├─ LogPoller polling but no new logs (still waiting for LLM)
+     │
+t=78s: CV complete
+     ├─ QueuePoller detects status→"completed", version increments
+     │   UI updates badge to green
+     ├─ LogPoller receives final log line
+     │   CLI shows completion message
+     │
+t=79s: User navigates away
+     └─ QueuePoller.stop() and LogPoller.stop() called
+        No more polling
+```
+
+**Reliability Advantages**:
+
+1. **No Connection State**: Each poll is independent - no connection to drop
+2. **Browser Throttling Immune**: HTTP requests not affected by JavaScript timer throttling
+3. **Network Resilient**: Automatic reconnection with backoff on any failure
+4. **Version-Based Deduplication**: Prevents unnecessary UI updates
+5. **Incremental Updates**: LogPoller only returns new lines, reducing bandwidth
+6. **Graceful Degradation**: Polling continues even during network issues
 
 **Testing**:
 
-- `tests/runner/test_websocket_auth.py` - 15 unit tests covering:
-  - Auth disabled mode (all connections allowed)
-  - Missing Authorization header (error 1008)
-  - Invalid Bearer format (error 1008 with hint)
-  - Invalid token (error 1008)
-  - Valid token (connection established)
-  - Redis unavailable (error 1011)
-  - ASGI compliance (accept before close)
+- `tests/unit/frontend/test_queue_poller.js` - QueuePoller logic:
+  - Active/idle interval switching
+  - Version-based deduplication
+  - Exponential backoff on network errors
+  - UI update triggering
 
-**Related Features**:
+- `tests/unit/frontend/test_log_poller.js` - LogPoller logic:
+  - Incremental log streaming
+  - Per-line deduplication
+  - Reconnection with backoff
+  - Graceful stop
 
-- Real-time queue visibility on frontend `/queue` page
-- Live status badges on job rows
-- Queue dropdowns in header for quick status access
-- Client-side queue state synchronization via `queue-websocket.js` and `queue-store.js`
+**Migration from WebSocket**:
 
-**Impact**: WebSocket connections now properly authenticated and fully ASGI-compliant. No more HTTP 403 errors. Clear error messages aid debugging. Real-time queue visibility works reliably.
+- Removed: WebSocket endpoints, RUNNER_API_SECRET, RxJS utilities
+- Removed: WebSocket keepalive infrastructure (pings/pongs)
+- Added: QueuePoller and LogPoller for HTTP polling
+- Benefit: Simpler architecture, more reliable during long operations
 
-### WebSocket Connection Keepalive (NEW - 2025-12-16, Refined 2025-12-17)
-
-**Purpose**: Maintain persistent WebSocket connections in browser background tabs and prevent stale connection drops from network infrastructure (proxies, NAT, firewalls). Optimized timeouts to accommodate long-running CV generation operations without false disconnections.
-
-**Problem Addressed**:
-- WebSocket connections drop after 20-30 seconds of inactivity in browser background tabs
-- Client-side ping alone unreliable because browser throttles JavaScript timers in inactive tabs
-- Network infrastructure (reverse proxies, firewalls, NAT) close idle connections without keepalive
-- CV generation operations can take 60+ seconds, requiring more generous timeout windows
-- Users need visual feedback on connection health during long-running operations
-- Result: Queue status not visible, real-time updates fail in background tabs, false disconnections during processing
-
-**Architecture - Multi-Layer Keepalive Strategy**:
-
-```
-Browser Tab (Active/Inactive)
-  │
-  ├─ WebSocket API (native browser support)
-  │  └─ Responds to server pings (event-driven, bypasses throttling)
-  │  └─ Connection health indicator (UI feedback: connected/reconnecting/disconnected)
-  │
-  ▼
-Traefik Reverse Proxy (HTTPS)
-  │
-  └─ Maintains connection for long-lived WebSocket streams
-  │
-  ▼
-FastAPI WebSocket Endpoint (/ws/queue)
-  │
-  ├─ Sends server-side pings every 20 seconds
-  ├─ Tracks last_ping_time and last_pong_time per connection
-  ├─ Detects stale connections (no pong for 120s - increased tolerance)
-  ├─ Closes unresponsive clients gracefully
-  ├─ Logs disconnection events with connection ID
-  │
-  ▼
-uvicorn ASGI Server
-  │
-  └─ Built-in WebSocket keepalive
-     - --ws-ping-interval 20 (send pings every 20s)
-     - --ws-ping-timeout 120 (wait 120s for pong - increased tolerance)
-```
-
-**Key Components**:
-
-1. **Server-Side Ping Loop** (`runner_service/websocket.py`):
-   - Per-connection async task that runs for duration of connection
-   - Sends `{"type": "ping", "timestamp": "2025-12-17T..."}` frame every 20 seconds
-   - Tracks connection state: last_ping_time, last_pong_time, connection_id
-   - Detects stale clients: If no pong for 120s (increased from 30s), closes connection with code 1000
-   - Logs disconnection events with reason and connection ID for debugging
-   - Graceful cleanup on connection end
-
-2. **Server-Side Ping Thread** (`runner_service/ws_proxy.py`):
-   - Separate ping thread maintains Flask proxy connection to browser
-   - Sends pings to both client (browser) and upstream (FastAPI)
-   - Stale detection: Closes connection if no response for 120 seconds (increased from 30s)
-   - Prevents proxy from timing out connection
-   - Enhanced logging with connection diagnostics
-
-3. **Client Event Handler** (`frontend/static/js/queue-websocket.js`):
-   - Listens for server `ping` messages (event-driven, bypasses throttling)
-   - Immediately responds with `pong` message
-   - No reliance on client-side timers (works in throttled tabs)
-   - Detects server timeout: If no data for 25s (increased from 5s), raises "pong timeout" error
-   - Maintains connection health state: connected/reconnecting/disconnected
-   - Updates UI indicator in real-time
-
-4. **UV icorn Transport Layer** (`Dockerfile.runner`):
-   - Added `--ws-ping-interval 20 --ws-ping-timeout 120` flags (timeout increased from 30s)
-   - Enables built-in ASGI-level keepalive
-   - Catches stale connections before application layer
-   - Complements application-level keepalive
-
-5. **Connection Health Indicator UI** (`frontend/templates/base.html`):
-   - Real-time WebSocket connection status display
-   - States: Green (connected), Yellow (reconnecting), Red/Hidden (disconnected)
-   - Provides visual feedback during long-running operations
-   - Uses Alpine.js to monitor `window.queueWebSocket.connectionState`
-
-**Configuration**:
-
-| Component | Parameter | Value | Purpose | Updated |
-|-----------|-----------|-------|---------|---------|
-| FastAPI | Server ping interval | 20 seconds | Frequency of server→client pings | - |
-| FastAPI | Stale detection timeout | 120 seconds (was 30s) | Time without pong before close | 2025-12-17 |
-| Client JS | Pong timeout | 25 seconds (was 5s) | Detect unresponsive server during long operations | 2025-12-17 |
-| uvicorn | --ws-ping-interval | 20 seconds | Transport-layer keepalive | - |
-| uvicorn | --ws-ping-timeout | 120 seconds (was 30s) | Transport-layer stale detection | 2025-12-17 |
-| Proxy | Stale detection timeout | 120 seconds (was 30s) | Proxy keepalive timeout | 2025-12-17 |
-
-**Data Flow - Connection Lifecycle**:
-
-```
-Browser Connect to /ws/queue
-       │
-       ▼
-FastAPI accepts connection, starts server ping loop
-       │
-       ▼ (every 20 seconds)
-Server sends {"type": "ping", "timestamp": "..."}
-       │
-       ▼
-Client receives ping message (event-driven)
-       │
-       ▼
-Client immediately responds {"type": "pong", "timestamp": "..."}
-       │
-       ▼
-Server updates last_pong_time
-       │
-       ▼ (if no pong for 30 seconds)
-Server closes connection with code 1000
-       │
-       ▼
-Client detects close, attempts reconnect
-```
-
-**Advantages of Server-Side Keepalive**:
-
-1. **Browser Throttling Bypass**: Server pings are delivered by browser WebSocket API, bypassing JavaScript timer throttling
-2. **Multi-Layer Redundancy**: Application layer (FastAPI) + transport layer (uvicorn) + proxy layer (Traefik) all participating
-3. **Stale Detection**: Server-side awareness of dead connections enables cleanup
-4. **Energy Efficient**: 20-second interval balances responsiveness vs battery usage
-5. **Network-Aware**: Works with proxies, firewalls, NAT (which expect periodic traffic)
-
-**Testing & Validation**:
-
-- WebSocket connections remain active in background browser tabs
-- Connections survive 5+ minutes of browser inactivity without drop
-- Stale clients disconnected cleanly within 30 seconds
-- Ping/pong frames not visible in browser UI (transparent keepalive)
-- Real-time queue updates continue even when tab inactive
-
-**Impact**: Queue status and real-time job monitoring now reliable across all browser tab states (active, background, throttled). Users can safely switch tabs and leave application running in background without losing connection continuity.
+**Impact**: Real-time queue status and logs now reliable during long CV generation (78s). No connection drops. Simpler architecture. Browser tab throttling no longer affects updates. Polling provides implicit reconnection with backoff on network failures.
 
 ### Queue Manager & State Management (UPDATED - 2025-12-15)
 
