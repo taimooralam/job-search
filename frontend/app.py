@@ -87,29 +87,9 @@ else:
     if _import_error:
         print(f"   Import errors: {_import_error}")
 
-# Import and initialize WebSocket support
-ws_bp = None
-_ws_import_error = None
-
-try:
-    # Try frontend.ws_proxy first (correct module)
-    from frontend.ws_proxy import ws_bp, init_websocket
-except ImportError as e1:
-    try:
-        # Fallback for direct execution (python frontend/app.py)
-        from ws_proxy import ws_bp, init_websocket
-    except ImportError as e2:
-        _ws_import_error = f"Tried: frontend.ws_proxy ({e1}), ws_proxy ({e2})"
-
-if ws_bp:
-    print(f"✅ Imported WebSocket blueprint")
-    app.register_blueprint(ws_bp)
-    init_websocket(app)
-    print(f"✅ WebSocket support initialized at /ws/queue")
-else:
-    print(f"⚠️  WebSocket blueprint not available (queue real-time updates disabled)")
-    if _ws_import_error:
-        print(f"   Import errors: {_ws_import_error}")
+# WebSocket support removed - using HTTP polling instead
+# Queue updates via QueuePoller (1s interval)
+# Log streaming via LogPoller (200ms interval)
 
 # Import country code extraction service
 try:

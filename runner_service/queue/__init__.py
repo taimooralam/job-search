@@ -2,16 +2,14 @@
 Queue Package
 
 Provides Redis-backed persistent queue management for pipeline jobs.
-Supports WebSocket broadcasting for real-time queue state updates.
+Exposes state via HTTP polling endpoints.
 """
 
 from .models import QueueItem, QueueItemStatus
 from .manager import QueueManager
-from .websocket import QueueWebSocketManager
 
 __all__ = [
     "QueueItem",
     "QueueItemStatus",
     "QueueManager",
-    "QueueWebSocketManager",
 ]

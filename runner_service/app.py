@@ -46,9 +46,9 @@ from .models import (
 )
 from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
-from .auth import verify_token, verify_websocket_token
+from .auth import verify_token
 from .config import settings, validate_config_on_startup
-from .routes import operations_router, contacts_router, master_cv_router
+from .routes import operations_router, contacts_router, master_cv_router, log_polling_router
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +81,7 @@ if settings.cors_origins_list:
 app.include_router(operations_router)
 app.include_router(contacts_router)
 app.include_router(master_cv_router)
+app.include_router(log_polling_router)
 
 
 @dataclass
@@ -107,7 +108,6 @@ _service_start_time = time.time()
 
 # Queue management (Redis-backed, optional)
 _queue_manager: Optional["QueueManager"] = None
-_ws_manager: Optional["QueueWebSocketManager"] = None
 
 
 def _status_url(run_id: str) -> str:
@@ -1079,32 +1079,20 @@ async def get_diagnostics() -> DiagnosticsResponse:
 @app.on_event("startup")
 async def startup_queue_manager():
     """Initialize queue manager on startup if Redis is configured."""
-    global _queue_manager, _ws_manager
+    global _queue_manager
 
     if not settings.redis_url:
         logger.info("Redis not configured, queue persistence disabled")
         return
 
     try:
-        from .queue import QueueManager, QueueWebSocketManager
+        from .queue import QueueManager
 
         _queue_manager = QueueManager(settings.redis_url)
         await _queue_manager.connect()
 
-        # Start cross-runner event listener for multi-instance WebSocket support
+        # Start cross-runner event listener for multi-instance state sync
         await _queue_manager.start_event_listener()
-
-        _ws_manager = QueueWebSocketManager(_queue_manager)
-
-        # Subscribe to queue events for WebSocket broadcasting
-        async def broadcast_event(event: dict):
-            if _ws_manager:
-                await _ws_manager.broadcast({
-                    "type": "queue_update",
-                    "payload": event
-                })
-
-        await _queue_manager.subscribe(broadcast_event)
 
         # Restore any interrupted runs from previous instance
         restored = await _queue_manager.restore_interrupted_runs()
@@ -1121,88 +1109,36 @@ async def startup_queue_manager():
     except Exception as e:
         logger.error(f"Failed to initialize queue manager: {e}")
         _queue_manager = None
-        _ws_manager = None
 
 
 @app.on_event("shutdown")
 async def shutdown_queue_manager():
     """Disconnect queue manager on shutdown."""
-    global _queue_manager, _ws_manager
+    global _queue_manager
 
     if _queue_manager:
         await _queue_manager.disconnect()
         _queue_manager = None
-        _ws_manager = None
         logger.info("Queue manager disconnected")
-
-
-@app.websocket("/ws/queue")
-async def queue_websocket(websocket: WebSocket):
-    """
-    WebSocket endpoint for real-time queue state updates.
-
-    Provides:
-    - Initial queue state on connect
-    - Real-time updates as queue changes
-    - Client commands: retry, cancel, dismiss, refresh
-
-    Authentication:
-    - Validates Bearer token from Authorization header
-    - Uses same secret as REST API endpoints (RUNNER_API_SECRET)
-
-    Note: WebSocket connections MUST call accept() before close() to avoid
-    Uvicorn returning HTTP 403 Forbidden (per ASGI spec).
-    """
-    # Diagnostic logging for connection debugging
-    client_host = websocket.client.host if websocket.client else "unknown"
-    logger.info(f"[WS] WebSocket connection attempt from {client_host}")
-    logger.debug(f"[WS] Headers: {dict(websocket.headers)}")
-    logger.debug(f"[WS] Path: {websocket.url.path}")
-
-    # Verify authentication BEFORE accepting (but must accept to send error)
-    is_authenticated, auth_error = verify_websocket_token(websocket)
-
-    if not is_authenticated:
-        # CRITICAL: Must accept() before close() to avoid HTTP 403 response.
-        # Per ASGI spec, closing without accepting results in 403 Forbidden.
-        logger.warning(f"[WS] Authentication failed for {client_host}: {auth_error}")
-        await websocket.accept()
-        await websocket.send_json({
-            "type": "error",
-            "payload": {
-                "message": f"Authentication failed: {auth_error}",
-                "code": "AUTH_FAILED"
-            }
-        })
-        await websocket.close(code=1008, reason="Authentication failed")
-        return
-
-    logger.info(f"[WS] Queue manager configured: {_ws_manager is not None}")
-
-    if not _ws_manager:
-        # CRITICAL: Must accept() before close() to avoid HTTP 403 response.
-        logger.warning(f"[WS] Queue not configured (Redis unavailable), sending error to client")
-        await websocket.accept()
-        await websocket.send_json({
-            "type": "error",
-            "payload": {
-                "message": "Queue service not configured. Redis may be unavailable.",
-                "code": "QUEUE_NOT_CONFIGURED"
-            }
-        })
-        await websocket.close(code=1011, reason="Queue not configured")
-        return
-
-    logger.info(f"[WS] Accepting authenticated WebSocket connection from {client_host}")
-    await _ws_manager.run_connection(websocket)
 
 
 @app.get("/queue/state")
 async def get_queue_state():
     """
-    Get current queue state (REST fallback for WebSocket).
+    Get current queue state for polling.
 
     Returns queue state with pending, running, failed, and history items.
+    Includes state_version for efficient change detection - clients can
+    compare versions to know if state has changed since last poll.
+
+    Response:
+        - pending[]: Jobs waiting in queue (position 1 = next to run)
+        - running[]: Currently executing jobs
+        - failed[]: Jobs that errored (retry available)
+        - history[]: Recently completed jobs
+        - stats: Count summaries
+        - state_version: Increments on each queue change
+        - timestamp: Server time for "last updated X ago" display
     """
     if not _queue_manager:
         return {
@@ -1217,11 +1153,15 @@ async def get_queue_state():
                 "total_completed_today": 0,
             },
             "queue_enabled": False,
+            "state_version": "0",
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     state = await _queue_manager.get_state()
     result = state.to_dict()
     result["queue_enabled"] = True
+    result["state_version"] = await _queue_manager.get_state_version()
+    result["timestamp"] = datetime.utcnow().isoformat()
     return result
 
 
