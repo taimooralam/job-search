@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-17 (Annotation Popover Auto-Save UX Improvement)
+**Last Updated**: 2025-12-17 (Batch Page Interactive Sidebars & Tri-State Badges)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,70 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-17 Session 16): Batch Page Interactive Sidebars & Tri-State Badges
+
+**ENHANCEMENT: Batch Page Advanced UI with Tri-State Color Indicators - COMPLETED**:
+- **Feature**: Rich interactive batch page with smart color-coded badges and context-aware sidebars for efficient bulk job processing
+- **Tri-State Color System for JD/RS/CV Badges**:
+  - **Gray**: No data (not extracted/researched/generated)
+  - **Orange**: Partial data (extracted but no annotations, researched but no contacts, generated but not edited)
+  - **Green**: Complete and actionable (has annotations/contacts/edited CV) - clickable to open sidebars
+  - **Logic**:
+    - JD: gray=none, orange=extracted_jd, green=has_jd_annotations (clickable)
+    - RS: gray=none, orange=company_research|role_skills, green=has_contacts (clickable)
+    - CV: gray=none, orange=generated_cv|cv_text, green=cv_editor_state (clickable)
+- **Interactive Sidebars** (opened by clicking green badges):
+  - **JD Annotation Panel** (`_annotation_sidebar_content.html`):
+    - Read-only display of JD with highlights
+    - List of all annotations with type, relevance, passion level, identity level
+    - Grouped by annotation type for clarity
+  - **Contacts Sidebar** (`_contacts_sidebar_content.html`):
+    - Primary contacts list with names, titles, companies
+    - Secondary contacts (agencies, recruiters)
+    - Action buttons: "Generate InMail" / "Generate LinkedIn Connect" message
+    - Real vs synthetic contact badges
+  - **CV Editor Sidebar** (`_cv_sidebar_content.html`):
+    - Display of edited CV with TipTap editor preview
+    - Export options (docx, pdf, markdown)
+    - Quick copy-to-clipboard button
+- **Application URL Quick Entry**:
+  - Inline link icon next to job title
+  - Green when URL exists, gray/hidden when empty
+  - Popover for quick URL entry with save button
+  - Keyboard shortcuts: Enter to save, Escape to cancel
+  - Persists to MongoDB via `saveBatchJobUrl()` AJAX call
+- **New Frontend Architecture**:
+  - `batch-sidebars.js` - Alpine.js event handlers for opening/closing sidebars
+  - `_batch_sidebars.html` - Container shell for 3 sidebars with HTMX integration
+  - Per-sidebar content partials loaded dynamically via HTMX
+  - Sidebars auto-close when clicking outside or switching jobs
+- **Backend Integration** (3 new Flask HTMX endpoints):
+  - `GET /partials/batch-annotation/<job_id>` - Fetch JD annotation content
+  - `GET /partials/batch-contacts/<job_id>` - Fetch contacts with actions
+  - `GET /partials/batch-cv/<job_id>` - Fetch CV editor content
+  - All endpoints are @login_required and handle missing data gracefully
+- **Files Created**:
+  - `frontend/static/js/batch-sidebars.js` - Alpine.js sidebar management (200+ lines)
+  - `frontend/templates/partials/batch/_batch_sidebars.html` - Sidebar container shell
+  - `frontend/templates/partials/batch/_annotation_sidebar_content.html` - JD annotation panel
+  - `frontend/templates/partials/batch/_contacts_sidebar_content.html` - Contacts & outreach actions
+  - `frontend/templates/partials/batch/_cv_sidebar_content.html` - CV display & export
+- **Files Modified**:
+  - `frontend/templates/partials/batch_job_single_row.html` - Tri-state badges, URL popover, sidebar open handlers
+  - `frontend/templates/batch_processing.html` - Include batch sidebars container
+  - `frontend/app.py` - 3 new HTMX endpoints for sidebar content
+  - `frontend/templates/base.html` - Added Alpine.js data attributes for page context
+- **UX Improvements**:
+  - Batch page now shows data completeness at a glance with color coding
+  - Green badges are clickable to drill into specific data without page navigation
+  - Sidebars appear inline without page reloads via HTMX
+  - Application URLs can be set directly from batch view for quick reference
+  - Improved batch processing workflow: scan → identify gaps → act → move on
+- **Impact**: Users can now efficiently manage all batch job data (JD annotations, contacts, CV) from a single view. Tri-state colors provide immediate visibility into data completeness. Interactive sidebars allow quick context switching without leaving batch view. URL quick entry streamlines job tracking.
+- **Documentation**: Updated `plans/architecture.md` with new Batch Page UI Architecture section
 
 ---
 

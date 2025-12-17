@@ -5195,6 +5195,302 @@ Tab context menu allows tab management
 
 ---
 
+## Batch Page Advanced UI Architecture (NEW - 2025-12-17)
+
+### Overview
+Enhanced batch processing page with intelligent tri-state color indicators for data completeness and context-aware interactive sidebars for efficient bulk job data management.
+
+### Core Features
+
+#### 1. Tri-State Badge System
+
+**JD Badge Logic**:
+```python
+has_jd_extraction = job.extracted_jd or job.processed_jd
+jd_annotations_list = job.jd_annotations.annotations if job.jd_annotations else []
+has_jd_annotations = len(jd_annotations_list) > 0
+jd_state = 'green' if has_jd_annotations else ('orange' if has_jd_extraction else 'gray')
+```
+
+- **Gray**: No JD extracted
+- **Orange**: JD extracted but no annotations (data exists, not yet analyzed)
+- **Green**: Has JD annotations (actionable, clickable to open annotation panel)
+
+**RS Badge Logic**:
+```python
+has_research = job.company_research or job.role_skills
+primary_contacts = job.primary_contacts or []
+secondary_contacts = job.secondary_contacts or []
+has_contacts = len(primary_contacts) > 0 or len(secondary_contacts) > 0
+rs_state = 'green' if has_contacts else ('orange' if has_research else 'gray')
+```
+
+- **Gray**: No research done
+- **Orange**: Research exists (company_research or role_skills) but no contacts extracted
+- **Green**: Has contacts (actionable, clickable to open contacts panel)
+
+**CV Badge Logic**:
+```python
+has_cv_generated = job.generated_cv or job.cv_output or job.cv_text
+has_cv_edited = job.cv_editor_state is defined and job.cv_editor_state
+cv_state = 'green' if has_cv_edited else ('orange' if has_cv_generated else 'gray')
+```
+
+- **Gray**: No CV generated
+- **Orange**: CV generated but not edited in editor (raw output, needs personalization)
+- **Green**: CV edited in editor (personalized and ready, clickable to open CV panel)
+
+**Visual Styling**:
+- Gray: `bg-gray-100 text-gray-400` (muted)
+- Orange: `bg-orange-100 text-orange-600` (warning, attention needed)
+- Green: `bg-green-100 text-green-700` (success, clickable with hover effect)
+- All badges have `transition-colors` for smooth interactions
+
+#### 2. Interactive Sidebars
+
+**Architecture**:
+- Container: `_batch_sidebars.html` - 3-column layout with HTMX integration
+- Content loaded dynamically via HTMX when badges are clicked
+- Sidebars managed by `batch-sidebars.js` Alpine.js component
+- Auto-close on outside clicks or when switching jobs
+- Smooth slide-in/slide-out animations
+
+**Sidebar 1: JD Annotation Panel** (`_annotation_sidebar_content.html`):
+- **Display**: Read-only view of JD with highlight annotations
+- **Content**:
+  - Full JD text with `<mark>` highlights for annotated sections
+  - Grouped list of annotations:
+    - Annotation type (skill, responsibility, qualification, concern, reframe)
+    - Relevant text snippet
+    - Relevance score (0-5)
+    - Requirement type (must_have, nice_to_have, gap, concern)
+    - Passion level (love_it, enjoy, neutral, tolerate, avoid)
+    - Identity level (core_identity, strong_identity, developing, peripheral, not_identity)
+  - Search/filter box to find specific annotations
+- **Interactions**: Read-only (no edits from batch view)
+
+**Sidebar 2: Contacts Panel** (`_contacts_sidebar_content.html`):
+- **Display**: Primary and secondary contacts with action buttons
+- **Content**:
+  - Primary contacts section:
+    - Contact name, title, company
+    - Real vs synthetic badge (`is_synthetic` field)
+    - "Generate InMail" button
+    - "Generate LinkedIn Connect" button
+  - Secondary contacts (agencies, recruiters):
+    - Same fields as primary
+    - Optional: Specialization info
+- **Interactions**:
+  - Clicking "Generate InMail" triggers `/api/runner/operations/{job_id}/generate-inmails/stream`
+  - Clicking "Generate Connect" triggers `/api/runner/operations/{job_id}/generate-connections/stream`
+  - Both operations stream logs to CLI panel
+  - Real contacts get priority (visual distinction)
+
+**Sidebar 3: CV Editor Panel** (`_cv_sidebar_content.html`):
+- **Display**: Generated/edited CV with export options
+- **Content**:
+  - CV content preview (markdown or HTML)
+  - If `cv_editor_state` exists: Show TipTap editor state rendered as HTML
+  - Export buttons:
+    - "Export as DOCX" - `/api/jobs/{job_id}/export-cv/docx`
+    - "Export as PDF" - `/api/jobs/{job_id}/export-cv/pdf`
+    - "Export as Markdown" - `/api/jobs/{job_id}/export-cv/markdown`
+  - Copy-to-clipboard button for quick copying
+- **Interactions**:
+  - Export buttons trigger downloads
+  - Copy button shows brief "Copied!" toast
+
+#### 3. Application URL Quick Entry
+
+**Location**: Inline with job title in each row
+
+**Behavior**:
+- Icon: Link symbol (chain icon)
+- **Green** when URL exists, clickable
+- **Gray + hidden on hover** when no URL (appears on row hover)
+- Clicking icon opens popover
+
+**Popover UI**:
+- Input field with placeholder "https://..."
+- "Save" button (disabled until URL entered)
+- Keyboard shortcuts:
+  - Enter: Save and close
+  - Escape: Close without saving
+- Loading state: Spinner on button during save
+- Persists to MongoDB via `saveBatchJobUrl()` AJAX call
+
+**Endpoint**: `POST /api/jobs/{job_id}/set-application-url`
+```json
+{
+  "url": "https://example.com/apply"
+}
+```
+
+#### 4. Frontend Components
+
+**File Structure**:
+```
+frontend/static/js/
+  └── batch-sidebars.js          (220 lines) - Alpine.js management
+frontend/templates/partials/batch/
+  ├── _batch_sidebars.html       (Container shell)
+  ├── _annotation_sidebar_content.html
+  ├── _contacts_sidebar_content.html
+  └── _cv_sidebar_content.html
+frontend/templates/
+  └── batch_processing.html      (Include sidebars)
+frontend/templates/partials/
+  └── batch_job_single_row.html  (Tri-state badges + URL popover)
+```
+
+**batch-sidebars.js Functions**:
+```javascript
+openBatchAnnotationPanel(jobId)    // Opens JD annotation sidebar
+openBatchContactsSidebar(jobId)    // Opens contacts sidebar
+openBatchCVEditor(jobId)           // Opens CV editor sidebar
+closeBatchSidebars()               // Closes all sidebars
+saveBatchJobUrl(jobId, url)        // AJAX save application URL
+```
+
+#### 5. Backend Endpoints (3 new HTMX endpoints)
+
+**GET /partials/batch-annotation/<job_id>**
+- Returns: `_annotation_sidebar_content.html` partial
+- Query job from MongoDB with ObjectId
+- Fetch jd_annotations, extracted_jd
+- Render annotations grouped by type
+- @login_required
+
+**GET /partials/batch-contacts/<job_id>**
+- Returns: `_contacts_sidebar_content.html` partial
+- Query job from MongoDB
+- Fetch primary_contacts, secondary_contacts
+- Add action buttons for InMail/Connect generation
+- @login_required
+
+**GET /partials/batch-cv/<job_id>**
+- Returns: `_cv_sidebar_content.html` partial
+- Query job from MongoDB
+- Fetch cv_editor_state or generated_cv or cv_output
+- Render export buttons with endpoints
+- @login_required
+
+**Error Handling**:
+- Missing job → return 404 with "Job not found" message
+- Missing data → return empty state with appropriate message
+- Auth failure → redirect to login
+
+#### 6. Data Flow
+
+```
+Batch Processing Page Loaded
+    ↓
+User clicks green badge (JD/RS/CV)
+    ↓
+openBatch[Type]Panel(jobId) triggered
+    ↓
+HTMX GET /partials/batch-[type]/<job_id>
+    ↓
+Backend fetches job data + renders partial
+    ↓
+Sidebar slides in with content
+    ↓
+User can interact (generate messages, export, etc)
+    ↓
+Click outside or switch job → sidebar closes
+```
+
+**Application URL Save Flow**:
+```
+User clicks link icon
+    ↓
+Popover opens with input field
+    ↓
+User enters URL and presses Enter
+    ↓
+saveBatchJobUrl(jobId, url) AJAX POST /api/jobs/{job_id}/set-application-url
+    ↓
+MongoDB updates job.application_url
+    ↓
+Icon turns green, popover closes
+```
+
+#### 7. Integration Points
+
+**With Batch Processing Page**:
+- Sidebars container lives inside `batch_processing.html`
+- Positioned as off-canvas panels (right side)
+- Backdrop click closes sidebars
+- Z-index management: sidebars > table (50 > 10)
+
+**With CLI Panel**:
+- Generate InMail/Connect buttons trigger SSE streams
+- Logs appear in CLI panel tabs
+- Same tab management as other batch operations
+
+**With MongoDB**:
+- All badge states read from MongoDB fields
+- No new collections needed
+- Fields already exist: jd_annotations, company_research, cv_editor_state, contacts
+
+**With Job Detail Page**:
+- Sidebars are batch-view-only (not on detail page)
+- Detail page has its own editors for these sections
+- Batch sidebars are read-only drill-down (detail page for editing)
+
+#### 8. UX Improvements
+
+**Workflow Enhancement**:
+1. User enters batch view with 10 jobs
+2. Scans table: sees color-coded badges showing data completeness
+3. Focuses on orange badges first (incomplete data)
+4. Clicks green JD badge → reviews annotations in sidebar
+5. Clicks green RS badge → generates outreach messages in sidebar
+6. Clicks green CV badge → exports CV
+7. Sets application URLs for jobs missing them
+8. Marks jobs as "applied" or "discarded"
+9. Jobs disappear from batch view
+
+**Key Benefits**:
+- Single-pane-of-glass for batch data management
+- No page navigation needed to drill into data
+- Color coding shows priorities at a glance
+- Sidebar interactions stay in batch flow
+- Application URL quick entry saves time
+
+#### 9. Files Involved
+
+**Created**:
+- `frontend/static/js/batch-sidebars.js` - Alpine.js sidebar management
+- `frontend/templates/partials/batch/_batch_sidebars.html` - Container
+- `frontend/templates/partials/batch/_annotation_sidebar_content.html` - JD panel
+- `frontend/templates/partials/batch/_contacts_sidebar_content.html` - Contacts panel
+- `frontend/templates/partials/batch/_cv_sidebar_content.html` - CV panel
+
+**Modified**:
+- `frontend/templates/partials/batch_job_single_row.html` - Tri-state badges, URL popover, open handlers
+- `frontend/templates/batch_processing.html` - Include sidebars container
+- `frontend/app.py` - 3 new HTMX endpoints
+- `frontend/templates/base.html` - Alpine.js attributes for page context
+
+#### 10. Performance Considerations
+
+- Sidebars load on-demand via HTMX (not on page init)
+- Each sidebar query: single MongoDB document fetch by ID (indexed)
+- Typical response time: <50ms
+- Sidebar content cached by browser (can HTMX cache on same job_id)
+- No pagination needed (annotation count <100 typical, contacts <20)
+- Zero impact on batch table performance (lazy-loaded sidebars)
+
+#### 11. Browser Compatibility
+
+- Alpine.js 3.x (modern browsers)
+- HTMX 1.9+ (all modern browsers)
+- CSS Grid for sidebar layout (all modern browsers)
+- No IE11 support (acceptable for internal tool)
+
+---
+
 ## Next Priorities
 
 1. Fix time-based filters bug (affects all users)
