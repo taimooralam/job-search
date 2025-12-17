@@ -4,12 +4,19 @@ WebSocket Handler for Queue State Broadcasting
 Manages WebSocket connections for real-time queue updates.
 Handles client messages (retry, cancel, refresh) and broadcasts queue events.
 Implements server-side ping to detect stale connections.
+
+Reliability Improvements:
+- Increased timeout for long-running operations (CV generation ~78s)
+- Separate lock-free pong time updates to avoid blocking pings
+- Enhanced logging for connection lifecycle debugging
+- Graceful close with proper close frames
 """
 
 import asyncio
 import json
 import logging
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
@@ -20,8 +27,9 @@ from .manager import QueueManager
 logger = logging.getLogger(__name__)
 
 # Ping/pong configuration
-PING_INTERVAL_SECONDS = 20
-PONG_TIMEOUT_SECONDS = 30
+# CV generation can take ~78 seconds, so we need generous timeouts
+PING_INTERVAL_SECONDS = 15  # Send ping every 15 seconds (more frequent)
+PONG_TIMEOUT_SECONDS = 120  # 2 minutes - allows for long operations + network delays
 
 
 @dataclass
@@ -31,11 +39,18 @@ class ConnectionState:
     websocket: WebSocket
     ping_task: Optional[asyncio.Task] = None
     last_pong_time: float = field(default_factory=time.time)
+    last_ping_sent: float = field(default_factory=time.time)
     connection_id: str = ""
+    pings_sent: int = 0
+    pongs_received: int = 0
 
     def is_stale(self) -> bool:
         """Check if connection is stale (no pong received within timeout)."""
         return time.time() - self.last_pong_time > PONG_TIMEOUT_SECONDS
+
+    def get_age_since_last_pong(self) -> float:
+        """Get seconds since last pong for logging."""
+        return time.time() - self.last_pong_time
 
 
 class QueueWebSocketManager:
@@ -75,16 +90,21 @@ class QueueWebSocketManager:
         """
         await websocket.accept()
 
+        # Get client info for logging
+        client_host = websocket.client.host if websocket.client else "unknown"
+
         async with self._lock:
             self._connection_counter += 1
             connection_id = f"conn_{self._connection_counter}"
             self.active_connections.add(websocket)
 
             # Create connection state and start ping loop
+            now = time.time()
             conn_state = ConnectionState(
                 websocket=websocket,
                 connection_id=connection_id,
-                last_pong_time=time.time(),
+                last_pong_time=now,
+                last_ping_sent=now,
             )
             conn_state.ping_task = asyncio.create_task(
                 self._ping_loop(websocket, connection_id)
@@ -92,7 +112,7 @@ class QueueWebSocketManager:
             self._connection_states[websocket] = conn_state
 
         logger.info(
-            f"WebSocket {connection_id} connected, "
+            f"[{connection_id}] WebSocket connected from {client_host}, "
             f"total connections: {len(self.active_connections)}"
         )
 
@@ -103,8 +123,9 @@ class QueueWebSocketManager:
                 "type": "queue_state",
                 "payload": state.to_dict()
             })
+            logger.debug(f"[{connection_id}] Sent initial queue state")
         except Exception as e:
-            logger.error(f"Failed to send initial state: {e}")
+            logger.error(f"[{connection_id}] Failed to send initial state: {e}")
 
         return connection_id
 
@@ -140,51 +161,95 @@ class QueueWebSocketManager:
         """
         Send periodic pings to keep connection alive and detect stale connections.
 
+        Improvements:
+        - Lock-free pong time check (read only, atomic in Python)
+        - Periodic health logging for debugging long operations
+        - Graceful close with proper close frame on stale detection
+
         Args:
             websocket: WebSocket to ping
             connection_id: Connection identifier for logging
         """
+        logger.info(
+            f"[{connection_id}] Ping loop started "
+            f"(interval={PING_INTERVAL_SECONDS}s, timeout={PONG_TIMEOUT_SECONDS}s)"
+        )
+
         try:
             while True:
                 await asyncio.sleep(PING_INTERVAL_SECONDS)
 
-                # Check if connection is stale before sending ping
-                async with self._lock:
-                    conn_state = self._connection_states.get(websocket)
-                    if conn_state and conn_state.is_stale():
-                        logger.warning(
-                            f"WebSocket {connection_id} is stale "
-                            f"(no pong for {PONG_TIMEOUT_SECONDS}s), closing"
-                        )
-                        # Mark for cleanup - will be handled by broadcast or explicit close
-                        break
+                # Lock-free stale check - reading last_pong_time is atomic
+                # We only need the lock for structural modifications (add/remove)
+                conn_state = self._connection_states.get(websocket)
+                if not conn_state:
+                    logger.warning(f"[{connection_id}] Connection state not found, stopping ping loop")
+                    break
 
-                # Send ping
+                if conn_state.is_stale():
+                    age = conn_state.get_age_since_last_pong()
+                    logger.warning(
+                        f"[{connection_id}] Connection is stale "
+                        f"(no pong for {age:.1f}s > {PONG_TIMEOUT_SECONDS}s), closing"
+                    )
+                    # Send close frame before breaking
+                    try:
+                        await websocket.close(code=1000, reason="Connection stale - no pong received")
+                    except Exception as e:
+                        logger.debug(f"[{connection_id}] Error sending close frame: {e}")
+                    break
+
+                # Send ping and track it
                 try:
+                    conn_state.pings_sent += 1
+                    conn_state.last_ping_sent = time.time()
                     await websocket.send_json({"type": "ping"})
-                    logger.debug(f"Sent ping to {connection_id}")
+                    logger.debug(f"[{connection_id}] Sent ping #{conn_state.pings_sent}")
+
+                    # Periodic health logging (every 4 pings = ~60s)
+                    if conn_state.pings_sent % 4 == 0:
+                        age = conn_state.get_age_since_last_pong()
+                        logger.info(
+                            f"[{connection_id}] Connection health: "
+                            f"pings_sent={conn_state.pings_sent}, "
+                            f"pongs_received={conn_state.pongs_received}, "
+                            f"last_pong_age={age:.1f}s"
+                        )
                 except Exception as e:
-                    logger.warning(f"Failed to send ping to {connection_id}: {e}")
+                    logger.warning(f"[{connection_id}] Failed to send ping: {e}")
                     break
 
         except asyncio.CancelledError:
-            logger.debug(f"Ping loop cancelled for {connection_id}")
+            logger.debug(f"[{connection_id}] Ping loop cancelled")
             raise
         except Exception as e:
-            logger.error(f"Ping loop error for {connection_id}: {e}")
+            logger.error(f"[{connection_id}] Ping loop error: {e}")
+        finally:
+            conn_state = self._connection_states.get(websocket)
+            if conn_state:
+                logger.info(
+                    f"[{connection_id}] Ping loop ended after {conn_state.pings_sent} pings, "
+                    f"{conn_state.pongs_received} pongs received"
+                )
 
     def _update_pong_time(self, websocket: WebSocket) -> None:
         """
         Update last pong time for a connection.
 
+        Lock-free update - modifying a float is atomic in Python.
+
         Args:
             websocket: WebSocket that sent the pong
         """
-        if websocket in self._connection_states:
-            self._connection_states[websocket].last_pong_time = time.time()
+        conn_state = self._connection_states.get(websocket)
+        if conn_state:
+            conn_state.last_pong_time = time.time()
+            conn_state.pongs_received += 1
+            # Calculate round-trip time if we have a recent ping
+            rtt_ms = (conn_state.last_pong_time - conn_state.last_ping_sent) * 1000
             logger.debug(
-                f"Received pong from "
-                f"{self._connection_states[websocket].connection_id}"
+                f"[{conn_state.connection_id}] Received pong "
+                f"(#{conn_state.pongs_received}, RTT={rtt_ms:.1f}ms)"
             )
 
     async def broadcast(self, message: Dict[str, Any]) -> None:
@@ -322,31 +387,43 @@ class QueueWebSocketManager:
         Run WebSocket connection lifecycle.
 
         Handles connection, message loop, and disconnection.
+        Includes enhanced logging for debugging connection issues.
 
         Args:
             websocket: FastAPI WebSocket instance
         """
-        await self.connect(websocket)
+        connection_id = await self.connect(websocket)
+        messages_received = 0
 
         try:
             while True:
                 # Receive and parse message
                 raw_data = await websocket.receive_text()
+                messages_received += 1
+
                 try:
                     data = json.loads(raw_data)
                     await self.handle_message(websocket, data)
                 except json.JSONDecodeError:
+                    logger.warning(f"[{connection_id}] Received invalid JSON")
                     await websocket.send_json({
                         "type": "error",
                         "payload": {"message": "Invalid JSON"}
                     })
 
-        except WebSocketDisconnect:
-            pass
+        except WebSocketDisconnect as e:
+            logger.info(
+                f"[{connection_id}] WebSocket disconnected by client "
+                f"(code={getattr(e, 'code', 'unknown')}, messages={messages_received})"
+            )
         except Exception as e:
-            logger.error(f"WebSocket error: {e}")
+            logger.error(f"[{connection_id}] WebSocket error: {e}")
         finally:
             await self.disconnect(websocket)
+            logger.info(
+                f"[{connection_id}] Connection lifecycle ended, "
+                f"total messages received: {messages_received}"
+            )
 
     @property
     def connection_count(self) -> int:

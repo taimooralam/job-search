@@ -265,6 +265,9 @@ class TestQueueWebSocketManager:
         )
         ws_manager._connection_states[mock_websocket] = conn_state
 
+        # Mock websocket.close() for stale connection handling
+        mock_websocket.close = AsyncMock()
+
         # Mock sleep to avoid waiting
         async def mock_sleep(seconds):
             pass
@@ -275,6 +278,9 @@ class TestQueueWebSocketManager:
 
         # Assert - should NOT have sent any pings (detected stale before sending)
         mock_websocket.send_json.assert_not_called()
+
+        # Assert - should have sent close frame
+        mock_websocket.close.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_ping_loop_stops_on_send_error(self, ws_manager, mock_websocket):

@@ -42,7 +42,7 @@ class QueueWebSocket {
         // Ping/pong tracking for connection health
         this.lastPingTime = null;
         this.lastPongTime = null;
-        this.pongTimeoutMs = 5000; // 5 seconds to receive pong
+        this.pongTimeoutMs = 25000; // 25 seconds to receive pong (server has 30s timeout)
 
         // Connection history for debugging
         this.connectionHistory = [];
@@ -224,6 +224,7 @@ class QueueWebSocket {
             this.isConnecting = false;
             this.shouldReconnect = false;  // Don't keep retrying
             this.emit('error', { message: 'Mixed content: WebSocket requires HTTPS on runner', code: 'MIXED_CONTENT' });
+            this.updateHealthIndicator();
             return;
         }
 
@@ -244,6 +245,7 @@ class QueueWebSocket {
                 }
 
                 this.emit('connected');
+                this.updateHealthIndicator();
 
                 // Start ping interval
                 this.startPingInterval();
@@ -304,6 +306,7 @@ class QueueWebSocket {
                 }
 
                 this.emit('disconnected');
+                this.updateHealthIndicator();
 
                 if (this.shouldReconnect) {
                     this.scheduleReconnect();
@@ -611,6 +614,7 @@ class QueueWebSocket {
                 attempts: this.reconnectAttempts
             });
             this.emit('max_reconnects');
+            this.updateHealthIndicator();
             return;
         }
 
@@ -634,6 +638,9 @@ class QueueWebSocket {
         this._recordHistory('reconnect_scheduled', { delay: Math.round(delay), attempt: this.reconnectAttempts + 1 });
 
         console.log(`[QueueWS] Reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+
+        // Update health indicator to show reconnecting state
+        this.updateHealthIndicator();
 
         // Use RxJS timer if available, otherwise setTimeout
         if (this._rxjsAvailable) {
@@ -729,6 +736,53 @@ class QueueWebSocket {
      */
     get isConnected() {
         return this.ws?.readyState === WebSocket.OPEN;
+    }
+
+    /**
+     * Update the WebSocket health indicator in the UI
+     * This method updates the #ws-health-indicator element to reflect current connection state.
+     * States: connected (green), reconnecting (yellow/orange), disconnected (red), disabled (gray)
+     */
+    updateHealthIndicator() {
+        const indicator = document.getElementById('ws-health-indicator');
+        if (!indicator) {
+            // Health indicator not yet rendered, will be updated on next health refresh
+            return;
+        }
+
+        const dot = indicator.querySelector('.health-dot');
+        if (!dot) return;
+
+        let status, dotClass, title;
+
+        if (this.isConnected) {
+            status = 'connected';
+            dotClass = 'health-healthy';
+            title = 'WebSocket: Connected';
+        } else if (this.shouldReconnect === false) {
+            status = 'disabled';
+            dotClass = 'health-unknown';
+            title = 'WebSocket: Disabled (mixed content or service unavailable)';
+        } else if (this.isConnecting || this.reconnectAttempts > 0) {
+            // Reconnecting state - show as pending/warning (yellow/orange)
+            status = 'reconnecting';
+            dotClass = 'health-warning';
+            const attemptInfo = this.reconnectAttempts > 0
+                ? ` (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+                : '';
+            title = `WebSocket: Reconnecting${attemptInfo}`;
+        } else {
+            status = 'disconnected';
+            dotClass = 'health-unhealthy';
+            title = 'WebSocket: Disconnected';
+        }
+
+        // Update the indicator
+        dot.className = `health-dot ${dotClass}`;
+        indicator.title = title;
+        indicator.dataset.wsStatus = status;
+
+        this._debug('Health indicator updated', { status, dotClass, title });
     }
 }
 
