@@ -996,15 +996,17 @@ Real-time queue updates via JSON messages
 
 **Impact**: WebSocket connections now properly authenticated and fully ASGI-compliant. No more HTTP 403 errors. Clear error messages aid debugging. Real-time queue visibility works reliably.
 
-### WebSocket Connection Keepalive (NEW - 2025-12-16)
+### WebSocket Connection Keepalive (NEW - 2025-12-16, Refined 2025-12-17)
 
-**Purpose**: Maintain persistent WebSocket connections in browser background tabs and prevent stale connection drops from network infrastructure (proxies, NAT, firewalls).
+**Purpose**: Maintain persistent WebSocket connections in browser background tabs and prevent stale connection drops from network infrastructure (proxies, NAT, firewalls). Optimized timeouts to accommodate long-running CV generation operations without false disconnections.
 
 **Problem Addressed**:
 - WebSocket connections drop after 20-30 seconds of inactivity in browser background tabs
 - Client-side ping alone unreliable because browser throttles JavaScript timers in inactive tabs
 - Network infrastructure (reverse proxies, firewalls, NAT) close idle connections without keepalive
-- Result: Queue status not visible, real-time updates fail in background tabs
+- CV generation operations can take 60+ seconds, requiring more generous timeout windows
+- Users need visual feedback on connection health during long-running operations
+- Result: Queue status not visible, real-time updates fail in background tabs, false disconnections during processing
 
 **Architecture - Multi-Layer Keepalive Strategy**:
 
@@ -1013,6 +1015,7 @@ Browser Tab (Active/Inactive)
   │
   ├─ WebSocket API (native browser support)
   │  └─ Responds to server pings (event-driven, bypasses throttling)
+  │  └─ Connection health indicator (UI feedback: connected/reconnecting/disconnected)
   │
   ▼
 Traefik Reverse Proxy (HTTPS)
@@ -1024,56 +1027,65 @@ FastAPI WebSocket Endpoint (/ws/queue)
   │
   ├─ Sends server-side pings every 20 seconds
   ├─ Tracks last_ping_time and last_pong_time per connection
-  ├─ Detects stale connections (no pong for 30s)
+  ├─ Detects stale connections (no pong for 120s - increased tolerance)
   ├─ Closes unresponsive clients gracefully
+  ├─ Logs disconnection events with connection ID
   │
   ▼
 uvicorn ASGI Server
   │
   └─ Built-in WebSocket keepalive
      - --ws-ping-interval 20 (send pings every 20s)
-     - --ws-ping-timeout 30 (wait 30s for pong)
+     - --ws-ping-timeout 120 (wait 120s for pong - increased tolerance)
 ```
 
 **Key Components**:
 
 1. **Server-Side Ping Loop** (`runner_service/websocket.py`):
    - Per-connection async task that runs for duration of connection
-   - Sends `{"type": "ping", "timestamp": "2025-12-16T..."}` frame every 20 seconds
-   - Tracks connection state: last_ping_time, last_pong_time
-   - Detects stale clients: If no pong for 30s, closes connection with code 1000
-   - Logs disconnection events with reason (timeout vs normal close)
+   - Sends `{"type": "ping", "timestamp": "2025-12-17T..."}` frame every 20 seconds
+   - Tracks connection state: last_ping_time, last_pong_time, connection_id
+   - Detects stale clients: If no pong for 120s (increased from 30s), closes connection with code 1000
+   - Logs disconnection events with reason and connection ID for debugging
    - Graceful cleanup on connection end
 
 2. **Server-Side Ping Thread** (`runner_service/ws_proxy.py`):
    - Separate ping thread maintains Flask proxy connection to browser
    - Sends pings to both client (browser) and upstream (FastAPI)
-   - Stale detection: Closes connection if no response for 30 seconds
+   - Stale detection: Closes connection if no response for 120 seconds (increased from 30s)
    - Prevents proxy from timing out connection
+   - Enhanced logging with connection diagnostics
 
 3. **Client Event Handler** (`frontend/static/js/queue-websocket.js`):
    - Listens for server `ping` messages (event-driven, bypasses throttling)
    - Immediately responds with `pong` message
    - No reliance on client-side timers (works in throttled tabs)
-   - Detects server timeout: If no data for 5s, raises "pong timeout" error
-   - Reduced client ping interval from 30s to 15s for faster stale detection
+   - Detects server timeout: If no data for 25s (increased from 5s), raises "pong timeout" error
+   - Maintains connection health state: connected/reconnecting/disconnected
+   - Updates UI indicator in real-time
 
-4. **uvicorn Transport Layer** (`Dockerfile.runner`):
-   - Added `--ws-ping-interval 20 --ws-ping-timeout 30` flags
+4. **UV icorn Transport Layer** (`Dockerfile.runner`):
+   - Added `--ws-ping-interval 20 --ws-ping-timeout 120` flags (timeout increased from 30s)
    - Enables built-in ASGI-level keepalive
    - Catches stale connections before application layer
    - Complements application-level keepalive
 
+5. **Connection Health Indicator UI** (`frontend/templates/base.html`):
+   - Real-time WebSocket connection status display
+   - States: Green (connected), Yellow (reconnecting), Red/Hidden (disconnected)
+   - Provides visual feedback during long-running operations
+   - Uses Alpine.js to monitor `window.queueWebSocket.connectionState`
+
 **Configuration**:
 
-| Component | Parameter | Value | Purpose |
-|-----------|-----------|-------|---------|
-| FastAPI | Server ping interval | 20 seconds | Frequency of server→client pings |
-| FastAPI | Stale detection timeout | 30 seconds | Time without pong before close |
-| Client JS | Client ping interval | 15 seconds | Faster stale detection |
-| Client JS | Pong timeout | 5 seconds | Detect unresponsive server |
-| uvicorn | --ws-ping-interval | 20 seconds | Transport-layer keepalive |
-| uvicorn | --ws-ping-timeout | 30 seconds | Transport-layer stale detection |
+| Component | Parameter | Value | Purpose | Updated |
+|-----------|-----------|-------|---------|---------|
+| FastAPI | Server ping interval | 20 seconds | Frequency of server→client pings | - |
+| FastAPI | Stale detection timeout | 120 seconds (was 30s) | Time without pong before close | 2025-12-17 |
+| Client JS | Pong timeout | 25 seconds (was 5s) | Detect unresponsive server during long operations | 2025-12-17 |
+| uvicorn | --ws-ping-interval | 20 seconds | Transport-layer keepalive | - |
+| uvicorn | --ws-ping-timeout | 120 seconds (was 30s) | Transport-layer stale detection | 2025-12-17 |
+| Proxy | Stale detection timeout | 120 seconds (was 30s) | Proxy keepalive timeout | 2025-12-17 |
 
 **Data Flow - Connection Lifecycle**:
 

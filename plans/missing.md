@@ -4232,7 +4232,7 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 
 ---
 
-### WebSocket Connection Keepalive - Server-Side Ping Implementation (2025-12-16)
+### WebSocket Connection Keepalive - Server-Side Ping Implementation (2025-12-16, Refined 2025-12-17)
 
 **ENHANCEMENT: Implemented server-side WebSocket keepalive to prevent connection stale-outs during browser tab throttling - FIXED**:
 - **Issue**: WebSocket connections were dropping after 20-30 seconds of inactivity, particularly in background browser tabs due to browser tab throttling policies
@@ -4244,36 +4244,44 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 - **Fix Applied**: Implemented bidirectional server-side keepalive mechanism across all transport layers:
   1. **Flask Proxy** (`ws_proxy.py`):
      - Added server-side ping thread sending pings to both browser and runner every 20 seconds
-     - Implemented 30-second stale detection - closes connections not responding to pings
+     - Implemented 120-second stale detection (increased from 30s) - closes connections not responding to pings
      - Pings bypass browser throttling by coming from server, not relying on client timers
   2. **FastAPI WebSocket** (`websocket.py`):
-     - Added server-side ping loop per connection (20s interval, 30s timeout)
+     - Added server-side ping loop per connection (20s interval, 120s timeout - increased from 30s)
      - Tracks ConnectionState with last_ping_time and last_pong_time
-     - Detects stale clients and logs disconnection events
+     - Detects stale clients and logs disconnection events with connection ID
   3. **Client JavaScript** (`queue-websocket.js`):
-     - Reduced client ping interval from 30s to 15s for faster response
-     - Added pong timeout detection (5s) - detects unresponsive server
+     - Increased client pong timeout from 5s to 25s (accommodates longer-running CV generation operations)
      - Added server-ping response handling - responds to server pings immediately
      - No longer relies on timers for keepalive; reacts to server pings instead
+     - Maintains connection health state for UI display
   4. **Docker Runner** (`Dockerfile.runner`):
-     - Updated uvicorn startup with `--ws-ping-interval 20 --ws-ping-timeout 30` flags
+     - Updated uvicorn startup with `--ws-ping-interval 20 --ws-ping-timeout 120` flags (timeout increased)
      - Enables built-in uvicorn WebSocket keepalive at transport layer
+  5. **UI Health Indicator** (NEW):
+     - Added connection health indicator to base.html showing real-time WebSocket status
+     - States: Connected (green), Reconnecting (yellow), Disconnected (red)
+     - Provides visual feedback for connection reliability during long-running operations
 - **Files Modified**:
-  - `runner_service/websocket.py` - Added server-side ping loop with ConnectionState tracking
-  - `runner_service/ws_proxy.py` - Added ping thread with stale detection
-  - `frontend/static/js/queue-websocket.js` - Reduced client ping interval, added server-ping handler
-  - `Dockerfile.runner` - Added uvicorn WebSocket keepalive configuration
+  - `runner_service/websocket.py` - Added server-side ping loop with ConnectionState tracking and connection IDs
+  - `runner_service/ws_proxy.py` - Increased stale timeout to 120s with enhanced logging
+  - `frontend/static/js/queue-websocket.js` - Increased pong timeout to 25s, added health state tracking
+  - `frontend/templates/base.html` - Added connection health indicator UI
+  - `Dockerfile.runner` - Updated uvicorn keepalive timeouts
+  - `tests/runner/test_websocket_keepalive.py` - Added tests for timeout values and health status
 - **Architecture Impact**:
   - WebSocket connections now stay alive indefinitely (pings every 20s)
   - No reliance on client timers (works in throttled browser tabs)
-  - Stale connections detected and cleaned up within 30 seconds
+  - Stale connections detected and cleaned up within 120 seconds
   - Multi-layer redundancy: client + FastAPI + Traefik proxy + uvicorn all implementing keepalive
+  - Increased timeout values accommodate long-running CV generation without false disconnections
 - **Verification**:
   - WebSocket connections remain active in background browser tabs
-  - No connection drops after 20-30 seconds of inactivity
+  - No connection drops during 60+ second CV generation operations
   - Server-side pings fire consistently on 20s interval
   - Stale connections properly detected and closed
-- **Impact**: Queue status and real-time job monitoring remain reliable even when browser tab is inactive/throttled. Users can switch between tabs and maintain connection continuity.
+  - Connection health indicator reflects real-time status
+- **Impact**: Queue status and real-time job monitoring remain reliable even when browser tab is inactive/throttled or CV generation is long-running. Users get visual feedback on connection health during extended operations. Enhanced logging with connection IDs improves debugging. ✅ **COMPLETED 2025-12-17**
 
 ---
 
