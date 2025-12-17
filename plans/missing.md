@@ -3668,6 +3668,58 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
   - **Impact**: Reduced cognitive load - users don't need to explicitly click "Save" for valid annotations; workflow is more intuitive
   - **Commit**: `dfd5f7dd` - feat(annotation): add auto-save when clicking outside popover
 
+- [x] Scroll bleed-through fix in modals and panels (2025-12-17): Prevented unwanted scroll behavior when scrolling inside modal/panel containers, ensuring scrolling is contained to those elements only.
+  - **Issue**: Scrolling inside annotation popover, JD panel, CV editor panel, CLI panel, and add contacts modal would propagate to parent page, causing unwanted page scroll
+  - **Root Cause**: Missing `overscroll-behavior: contain` CSS property on scrollable containers; scroll events bubbled to document root
+  - **Fix Applied**:
+    1. Added `overscroll-behavior: contain` to all scrollable container classes
+    2. Affected containers: annotation popover scroll region, JD annotation panel, CV editor panel, CLI panel log container, add contacts modal body
+    3. Ensures isolation of scroll behavior within modal/panel boundaries
+  - **Files Modified**:
+    - `frontend/templates/partials/job_detail/_annotation_popover.html` - Added overscroll-behavior to popover body
+    - `frontend/templates/partials/job_detail/_jd_annotation_panel.html` - Added overscroll-behavior to panel content
+    - `frontend/templates/partials/job_detail/_cv_editor_panel.html` - Added overscroll-behavior to editor body
+    - `frontend/templates/base.html` - Added overscroll-behavior to CLI panel log container
+    - `frontend/templates/partials/add_contacts_modal.html` - Added overscroll-behavior to modal body
+  - **Verification**: Scrolling inside containers stays contained; page doesn't scroll when user scrolls in modal/panel
+  - **Impact**: Improved UX when users interact with modal/panel scrollable areas; more predictable scroll behavior
+  - **Commit**: `3d6e2b42` - fix(ui): prevent scroll bleed-through in modals and panels
+
+- [x] Annotation textarea dual-text storage (2025-12-17): Implemented separate storage for original JD text and user-edited text to support highlighting with immutable original while allowing text refinement.
+  - **Issue**: When user edited selected text in textarea (pruning/refining), the highlighting system had no reference to original JD text for proper span targeting
+  - **Solution**: Store two text variants in annotation target:
+    - `original_text`: Original JD text extracted from JD (immutable, used for highlighting)
+    - `text`: User's final text for LLM prompts (mutable, can be edited/pruned)
+  - **Fix Applied**:
+    1. Updated annotation creation to capture both: `target.original_text = selectedText` and `target.text = editedText`
+    2. Highlighting system queries for original_text in MongoDB for proper span generation
+    3. LLM prompts use edited text field for user-refined context
+  - **Files Modified**:
+    - `frontend/static/js/jd-annotation.js` - Store original_text and text separately when creating annotation
+    - MongoDB annotation schema - Both fields stored in annotation target object
+  - **Verification**: Edited text persists in LLM prompts; highlighting uses original JD text for accuracy
+  - **Impact**: Users can refine selected text (pruning, rephrasing) while system maintains accurate reference to original JD context
+  - **Commit**: `3d6e2b42` - fix(annotation): properly handle edited text in textarea
+
+- [x] SSE streaming for real-time pipeline logs in CLI panel (2025-12-17): Enhanced CLI panel with live event source subscriptions for job pipeline operations, showing real-time logs with full metadata (job title, company, status).
+  - **Feature**: CLI panel now supports Server-Sent Events (SSE) streaming for immediate log visibility during pipeline execution
+  - **Implementation Details**:
+    1. Added `subscribeToLogs(runId)` method in CLI panel to establish EventSource connection
+    2. Listens for pipeline progress events on `cli:fetch-logs` with full metadata (jobTitle, company, status)
+    3. Auto-subscribes to SSE when panel views running operations (run_id validation prevents undefined errors)
+    4. Shows full job context in logs: "Research Company [JobTitle - Company]" instead of just "Research Company"
+  - **Architecture**:
+    - Frontend: `subscribeToLogs()` establishes EventSource to backend `/operations/{run_id}/logs`
+    - Backend: Emits SSE updates with jobTitle, company, status from operation metadata
+    - CLI panel maintains tab per run_id; auto-scrolls to latest logs
+  - **Files Modified**:
+    - `frontend/templates/base.html` - CLI panel HTML structure with run_id validation
+    - `frontend/static/js/cli-panel.js` - Added `subscribeToLogs()` method and metadata rendering
+    - `runner_service/routes/operation_streaming.py` - Includes jobTitle, company, status in SSE event payload
+  - **Verification**: CLI panel shows live logs during pipeline execution; metadata displays correct job context; EventSource connection maintains during operation
+  - **Impact**: Operators have real-time visibility into pipeline execution with full job context; no need to wait for operation completion to see logs
+  - **Commit**: `9f83d551` - feat(cli-panel): add SSE streaming for real-time pipeline logs
+
 ### Master CV API Vercel Deployment Fix
 - [x] Master CV API proxy pattern (2025-12-12): Fixed 500 errors on Vercel deployment by proxying Master CV endpoints to Runner Service instead of importing `src.common.master_cv_store` directly.
   - **Problem**: Frontend running on Vercel doesn't have access to `src` module; direct imports of `master_cv_store` caused 500 errors
