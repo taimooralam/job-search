@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<!-- CV Editor Styles (needed for batch CV sidebar) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cv-editor.css') }}">
+<!-- JD Annotation Styles (needed for batch annotation sidebar) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/jd-annotation.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="space-y-4">
     <!-- Page Header -->

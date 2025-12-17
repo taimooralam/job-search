@@ -81,8 +81,8 @@
                 {% for annotation in annotations %}
                 <div class="annotation-card p-3 rounded-lg border theme-border theme-bg-card hover:theme-bg-hover transition"
                      data-annotation-id="{{ annotation.id or loop.index0 }}">
-                    {# Annotated text preview #}
-                    {% set ann_text = annotation.text or annotation.selected_text or '' %}
+                    {# Annotated text preview - text is nested in target.text #}
+                    {% set ann_text = annotation.target.text if annotation.target and annotation.target.text else '' %}
                     <div class="text-sm theme-text-primary mb-2 line-clamp-2 font-medium">
                         "{{ ann_text[:100] }}{% if ann_text | length > 100 %}...{% endif %}"
                     </div>

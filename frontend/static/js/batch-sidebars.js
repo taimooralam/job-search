@@ -192,6 +192,43 @@ document.addEventListener('keydown', (e) => {
  */
 let batchCVEditorInstance = null;
 
+/**
+ * Wait for TipTap library to be available
+ * TipTap loads asynchronously via ES modules and dispatches 'tiptap-loaded' event when ready
+ * @returns {Promise<boolean>} True if TipTap is available
+ */
+function waitForTipTap(timeoutMs = 5000) {
+    return new Promise((resolve) => {
+        // Already loaded
+        if (typeof window.tiptap !== 'undefined' && window.tiptap.Editor) {
+            resolve(true);
+            return;
+        }
+
+        const startTime = Date.now();
+
+        // Listen for the tiptap-loaded event from base.html
+        const handler = () => {
+            window.removeEventListener('tiptap-loaded', handler);
+            resolve(true);
+        };
+        window.addEventListener('tiptap-loaded', handler);
+
+        // Fallback: poll for availability in case event was already fired
+        const checkInterval = setInterval(() => {
+            if (typeof window.tiptap !== 'undefined' && window.tiptap.Editor) {
+                clearInterval(checkInterval);
+                window.removeEventListener('tiptap-loaded', handler);
+                resolve(true);
+            } else if (Date.now() - startTime > timeoutMs) {
+                clearInterval(checkInterval);
+                window.removeEventListener('tiptap-loaded', handler);
+                resolve(false);
+            }
+        }, 100);
+    });
+}
+
 async function initBatchCVEditor(jobId) {
     const container = document.getElementById('batch-cv-editor-container');
     if (!container) {
@@ -206,9 +243,10 @@ async function initBatchCVEditor(jobId) {
         return;
     }
 
-    // Check if TipTap library is available
-    if (typeof window.tiptap === 'undefined' || !window.tiptap.Editor) {
-        console.error('TipTap library not loaded');
+    // Wait for TipTap library to be available (async ES module loading)
+    const tiptapReady = await waitForTipTap();
+    if (!tiptapReady) {
+        console.error('TipTap library failed to load within timeout');
         showBatchCVEditorError('TipTap library not loaded. Check browser extensions or network.');
         return;
     }
