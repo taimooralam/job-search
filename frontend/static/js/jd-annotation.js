@@ -357,7 +357,7 @@ class AnnotationManager {
                 if (this.smartSelectionState.hasSentenceSelected && clickedInsideSelection) {
                     // Toggle popover visibility for SAME selection
                     if (isPopoverVisible) {
-                        hideAnnotationPopover();
+                        hideAnnotationPopover({ save: true });
                     } else {
                         // Re-show popover with the same selection
                         if (selection.rangeCount > 0) {
@@ -376,7 +376,7 @@ class AnnotationManager {
                 // -> Reset state and select new sentence
                 this.smartSelectionState.hasSentenceSelected = false;
                 this.smartSelectionState.lastSelectedSentence = null;
-                hideAnnotationPopover();
+                hideAnnotationPopover({ save: true });
 
                 // Select the sentence at the new click location
                 this.handleSmartSentenceClick(e);
@@ -391,7 +391,7 @@ class AnnotationManager {
                 window.getSelection().removeAllRanges();
                 this.smartSelectionState.hasSentenceSelected = false;
                 this.smartSelectionState.lastSelectedSentence = null;
-                hideAnnotationPopover();
+                hideAnnotationPopover({ save: false });
 
                 // Don't prevent default - allow normal context menu
                 // The user can now manually select text
@@ -446,7 +446,7 @@ class AnnotationManager {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                hideAnnotationPopover();
+                hideAnnotationPopover({ save: false, clearSelection: true });
                 // Also clear smart selection state
                 if (this.smartSelectionState) {
                     this.smartSelectionState.hasSentenceSelected = false;
@@ -470,8 +470,8 @@ class AnnotationManager {
             const jdViewer = document.getElementById('jd-processed-content');
             if (jdViewer && jdViewer.contains(e.target)) return;
 
-            // Close popover for clicks outside
-            hideAnnotationPopover();
+            // Close popover for clicks outside - auto-save if valid
+            hideAnnotationPopover({ save: true });
         });
     }
 
@@ -1030,6 +1030,24 @@ class AnnotationManager {
     }
 
     /**
+     * Check if the current popover state can be saved.
+     * Requires: (1) text with at least 3 chars, (2) any explicit selection made.
+     * @returns {boolean} True if annotation can be saved
+     */
+    canSaveAnnotation() {
+        const textEl = document.getElementById('popover-selected-text');
+        const hasText = textEl?.value?.trim().length >= 3;
+
+        const hasAnyExplicitSelection =
+            this.popoverState.hasExplicitRelevance ||
+            this.popoverState.hasExplicitRequirement ||
+            this.popoverState.hasExplicitPassion ||
+            this.popoverState.hasExplicitIdentity;
+
+        return hasText && hasAnyExplicitSelection;
+    }
+
+    /**
      * Update save button enabled state
      *
      * Uses OR logic: enable when ANY dimension has been explicitly selected.
@@ -1133,9 +1151,14 @@ class AnnotationManager {
         // Schedule save
         this.scheduleSave();
 
+        // Show toast feedback
+        if (typeof showToast === 'function') {
+            showToast(isEditing ? 'Annotation updated' : 'Annotation saved', 'success');
+        }
+
         // Hide popover and reset editing state
         this.editingAnnotationId = null;
-        hideAnnotationPopover();
+        _hidePopover();
     }
 
     /**
@@ -2297,16 +2320,40 @@ function closeAnnotationPanel() {
     if (panel) panel.classList.add('translate-x-full');
     if (overlay) overlay.classList.add('hidden');
 
-    // Hide popover
-    hideAnnotationPopover();
+    // Hide popover - auto-save if valid before closing panel
+    hideAnnotationPopover({ save: true });
 }
 
 /**
- * Hide annotation popover
+ * Private helper to hide the popover DOM element only (no save logic)
  */
-function hideAnnotationPopover() {
+function _hidePopover() {
     const popover = document.getElementById('annotation-popover');
     if (popover) popover.classList.add('hidden');
+}
+
+/**
+ * Hide annotation popover with optional auto-save
+ * @param {Object} options - Options for hiding behavior
+ * @param {boolean} options.save - Whether to auto-save if valid (default: true)
+ * @param {boolean} options.clearSelection - Whether to clear text selection (default: false)
+ */
+function hideAnnotationPopover(options = {}) {
+    const { save = true, clearSelection = false } = options;
+
+    const popover = document.getElementById('annotation-popover');
+    if (!popover || popover.classList.contains('hidden')) return;
+
+    if (save && annotationManager?.canSaveAnnotation()) {
+        annotationManager.createAnnotationFromPopover();
+        return; // createAnnotationFromPopover will call _hidePopover()
+    }
+
+    _hidePopover();
+
+    if (clearSelection) {
+        window.getSelection().removeAllRanges();
+    }
 }
 
 /**
@@ -2435,8 +2482,8 @@ function deleteAnnotationFromPopover() {
     // Delete the annotation
     annotationManager.deleteAnnotation(annotationId);
 
-    // Hide the popover
-    hideAnnotationPopover();
+    // Hide the popover - no save needed since we just deleted
+    hideAnnotationPopover({ save: false });
 }
 
 // Export to window for HTML onclick handlers
