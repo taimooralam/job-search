@@ -43,6 +43,19 @@
 
             <div class="hidden sm:block w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
 
+            {# Keyboard Shortcuts Help Button #}
+            <button onclick="toggleKeyboardShortcutsPanel()"
+                    class="hidden sm:block text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition p-1.5"
+                    aria-label="Keyboard shortcuts (Ctrl+/)"
+                    title="Keyboard Shortcuts (Ctrl+/)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </button>
+
+            <div class="hidden sm:block w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
+
             {# Save Indicator #}
             <span id="batch-cv-save-indicator"
                   class="text-xs theme-text-tertiary hidden"
@@ -68,58 +81,132 @@
     </div>
 
     {% if has_cv %}
-    {# Toolbar #}
+    {# Toolbar - Full toolbar matching job detail page #}
     <div class="px-3 py-2 border-b theme-border theme-bg-secondary cv-toolbar flex-shrink-0"
          role="toolbar"
          aria-label="Text formatting controls">
         <div class="flex flex-wrap items-center gap-1.5">
-            {# Font Group #}
+            {# Font Group - Full font family and size dropdowns #}
             <div class="flex gap-1">
                 <label for="batch-cv-font-family" class="sr-only">Font family</label>
                 <select id="batch-cv-font-family" onchange="applyBatchCVFormat('fontFamily', this.value)"
-                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-28">
-                    <optgroup label="Serif">
+                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-36"
+                        aria-label="Select font family">
+                    <optgroup label="Serif (Professional)">
                         <option value="Crimson Text">Crimson Text</option>
+                        <option value="EB Garamond">EB Garamond</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
                         <option value="Merriweather">Merriweather</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Spectral">Spectral</option>
                         <option value="Source Serif Pro">Source Serif Pro</option>
+                        <option value="PT Serif">PT Serif</option>
+                        <option value="Bitter">Bitter</option>
+                        <option value="Arvo">Arvo</option>
+                        <option value="Cardo">Cardo</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="Neuton">Neuton</option>
+                        <option value="Vollkorn">Vollkorn</option>
                     </optgroup>
-                    <optgroup label="Sans-Serif">
+                    <optgroup label="Sans-Serif (Modern)">
                         <option value="Inter" selected>Inter</option>
                         <option value="Roboto">Roboto</option>
                         <option value="Open Sans">Open Sans</option>
                         <option value="Lato">Lato</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Work Sans">Work Sans</option>
+                        <option value="IBM Plex Sans">IBM Plex Sans</option>
+                        <option value="Karla">Karla</option>
+                        <option value="Rubik">Rubik</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="Manrope">Manrope</option>
+                        <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Archivo">Archivo</option>
+                        <option value="Public Sans">Public Sans</option>
+                        <option value="Red Hat Display">Red Hat Display</option>
+                    </optgroup>
+                    <optgroup label="Monospace (Technical)">
+                        <option value="Fira Code">Fira Code</option>
+                        <option value="JetBrains Mono">JetBrains Mono</option>
+                        <option value="Source Code Pro">Source Code Pro</option>
+                        <option value="IBM Plex Mono">IBM Plex Mono</option>
+                        <option value="Roboto Mono">Roboto Mono</option>
+                        <option value="Inconsolata">Inconsolata</option>
+                    </optgroup>
+                    <optgroup label="Display (Creative)">
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Archivo Black">Archivo Black</option>
+                        <option value="Righteous">Righteous</option>
+                        <option value="Josefin Sans">Josefin Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Anton">Anton</option>
+                        <option value="Kanit">Kanit</option>
+                    </optgroup>
+                    <optgroup label="Condensed (Space-Saving)">
+                        <option value="Roboto Condensed">Roboto Condensed</option>
+                        <option value="PT Sans Narrow">PT Sans Narrow</option>
+                        <option value="Fira Sans Condensed">Fira Sans Condensed</option>
+                        <option value="Barlow Condensed">Barlow Condensed</option>
+                    </optgroup>
+                    <optgroup label="Rounded (Friendly)">
+                        <option value="Nunito Sans">Nunito Sans</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Varela Round">Varela Round</option>
+                        <option value="Comfortaa">Comfortaa</option>
                     </optgroup>
                 </select>
                 <label for="batch-cv-font-size" class="sr-only">Font size</label>
                 <select id="batch-cv-font-size" onchange="applyBatchCVFormat('fontSize', this.value)"
-                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-14">
+                        class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-16"
+                        aria-label="Select font size">
+                    <option value="8pt">8pt</option>
                     <option value="9pt">9pt</option>
                     <option value="10pt">10pt</option>
+                    <option value="10.5pt">10.5pt</option>
                     <option value="11pt" selected>11pt</option>
                     <option value="12pt">12pt</option>
+                    <option value="13pt">13pt</option>
                     <option value="14pt">14pt</option>
+                    <option value="16pt">16pt</option>
+                    <option value="18pt">18pt</option>
+                    <option value="20pt">20pt</option>
+                    <option value="24pt">24pt</option>
+                    <option value="28pt">28pt</option>
+                    <option value="32pt">32pt</option>
                 </select>
             </div>
 
             <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
 
-            {# Formatting Group #}
+            {# Formatting Group - Bold, Italic, Underline, Small Caps #}
             <div class="flex gap-0.5" role="group" aria-label="Text formatting">
                 <button onclick="applyBatchCVFormat('bold')" data-format="bold"
                         class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-xs transition border border-transparent"
                         aria-label="Bold (Ctrl+B)"
                         aria-pressed="false"
-                        title="Bold">B</button>
+                        title="Bold (Ctrl+B)">B</button>
                 <button onclick="applyBatchCVFormat('italic')" data-format="italic"
                         class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 italic text-xs transition border border-transparent"
                         aria-label="Italic (Ctrl+I)"
                         aria-pressed="false"
-                        title="Italic">I</button>
+                        title="Italic (Ctrl+I)">I</button>
                 <button onclick="applyBatchCVFormat('underline')" data-format="underline"
                         class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 underline text-xs transition border border-transparent"
                         aria-label="Underline (Ctrl+U)"
                         aria-pressed="false"
-                        title="Underline">U</button>
+                        title="Underline (Ctrl+U)">U</button>
+                <button onclick="applyBatchCVFormat('smallCaps')" data-format="smallCaps"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        style="font-variant: small-caps; font-size: 0.85em;"
+                        aria-label="Small Caps"
+                        aria-pressed="false"
+                        title="Small Caps">Sc</button>
             </div>
 
             <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
@@ -152,7 +239,7 @@
                         aria-label="Bullet list"
                         aria-pressed="false"
                         title="Bullet List">
-                    <span aria-hidden="true">•</span>
+                    <span aria-hidden="true">&#8226;</span>
                 </button>
                 <button onclick="applyBatchCVFormat('orderedList')" data-format="orderedList"
                         class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
@@ -165,7 +252,7 @@
 
             <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
 
-            {# Alignment Group #}
+            {# Alignment Group - Left, Center, Right, Justify #}
             <div class="flex gap-0.5" role="group" aria-label="Text alignment">
                 <button onclick="applyBatchCVFormat('textAlign', 'left')" data-align="left"
                         class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
@@ -194,8 +281,203 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"/>
                     </svg>
                 </button>
+                <button onclick="applyBatchCVFormat('textAlign', 'justify')" data-align="justify"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Justify"
+                        aria-pressed="false"
+                        title="Justify">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# Indentation Group #}
+            <div class="flex gap-0.5" role="group" aria-label="Text indentation">
+                <button onclick="if(batchCVEditorInstance) batchCVEditorInstance.decreaseIndent()"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Decrease indent (Shift+Tab)"
+                        title="Decrease Indent (Shift+Tab)">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14V5"/>
+                    </svg>
+                </button>
+                <button onclick="if(batchCVEditorInstance) batchCVEditorInstance.increaseIndent()"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-transparent"
+                        aria-label="Increase indent (Tab)"
+                        title="Increase Indent (Tab)">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5v14"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="w-px h-5 bg-gray-300 dark:bg-gray-600" aria-hidden="true"></div>
+
+            {# Color Group - Text color, Highlight color, Remove highlight #}
+            <div class="flex gap-0.5" role="group" aria-label="Text and highlight colors">
+                <label class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer inline-flex items-center text-xs border border-gray-300 dark:border-gray-600"
+                       aria-label="Text color picker"
+                       title="Text Color">
+                    <span aria-hidden="true">A</span>
+                    <span class="ml-0.5 text-[8px]" aria-hidden="true">&#9660;</span>
+                    <input type="color" id="batch-cv-text-color" value="#1a1a1a"
+                           onchange="applyBatchCVFormat('color', this.value)"
+                           aria-label="Select text color"
+                           class="hidden">
+                </label>
+                <label class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer inline-flex items-center text-xs border border-gray-300 dark:border-gray-600"
+                       aria-label="Highlight color picker"
+                       title="Highlight Color">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M15.2 3.8l5 5-11 11H4v-5.2l11.2-10.8zM18.2 8.8L15.2 5.8l2-2 3 3-2 2z"/>
+                    </svg>
+                    <input type="color" id="batch-cv-highlight-color" value="#ffff00"
+                           onchange="applyBatchCVFormat('highlight', this.value)"
+                           aria-label="Select highlight color"
+                           class="hidden">
+                </label>
+                <button onclick="applyBatchCVFormat('removeHighlight')"
+                        class="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition text-xs border border-gray-300 dark:border-gray-600"
+                        aria-label="Remove highlight"
+                        title="Remove Highlight">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </div>
+    </div>
+
+    {# Document Settings Section #}
+    <div class="px-3 py-2 border-b theme-border theme-bg-tertiary cv-document-settings flex-shrink-0"
+         role="region"
+         aria-labelledby="batch-document-settings-heading">
+        <details class="group">
+            <summary class="cursor-pointer text-xs font-semibold theme-text-secondary uppercase tracking-wide hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1"
+                     id="batch-document-settings-heading"
+                     aria-expanded="false"
+                     aria-controls="batch-document-settings-content">
+                <span class="inline-block transform transition-transform group-open:rotate-90" aria-hidden="true">&#9654;</span>
+                Document Settings
+            </summary>
+            <div id="batch-document-settings-content" class="flex flex-wrap items-center gap-3 pt-2 pl-4">
+                {# Line Height #}
+                <div class="flex flex-col gap-0.5">
+                    <label for="batch-cv-line-height" class="text-[10px] theme-text-tertiary">Line Height</label>
+                    <select id="batch-cv-line-height" onchange="applyBatchDocumentStyle('lineHeight')"
+                            class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-24">
+                        <option value="1.0">Single (1.0)</option>
+                        <option value="1.15" selected>Standard (1.15)</option>
+                        <option value="1.5">1.5 Lines</option>
+                        <option value="2.0">Double (2.0)</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+
+                {# Margin Presets #}
+                <div class="flex flex-col gap-0.5">
+                    <label for="batch-cv-margin-preset" class="text-[10px] theme-text-tertiary">Margins</label>
+                    <select id="batch-cv-margin-preset" onchange="applyBatchMarginPreset()"
+                            class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-24">
+                        <option value="normal">Normal (1")</option>
+                        <option value="narrow" selected>Narrow (0.5")</option>
+                        <option value="moderate">Moderate (0.75")</option>
+                        <option value="wide">Wide (1.5")</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                </div>
+
+                {# Custom Margins (hidden by default) #}
+                <div id="batch-custom-margins-container" class="flex flex-col gap-0.5 hidden">
+                    <label class="text-[10px] theme-text-tertiary">Custom (inches)</label>
+                    <div class="flex gap-1">
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] theme-text-tertiary">T</span>
+                            <select id="batch-cv-margin-top" onchange="applyBatchDocumentStyle('margins'); updateBatchMarginPreset()"
+                                    class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1 py-0.5 focus:ring-2 focus:ring-indigo-500 w-14">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] theme-text-tertiary">R</span>
+                            <select id="batch-cv-margin-right" onchange="applyBatchDocumentStyle('margins'); updateBatchMarginPreset()"
+                                    class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1 py-0.5 focus:ring-2 focus:ring-indigo-500 w-14">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] theme-text-tertiary">B</span>
+                            <select id="batch-cv-margin-bottom" onchange="applyBatchDocumentStyle('margins'); updateBatchMarginPreset()"
+                                    class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1 py-0.5 focus:ring-2 focus:ring-indigo-500 w-14">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-[9px] theme-text-tertiary">L</span>
+                            <select id="batch-cv-margin-left" onchange="applyBatchDocumentStyle('margins'); updateBatchMarginPreset()"
+                                    class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1 py-0.5 focus:ring-2 focus:ring-indigo-500 w-14">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+
+                {# Page Size #}
+                <div class="flex flex-col gap-0.5">
+                    <label for="batch-cv-page-size" class="text-[10px] theme-text-tertiary">Page Size</label>
+                    <select id="batch-cv-page-size" onchange="applyBatchDocumentStyle('pageSize')"
+                            class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-28">
+                        <option value="letter">Letter (8.5" x 11")</option>
+                        <option value="a4" selected>A4 (210mm x 297mm)</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
+
+                {# Header/Footer #}
+                <div class="flex flex-col gap-0.5">
+                    <label class="text-[10px] theme-text-tertiary">Header/Footer</label>
+                    <div class="flex gap-1">
+                        <input type="text" id="batch-cv-header-text" placeholder="Header text"
+                               class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-32"
+                               onchange="applyBatchDocumentStyle('header')">
+                        <input type="text" id="batch-cv-footer-text" placeholder="Footer text"
+                               class="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded px-1.5 py-1 focus:ring-2 focus:ring-indigo-500 w-32"
+                               onchange="applyBatchDocumentStyle('footer')">
+                    </div>
+                </div>
+            </div>
+        </details>
     </div>
 
     {# Editor Content Area #}
@@ -352,8 +634,8 @@ function updateBatchCVToolbarState() {
 
     const editor = batchCVEditorInstance.editor;
 
-    // Update alignment buttons
-    const alignments = ['left', 'center', 'right'];
+    // Update alignment buttons (including justify)
+    const alignments = ['left', 'center', 'right', 'justify'];
     alignments.forEach(align => {
         const btn = document.querySelector(`#batch-cv-content button[data-align="${align}"]`);
         if (btn) {
@@ -364,8 +646,8 @@ function updateBatchCVToolbarState() {
         }
     });
 
-    // Update formatting buttons
-    ['bold', 'italic', 'underline', 'bulletList', 'orderedList'].forEach(format => {
+    // Update formatting buttons (including smallCaps)
+    ['bold', 'italic', 'underline', 'bulletList', 'orderedList', 'smallCaps'].forEach(format => {
         const btn = document.querySelector(`#batch-cv-content button[data-format="${format}"]`);
         if (btn) {
             const isActive = editor.isActive(format);
@@ -414,10 +696,151 @@ function updateBatchCVSaveIndicator(status) {
         unsaved: { icon: '○', text: 'Unsaved', class: 'text-gray-500' },
         saving: { icon: '◐', text: 'Saving...', class: 'text-blue-500 animate-pulse' },
         saved: { icon: '●', text: 'Saved', class: 'text-green-500' },
-        error: { icon: '⚠️', text: 'Error', class: 'text-red-500' }
+        error: { icon: '⚠', text: 'Error', class: 'text-red-500' }
     };
 
     const state = states[status] || states.saved;
     indicator.innerHTML = `<span class="${state.class}">${state.icon} ${state.text}</span>`;
+}
+
+/**
+ * Apply document-level styles (line height, margins, page size, header/footer)
+ */
+function applyBatchDocumentStyle(styleType) {
+    if (!batchCVEditorInstance) return;
+
+    const container = document.getElementById('batch-cv-editor-container');
+    if (!container) return;
+
+    switch (styleType) {
+        case 'lineHeight':
+            const lineHeightSelect = document.getElementById('batch-cv-line-height');
+            if (lineHeightSelect) {
+                container.style.lineHeight = lineHeightSelect.value;
+                // Also update editor state for persistence
+                if (batchCVEditorInstance.documentStyles) {
+                    batchCVEditorInstance.documentStyles.lineHeight = lineHeightSelect.value;
+                }
+            }
+            break;
+
+        case 'margins':
+            const marginTop = document.getElementById('batch-cv-margin-top')?.value || '0.5';
+            const marginRight = document.getElementById('batch-cv-margin-right')?.value || '0.5';
+            const marginBottom = document.getElementById('batch-cv-margin-bottom')?.value || '0.5';
+            const marginLeft = document.getElementById('batch-cv-margin-left')?.value || '0.5';
+            container.style.padding = `${marginTop}in ${marginRight}in ${marginBottom}in ${marginLeft}in`;
+            if (batchCVEditorInstance.documentStyles) {
+                batchCVEditorInstance.documentStyles.margins = {
+                    top: marginTop, right: marginRight, bottom: marginBottom, left: marginLeft
+                };
+            }
+            break;
+
+        case 'pageSize':
+            const pageSizeSelect = document.getElementById('batch-cv-page-size');
+            if (pageSizeSelect) {
+                const pageSize = pageSizeSelect.value;
+                if (pageSize === 'letter') {
+                    container.style.maxWidth = '8.5in';
+                    container.style.minHeight = '11in';
+                } else if (pageSize === 'a4') {
+                    container.style.maxWidth = '210mm';
+                    container.style.minHeight = '297mm';
+                }
+                if (batchCVEditorInstance.documentStyles) {
+                    batchCVEditorInstance.documentStyles.pageSize = pageSize;
+                }
+            }
+            break;
+
+        case 'header':
+        case 'footer':
+            // Store header/footer for PDF generation
+            const headerText = document.getElementById('batch-cv-header-text')?.value || '';
+            const footerText = document.getElementById('batch-cv-footer-text')?.value || '';
+            if (batchCVEditorInstance.documentStyles) {
+                batchCVEditorInstance.documentStyles.header = headerText;
+                batchCVEditorInstance.documentStyles.footer = footerText;
+            }
+            break;
+    }
+
+    // Trigger auto-save
+    if (batchCVEditorInstance && typeof batchCVEditorInstance.scheduleSave === 'function') {
+        batchCVEditorInstance.scheduleSave();
+    }
+}
+
+/**
+ * Apply margin preset
+ */
+function applyBatchMarginPreset() {
+    const presetSelect = document.getElementById('batch-cv-margin-preset');
+    const customContainer = document.getElementById('batch-custom-margins-container');
+
+    if (!presetSelect) return;
+
+    const preset = presetSelect.value;
+    const marginPresets = {
+        normal: { top: '1.0', right: '1.0', bottom: '1.0', left: '1.0' },
+        narrow: { top: '0.5', right: '0.5', bottom: '0.5', left: '0.5' },
+        moderate: { top: '0.75', right: '0.75', bottom: '0.75', left: '0.75' },
+        wide: { top: '1.5', right: '1.5', bottom: '1.5', left: '1.5' }
+    };
+
+    if (preset === 'custom') {
+        // Show custom margin controls
+        if (customContainer) customContainer.classList.remove('hidden');
+    } else {
+        // Hide custom margin controls and apply preset
+        if (customContainer) customContainer.classList.add('hidden');
+
+        const margins = marginPresets[preset];
+        if (margins) {
+            const topSelect = document.getElementById('batch-cv-margin-top');
+            const rightSelect = document.getElementById('batch-cv-margin-right');
+            const bottomSelect = document.getElementById('batch-cv-margin-bottom');
+            const leftSelect = document.getElementById('batch-cv-margin-left');
+
+            if (topSelect) topSelect.value = margins.top;
+            if (rightSelect) rightSelect.value = margins.right;
+            if (bottomSelect) bottomSelect.value = margins.bottom;
+            if (leftSelect) leftSelect.value = margins.left;
+
+            applyBatchDocumentStyle('margins');
+        }
+    }
+}
+
+/**
+ * Update margin preset dropdown based on current margin values
+ */
+function updateBatchMarginPreset() {
+    const presetSelect = document.getElementById('batch-cv-margin-preset');
+    const topSelect = document.getElementById('batch-cv-margin-top');
+    const rightSelect = document.getElementById('batch-cv-margin-right');
+    const bottomSelect = document.getElementById('batch-cv-margin-bottom');
+    const leftSelect = document.getElementById('batch-cv-margin-left');
+
+    if (!presetSelect || !topSelect || !rightSelect || !bottomSelect || !leftSelect) return;
+
+    const top = topSelect.value;
+    const right = rightSelect.value;
+    const bottom = bottomSelect.value;
+    const left = leftSelect.value;
+
+    // Check if margins match a preset
+    if (top === '1.0' && right === '1.0' && bottom === '1.0' && left === '1.0') {
+        presetSelect.value = 'normal';
+    } else if (top === '0.5' && right === '0.5' && bottom === '0.5' && left === '0.5') {
+        presetSelect.value = 'narrow';
+    } else if (top === '0.75' && right === '0.75' && bottom === '0.75' && left === '0.75') {
+        presetSelect.value = 'moderate';
+    } else if (top === '1.5' && right === '1.5' && bottom === '1.5' && left === '1.5') {
+        presetSelect.value = 'wide';
+    } else {
+        presetSelect.value = 'custom';
+    }
 }
 </script>
