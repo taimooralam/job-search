@@ -165,7 +165,7 @@ document.addEventListener('alpine:init', () => {
         // Actions - use direct HTTP calls
         async retry(queueId) {
             try {
-                const response = await fetch(`/queue/${queueId}/retry`, {
+                const response = await fetch(`/api/runner/queue/${queueId}/retry`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
@@ -183,7 +183,7 @@ document.addEventListener('alpine:init', () => {
 
         async cancel(queueId) {
             try {
-                const response = await fetch(`/queue/${queueId}/cancel`, {
+                const response = await fetch(`/api/runner/queue/${queueId}/cancel`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
@@ -200,7 +200,7 @@ document.addEventListener('alpine:init', () => {
 
         async dismiss(queueId) {
             try {
-                const response = await fetch(`/queue/${queueId}/dismiss`, {
+                const response = await fetch(`/api/runner/queue/${queueId}/dismiss`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
