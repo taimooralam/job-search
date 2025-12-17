@@ -1,8 +1,10 @@
 /**
  * Queue Store - Alpine.js Reactive State
  *
- * Manages queue state and syncs with WebSocket updates.
+ * Manages queue state and syncs with HTTP polling updates.
  * Provides reactive data for UI components across all pages.
+ *
+ * Uses QueuePoller for reliable state updates (replaces WebSocket).
  */
 
 document.addEventListener('alpine:init', () => {
@@ -11,6 +13,7 @@ document.addEventListener('alpine:init', () => {
         connected: false,
         connecting: false,
         error: null,
+        lastUpdated: null,
 
         // Queue data
         pending: [],
@@ -21,6 +24,9 @@ document.addEventListener('alpine:init', () => {
         // UI state
         queueDropdownOpen: false,
         failedDropdownOpen: false,
+
+        // Internal: poller instance
+        _poller: null,
 
         // Computed properties
         get pendingCount() {
@@ -47,6 +53,12 @@ document.addEventListener('alpine:init', () => {
             return this.failedCount > 0;
         },
 
+        // Get time since last update (for UI display)
+        get lastUpdatedAgo() {
+            if (!this.lastUpdated) return null;
+            return Date.now() - this.lastUpdated;
+        },
+
         // Get queue item by job ID
         getItemByJobId(jobId) {
             // Check running first
@@ -70,122 +82,51 @@ document.addEventListener('alpine:init', () => {
             return idx >= 0 ? idx + 1 : null;
         },
 
-        // Initialize and connect
+        // Initialize and start polling
         init() {
-            if (!window.queueWebSocket) {
-                console.warn('[QueueStore] WebSocket client not available');
+            // Check if QueuePoller is available
+            if (typeof window.QueuePoller === 'undefined') {
+                console.warn('[QueueStore] QueuePoller not available, waiting...');
+                // Retry after short delay (script loading order)
+                setTimeout(() => this.init(), 100);
                 return;
             }
 
             this.connecting = true;
 
-            // Try RxJS observables first, fall back to legacy event handlers
-            if (this._initRxJS()) {
-                console.log('[QueueStore] Initialized with RxJS observables');
-            } else {
-                this._initLegacyEventHandlers();
-                console.log('[QueueStore] Initialized with legacy event handlers');
-            }
-
-            // Connect
-            window.queueWebSocket.connect();
-        },
-
-        /**
-         * Initialize using RxJS observables from queue-websocket.js
-         * @returns {boolean} true if RxJS init succeeded
-         * @private
-         */
-        _initRxJS() {
-            // Check if RxUtils and WebSocket observables are available
-            if (typeof window.RxUtils === 'undefined') return false;
-            if (!window.queueWebSocket?.connected$) return false;
-
-            const { merge, tap, takeUntil, map, filter, catchError, EMPTY } = window.RxUtils;
-            const ws = window.queueWebSocket;
-
-            // Store reference for cleanup
-            this._rxjsDestroy$ = new window.RxUtils.Subject();
-
-            // Subscribe to connection state
-            ws.connected$.pipe(
-                tap(connected => {
-                    this.connected = connected;
-                    this.connecting = false;
-                    if (connected) this.error = null;
-                }),
-                takeUntil(this._rxjsDestroy$)
-            ).subscribe();
-
-            // Subscribe to typed message streams
-            merge(
-                // Queue state updates
-                ws.queueState$.pipe(
-                    tap(msg => this.updateState(msg.payload))
-                ),
-                // Individual queue updates
-                ws.queueUpdate$.pipe(
-                    tap(msg => this.handleUpdate(msg.payload))
-                ),
-                // Action results
-                ws.actionResult$.pipe(
-                    tap(msg => this.handleActionResult(msg.payload))
-                ),
-                // Errors
-                ws.error$.pipe(
-                    tap(msg => {
-                        this.error = msg.payload?.message || 'Connection error';
-                    })
-                )
-            ).pipe(
-                takeUntil(this._rxjsDestroy$),
-                catchError(err => {
-                    console.error('[QueueStore] RxJS stream error:', err);
-                    return EMPTY;
-                })
-            ).subscribe();
-
-            return true;
-        },
-
-        /**
-         * Initialize using legacy .on() event handlers
-         * @private
-         */
-        _initLegacyEventHandlers() {
-            // Set up event handlers
-            window.queueWebSocket.on('connected', () => {
-                this.connected = true;
-                this.connecting = false;
-                this.error = null;
+            // Create poller instance
+            this._poller = new window.QueuePoller({
+                debug: false, // Set to true for debugging
             });
 
-            window.queueWebSocket.on('disconnected', () => {
-                this.connected = false;
-                this.connecting = false;
-            });
-
-            window.queueWebSocket.on('error', (err) => {
-                this.error = err?.message || 'Connection error';
-            });
-
-            window.queueWebSocket.on('queue_state', (state) => {
+            // Handle state updates
+            this._poller.onState((state) => {
                 this.updateState(state);
+                this.lastUpdated = Date.now();
             });
 
-            window.queueWebSocket.on('queue_update', (update) => {
-                this.handleUpdate(update);
+            // Handle connection status
+            this._poller.onConnection((connected) => {
+                this.connected = connected;
+                this.connecting = false;
+                if (connected) {
+                    this.error = null;
+                }
             });
 
-            window.queueWebSocket.on('action_result', (result) => {
-                this.handleActionResult(result);
+            // Handle errors
+            this._poller.onError((error) => {
+                this.error = error?.message || 'Connection error';
             });
+
+            // Start polling
+            this._poller.start();
+            console.log('[QueueStore] Initialized with HTTP polling');
         },
 
-        // Update full state (with transition detection for missed events)
+        // Update full state (with transition detection for completed jobs)
         updateState(state) {
             // Track running items BEFORE update to detect transitions
-            // This handles the case where completion events were missed (e.g., during reconnection)
             const oldRunningIds = new Set(this.running.map(i => i.job_id));
 
             // Update state arrays
@@ -194,15 +135,16 @@ document.addEventListener('alpine:init', () => {
             this.failed = state.failed || [];
             this.history = state.history || [];
 
-            // Detect items that completed/failed while we were disconnected
+            // Detect items that completed/failed since last poll
+            const newRunningIds = new Set(this.running.map(i => i.job_id));
             const newHistoryIds = new Set(this.history.map(i => i.job_id));
             const newFailedIds = new Set(this.failed.map(i => i.job_id));
 
             oldRunningIds.forEach(jobId => {
                 // Item was running but is no longer running
-                if (!this.running.some(i => i.job_id === jobId)) {
+                if (!newRunningIds.has(jobId)) {
                     if (newHistoryIds.has(jobId)) {
-                        // Moved to history → completed
+                        // Moved to history = completed
                         this.dispatchJobCompleted(jobId);
                     } else if (newFailedIds.has(jobId)) {
                         // Moved to failed
@@ -211,97 +153,70 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
             });
-        },
 
-        // Handle incremental update
-        handleUpdate(update) {
-            const { action, item } = update;
-
-            switch (action) {
-                case 'added':
-                    // New item added to pending
-                    if (!this.pending.find(i => i.queue_id === item.queue_id)) {
-                        this.pending.push(item);
-                    }
-                    break;
-
-                case 'started':
-                    // Item moved from pending to running
-                    this.pending = this.pending.filter(i => i.queue_id !== item.queue_id);
-                    if (!this.running.find(i => i.queue_id === item.queue_id)) {
-                        this.running.push(item);
-                    }
-                    // Trigger event for UI components
+            // Detect newly started jobs
+            this.running.forEach(item => {
+                if (!oldRunningIds.has(item.job_id)) {
                     this.dispatchJobStarted(item.job_id, item.run_id);
-                    break;
+                }
+            });
+        },
 
-                case 'completed':
-                    // Item completed
-                    this.running = this.running.filter(i => i.queue_id !== item.queue_id);
-                    // Add to history (keep limited)
-                    this.history.unshift(item);
-                    if (this.history.length > 20) {
-                        this.history = this.history.slice(0, 20);
-                    }
-                    // Trigger event for UI components
-                    this.dispatchJobCompleted(item.job_id);
-                    break;
-
-                case 'failed':
-                    // Item failed
-                    this.running = this.running.filter(i => i.queue_id !== item.queue_id);
-                    if (!this.failed.find(i => i.queue_id === item.queue_id)) {
-                        this.failed.push(item);
-                    }
-                    // Trigger event for UI components
-                    this.dispatchJobFailed(item.job_id, item.error);
-                    break;
-
-                case 'cancelled':
-                    // Item cancelled
-                    this.pending = this.pending.filter(i => i.queue_id !== item.queue_id);
-                    this.running = this.running.filter(i => i.queue_id !== item.queue_id);
-                    break;
-
-                case 'retried':
-                    // Item moved from failed to pending
-                    this.failed = this.failed.filter(i => i.queue_id !== item.queue_id);
-                    if (!this.pending.find(i => i.queue_id === item.queue_id)) {
-                        this.pending.push(item);
-                    }
-                    break;
-
-                case 'dismissed':
-                    // Item removed from failed
-                    this.failed = this.failed.filter(i => i.queue_id !== item.queue_id);
-                    break;
+        // Actions - use direct HTTP calls
+        async retry(queueId) {
+            try {
+                const response = await fetch(`/queue/${queueId}/retry`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (response.ok) {
+                    // Force immediate refresh
+                    this._poller?.refresh();
+                } else {
+                    console.warn(`[QueueStore] Retry failed: ${response.status}`);
+                }
+            } catch (e) {
+                console.error('[QueueStore] Retry error:', e);
             }
         },
 
-        // Handle action result
-        handleActionResult(result) {
-            const { action, success, queue_id } = result;
-
-            if (!success) {
-                console.warn(`[QueueStore] Action ${action} failed for ${queue_id}`);
+        async cancel(queueId) {
+            try {
+                const response = await fetch(`/queue/${queueId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (response.ok) {
+                    this._poller?.refresh();
+                } else {
+                    console.warn(`[QueueStore] Cancel failed: ${response.status}`);
+                }
+            } catch (e) {
+                console.error('[QueueStore] Cancel error:', e);
             }
         },
 
-        // Actions
-        retry(queueId) {
-            window.queueWebSocket?.retry(queueId);
-        },
-
-        cancel(queueId) {
-            window.queueWebSocket?.cancel(queueId);
-        },
-
-        dismiss(queueId) {
-            window.queueWebSocket?.dismiss(queueId);
+        async dismiss(queueId) {
+            try {
+                const response = await fetch(`/queue/${queueId}/dismiss`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                if (response.ok) {
+                    this._poller?.refresh();
+                } else {
+                    console.warn(`[QueueStore] Dismiss failed: ${response.status}`);
+                }
+            } catch (e) {
+                console.error('[QueueStore] Dismiss error:', e);
+            }
         },
 
         refresh() {
-            window.queueWebSocket?.refresh();
+            this._poller?.refresh();
         },
 
         // Toggle dropdowns

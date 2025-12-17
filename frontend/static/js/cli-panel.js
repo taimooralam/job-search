@@ -577,7 +577,7 @@ document.addEventListener('alpine:init', () => {
                 this._saveState();
 
                 // If operation is running but no SSE subscription, start one
-                if ((opStatus === 'running' || this.runs[runId].status === 'running') && !this.runs[runId]._eventSource) {
+                if ((opStatus === 'running' || this.runs[runId].status === 'running') && !this.runs[runId]._logPoller) {
                     this.subscribeToLogs(runId);
                 }
 
@@ -614,7 +614,7 @@ document.addEventListener('alpine:init', () => {
                     error: data.error || null,
                     langsmithUrl: data.langsmith_url || null,
                     fromRedis: false,
-                    _eventSource: null  // Will be set if we subscribe to SSE
+                    _logPoller: null  // Will be set if we subscribe to log polling
                 };
 
                 // Add error log if present
@@ -654,7 +654,11 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Subscribe to real-time log streaming via SSE (Server-Sent Events)
+         * Subscribe to real-time log streaming via HTTP polling (replaces SSE)
+         *
+         * Uses LogPoller for reliable log fetching that works during long operations.
+         * Implements "replay + live tail" pattern: fetches all past logs then polls for new.
+         *
          * @param {string} runId - The run ID to subscribe to
          */
         subscribeToLogs(runId) {
@@ -671,26 +675,34 @@ document.addEventListener('alpine:init', () => {
             }
 
             // Don't create duplicate subscriptions
-            if (this.runs[runId]._eventSource) {
-                cliDebug(`Already subscribed to SSE for ${runId}`);
+            if (this.runs[runId]._logPoller) {
+                cliDebug(`Already subscribed to logs for ${runId}`);
                 return;
             }
 
-            const url = `/api/runner/operations/${runId}/logs`;
-            cliDebug(`Subscribing to SSE logs: ${url}`);
+            // Check if LogPoller is available
+            if (typeof window.LogPoller === 'undefined') {
+                console.error('[CLI] LogPoller not available');
+                return;
+            }
+
+            cliDebug(`Subscribing to log polling: ${runId}`);
 
             try {
-                const eventSource = new EventSource(url);
-                this.runs[runId]._eventSource = eventSource;
+                const poller = new window.LogPoller(runId, {
+                    pollInterval: 200,  // 200ms for near-instant feel
+                    debug: false,
+                });
+                this.runs[runId]._logPoller = poller;
 
-                // Handle standard log messages (data-only events)
-                eventSource.onmessage = (event) => {
+                // Handle each log message
+                poller.onLog((log) => {
                     if (!this.runs[runId]) {
-                        eventSource.close();
+                        poller.stop();
                         return;
                     }
 
-                    const text = event.data;
+                    const text = log.message;
                     const logType = window.cliDetectLogType?.(text) || 'info';
 
                     // Use spread for Alpine.js reactivity
@@ -710,55 +722,37 @@ document.addEventListener('alpine:init', () => {
 
                     // Debounced save
                     this._saveState();
-                };
+                });
 
-                // Handle layer_status events
-                eventSource.addEventListener('layer_status', (event) => {
+                // Handle layer status updates
+                poller.onLayerStatus((layerStatus) => {
                     if (!this.runs[runId]) {
-                        eventSource.close();
+                        poller.stop();
                         return;
                     }
 
-                    try {
-                        const layerStatus = JSON.parse(event.data);
-                        this.runs[runId].layerStatus = {
-                            ...this.runs[runId].layerStatus,
-                            ...layerStatus
-                        };
-                        cliDebug(`Layer status update for ${runId}:`, layerStatus);
-                    } catch (e) {
-                        console.warn('[CLI] Failed to parse layer_status:', e);
-                    }
+                    this.runs[runId].layerStatus = {
+                        ...this.runs[runId].layerStatus,
+                        ...layerStatus
+                    };
+                    cliDebug(`Layer status update for ${runId}:`, layerStatus);
                 });
 
-                // Handle result events (final operation result)
-                eventSource.addEventListener('result', (event) => {
-                    if (!this.runs[runId]) {
-                        eventSource.close();
-                        return;
-                    }
-
-                    try {
-                        const result = JSON.parse(event.data);
-                        this.runs[runId].result = result;
-                        cliDebug(`Result for ${runId}:`, result);
-                    } catch (e) {
-                        console.warn('[CLI] Failed to parse result:', e);
-                    }
-                });
-
-                // Handle end event (stream complete)
-                eventSource.addEventListener('end', (event) => {
-                    const finalStatus = event.data;  // 'completed' or 'failed'
-                    cliDebug(`SSE stream ended for ${runId}: ${finalStatus}`);
+                // Handle completion
+                poller.onComplete((status, error) => {
+                    cliDebug(`Log polling ended for ${runId}: ${status}`);
 
                     if (this.runs[runId]) {
                         // Map backend status to CLI status
-                        this.runs[runId].status = finalStatus === 'completed' ? 'success' : 'error';
+                        this.runs[runId].status = status === 'completed' ? 'success' : 'error';
                         this.runs[runId].completedAt = Date.now();
 
-                        // Clean up EventSource reference
-                        this.runs[runId]._eventSource = null;
+                        if (error) {
+                            this.runs[runId].error = error;
+                        }
+
+                        // Clean up poller reference
+                        this.runs[runId]._logPoller = null;
 
                         // Save state
                         this._saveStateImmediate();
@@ -766,37 +760,27 @@ document.addEventListener('alpine:init', () => {
                         // Show toast if panel is collapsed
                         if (!this.expanded && typeof showToast === 'function') {
                             const jobTitle = this.runs[runId].jobTitle;
-                            if (finalStatus === 'completed') {
+                            if (status === 'completed') {
                                 showToast(`Pipeline completed: ${jobTitle}`, 'success');
                             } else {
                                 showToast(`Pipeline failed: ${jobTitle}`, 'error');
                             }
                         }
                     }
-
-                    eventSource.close();
                 });
 
-                // Handle errors - fall back to polling
-                eventSource.onerror = (event) => {
-                    console.warn(`[CLI] SSE error for ${runId}, falling back to polling`);
+                // Handle errors
+                poller.onError((error) => {
+                    console.warn(`[CLI] Log polling error for ${runId}:`, error);
+                    // Poller will auto-retry, so just log the error
+                });
 
-                    if (this.runs[runId]) {
-                        this.runs[runId]._eventSource = null;
-                    }
-
-                    eventSource.close();
-
-                    // Fall back to periodic polling for this run
-                    this._startPollingFallback(runId);
-                };
-
-                cliDebug(`SSE subscription established for ${runId}`);
+                // Start polling
+                poller.start();
+                cliDebug(`Log polling subscription established for ${runId}`);
 
             } catch (err) {
-                console.error('[CLI] Failed to create EventSource:', err);
-                // Fall back to polling
-                this._startPollingFallback(runId);
+                console.error('[CLI] Failed to create LogPoller:', err);
             }
         },
 
@@ -1042,7 +1026,7 @@ document.addEventListener('alpine:init', () => {
                 layerStatus: {},
                 startedAt: Date.now(),
                 completedAt: null,
-                _eventSource: null,
+                _logPoller: null,
                 _pollingInterval: null
             };
 
@@ -1185,10 +1169,10 @@ document.addEventListener('alpine:init', () => {
 
             cliDebug('Closing run:', runId);
 
-            // Clean up SSE EventSource if present
-            if (this.runs[runId]?._eventSource) {
+            // Clean up LogPoller if present
+            if (this.runs[runId]?._logPoller) {
                 try {
-                    this.runs[runId]._eventSource.close();
+                    this.runs[runId]._logPoller.stop();
                 } catch (e) {
                     // Ignore close errors
                 }

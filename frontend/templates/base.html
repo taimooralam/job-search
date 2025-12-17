@@ -108,9 +108,9 @@
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
-    <!-- RxJS for reactive streams (WebSocket, SSE, event handling) -->
-    <script src="https://unpkg.com/rxjs@7/dist/bundles/rxjs.umd.min.js"></script>
-    <script src="/static/js/rxjs-utils.js"></script>
+    <!-- HTTP Polling for Queue and Log Updates (replaces WebSocket/RxJS) -->
+    <script src="/static/js/queue-poller.js"></script>
+    <script src="/static/js/log-poller.js"></script>
 
     <!-- TipTap Editor (Using esm.sh CDN with importmap for browser extension compatibility) -->
     <script type="importmap">
@@ -3140,8 +3140,7 @@
     <!-- CLI Panel JS (must load after Alpine.js for store registration) -->
     <script src="/static/js/cli-panel.js"></script>
 
-    <!-- Queue WebSocket and Store (must load after Alpine.js) -->
-    <script src="/static/js/queue-websocket.js"></script>
+    <!-- Queue Store (must load after Alpine.js and pollers) -->
     <script src="/static/js/queue-store.js"></script>
     <script src="/static/js/live-status-badge.js"></script>
 

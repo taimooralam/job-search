@@ -440,122 +440,111 @@ document.addEventListener('alpine:init', () => {
                     }
                 }));
 
-                // Step 2: Connect to SSE stream for real-time updates
+                // Step 2: Connect to log polling for real-time updates
                 return new Promise((resolve) => {
-                    const logStreamUrl = `/api/runner/operations/${runId}/logs`;
-                    console.log(`[${action}] Creating EventSource for: ${logStreamUrl}`);
+                    console.log(`[${action}] Creating LogPoller for run: ${runId}`);
 
-                    let eventSource;
+                    // Check if LogPoller is available
+                    if (typeof window.LogPoller === 'undefined') {
+                        console.error(`[${action}] LogPoller not available, falling back to status polling`);
+                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
+                        return;
+                    }
+
+                    let poller;
                     try {
-                        eventSource = new EventSource(logStreamUrl);
-                        console.log(`[${action}] EventSource created, readyState: ${eventSource.readyState}`);
+                        poller = new window.LogPoller(runId, {
+                            pollInterval: 200,  // 200ms for near-instant feel
+                            debug: false,
+                        });
+                        console.log(`[${action}] LogPoller created`);
                     } catch (e) {
-                        console.error(`[${action}] Failed to create EventSource:`, e);
+                        console.error(`[${action}] Failed to create LogPoller:`, e);
                         // Fall back to polling immediately
                         this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
                         return;
                     }
 
                     let lastLayerStatus = {};
-                    let finalResult = null;
-
-                    // Log when SSE connection opens
-                    eventSource.onopen = () => {
-                        console.log(`[${action}] SSE connection opened, readyState: ${eventSource.readyState}`);
-                    };
 
                     // Handle regular log messages
-                    eventSource.onmessage = (event) => {
-                        console.log(`[${action}] Log: ${event.data}`);
+                    poller.onLog((log) => {
+                        console.log(`[${action}] Log: ${log.message}`);
                         // Dispatch CLI log event
-                        const logType = window.cliDetectLogType ? window.cliDetectLogType(event.data) : 'info';
+                        const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
                         window.dispatchEvent(new CustomEvent('cli:log', {
                             detail: {
-                                runId: runId,  // Use server's run_id
-                                text: event.data,
+                                runId: runId,
+                                text: log.message,
                                 logType
                             }
                         }));
-                    };
-
-                    // Handle layer status updates
-                    eventSource.addEventListener('layer_status', (event) => {
-                        try {
-                            lastLayerStatus = JSON.parse(event.data);
-                            console.log(`[${action}] Layer status:`, lastLayerStatus);
-                            // Dispatch CLI layer status event
-                            window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                                detail: {
-                                    runId: runId,  // Use server's run_id
-                                    layerStatus: lastLayerStatus
-                                }
-                            }));
-                        } catch (e) {
-                            console.error('Failed to parse layer_status:', e);
-                        }
                     });
 
-                    // Handle final result
-                    eventSource.addEventListener('result', (event) => {
-                        try {
-                            finalResult = JSON.parse(event.data);
-                            console.log(`[${action}] Result:`, finalResult);
-                        } catch (e) {
-                            console.error('Failed to parse result:', e);
-                        }
+                    // Handle layer status updates
+                    poller.onLayerStatus((layerStatus) => {
+                        lastLayerStatus = layerStatus;
+                        console.log(`[${action}] Layer status:`, lastLayerStatus);
+                        // Dispatch CLI layer status event
+                        window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                            detail: {
+                                runId: runId,
+                                layerStatus: lastLayerStatus
+                            }
+                        }));
                     });
 
                     // Handle completion/failure
-                    eventSource.addEventListener('end', (event) => {
-                        const status = event.data;
+                    poller.onComplete((status, error) => {
                         console.log(`[${action}] Ended with status: ${status}`);
-
-                        eventSource.close();
                         this.loading[action] = false;
 
-                        if (status === 'completed' && finalResult) {
-                            // Store result
-                            this.lastResults[action] = {
-                                success: finalResult.success,
-                                timestamp: new Date().toISOString(),
-                                cost: finalResult.cost_usd || this.getCost(tier),
-                                data: finalResult
-                            };
+                        if (status === 'completed') {
+                            // Fetch final result from status endpoint
+                            this._fetchFinalResult(runId).then(finalResult => {
+                                // Store result
+                                this.lastResults[action] = {
+                                    success: true,
+                                    timestamp: new Date().toISOString(),
+                                    cost: finalResult?.cost_usd || this.getCost(tier),
+                                    data: finalResult
+                                };
 
-                            // Update session costs
-                            this.sessionCosts[action] += finalResult.cost_usd || this.getCost(tier);
+                                // Update session costs
+                                this.sessionCosts[action] += finalResult?.cost_usd || this.getCost(tier);
 
-                            // Dispatch CLI complete event
-                            window.dispatchEvent(new CustomEvent('cli:complete', {
-                                detail: {
-                                    runId: runId,  // Use server's run_id
-                                    status: 'success',
-                                    result: finalResult
-                                }
-                            }));
+                                // Dispatch CLI complete event
+                                window.dispatchEvent(new CustomEvent('cli:complete', {
+                                    detail: {
+                                        runId: runId,
+                                        status: 'success',
+                                        result: finalResult
+                                    }
+                                }));
 
-                            // Dispatch UI refresh event (replaces page reload)
-                            window.dispatchEvent(new CustomEvent('ui:refresh-job', {
-                                detail: {
-                                    jobId,
-                                    sections: this._getRefreshSections(action)
-                                }
-                            }));
+                                // Dispatch UI refresh event
+                                window.dispatchEvent(new CustomEvent('ui:refresh-job', {
+                                    detail: {
+                                        jobId,
+                                        sections: this._getRefreshSections(action)
+                                    }
+                                }));
 
-                            // Dispatch custom event for other listeners
-                            document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
-                                detail: { action, jobId, result: finalResult }
-                            }));
+                                // Dispatch custom event for other listeners
+                                document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
+                                    detail: { action, jobId, result: finalResult }
+                                }));
 
-                            resolve(finalResult);
+                                resolve(finalResult || { success: true });
+                            });
                         } else {
                             // Failed
-                            const errorMsg = finalResult?.error || 'Operation failed';
+                            const errorMsg = error || 'Operation failed';
 
                             // Dispatch CLI complete with error
                             window.dispatchEvent(new CustomEvent('cli:complete', {
                                 detail: {
-                                    runId: runId,  // Use server's run_id
+                                    runId: runId,
                                     status: 'error',
                                     error: errorMsg
                                 }
@@ -571,19 +560,14 @@ document.addEventListener('alpine:init', () => {
                         }
                     });
 
-                    // Handle SSE errors
-                    eventSource.addEventListener('error', (event) => {
-                        console.warn(`[${action}] SSE error, falling back to polling`);
-                        eventSource.close();
-
-                        // Fall back to polling for status
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
+                    // Handle polling errors (LogPoller auto-retries)
+                    poller.onError((err) => {
+                        console.warn(`[${action}] Log polling error:`, err);
+                        // LogPoller auto-retries, so we just log
                     });
 
-                    eventSource.onerror = (err) => {
-                        console.error(`[${action}] SSE connection error:`, err);
-                        // The 'error' event listener should handle this
-                    };
+                    // Start the poller
+                    poller.start();
                 });
 
             } catch (error) {
@@ -781,78 +765,76 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Connect to SSE stream for operation logs (used by queueExecution)
+         * Connect to log polling for operation logs (used by queueExecution)
          *
-         * This method connects to the log streaming endpoint after an operation
+         * This method connects to the log polling endpoint after an operation
          * has been queued. Unlike executeWithSSE() which waits for completion,
          * this is fire-and-forget - logs are streamed to CLI panel but we don't
          * block on completion (the queue handles that).
+         *
+         * Uses LogPoller for reliable streaming during long operations.
          *
          * @param {string} runId - The operation run ID from the queue response
          * @param {string} action - Action name (e.g., 'research-company')
          * @param {string} jobId - MongoDB job ID
          */
         _connectToOperationLogs(runId, action, jobId) {
-            const logStreamUrl = `/api/runner/operations/${runId}/logs`;
-            console.log(`[${action}] Connecting to SSE for queued operation: ${logStreamUrl}`);
+            console.log(`[${action}] Connecting to log polling for queued operation: ${runId}`);
 
-            let eventSource;
+            // Check if LogPoller is available
+            if (typeof window.LogPoller === 'undefined') {
+                console.warn(`[${action}] LogPoller not available, skipping log connection`);
+                // Logs are persisted on server, CLI panel should handle subscription
+                return;
+            }
+
+            let poller;
             try {
-                eventSource = new EventSource(logStreamUrl);
-                console.log(`[${action}] EventSource created for queued op, readyState: ${eventSource.readyState}`);
+                poller = new window.LogPoller(runId, {
+                    pollInterval: 200,  // 200ms for near-instant feel
+                    debug: false,
+                });
+                console.log(`[${action}] LogPoller created for queued op`);
             } catch (e) {
-                console.error(`[${action}] Failed to create EventSource for queued operation:`, e);
+                console.error(`[${action}] Failed to create LogPoller for queued operation:`, e);
                 // Logs are persisted on server, user can fetch via status endpoint
                 return;
             }
 
-            // Log when SSE connection opens
-            eventSource.onopen = () => {
-                console.log(`[${action}] SSE connection opened for queued op, readyState: ${eventSource.readyState}`);
-            };
-
             // Handle regular log messages
-            eventSource.onmessage = (event) => {
-                console.log(`[${action}] Queued log: ${event.data}`);
-                const logType = window.cliDetectLogType ? window.cliDetectLogType(event.data) : 'info';
+            poller.onLog((log) => {
+                console.log(`[${action}] Queued log: ${log.message}`);
+                const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
                 window.dispatchEvent(new CustomEvent('cli:log', {
                     detail: {
                         runId: runId,
-                        text: event.data,
+                        text: log.message,
                         logType
                     }
                 }));
-            };
+            });
 
             // Handle layer status updates
-            eventSource.addEventListener('layer_status', (event) => {
-                try {
-                    const layerStatus = JSON.parse(event.data);
-                    console.log(`[${action}] Queued layer status:`, layerStatus);
-                    window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                        detail: {
-                            runId: runId,
-                            layerStatus: layerStatus
-                        }
-                    }));
-                } catch (e) {
-                    console.error('Failed to parse layer_status:', e);
-                }
+            poller.onLayerStatus((layerStatus) => {
+                console.log(`[${action}] Queued layer status:`, layerStatus);
+                window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                    detail: {
+                        runId: runId,
+                        layerStatus: layerStatus
+                    }
+                }));
             });
 
             // Handle completion/failure
-            eventSource.addEventListener('end', (event) => {
-                const status = event.data;
+            poller.onComplete((status, error) => {
                 console.log(`[${action}] Queued operation ended with status: ${status}`);
-
-                eventSource.close();
 
                 // Dispatch CLI complete event
                 window.dispatchEvent(new CustomEvent('cli:complete', {
                     detail: {
                         runId: runId,
                         status: status === 'completed' ? 'success' : 'error',
-                        error: status !== 'completed' ? `Operation ${status}` : null
+                        error: status !== 'completed' ? error || `Operation ${status}` : null
                     }
                 }));
 
@@ -872,13 +854,14 @@ document.addEventListener('alpine:init', () => {
                 }
             });
 
-            // Handle SSE errors - just close, logs are persisted
-            eventSource.onerror = (err) => {
-                console.warn(`[${action}] SSE error for queued operation, closing connection:`, err);
-                eventSource.close();
-                // Don't dispatch error - logs are persisted on server
-                // User can still see logs via the status endpoint or by refreshing
-            };
+            // Handle errors (LogPoller auto-retries, so just log)
+            poller.onError((err) => {
+                console.warn(`[${action}] Log polling error for queued operation:`, err);
+                // Don't dispatch error - poller will retry and logs are persisted
+            });
+
+            // Start polling
+            poller.start();
         },
 
         /**
@@ -1107,6 +1090,44 @@ document.addEventListener('alpine:init', () => {
                 'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker']
             };
             return sectionMap[action] || ['action-buttons'];
+        },
+
+        /**
+         * Fetch final result from log status endpoint
+         *
+         * Called when LogPoller completes to get the final operation result.
+         * This replaces the need to parse SSE 'result' events.
+         *
+         * @param {string} runId - The operation run ID
+         * @returns {Promise<Object|null>} Final result object or null on error
+         */
+        async _fetchFinalResult(runId) {
+            try {
+                const response = await fetch(`/api/logs/${runId}/status`);
+                if (!response.ok) {
+                    console.warn(`[pipeline-actions] Failed to fetch final result: ${response.status}`);
+                    return null;
+                }
+
+                const data = await response.json();
+
+                // The status endpoint returns the full operation state
+                // We extract relevant result data
+                return {
+                    success: data.status === 'completed',
+                    status: data.status,
+                    error: data.error,
+                    cost_usd: data.cost_usd,
+                    langsmith_url: data.langsmith_url,
+                    layer_status: data.layer_status,
+                    total_logs: data.total_count,
+                    // Include result data if present in meta
+                    ...(data.result || {})
+                };
+            } catch (error) {
+                console.error('[pipeline-actions] Error fetching final result:', error);
+                return null;
+            }
         },
 
         /**
