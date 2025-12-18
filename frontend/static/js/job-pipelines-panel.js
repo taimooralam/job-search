@@ -157,10 +157,11 @@ document.addEventListener('alpine:init', () => {
 
                 if (result.success) {
                     // Update local state immediately for responsive UI
+                    // Capture run_id from API response if available (for immediate log viewing)
                     this.operations[operation] = {
                         status: 'pending',
                         queue_id: result.queue_id,
-                        run_id: null,
+                        run_id: result.run_id || null,  // Capture run_id for log viewing
                         position: result.position,
                         started_at: null,
                         completed_at: null,
@@ -365,6 +366,32 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('queue:job-failed', (event) => {
                 if (event.detail?.jobId === this.jobId) {
                     console.log('[Pipelines Panel] Job failed event received, refreshing status');
+                    this._loadInitialStatus();
+                }
+            });
+
+            // Listen for status changes from batch operations (dispatched by batch_processing.html)
+            // This enables real-time updates when same job is viewed from detail page while batch runs
+            window.addEventListener('queue:job-status-changed', (event) => {
+                if (event.detail?.jobId === this.jobId) {
+                    const { status, runId, operation } = event.detail;
+                    console.log(`[Pipelines Panel] Job status changed: ${operation} -> ${status}`);
+
+                    // Update local operation state if we track this operation
+                    if (operation && this.operations[operation] !== undefined) {
+                        if (!this.operations[operation]) {
+                            this.operations[operation] = {};
+                        }
+                        this.operations[operation].status = status === 'queued' ? 'pending' : status;
+                        if (runId) {
+                            this.operations[operation].run_id = runId;
+                        }
+                        if (event.detail.position) {
+                            this.operations[operation].position = event.detail.position;
+                        }
+                    }
+
+                    // Also refresh from API to get complete data
                     this._loadInitialStatus();
                 }
             });

@@ -41,6 +41,7 @@ function liveStatusBadge(jobId) {
                     } else if (status === 'pending') {
                         this.status = 'pending';
                         this.position = e.detail.position || null;
+                        this.runId = e.detail.runId || null;  // Capture runId for log viewing
                         this._syntheticStatus = true;
                     } else if (status === 'completed') {
                         this.status = 'completed';
