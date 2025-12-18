@@ -1,4 +1,5 @@
 # Runner + pipeline image with Playwright/Chromium for PDF export.
+# Also includes Claude Code CLI for parallel JD extraction.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -6,11 +7,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# System deps for Playwright/Chromium
+# System deps for Playwright/Chromium + Node.js for Claude Code CLI
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
         ca-certificates \
+        gnupg \
         libnss3 \
         libatk-bridge2.0-0 \
         libgtk-3-0 \
@@ -26,6 +28,18 @@ RUN apt-get update \
         libasound2 \
         fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20.x for Claude Code CLI
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Claude Code CLI globally
+# Uses Max subscription auth via mounted ~/.claude config
+RUN npm install -g @anthropic-ai/claude-code
+
+# Create directory for Claude auth config (will be mounted as volume)
+RUN mkdir -p /root/.claude
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \

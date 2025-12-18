@@ -15,6 +15,9 @@ services:
       - PDF_SERVICE_URL=http://pdf-service:8001
       # CORS: Allow direct browser → runner communication for log polling
       - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app
+      # Claude Code CLI OAuth token (Max subscription - set in .env file on server)
+      - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
+      - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
     # Traefik handles external traffic via HTTPS; keep direct port for local/fallback
     ports:
       - "0.0.0.0:8000:8000"
@@ -51,6 +54,8 @@ services:
       - ./credentials:/app/credentials:ro
       # Master CV data directory (file fallback for MongoDB)
       - ./data/master-cv:/app/data/master-cv:ro
+      # Claude Code CLI auth is via ANTHROPIC_AUTH_TOKEN env var (see environment section)
+      # No file mount needed - the OAuth token is passed as environment variable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

@@ -562,6 +562,176 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
+# ============================================================================
+# Claude Code JD Extraction Endpoint (Parallel A/B Comparison)
+# ============================================================================
+
+
+@app.post("/api/jobs/{job_id}/extract-claude", dependencies=[Depends(verify_token)])
+async def extract_with_claude(job_id: str) -> Dict[str, Any]:
+    """
+    Run Claude Code CLI extraction on a job (A/B comparison with GPT-4o).
+
+    Uses Claude Max subscription via CLI headless mode. Stores result in
+    extracted_jd_claude field for side-by-side comparison on job detail page.
+
+    Args:
+        job_id: MongoDB ObjectId of the job to extract
+
+    Returns:
+        JSON with extraction result and metadata
+    """
+    from bson import ObjectId
+    from pymongo import MongoClient
+    from dataclasses import asdict
+
+    # Validate job_id format
+    try:
+        object_id = ObjectId(job_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid job ID format")
+
+    # Get MongoDB connection
+    mongo_uri = os.getenv("MONGODB_URI")
+    if not mongo_uri:
+        raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
+
+    client = None
+    try:
+        client = MongoClient(mongo_uri)
+        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
+        collection = db["level-2"]
+
+        # Fetch job details
+        job = collection.find_one(
+            {"_id": object_id},
+            {"title": 1, "company": 1, "company_name": 1, "job_description": 1, "description": 1}
+        )
+
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        title = job.get("title", "")
+        company = job.get("company_name") or job.get("company", "")
+        job_description = job.get("job_description") or job.get("description", "")
+
+        if not job_description:
+            raise HTTPException(status_code=400, detail="Job has no description to extract")
+
+        logger.info(f"Starting Claude extraction for job {job_id}: {title} at {company}")
+
+        # Import and run Claude extractor
+        try:
+            from src.layer1_4.claude_jd_extractor import ClaudeJDExtractor
+        except ImportError as e:
+            logger.error(f"Failed to import Claude extractor: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="Claude extractor module not available"
+            )
+
+        # Check if Claude CLI is available
+        extractor = ClaudeJDExtractor()
+        if not extractor.check_cli_available():
+            logger.error("Claude CLI not available or not authenticated")
+            raise HTTPException(
+                status_code=503,
+                detail="Claude CLI not available. Ensure 'claude' is installed and authenticated."
+            )
+
+        # Run extraction
+        result = extractor.extract(
+            job_id=job_id,
+            title=title,
+            company=company,
+            job_description=job_description
+        )
+
+        if not result.success:
+            logger.error(f"Claude extraction failed for {job_id}: {result.error}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Claude extraction failed: {result.error}"
+            )
+
+        # Save to MongoDB
+        update_result = collection.update_one(
+            {"_id": object_id},
+            {
+                "$set": {
+                    "extracted_jd_claude": result.extracted_jd,
+                    "extracted_jd_claude_metadata": {
+                        "model": result.model,
+                        "extracted_at": result.extracted_at,
+                        "duration_ms": result.duration_ms,
+                        "extractor": "claude-code-cli"
+                    }
+                }
+            }
+        )
+
+        logger.info(
+            f"Claude extraction complete for {job_id}: "
+            f"role_category={result.extracted_jd.get('role_category', 'unknown')}, "
+            f"duration={result.duration_ms}ms"
+        )
+
+        return {
+            "success": True,
+            "job_id": job_id,
+            "extracted_jd_claude": result.extracted_jd,
+            "metadata": {
+                "model": result.model,
+                "extracted_at": result.extracted_at,
+                "duration_ms": result.duration_ms,
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Claude extraction error for job {job_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Extraction error: {str(e)}")
+    finally:
+        if client:
+            try:
+                client.close()
+            except Exception:
+                pass
+
+
+@app.get("/api/claude/status")
+async def get_claude_status() -> Dict[str, Any]:
+    """
+    Check Claude Code CLI availability and authentication status.
+
+    Used by frontend to show whether Claude extraction is available.
+    """
+    try:
+        from src.layer1_4.claude_jd_extractor import ClaudeJDExtractor
+
+        extractor = ClaudeJDExtractor()
+        cli_available = extractor.check_cli_available()
+
+        return {
+            "available": cli_available,
+            "model": extractor.model,
+            "error": None if cli_available else "Claude CLI not installed or not authenticated"
+        }
+    except ImportError as e:
+        return {
+            "available": False,
+            "model": None,
+            "error": f"Claude extractor module not available: {str(e)}"
+        }
+    except Exception as e:
+        return {
+            "available": False,
+            "model": None,
+            "error": str(e)
+        }
+
+
 @app.get("/jobs/{run_id}/status", response_model=StatusResponse)
 async def get_status(run_id: str) -> StatusResponse:
     """Return status for a given run_id."""

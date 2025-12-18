@@ -72,3 +72,7 @@ node_modules/
 .vercel/
 GEMINI.md
 .env*.local
+
+# Claude Code CLI auth (never commit - contains subscription tokens!)
+claude-auth/
+.claude/
