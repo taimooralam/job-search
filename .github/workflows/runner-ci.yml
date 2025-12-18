@@ -240,7 +240,7 @@ jobs:
           RUNNER_SHA="${{ steps.deployed.outputs.runner_sha }}"
           if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
             echo "### Runner Service (deployed: $RUNNER_SHA)"
-            COMMITS=$(git log --oneline ${RUNNER_SHA}..HEAD -- runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | head -20)
+            COMMITS=$(git log --oneline ${RUNNER_SHA}..HEAD -- runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | head -20)
             if [[ -n "$COMMITS" ]]; then
               echo "\`\`\`"
               echo "$COMMITS"
@@ -279,9 +279,10 @@ jobs:
           PDF_SHA="${{ steps.deployed.outputs.pdf_sha }}"
 
           # Check runner changes since deployment
+          # IMPORTANT: Include docker-compose.runner.yml for env var changes (CORS_ORIGINS, etc.)
           if [[ "$RUNNER_SHA" != "unknown" && "$RUNNER_SHA" != "" ]]; then
             RUNNER_CHANGES=$(git diff --name-only ${RUNNER_SHA}..HEAD -- \
-              runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | wc -l)
+              runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | wc -l)
             if [[ $RUNNER_CHANGES -gt 0 ]]; then
               echo "runner=true" >> $GITHUB_OUTPUT
               echo "🔄 Runner: $RUNNER_CHANGES files changed since $RUNNER_SHA"
@@ -292,7 +293,7 @@ jobs:
           else
             # Unknown deployed version - check against previous commit as fallback
             RUNNER_CHANGES=$(git diff --name-only HEAD~1..HEAD -- \
-              runner_service/ src/ scripts/ Dockerfile.runner requirements.txt 2>/dev/null | wc -l)
+              runner_service/ src/ scripts/ Dockerfile.runner docker-compose.runner.yml requirements.txt 2>/dev/null | wc -l)
             if [[ $RUNNER_CHANGES -gt 0 ]]; then
               echo "runner=true" >> $GITHUB_OUTPUT
               echo "🔄 Runner: $RUNNER_CHANGES files changed (unknown deployed version)"
