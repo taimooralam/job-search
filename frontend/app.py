@@ -4252,12 +4252,12 @@ def import_contacts(job_id: str):
 
 @app.route("/api/jobs/<job_id>/contacts/prompt", methods=["GET"])
 @login_required
-def get_firecrawl_prompt(job_id: str):
+def get_contact_discovery_prompt(job_id: str):
     """
-    Generate a FireCrawl contact discovery prompt for Claude Code.
+    Generate a contact discovery prompt for Claude Code.
 
     Returns a prompt that users can copy and paste into Claude Code
-    to discover contacts using the FireCrawl MCP tool.
+    to discover contacts using the built-in WebSearch tool.
 
     Returns:
         JSON with the generated prompt
@@ -4277,27 +4277,20 @@ def get_firecrawl_prompt(job_id: str):
     company = job.get("company", "the company")
     title = job.get("title", "the role")
 
-    prompt = f"""Find contacts at {company} for the {title} role using FireCrawl MCP.
+    prompt = f"""Find contacts at {company} for the {title} role.
 
-Instructions:
-1. Use mcp__firecrawl__firecrawl_search with these parameters:
-   Query: "{company} {title} (hiring manager OR recruiter OR team lead) site:linkedin.com"
-   Limit: 5
+Use the WebSearch tool to find relevant people:
 
-2. Extract contacts using this schema:
-{{
-  "name": "string",
-  "role": "string",
-  "linkedin_url": "string",
-  "email": "string (if found)",
-  "phone": "string (if found)",
-  "relevance": "hiring_manager | recruiter | team_lead | other"
-}}
+1. Search for: "{company} {title} hiring manager OR recruiter OR team lead site:linkedin.com"
 
-3. Return results as JSON array
-4. Paste the JSON below to import into job-search
+2. From the results, extract contacts with this information:
+   - name: Full name
+   - role: Their job title
+   - linkedin_url: LinkedIn profile URL
+   - email: Email if found (often not available)
+   - relevance: One of: hiring_manager, recruiter, team_lead, or other
 
-Expected format:
+3. Return as JSON array in this format:
 [
   {{
     "name": "Jane Doe",
@@ -4306,7 +4299,10 @@ Expected format:
     "email": "jane@company.com",
     "relevance": "hiring_manager"
   }}
-]"""
+]
+
+4. Prioritize people who are likely decision-makers for this role
+5. I'll paste the JSON into my job-search app to import the contacts"""
 
     return jsonify({
         "success": True,
