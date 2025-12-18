@@ -425,94 +425,121 @@
         cancelled: false
     };
 
-    // Active SSE connection for bulk operations
-    let activeBatchSSE = null;
+    // Active log pollers for bulk operations (one per job)
+    const activeBatchPollers = new Map(); // runId -> LogPoller instance
 
     // ============================================================================
-    // SSE Streaming for Bulk Operations
+    // Log Polling for Bulk Operations (replaces SSE for reliability)
     // ============================================================================
 
     /**
-     * Start SSE stream for a bulk operation
-     * Connects to the runner service's log stream for real-time updates
+     * Connect LogPoller for a batch operation job
+     * Uses direct browser → runner communication for 200ms polling
      * @param {string} runId - The run ID returned from the bulk operation
+     * @param {string} jobId - The job ID for progress tracking
      * @param {string} operation - Operation name for logging
+     * @param {string} jobTitle - Job title for CLI panel display
      */
-    function connectBatchSSEStream(runId, operation) {
-        BatchDebug.log('SSE', `Connecting to stream for run ${runId}`, { operation });
+    function connectBatchLogPoller(runId, jobId, operation, jobTitle) {
+        BatchDebug.log('POLLER', `Connecting LogPoller for run ${runId}`, { jobId, operation });
 
-        // Close any existing connection
-        if (activeBatchSSE) {
-            BatchDebug.log('SSE', 'Closing previous SSE connection');
-            activeBatchSSE.close();
-            activeBatchSSE = null;
+        // Check if LogPoller is available
+        if (typeof window.LogPoller === 'undefined') {
+            BatchDebug.error('POLLER', 'LogPoller not available - logs will not be streamed');
+            return;
         }
 
-        const logStreamUrl = `/api/runner/operations/${runId}/logs`;
-        BatchDebug.log('SSE', `Creating EventSource: ${logStreamUrl}`);
+        // Stop existing poller for this run if any
+        if (activeBatchPollers.has(runId)) {
+            BatchDebug.log('POLLER', `Stopping existing poller for ${runId}`);
+            activeBatchPollers.get(runId).stop();
+            activeBatchPollers.delete(runId);
+        }
 
         try {
-            activeBatchSSE = new EventSource(logStreamUrl);
+            const poller = new window.LogPoller(runId, {
+                pollInterval: 200,  // 200ms for near-instant feel
+                debug: false
+            });
 
-            activeBatchSSE.onopen = function() {
-                BatchDebug.log('SSE', 'Connection opened', { readyState: activeBatchSSE.readyState });
-            };
-
-            // Handle regular log messages
-            activeBatchSSE.onmessage = function(event) {
-                BatchDebug.log('SSE', 'Log message', event.data);
-                // Append to CLI panel if available
-                if (window.cliPanel && typeof window.cliPanel.appendOutput === 'function') {
-                    window.cliPanel.appendOutput(event.data, 'info');
+            // Dispatch CLI start event to create tab in CLI panel
+            window.dispatchEvent(new CustomEvent('cli:start-run', {
+                detail: {
+                    runId: runId,
+                    jobId: jobId,
+                    jobTitle: jobTitle || 'Unknown Job',
+                    action: operation
                 }
-            };
+            }));
 
-            // Handle status events (job started, completed, etc.)
-            activeBatchSSE.addEventListener('status', function(event) {
-                BatchDebug.log('SSE', 'Status event received', event.data);
-                try {
-                    const statusData = JSON.parse(event.data);
-                    handleBatchSSEStatus(statusData);
-                } catch (e) {
-                    BatchDebug.error('SSE', 'Failed to parse status event', e);
-                }
+            // Handle log messages
+            poller.onLog((log) => {
+                BatchDebug.log('POLLER', `[${runId}] Log: ${log.message}`);
+                const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
+                window.dispatchEvent(new CustomEvent('cli:log', {
+                    detail: {
+                        runId: runId,
+                        text: log.message,
+                        logType: logType
+                    }
+                }));
             });
 
             // Handle layer status updates
-            activeBatchSSE.addEventListener('layer_status', function(event) {
-                BatchDebug.log('SSE', 'Layer status event', event.data);
-                try {
-                    const layerData = JSON.parse(event.data);
-                    // Dispatch to CLI panel
-                    window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                        detail: { runId, layerStatus: layerData }
-                    }));
-                } catch (e) {
-                    BatchDebug.error('SSE', 'Failed to parse layer_status', e);
-                }
+            poller.onLayerStatus((layerStatus) => {
+                BatchDebug.log('POLLER', `[${runId}] Layer status:`, layerStatus);
+                window.dispatchEvent(new CustomEvent('cli:layer-status', {
+                    detail: { runId: runId, layerStatus: layerStatus }
+                }));
             });
 
             // Handle completion
-            activeBatchSSE.addEventListener('end', function(event) {
-                const status = event.data;
-                BatchDebug.log('SSE', `Stream ended with status: ${status}`);
-                activeBatchSSE.close();
-                activeBatchSSE = null;
+            poller.onComplete((status, error) => {
+                BatchDebug.log('POLLER', `[${runId}] Complete with status: ${status}`);
+
+                // Update batch progress
+                const mappedStatus = status === 'completed' ? 'success' : 'error';
+                updateJobProgress(jobId, mappedStatus);
+
+                // Dispatch CLI complete event
+                window.dispatchEvent(new CustomEvent('cli:complete', {
+                    detail: {
+                        runId: runId,
+                        status: mappedStatus,
+                        error: error
+                    }
+                }));
+
+                // Dispatch queue event for live status badge
+                window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                    detail: {
+                        jobId: jobId,
+                        status: mappedStatus,
+                        operation: operation
+                    }
+                }));
+
+                // Update batch completion count
+                batchOperationState.completedJobs++;
+                updateBatchProgressUI();
+
+                // Clean up poller
+                activeBatchPollers.delete(runId);
             });
 
-            // Handle errors
-            activeBatchSSE.onerror = function(err) {
-                BatchDebug.error('SSE', 'Connection error', err);
-                // Don't immediately close - EventSource will try to reconnect
-                // If we want to close, we can check readyState
-                if (activeBatchSSE.readyState === EventSource.CLOSED) {
-                    BatchDebug.log('SSE', 'Connection closed by server');
-                    activeBatchSSE = null;
-                }
-            };
+            // Handle errors (LogPoller auto-retries, so just log)
+            poller.onError((err) => {
+                BatchDebug.log('POLLER', `[${runId}] Polling error:`, err);
+            });
+
+            // Start polling
+            poller.start();
+            activeBatchPollers.set(runId, poller);
+
+            BatchDebug.log('POLLER', `Started LogPoller for ${runId} (${activeBatchPollers.size} active pollers)`);
 
         } catch (e) {
-            BatchDebug.error('SSE', 'Failed to create EventSource', e);
+            BatchDebug.error('POLLER', `Failed to create LogPoller for ${runId}:`, e);
         }
     }
 
@@ -613,14 +640,26 @@
     }
 
     /**
-     * Close active SSE connection
+     * Stop all active batch log pollers
+     * Called when cancelling batch operation or cleaning up
      */
-    function closeBatchSSE() {
-        if (activeBatchSSE) {
-            BatchDebug.log('SSE', 'Manually closing SSE connection');
-            activeBatchSSE.close();
-            activeBatchSSE = null;
+    function cleanupBatchPollers() {
+        if (activeBatchPollers.size > 0) {
+            BatchDebug.log('POLLER', `Stopping ${activeBatchPollers.size} active pollers`);
+            activeBatchPollers.forEach((poller, runId) => {
+                try {
+                    poller.stop();
+                } catch (e) {
+                    BatchDebug.error('POLLER', `Error stopping poller ${runId}:`, e);
+                }
+            });
+            activeBatchPollers.clear();
         }
+    }
+
+    // Alias for backward compatibility
+    function closeBatchSSE() {
+        cleanupBatchPollers();
     }
 
     // ============================================================================
@@ -952,7 +991,7 @@
                 // Success - jobs are queued
                 showToast(`Queued ${result.total_count} jobs for ${operationNames[operation]}. Check Pipeline Queue for progress.`, 'success');
 
-                // Mark all jobs as queued in progress panel
+                // Mark all jobs as queued in progress panel and start log pollers
                 result.runs.forEach((run, index) => {
                     BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
                     updateJobProgress(run.job_id, 'queued');
@@ -973,11 +1012,13 @@
                     }));
                     BatchDebug.log('QUEUE', `Dispatched queue:job-status-changed for ${run.job_id} (position #${position})`);
 
-                    // Connect SSE stream for the first job to get real-time logs
-                    // Note: For true bulk SSE, we'd need a bulk log stream endpoint
-                    if (run.run_id && result.runs.indexOf(run) === 0) {
-                        BatchDebug.log('SSE', `Connecting to SSE for first job: ${run.run_id}`);
-                        connectBatchSSEStream(run.run_id, operation);
+                    // Connect LogPoller for EACH job to get real-time 200ms logs
+                    // This replaces the old SSE approach which only worked for the first job
+                    if (run.run_id) {
+                        const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
+                        const jobTitle = jobStatus?.title || `Job ${run.job_id.slice(-6)}`;
+                        BatchDebug.log('POLLER', `Starting LogPoller for job ${run.job_id}: ${run.run_id}`);
+                        connectBatchLogPoller(run.run_id, run.job_id, operation, jobTitle);
                     }
                 });
 
