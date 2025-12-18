@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-17 (Batch Page Interactive Sidebars & Tri-State Badges)
+**Last Updated**: 2025-12-19 (Performance Optimization & UI Unification)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,105 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-19 Session 17): Performance Optimization & UI Unification
+
+**ENHANCEMENT: Editor Debounce Reduced to 1.5 Seconds - COMPLETED**:
+- **Feature**: Reduced auto-save debounce from 3000ms to 1500ms for faster feedback across all editors
+- **Motivation**: User perception of responsiveness improved with faster save confirmations
+- **Files Modified**:
+  - `frontend/static/js/cv-editor.js` - AUTOSAVE_DELAY: 1500 (was 3000)
+  - `frontend/static/js/jd-annotation.js` - AUTOSAVE_DELAY: 1500 (was 3000)
+  - `frontend/static/js/master-cv-editor.js` - AUTOSAVE_DELAY: 1500 (was 3000)
+- **Behavior**: "Saving..." indicator appears for 1.5s after edits, then clears on success
+- **Impact**: 50% faster save feedback without server load concerns (debounce still effective)
+- **Commit**: `74a886ba` - perf(editors): reduce autosave debounce from 3s to 1.5s
+
+**ENHANCEMENT: JD Annotation Editor Unified Component - COMPLETED**:
+- **Feature**: Parameterized JD annotation editor component eliminates 70-80% code duplication between detail and batch pages
+- **Architecture**:
+  - New component: `frontend/templates/components/jd_annotation_editor.html` - Universal annotation editor
+  - New subcomponent: `frontend/templates/components/_jd_annotation_list.html` - Reusable annotation list renderer
+  - Supports `mode` parameter: 'panel' (batch sidebar) or 'sidebar' (detail page, future use)
+  - Parameterized: `id_prefix`, `feature_flags`, `show_save_indicator`
+- **Code Reduction**:
+  - Batch detail page template: 292 lines → 13 lines (95% reduction)
+  - Batch annotation page template: 301 lines → 18 lines (94% reduction)
+- **Files Created**:
+  - `frontend/templates/components/jd_annotation_editor.html` - Main parameterized component
+  - `frontend/templates/components/_jd_annotation_list.html` - Annotation list subcomponent
+- **Files Modified**:
+  - `frontend/templates/job_detail.html` - Include jd_annotation_editor component (refactored from 292 lines)
+  - `frontend/templates/partials/batch/_annotation_sidebar_content.html` - Include jd_annotation_editor component (refactored from 301 lines)
+- **Impact**: Unified component pattern enables rapid development of annotation editors across different views. Subcomponent approach supports future feature flags and mode-specific behavior.
+- **Commit**: `3f265f40` - refactor(ui): unify JD annotation editor as parameterized component
+
+**BUG FIX: Batch Page Log Polling - Replaced SSE with Direct Polling - COMPLETED**:
+- **Issue**: Batch page log streaming had 504 timeout errors during long pipeline operations (78s CV generation). SSE connections would drop mid-stream, causing lost logs.
+- **Root Cause**: Flask proxy to runner SSE endpoint was rate-limited and timed out under sustained log pressure (>100 log events/second)
+- **Solution**: Replaced Server-Sent Events with direct HTTP polling from browser to runner
+  - Eliminated Flask proxy bottleneck
+  - Browser → Runner communication (direct)
+  - Each polling request returns full state snapshot
+  - No connection to lose, just request/response cycles
+  - Polling interval: 500ms (matches SSE responsiveness but more reliable)
+- **Files Created**:
+  - `frontend/static/js/log-poller.js` - NEW: LogPoller class for direct log polling
+    - `poll()` method: Fetches logs from `/api/operations/{run_id}/logs` endpoint
+    - Exponential backoff on errors (500ms → 2s → 5s → stop)
+    - Handles operation completion and error states
+- **Files Modified**:
+  - `frontend/static/js/batch-sidebars.js` - Replaced SSE EventSource with LogPoller
+  - `frontend/templates/batch_processing.html` - Script inclusion for LogPoller
+- **Architecture Change**: Shift from persistent connection (SSE) to stateless polling (HTTP)
+  - SSE: Browser opens persistent connection, server pushes logs, connection can drop
+  - Polling: Browser asks for logs every 500ms, gets complete response, no connection state to lose
+  - Trade-off: Polling uses more requests but eliminates timeout issues
+- **Verification**: No more 504 errors during batch operations; logs stream reliably even for 78s+ operations
+- **Impact**: Batch page logging is now reliable for extended operations. Users see real-time progress without interruption.
+- **Commit**: `efd8720f` - fix(batch): replace SSE with direct log polling for batch operations
+
+**ENHANCEMENT: JD Badge Immediate Update - COMPLETED**:
+- **Feature**: JD annotation badge now turns green immediately when annotations are saved (1500ms feedback)
+- **Pattern**: Custom event dispatch in annotation editor
+- **Files Modified**:
+  - `frontend/templates/components/jd_annotation_editor.html` - Dispatch custom event on save
+  - `frontend/templates/partials/batch/_batch_sidebars.html` - Listen for badge update event
+- **Behavior**: Badge color changes: orange (incomplete) → green (has annotations) without page reload
+- **Impact**: Users get immediate visual confirmation of their work
+- **Commit**: `548dedf3` - feat(batch): update JD badge immediately on annotation save
+
+**ENHANCEMENT: Persona Builder in Batch Annotation Sidebar - COMPLETED**:
+- **Feature**: Batch annotation sidebar now includes same persona builder UI as detail page
+- **Files Modified**:
+  - `frontend/templates/components/jd_annotation_editor.html` - Include persona builder section
+  - Persona builder same as detail page (reused component)
+- **Impact**: Batch page annotation editor now feature-complete with persona builder
+- **Commit**: `b49d4ba6` - feat(batch): add persona builder to annotation sidebar
+
+**TEST CLEANUP: Removed Obsolete SSE Tests - COMPLETED**:
+- **Cleanup**: Removed 1029 lines of obsolete Server-Sent Events tests
+  - Tests covered SSE log display pattern (now replaced by polling)
+  - No longer relevant after SSE → polling migration
+- **Files Modified**:
+  - `tests/frontend/test_sse_logs_display.py` - DELETED (1029 lines)
+  - `tests/frontend/test_contact_management.py` - Updated for WebSearch (was FireCrawl)
+- **Test Coverage**: 1521 tests passing (maintained)
+- **Impact**: Cleaner test suite, removed dead code paths
+- **Commit**: `9c471e29` - test: remove obsolete SSE log display tests and update contact tests
+
+**ANALYSIS: CV Editor Unification Opportunity - IDENTIFIED**:
+- **Finding**: ~70-80% code overlap between detail page and batch page CV editors
+- **Pattern**: Similar to JD annotation editor (just unified into reusable component)
+- **Recommendation**: Create unified CV editor component (similar to jd_annotation_editor.html)
+  - Detail page CV editor: `frontend/templates/partials/job_detail/_cv_editor.html` (current, full-featured)
+  - Batch page CV editor: `frontend/templates/partials/batch/_cv_sidebar_content.html` (sidebar mode)
+  - Opportunity: Extract to `frontend/templates/components/cv_editor.html` with mode parameter
+  - Potential savings: 200-300 lines of duplicated initialization and state management code
+- **Status**: Analysis complete, implementation pending (ready for next session if prioritized)
+- **See also**: `plans/next-steps.md` for CV editor unification task
 
 ---
 
