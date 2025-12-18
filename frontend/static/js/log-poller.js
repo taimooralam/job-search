@@ -186,11 +186,22 @@
                     }
 
                     // Check for completion
+                    // IMPORTANT: Don't stop until all logs are fetched, even if status is completed
+                    // This prevents the race condition where pipeline finishes fast but we haven't
+                    // fetched all logs yet (e.g., 150 logs but only fetched first 100)
                     if (data.status === 'completed' || data.status === 'failed') {
-                        this._log('Run completed with status:', data.status);
-                        this._emitComplete(data.status, data.error);
-                        this.stop();
-                        break;
+                        const allLogsFetched = this.nextIndex >= this.totalCount;
+
+                        if (allLogsFetched) {
+                            this._log('Run completed with status:', data.status, `(${this.nextIndex}/${this.totalCount} logs)`);
+                            this._emitComplete(data.status, data.error);
+                            this.stop();
+                            break;
+                        } else {
+                            // Status is completed but we haven't fetched all logs yet
+                            // Continue polling until we have all logs
+                            this._log('Run completed but still fetching logs:', `${this.nextIndex}/${this.totalCount}`);
+                        }
                     }
 
                     // Wait before next poll
