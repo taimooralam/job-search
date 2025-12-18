@@ -64,7 +64,7 @@ services:
     networks:
       - job-pipeline
       - n8n-prod_default
-      - mongodb-network  # For internal MongoDB access after migration
+      # - mongodb-network  # For internal MongoDB access after migration (VPS uses Atlas)
 
   pdf-service:
     image: ${PDF_SERVICE_IMAGE:-ghcr.io/taimooralam/job-search/pdf-service:latest}
@@ -97,8 +97,8 @@ networks:
     external: true
     # For local testing without n8n, comment out 'external: true' and uncomment below:
     # driver: bridge
-  mongodb-network:
-    external: true
-    name: mongodb-network
-    # Note: This network is created by docker-compose.mongodb.yml
-    # For local dev without VPS MongoDB, comment out 'external: true' and 'name:'
+  # mongodb-network:
+  #   external: true
+  #   name: mongodb-network
+  #   # Note: This network is created by docker-compose.mongodb.yml
+  #   # For local dev without VPS MongoDB, comment out 'external: true' and 'name:'
