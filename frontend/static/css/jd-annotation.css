@@ -493,13 +493,113 @@ section[data-section-type="about_role"] {
 }
 
 /* ============================================================================
+   Batch Mode Styles (sidebar mode with batch- prefixed IDs)
+   ============================================================================ */
+
+/* Batch JD Viewer Content - inherits base styles */
+#batch-jd-viewer-content {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#batch-jd-viewer-content ::selection,
+#batch-jd-processed-content ::selection {
+    background-color: rgba(99, 102, 241, 0.3);
+}
+
+#batch-jd-viewer-content ::-moz-selection,
+#batch-jd-processed-content ::-moz-selection {
+    background-color: rgba(99, 102, 241, 0.3);
+}
+
+/* Batch annotation highlights - same styles as main panel */
+#batch-jd-processed-content .annotation-highlight {
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 1px 0;
+    transition: background-color 0.2s ease;
+}
+
+#batch-jd-processed-content .annotation-highlight-core_strength {
+    background-color: rgba(34, 197, 94, 0.3);
+    border-bottom: 2px solid rgb(34, 197, 94);
+}
+
+#batch-jd-processed-content .annotation-highlight-extremely_relevant {
+    background-color: rgba(16, 185, 129, 0.3);
+    border-bottom: 2px solid rgb(16, 185, 129);
+}
+
+#batch-jd-processed-content .annotation-highlight-relevant {
+    background-color: rgba(234, 179, 8, 0.3);
+    border-bottom: 2px solid rgb(234, 179, 8);
+}
+
+#batch-jd-processed-content .annotation-highlight-tangential {
+    background-color: rgba(249, 115, 22, 0.3);
+    border-bottom: 2px solid rgb(249, 115, 22);
+}
+
+#batch-jd-processed-content .annotation-highlight-gap {
+    background-color: rgba(239, 68, 68, 0.3);
+    border-bottom: 2px solid rgb(239, 68, 68);
+}
+
+#batch-jd-processed-content .annotation-highlight:hover {
+    filter: brightness(0.95);
+}
+
+#batch-jd-processed-content .annotation-highlight-pulse {
+    animation: annotation-pulse 1.5s ease-in-out;
+}
+
+@keyframes annotation-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); }
+}
+
+/* Raw JD styling for pre-processed content */
+#batch-jd-processed-content .raw-jd-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Batch annotation list item styles */
+#batch-annotation-items .annotation-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+#batch-annotation-items .annotation-item:hover {
+    background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+}
+
+#batch-annotation-items .annotation-item.selected {
+    background-color: var(--color-bg-selected, rgba(99, 102, 241, 0.1));
+    border-left: 3px solid var(--color-accent-500, rgb(99, 102, 241));
+}
+
+/* Dark mode adjustments for batch mode */
+.dark #batch-jd-processed-content .annotation-highlight:hover {
+    filter: brightness(1.1);
+}
+
+.dark #batch-annotation-items .annotation-item:hover {
+    background-color: var(--color-bg-hover, rgba(255, 255, 255, 0.05));
+}
+
+.dark #batch-annotation-items .annotation-item.selected {
+    background-color: var(--color-bg-selected, rgba(99, 102, 241, 0.2));
+}
+
+/* ============================================================================
    Print Styles
    ============================================================================ */
 
 @media print {
     #jd-annotation-panel,
     #jd-annotation-overlay,
-    #annotation-popover {
+    #annotation-popover,
+    #batch-jd-annotation-panel {
         display: none !important;
     }
 }

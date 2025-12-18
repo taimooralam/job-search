@@ -1,0 +1,108 @@
+{#
+  JD Annotation List Component (for sidebar mode)
+
+  This is a theme-aware version of the annotation list that supports dark mode.
+  Used by jd_annotation_editor.html when mode='sidebar'.
+
+  Expected context variables:
+  - id_prefix: Element ID prefix (e.g., 'batch-')
+  - annotations: List of annotation objects
+  - theme_text_primary, theme_text_secondary, theme_text_tertiary: Theme text classes
+  - theme_bg, theme_bg_secondary: Theme background classes
+  - theme_border: Theme border class
+#}
+
+<div class="flex flex-col h-full">
+    {# Header #}
+    <div class="px-4 py-3 border-b {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold {{ theme_text_primary }}">Annotations</h3>
+            <span id="{{ id_prefix }}annotation-list-count" class="text-xs {{ theme_text_tertiary }} bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">{{ annotations | length }}</span>
+        </div>
+
+        {# Filter Controls #}
+        <div class="flex flex-wrap gap-1 mb-2">
+            <button onclick="filterAnnotations('all')"
+                    data-filter="all"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-accent-900/50 dark:text-accent-300 transition">
+                All
+            </button>
+            <button onclick="filterAnnotations('core_strength')"
+                    data-filter="core_strength"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-green-900/30 transition">
+                Core
+            </button>
+            <button onclick="filterAnnotations('gap')"
+                    data-filter="gap"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/30 transition">
+                Gaps
+            </button>
+            <button onclick="filterAnnotations('must_have')"
+                    data-filter="must_have"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30 transition">
+                Must-Have
+            </button>
+            <button onclick="filterAnnotations('active')"
+                    data-filter="active"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-green-900/30 transition">
+                Active
+            </button>
+        </div>
+
+        {# Passion & Identity Filters #}
+        <div class="flex flex-wrap gap-1">
+            <span class="text-xs {{ theme_text_tertiary }} mr-1">Passion:</span>
+            <button onclick="filterAnnotations('love_it')"
+                    data-filter="love_it"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-pink-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-pink-900/30 transition"
+                    title="Filter by 'Love it' passion">
+                &#128293;
+            </button>
+            <button onclick="filterAnnotations('avoid')"
+                    data-filter="avoid"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-stone-50 hover:text-stone-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-stone-900/30 transition"
+                    title="Filter by 'Avoid' passion">
+                &#128683;
+            </button>
+            <span class="text-xs {{ theme_text_tertiary }} mx-1">|</span>
+            <span class="text-xs {{ theme_text_tertiary }} mr-1">Identity:</span>
+            <button onclick="filterAnnotations('core_identity')"
+                    data-filter="core_identity"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-900/30 transition"
+                    title="Filter by 'Core Identity'">
+                &#11088;
+            </button>
+            <button onclick="filterAnnotations('not_identity')"
+                    data-filter="not_identity"
+                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-zinc-50 hover:text-zinc-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-zinc-900/30 transition"
+                    title="Filter by 'Not Me'">
+                &#10007;
+            </button>
+        </div>
+    </div>
+
+    {# Annotation List #}
+    <div id="{{ id_prefix }}annotation-list" class="flex-1 overflow-y-auto">
+        {# Empty State #}
+        <div id="{{ id_prefix }}annotation-list-empty" class="{% if annotations | length > 0 %}hidden{% endif %} flex flex-col items-center justify-center py-12 px-4 text-center">
+            <svg class="h-12 w-12 {{ theme_text_tertiary }} mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            <p class="text-sm {{ theme_text_secondary }} mb-1">No annotations yet</p>
+            <p class="text-xs {{ theme_text_tertiary }}">Select text in the JD to create annotations</p>
+        </div>
+
+        {# Annotation Items Container (populated by JS) #}
+        <div id="{{ id_prefix }}annotation-items" class="divide-y divide-gray-100 dark:divide-gray-700">
+            {# Annotations will be rendered here by AnnotationManager #}
+        </div>
+    </div>
+
+    {# Footer Stats #}
+    <div class="px-4 py-3 border-t {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
+        <div class="flex items-center justify-between text-xs {{ theme_text_tertiary }}">
+            <span id="{{ id_prefix }}annotation-count">{{ annotations | length }} annotations</span>
+            <span id="{{ id_prefix }}active-annotation-count">{{ annotations | selectattr('is_active', 'true') | list | length if annotations else 0 }} active</span>
+        </div>
+    </div>
+</div>
