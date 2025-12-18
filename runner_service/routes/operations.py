@@ -1811,6 +1811,46 @@ async def _execute_queued_operation(
                 pass
 
 
+async def _get_last_operation_run(job_id: str, operation: str) -> Optional[Dict[str, Any]]:
+    """
+    Get the most recent operation run from MongoDB for a job+operation.
+
+    This is used as a fallback when no queue item exists (after queue cleanup).
+    Allows viewing logs from previously completed/failed operations.
+
+    Args:
+        job_id: MongoDB job ID
+        operation: Operation type (full-extraction, research-company, etc.)
+
+    Returns:
+        Dict with run details or None if no runs found
+    """
+    try:
+        client = _get_mongo_client()
+        if not client:
+            return None
+
+        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
+        collection = db["operation_runs"]
+
+        # Find the most recent run for this job+operation
+        def sync_find():
+            return collection.find_one(
+                {"job_id": job_id, "operation": operation},
+                sort=[("timestamp", -1)],  # Most recent first
+            )
+
+        result = await asyncio.get_event_loop().run_in_executor(
+            _db_executor, sync_find
+        )
+
+        return result
+
+    except Exception as e:
+        logger.warning(f"Failed to get last operation run for {operation} on job {job_id}: {e}")
+        return None
+
+
 @router.get(
     "/{job_id}/queue-status",
     response_model=JobQueueStatusResponse,
@@ -1824,6 +1864,10 @@ async def get_job_queue_status(job_id: str) -> JobQueueStatusResponse:
 
     Used by the frontend pipelines panel to show current status
     of each operation type (full-extraction, research-company, generate-cv).
+
+    First checks the in-memory queue for active/pending items.
+    If no queue item exists, falls back to querying operation_runs
+    for previously completed runs (allows viewing historical logs).
 
     Args:
         job_id: MongoDB ObjectId of the job
@@ -1844,6 +1888,7 @@ async def get_job_queue_status(job_id: str) -> JobQueueStatusResponse:
                 logger.warning(f"Failed to get queue status for {op} on job {job_id}: {e}")
 
         if item:
+            # Queue item exists (pending, running, or recently completed)
             operations[op] = OperationQueueStatus(
                 status=item.status.value,
                 queue_id=item.queue_id,
@@ -1854,7 +1899,21 @@ async def get_job_queue_status(job_id: str) -> JobQueueStatusResponse:
                 error=item.error,
             )
         else:
-            operations[op] = None
+            # No queue item - check operation_runs for historical data
+            last_run = await _get_last_operation_run(job_id, op)
+            if last_run:
+                # Found a previous run - return its status so user can view logs
+                operations[op] = OperationQueueStatus(
+                    status="completed" if last_run.get("success") else "failed",
+                    queue_id=None,  # No queue_id for historical runs
+                    run_id=last_run.get("run_id"),
+                    position=None,
+                    started_at=last_run.get("timestamp"),
+                    completed_at=last_run.get("timestamp"),
+                    error=last_run.get("error"),
+                )
+            else:
+                operations[op] = None
 
     return JobQueueStatusResponse(job_id=job_id, operations=operations)
 
