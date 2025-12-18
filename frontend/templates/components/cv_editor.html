@@ -1,0 +1,704 @@
+{#
+  Unified CV Editor Component
+
+  This component is used by both:
+  - Job Detail Page (panel mode with overlay)
+  - Batch Page (sidebar mode without overlay)
+
+  Parameters:
+  - mode: 'panel' (default) or 'sidebar'
+  - id_prefix: Element ID prefix ('' for detail, 'batch-' for batch)
+  - job: The job object (required for sidebar mode to show job info and check CV content)
+  - show_overlay: Show overlay background (panel mode only)
+  - show_close_button: Show close button in header
+  - show_panel_toggle: Show expand/collapse button
+  - show_job_info: Show job title/company in header (sidebar mode only)
+  - compact_toolbar: Use compact sizing for toolbar elements
+
+  Usage:
+  {% include 'components/cv_editor.html' %}
+  {% include 'components/cv_editor.html' with context %}
+#}
+
+{# Set defaults based on mode #}
+{% set mode = mode | default('panel') %}
+{% set id_prefix = id_prefix | default('') %}
+{% set show_overlay = show_overlay | default(mode == 'panel') %}
+{% set show_close_button = show_close_button | default(mode == 'panel') %}
+{% set show_panel_toggle = show_panel_toggle | default(mode == 'panel') %}
+{% set show_job_info = show_job_info | default(mode == 'sidebar') %}
+{% set compact_toolbar = compact_toolbar | default(mode == 'sidebar') %}
+
+{# CV content detection for sidebar mode #}
+{% if mode == 'sidebar' and job %}
+    {% set cv_content = job.cv_editor_state or job.cv_text or job.generated_cv or job.cv_output or '' %}
+    {% set has_cv = cv_content | length > 0 %}
+{% else %}
+    {% set has_cv = true %}
+{% endif %}
+
+{# Theme classes - sidebar uses theme classes for dark mode support #}
+{% set theme_bg = 'theme-bg-card' if mode == 'sidebar' else 'bg-white' %}
+{% set theme_bg_secondary = 'theme-bg-secondary' if mode == 'sidebar' else 'bg-gray-50' %}
+{% set theme_bg_tertiary = 'theme-bg-tertiary' if mode == 'sidebar' else 'bg-gray-100' %}
+{% set theme_text_primary = 'theme-text-primary' if mode == 'sidebar' else 'text-gray-900' %}
+{% set theme_text_secondary = 'theme-text-secondary' if mode == 'sidebar' else 'text-gray-500' %}
+{% set theme_text_tertiary = 'theme-text-tertiary' if mode == 'sidebar' else 'text-gray-400' %}
+{% set theme_border = 'theme-border' if mode == 'sidebar' else 'border-gray-200' %}
+
+{# Size classes based on compact mode #}
+{% set icon_size = 'w-4 h-4' if compact_toolbar else 'w-5 h-5' %}
+{% set icon_size_sm = 'w-3 h-3' if compact_toolbar else 'w-4 h-4' %}
+{% set text_size = 'text-xs' if compact_toolbar else 'text-sm' %}
+{% set padding_x = 'px-1.5' if compact_toolbar else 'px-2' %}
+{% set padding_y = 'py-1' if compact_toolbar else 'py-1.5' %}
+{% set gap_size = 'gap-0.5' if compact_toolbar else 'gap-1' %}
+{% set divider_height = 'h-5' if compact_toolbar else 'h-6' %}
+{% set select_width_font = 'w-36' if compact_toolbar else 'w-48' %}
+{% set select_width_size = 'w-16' if compact_toolbar else 'w-20' %}
+{% set button_min_width = '' if compact_toolbar else 'min-w-[2.75rem]' %}
+
+{# Skip link for accessibility (panel mode only) #}
+{% if mode == 'panel' %}
+<a href="#{{ id_prefix }}cv-editor-content" class="skip-link">Skip to CV editor</a>
+{% endif %}
+
+{# Overlay (panel mode only) #}
+{% if show_overlay %}
+<div id="{{ id_prefix }}cv-editor-overlay"
+     class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-200"
+     onclick="closeCVEditorPanel()"
+     role="presentation"
+     aria-hidden="true">
+</div>
+{% endif %}
+
+{# Main Container #}
+{% if mode == 'panel' %}
+<div id="{{ id_prefix }}cv-editor-panel"
+     class="fixed inset-y-0 right-0 w-11/12 sm:w-2/3 lg:w-1/2 {{ theme_bg }} shadow-2xl
+            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+     role="dialog"
+     aria-labelledby="{{ id_prefix }}cv-editor-title"
+     aria-modal="true">
+{% else %}
+<div class="h-full flex flex-col">
+{% endif %}
+
+    {# Header #}
+    <div class="flex items-center justify-between px-4 {% if not compact_toolbar %}sm:px-6{% endif %} py-{% if compact_toolbar %}3{% else %}4{% endif %} border-b {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
+        <div class="flex items-center space-x-2 {% if not compact_toolbar %}sm:space-x-4{% endif %}">
+            {% if show_close_button %}
+            <button onclick="closeCVEditorPanel()"
+                    class="{{ theme_text_tertiary }} hover:text-gray-600 transition p-2"
+                    aria-label="Close CV editor (Escape key)"
+                    title="Close (Esc)">
+                <svg class="{{ icon_size }} sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            {% endif %}
+
+            {% if show_job_info and job %}
+            <div>
+                <h3 class="font-medium {{ theme_text_primary }} {{ text_size }}">{{ job.title or 'Untitled Position' }}</h3>
+                <p class="text-xs {{ theme_text_secondary }}">{{ job.company or 'Unknown Company' }}</p>
+            </div>
+            {% else %}
+            <h2 id="{{ id_prefix }}cv-editor-title" class="text-base sm:text-lg font-semibold {{ theme_text_primary }}">Edit CV</h2>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center space-x-2 {% if not compact_toolbar %}sm:space-x-4{% endif %}">
+            {# Undo/Redo Buttons #}
+            <div class="hidden sm:flex items-center {{ gap_size }}" role="group" aria-label="Edit history">
+                <button id="{{ id_prefix }}cv-undo-btn"
+                        onclick="if({% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %} && {% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}.editor) {% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}.editor.chain().focus().undo().run()"
+                        class="{{ theme_text_tertiary }} hover:text-gray-600 {% if mode == 'sidebar' %}dark:hover:text-gray-300{% endif %} transition p-{% if compact_toolbar %}1.5{% else %}2{% endif %} disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Undo (Ctrl+Z)"
+                        title="Undo (Ctrl+Z)"
+                        disabled>
+                    <svg class="{{ icon_size }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                </button>
+                <button id="{{ id_prefix }}cv-redo-btn"
+                        onclick="if({% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %} && {% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}.editor) {% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}.editor.chain().focus().redo().run()"
+                        class="{{ theme_text_tertiary }} hover:text-gray-600 {% if mode == 'sidebar' %}dark:hover:text-gray-300{% endif %} transition p-{% if compact_toolbar %}1.5{% else %}2{% endif %} disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Redo (Ctrl+Shift+Z)"
+                        title="Redo (Ctrl+Shift+Z)"
+                        disabled>
+                    <svg class="{{ icon_size }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="hidden sm:block w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}"></div>
+
+            {# Keyboard Shortcuts Help Button #}
+            <button onclick="toggleKeyboardShortcutsPanel()"
+                    class="hidden sm:block {{ theme_text_tertiary }} hover:text-gray-600 {% if mode == 'sidebar' %}dark:hover:text-gray-300{% endif %} transition p-{% if compact_toolbar %}1.5{% else %}2{% endif %}"
+                    aria-label="Keyboard shortcuts (Ctrl+/)"
+                    title="Keyboard Shortcuts (Ctrl+/)">
+                <svg class="{{ icon_size }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </button>
+
+            <div class="hidden sm:block w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}"></div>
+
+            {# Save Indicator #}
+            <span id="{{ id_prefix }}cv-save-indicator"
+                  class="{{ text_size }} {{ theme_text_tertiary }} {% if mode == 'sidebar' %}hidden{% endif %}"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true">
+                <span class="text-green-500" aria-label="CV saved successfully">&#9679; Saved</span>
+            </span>
+
+            {% if show_panel_toggle %}
+            {# Expand/Collapse Button #}
+            <button onclick="toggleCVPanelSize()"
+                    class="hidden sm:block {{ theme_text_tertiary }} hover:text-gray-600 transition p-2"
+                    aria-label="Toggle panel size"
+                    title="Expand/Collapse">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+            </button>
+            {% endif %}
+
+            {# Export PDF Button #}
+            <button onclick="{% if mode == 'sidebar' %}exportBatchCVToPDF(){% else %}exportCVToPDF(){% endif %}"
+                    class="inline-flex items-center {{ padding_x }} sm:px-3 {{ padding_y }} {{ text_size }} font-medium
+                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    aria-label="Export CV as PDF{% if not compact_toolbar %} (Ctrl+P){% endif %}"
+                    title="Export PDF{% if not compact_toolbar %} (Ctrl+P){% endif %}">
+                <svg class="{{ icon_size_sm }} {% if not compact_toolbar %}sm:mr-1.5{% else %}mr-1{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                {% if compact_toolbar %}
+                PDF
+                {% else %}
+                <span class="hidden sm:inline">Export PDF</span>
+                <span class="sm:hidden">PDF</span>
+                {% endif %}
+            </button>
+        </div>
+    </div>
+
+    {% if has_cv %}
+    {# Toolbar #}
+    <div class="px-{% if compact_toolbar %}3{% else %}4 sm:px-6{% endif %} py-{% if compact_toolbar %}2{% else %}3{% endif %} border-b {{ theme_border }} {{ theme_bg }} cv-toolbar flex-shrink-0"
+         role="toolbar"
+         aria-label="Text formatting controls"
+         aria-controls="{{ id_prefix }}cv-editor-content">
+        <div class="flex flex-wrap items-center gap-{% if compact_toolbar %}1.5{% else %}2{% endif %}">
+            {# Font Group #}
+            <div class="flex {{ gap_size }}">
+                <label for="{{ id_prefix }}cv-font-family" class="sr-only">Font family</label>
+                <select id="{{ id_prefix }}cv-font-family" onchange="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('fontFamily', this.value)"
+                        class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 {{ select_width_font }}"
+                        aria-label="Select font family">
+                    <optgroup label="Serif (Professional)">
+                        <option value="Crimson Text">Crimson Text</option>
+                        <option value="EB Garamond">EB Garamond</option>
+                        <option value="Libre Baskerville">Libre Baskerville</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Spectral">Spectral</option>
+                        <option value="Source Serif Pro">Source Serif Pro</option>
+                        <option value="PT Serif">PT Serif</option>
+                        <option value="Bitter">Bitter</option>
+                        <option value="Arvo">Arvo</option>
+                        <option value="Cardo">Cardo</option>
+                        <option value="Cormorant Garamond">Cormorant Garamond</option>
+                        <option value="Neuton">Neuton</option>
+                        <option value="Vollkorn">Vollkorn</option>
+                    </optgroup>
+                    <optgroup label="Sans-Serif (Modern)">
+                        <option value="Inter" selected>Inter</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="Lato">Lato</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Raleway">Raleway</option>
+                        <option value="Nunito">Nunito</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Work Sans">Work Sans</option>
+                        <option value="IBM Plex Sans">IBM Plex Sans</option>
+                        <option value="Karla">Karla</option>
+                        <option value="Rubik">Rubik</option>
+                        <option value="DM Sans">DM Sans</option>
+                        <option value="Manrope">Manrope</option>
+                        <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                        <option value="Space Grotesk">Space Grotesk</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Archivo">Archivo</option>
+                        <option value="Public Sans">Public Sans</option>
+                        <option value="Red Hat Display">Red Hat Display</option>
+                    </optgroup>
+                    <optgroup label="Monospace (Technical)">
+                        <option value="Fira Code">Fira Code</option>
+                        <option value="JetBrains Mono">JetBrains Mono</option>
+                        <option value="Source Code Pro">Source Code Pro</option>
+                        <option value="IBM Plex Mono">IBM Plex Mono</option>
+                        <option value="Roboto Mono">Roboto Mono</option>
+                        <option value="Inconsolata">Inconsolata</option>
+                    </optgroup>
+                    <optgroup label="Display (Creative)">
+                        <option value="Bebas Neue">Bebas Neue</option>
+                        <option value="Archivo Black">Archivo Black</option>
+                        <option value="Righteous">Righteous</option>
+                        <option value="Josefin Sans">Josefin Sans</option>
+                        <option value="Oswald">Oswald</option>
+                        <option value="Anton">Anton</option>
+                        <option value="Kanit">Kanit</option>
+                    </optgroup>
+                    <optgroup label="Condensed (Space-Saving)">
+                        <option value="Roboto Condensed">Roboto Condensed</option>
+                        <option value="PT Sans Narrow">PT Sans Narrow</option>
+                        <option value="Fira Sans Condensed">Fira Sans Condensed</option>
+                        <option value="Barlow Condensed">Barlow Condensed</option>
+                    </optgroup>
+                    <optgroup label="Rounded (Friendly)">
+                        <option value="Nunito Sans">Nunito Sans</option>
+                        <option value="Quicksand">Quicksand</option>
+                        <option value="Varela Round">Varela Round</option>
+                        <option value="Comfortaa">Comfortaa</option>
+                    </optgroup>
+                </select>
+                <label for="{{ id_prefix }}cv-font-size" class="sr-only">Font size</label>
+                <select id="{{ id_prefix }}cv-font-size" onchange="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('fontSize', this.value)"
+                        class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 {{ select_width_size }}"
+                        aria-label="Select font size">
+                    <option value="8pt">8pt</option>
+                    <option value="9pt">9pt</option>
+                    <option value="10pt">10pt</option>
+                    <option value="10.5pt">10.5pt</option>
+                    <option value="11pt" selected>11pt</option>
+                    <option value="12pt">12pt</option>
+                    <option value="13pt">13pt</option>
+                    <option value="14pt">14pt</option>
+                    <option value="16pt">16pt</option>
+                    <option value="18pt">18pt</option>
+                    <option value="20pt">20pt</option>
+                    <option value="24pt">24pt</option>
+                    <option value="28pt">28pt</option>
+                    <option value="32pt">32pt</option>
+                </select>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# Formatting Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="Text formatting">
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('bold')" data-format="bold"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} font-bold {{ text_size }} transition border border-transparent {{ button_min_width }}"
+                        aria-label="Bold (Ctrl+B)"
+                        aria-pressed="false"
+                        title="Bold (Ctrl+B)">B</button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('italic')" data-format="italic"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} italic {{ text_size }} transition border border-transparent {{ button_min_width }}"
+                        aria-label="Italic (Ctrl+I)"
+                        aria-pressed="false"
+                        title="Italic (Ctrl+I)">I</button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('underline')" data-format="underline"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} underline {{ text_size }} transition border border-transparent {{ button_min_width }}"
+                        aria-label="Underline (Ctrl+U)"
+                        aria-pressed="false"
+                        title="Underline (Ctrl+U)">U</button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('smallCaps')" data-format="smallCaps"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        style="font-variant: small-caps; font-size: 0.85em;"
+                        aria-label="Small Caps"
+                        aria-pressed="false"
+                        title="Small Caps">Sc</button>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# Heading Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="Heading levels">
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('heading', 1)" data-heading="1"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} font-bold transition border border-transparent {{ button_min_width }}"
+                        aria-label="Heading 1"
+                        aria-pressed="false"
+                        title="Heading 1">H1</button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('heading', 2)" data-heading="2"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} font-bold transition border border-transparent {{ button_min_width }}"
+                        aria-label="Heading 2"
+                        aria-pressed="false"
+                        title="Heading 2">H2</button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('heading', 3)" data-heading="3"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} font-bold transition border border-transparent {{ button_min_width }}"
+                        aria-label="Heading 3"
+                        aria-pressed="false"
+                        title="Heading 3">H3</button>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# List Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="List formatting">
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('bulletList')" data-format="bulletList"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Bullet list"
+                        aria-pressed="false"
+                        title="Bullet List">
+                    <span aria-hidden="true">{% if compact_toolbar %}&#8226;{% else %}&bull;{% endif %}</span>
+                </button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('orderedList')" data-format="orderedList"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Numbered list"
+                        aria-pressed="false"
+                        title="Numbered List">
+                    <span aria-hidden="true">1.</span>
+                </button>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# Alignment Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="Text alignment">
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('textAlign', 'left')" data-align="left"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Align left"
+                        aria-pressed="true"
+                        title="Align Left">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h14"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#11013;</span>
+                    {% endif %}
+                </button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('textAlign', 'center')" data-align="center"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Align center"
+                        aria-pressed="false"
+                        title="Align Center">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M7 12h10M5 18h14"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#8596;</span>
+                    {% endif %}
+                </button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('textAlign', 'right')" data-align="right"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Align right"
+                        aria-pressed="false"
+                        title="Align Right">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M10 12h10M6 18h14"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#10145;</span>
+                    {% endif %}
+                </button>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('textAlign', 'justify')" data-align="justify"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent {{ button_min_width }}"
+                        aria-label="Justify"
+                        aria-pressed="false"
+                        title="Justify">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#11020;</span>
+                    {% endif %}
+                </button>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# Indentation Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="Text indentation">
+                <button onclick="{% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}?.decreaseIndent()"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent"
+                        aria-label="Decrease indent (Shift+Tab)"
+                        title="Decrease Indent (Shift+Tab)">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14V5"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#11013;</span> <span class="hidden sm:inline">Outdent</span>
+                    {% endif %}
+                </button>
+                <button onclick="{% if mode == 'sidebar' %}batchCVEditorInstance{% else %}cvEditorInstance{% endif %}?.increaseIndent()"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-transparent"
+                        aria-label="Increase indent (Tab)"
+                        title="Increase Indent (Tab)">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5v14"/>
+                    </svg>
+                    {% else %}
+                    <span class="hidden sm:inline">Indent</span> <span aria-hidden="true">&#10145;</span>
+                    {% endif %}
+                </button>
+            </div>
+
+            <div class="w-px {{ divider_height }} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}" aria-hidden="true"></div>
+
+            {# Color Group #}
+            <div class="flex {{ gap_size }}" role="group" aria-label="Text and highlight colors">
+                <label class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} cursor-pointer inline-flex items-center {{ text_size }} border border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600{% endif %}"
+                       aria-label="Text color picker"
+                       title="Text Color">
+                    <span aria-hidden="true">A</span>
+                    <span class="ml-{% if compact_toolbar %}0.5{% else %}1{% endif %} text-{% if compact_toolbar %}[8px]{% else %}xs{% endif %}" aria-hidden="true">{% if compact_toolbar %}&#9660;{% else %}&#9660;{% endif %}</span>
+                    <input type="color" id="{{ id_prefix }}cv-text-color" value="#1a1a1a"
+                           onchange="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('color', this.value)"
+                           aria-label="Select text color"
+                           class="hidden">
+                </label>
+                <label class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} cursor-pointer inline-flex items-center {{ text_size }} border border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600{% endif %}"
+                       aria-label="Highlight color picker"
+                       title="Highlight Color">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M15.2 3.8l5 5-11 11H4v-5.2l11.2-10.8zM18.2 8.8L15.2 5.8l2-2 3 3-2 2z"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#128397;</span>
+                    {% endif %}
+                    <input type="color" id="{{ id_prefix }}cv-highlight-color" value="#ffff00"
+                           onchange="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('highlight', this.value)"
+                           aria-label="Select highlight color"
+                           class="hidden">
+                </label>
+                <button onclick="{% if mode == 'sidebar' %}applyBatchCVFormat{% else %}applyCVFormat{% endif %}('removeHighlight')"
+                        class="{{ padding_x }} {{ padding_y }} rounded hover:bg-gray-200 {% if mode == 'sidebar' %}dark:hover:bg-gray-600{% endif %} transition {{ text_size }} border border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600{% endif %}"
+                        aria-label="Remove highlight"
+                        title="Remove Highlight">
+                    {% if compact_toolbar %}
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    {% else %}
+                    <span aria-hidden="true">&#10005;</span>
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# Document Settings Section #}
+    <div class="px-{% if compact_toolbar %}3{% else %}4 sm:px-6{% endif %} py-{% if compact_toolbar %}2{% else %}3{% endif %} border-b {{ theme_border }} {{ theme_bg_tertiary }} cv-document-settings flex-shrink-0"
+         role="region"
+         aria-labelledby="{{ id_prefix }}document-settings-heading">
+        <details class="group">
+            <summary class="cursor-pointer {{ text_size }} font-semibold {{ theme_text_secondary }} uppercase tracking-wide {% if not compact_toolbar %}mb-2{% endif %} hover:text-indigo-600 {% if mode == 'sidebar' %}dark:hover:text-indigo-400{% endif %} flex items-center gap-1"
+                     id="{{ id_prefix }}document-settings-heading"
+                     aria-expanded="false"
+                     aria-controls="{{ id_prefix }}document-settings-content">
+                <span class="inline-block transform transition-transform group-open:rotate-90" aria-hidden="true">&#9654;</span>
+                Document Settings{% if not compact_toolbar %} (Page Layout){% endif %}
+            </summary>
+            <div id="{{ id_prefix }}document-settings-content" class="flex flex-wrap items-center gap-{% if compact_toolbar %}3{% else %}4{% endif %} {% if compact_toolbar %}pt-2{% endif %} pl-{% if compact_toolbar %}4{% else %}5{% endif %}">
+                {# Line Height #}
+                <div class="flex flex-col gap-{% if compact_toolbar %}0.5{% else %}1{% endif %}">
+                    <label for="{{ id_prefix }}cv-line-height" class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Line Height</label>
+                    <select id="{{ id_prefix }}cv-line-height" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle{% else %}applyDocumentStyle{% endif %}('lineHeight')"
+                            class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}24{% else %}28{% endif %}">
+                        <option value="1.0">Single (1.0)</option>
+                        <option value="1.15" selected>Standard (1.15)</option>
+                        <option value="1.5">1.5 Lines</option>
+                        <option value="2.0">Double (2.0)</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-{% if compact_toolbar %}8{% else %}12{% endif %} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}"></div>
+
+                {# Margin Presets #}
+                <div class="flex flex-col gap-{% if compact_toolbar %}0.5{% else %}1{% endif %}">
+                    <label for="{{ id_prefix }}cv-margin-preset" class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Margins</label>
+                    <select id="{{ id_prefix }}cv-margin-preset" onchange="{% if mode == 'sidebar' %}applyBatchMarginPreset{% else %}applyMarginPreset{% endif %}()"
+                            class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}24{% else %}28{% endif %}">
+                        <option value="normal">Normal (1")</option>
+                        <option value="narrow" selected>Narrow (0.5")</option>
+                        <option value="moderate">Moderate (0.75")</option>
+                        <option value="wide">Wide (1.5")</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                </div>
+
+                {# Custom Margins (hidden by default) #}
+                <div id="{{ id_prefix }}custom-margins-container" class="flex flex-col gap-{% if compact_toolbar %}0.5{% else %}1{% endif %} hidden">
+                    <label class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Custom (inches)</label>
+                    <div class="flex gap-{% if compact_toolbar %}1{% else %}2{% endif %}">
+                        <div class="flex flex-col items-center">
+                            <span class="text-{% if compact_toolbar %}[9px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">{% if compact_toolbar %}T{% else %}Top{% endif %}</span>
+                            <select id="{{ id_prefix }}cv-margin-top" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle('margins'); updateBatchMarginPreset(){% else %}applyDocumentStyle('margins'); updateMarginPreset(){% endif %}"
+                                    class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1{% else %}2{% endif %} py-{% if compact_toolbar %}0.5{% else %}1{% endif %} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}14{% else %}20{% endif %}">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-{% if compact_toolbar %}[9px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">{% if compact_toolbar %}R{% else %}Right{% endif %}</span>
+                            <select id="{{ id_prefix }}cv-margin-right" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle('margins'); updateBatchMarginPreset(){% else %}applyDocumentStyle('margins'); updateMarginPreset(){% endif %}"
+                                    class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1{% else %}2{% endif %} py-{% if compact_toolbar %}0.5{% else %}1{% endif %} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}14{% else %}20{% endif %}">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-{% if compact_toolbar %}[9px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">{% if compact_toolbar %}B{% else %}Bottom{% endif %}</span>
+                            <select id="{{ id_prefix }}cv-margin-bottom" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle('margins'); updateBatchMarginPreset(){% else %}applyDocumentStyle('margins'); updateMarginPreset(){% endif %}"
+                                    class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1{% else %}2{% endif %} py-{% if compact_toolbar %}0.5{% else %}1{% endif %} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}14{% else %}20{% endif %}">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-{% if compact_toolbar %}[9px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">{% if compact_toolbar %}L{% else %}Left{% endif %}</span>
+                            <select id="{{ id_prefix }}cv-margin-left" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle('margins'); updateBatchMarginPreset(){% else %}applyDocumentStyle('margins'); updateMarginPreset(){% endif %}"
+                                    class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1{% else %}2{% endif %} py-{% if compact_toolbar %}0.5{% else %}1{% endif %} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}14{% else %}20{% endif %}">
+                                <option value="0.5" selected>0.5"</option>
+                                <option value="0.75">0.75"</option>
+                                <option value="1.0">1.0"</option>
+                                <option value="1.25">1.25"</option>
+                                <option value="1.5">1.5"</option>
+                                <option value="1.75">1.75"</option>
+                                <option value="2.0">2.0"</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-px h-{% if compact_toolbar %}8{% else %}12{% endif %} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}"></div>
+
+                {# Page Size #}
+                <div class="flex flex-col gap-{% if compact_toolbar %}0.5{% else %}1{% endif %}">
+                    <label for="{{ id_prefix }}cv-page-size" class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Page Size</label>
+                    <select id="{{ id_prefix }}cv-page-size" onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle{% else %}applyDocumentStyle{% endif %}('pageSize')"
+                            class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md {{ padding_x }} {{ padding_y }} focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}28{% else %}32{% endif %}">
+                        <option value="letter">Letter (8.5" x 11")</option>
+                        <option value="a4" selected>A4 (210mm x 297mm)</option>
+                    </select>
+                </div>
+
+                <div class="w-px h-{% if compact_toolbar %}8{% else %}12{% endif %} bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %}"></div>
+
+                {# Header/Footer #}
+                <div class="flex flex-col gap-{% if compact_toolbar %}0.5{% else %}1{% endif %}">
+                    <label class="text-{% if compact_toolbar %}[10px]{% else %}xs{% endif %} {{ theme_text_tertiary }}">Header/Footer{% if not compact_toolbar %} (Optional){% endif %}</label>
+                    <div class="flex gap-{% if compact_toolbar %}1{% else %}2{% endif %}">
+                        <input type="text" id="{{ id_prefix }}cv-header-text" placeholder="Header text{% if not compact_toolbar %} (e.g., Name | Email | Phone){% endif %}"
+                               class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1.5{% else %}2{% endif %} py-1 focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}32{% else %}64{% endif %}"
+                               onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle{% else %}applyDocumentStyle{% endif %}('header')">
+                        <input type="text" id="{{ id_prefix }}cv-footer-text" placeholder="Footer text{% if not compact_toolbar %} (e.g., Page number){% endif %}"
+                               class="{{ text_size }} border-gray-300 {% if mode == 'sidebar' %}dark:border-gray-600 dark:bg-gray-700{% endif %} rounded-md px-{% if compact_toolbar %}1.5{% else %}2{% endif %} py-1 focus:ring-2 focus:ring-indigo-500 w-{% if compact_toolbar %}32{% else %}64{% endif %}"
+                               onchange="{% if mode == 'sidebar' %}applyBatchDocumentStyle{% else %}applyDocumentStyle{% endif %}('footer')">
+                    </div>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    {# Editor Content Area #}
+    <div class="flex-1 overflow-y-auto p-{% if compact_toolbar %}4{% else %}6{% endif %} {{ theme_bg_secondary }}" style="overscroll-behavior: contain;">
+        <div id="{{ id_prefix }}cv-editor-content"
+             class="{{ theme_bg }} {% if mode == 'sidebar' %}dark:bg-gray-800{% endif %} border {{ theme_border }} rounded-lg shadow-inner
+                    min-h-full mx-auto {% if mode == 'sidebar' %}prose prose-sm dark:prose-invert max-w-none{% endif %}"
+             style="max-width: 8.5in; min-height: 11in;"
+             {% if mode == 'sidebar' and job %}
+             data-job-id="{{ job._id }}"
+             data-has-state="{{ 'true' if job.cv_editor_state else 'false' }}"
+             {% endif %}>
+            {% if mode == 'sidebar' %}
+            {# Loading state for sidebar mode #}
+            <div id="{{ id_prefix }}cv-editor-loading" class="flex flex-col items-center justify-center h-96 p-8">
+                <div class="w-full max-w-md space-y-4 animate-pulse">
+                    <div class="h-6 bg-gray-300 {% if mode == 'sidebar' %}dark:bg-gray-600{% endif %} rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 {% if mode == 'sidebar' %}dark:bg-gray-700{% endif %} rounded w-1/2"></div>
+                    <div class="space-y-2 mt-6">
+                        <div class="h-4 bg-gray-200 {% if mode == 'sidebar' %}dark:bg-gray-700{% endif %} rounded"></div>
+                        <div class="h-4 bg-gray-200 {% if mode == 'sidebar' %}dark:bg-gray-700{% endif %} rounded w-5/6"></div>
+                        <div class="h-4 bg-gray-200 {% if mode == 'sidebar' %}dark:bg-gray-700{% endif %} rounded w-4/5"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-center mt-6 text-indigo-600 {% if mode == 'sidebar' %}dark:text-indigo-400{% endif %}">
+                    <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span class="{{ text_size }} font-medium">Loading CV editor...</span>
+                </div>
+            </div>
+            {% else %}
+            {# TipTap renders here for panel mode #}
+            {% endif %}
+        </div>
+
+        {% if mode == 'sidebar' and job and job.cv_reasoning %}
+        {# CV Reasoning if available #}
+        <div class="mt-4 p-3 rounded-lg border {{ theme_border }} {{ theme_bg }}">
+            <h4 class="text-xs font-semibold {{ theme_text_tertiary }} uppercase tracking-wide mb-2 flex items-center gap-2">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                CV Tailoring Rationale
+            </h4>
+            <p class="text-xs {{ theme_text_secondary }}">{{ job.cv_reasoning }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    {# No CV state (sidebar mode only) #}
+    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <svg class="h-16 w-16 {{ theme_text_tertiary }} mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="font-medium {{ theme_text_primary }} mb-2">No CV Generated Yet</h3>
+        <p class="{{ theme_text_secondary }} {{ text_size }} mb-4 max-w-xs">
+            Run the pipeline to generate a tailored CV for this position.
+        </p>
+        {% if mode == 'sidebar' and job %}
+        <button onclick="processSingleBatchJob('{{ job._id }}'); closeBatchSidebar();"
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white {{ text_size }} font-medium rounded-lg transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Run Pipeline
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+{% if mode == 'panel' %}
+</div>
+{% else %}
+</div>
+{% endif %}
