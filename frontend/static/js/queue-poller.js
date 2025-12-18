@@ -9,6 +9,12 @@
  * - Adaptive polling: faster when jobs are active (1s), slower when idle (30s)
  * - Automatic retry with backoff on errors
  * - Self-healing: always returns full truth on each poll
+ * - Direct browser → runner communication (bypasses Flask proxy for speed)
+ *
+ * Architecture Note:
+ * Queue polling calls the runner service DIRECTLY (not through Flask proxy).
+ * This eliminates Vercel cold-start latency and synchronous HTTP bottlenecks.
+ * The queue state endpoint is public (no auth required).
  *
  * Usage:
  *   const poller = new QueuePoller();
@@ -23,6 +29,10 @@
 (function(global) {
     'use strict';
 
+    // Direct runner URL - bypasses Flask proxy for faster queue state polling
+    // The runner service has CORS enabled for the Vercel domain
+    const RUNNER_URL = global.RUNNER_URL || 'https://runner.uqab.digital';
+
     class QueuePoller {
         constructor(options = {}) {
             // Polling intervals
@@ -30,8 +40,9 @@
             this.idleInterval = options.idleInterval || 30000;     // 30s when idle
             this.errorInterval = options.errorInterval || 5000;    // 5s on error
 
-            // Endpoint (proxied through Flask to runner service)
-            this.endpoint = options.endpoint || '/api/runner/queue/state';
+            // Endpoint - direct to runner service (not Flask proxy)
+            // This eliminates Vercel cold-start latency and sync HTTP bottlenecks
+            this.endpoint = options.endpoint || `${RUNNER_URL}/queue/state`;
 
             // State tracking
             this.polling = false;
@@ -160,17 +171,20 @@
 
         /**
          * Internal: Fetch state from server.
+         * Calls runner directly (cross-origin) - no credentials needed.
          */
         async _fetchState() {
             this.pollCount++;
 
             try {
+                // Note: No 'credentials' option for cross-origin requests to runner
+                // The queue state endpoint is public (no auth required)
                 const response = await fetch(this.endpoint, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                     },
-                    credentials: 'same-origin',
+                    mode: 'cors',
                 });
 
                 if (!response.ok) {
