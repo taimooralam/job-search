@@ -106,16 +106,34 @@
 - **Impact**: Cleaner test suite, removed dead code paths
 - **Commit**: `9c471e29` - test: remove obsolete SSE log display tests and update contact tests
 
-**ANALYSIS: CV Editor Unification Opportunity - IDENTIFIED**:
-- **Finding**: ~70-80% code overlap between detail page and batch page CV editors
-- **Pattern**: Similar to JD annotation editor (just unified into reusable component)
-- **Recommendation**: Create unified CV editor component (similar to jd_annotation_editor.html)
-  - Detail page CV editor: `frontend/templates/partials/job_detail/_cv_editor.html` (current, full-featured)
-  - Batch page CV editor: `frontend/templates/partials/batch/_cv_sidebar_content.html` (sidebar mode)
-  - Opportunity: Extract to `frontend/templates/components/cv_editor.html` with mode parameter
-  - Potential savings: 200-300 lines of duplicated initialization and state management code
-- **Status**: Analysis complete, implementation pending (ready for next session if prioritized)
-- **See also**: `plans/next-steps.md` for CV editor unification task
+**ENHANCEMENT: CV Editor Unified Component - COMPLETED**:
+- **Feature**: Parameterized CV editor component eliminates 70-80% code duplication between detail and batch pages
+- **Architecture**:
+  - New component: `frontend/templates/components/cv_editor.html` - Universal CV editor with dual-mode support
+  - Supports `mode` parameter: 'panel' (detail page, full width) or 'sidebar' (batch page, compact)
+  - Parameterized: `id_prefix`, `show_overlay`, `show_close_button`, `show_panel_toggle`, `show_job_info`, `compact_toolbar`
+- **Code Reduction**:
+  - Detail page CV editor wrapper: 507 lines → 12 lines (98% reduction in _cv_editor_panel.html)
+  - Batch page CV editor wrapper: 847 lines → 236 lines (72% reduction in _cv_sidebar_content.html, includes batch-specific JS)
+  - **Total lines saved: 402 lines (30% reduction across both files)**
+- **Files Created**:
+  - `frontend/templates/components/cv_editor.html` - Main parameterized CV editor component (704 lines)
+- **Files Modified**:
+  - `frontend/templates/partials/job_detail/_cv_editor_panel.html` - Refactored to 12-line wrapper (includes cv_editor.html component)
+  - `frontend/templates/partials/batch/_cv_sidebar_content.html` - Refactored to 236-line wrapper (includes cv_editor.html component + batch-specific state management)
+- **Features Preserved**:
+  - TipTap rich text editing with full toolbar in both modes
+  - Auto-save with 1.5s debounce (consistent across all editors)
+  - Save indicator: unsaved/saving/saved state display
+  - Dark mode theme support
+  - Document settings (line height, margins, page size)
+  - PDF export capability
+  - Undo/Redo functionality
+  - Empty state handling (displays when no CV generated yet)
+  - CV reasoning display
+  - Batch page CV listing and selection
+- **Impact**: Unified component pattern (alongside JD annotation editor) enables rapid development of editors across different views. Consistent styling, behavior, and save patterns across detail and batch pages.
+- **Commit**: `bab3c2ba` - refactor(ui): unify CV editor as parameterized component with dual-mode support
 
 ---
 
