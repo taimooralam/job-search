@@ -148,7 +148,8 @@ class TestScreenReaderSupport:
     def test_toolbar_has_role_toolbar(self):
         """Toolbar should have role='toolbar' for screen readers."""
         # Arrange
-        with open('frontend/templates/partials/job_detail/_cv_editor_panel.html', 'r') as f:
+        # Note: CV editor HTML is now in components/cv_editor.html (unified component)
+        with open('frontend/templates/components/cv_editor.html', 'r') as f:
             content = f.read()
 
         # Act & Assert
