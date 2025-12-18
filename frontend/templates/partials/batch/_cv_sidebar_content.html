@@ -767,8 +767,8 @@ function applyBatchDocumentStyle(styleType) {
     }
 
     // Trigger auto-save
-    if (batchCVEditorInstance && typeof batchCVEditorInstance.scheduleSave === 'function') {
-        batchCVEditorInstance.scheduleSave();
+    if (batchCVEditorInstance && typeof batchCVEditorInstance.scheduleAutoSave === 'function') {
+        batchCVEditorInstance.scheduleAutoSave();
     }
 }
 
