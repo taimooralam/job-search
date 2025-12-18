@@ -59,15 +59,17 @@
                 </div>
 
                 {# Action Buttons #}
+                {% set contact_name = (contact.name or contact.contact_name or 'Unknown') | e | replace("'", "\\'") %}
+                {% set contact_role = (contact.role or contact.contact_role or '') | e | replace("'", "\\'") %}
                 <div class="flex gap-2 mt-3">
-                    <button onclick="generateOutreach('primary', {{ loop.index0 }}, 'inmail', this)"
+                    <button onclick="generateOutreach('{{ contact_name }}', '{{ contact_role }}', 'inmail', this)"
                             class="flex-1 px-2.5 py-1.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-800/50 text-indigo-700 dark:text-indigo-200 rounded hover:bg-indigo-200 dark:hover:bg-indigo-700/50 transition flex items-center justify-center gap-1.5">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                         Generate InMail
                     </button>
-                    <button onclick="generateOutreach('primary', {{ loop.index0 }}, 'connection', this)"
+                    <button onclick="generateOutreach('{{ contact_name }}', '{{ contact_role }}', 'connection', this)"
                             class="flex-1 px-2.5 py-1.5 text-xs font-medium bg-green-100 dark:bg-green-800/50 text-green-700 dark:text-green-200 rounded hover:bg-green-200 dark:hover:bg-green-700/50 transition flex items-center justify-center gap-1.5">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
@@ -161,8 +163,10 @@
                 </div>
 
                 {# Action Buttons #}
+                {% set sec_contact_name = (contact.name or contact.contact_name or 'Unknown') | e | replace("'", "\\'") %}
+                {% set sec_contact_role = (contact.role or contact.contact_role or '') | e | replace("'", "\\'") %}
                 <div class="flex gap-2 mt-2">
-                    <button onclick="generateOutreach('secondary', {{ loop.index0 }}, 'connection', this)"
+                    <button onclick="generateOutreach('{{ sec_contact_name }}', '{{ sec_contact_role }}', 'connection', this)"
                             class="flex-1 px-2.5 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-1.5">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>

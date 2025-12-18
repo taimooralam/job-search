@@ -654,17 +654,19 @@ async function copyToClipboard(text, label, button) {
 }
 
 /**
- * Generate outreach message for a contact (placeholder - will call API)
- * @param {string} contactType - 'primary' or 'secondary'
- * @param {number} contactIndex - Index in the contacts array
+ * Generate outreach message for a contact
+ * @param {string} contactName - Name of the contact
+ * @param {string} contactRole - Role/title of the contact
  * @param {string} messageType - 'inmail' or 'connection'
  * @param {HTMLElement} button - Button element for loading state
  */
-async function generateOutreach(contactType, contactIndex, messageType, button) {
+async function generateOutreach(contactName, contactRole, messageType, button) {
     if (!currentBatchJobId) {
         console.error('No job ID set');
         return;
     }
+
+    const messageLabel = messageType === 'connection' ? 'Connection request' : 'InMail';
 
     // Show loading state
     const originalHTML = button.innerHTML;
@@ -678,21 +680,27 @@ async function generateOutreach(contactType, contactIndex, messageType, button) 
     `;
 
     try {
-        const response = await fetch(`/api/jobs/${currentBatchJobId}/generate-outreach`, {
+        const response = await fetch(`/api/jobs/${currentBatchJobId}/contacts/generate-message`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                contact_type: contactType,
-                contact_index: contactIndex,
+                contact_name: contactName,
+                contact_role: contactRole,
                 message_type: messageType
             })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            // Refresh the contacts content
+        const result = await response.json();
+
+        if (result.success && result.message) {
+            // Copy to clipboard
+            await navigator.clipboard.writeText(result.message);
+            if (typeof showToast === 'function') {
+                showToast(`${messageLabel} copied to clipboard!`, 'success');
+            }
+            // Refresh the contacts content to show the saved message
             const contentContainer = document.getElementById('batch-contacts-content');
             if (contentContainer) {
                 const refreshResponse = await fetch(`/partials/batch-contacts/${currentBatchJobId}`);
@@ -700,18 +708,15 @@ async function generateOutreach(contactType, contactIndex, messageType, button) 
                     contentContainer.innerHTML = await refreshResponse.text();
                 }
             }
-            if (typeof showToast === 'function') {
-                showToast('Message generated successfully', 'success');
-            }
         } else {
-            throw new Error('Failed to generate message');
+            throw new Error(result.error || 'Failed to generate message');
         }
     } catch (error) {
         console.error('Error generating outreach:', error);
         button.innerHTML = originalHTML;
         button.disabled = false;
         if (typeof showToast === 'function') {
-            showToast('Failed to generate message', 'error');
+            showToast(`Failed to generate ${messageLabel}: ${error.message}`, 'error');
         }
     }
 }
