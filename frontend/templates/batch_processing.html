@@ -953,22 +953,25 @@
                 showToast(`Queued ${result.total_count} jobs for ${operationNames[operation]}. Check Pipeline Queue for progress.`, 'success');
 
                 // Mark all jobs as queued in progress panel
-                result.runs.forEach(run => {
+                result.runs.forEach((run, index) => {
                     BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
                     updateJobProgress(run.job_id, 'queued');
 
                     // Immediately dispatch event so live status badges update
-                    // This ensures the PIPELINE column shows "Running" right away
+                    // Show 'pending' status first with queue position for better UX
+                    // Then queue store events will update to 'running' when job actually starts
                     // Note: Must use window (not document) since live-status-badge.js listens on window
+                    const position = run.position || (index + 1);  // Use position from response or calculate from index
                     window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
                         detail: {
                             jobId: run.job_id,
-                            status: 'running',
+                            status: 'pending',  // Changed from 'running' to show accurate queue state
                             runId: run.run_id,
-                            operation: operation
+                            operation: operation,
+                            position: position
                         }
                     }));
-                    BatchDebug.log('QUEUE', `Dispatched queue:job-status-changed for ${run.job_id}`);
+                    BatchDebug.log('QUEUE', `Dispatched queue:job-status-changed for ${run.job_id} (position #${position})`);
 
                     // Connect SSE stream for the first job to get real-time logs
                     // Note: For true bulk SSE, we'd need a bulk log stream endpoint

@@ -338,18 +338,40 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Subscribe to WebSocket queue events
+         * Subscribe to queue events for real-time updates
          */
         _subscribeToQueueEvents() {
-            // Listen for queue WebSocket events
+            // Listen for queue:update events (if dispatched)
             window.addEventListener('queue:update', (event) => {
                 this._handleQueueEvent(event.detail);
             });
 
+            // Listen for global queue job events (dispatched by queue-store.js)
+            // These provide real-time updates instead of relying solely on polling
+            window.addEventListener('queue:job-started', (event) => {
+                if (event.detail?.jobId === this.jobId) {
+                    console.log('[Pipelines Panel] Job started event received, refreshing status');
+                    this._loadInitialStatus();
+                }
+            });
+
+            window.addEventListener('queue:job-completed', (event) => {
+                if (event.detail?.jobId === this.jobId) {
+                    console.log('[Pipelines Panel] Job completed event received, refreshing status');
+                    this._loadInitialStatus();
+                }
+            });
+
+            window.addEventListener('queue:job-failed', (event) => {
+                if (event.detail?.jobId === this.jobId) {
+                    console.log('[Pipelines Panel] Job failed event received, refreshing status');
+                    this._loadInitialStatus();
+                }
+            });
+
             // Also listen for global queue store updates if available
             if (typeof Alpine !== 'undefined' && Alpine.store('queue')) {
-                // The queue store broadcasts events via WebSocket
-                console.log('[Pipelines Panel] Queue store available, events will be handled');
+                console.log('[Pipelines Panel] Queue store available, real-time events enabled');
             }
         },
 
@@ -432,12 +454,26 @@ document.addEventListener('alpine:init', () => {
                 clearInterval(this._pollIntervalId);
             }
 
+            // Grace period tracking - continue polling for 30s after operations complete
+            // This catches late completion events and ensures final status is captured
+            let gracePeriodEnd = null;
+            const gracePeriodMs = 30000;  // 30 seconds
+
             // Poll periodically
             this._pollIntervalId = setInterval(() => {
-                // Only poll if we have active operations
                 if (this.hasActiveOperations()) {
+                    // Active operations - reset grace period and poll
+                    gracePeriodEnd = null;
+                    this._loadInitialStatus();
+                } else if (gracePeriodEnd === null) {
+                    // Just finished active operations - start grace period
+                    gracePeriodEnd = Date.now() + gracePeriodMs;
+                    this._loadInitialStatus();
+                } else if (Date.now() < gracePeriodEnd) {
+                    // Within grace period - continue polling
                     this._loadInitialStatus();
                 }
+                // After grace period - stop polling to save resources
             }, PIPELINES_PANEL_CONFIG.pollIntervalMs);
         },
 
