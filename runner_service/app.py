@@ -27,6 +27,7 @@ from .models import (
     AlertEntry,
     CapacityMetrics,
     CircuitBreakerSummary,
+    ClaudeCodeStatus,
     ConnectionStatus,
     DiagnosticsResponse,
     FireCrawlCreditsResponse,
@@ -1089,6 +1090,41 @@ async def _get_openrouter_credits_safe() -> Optional[OpenRouterCreditsResponse]:
         return None
 
 
+def _get_claude_code_status() -> Optional[ClaudeCodeStatus]:
+    """Get Claude Code CLI status for diagnostics."""
+    try:
+        from src.layer1_4.claude_jd_extractor import ClaudeJDExtractor
+
+        extractor = ClaudeJDExtractor()
+        available = extractor.check_cli_available()
+
+        # Determine auth method
+        auth_token = os.getenv("ANTHROPIC_AUTH_TOKEN")
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+
+        if auth_token and auth_token.startswith("sk-ant-oat"):
+            auth_method = "oauth_token"
+        elif api_key:
+            auth_method = "api_key"
+        else:
+            auth_method = "none"
+
+        return ClaudeCodeStatus(
+            available=available,
+            model=extractor.model,
+            auth_method=auth_method,
+            error=None if available else "CLI not available or not authenticated"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to get Claude Code status for diagnostics: {e}")
+        return ClaudeCodeStatus(
+            available=False,
+            model=os.getenv("CLAUDE_CODE_MODEL", "claude-opus-4-5-20251101"),
+            auth_method="none",
+            error=str(e)
+        )
+
+
 @app.get("/diagnostics", response_model=DiagnosticsResponse)
 async def get_diagnostics() -> DiagnosticsResponse:
     """
@@ -1097,6 +1133,7 @@ async def get_diagnostics() -> DiagnosticsResponse:
     Aggregates all diagnostic information in a single call:
     - Connection status (MongoDB, Redis, PDF service)
     - API credits (FireCrawl, OpenRouter)
+    - Claude Code CLI status (for JD extraction)
     - Circuit breaker states
     - Rate limit status
     - Recent alerts
@@ -1122,6 +1159,9 @@ async def get_diagnostics() -> DiagnosticsResponse:
 
     firecrawl_credits = await firecrawl_task
     openrouter_credits = await openrouter_task
+
+    # 2b. Get Claude Code CLI status (sync - fast check)
+    claude_code_status = _get_claude_code_status()
 
     # 3. Get metrics from common infrastructure
     system_health_status = SystemHealthStatus(status="healthy", issues=[], warnings=[])
@@ -1232,6 +1272,7 @@ async def get_diagnostics() -> DiagnosticsResponse:
         pdf_service=pdf_status,
         firecrawl_credits=firecrawl_credits,
         openrouter_credits=openrouter_credits,
+        claude_code=claude_code_status,
         system_health=system_health_status,
         circuit_breakers=circuit_breaker_summary,
         rate_limits=rate_limit_summary,

@@ -51,7 +51,7 @@
     </div>
 
     <!-- Connection Status Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- MongoDB -->
         {% set mongo = diagnostics.mongodb %}
         <div class="panel p-4">
@@ -131,6 +131,39 @@
             <p class="text-xs text-red-500 mt-1">{{ pdf.error[:40] }}{% if pdf.error|length > 40 %}...{% endif %}</p>
             {% endif %}
         </div>
+
+        <!-- Claude Code CLI -->
+        {% if diagnostics.claude_code %}
+        {% set claude = diagnostics.claude_code %}
+        <div class="panel p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold theme-text-secondary">Claude Code</h3>
+                <span class="flex items-center gap-1.5">
+                    {% if claude.available %}
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="text-xs text-green-600 dark:text-green-400">available</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-600 dark:text-red-400">unavailable</span>
+                    {% endif %}
+                </span>
+            </div>
+            <p class="text-xs theme-text-tertiary">Model: {{ claude.model }}</p>
+            <p class="text-xs theme-text-muted">
+                Auth:
+                {% if claude.auth_method == 'oauth_token' %}
+                <span class="text-purple-600 dark:text-purple-400">OAuth (Max)</span>
+                {% elif claude.auth_method == 'api_key' %}
+                <span class="text-blue-600 dark:text-blue-400">API Key</span>
+                {% else %}
+                <span class="text-gray-500">None</span>
+                {% endif %}
+            </p>
+            {% if claude.error %}
+            <p class="text-xs text-red-500 mt-1">{{ claude.error[:40] }}{% if claude.error|length > 40 %}...{% endif %}</p>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 
     <!-- API Credits & Capacity Row -->

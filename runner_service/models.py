@@ -333,6 +333,21 @@ class AlertEntry(BaseModel):
     metadata: Dict[str, str] = Field(default_factory=dict, description="Additional context")
 
 
+class ClaudeCodeStatus(BaseModel):
+    """Status for Claude Code CLI availability.
+
+    Used for parallel JD extraction via Claude Max subscription.
+    """
+
+    available: bool = Field(..., description="Whether Claude Code CLI is available and authenticated")
+    model: str = Field(..., description="Configured Claude model (e.g., claude-opus-4-5-20251101)")
+    auth_method: str = Field(
+        ...,
+        description="Authentication method: oauth_token, api_key, or none"
+    )
+    error: Optional[str] = Field(None, description="Error message if unavailable")
+
+
 class DiagnosticsResponse(BaseModel):
     """Comprehensive diagnostics response for system health monitoring.
 
@@ -362,6 +377,11 @@ class DiagnosticsResponse(BaseModel):
     )
     openrouter_credits: Optional[OpenRouterCreditsResponse] = Field(
         None, description="OpenRouter API credit status"
+    )
+
+    # Claude Code CLI status (for parallel JD extraction)
+    claude_code: Optional[ClaudeCodeStatus] = Field(
+        None, description="Claude Code CLI availability for JD extraction"
     )
 
     # System metrics
