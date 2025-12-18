@@ -312,11 +312,21 @@ document.addEventListener('alpine:init', () => {
         // =====================================================================
 
         /**
-         * Load initial status from backend
+         * Load status from queue store (no HTTP request - uses data from QueuePoller)
+         * Falls back to HTTP request if queue store is not available
          */
         async _loadInitialStatus() {
             if (!this.jobId) return;
 
+            // Try to use queue store data first (fast, no HTTP request)
+            const queueStore = typeof Alpine !== 'undefined' ? Alpine.store('queue') : null;
+            if (queueStore && queueStore.pending && queueStore.running && queueStore.history) {
+                this._updateFromQueueStore(queueStore);
+                return;
+            }
+
+            // Fallback: make HTTP request through Flask proxy (slow, may timeout)
+            console.log('[Pipelines Panel] Queue store not available, falling back to HTTP request');
             const endpoint = PIPELINES_PANEL_CONFIG.queueStatusEndpoint
                 .replace('{jobId}', this.jobId);
 
@@ -336,6 +346,42 @@ document.addEventListener('alpine:init', () => {
             } catch (error) {
                 console.error('[Pipelines Panel] Failed to load initial status:', error);
             }
+        },
+
+        /**
+         * Update operations from queue store data
+         * @param {Object} queueStore - Alpine queue store
+         */
+        _updateFromQueueStore(queueStore) {
+            const allItems = [
+                ...queueStore.pending.map(i => ({ ...i, status: 'pending' })),
+                ...queueStore.running.map(i => ({ ...i, status: 'running' })),
+                ...queueStore.failed.map(i => ({ ...i, status: 'failed' })),
+                ...queueStore.history.filter(i => i.job_id === this.jobId).map(i => ({ ...i, status: i.status || 'completed' }))
+            ];
+
+            // Find items for this job
+            const jobItems = allItems.filter(item => item.job_id === this.jobId);
+
+            // Group by operation and take the most recent
+            for (const op of PIPELINES_PANEL_CONFIG.operations) {
+                const opItems = jobItems.filter(item => item.operation === op);
+                if (opItems.length > 0) {
+                    // Take the most recent (first match in order: pending > running > history)
+                    const latest = opItems[0];
+                    this.operations[op] = {
+                        status: latest.status,
+                        run_id: latest.run_id,
+                        position: latest.position,
+                        created_at: latest.created_at,
+                        started_at: latest.started_at,
+                        completed_at: latest.completed_at,
+                        error: latest.error
+                    };
+                }
+            }
+
+            console.log('[Pipelines Panel] Updated from queue store:', this.operations);
         },
 
         /**
