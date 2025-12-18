@@ -1369,6 +1369,30 @@
         updateBatchSelectionUI();
         setupKeyboardShortcuts();
 
+        // Listen for annotation updates to turn JD badge green immediately
+        window.addEventListener('annotations:updated', function(e) {
+            const { jobId, hasAnnotations } = e.detail;
+            const badge = document.querySelector(`[data-jd-badge="${jobId}"]`);
+            if (badge) {
+                // Remove all state classes
+                badge.classList.remove(
+                    'bg-gray-100', 'text-gray-400', 'dark:bg-gray-700', 'dark:text-gray-500',
+                    'bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300',
+                    'bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300'
+                );
+
+                // Add green classes if has annotations, orange otherwise (already extracted since modal is open)
+                if (hasAnnotations) {
+                    badge.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300', 'cursor-pointer');
+                    badge.title = 'JD: Annotated';
+                } else {
+                    badge.classList.add('bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300', 'cursor-pointer');
+                    badge.title = 'JD: Extracted';
+                }
+                BatchDebug.log('BADGE', `Updated JD badge for ${jobId}:`, hasAnnotations ? 'green' : 'orange');
+            }
+        });
+
         // Listen for queue events to track actual extraction completion
         // Note: Events are dispatched on window, so listen on window
         window.addEventListener('queue:job-started', function(e) {

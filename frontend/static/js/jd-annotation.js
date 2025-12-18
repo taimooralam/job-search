@@ -375,6 +375,15 @@ class AnnotationManager {
 
             this.updateSaveIndicator('saved');
             console.log('Annotations saved successfully');
+
+            // Dispatch event to update JD badge in job rows (turns green when annotations exist)
+            window.dispatchEvent(new CustomEvent('annotations:updated', {
+                detail: {
+                    jobId: this.jobId,
+                    hasAnnotations: this.annotations.length > 0,
+                    annotationCount: this.annotations.length
+                }
+            }));
         } catch (error) {
             console.error('Error saving annotations:', error);
             this.updateSaveIndicator('error');
