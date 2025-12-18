@@ -363,6 +363,145 @@ function cleanupBatchCVEditor() {
     }
 }
 
+/**
+ * Apply formatting command to batch CV editor
+ * Global function called from inline onclick handlers in the sidebar HTML
+ */
+function applyBatchCVFormat(command, value = null) {
+    if (batchCVEditorInstance && batchCVEditorInstance.applyFormat) {
+        batchCVEditorInstance.applyFormat(command, value);
+    }
+}
+
+/**
+ * Export batch CV to PDF
+ * Global function called from PDF export button in the sidebar HTML
+ */
+async function exportBatchCVToPDF() {
+    if (!batchCVEditorInstance) {
+        if (typeof showToast === 'function') {
+            showToast('CV editor not initialized', 'error');
+        }
+        return;
+    }
+
+    try {
+        // Show loading state
+        if (typeof showToast === 'function') {
+            showToast('Generating PDF...', 'info');
+        }
+
+        // Save first to ensure latest content
+        await batchCVEditorInstance.save();
+
+        // Call PDF generation endpoint
+        const response = await fetch(`/api/jobs/${batchCVEditorInstance.jobId}/cv-editor/pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'PDF generation failed');
+        }
+
+        // Download the PDF file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'CV.pdf';
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        if (typeof showToast === 'function') {
+            showToast('PDF downloaded successfully!', 'success');
+        }
+
+    } catch (error) {
+        console.error('PDF export failed:', error);
+        if (typeof showToast === 'function') {
+            showToast(`PDF export failed: ${error.message}`, 'error');
+        }
+    }
+}
+
+/**
+ * Update toolbar button states based on current selection
+ * Called from editor selection change events
+ */
+function updateBatchCVToolbarState() {
+    if (!batchCVEditorInstance || !batchCVEditorInstance.editor) return;
+
+    const editor = batchCVEditorInstance.editor;
+
+    // Update format buttons
+    const formatButtons = {
+        'batch-cv-bold-btn': 'bold',
+        'batch-cv-italic-btn': 'italic',
+        'batch-cv-underline-btn': 'underline'
+    };
+
+    for (const [btnId, format] of Object.entries(formatButtons)) {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            if (editor.isActive(format)) {
+                btn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+            } else {
+                btn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+            }
+        }
+    }
+}
+
+/**
+ * Apply document-level styles (margins, page size, headers, footers)
+ * Called from document settings controls
+ */
+function applyBatchDocumentStyle(property) {
+    if (!batchCVEditorInstance) return;
+
+    // Get value from the corresponding input element
+    let value;
+    switch (property) {
+        case 'lineHeight':
+            value = document.getElementById('batch-cv-line-height')?.value;
+            break;
+        case 'margins':
+            value = document.getElementById('batch-cv-margins')?.value;
+            break;
+        case 'pageSize':
+            value = document.getElementById('batch-cv-page-size')?.value;
+            break;
+        case 'header':
+            value = document.getElementById('batch-cv-header-text')?.value;
+            break;
+        case 'footer':
+            value = document.getElementById('batch-cv-footer-text')?.value;
+            break;
+    }
+
+    if (batchCVEditorInstance.applyDocumentStyle) {
+        batchCVEditorInstance.applyDocumentStyle(property, value);
+    }
+}
+
 // ============================================================================
 // Batch Annotation Manager Initialization
 // ============================================================================
