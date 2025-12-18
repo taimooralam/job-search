@@ -151,6 +151,7 @@ document.addEventListener('alpine:init', () => {
         activeRunId: null,
         runs: {},
         runOrder: [], // Newest first
+        pollingActive: {}, // Track active polling per runId: { runId: true/false }
 
         // Context menu state
         contextMenu: {
@@ -357,6 +358,22 @@ document.addEventListener('alpine:init', () => {
 
             window.addEventListener('queue:job-failed', (e) => {
                 this._handleQueueJobFailed(e.detail);
+            });
+
+            // Polling state events for visual indicator
+            // Dispatched by LogPoller during fetch cycles
+            window.addEventListener('poller:poll-start', (e) => {
+                const { runId } = e.detail;
+                if (runId) {
+                    this.pollingActive = { ...this.pollingActive, [runId]: true };
+                }
+            });
+
+            window.addEventListener('poller:poll-end', (e) => {
+                const { runId } = e.detail;
+                if (runId) {
+                    this.pollingActive = { ...this.pollingActive, [runId]: false };
+                }
             });
         },
 
@@ -1356,6 +1373,13 @@ document.addEventListener('alpine:init', () => {
          */
         hasRunningPipeline() {
             return Object.values(this.runs).some(run => run.status === 'running');
+        },
+
+        /**
+         * Check if any log polling is currently active (for visual indicator)
+         */
+        isPollingActive() {
+            return Object.values(this.pollingActive).some(active => active === true);
         },
 
         /**

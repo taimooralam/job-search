@@ -13,6 +13,8 @@ services:
       - LOG_BUFFER_LIMIT=500
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
+      # CORS: Allow direct browser → runner communication for log polling
+      - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app
     # Traefik handles external traffic via HTTPS; keep direct port for local/fallback
     ports:
       - "0.0.0.0:8000:8000"
@@ -62,6 +64,7 @@ services:
     networks:
       - job-pipeline
       - n8n-prod_default
+      - mongodb-network  # For internal MongoDB access after migration
 
   pdf-service:
     image: ${PDF_SERVICE_IMAGE:-ghcr.io/taimooralam/job-search/pdf-service:latest}
@@ -94,3 +97,8 @@ networks:
     external: true
     # For local testing without n8n, comment out 'external: true' and uncomment below:
     # driver: bridge
+  mongodb-network:
+    external: true
+    name: mongodb-network
+    # Note: This network is created by docker-compose.mongodb.yml
+    # For local dev without VPS MongoDB, comment out 'external: true' and 'name:'

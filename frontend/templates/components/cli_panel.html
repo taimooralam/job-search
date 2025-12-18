@@ -30,6 +30,13 @@
                     <span x-text="$store.cli.getActiveRunTitle()"></span>
                 </span>
             </template>
+
+            <!-- Polling activity indicator - amber pulsing dot when fetching logs -->
+            <template x-if="$store.cli.isPollingActive()">
+                <span class="cli-polling-indicator" title="Fetching logs from runner...">
+                    <span class="cli-polling-dot"></span>
+                </span>
+            </template>
         </div>
 
         <div class="cli-toggle-right">

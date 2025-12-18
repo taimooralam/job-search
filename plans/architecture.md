@@ -1084,6 +1084,68 @@ t=79s: User navigates away
 
 **Impact**: Real-time queue status and logs now reliable during long CV generation (78s). No connection drops. Simpler architecture. Browser tab throttling no longer affects updates. Polling provides implicit reconnection with backoff on network failures.
 
+### Proxy vs Direct Communication Design Principle (NEW - 2025-12-18)
+
+**Principle**: Not all frontend → backend communication needs to go through the Flask proxy.
+
+**Decision Framework**:
+
+| Request Type | Needs Auth? | Use Proxy? | Example |
+|--------------|-------------|------------|---------|
+| Write operations | Yes | Yes | Queue job, execute pipeline |
+| Sensitive reads | Yes | Yes | User data, API keys |
+| Public read-only | No | **No** | Log polling, health checks |
+
+**Rationale**:
+- Flask proxy on Vercel adds latency (cold starts, sync HTTP)
+- High-frequency polling (200ms) amplifies any proxy overhead
+- Direct browser → VPS communication is faster and more reliable for non-sensitive data
+
+**Implementation**:
+- Enable CORS on runner service for Vercel domain (`CORS_ORIGINS` env var)
+- Public endpoints like log polling (`/api/logs/{run_id}`) accessible directly
+- Sensitive operations remain behind Flask proxy with Bearer token auth
+
+**Log Polling Direct Access** (2025-12-18):
+
+```
+BEFORE (problematic):
+Browser → Vercel Flask Proxy → VPS Runner
+         (sync HTTP, 30s timeout, cold starts)
+         ↓
+         504 Gateway Timeout on high-frequency polling
+
+AFTER (fast):
+Browser → VPS Runner (runner.uqab.digital)
+         (direct HTTPS, CORS enabled)
+         ↓
+         Reliable 200ms polling, no proxy overhead
+```
+
+**Configuration**:
+- `docker-compose.runner.yml`: `CORS_ORIGINS=https://job-search-inky-sigma.vercel.app`
+- `frontend/static/js/log-poller.js`: Direct URL `https://runner.uqab.digital/api/logs`
+- `runner_service/app.py`: CORSMiddleware with allowed origins
+
+**Security Note**:
+- Log polling endpoint is **intentionally public** - no auth required
+- Run IDs are UUIDs (unguessable) - security through obscurity
+- Logs contain operation progress, not sensitive data
+- Write operations still require Bearer token via Flask proxy
+
+**Visual Feedback** (2025-12-18):
+- Amber pulsing dot in CLI panel toggle bar during active log polling
+- `poller:poll-start` and `poller:poll-end` events dispatched by LogPoller
+- `$store.cli.isPollingActive()` checks if any run is being polled
+
+**Lesson Learned**:
+The original design proxied ALL runner requests through Flask for simplicity. This caused intermittent 504 timeouts during high-frequency log polling (200ms interval = 5 req/sec) due to:
+1. Synchronous `requests.get()` blocking Flask workers
+2. Vercel serverless cold starts adding latency
+3. 30-second timeout exhausted during queue backup
+
+The fix was to enable direct browser → runner communication for log polling, eliminating the unnecessary proxy hop for public read-only endpoints.
+
 ### Queue Manager & State Management (UPDATED - 2025-12-15)
 
 **Purpose**: Manage job processing queue state, track operation status (pending/completed/failed), and provide cleanup mechanisms for operational recovery.

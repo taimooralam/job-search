@@ -107,6 +107,26 @@ body {
     50% { opacity: 0.4; }
 }
 
+/* Polling activity indicator - amber pulsing dot */
+.cli-polling-indicator {
+    display: flex;
+    align-items: center;
+    margin-left: 0.5rem;
+}
+
+.cli-polling-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #f59e0b; /* amber-500 */
+    border-radius: 50%;
+    animation: cli-polling-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes cli-polling-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
 .cli-chevron {
     width: 1rem;
     height: 1rem;
@@ -475,12 +495,14 @@ body {
     .cli-panel,
     .cli-chevron,
     .cli-running-dot,
+    .cli-polling-dot,
     .cli-tab,
     .cli-action-btn {
         transition: none;
     }
 
-    .cli-running-dot {
+    .cli-running-dot,
+    .cli-polling-dot {
         animation: none;
     }
 }

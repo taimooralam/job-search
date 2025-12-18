@@ -12,6 +12,12 @@
  * - 200ms polling for near-instant feel
  * - Automatic completion detection
  * - Layer status updates
+ * - Direct browser → runner communication (bypasses Flask proxy for speed)
+ *
+ * Architecture Note:
+ * Log polling calls the runner service DIRECTLY (not through Flask proxy).
+ * This eliminates Vercel cold-start latency and synchronous HTTP bottlenecks.
+ * The log endpoint is public (no auth required) - run IDs are unguessable UUIDs.
  *
  * Usage:
  *   const poller = new LogPoller('op_generate-cv_abc123');
@@ -25,6 +31,10 @@
 (function(global) {
     'use strict';
 
+    // Direct runner URL - bypasses Flask proxy for faster log polling
+    // The runner service has CORS enabled for the Vercel domain
+    const RUNNER_URL = global.RUNNER_URL || 'https://runner.uqab.digital';
+
     class LogPoller {
         constructor(runId, options = {}) {
             if (!runId) {
@@ -37,8 +47,9 @@
             this.pollInterval = options.pollInterval || 200;
             this.errorInterval = options.errorInterval || 1000;
 
-            // Endpoint base (proxied through Flask to runner service)
-            this.endpointBase = options.endpointBase || '/api/runner/logs';
+            // Endpoint base - direct to runner service (not Flask proxy)
+            // This eliminates Vercel cold-start latency and sync HTTP bottlenecks
+            this.endpointBase = options.endpointBase || `${RUNNER_URL}/api/logs`;
 
             // State tracking
             this.polling = false;
@@ -194,18 +205,27 @@
 
         /**
          * Internal: Fetch logs from server.
+         * Calls runner directly (cross-origin) - no credentials needed.
          */
         async _fetchLogs() {
             const url = `${this.endpointBase}/${this.runId}?since=${this.nextIndex}&limit=100`;
 
+            // Dispatch poll-start event for visual indicator
+            this._dispatchPollEvent('poller:poll-start');
+
             try {
+                // Note: No 'credentials' option for cross-origin requests to runner
+                // The log endpoint is public (no auth required)
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
                     },
-                    credentials: 'same-origin',
+                    mode: 'cors',
                 });
+
+                // Dispatch poll-end event (success)
+                this._dispatchPollEvent('poller:poll-end', { success: true });
 
                 if (response.status === 404) {
                     // Run not found - could be too early or expired
@@ -222,6 +242,9 @@
             } catch (error) {
                 this._log('Fetch error:', error.message);
 
+                // Dispatch poll-end event (failure)
+                this._dispatchPollEvent('poller:poll-end', { success: false, error: error.message });
+
                 // Notify error listeners
                 for (const callback of this._onErrorCallbacks) {
                     try {
@@ -232,6 +255,17 @@
                 }
 
                 return null;
+            }
+        }
+
+        /**
+         * Internal: Dispatch polling events for UI feedback.
+         */
+        _dispatchPollEvent(eventName, detail = {}) {
+            if (typeof global.dispatchEvent === 'function') {
+                global.dispatchEvent(new CustomEvent(eventName, {
+                    detail: { runId: this.runId, ...detail }
+                }));
             }
         }
 
