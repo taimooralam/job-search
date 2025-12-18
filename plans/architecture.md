@@ -5581,20 +5581,66 @@ Unified, parameterized components eliminate code duplication across views while 
 
 **Related Commit**: `3f265f40` - refactor(ui): unify JD annotation editor as parameterized component
 
-### CV Editor Unification Opportunity (PENDING)
+### CV Editor Unification
 
-**Identified Pattern**:
-- Detail page CV editor: `frontend/templates/partials/job_detail/_cv_editor.html`
-- Batch page CV editor: `frontend/templates/partials/batch/_cv_sidebar_content.html`
-- **Code overlap**: ~70-80% (TipTap initialization, toolbar setup, save handlers)
+**Architecture**:
+- **Main Component**: `frontend/templates/components/cv_editor.html`
+  - Universal CV editor supporting multiple display modes
+  - Parameterized inputs: `mode`, `id_prefix`, `show_overlay`, `show_close_button`, `show_panel_toggle`, `show_job_info`, `compact_toolbar`
+  - Modes: 'panel' (detail page, full-width) and 'sidebar' (batch page, compact layout)
+  - Single source of truth for CV editing UI logic
 
-**Recommended Approach**:
-- Extract to `frontend/templates/components/cv_editor.html`
-- Parameterize: `mode` ('detail' vs 'batch'), `id_prefix`, `show_rationale`
-- Potential savings: 200-300 lines of duplicated code
-- Implementation readiness: HIGH (same pattern as JD annotation editor)
+**Usage**:
+```html
+<!-- Detail page (panel mode, full-width) -->
+{%- include 'components/cv_editor.html'
+    with mode='panel',
+         id_prefix='',
+         show_overlay=true,
+         show_close_button=false,
+         show_panel_toggle=false,
+         show_job_info=true,
+         compact_toolbar=false
+-%}
 
-**Status**: Analysis complete, pending implementation
+<!-- Batch page (sidebar mode, compact) -->
+{%- include 'components/cv_editor.html'
+    with mode='sidebar',
+         id_prefix='batch-',
+         show_overlay=false,
+         show_close_button=true,
+         show_panel_toggle=true,
+         show_job_info=false,
+         compact_toolbar=true
+-%}
+```
+
+**Features**:
+- TipTap rich text editing with context-aware toolbar
+- Auto-save with 1.5s debounce across all modes
+- Save indicator states: unsaved/saving/saved
+- Dark mode theme support
+- Document settings panel (line height, margins, page size)
+- PDF export capability
+- Undo/Redo functionality
+- Empty state handling when no CV has been generated
+- CV reasoning display (for generated CVs)
+- Batch mode: CV listing and selection UI
+
+**Benefits**:
+- Reduced duplicate code: Detail wrapper 507 lines → 12 lines (98% reduction)
+- Batch wrapper 847 lines → 236 lines (72% reduction, includes batch-specific JS)
+- Total code savings: 402 lines (30% reduction across both files)
+- Unified editor component pattern (pairs with JD annotation editor pattern)
+- Consistent styling, save behavior, and accessibility across detail and batch views
+- Easy to extend with new modes without code duplication
+
+**Files**:
+- **Created**: `frontend/templates/components/cv_editor.html` (704 lines, main component)
+- **Modified**: `frontend/templates/partials/job_detail/_cv_editor_panel.html` (12-line wrapper)
+- **Modified**: `frontend/templates/partials/batch/_cv_sidebar_content.html` (236-line wrapper with batch state management)
+
+**Related Commit**: `bab3c2ba` - refactor(ui): unify CV editor as parameterized component with dual-mode support
 
 ---
 
