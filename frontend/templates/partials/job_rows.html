@@ -21,7 +21,7 @@
             {# Column widths: narrow for metadata, wider for role/company #}
             {% set sort_fields = [
                 ('createdAt', 'Created', 'hide-mobile', 'w-[70px]'),
-                ('company', 'Company', '', 'w-[140px]'),
+                ('company', 'Company', '', 'w-[120px] max-w-[120px]'),
                 ('title', 'Role/Title', '', ''),
                 ('location', 'Location', 'hide-mobile', 'w-[50px]'),
                 ('url', 'URL', 'hide-mobile', 'w-[100px]'),
@@ -95,8 +95,8 @@
                 </td>
 
                 <!-- Company -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap">
-                    <div class="text-sm font-semibold theme-text-primary">
+                <td class="px-2 sm:px-4 py-3 max-w-[120px]">
+                    <div class="text-sm font-semibold theme-text-primary truncate" title="{{ job.company or '-' }}">
                         {{ job.company or '-' }}
                     </div>
                     {% if job.auto_discovered %}
