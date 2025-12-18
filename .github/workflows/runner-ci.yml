@@ -179,13 +179,17 @@ jobs:
       matrix:
         service-group:
           # Each large test file gets its own job for parallel execution
-          # runner-api split into 3 groups for parallelization
+          # runner-api split into 6 groups for maximum parallelization
           - name: runner-api-auth
             paths: tests/runner/test_runner_api.py -k "health or requires_auth or invalid_auth or valid_auth"
-          - name: runner-api-jobs-1
-            paths: tests/runner/test_runner_api.py -k "run_job_with_profile or bulk_run"
-          - name: runner-api-jobs-2
-            paths: tests/runner/test_runner_api.py -k "concurrency or missing_job or empty_bulk"
+          - name: runner-api-profile
+            paths: tests/runner/test_runner_api.py -k "run_job_with_profile"
+          - name: runner-api-bulk
+            paths: tests/runner/test_runner_api.py -k "bulk_run"
+          - name: runner-api-concurrency
+            paths: tests/runner/test_runner_api.py -k "concurrency_limit"
+          - name: runner-api-validation
+            paths: tests/runner/test_runner_api.py -k "missing_job or empty_bulk"
           - name: runner-api-status
             paths: tests/runner/test_runner_api.py -k "get_status or stream_logs or get_artifact or firecrawl"
           - name: executor
