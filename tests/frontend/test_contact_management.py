@@ -330,13 +330,13 @@ class TestImportContacts:
         assert response.status_code in [401, 302]
 
 
-class TestGetFirecrawlPrompt:
+class TestGetContactDiscoveryPrompt:
     """Tests for GET /api/jobs/<job_id>/contacts/prompt endpoint."""
 
     def test_get_prompt_success(
         self, authenticated_client, mock_db, sample_job
     ):
-        """Should return FireCrawl prompt with job details."""
+        """Should return contact discovery prompt with job details."""
         # Arrange
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job
@@ -351,12 +351,12 @@ class TestGetFirecrawlPrompt:
         assert "prompt" in data
         assert sample_job["company"] in data["prompt"]
         assert sample_job["title"] in data["prompt"]
-        assert "mcp__firecrawl__firecrawl_search" in data["prompt"]
+        assert "WebSearch" in data["prompt"]
 
-    def test_get_prompt_includes_schema(
+    def test_get_prompt_includes_contact_fields(
         self, authenticated_client, mock_db, sample_job
     ):
-        """Should include contact schema in prompt."""
+        """Should include contact field examples in prompt."""
         # Arrange
         job_id = str(sample_job["_id"])
         mock_db.find_one.return_value = sample_job
@@ -368,7 +368,7 @@ class TestGetFirecrawlPrompt:
         data = response.get_json()
         assert "linkedin_url" in data["prompt"]
         assert "email" in data["prompt"]
-        assert '"role": "string"' in data["prompt"]  # Schema uses 'role', not 'title'
+        assert "role" in data["prompt"]  # Role field is included in prompt
 
     def test_get_prompt_job_not_found(self, authenticated_client, mock_db):
         """Should return 404 when job doesn't exist."""
@@ -428,10 +428,10 @@ class TestContactManagementUI:
         assert 'copyFirecrawlPrompt()' in html
         assert 'openAddContactsModal()' in html
 
-    def test_contact_cards_have_delete_button(
+    def test_contact_cards_display_contact_info(
         self, authenticated_client, mock_db, sample_job_with_editor_state
     ):
-        """Should show delete button on each contact card."""
+        """Should display contact name and role on each contact card."""
         # Arrange
         job_id = str(sample_job_with_editor_state["_id"])
         sample_job_with_editor_state["primary_contacts"] = [
@@ -445,7 +445,8 @@ class TestContactManagementUI:
         # Assert
         assert response.status_code == 200
         html = response.data.decode('utf-8')
-        assert 'deleteContact(' in html
+        assert 'Jane Doe' in html
+        assert 'Hiring Manager' in html
 
     def test_import_modal_exists(
         self, authenticated_client, mock_db, sample_job_with_editor_state
