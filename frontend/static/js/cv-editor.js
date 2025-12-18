@@ -17,7 +17,7 @@ class CVEditor {
         this.editor = null;
         this.saveStatus = 'saved';
         this.saveTimeout = null;
-        this.AUTOSAVE_DELAY = 3000; // 3 seconds
+        this.AUTOSAVE_DELAY = 1500; // 1.5 seconds
         this.lastSavedContent = null;
     }
 

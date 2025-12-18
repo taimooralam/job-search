@@ -4,7 +4,7 @@
  * Features:
  * - Text selection and annotation creation
  * - Annotation highlighting with relevance-based colors
- * - Auto-save with 3-second debounce
+ * - Auto-save with 1.5-second debounce
  * - STAR story linking
  * - Validation and boost calculation preview
  *
@@ -33,7 +33,7 @@ const REQUIREMENT_COLORS = {
     disqualifier: { bg: 'bg-red-100', text: 'text-red-700' }
 };
 
-const AUTOSAVE_DELAY = 3000; // 3 seconds
+const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 
 // ============================================================================
 // Annotation Manager Class
