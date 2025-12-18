@@ -34,8 +34,52 @@ env:
   UV_SYSTEM_PYTHON: 1
 
 jobs:
+  # Quick change detection - runs first to determine if tests are needed
+  # This allows skipping tests for compose-only changes (env vars, etc.)
+  quick-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code-changed: ${{ steps.detect.outputs.code-changed }}
+      compose-only: ${{ steps.detect.outputs.compose-only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit for comparison
+
+      - name: Detect change type
+        id: detect
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check if any code files changed (not just docker-compose.runner.yml)
+          CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v "^docker-compose.runner.yml$" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|tests/|Dockerfile\.|requirements\.txt)" | wc -l)
+
+          # Check if only docker-compose.runner.yml changed
+          COMPOSE_ONLY=$(echo "$CHANGED_FILES" | grep -E "^docker-compose.runner.yml$" | wc -l)
+          TOTAL_RUNNER_FILES=$(echo "$CHANGED_FILES" | grep -E "^(runner_service/|pdf_service/|src/|scripts/|Dockerfile\.|docker-compose\.runner\.yml|requirements\.txt)" | wc -l)
+
+          if [[ $CODE_CHANGES -gt 0 ]]; then
+            echo "code-changed=true" >> $GITHUB_OUTPUT
+            echo "compose-only=false" >> $GITHUB_OUTPUT
+            echo "🔄 Code changes detected - tests required"
+          elif [[ $COMPOSE_ONLY -gt 0 && $TOTAL_RUNNER_FILES -eq $COMPOSE_ONLY ]]; then
+            echo "code-changed=false" >> $GITHUB_OUTPUT
+            echo "compose-only=true" >> $GITHUB_OUTPUT
+            echo "📦 Compose-only change - skipping tests, deploy only"
+          else
+            echo "code-changed=false" >> $GITHUB_OUTPUT
+            echo "compose-only=false" >> $GITHUB_OUTPUT
+            echo "✅ No relevant changes"
+          fi
+
   # Unit tests split into parallel jobs for faster execution
+  # SKIP if only docker-compose.runner.yml changed (no code to test)
   test-unit:
+    needs: [quick-changes]
+    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -125,7 +169,10 @@ jobs:
 
   # Service-specific tests run in parallel with matrix
   # Split into fine-grained groups for maximum parallelization (~1-2 min each)
+  # SKIP if only docker-compose.runner.yml changed (no code to test)
   test-services:
+    needs: [quick-changes]
+    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -211,21 +258,17 @@ jobs:
       - name: Get deployed versions from running containers
         id: deployed
         run: |
-          # Get runner service deployed SHA from container image tag
-          RUNNER_IMAGE=$(docker inspect job-runner-runner-1 --format '{{.Config.Image}}' 2>/dev/null || echo "none")
-          if [[ "$RUNNER_IMAGE" == *"main-"* ]]; then
-            RUNNER_SHA=$(echo "$RUNNER_IMAGE" | grep -oP 'main-\K[a-f0-9]+' | head -1)
-          else
+          # Get runner service deployed SHA from OCI label (set during build)
+          RUNNER_SHA=$(docker inspect job-runner-runner-1 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "")
+          if [[ -z "$RUNNER_SHA" || "$RUNNER_SHA" == "<no value>" ]]; then
             RUNNER_SHA="unknown"
           fi
           echo "runner_sha=$RUNNER_SHA" >> $GITHUB_OUTPUT
           echo "📦 Runner deployed: $RUNNER_SHA"
 
-          # Get PDF service deployed SHA
-          PDF_IMAGE=$(docker inspect job-runner-pdf-service-1 --format '{{.Config.Image}}' 2>/dev/null || echo "none")
-          if [[ "$PDF_IMAGE" == *"main-"* ]]; then
-            PDF_SHA=$(echo "$PDF_IMAGE" | grep -oP 'main-\K[a-f0-9]+' | head -1)
-          else
+          # Get PDF service deployed SHA from OCI label
+          PDF_SHA=$(docker inspect job-runner-pdf-service-1 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || echo "")
+          if [[ -z "$PDF_SHA" || "$PDF_SHA" == "<no value>" ]]; then
             PDF_SHA="unknown"
           fi
           echo "pdf_sha=$PDF_SHA" >> $GITHUB_OUTPUT
@@ -325,11 +368,16 @@ jobs:
             fi
           fi
 
-  # Build runner image - only if runner files changed
+  # Build runner image - only if runner CODE files changed (not compose-only)
   build-runner:
-    needs: [test-unit, test-services, changes]
+    needs: [quick-changes, test-unit, test-services, changes]
     runs-on: self-hosted
-    if: github.ref == 'refs/heads/main' && needs.changes.outputs.runner == 'true'
+    if: |
+      github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.runner == 'true' &&
+      needs.quick-changes.outputs.compose-only != 'true' &&
+      needs.test-unit.result == 'success' &&
+      needs.test-services.result == 'success'
     permissions:
       contents: read
       packages: write
@@ -400,13 +448,19 @@ jobs:
   # Deploy - runs on self-hosted VPS runner (GAP-097 fix)
   # No SSH needed since runner has direct local access to Docker and filesystem
   deploy:
-    needs: [build-runner, build-pdf-service, changes]
+    needs: [quick-changes, build-runner, build-pdf-service, changes]
     runs-on: self-hosted
-    # Run if on main AND at least one build job ran (not skipped)
+    # Run if on main AND either:
+    # 1. At least one build job succeeded (code change), OR
+    # 2. Compose-only change (just need to restart with new env vars)
     if: |
       always() &&
       github.ref == 'refs/heads/main' &&
-      (needs.build-runner.result == 'success' || needs.build-pdf-service.result == 'success')
+      (
+        needs.build-runner.result == 'success' ||
+        needs.build-pdf-service.result == 'success' ||
+        needs.quick-changes.outputs.compose-only == 'true'
+      )
 
     steps:
       - uses: actions/checkout@v4
@@ -427,11 +481,16 @@ jobs:
         run: |
           cd /root/job-runner
 
-          # Images are already built locally by build-runner/build-pdf-service jobs
-          # No need to pull from GHCR - just restart with local images
-          echo "Restarting services with locally built images..."
+          # For code changes: images are built locally by build-runner/build-pdf-service jobs
+          # For compose-only changes: existing images stay, just restart with new env vars
+          COMPOSE_ONLY="${{ needs.quick-changes.outputs.compose-only }}"
+          if [[ "$COMPOSE_ONLY" == "true" ]]; then
+            echo "📦 Compose-only change - restarting with new environment variables..."
+          else
+            echo "🔄 Code change - restarting with locally built images..."
+          fi
 
-          # Restart services
+          # Restart services (picks up new compose file either way)
           docker compose -f docker-compose.runner.yml up -d --remove-orphans
 
           # Clean up old images
