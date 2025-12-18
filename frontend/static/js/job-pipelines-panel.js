@@ -23,12 +23,13 @@
 
 const PIPELINES_PANEL_CONFIG = {
     // Valid operations to track
-    operations: ['structure-jd', 'full-extraction', 'research-company', 'generate-cv'],
+    operations: ['structure-jd', 'full-extraction', 'extract-claude', 'research-company', 'generate-cv'],
 
     // Display labels
     labels: {
         'structure-jd': 'Structure JD',
-        'full-extraction': 'Extract JD',
+        'full-extraction': 'Extract JD (GPT)',
+        'extract-claude': 'Extract JD (Claude)',
         'research-company': 'Research',
         'generate-cv': 'Generate CV'
     },
@@ -78,6 +79,7 @@ document.addEventListener('alpine:init', () => {
         operations: {
             'structure-jd': null,
             'full-extraction': null,
+            'extract-claude': null,
             'research-company': null,
             'generate-cv': null
         },
@@ -676,6 +678,82 @@ function pipelineCard(config) {
 
 // Make component available globally
 window.pipelineCard = pipelineCard;
+
+/* ============================================================================
+   Claude Extraction Button Component
+   ============================================================================ */
+
+/**
+ * Alpine.js component for Claude extraction button
+ * Uses the queue system for live tail logs, same as GPT-4o extraction
+ *
+ * @param {string} jobId - MongoDB job ID
+ * @returns {Object} Alpine.js component
+ */
+function claudeExtractionButton(jobId) {
+    return {
+        jobId: jobId,
+        loading: false,
+
+        /**
+         * Queue Claude extraction via the pipeline queue system
+         */
+        async queueExtract() {
+            if (this.loading) return;
+
+            this.loading = true;
+
+            try {
+                // Use the pipelines store to queue the operation
+                const store = Alpine.store('detailPipelines');
+                if (store) {
+                    const result = await store.queueOperation('extract-claude', 'balanced', {});
+
+                    if (result.success) {
+                        // Show toast notification
+                        if (window.showToast) {
+                            window.showToast('Claude extraction queued! Check the Pipelines panel for progress.', 'success');
+                        }
+                    } else {
+                        if (window.showToast) {
+                            window.showToast(`Failed to queue Claude extraction: ${result.error}`, 'error');
+                        }
+                    }
+                } else {
+                    // Fallback: direct API call if store not available
+                    const endpoint = `/api/runner/jobs/${this.jobId}/operations/extract-claude/queue`;
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tier: 'balanced' })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (window.showToast) {
+                            window.showToast('Claude extraction queued!', 'success');
+                        }
+                    } else {
+                        if (window.showToast) {
+                            window.showToast(`Failed: ${data.error}`, 'error');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Claude Button] Queue error:', error);
+                if (window.showToast) {
+                    window.showToast(`Error: ${error.message}`, 'error');
+                }
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+
+// Make Claude extraction button available globally
+window.claudeExtractionButton = claudeExtractionButton;
 
 /* ============================================================================
    Event Listeners

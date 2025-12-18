@@ -390,14 +390,14 @@
                     </div>
                 </div>
 
-                {# Full Extraction Button #}
+                {# Full Extraction Button (GPT-4o) #}
                 <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
                                 class="btn-action-main btn-action-accent flex-1"
                                 :disabled="loading"
-                                title="Full JD extraction (Alt+2)">
+                                title="Full JD extraction with GPT-4o (Alt+2)">
                             <template x-if="loading">
                                 <span class="btn-action-spinner">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -407,7 +407,7 @@
                                 </span>
                             </template>
                             <template x-if="!loading">
-                                <span x-text="label">Extract JD</span>
+                                <span x-text="label">Extract (GPT)</span>
                             </template>
                             <span class="tier-badge" :class="tier" x-text="tierIcon"></span>
                         </button>
@@ -438,6 +438,28 @@
                             </button>
                         </template>
                     </div>
+                </div>
+
+                {# Claude Extraction Button (Claude Opus 4.5 - $0 with Max subscription) #}
+                <div x-data="claudeExtractionButton('{{ job._id }}')" class="pipeline-action-wrapper">
+                    <button @click="queueExtract()"
+                            class="btn-action-main flex-1 bg-purple-600 hover:bg-purple-700 text-white border-purple-600 rounded-lg"
+                            :disabled="loading"
+                            :class="{ 'opacity-50 cursor-not-allowed': loading }"
+                            title="Extract JD with Claude Opus 4.5 ($0 - Max subscription)">
+                        <template x-if="loading">
+                            <span class="btn-action-spinner">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                        </template>
+                        <template x-if="!loading">
+                            <span>Extract (Claude)</span>
+                        </template>
+                        <span class="ml-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/30 text-purple-100">$0</span>
+                    </button>
                 </div>
 
                 {# Research Company Button #}
@@ -708,16 +730,27 @@
                 </h2>
                 {# Claude Extraction Button - only show if not already extracted #}
                 {% if not job.extracted_jd_claude %}
-                <button
-                    id="run-claude-extraction"
-                    onclick="runClaudeExtraction('{{ job._id }}')"
-                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors"
-                >
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                    </svg>
-                    Run Claude Extraction
-                </button>
+                <div x-data="claudeExtractionButton('{{ job._id }}')" class="inline-block">
+                    <button
+                        @click="queueExtract()"
+                        :disabled="loading"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+                        :class="{ 'opacity-50 cursor-not-allowed': loading }"
+                    >
+                        <template x-if="loading">
+                            <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </template>
+                        <template x-if="!loading">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </template>
+                        <span x-text="loading ? 'Extracting...' : 'Run Claude Extraction'"></span>
+                    </button>
+                </div>
                 {% else %}
                 <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-purple-100 text-purple-800">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
