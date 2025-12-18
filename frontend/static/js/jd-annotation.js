@@ -71,7 +71,8 @@ class AnnotationManager {
             activeAnnotationCountId: config.activeAnnotationCountId || 'active-annotation-count',
             coverageBarId: config.coverageBarId || 'annotation-coverage-bar',
             coveragePctId: config.coveragePctId || 'annotation-coverage-pct',
-            boostValueId: config.boostValueId || 'total-boost-value'
+            boostValueId: config.boostValueId || 'total-boost-value',
+            personaPanelId: config.personaPanelId || 'persona-panel-container'
         };
         this.annotations = [];
         this.processedJdHtml = null;
@@ -1896,7 +1897,7 @@ class AnnotationManager {
      * Render the persona panel UI
      */
     renderPersonaPanel() {
-        const container = document.getElementById('persona-panel-container');
+        const container = document.getElementById(this.config.personaPanelId);
         if (!container) return;
 
         // Check for identity annotations
@@ -1936,7 +1937,7 @@ class AnnotationManager {
                         AI-powered persona synthesis is not available on this deployment.
                         You can enter your persona statement manually.
                     </p>
-                    <button onclick="annotationManager.startManualPersonaEntry()"
+                    <button onclick="getActiveAnnotationManager()?.startManualPersonaEntry()"
                             class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium">
                         Enter Persona Manually
                     </button>
@@ -1953,7 +1954,7 @@ class AnnotationManager {
                     <p class="text-sm text-gray-600 mb-3">
                         You have identity annotations. Generate a synthesized persona to use in CV, cover letter, and outreach.
                     </p>
-                    <button onclick="annotationManager.synthesizePersona()"
+                    <button onclick="getActiveAnnotationManager()?.synthesizePersona()"
                             class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
                         Generate Persona
                     </button>
@@ -1970,14 +1971,14 @@ class AnnotationManager {
                     <textarea id="persona-edit-textarea"
                               class="w-full p-3 border border-indigo-300 rounded-md text-sm"
                               rows="3"
-                              oninput="annotationManager.updatePersonaText(this.value)"
+                              oninput="getActiveAnnotationManager()?.updatePersonaText(this.value)"
                     >${statement}</textarea>
                     <div class="flex gap-2 mt-3">
-                        <button onclick="annotationManager.savePersona()"
+                        <button onclick="getActiveAnnotationManager()?.savePersona()"
                                 class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
                             Save
                         </button>
-                        <button onclick="annotationManager.cancelEditingPersona()"
+                        <button onclick="getActiveAnnotationManager()?.cancelEditingPersona()"
                                 class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium">
                             Cancel
                         </button>
@@ -1999,11 +2000,11 @@ class AnnotationManager {
                         Synthesized Persona ${editedBadge}
                     </h4>
                     <div class="flex gap-2">
-                        <button onclick="annotationManager.startEditingPersona()"
+                        <button onclick="getActiveAnnotationManager()?.startEditingPersona()"
                                 class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
                             Edit
                         </button>
-                        <button onclick="annotationManager.synthesizePersona()"
+                        <button onclick="getActiveAnnotationManager()?.synthesizePersona()"
                                 class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
                             Regenerate
                         </button>
@@ -2591,6 +2592,26 @@ function deleteAnnotationFromPopover() {
 
 // Export to window for HTML onclick handlers
 window.deleteAnnotationFromPopover = deleteAnnotationFromPopover;
+
+/**
+ * Get the active annotation manager instance.
+ * Works in both job detail page (annotationManager) and batch page (batchAnnotationManager) contexts.
+ * @returns {AnnotationManager|null} The active annotation manager or null
+ */
+function getActiveAnnotationManager() {
+    // Check batch context first (if batchAnnotationManager exists and is active)
+    if (typeof batchAnnotationManager !== 'undefined' && batchAnnotationManager) {
+        return batchAnnotationManager;
+    }
+    // Fall back to job detail page context
+    if (typeof annotationManager !== 'undefined' && annotationManager) {
+        return annotationManager;
+    }
+    return null;
+}
+
+// Export for use in onclick handlers
+window.getActiveAnnotationManager = getActiveAnnotationManager;
 
 // ============================================================================
 // Strength Suggestions Feature

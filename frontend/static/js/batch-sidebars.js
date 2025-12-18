@@ -540,7 +540,8 @@ async function initBatchAnnotationManager(jobId) {
             activeAnnotationCountId: 'batch-active-annotation-count',
             coverageBarId: 'batch-annotation-coverage-bar',
             coveragePctId: 'batch-annotation-coverage-pct',
-            boostValueId: 'batch-total-boost-value'
+            boostValueId: 'batch-total-boost-value',
+            personaPanelId: 'batch-persona-panel-container'
         });
 
         // Initialize the manager

@@ -28,6 +28,11 @@
                         title="Relevant (1.5x)">
                     Medium
                 </button>
+                <button onclick="setQuickAnnotation('tangential')"
+                        class="px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800 hover:bg-orange-200 transition border border-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700"
+                        title="Tangential (1.0x)">
+                    Weak
+                </button>
                 <button onclick="setQuickAnnotation('gap')"
                         class="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition border border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-700"
                         title="Gap (0.3x penalty)">
@@ -38,7 +43,7 @@
             <div class="w-px h-6 theme-bg-tertiary hidden sm:block"></div>
 
             {# Requirement Type #}
-            <div class="hidden sm:flex gap-1" role="group" aria-label="Requirement type">
+            <div class="flex gap-1" role="group" aria-label="Requirement type">
                 <button onclick="setRequirementType('must_have')"
                         class="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition border border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700"
                         title="Must-Have (1.5x multiplier)">
@@ -48,6 +53,38 @@
                         class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
                         title="Nice-to-Have (1.0x)">
                     Nice
+                </button>
+            </div>
+
+            <div class="w-px h-6 theme-bg-tertiary hidden sm:block"></div>
+
+            {# Passion Quick Add #}
+            <div class="flex gap-1" role="group" aria-label="Passion level presets">
+                <button onclick="setQuickPassion('love_it')"
+                        class="px-2 py-1 rounded text-xs font-medium bg-pink-100 text-pink-800 hover:bg-pink-200 transition border border-pink-300 dark:bg-pink-900/50 dark:text-pink-300 dark:border-pink-700"
+                        title="Love it - genuinely excited (1.5x boost)">
+                    🔥 Love
+                </button>
+                <button onclick="setQuickPassion('avoid')"
+                        class="px-2 py-1 rounded text-xs font-medium bg-stone-100 text-stone-700 hover:bg-stone-200 transition border border-stone-300 dark:bg-stone-700 dark:text-stone-300 dark:border-stone-600"
+                        title="Avoid - would prefer not to do (0.5x penalty)">
+                    🚫 Avoid
+                </button>
+            </div>
+
+            <div class="w-px h-6 theme-bg-tertiary hidden sm:block"></div>
+
+            {# Identity Quick Add #}
+            <div class="flex gap-1" role="group" aria-label="Identity level presets">
+                <button onclick="setQuickIdentity('core_identity')"
+                        class="px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800 hover:bg-indigo-200 transition border border-indigo-300 dark:bg-indigo-900/50 dark:text-indigo-300 dark:border-indigo-700"
+                        title="Core Identity - this IS who I am (2.0x boost)">
+                    ⭐ Core ID
+                </button>
+                <button onclick="setQuickIdentity('not_identity')"
+                        class="px-2 py-1 rounded text-xs font-medium bg-zinc-100 text-zinc-700 hover:bg-zinc-200 transition border border-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:border-zinc-600"
+                        title="Not Me - NOT how I want to be seen (0.3x penalty)">
+                    ✗ Not Me
                 </button>
             </div>
         </div>
@@ -120,6 +157,41 @@
                                 class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30 transition">
                             Must-Have
                         </button>
+                        <button onclick="filterAnnotations('active')"
+                                data-filter="active"
+                                class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-green-900/30 transition">
+                            Active
+                        </button>
+                    </div>
+                    {# Passion & Identity Filters #}
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="text-xs theme-text-tertiary mr-1">Passion:</span>
+                        <button onclick="filterAnnotations('love_it')"
+                                data-filter="love_it"
+                                class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-pink-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-pink-900/30 transition"
+                                title="Filter by 'Love it' passion">
+                            🔥
+                        </button>
+                        <button onclick="filterAnnotations('avoid')"
+                                data-filter="avoid"
+                                class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-stone-50 hover:text-stone-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-stone-900/30 transition"
+                                title="Filter by 'Avoid' passion">
+                            🚫
+                        </button>
+                        <span class="text-xs theme-text-tertiary mx-1">|</span>
+                        <span class="text-xs theme-text-tertiary mr-1">Identity:</span>
+                        <button onclick="filterAnnotations('core_identity')"
+                                data-filter="core_identity"
+                                class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-900/30 transition"
+                                title="Filter by 'Core Identity'">
+                            ⭐
+                        </button>
+                        <button onclick="filterAnnotations('not_identity')"
+                                data-filter="not_identity"
+                                class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-zinc-50 hover:text-zinc-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-zinc-900/30 transition"
+                                title="Filter by 'Not Me'">
+                            ✗
+                        </button>
                     </div>
                 </div>
 
@@ -149,6 +221,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    {# Persona Panel - Shows synthesized persona from identity annotations #}
+    <div id="batch-persona-panel-container" class="px-4 py-3 border-t theme-border flex-shrink-0">
+        {# Content rendered by JS based on identity annotations #}
     </div>
 </div>
 
