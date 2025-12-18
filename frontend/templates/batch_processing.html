@@ -585,7 +585,8 @@
                 }
 
                 // Dispatch custom event for live_status_badge.html to react to
-                document.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                // Note: Must use window (not document) since live-status-badge.js listens on window
+                window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
                     detail: {
                         jobId: job_id,
                         status: queueStatus,
@@ -595,15 +596,15 @@
 
                 // Also dispatch the specific events that existing code listens for
                 if (queueStatus === 'running') {
-                    document.dispatchEvent(new CustomEvent('queue:job-started', {
+                    window.dispatchEvent(new CustomEvent('queue:job-started', {
                         detail: { jobId: job_id, operation }
                     }));
                 } else if (queueStatus === 'success') {
-                    document.dispatchEvent(new CustomEvent('queue:job-completed', {
+                    window.dispatchEvent(new CustomEvent('queue:job-completed', {
                         detail: { jobId: job_id, operation }
                     }));
                 } else if (queueStatus === 'error') {
-                    document.dispatchEvent(new CustomEvent('queue:job-failed', {
+                    window.dispatchEvent(new CustomEvent('queue:job-failed', {
                         detail: { jobId: job_id, error: statusData.error }
                     }));
                 }
@@ -958,7 +959,8 @@
 
                     // Immediately dispatch event so live status badges update
                     // This ensures the PIPELINE column shows "Running" right away
-                    document.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                    // Note: Must use window (not document) since live-status-badge.js listens on window
+                    window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
                         detail: {
                             jobId: run.job_id,
                             status: 'running',
@@ -1323,15 +1325,16 @@
         updateBatchSelectionUI();
         setupKeyboardShortcuts();
 
-        // Listen for WebSocket queue events to track actual extraction completion
-        document.addEventListener('queue:job-started', function(e) {
+        // Listen for queue events to track actual extraction completion
+        // Note: Events are dispatched on window, so listen on window
+        window.addEventListener('queue:job-started', function(e) {
             const jobId = e.detail?.jobId;
             if (jobId && batchOperationState.jobStatuses.has(jobId)) {
                 updateJobProgress(jobId, 'running');
             }
         });
 
-        document.addEventListener('queue:job-completed', function(e) {
+        window.addEventListener('queue:job-completed', function(e) {
             const jobId = e.detail?.jobId;
             if (jobId && batchOperationState.jobStatuses.has(jobId)) {
                 updateJobProgress(jobId, 'extracted');
@@ -1353,7 +1356,7 @@
             }
         });
 
-        document.addEventListener('queue:job-failed', function(e) {
+        window.addEventListener('queue:job-failed', function(e) {
             const jobId = e.detail?.jobId;
             if (jobId && batchOperationState.jobStatuses.has(jobId)) {
                 updateJobProgress(jobId, 'error');
