@@ -1793,9 +1793,10 @@ async def _execute_queued_operation(
                 layer_cb("extract-claude", "failed", "No job description found")
                 result = OperationResult(
                     success=False,
+                    run_id=run_id,
+                    operation="extract-claude",
                     data={},
                     cost_usd=0.0,
-                    run_id=run_id,
                     error="No job description found for extraction",
                 )
             else:
@@ -1838,9 +1839,10 @@ async def _execute_queued_operation(
                     layer_cb("extract-claude", "completed", f"Extracted in {extraction_result.duration_ms}ms")
                     result = OperationResult(
                         success=True,
+                        run_id=run_id,
+                        operation="extract-claude",
                         data={"extracted_jd_claude": extraction_result.extracted_jd},
                         cost_usd=0.0,  # Claude Max subscription = $0 marginal cost
-                        run_id=run_id,
                         model_used=extraction_result.model,
                         duration_ms=extraction_result.duration_ms,
                     )
@@ -1848,9 +1850,10 @@ async def _execute_queued_operation(
                     layer_cb("extract-claude", "failed", extraction_result.error or "Extraction failed")
                     result = OperationResult(
                         success=False,
+                        run_id=run_id,
+                        operation="extract-claude",
                         data={},
                         cost_usd=0.0,
-                        run_id=run_id,
                         error=extraction_result.error or "Claude extraction failed",
                         model_used=extraction_result.model,
                         duration_ms=extraction_result.duration_ms,
