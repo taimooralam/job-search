@@ -14,7 +14,8 @@ services:
       - PIPELINE_TIMEOUT_SECONDS=600
       - PDF_SERVICE_URL=http://pdf-service:8001
       # CORS: Allow direct browser → runner communication for log polling
-      - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app
+      # Multiple origins: Vercel production, localhost dev, custom domain
+      - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app,http://localhost:5001,http://127.0.0.1:5001,https://jobs.uqab.digital
       # Claude Code CLI OAuth token (Max subscription - set in .env file on server)
       - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
