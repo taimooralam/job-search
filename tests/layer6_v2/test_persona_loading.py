@@ -17,7 +17,7 @@ from src.layer6_v2.prompts.header_generation import (
     build_profile_user_prompt,
     build_persona_user_prompt,
 )
-from src.layer1_4.jd_extractor import RoleCategory
+from src.layer1_4.claude_jd_extractor import RoleCategory
 
 
 # ===== FIXTURES =====

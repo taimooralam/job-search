@@ -1,13 +1,13 @@
 """
-Unit Tests for Layer 1.4: JD Extractor (CV Gen V2)
+Unit Tests for Layer 1.4: JD Extractor
 
-Tests structured job description extraction:
+Tests structured job description extraction using Claude Code CLI:
 - Role category classification (EM, Staff, Director, Head of Eng, CTO)
 - Competency weights validation (sum = 100)
 - ATS keyword extraction (15 keywords)
 - Pydantic schema validation
-- LLM response parsing
-- Node function integration
+- CLI response parsing
+- ExtractionResult handling
 """
 
 import json
@@ -15,9 +15,9 @@ import pytest
 from unittest.mock import MagicMock, patch
 from pydantic import ValidationError
 
-from src.layer1_4.jd_extractor import (
+from src.layer1_4.claude_jd_extractor import (
     JDExtractor,
-    jd_extractor_node,
+    ExtractionResult,
     ExtractedJDModel,
     CompetencyWeightsModel,
     RoleCategory,
@@ -29,8 +29,8 @@ from src.layer1_4.jd_extractor import (
 # ===== FIXTURES =====
 
 @pytest.fixture
-def sample_job_state():
-    """Sample JobState with minimal fields for Layer 1.4."""
+def sample_job_params():
+    """Sample job parameters for extraction."""
     return {
         "job_id": "test_001",
         "title": "Head of Engineering",
@@ -64,18 +64,13 @@ def sample_job_state():
         Compensation: $180k - $220k + equity
         Location: Remote (EU timezone preferred)
         """,
-        "job_url": "https://example.com/job",
-        "source": "test",
-        "candidate_profile": "",
-        "run_id": "test-run-001",
-        "errors": [],
     }
 
 
 @pytest.fixture
-def sample_llm_response():
-    """Sample valid LLM response for JD extraction."""
-    return json.dumps({
+def sample_extracted_jd():
+    """Sample valid extracted JD response."""
+    return {
         "title": "Head of Engineering",
         "company": "TechStartup Inc",
         "location": "Remote (EU)",
@@ -126,6 +121,15 @@ def sample_llm_response():
         "industry_background": "B2B SaaS",
         "years_experience_required": 10,
         "education_requirements": None
+    }
+
+
+def create_cli_output(extracted_jd: dict) -> str:
+    """Create mock CLI JSON output."""
+    return json.dumps({
+        "result": json.dumps(extracted_jd),
+        "cost": {"input_tokens": 1000, "output_tokens": 500},
+        "model": "claude-opus-4-5-20251101",
     })
 
 
@@ -238,181 +242,143 @@ class TestRemotePolicyValidation:
 class TestExtractedJDModelValidation:
     """Test full ExtractedJDModel validation."""
 
-    def test_valid_model_passes(self, sample_llm_response):
+    def test_valid_model_passes(self, sample_extracted_jd):
         """Valid JSON passes full schema validation."""
-        data = json.loads(sample_llm_response)
-        model = ExtractedJDModel(**data)
+        model = ExtractedJDModel(**sample_extracted_jd)
         assert model.role_category == RoleCategory.HEAD_OF_ENGINEERING
         assert model.seniority_level == SeniorityLevel.DIRECTOR
         assert len(model.top_keywords) == 15
 
-    def test_missing_required_field_fails(self, sample_llm_response):
+    def test_missing_required_field_fails(self, sample_extracted_jd):
         """Missing required field raises validation error."""
-        data = json.loads(sample_llm_response)
-        del data["role_category"]
+        del sample_extracted_jd["role_category"]
         with pytest.raises(ValidationError) as exc_info:
-            ExtractedJDModel(**data)
+            ExtractedJDModel(**sample_extracted_jd)
         assert "role_category" in str(exc_info.value)
 
-    def test_empty_responsibilities_fails(self, sample_llm_response):
+    def test_empty_responsibilities_fails(self, sample_extracted_jd):
         """Empty responsibilities list fails validation."""
-        data = json.loads(sample_llm_response)
-        data["responsibilities"] = []
+        sample_extracted_jd["responsibilities"] = []
         with pytest.raises(ValidationError):
-            ExtractedJDModel(**data)
+            ExtractedJDModel(**sample_extracted_jd)
 
-    def test_too_few_keywords_fails(self, sample_llm_response):
+    def test_too_few_keywords_fails(self, sample_extracted_jd):
         """Fewer than 10 keywords fails validation."""
-        data = json.loads(sample_llm_response)
-        data["top_keywords"] = ["keyword1", "keyword2", "keyword3"]
+        sample_extracted_jd["top_keywords"] = ["keyword1", "keyword2", "keyword3"]
         with pytest.raises(ValidationError):
-            ExtractedJDModel(**data)
+            ExtractedJDModel(**sample_extracted_jd)
 
-    def test_keyword_deduplication(self, sample_llm_response):
+    def test_keyword_deduplication(self, sample_extracted_jd):
         """Duplicate keywords are removed."""
-        data = json.loads(sample_llm_response)
-        data["top_keywords"] = ["Python", "python", "PYTHON", "AWS", "aws"] + data["top_keywords"]
-        model = ExtractedJDModel(**data)
+        sample_extracted_jd["top_keywords"] = ["Python", "python", "PYTHON", "AWS", "aws"] + sample_extracted_jd["top_keywords"]
+        model = ExtractedJDModel(**sample_extracted_jd)
         # Should deduplicate case-insensitively
         python_count = sum(1 for k in model.top_keywords if k.lower() == "python")
         assert python_count == 1
 
 
-# ===== TESTS: LLM Response Parsing =====
+# ===== TESTS: JDExtractor CLI Integration =====
 
-class TestLLMResponseParsing:
-    """Test parsing of LLM responses."""
+class TestJDExtractorCLI:
+    """Test JDExtractor CLI-based extraction."""
 
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_parses_valid_json_response(self, mock_llm_class, sample_job_state, sample_llm_response):
-        """Valid JSON response is parsed correctly."""
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = sample_llm_response
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
-
-        extractor = JDExtractor()
-        result = extractor.extract(sample_job_state)
-
-        assert result["extracted_jd"] is not None
-        assert result["extracted_jd"]["role_category"] == "head_of_engineering"
-        assert result["extracted_jd"]["competency_weights"]["leadership"] == 40
-
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_parses_json_with_markdown_wrapper(self, mock_llm_class, sample_job_state, sample_llm_response):
-        """JSON wrapped in markdown code blocks is parsed correctly."""
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = f"```json\n{sample_llm_response}\n```"
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+    @patch('subprocess.run')
+    def test_successful_extraction(self, mock_run, sample_job_params, sample_extracted_jd):
+        """Successful CLI extraction returns ExtractionResult with data."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=create_cli_output(sample_extracted_jd),
+            stderr=""
+        )
 
         extractor = JDExtractor()
-        result = extractor.extract(sample_job_state)
+        result = extractor.extract(**sample_job_params)
 
-        assert result["extracted_jd"] is not None
-        assert result["extracted_jd"]["title"] == "Head of Engineering"
+        assert isinstance(result, ExtractionResult)
+        assert result.success is True
+        assert result.extracted_jd is not None
+        assert result.extracted_jd["role_category"] == "head_of_engineering"
+        assert result.extracted_jd["competency_weights"]["leadership"] == 40
+        assert result.error is None
 
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_handles_invalid_json_gracefully(self, mock_llm_class, sample_job_state):
-        """Invalid JSON returns None and adds error."""
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "This is not valid JSON at all"
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
-
-        extractor = JDExtractor()
-        result = extractor.extract(sample_job_state)
-
-        assert result["extracted_jd"] is None
-        assert len(result["errors"]) > 0
-        assert "Layer 1.4" in result["errors"][0]
-
-
-# ===== TESTS: Role Category Detection Accuracy =====
-
-class TestRoleCategoryDetection:
-    """Test role category is detected correctly from JD context."""
-
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_engineering_manager_classification(self, mock_llm_class):
-        """Engineering Manager JD is classified correctly."""
-        state = {
-            "job_id": "em_test",
-            "title": "Engineering Manager",
-            "company": "TestCo",
-            "job_description": "Manage a team of 8 engineers. Run 1:1s, sprint planning.",
-            "run_id": None,
-            "errors": [],
-        }
-
-        response = json.dumps({
-            "title": "Engineering Manager",
-            "company": "TestCo",
-            "location": "San Francisco",
-            "remote_policy": "hybrid",
-            "role_category": "engineering_manager",
-            "seniority_level": "senior",
-            "competency_weights": {"delivery": 30, "process": 20, "architecture": 10, "leadership": 40},
-            "responsibilities": ["Manage team", "Run 1:1s", "Sprint planning"],
-            "qualifications": ["3+ years managing engineers", "Strong technical background"],
-            "nice_to_haves": [],
-            "technical_skills": ["Python"],
-            "soft_skills": ["Leadership"],
-            "implied_pain_points": ["Team needs direction"],
-            "success_metrics": ["Team velocity increases"],
-            "top_keywords": ["Engineering Manager"] * 15,  # Simplified for test
-            "industry_background": None,
-            "years_experience_required": 5,
-            "education_requirements": None
-        })
-
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = response
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+    @patch('subprocess.run')
+    def test_cli_failure_returns_error(self, mock_run, sample_job_params):
+        """CLI failure returns ExtractionResult with error."""
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="CLI authentication failed"
+        )
 
         extractor = JDExtractor()
-        result = extractor.extract(state)
+        result = extractor.extract(**sample_job_params)
 
-        assert result["extracted_jd"]["role_category"] == "engineering_manager"
-        assert result["extracted_jd"]["competency_weights"]["leadership"] == 40
+        assert result.success is False
+        assert result.extracted_jd is None
+        assert "CLI authentication failed" in result.error
 
+    @patch('subprocess.run')
+    def test_invalid_json_returns_error(self, mock_run, sample_job_params):
+        """Invalid JSON in CLI output returns error."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="not valid json at all",
+            stderr=""
+        )
 
-# ===== TESTS: Node Function Integration =====
+        extractor = JDExtractor()
+        result = extractor.extract(**sample_job_params)
 
-class TestJDExtractorNode:
-    """Test jd_extractor_node LangGraph integration."""
+        assert result.success is False
+        assert result.extracted_jd is None
+        assert "parse" in result.error.lower()
 
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_node_returns_state_updates(self, mock_llm_class, sample_job_state, sample_llm_response):
-        """Node function returns correct state updates."""
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = sample_llm_response
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+    @patch('subprocess.run')
+    def test_validation_error_returns_error(self, mock_run, sample_job_params, sample_extracted_jd):
+        """Schema validation failure returns error."""
+        # Make the response fail validation by removing required field
+        del sample_extracted_jd["role_category"]
 
-        updates = jd_extractor_node(sample_job_state)
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=create_cli_output(sample_extracted_jd),
+            stderr=""
+        )
 
-        assert "extracted_jd" in updates
-        assert updates["extracted_jd"]["role_category"] == "head_of_engineering"
-        assert len(updates["extracted_jd"]["top_keywords"]) == 15
+        extractor = JDExtractor()
+        result = extractor.extract(**sample_job_params)
 
-    @patch('src.layer1_4.jd_extractor.create_tracked_llm')
-    def test_node_handles_errors_gracefully(self, mock_llm_class, sample_job_state):
-        """Node function handles errors without crashing."""
-        mock_llm = MagicMock()
-        mock_llm.invoke.side_effect = Exception("LLM API Error")
-        mock_llm_class.return_value = mock_llm
+        assert result.success is False
+        assert result.extracted_jd is None
+        assert "validation" in result.error.lower()
 
-        updates = jd_extractor_node(sample_job_state)
+    @patch('subprocess.run')
+    def test_timeout_returns_error(self, mock_run, sample_job_params):
+        """CLI timeout returns ExtractionResult with timeout error."""
+        import subprocess
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=120)
 
-        assert updates["extracted_jd"] is None
-        assert len(updates["errors"]) > 0
+        extractor = JDExtractor(timeout=120)
+        result = extractor.extract(**sample_job_params)
+
+        assert result.success is False
+        assert result.extracted_jd is None
+        assert "timeout" in result.error.lower()
+
+    @patch('subprocess.run')
+    def test_tracks_duration(self, mock_run, sample_job_params, sample_extracted_jd):
+        """Extraction tracks duration in milliseconds."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=create_cli_output(sample_extracted_jd),
+            stderr=""
+        )
+
+        extractor = JDExtractor()
+        result = extractor.extract(**sample_job_params)
+
+        assert result.duration_ms >= 0
+        assert result.extracted_at is not None
 
 
 # ===== TESTS: TypedDict Conversion =====
@@ -420,25 +386,85 @@ class TestJDExtractorNode:
 class TestTypedDictConversion:
     """Test conversion from Pydantic model to TypedDict."""
 
-    def test_to_extracted_jd_preserves_all_fields(self, sample_llm_response):
+    def test_to_extracted_jd_preserves_all_fields(self, sample_extracted_jd):
         """Conversion to TypedDict preserves all fields."""
-        data = json.loads(sample_llm_response)
-        model = ExtractedJDModel(**data)
+        model = ExtractedJDModel(**sample_extracted_jd)
         typed_dict = model.to_extracted_jd()
 
-        assert typed_dict["title"] == data["title"]
+        assert typed_dict["title"] == sample_extracted_jd["title"]
         assert typed_dict["role_category"] == "head_of_engineering"
         assert typed_dict["competency_weights"]["leadership"] == 40
         assert len(typed_dict["top_keywords"]) == 15
         assert typed_dict["industry_background"] == "B2B SaaS"
 
-    def test_to_extracted_jd_handles_optional_nulls(self, sample_llm_response):
+    def test_to_extracted_jd_handles_optional_nulls(self, sample_extracted_jd):
         """Conversion handles None values for optional fields."""
-        data = json.loads(sample_llm_response)
-        data["industry_background"] = None
-        data["years_experience_required"] = None
-        model = ExtractedJDModel(**data)
+        sample_extracted_jd["industry_background"] = None
+        sample_extracted_jd["years_experience_required"] = None
+        model = ExtractedJDModel(**sample_extracted_jd)
         typed_dict = model.to_extracted_jd()
 
         assert typed_dict["industry_background"] is None
         assert typed_dict["years_experience_required"] is None
+
+
+# ===== TESTS: ExtractionResult =====
+
+class TestExtractionResult:
+    """Test ExtractionResult dataclass."""
+
+    def test_to_dict_serialization(self):
+        """ExtractionResult can be serialized to dict."""
+        result = ExtractionResult(
+            job_id="test_001",
+            success=True,
+            extracted_jd={"role_category": "head_of_engineering"},
+            error=None,
+            model="claude-opus-4-5-20251101",
+            duration_ms=1234,
+            extracted_at="2024-01-01T00:00:00"
+        )
+
+        result_dict = result.to_dict()
+        assert result_dict["job_id"] == "test_001"
+        assert result_dict["success"] is True
+        assert result_dict["extracted_jd"]["role_category"] == "head_of_engineering"
+        assert result_dict["duration_ms"] == 1234
+
+    def test_failure_result_structure(self):
+        """Failed ExtractionResult has expected structure."""
+        result = ExtractionResult(
+            job_id="test_001",
+            success=False,
+            extracted_jd=None,
+            error="Validation failed",
+            model="claude-opus-4-5-20251101",
+            duration_ms=500,
+            extracted_at="2024-01-01T00:00:00"
+        )
+
+        assert result.success is False
+        assert result.extracted_jd is None
+        assert result.error == "Validation failed"
+
+
+# ===== TESTS: CLI Availability Check =====
+
+class TestCLIAvailability:
+    """Test CLI availability checking."""
+
+    @patch('subprocess.run')
+    def test_check_cli_available_success(self, mock_run):
+        """check_cli_available returns True when CLI is installed."""
+        mock_run.return_value = MagicMock(returncode=0)
+
+        extractor = JDExtractor()
+        assert extractor.check_cli_available() is True
+
+    @patch('subprocess.run')
+    def test_check_cli_available_failure(self, mock_run):
+        """check_cli_available returns False when CLI is not installed."""
+        mock_run.side_effect = FileNotFoundError()
+
+        extractor = JDExtractor()
+        assert extractor.check_cli_available() is False

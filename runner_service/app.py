@@ -564,17 +564,17 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
 
 
 # ============================================================================
-# Claude Code JD Extraction Endpoint (Parallel A/B Comparison)
+# JD Extraction Endpoint (Primary Extractor)
 # ============================================================================
 
 
-@app.post("/api/jobs/{job_id}/extract-claude", dependencies=[Depends(verify_token)])
-async def extract_with_claude(job_id: str) -> Dict[str, Any]:
+@app.post("/api/jobs/{job_id}/extract", dependencies=[Depends(verify_token)])
+async def extract_jd(job_id: str) -> Dict[str, Any]:
     """
-    Run Claude Code CLI extraction on a job (A/B comparison with GPT-4o).
+    Run JD extraction on a job using Claude Code CLI.
 
     Uses Claude Max subscription via CLI headless mode. Stores result in
-    extracted_jd_claude field for side-by-side comparison on job detail page.
+    extracted_jd field.
 
     Args:
         job_id: MongoDB ObjectId of the job to extract
@@ -619,20 +619,20 @@ async def extract_with_claude(job_id: str) -> Dict[str, Any]:
         if not job_description:
             raise HTTPException(status_code=400, detail="Job has no description to extract")
 
-        logger.info(f"Starting Claude extraction for job {job_id}: {title} at {company}")
+        logger.info(f"Starting JD extraction for job {job_id}: {title} at {company}")
 
-        # Import and run Claude extractor
+        # Import and run extractor
         try:
-            from src.layer1_4.claude_jd_extractor import ClaudeJDExtractor
+            from src.layer1_4.claude_jd_extractor import JDExtractor
         except ImportError as e:
-            logger.error(f"Failed to import Claude extractor: {e}")
+            logger.error(f"Failed to import JD extractor: {e}")
             raise HTTPException(
                 status_code=503,
-                detail="Claude extractor module not available"
+                detail="JD extractor module not available"
             )
 
         # Check if Claude CLI is available
-        extractor = ClaudeJDExtractor()
+        extractor = JDExtractor()
         if not extractor.check_cli_available():
             logger.error("Claude CLI not available or not authenticated")
             raise HTTPException(
@@ -649,10 +649,10 @@ async def extract_with_claude(job_id: str) -> Dict[str, Any]:
         )
 
         if not result.success:
-            logger.error(f"Claude extraction failed for {job_id}: {result.error}")
+            logger.error(f"JD extraction failed for {job_id}: {result.error}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Claude extraction failed: {result.error}"
+                detail=f"JD extraction failed: {result.error}"
             )
 
         # Save to MongoDB
@@ -660,8 +660,8 @@ async def extract_with_claude(job_id: str) -> Dict[str, Any]:
             {"_id": object_id},
             {
                 "$set": {
-                    "extracted_jd_claude": result.extracted_jd,
-                    "extracted_jd_claude_metadata": {
+                    "extracted_jd": result.extracted_jd,
+                    "extracted_jd_metadata": {
                         "model": result.model,
                         "extracted_at": result.extracted_at,
                         "duration_ms": result.duration_ms,
@@ -672,7 +672,7 @@ async def extract_with_claude(job_id: str) -> Dict[str, Any]:
         )
 
         logger.info(
-            f"Claude extraction complete for {job_id}: "
+            f"JD extraction complete for {job_id}: "
             f"role_category={result.extracted_jd.get('role_category', 'unknown')}, "
             f"duration={result.duration_ms}ms"
         )
@@ -680,7 +680,7 @@ async def extract_with_claude(job_id: str) -> Dict[str, Any]:
         return {
             "success": True,
             "job_id": job_id,
-            "extracted_jd_claude": result.extracted_jd,
+            "extracted_jd": result.extracted_jd,
             "metadata": {
                 "model": result.model,
                 "extracted_at": result.extracted_at,

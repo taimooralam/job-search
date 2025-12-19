@@ -1,22 +1,21 @@
 """
-Layer 1.4: Claude Code CLI JD Extractor
+Layer 1.4: JD Extractor (Primary Extractor)
 
-Parallel JD extraction module using Claude Code CLI (headless mode).
-Runs alongside GPT-4o extraction for A/B quality comparison.
-Uses Claude Max subscription via CLI authentication.
+Primary JD extraction module using Claude Code CLI (headless mode).
+Uses Claude Max subscription via CLI authentication for high-quality extraction.
 
 Architecture: Batch-ready with logging hooks for future Redis live-tail.
 
 Usage:
     # Single extraction
-    extractor = ClaudeJDExtractor(model="claude-opus-4-5-20251101")
+    extractor = JDExtractor(model="claude-opus-4-5-20251101")
     result = extractor.extract(job_id, title, company, job_description)
 
     # Batch extraction
     results = await extractor.extract_batch(jobs, max_concurrent=3)
 
     # With Redis logging (future)
-    extractor = ClaudeJDExtractor(log_callback=redis_publisher)
+    extractor = JDExtractor(log_callback=redis_publisher)
 """
 
 import subprocess
@@ -27,7 +26,8 @@ import os
 from typing import Optional, List, Dict, Any, Callable
 from dataclasses import dataclass, asdict
 from datetime import datetime
-from pydantic import ValidationError
+from enum import Enum
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from src.common.state import ExtractedJD
 from src.common.json_utils import parse_llm_json
@@ -35,7 +35,161 @@ from src.layer1_4.prompts import (
     JD_EXTRACTION_SYSTEM_PROMPT,
     JD_EXTRACTION_USER_TEMPLATE,
 )
-from src.layer1_4.jd_extractor import ExtractedJDModel
+
+
+# ===== SCHEMA VALIDATION =====
+
+class RoleCategory(str, Enum):
+    """Role category classification for CV tailoring."""
+    ENGINEERING_MANAGER = "engineering_manager"
+    STAFF_PRINCIPAL_ENGINEER = "staff_principal_engineer"
+    DIRECTOR_OF_ENGINEERING = "director_of_engineering"
+    HEAD_OF_ENGINEERING = "head_of_engineering"
+    VP_ENGINEERING = "vp_engineering"  # VP/SVP Engineering - exec + operational at scale
+    CTO = "cto"
+    TECH_LEAD = "tech_lead"  # Covers Team Lead, Tech Lead, Lead Engineer
+    SENIOR_ENGINEER = "senior_engineer"  # Fallback for senior IC roles
+
+
+class SeniorityLevel(str, Enum):
+    """Seniority level classification."""
+    SENIOR = "senior"
+    STAFF = "staff"
+    PRINCIPAL = "principal"
+    DIRECTOR = "director"
+    VP = "vp"
+    C_LEVEL = "c_level"
+
+
+class RemotePolicy(str, Enum):
+    """Remote work policy classification."""
+    FULLY_REMOTE = "fully_remote"
+    HYBRID = "hybrid"
+    ONSITE = "onsite"
+    NOT_SPECIFIED = "not_specified"
+
+
+class CompetencyWeightsModel(BaseModel):
+    """Competency weights with sum validation."""
+    delivery: int = Field(..., ge=0, le=100, description="Shipping features, product execution")
+    process: int = Field(..., ge=0, le=100, description="CI/CD, testing, quality standards")
+    architecture: int = Field(..., ge=0, le=100, description="System design, technical strategy")
+    leadership: int = Field(..., ge=0, le=100, description="People management, team building")
+
+    @model_validator(mode='after')
+    def validate_sum(self) -> 'CompetencyWeightsModel':
+        """Ensure weights sum to exactly 100."""
+        total = self.delivery + self.process + self.architecture + self.leadership
+        if total != 100:
+            raise ValueError(f"Competency weights must sum to 100, got {total}")
+        return self
+
+
+class ExtractedJDModel(BaseModel):
+    """Pydantic model for JD extraction validation."""
+
+    # Basic Info
+    title: str = Field(..., min_length=3, description="Job title")
+    company: str = Field(..., min_length=1, description="Company name")
+    location: str = Field(default="Not specified", description="Location")
+    remote_policy: RemotePolicy = Field(default=RemotePolicy.NOT_SPECIFIED)
+
+    # Role Classification
+    role_category: RoleCategory = Field(..., description="Role category for CV tailoring")
+    seniority_level: SeniorityLevel = Field(..., description="Seniority level")
+
+    # Competency Mix
+    competency_weights: CompetencyWeightsModel = Field(..., description="Competency weights (sum=100)")
+
+    # Content Extraction
+    responsibilities: List[str] = Field(
+        ..., min_length=3, max_length=15,
+        description="Key responsibilities"
+    )
+    qualifications: List[str] = Field(
+        ..., min_length=2, max_length=12,
+        description="Required qualifications"
+    )
+    nice_to_haves: List[str] = Field(
+        default_factory=list, max_length=10,
+        description="Optional qualifications"
+    )
+    technical_skills: List[str] = Field(
+        default_factory=list, max_length=20,
+        description="Technical skills mentioned"
+    )
+    soft_skills: List[str] = Field(
+        default_factory=list, max_length=10,
+        description="Soft skills mentioned"
+    )
+
+    # Pain Points (inferred)
+    implied_pain_points: List[str] = Field(
+        default_factory=list, max_length=8,
+        description="Inferred problems this hire solves"
+    )
+    success_metrics: List[str] = Field(
+        default_factory=list, max_length=8,
+        description="How success will be measured"
+    )
+
+    # ATS Keywords
+    top_keywords: List[str] = Field(
+        ..., min_length=10, max_length=20,
+        description="Top 15 ATS keywords"
+    )
+
+    # Background Requirements
+    industry_background: Optional[str] = Field(default=None)
+    years_experience_required: Optional[int] = Field(default=None, ge=0, le=50)
+    education_requirements: Optional[str] = Field(default=None)
+
+    @field_validator('responsibilities', 'qualifications')
+    @classmethod
+    def validate_non_empty_strings(cls, v: List[str]) -> List[str]:
+        """Ensure all items are non-empty strings."""
+        return [item.strip() for item in v if item and item.strip()]
+
+    @field_validator('top_keywords')
+    @classmethod
+    def validate_keywords(cls, v: List[str]) -> List[str]:
+        """Deduplicate and clean keywords."""
+        seen = set()
+        result = []
+        for kw in v:
+            kw_clean = kw.strip().lower()
+            if kw_clean and kw_clean not in seen:
+                seen.add(kw_clean)
+                result.append(kw.strip())
+        return result
+
+    def to_extracted_jd(self) -> ExtractedJD:
+        """Convert to TypedDict for state."""
+        return ExtractedJD(
+            title=self.title,
+            company=self.company,
+            location=self.location,
+            remote_policy=self.remote_policy.value,
+            role_category=self.role_category.value,
+            seniority_level=self.seniority_level.value,
+            competency_weights={
+                "delivery": self.competency_weights.delivery,
+                "process": self.competency_weights.process,
+                "architecture": self.competency_weights.architecture,
+                "leadership": self.competency_weights.leadership,
+            },
+            responsibilities=self.responsibilities,
+            qualifications=self.qualifications,
+            nice_to_haves=self.nice_to_haves,
+            technical_skills=self.technical_skills,
+            soft_skills=self.soft_skills,
+            implied_pain_points=self.implied_pain_points,
+            success_metrics=self.success_metrics,
+            top_keywords=self.top_keywords,
+            industry_background=self.industry_background,
+            years_experience_required=self.years_experience_required,
+            education_requirements=self.education_requirements,
+        )
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +220,16 @@ class ExtractionResult:
 LogCallback = Callable[[str, str, Dict[str, Any]], None]
 
 
-class ClaudeJDExtractor:
+class JDExtractor:
     """
-    Extract job descriptions using Claude Code CLI (headless mode).
+    Primary JD extractor using Claude Code CLI (headless mode).
 
-    Uses the same prompts as GPT-4o extractor for fair A/B comparison.
+    Extracts structured intelligence from job descriptions including:
+    - Role classification (EM, Staff, Director, Head, CTO)
+    - Competency weights (delivery, process, architecture, leadership)
+    - ATS keywords (top 15 for optimization)
+    - Structured content (responsibilities, qualifications, skills)
+
     Designed for both single and batch operations with pluggable logging.
 
     Attributes:
@@ -89,7 +248,7 @@ class ClaudeJDExtractor:
         log_callback: Optional[LogCallback] = None
     ):
         """
-        Initialize the Claude JD extractor.
+        Initialize the JD extractor.
 
         Args:
             model: Claude model ID. Defaults to CLAUDE_CODE_MODEL env var or Opus 4.5.
@@ -378,7 +537,7 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
 
 
 # Convenience function for quick extraction
-def extract_jd_with_claude(
+def extract_jd(
     job_id: str,
     title: str,
     company: str,
@@ -386,7 +545,7 @@ def extract_jd_with_claude(
     model: Optional[str] = None
 ) -> ExtractionResult:
     """
-    Convenience function for single JD extraction with Claude.
+    Convenience function for single JD extraction.
 
     Args:
         job_id: MongoDB job ID
@@ -398,5 +557,10 @@ def extract_jd_with_claude(
     Returns:
         ExtractionResult with extraction outcome
     """
-    extractor = ClaudeJDExtractor(model=model)
+    extractor = JDExtractor(model=model)
     return extractor.extract(job_id, title, company, job_description)
+
+
+# Backwards compatibility alias
+ClaudeJDExtractor = JDExtractor
+extract_jd_with_claude = extract_jd

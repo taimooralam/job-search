@@ -3014,20 +3014,20 @@ function resetFormScrapeButtons(btn, forceBtn, originalHTML) {
 }
 
 // ============================================================================
-// Claude JD Extraction
+// JD Extraction
 // ============================================================================
 
 /**
- * Run Claude Code CLI extraction on the current job.
+ * Run JD extraction on the current job.
  *
  * This triggers the runner service to extract job requirements using
- * Claude Opus 4.5 via the Claude Code CLI (headless mode).
- * Results are stored in extracted_jd_claude field for A/B comparison.
+ * the Claude Code CLI (headless mode).
+ * Results are stored in extracted_jd field.
  *
  * @param {string} jobId - The MongoDB job ID to extract
  */
-async function runClaudeExtraction(jobId) {
-    const btn = document.getElementById('run-claude-extraction');
+async function runJDExtraction(jobId) {
+    const btn = document.getElementById('run-extraction') || document.getElementById('run-claude-extraction');
     if (!btn) return;
 
     const originalHTML = btn.innerHTML;
@@ -3037,11 +3037,11 @@ async function runClaudeExtraction(jobId) {
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Extracting with Claude...
+        Extracting...
     `;
 
     try {
-        const response = await fetch(`/api/runner/jobs/${jobId}/extract-claude`, {
+        const response = await fetch(`/api/runner/jobs/${jobId}/extract`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -3056,19 +3056,22 @@ async function runClaudeExtraction(jobId) {
         const result = await response.json();
 
         if (result.success) {
-            showToast('Claude extraction complete! Reloading...', 'success');
-            // Reload to show comparison view
+            showToast('JD extraction complete! Reloading...', 'success');
+            // Reload to show results
             setTimeout(() => window.location.reload(), 1000);
         } else {
             throw new Error(result.error || 'Extraction failed');
         }
     } catch (error) {
-        console.error('Claude extraction error:', error);
-        showToast(`Claude extraction failed: ${error.message}`, 'error');
+        console.error('JD extraction error:', error);
+        showToast(`JD extraction failed: ${error.message}`, 'error');
         btn.disabled = false;
         btn.innerHTML = originalHTML;
     }
 }
+
+// Backwards compatibility alias
+const runClaudeExtraction = runJDExtraction;
 
 // ============================================================================
 // Global Exports (for inline onclick handlers)

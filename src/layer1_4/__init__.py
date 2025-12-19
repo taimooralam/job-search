@@ -14,7 +14,22 @@ This layer runs BEFORE Layer 2 (Pain Point Miner) and provides:
 The extracted data augments Layer 2's analysis and drives role-category-aware CV generation.
 """
 
-from src.layer1_4.jd_extractor import jd_extractor_node, JDExtractor
+# Primary JD Extractor (Claude Code CLI based)
+from src.layer1_4.claude_jd_extractor import (
+    JDExtractor,
+    ExtractionResult,
+    ExtractedJDModel,
+    CompetencyWeightsModel,
+    RoleCategory,
+    SeniorityLevel,
+    RemotePolicy,
+    extract_jd,
+    # Backwards compatibility aliases
+    ClaudeJDExtractor,
+    extract_jd_with_claude,
+)
+
+# JD Processor (for annotation system)
 from src.layer1_4.jd_processor import (
     process_jd,
     process_jd_sync,
@@ -26,9 +41,18 @@ from src.layer1_4.jd_processor import (
 )
 
 __all__ = [
-    # JD Extractor
-    "jd_extractor_node",
+    # JD Extractor (primary)
     "JDExtractor",
+    "ExtractionResult",
+    "ExtractedJDModel",
+    "CompetencyWeightsModel",
+    "RoleCategory",
+    "SeniorityLevel",
+    "RemotePolicy",
+    "extract_jd",
+    # Backwards compatibility
+    "ClaudeJDExtractor",
+    "extract_jd_with_claude",
     # JD Processor (for annotation system)
     "process_jd",
     "process_jd_sync",

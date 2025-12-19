@@ -25,7 +25,7 @@ from pymongo import MongoClient
 from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.common.state import JobState
 from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
-from src.layer1_4.jd_extractor import JDExtractor
+from src.layer1_4.claude_jd_extractor import JDExtractor
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -157,41 +157,33 @@ class FullExtractionService(OperationService):
         """
         Run JD Extractor: Extract structured intelligence from JD.
 
+        Uses Claude Code CLI for high-quality extraction.
+
         Returns:
             Tuple of (extracted_jd, error_message):
             - On success: (extracted_jd_dict, None)
             - On failure: (None, error_message_string)
         """
-        state: JobState = {
-            "job_id": str(job.get("_id", "")),
-            "title": job.get("title", ""),
-            "company": job.get("firm") or job.get("company", ""),
-            "job_description": jd_text,
-        }
+        job_id = str(job.get("_id", ""))
+        title = job.get("title", "")
+        company = job.get("firm") or job.get("company", "")
 
         extractor = JDExtractor()
-        result = extractor.extract(state)
+        result = extractor.extract(
+            job_id=job_id,
+            title=title,
+            company=company,
+            job_description=jd_text,
+        )
 
-        extracted_jd = result.get("extracted_jd")
-        error_message = None
-
-        if not extracted_jd:
-            # Extract error message from the errors list
-            errors = result.get("errors", [])
-            if errors:
-                # Get the last error (most specific)
-                last_error = errors[-1] if isinstance(errors, list) else str(errors)
-                # Strip common prefix for cleaner display
-                prefix = "Layer 1.4 (JD Extractor) failed: "
-                if isinstance(last_error, str) and last_error.startswith(prefix):
-                    error_message = last_error[len(prefix):]
-                else:
-                    error_message = str(last_error)
-                # Truncate if too long for SSE display
-                if len(error_message) > 200:
-                    error_message = error_message[:197] + "..."
-
-        return extracted_jd, error_message
+        if result.success and result.extracted_jd:
+            return result.extracted_jd, None
+        else:
+            error_message = result.error
+            # Truncate if too long for SSE display
+            if error_message and len(error_message) > 200:
+                error_message = error_message[:197] + "..."
+            return None, error_message
 
     def _run_layer_2(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
         """

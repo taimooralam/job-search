@@ -16,7 +16,7 @@ from src.layer6_v2.header_generator import (
     _load_role_persona,
 )
 from src.layer6_v2.types import StitchedCV, StitchedRole
-from src.layer1_4.jd_extractor import RoleCategory
+from src.layer1_4.claude_jd_extractor import RoleCategory
 
 
 # ===== FIXTURES =====

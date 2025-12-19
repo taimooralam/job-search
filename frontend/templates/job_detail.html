@@ -728,8 +728,8 @@
                     </svg>
                     Extracted Job Requirements
                 </h2>
-                {# Claude Extraction Button - only show if not already extracted #}
-                {% if not job.extracted_jd_claude %}
+                {# Extraction Button - only show if not already extracted #}
+                {% if not job.extracted_jd %}
                 <div x-data="claudeExtractionButton('{{ job._id }}')" class="inline-block">
                     <button
                         @click="queueExtract()"
@@ -748,48 +748,28 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                             </svg>
                         </template>
-                        <span x-text="loading ? 'Extracting...' : 'Run Claude Extraction'"></span>
+                        <span x-text="loading ? 'Extracting...' : 'Run Extraction'"></span>
                     </button>
                 </div>
                 {% else %}
-                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-purple-100 text-purple-800">
+                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-green-100 text-green-800">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                     </svg>
-                    Claude Extracted
+                    Extracted
                 </span>
                 {% endif %}
             </div>
 
-            {# Side-by-side comparison view when both extractions exist #}
-            {% if job.extracted_jd_claude %}
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                {# GPT-4o Column #}
-                <div class="border border-blue-200 rounded-lg p-4 bg-blue-50/30">
-                    {% with extracted=job.extracted_jd, label="GPT-4o", color="blue" %}
-                        {% include 'components/extracted_jd_compact.html' %}
-                    {% endwith %}
-                </div>
-
-                {# Claude Column #}
-                <div class="border border-purple-200 rounded-lg p-4 bg-purple-50/30">
-                    {% with extracted=job.extracted_jd_claude, label="Claude Opus 4.5", color="purple", metadata=job.extracted_jd_claude_metadata %}
-                        {% include 'components/extracted_jd_compact.html' %}
-                    {% endwith %}
-                </div>
+            {# Extraction metadata if available #}
+            {% if job.extracted_jd_metadata %}
+            <div class="mb-4 text-xs text-gray-500">
+                Extracted {{ job.extracted_jd_metadata.extracted_at|default('') }}
+                using {{ job.extracted_jd_metadata.model|default('unknown') }}
+                {% if job.extracted_jd_metadata.duration_ms %}
+                ({{ job.extracted_jd_metadata.duration_ms }}ms)
+                {% endif %}
             </div>
-
-            {# Toggle to show/hide full detail view #}
-            <details class="group border-t border-gray-200 pt-4">
-                <summary class="cursor-pointer list-none">
-                    <div class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-                        <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                        <span>Show Full GPT-4o Details</span>
-                    </div>
-                </summary>
-                <div class="mt-4">
             {% endif %}
             <div class="space-y-4">
                 <!-- Role Category & Seniority -->
@@ -1036,11 +1016,6 @@
                 </details>
                 {% endif %}
             </div>
-            {# Close the details wrapper if Claude comparison exists #}
-            {% if job.extracted_jd_claude %}
-                </div>
-            </details>
-            {% endif %}
         </div>
         {% endif %}
 

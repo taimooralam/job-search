@@ -1525,7 +1525,7 @@ VALID_QUEUE_OPERATIONS = {
     "full-extraction",
     "research-company",
     "generate-cv",
-    "extract-claude",  # Claude Code CLI JD extraction (parallel to GPT-4o)
+    "extract",  # Primary JD extraction via Claude Code CLI
 }
 
 # Estimated seconds per operation (for wait time estimation)
@@ -1534,7 +1534,7 @@ OPERATION_TIME_ESTIMATES = {
     "full-extraction": 45,
     "research-company": 60,
     "generate-cv": 30,
-    "extract-claude": 20,  # Claude CLI typically 5-15s, buffer for queue overhead
+    "extract": 20,  # Claude CLI typically 5-15s, buffer for queue overhead
 }
 
 
@@ -1775,13 +1775,13 @@ async def _execute_queued_operation(
             if result.success:
                 service.persist_run(result, job_id, tier)
 
-        elif operation == "extract-claude":
-            # Claude Code CLI JD extraction (parallel to GPT-4o)
-            from src.layer1_4.claude_jd_extractor import ClaudeJDExtractor
+        elif operation == "extract":
+            # Primary JD extraction via Claude Code CLI
+            from src.layer1_4.claude_jd_extractor import JDExtractor
             from src.services.operation_base import OperationResult
 
-            log_cb("Starting Claude Code CLI extraction...")
-            layer_cb("extract-claude", "running", "Initializing Claude CLI")
+            log_cb("Starting JD extraction...")
+            layer_cb("extract", "running", "Initializing extractor")
 
             # Get job details for extraction
             job = _validate_job_exists_sync(job_id)
@@ -1790,21 +1790,21 @@ async def _execute_queued_operation(
             job_description = job.get("job_description", "")
 
             if not job_description:
-                layer_cb("extract-claude", "failed", "No job description found")
+                layer_cb("extract", "failed", "No job description found")
                 result = OperationResult(
                     success=False,
                     run_id=run_id,
-                    operation="extract-claude",
+                    operation="extract",
                     data={},
                     cost_usd=0.0,
                     error="No job description found for extraction",
                 )
             else:
                 log_cb(f"Extracting JD for: {title} at {company}")
-                layer_cb("extract-claude", "running", f"Extracting: {title[:30]}...")
+                layer_cb("extract", "running", f"Extracting: {title[:30]}...")
 
                 # Run extraction (sync operation in thread pool)
-                extractor = ClaudeJDExtractor()
+                extractor = JDExtractor()
                 loop = asyncio.get_event_loop()
                 extraction_result = await loop.run_in_executor(
                     None,
@@ -1826,8 +1826,8 @@ async def _execute_queued_operation(
                         {"_id": ObjectId(job_id)},
                         {
                             "$set": {
-                                "extracted_jd_claude": extraction_result.extracted_jd,
-                                "extracted_jd_claude_metadata": {
+                                "extracted_jd": extraction_result.extracted_jd,
+                                "extracted_jd_metadata": {
                                     "model": extraction_result.model,
                                     "extracted_at": extraction_result.extracted_at,
                                     "duration_ms": extraction_result.duration_ms,
@@ -1836,25 +1836,25 @@ async def _execute_queued_operation(
                             }
                         }
                     )
-                    layer_cb("extract-claude", "completed", f"Extracted in {extraction_result.duration_ms}ms")
+                    layer_cb("extract", "completed", f"Extracted in {extraction_result.duration_ms}ms")
                     result = OperationResult(
                         success=True,
                         run_id=run_id,
-                        operation="extract-claude",
-                        data={"extracted_jd_claude": extraction_result.extracted_jd},
+                        operation="extract",
+                        data={"extracted_jd": extraction_result.extracted_jd},
                         cost_usd=0.0,  # Claude Max subscription = $0 marginal cost
                         model_used=extraction_result.model,
                         duration_ms=extraction_result.duration_ms,
                     )
                 else:
-                    layer_cb("extract-claude", "failed", extraction_result.error or "Extraction failed")
+                    layer_cb("extract", "failed", extraction_result.error or "Extraction failed")
                     result = OperationResult(
                         success=False,
                         run_id=run_id,
-                        operation="extract-claude",
+                        operation="extract",
                         data={},
                         cost_usd=0.0,
-                        error=extraction_result.error or "Claude extraction failed",
+                        error=extraction_result.error or "Extraction failed",
                         model_used=extraction_result.model,
                         duration_ms=extraction_result.duration_ms,
                     )
