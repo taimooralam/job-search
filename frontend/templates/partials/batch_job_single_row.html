@@ -31,9 +31,9 @@
         </td>
 
         <!-- Company -->
-        <td class="px-2 sm:px-4 py-3 whitespace-nowrap cursor-pointer"
+        <td class="px-2 sm:px-4 py-3 whitespace-nowrap cursor-pointer overflow-hidden"
             onclick="navigateToBatchJob(event, '{{ job._id }}')">
-            <div class="text-sm font-medium theme-text-primary">
+            <div class="text-sm font-medium theme-text-primary truncate" title="{{ job.company or '-' }}">
                 {{ job.company or '-' }}
             </div>
         </td>

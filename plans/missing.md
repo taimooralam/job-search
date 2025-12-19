@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-19 (Batch Move Auto-Trigger + Claude API Migration + Company Research Fallback Chain Improvements)
+**Last Updated**: 2025-12-19 (Multi-Agent Outreach with Claude CLI + MENA Cultural Awareness)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -16,7 +16,67 @@
 | **P3 (LOW)** | 23 (17 fixed, 0 open) | Backlog - nice-to-have improvements |
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
-**Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+**Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-19 Session 21): Multi-Agent Outreach with Claude CLI and MENA Cultural Awareness
+
+**FEATURE: Multi-Agent Outreach Generation with Claude Opus 4.5 - COMPLETED**:
+- **Scope**: Redesigned outreach generation to use Claude Code CLI with tiered model selection and MENA/Saudi cultural awareness
+- **Motivation**: Improve outreach quality by using Opus 4.5 for nuanced personalization, and adapt messages for MENA region (Saudi Arabia, UAE, Qatar, etc.)
+- **Components Created**:
+  1. **Agent Definitions** (`.claude/agents/`):
+     - `outreach-agent.md` - Opus-based outreach generation with universal email best practices
+     - `region-detector-agent.md` - Haiku-based MENA region detection
+  2. **MENA Detector Utility** (`src/common/mena_detector.py`):
+     - Deterministic detection of MENA region from location, company, JD keywords
+     - Cultural context generation (formality level, Arabic greetings, Vision 2030 references)
+     - Helper functions for greeting/closing formatting
+  3. **Outreach Prompts** (`src/layer6_v2/prompts/outreach_prompts.py`):
+     - Universal email best practices (value-first, 3 proof bullets, clear action)
+     - MENA cultural guidelines as an additional layer
+     - Prompt builders for system and user prompts
+  4. **Claude Outreach Service** (`src/services/claude_outreach_service.py`):
+     - Opus 4.5 (claude-opus-4-5-20251101) for high-quality generation
+     - Parallel batch processing for multiple contacts
+     - MENA-aware prompt building
+     - Fallback package on failure
+- **Dual-Backend Support**:
+  - `OutreachGenerationService` now accepts `use_claude_cli: bool` parameter
+  - Default: LangChain with OpenRouter (existing behavior)
+  - With flag: Claude Code CLI with Opus 4.5
+- **Universal Email Best Practices** (generalized from Saudi guidelines):
+  - Subject line: Job title + your name
+  - Greeting: Professional "Dear Mr./Ms." (never "Hi")
+  - First 2 lines: Value proposition (not life story)
+  - 3 proof bullets: Quantified achievements addressing JD pain points
+  - Close: Clear action + Calendly link
+  - Signature: Full name + phone + LinkedIn
+- **MENA Adaptations** (when detected):
+  - Arabic greetings for Saudi Arabia (As-salaam Alaykum / Shukran)
+  - Higher formality for all GCC countries
+  - Vision 2030 alignment references
+  - 1.5x timeline multiplier (slower hiring)
+- **Model Tiers**:
+  - Outreach: Opus 4.5 (claude-opus-4-5-20251101) - highest quality
+  - Region detection: Haiku 4.5 (claude-haiku-4-5-20251101) - fast/cheap classification
+- **Files Created**:
+  - `.claude/agents/outreach-agent.md`
+  - `.claude/agents/region-detector-agent.md`
+  - `src/common/mena_detector.py`
+  - `src/layer6_v2/prompts/outreach_prompts.py`
+  - `src/services/claude_outreach_service.py`
+  - `tests/unit/test_mena_detector.py` (41 tests)
+- **Files Modified**:
+  - `src/services/outreach_service.py` - Added `use_claude_cli` dual-backend support
+- **Testing**:
+  - 41 new unit tests for MENA detector (all passing)
+  - Tests cover country/city/company detection, cultural context, formatting helpers
+- **Cost Estimate**:
+  - ~$0.25/batch for Opus outreach generation
+  - ~$0.01/job for Haiku region detection
+- **Backward Compatibility**: Fully backward compatible - `use_claude_cli=False` preserves existing behavior
 
 ---
 
@@ -3783,6 +3843,36 @@ Added refined button sizing hierarchy in `frontend/templates/base.html`:
 - **Fix Applied**: Resolved by adding Alpine collapse plugin (see Bug Fix 1)
 - **Verification**: All HTML elements render correctly; dark mode styling applies properly
 - **Impact**: Complete UI consistency across all pages and themes
+
+**BUG FIX 13: Batch Page Table Layout - Horizontal Scroll & Column Width Issues - FIXED (2025-12-19)**:
+- **Issue**: Batch processing job table had horizontal scroll issues with large gap after company name column; table didn't use available width efficiently
+- **Root Cause**: Table used `min-w-full` class (sets minimum width to 100% but allows expanding wider); lacked fixed table layout mode causing uneven column spacing
+- **Fix Applied**:
+  1. Changed table from `min-w-full` to `w-full table-fixed` in `frontend/templates/partials/batch_job_rows.html`
+     - `w-full`: Table uses 100% of container width
+     - `table-fixed`: Fixed table layout algorithm (equal column distribution unless explicit widths set)
+  2. Added explicit column widths to all header columns:
+     - Expand toggle: `w-8` (32px)
+     - Select checkbox: `w-10` (40px)
+     - Company: `w-[14%]` (14% of table)
+     - Role: `w-[18%]` (18% of table)
+     - Score: `w-16` (64px)
+     - Added: `w-24` (96px)
+  3. Added overflow handling to company cells in `frontend/templates/partials/batch_job_single_row.html`:
+     - Company cell: `overflow-hidden` to prevent text overflow
+     - Company text: `truncate` class for ellipsis on long company names
+     - Title attribute: Added `title="{{ job.company or '-' }}"` for tooltip on hover
+- **Files Modified**:
+  - `frontend/templates/partials/batch_job_rows.html` - Table classes and column width declarations
+  - `frontend/templates/partials/batch_job_single_row.html` - Company cell overflow handling and title attribute
+- **Tests Added**: `tests/frontend/test_batch_table_layout.py` - 28 comprehensive tests covering:
+  - Table structure validation (thead, tbody, column count)
+  - CSS classes on table (`w-full table-fixed`)
+  - Explicit width classes on all header columns
+  - Company cell overflow/truncate handling
+  - Title attribute presence on company cells
+- **Verification**: All 28 tests passing; table no longer scrolls horizontally; company name column properly sized; long names display with ellipsis and tooltip
+- **Impact**: Batch table now uses container width efficiently; improved UX for viewing jobs with long company names; no unwanted horizontal scrolling
 
 ---
 

@@ -6112,6 +6112,92 @@ document.addEventListener('jdAnnotationsSaved', (e) => {
 
 **Related Commit**: `b49d4ba6` - feat(batch): add persona builder to annotation sidebar
 
+### Batch Table Layout Optimization (2025-12-19)
+
+**Problem**: Batch processing table had layout issues:
+- Horizontal scrolling despite adequate container width
+- Large gap after company name column
+- Inefficient use of available table width
+- Long company names overflowed without truncation
+
+**Root Cause**:
+- Table used `min-w-full` instead of `w-full table-fixed`
+- `min-w-full` sets minimum 100% but allows expanding beyond container
+- No explicit column widths defined
+- Missing overflow/truncate handling on company cells
+
+**Solution**: CSS Table Layout Optimization
+
+**HTML Changes**:
+```html
+<!-- Before -->
+<table class="min-w-full theme-table">
+
+<!-- After -->
+<table class="w-full table-fixed theme-table">
+```
+
+**Column Width Declarations**:
+```html
+{% set sort_fields = [
+    ('company', 'Company', 'w-[14%]'),      <!-- 14% -->
+    ('title', 'Role', 'w-[18%]'),            <!-- 18% -->
+    ('score', 'Score', 'w-16'),               <!-- 64px -->
+    ('batch_added_at', 'Added', 'w-24'),     <!-- 96px -->
+] %}
+
+<!-- Fixed-width columns -->
+<th class="px-2 py-3 w-8"></th>              <!-- Expand: 32px -->
+<th class="px-2 py-3 w-10">                  <!-- Checkbox: 40px -->
+```
+
+**Company Cell Overflow Handling**:
+```html
+<!-- batch_job_single_row.html -->
+<td class="px-2 sm:px-4 py-3 whitespace-nowrap cursor-pointer overflow-hidden">
+    <div class="text-sm font-medium theme-text-primary truncate"
+         title="{{ job.company or '-' }}">
+        {{ job.company or '-' }}
+    </div>
+</td>
+```
+
+**Technical Details**:
+- `w-full table-fixed`: Fixed table layout algorithm distributes width according to column class widths
+- `w-[14%]`, `w-[18%]`: Proportional widths for flexible columns
+- `w-8`, `w-10`, `w-16`, `w-24`: Absolute widths for fixed columns
+- `overflow-hidden truncate`: Prevents text overflow, adds ellipsis
+- `title` attribute: Provides tooltip with full company name on hover
+
+**Layout Formula**:
+```
+Total width = 100%
+Fixed columns = 32px + 40px + 64px + 96px = 232px (~15% of typical viewport)
+Flexible columns = Company(14%) + Role(18%) = 32% of 100%
+Remaining responsive space available for scaling
+```
+
+**Testing**: 28 comprehensive tests verify:
+- Table structure (thead, tbody, column count)
+- CSS classes applied correctly
+- Column widths declared on all headers
+- Overflow handling on company cells
+- Proper truncation and tooltip attributes
+
+**Files Modified**:
+- `frontend/templates/partials/batch_job_rows.html` - Table layout classes and column width declarations
+- `frontend/templates/partials/batch_job_single_row.html` - Company cell overflow handling
+- `tests/frontend/test_batch_table_layout.py` - 28 test cases (NEW)
+
+**Impact**:
+- Batch table now uses 100% of container width efficiently
+- No unwanted horizontal scrolling
+- Long company names display with ellipsis and tooltip
+- Responsive layout scales properly on different viewport widths
+- Better UX when viewing jobs from companies with long names
+
+**Related Commit**: TBD (batch-table-layout-fix)
+
 ---
 
 ## Next Priorities
