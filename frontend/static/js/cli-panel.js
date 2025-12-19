@@ -1075,8 +1075,11 @@ document.addEventListener('alpine:init', () => {
             // Note: In RxJS mode, this may be triggered by the race() subscription instead
             this._replayPendingLogs(runId);
 
-            // Note: Log polling is started on-demand when user views the run
-            // (via toggle(), switchToRun(), or fetchRunLogs())
+            // Auto-subscribe to log polling when run starts and panel is expanded
+            // This ensures logs stream immediately without requiring user interaction
+            if (this.expanded) {
+                this.subscribeToLogs(runId);
+            }
 
             // Cleanup old runs
             this._cleanup();
