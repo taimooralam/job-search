@@ -518,6 +518,81 @@ async function updateJobField(field, value) {
     }
 }
 
+/**
+ * Toggle batch status with UI update (doesn't require page reload)
+ */
+async function toggleBatchStatus(button) {
+    const jobId = getJobId();
+    const currentlyInBatch = button.dataset.inBatch === 'true';
+    const newStatus = currentlyInBatch ? 'not processed' : 'under processing';
+
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Update button state
+            const nowInBatch = !currentlyInBatch;
+            button.dataset.inBatch = nowInBatch.toString();
+
+            // Update button appearance
+            if (nowInBatch) {
+                button.className = button.className
+                    .replace(/bg-gray-100|text-gray-600|dark:bg-gray-700|dark:text-gray-300|hover:bg-gray-200|dark:hover:bg-gray-600/g, '')
+                    .trim() + ' bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-300 dark:border-amber-700';
+                button.innerHTML = `
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    In Batch Queue
+                `;
+            } else {
+                button.className = button.className
+                    .replace(/bg-amber-100|text-amber-800|dark:bg-amber-900\/30|dark:text-amber-400|border-amber-300|dark:border-amber-700/g, '')
+                    .trim() + ' bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+                button.innerHTML = `
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Add to Batch Queue
+                `;
+            }
+
+            // Also update the status dropdown if present
+            const statusSelect = document.getElementById('status-select');
+            if (statusSelect) {
+                statusSelect.value = newStatus;
+            }
+
+            // Update any other batch toggle buttons on the page
+            document.querySelectorAll('[data-batch-toggle]').forEach(btn => {
+                if (btn !== button) {
+                    btn.dataset.inBatch = nowInBatch.toString();
+                    // Trigger same visual update
+                    if (nowInBatch) {
+                        btn.classList.add('active');
+                        btn.textContent = 'In Batch';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.textContent = 'Add to Batch';
+                    }
+                }
+            });
+
+            showToast(nowInBatch ? 'Added to batch queue' : 'Removed from batch queue');
+        } else {
+            showToast(result.error || 'Update failed', 'error');
+        }
+    } catch (err) {
+        showToast('Update failed: ' + err.message, 'error');
+    }
+}
+
 async function saveRemarks() {
     const jobId = getJobId();
     const remarks = document.getElementById('remarks-textarea').value;
@@ -3079,6 +3154,7 @@ const runClaudeExtraction = runJDExtraction;
 
 window.showToast = showToast;
 window.updateJobField = updateJobField;
+window.toggleBatchStatus = toggleBatchStatus;
 window.saveRemarks = saveRemarks;
 window.deleteJob = deleteJob;
 window.toggleRawData = toggleRawData;
