@@ -101,6 +101,11 @@ class CVGeneratorV2:
     - Per-role hallucination QA
     - Role-category-aware emphasis
     - Single-pass improvement for cost control
+
+    Optional Claude CLI mode:
+    - use_claude_cli=True enables multi-agent generation with Claude Code CLI
+    - Uses Sonnet for role bullets (parallel), Opus for profile, Haiku for ATS validation
+    - Integrates CARS framework, role-level keywords, and ATS optimization
     """
 
     def __init__(
@@ -111,6 +116,7 @@ class CVGeneratorV2:
         use_llm_grading: bool = True,
         use_star_enforcement: bool = True,  # GAP-005: STAR format enforcement
         use_variant_selection: bool = True,  # Use pre-written variants (zero hallucination)
+        use_claude_cli: bool = False,  # Phase 3: Claude CLI multi-agent CV generation
     ):
         """
         Initialize the CV Generator V2 orchestrator.
@@ -122,6 +128,7 @@ class CVGeneratorV2:
             use_llm_grading: Use LLM for grading vs rule-based (default: True)
             use_star_enforcement: Enable STAR format enforcement with retry (default: True)
             use_variant_selection: Use pre-written variants for zero-hallucination generation (default: True)
+            use_claude_cli: Enable Claude CLI multi-agent CV generation (default: False)
         """
         self._logger = get_logger(__name__)
         self.model = model or Config.DEFAULT_MODEL
@@ -130,6 +137,18 @@ class CVGeneratorV2:
         self.use_llm_grading = use_llm_grading
         self.use_star_enforcement = use_star_enforcement  # GAP-005
         self.use_variant_selection = use_variant_selection  # Variant-based generation
+        self.use_claude_cli = use_claude_cli  # Phase 3: Claude CLI mode
+
+        # Initialize Claude CV service if enabled
+        self._claude_cv_service = None
+        if use_claude_cli:
+            try:
+                from src.services.claude_cv_service import ClaudeCVService
+                self._claude_cv_service = ClaudeCVService()
+                self._logger.info("Claude CLI CV service initialized")
+            except ImportError as e:
+                self._logger.warning(f"Claude CLI not available: {e}")
+                self.use_claude_cli = False
 
         # Initialize components
         # Use MongoDB for master CV data when enabled (edited via CV Editor)
@@ -166,6 +185,11 @@ class CVGeneratorV2:
         self._logger.info("=" * 60)
         self._logger.info("CV GENERATION V2: Starting 6-phase pipeline")
         self._logger.info("=" * 60)
+
+        # Phase 3: Route to Claude CLI if enabled
+        if self.use_claude_cli and self._claude_cv_service:
+            self._logger.info("Using Claude CLI multi-agent CV generation")
+            return self._generate_with_claude_cli(state)
 
         # Extract required data from state
         # Use `or {}` to handle both missing and explicit None
@@ -375,6 +399,221 @@ class CVGeneratorV2:
                 "errors": [f"CV Gen V2 error: {str(e)}"],
                 "traceback": full_traceback,
             }
+
+    def _generate_with_claude_cli(self, state: JobState) -> Dict[str, Any]:
+        """
+        Generate CV using Claude CLI multi-agent pipeline.
+
+        Phase 3: Alternative CV generation using Claude Code CLI with:
+        - Sonnet for role bullets (parallel)
+        - Opus for profile synthesis
+        - Haiku for ATS validation
+
+        Args:
+            state: Current job processing state
+
+        Returns:
+            Dictionary with cv_text, cv_path, cv_reasoning, and generation metadata
+        """
+        import asyncio
+
+        self._logger.info("CLAUDE CLI CV GENERATION: Starting multi-agent pipeline")
+
+        try:
+            # Load candidate data
+            candidate_data = self.cv_loader.load()
+
+            # Build candidate dict for service
+            candidate_dict = {
+                "name": candidate_data.name,
+                "email": candidate_data.email,
+                "phone": candidate_data.phone,
+                "linkedin": candidate_data.linkedin,
+                "location": candidate_data.location,
+                "roles": [
+                    {
+                        "title": role.title,
+                        "company": role.company,
+                        "period": role.period,
+                        "location": role.location,
+                        "achievements": role.achievements,
+                    }
+                    for role in candidate_data.roles
+                ],
+            }
+
+            # Build job state dict for service
+            job_state_dict = {
+                "extracted_jd": state.get("extracted_jd") or {},
+                "jd_annotations": state.get("jd_annotations") or {},
+                "pain_points": state.get("pain_points") or [],
+                "candidate_profile": state.get("candidate_profile") or {},
+            }
+
+            # Run async generation
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                cv_result = loop.run_until_complete(
+                    self._claude_cv_service.generate_cv(job_state_dict, candidate_dict)
+                )
+            finally:
+                loop.close()
+
+            # Assemble CV text from result
+            cv_text = self._assemble_claude_cv_text(cv_result, candidate_data, state)
+
+            # Save CV to disk
+            company = state.get("company", "Unknown")
+            title = state.get("title", "Unknown")
+            cv_path = self._save_cv_to_disk(cv_text, company, title)
+
+            # Build reasoning summary
+            cv_reasoning = self._build_claude_reasoning(cv_result)
+
+            self._logger.info("=" * 60)
+            self._logger.info("CLAUDE CLI CV GENERATION: Complete")
+            self._logger.info(f"  ATS Score: {cv_result.ats_validation.ats_score if cv_result.ats_validation else 'N/A'}")
+            self._logger.info(f"  Total Cost: ${cv_result.total_cost_usd:.4f}")
+            self._logger.info(f"  Total Time: {cv_result.total_time_ms}ms")
+            self._logger.info("=" * 60)
+
+            return {
+                "cv_text": cv_text,
+                "cv_path": cv_path,
+                "cv_reasoning": cv_reasoning,
+                "claude_cli_result": cv_result.to_dict(),
+            }
+
+        except Exception as e:
+            import traceback
+            full_traceback = traceback.format_exc()
+            self._logger.error(f"Claude CLI CV generation failed: {e}")
+            self._logger.error(f"Full traceback:\n{full_traceback}")
+
+            # Fall back to standard generation
+            self._logger.info("Falling back to standard CV generation...")
+            self.use_claude_cli = False
+            return self.generate(state)
+
+    def _assemble_claude_cv_text(
+        self,
+        cv_result: Any,
+        candidate: "CandidateData",
+        state: JobState,
+    ) -> str:
+        """Assemble CV text from Claude CLI result."""
+        lines = []
+        extracted_jd = state.get("extracted_jd") or {}
+
+        # Header
+        lines.append(f"# {candidate.name.upper()}")
+
+        # Role tagline
+        job_title = extracted_jd.get("title", "Engineering Professional")
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        generic_title = self._get_generic_title(role_category)
+        lines.append(f"### {job_title} · {generic_title}")
+
+        # Contact info
+        contact_parts = []
+        if candidate.email:
+            contact_parts.append(candidate.email)
+        if candidate.phone:
+            contact_parts.append(candidate.phone)
+        if candidate.linkedin:
+            contact_parts.append(candidate.linkedin)
+        if candidate.location:
+            contact_parts.append(candidate.location)
+        contact_line = " · ".join(contact_parts)
+        lines.append(f"*{contact_line}*")
+
+        # Relocation tagline for Middle East
+        job_location = extracted_jd.get("location", "") or state.get("location", "")
+        if job_location and is_middle_east_location(job_location):
+            lines.append(RELOCATION_TAGLINE)
+
+        lines.append("")
+
+        # Profile from Claude CLI
+        profile = cv_result.profile
+        lines.append("**PROFILE**")
+        lines.append(f"**{profile.headline}**")
+        lines.append(profile.tagline)
+        lines.append("")
+
+        # Key achievements
+        if profile.key_achievements:
+            for achievement in profile.key_achievements:
+                lines.append(f"• {achievement}")
+            lines.append("")
+
+        # Core competencies
+        lines.append("**CORE COMPETENCIES**")
+        for category, skills in profile.core_competencies.items():
+            if skills:
+                lines.append(f"**{category.title()}:** {', '.join(skills)}")
+        lines.append("")
+
+        # Professional Experience
+        lines.append("**PROFESSIONAL EXPERIENCE**")
+        lines.append("")
+
+        for role in cv_result.roles:
+            location_part = f" | {role.location}" if role.location else ""
+            lines.append(f"**{role.company} • {role.title}**{location_part} | {role.period}")
+            lines.append("")
+            for bullet in role.bullets:
+                lines.append(f"• {bullet.text}")
+            lines.append("")
+
+        # Education
+        lines.append("**EDUCATION & CERTIFICATIONS**")
+        lines.append(f"• {candidate.education_masters}")
+        if candidate.education_bachelors:
+            lines.append(f"• {candidate.education_bachelors}")
+        if candidate.certifications:
+            for cert in candidate.certifications:
+                lines.append(f"• {cert}")
+        lines.append("")
+
+        # Languages
+        if candidate.languages:
+            lines.append("**LANGUAGES**")
+            lines.append(", ".join(candidate.languages))
+            lines.append("")
+
+        return "\n".join(lines)
+
+    def _build_claude_reasoning(self, cv_result: Any) -> str:
+        """Build reasoning summary from Claude CLI result."""
+        lines = []
+
+        lines.append("CLAUDE CLI CV GENERATION REASONING")
+        lines.append("")
+
+        # Profile synthesis
+        lines.append("Profile Synthesis:")
+        if cv_result.profile.reasoning:
+            for key, value in cv_result.profile.reasoning.items():
+                if value:
+                    lines.append(f"  • {key}: {value[:100]}...")
+        lines.append("")
+
+        # ATS validation
+        if cv_result.ats_validation:
+            lines.append(f"ATS Score: {cv_result.ats_validation.ats_score}/100")
+            if cv_result.ats_validation.missing_keywords.get("critical"):
+                lines.append(f"Missing Critical: {', '.join(cv_result.ats_validation.missing_keywords['critical'][:3])}")
+            lines.append("")
+
+        # Metadata
+        lines.append("Generation Metadata:")
+        lines.append(f"  • Total Cost: ${cv_result.total_cost_usd:.4f}")
+        lines.append(f"  • Total Time: {cv_result.total_time_ms}ms")
+        lines.append(f"  • Models: {', '.join(cv_result.models_used.values())}")
+
+        return "\n".join(lines)
 
     def _build_default_extracted_jd(self, state: JobState) -> Dict[str, Any]:
         """Build default extracted_jd from state when not available."""
