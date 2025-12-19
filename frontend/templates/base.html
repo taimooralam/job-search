@@ -3007,6 +3007,64 @@
             }
         }
 
+        // Stats caching for faster page loads
+        const STATS_CACHE_KEY = 'job_stats_cache';
+        const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+        function getCachedStats() {
+            try {
+                const cached = localStorage.getItem(STATS_CACHE_KEY);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    // Return cached data if still valid
+                    if (Date.now() - timestamp < STATS_CACHE_TTL) {
+                        return data;
+                    }
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function setCachedStats(data) {
+            try {
+                localStorage.setItem(STATS_CACHE_KEY, JSON.stringify({
+                    data,
+                    timestamp: Date.now()
+                }));
+            } catch (e) {}
+        }
+
+        function updateStatsDisplay(data) {
+            const container = document.getElementById('stats-container');
+            if (container && data && data.level2_count !== undefined) {
+                container.innerHTML = `Level-2: <span class="font-semibold">${data.level2_count.toLocaleString()}</span> jobs`;
+            }
+        }
+
+        async function loadStats(forceRefresh = false) {
+            // Show cached data immediately (non-blocking)
+            const cached = getCachedStats();
+            if (cached && !forceRefresh) {
+                updateStatsDisplay(cached);
+            }
+
+            // Fetch fresh data in background (don't await if we have cache)
+            const fetchPromise = fetch('/api/stats')
+                .then(res => res.ok ? res.json() : null)
+                .then(data => {
+                    if (data) {
+                        setCachedStats(data);
+                        updateStatsDisplay(data);
+                    }
+                })
+                .catch(() => {}); // Silently fail - we have cached data
+
+            // Only wait for fetch if no cache
+            if (!cached || forceRefresh) {
+                await fetchPromise;
+            }
+        }
+
         // Load initial stats
         document.addEventListener('DOMContentLoaded', function() {
             // Hide page loader
@@ -3014,13 +3072,8 @@
                 document.getElementById('page-loader').classList.add('hidden');
             }, 500);
 
-            // Load stats
-            fetch('/api/stats')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('stats-container').innerHTML =
-                        `Level-2: <span class="font-semibold">${data.level2_count.toLocaleString()}</span> jobs`;
-                });
+            // Load stats (async with cache)
+            loadStats();
 
             // Load health status
             updateHealthStatus();
