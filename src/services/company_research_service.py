@@ -427,11 +427,15 @@ class CompanyResearchService(OperationService):
                     await emit_progress("company_research", "success", f"Found {signals_count} signals")
                     state["company_research"] = company_research
                 else:
+                    # Extract error details from the result
+                    errors = company_result.get("errors", [])
+                    error_detail = errors[-1] if errors else "No details available"
                     layer_status["company_research"] = {
                         "status": "failed",
-                        "message": "Company research failed"
+                        "message": f"Company research failed: {error_detail}",
+                        "errors": errors,
                     }
-                    await emit_progress("company_research", "failed", "Company research failed")
+                    await emit_progress("company_research", "failed", f"Failed after all fallbacks: {error_detail}")
                 logger.info(f"[{run_id[:16]}] Company research complete: {layer_status['company_research']['message']}")
 
                 # Run Role Research (Layer 3.5) if company research succeeded
@@ -472,7 +476,7 @@ class CompanyResearchService(OperationService):
                         "status": "skipped",
                         "message": "Skipped - company research failed"
                     }
-                    await emit_progress("role_research", "skipped", "Skipped")
+                    await emit_progress("role_research", "skipped", "Skipped (company research failed)")
 
                 # Run People Research (Layer 5) with skip_outreach=True
                 # Contact discovery happens here; outreach generation is triggered separately
@@ -517,7 +521,7 @@ class CompanyResearchService(OperationService):
                         "status": "skipped",
                         "message": "Skipped - company research failed"
                     }
-                    await emit_progress("people_research", "skipped", "Skipped")
+                    await emit_progress("people_research", "skipped", "Skipped (company research failed)")
 
                 # Persist results to MongoDB
                 await emit_progress("save_results", "processing", "Saving to database")

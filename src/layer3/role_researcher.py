@@ -693,11 +693,17 @@ def role_researcher_node(
     logger.info(f"LAYER 3.5: Role Researcher - {backend_name}")
     logger.info("="*60)
 
+    # Skip role research if company_research is None (upstream failure)
+    company_research = state.get("company_research")
+    if company_research is None:
+        logger.info("SKIP_LAYER: role_research: Skipped (reason: company_research is None)")
+        logger.info("="*60)
+        return {"role_research": None}
+
     # Skip role research for recruitment agencies (no client company to research)
-    company_research = state.get("company_research") or {}
     company_type = company_research.get("company_type", "employer")
     if company_type == "recruitment_agency":
-        logger.info("SKIPPING: Recruitment agency detected - role research not applicable")
+        logger.info("SKIP_LAYER: role_research: Skipped (reason: company_type is recruitment_agency)")
         logger.info("="*60)
         return {"role_research": None}
 

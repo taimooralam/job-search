@@ -539,9 +539,15 @@ class CompanyResearcher:
         """
         Research company using Claude API with WebSearch (new backend).
 
-        This is the primary research method when use_claude_api=True. It uses
-        Claude's built-in web_search tool to find and synthesize company information
-        in a single API call, replacing the multi-step FireCrawl + LLM approach.
+        This is the primary research method when use_claude_api=True. It implements
+        a fallback chain for resilient company research:
+
+        Fallback Chain:
+        1. Primary: Claude API WebSearch with original company name
+        2a. If fails: Try name variations (DLOCAL -> dLocal, DLocal, etc.)
+        2b. If still fails: Try FireCrawl mode if available (legacy scraping)
+        2c. If still fails: Use LLM knowledge fallback (training data, low confidence)
+        3. If ALL fail: Return error with company_research: None
 
         Args:
             state: JobState with company name, title, job_description
@@ -564,9 +570,9 @@ class CompanyResearcher:
         except Exception as e:
             self.logger.info(f"[Cache] Check failed, proceeding with fresh research: {e}")
 
-        # Call Claude API with web search
+        # ===== STEP 1: Primary research with original company name =====
+        primary_error = None
         try:
-            # Run async method in sync context
             result = asyncio.run(
                 self.claude_researcher.research_company(
                     company_name=company,
@@ -575,84 +581,201 @@ class CompanyResearcher:
                 )
             )
 
-            if not result.success:
-                raise ValueError(f"Claude API research failed: {result.error}")
+            if result.success and result.data:
+                self.logger.info(f"[Claude API] Primary research successful for {company}")
+                return self._build_research_result(company, result.data, state)
 
-            data = result.data
-            self.logger.info(
-                f"[Claude API] Research complete - {result.searches_performed} searches, "
-                f"{result.duration_ms}ms, {len(data.get('signals', []))} signals"
-            )
-
-            # Convert to CompanyResearch format for JobState
-            company_research: CompanyResearch = {
-                "summary": data.get("summary", ""),
-                "signals": [
-                    {
-                        "type": sig.get("type", "growth"),
-                        "description": sig.get("description", ""),
-                        "date": sig.get("date", "unknown"),
-                        "source": sig.get("source", ""),
-                    }
-                    for sig in data.get("signals", [])
-                ],
-                "url": data.get("url", self._construct_company_url(company)),
-                "company_type": data.get("company_type", "employer"),
-            }
-
-            # Store in cache
-            try:
-                # Create a CompanyResearchOutput for caching (matches Phase 5.1 format)
-                # Use classes defined at module level (not imported from self)
-                cache_output = CompanyResearchOutput(
-                    summary=company_research["summary"],
-                    signals=[
-                        CompanySignalModel(
-                            type=sig["type"],
-                            description=sig["description"],
-                            date=sig["date"],
-                            source=sig["source"],
-                        )
-                        for sig in company_research["signals"]
-                    ],
-                    url=company_research["url"],
-                )
-                self._store_cache(
-                    company,
-                    company_research=cache_output,
-                    company_type=company_research["company_type"]
-                )
-                self.logger.info(f"[Cache] ✓ Stored Claude API research for {company}")
-            except Exception as cache_error:
-                self.logger.warning(f"[Cache] ✗ Failed to cache Claude API results: {cache_error}")
-
-            # Scrape job posting if URL available (for dossier completeness)
-            scraped_job_posting = None
-            job_url = state.get("job_url", "")
-            if job_url and not self.use_claude_api:
-                # Only scrape job posting in FireCrawl mode (has scraping capability)
-                # In Claude API mode, we don't have FireCrawl available
-                pass
-
-            return {
-                "company_research": company_research,
-                "scraped_job_posting": scraped_job_posting,
-                # Legacy fields for backward compatibility
-                "company_summary": company_research["summary"],
-                "company_url": company_research["url"],
-            }
+            primary_error = result.error or "No data returned"
+            self.logger.warning(f"[Claude API] Primary research failed: {primary_error}")
 
         except Exception as e:
-            error_msg = f"Claude API company research failed: {str(e)}"
-            self.logger.error(error_msg)
+            primary_error = str(e)
+            self.logger.warning(f"[Claude API] Primary research exception: {primary_error}")
 
-            # Return minimal result with error
-            return {
-                "company_summary": None,
-                "company_url": None,
-                "scraped_job_posting": None,
-                "errors": state.get("errors", []) + [error_msg],
-            }
+        # ===== STEP 2a: Try name variations =====
+        name_variations = self._normalize_company_name(company)
+        # Remove original (already tried) and limit to remaining variations
+        variations_to_try = [v for v in name_variations if v != company][:4]
+
+        for variant in variations_to_try:
+            self.logger.info(f"[Fallback 2a] Trying name variation: {variant}")
+            try:
+                result = asyncio.run(
+                    self.claude_researcher.research_company(
+                        company_name=variant,
+                        job_context=job_description[:1000] if job_description else "",
+                        job_title=job_title,
+                    )
+                )
+
+                if result.success and result.data:
+                    self.logger.info(f"[Fallback 2a] Name variation '{variant}' successful")
+                    # Use original company name for caching/result, but research was with variant
+                    return self._build_research_result(company, result.data, state)
+
+            except Exception as e:
+                self.logger.debug(f"[Fallback 2a] Variation '{variant}' failed: {e}")
+                continue
+
+        self.logger.warning(f"[Fallback 2a] All name variations failed for {company}")
+
+        # ===== STEP 2b: Try FireCrawl mode if available =====
+        if self.firecrawl:
+            self.logger.info(f"[Fallback 2b] Trying FireCrawl mode for {company}")
+            try:
+                # Use the legacy research method
+                scraped_data = self._scrape_multiple_sources(company)
+                if scraped_data:
+                    # Extract STAR context if available
+                    star_domains, star_outcomes = self._extract_star_context(state)
+                    annotation_focus = self._extract_annotation_research_focus(state)
+
+                    company_research_output = self._analyze_company_signals(
+                        company, scraped_data,
+                        star_domains=star_domains,
+                        star_outcomes=star_outcomes,
+                        annotation_focus=annotation_focus
+                    )
+
+                    if company_research_output:
+                        self.logger.info(f"[Fallback 2b] FireCrawl mode successful for {company}")
+                        # Convert to result format
+                        company_research: CompanyResearch = {
+                            "summary": company_research_output.summary,
+                            "signals": [
+                                {
+                                    "type": sig.type,
+                                    "description": sig.description,
+                                    "date": sig.date,
+                                    "source": sig.source,
+                                }
+                                for sig in company_research_output.signals
+                            ],
+                            "url": company_research_output.url,
+                            "company_type": "employer",
+                        }
+
+                        # Cache the result
+                        try:
+                            self._store_cache(company, company_research=company_research_output, company_type="employer")
+                            self.logger.info(f"[Cache] ✓ Stored FireCrawl fallback research for {company}")
+                        except Exception as cache_error:
+                            self.logger.warning(f"[Cache] ✗ Failed to cache: {cache_error}")
+
+                        return {
+                            "company_research": company_research,
+                            "scraped_job_posting": None,
+                            "company_summary": company_research["summary"],
+                            "company_url": company_research["url"],
+                        }
+
+            except Exception as e:
+                self.logger.warning(f"[Fallback 2b] FireCrawl mode failed: {e}")
+        else:
+            self.logger.debug("[Fallback 2b] FireCrawl not available, skipping")
+
+        # ===== STEP 2c: LLM knowledge fallback (last resort) =====
+        self.logger.info(f"[Fallback 2c] Using LLM knowledge fallback for {company}")
+        try:
+            llm_result = asyncio.run(
+                self._research_with_llm_knowledge(company, job_title, job_description)
+            )
+            if llm_result:
+                self.logger.info(f"[Fallback 2c] LLM knowledge fallback successful for {company}")
+                # NOTE: Do NOT cache LLM knowledge results (may be stale)
+                return llm_result
+
+        except Exception as e:
+            self.logger.warning(f"[Fallback 2c] LLM knowledge fallback failed: {e}")
+
+        # ===== ALL FALLBACKS FAILED =====
+        error_msg = f"Claude API company research failed after all fallbacks: {primary_error}"
+        self.logger.error(error_msg)
+
+        # Return minimal result with error - include company_research: None
+        # so downstream layers can properly detect failure
+        return {
+            "company_research": None,
+            "company_summary": None,
+            "company_url": None,
+            "scraped_job_posting": None,
+            "errors": state.get("errors", []) + [error_msg],
+        }
+
+    def _build_research_result(
+        self,
+        company: str,
+        data: Dict[str, Any],
+        state: JobState,
+    ) -> Dict[str, Any]:
+        """
+        Build the standard research result dict from Claude API response data.
+
+        Helper method to avoid code duplication in the fallback chain.
+
+        Args:
+            company: Company name (for caching)
+            data: Parsed research data from Claude API
+            state: JobState for context
+
+        Returns:
+            Dict with company_research + legacy fields
+        """
+        self.logger.info(
+            f"[Claude API] Research complete - {len(data.get('signals', []))} signals"
+        )
+
+        # Convert to CompanyResearch format for JobState
+        company_research: CompanyResearch = {
+            "summary": data.get("summary", ""),
+            "signals": [
+                {
+                    "type": sig.get("type", "growth"),
+                    "description": sig.get("description", ""),
+                    "date": sig.get("date", "unknown"),
+                    "source": sig.get("source", ""),
+                }
+                for sig in data.get("signals", [])
+            ],
+            "url": data.get("url", self._construct_company_url(company)),
+            "company_type": data.get("company_type", "employer"),
+        }
+
+        # Store in cache
+        try:
+            cache_output = CompanyResearchOutput(
+                summary=company_research["summary"],
+                signals=[
+                    CompanySignalModel(
+                        type=sig["type"],
+                        description=sig["description"],
+                        date=sig["date"],
+                        source=sig["source"],
+                    )
+                    for sig in company_research["signals"]
+                ],
+                url=company_research["url"],
+            )
+            self._store_cache(
+                company,
+                company_research=cache_output,
+                company_type=company_research["company_type"]
+            )
+            self.logger.info(f"[Cache] ✓ Stored Claude API research for {company}")
+        except Exception as cache_error:
+            self.logger.warning(f"[Cache] ✗ Failed to cache Claude API results: {cache_error}")
+
+        # Scrape job posting if URL available (for dossier completeness)
+        scraped_job_posting = None
+        # In Claude API mode, we don't have FireCrawl available for job posting scraping
+
+        return {
+            "company_research": company_research,
+            "scraped_job_posting": scraped_job_posting,
+            # Legacy fields for backward compatibility
+            "company_summary": company_research["summary"],
+            "company_url": company_research["url"],
+        }
 
     def _assess_content_quality(self, content: str) -> str:
         """
@@ -925,6 +1048,162 @@ class CompanyResearcher:
         clean_name = re.sub(r'(inc|llc|ltd|corp|corporation|company)$', '', clean_name)  # Remove suffixes
 
         return f"https://{clean_name}.com"
+
+    def _normalize_company_name(self, company_name: str) -> List[str]:
+        """
+        Generate name variations for company research fallback.
+
+        Generates up to 5 case variations for companies with unusual casing
+        like "DLOCAL" -> ["DLOCAL", "dLocal", "DLocal", "dlocal", "Dlocal"].
+
+        Args:
+            company_name: Original company name
+
+        Returns:
+            List of up to 5 name variations (including original)
+        """
+        variations = set()
+        name = company_name.strip()
+
+        # Always include original
+        variations.add(name)
+
+        # All uppercase
+        variations.add(name.upper())
+
+        # All lowercase
+        variations.add(name.lower())
+
+        # Title case (first letter of each word capitalized)
+        variations.add(name.title())
+
+        # Capitalize first letter only
+        if name:
+            variations.add(name[0].upper() + name[1:].lower() if len(name) > 1 else name.upper())
+
+        # camelCase (lowercase first letter, capitalize rest of words)
+        words = name.split()
+        if len(words) > 1:
+            camel = words[0].lower() + ''.join(w.title() for w in words[1:])
+            variations.add(camel)
+        elif name:
+            # Single word: try dLocal pattern (lowercase first, rest as-is or title)
+            variations.add(name[0].lower() + name[1:].title() if len(name) > 1 else name.lower())
+
+        # Limit to 5 variations
+        return list(variations)[:5]
+
+    async def _research_with_llm_knowledge(
+        self,
+        company: str,
+        job_title: str,
+        job_description: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Fallback: Research company using Claude's training knowledge (no web search).
+
+        This is used when web search fails for all name variations. Uses Claude
+        WITHOUT the web_search tool to leverage its training data about companies.
+
+        Results are marked with low confidence and NOT cached (stale knowledge).
+
+        Args:
+            company: Company name
+            job_title: Job title for context
+            job_description: Job description for context
+
+        Returns:
+            Dict with company_research marked as llm_knowledge source, or None on failure
+        """
+        if not self.claude_researcher:
+            self.logger.warning("[LLM Knowledge] Claude researcher not initialized")
+            return None
+
+        self.logger.info(f"[Fallback 2c] Using LLM knowledge fallback for {company}")
+
+        # Build prompt for knowledge-based research (no web search)
+        knowledge_prompt = f"""Based on your training knowledge, provide information about the company "{company}".
+
+Company: {company}
+Job Title: {job_title}
+Job Context: {job_description[:500] if job_description else 'Not provided'}
+
+IMPORTANT: You do NOT have web search available. Only provide information from your training knowledge.
+If you don't have reliable information about this company, say so clearly.
+
+Return JSON with your findings:
+{{
+    "summary": "2-3 sentence company overview based on training knowledge, or 'Limited information available' if unknown",
+    "signals": [],
+    "url": "https://likely-company-url.com",
+    "company_type": "employer|recruitment_agency|unknown"
+}}
+
+Be honest about uncertainty. Prefix summary with '[Based on training knowledge]' to indicate the source."""
+
+        try:
+            import anthropic
+            from datetime import datetime
+
+            start_time = datetime.utcnow()
+
+            # Call Claude API WITHOUT web_search tool (pure LLM knowledge)
+            response = self.claude_researcher.client.messages.create(
+                model=self.claude_researcher.model,
+                max_tokens=1024,
+                system="You are a business analyst providing company information from your training knowledge. Be honest about limitations.",
+                messages=[{"role": "user", "content": knowledge_prompt}],
+                # NO tools parameter - this forces pure LLM knowledge
+            )
+
+            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+
+            # Extract text content
+            text_content = None
+            for block in response.content:
+                if hasattr(block, "type") and block.type == "text":
+                    text_content = block.text
+                    break
+
+            if not text_content:
+                self.logger.warning("[LLM Knowledge] No text content in response")
+                return None
+
+            # Parse JSON using existing utility
+            from src.common.json_utils import parse_llm_json
+            data = parse_llm_json(text_content)
+
+            # Ensure summary has the training knowledge prefix
+            summary = data.get("summary", f"Limited information available for {company}")
+            if not summary.startswith("[Based on training knowledge]"):
+                summary = f"[Based on training knowledge] {summary}"
+
+            # Build company_research with low confidence markers
+            company_research = {
+                "summary": summary,
+                "signals": [],  # No signals from training knowledge (unreliable)
+                "url": data.get("url", self._construct_company_url(company)),
+                "company_type": data.get("company_type", "unknown"),
+                "_source": "llm_knowledge",
+                "_confidence": "low",
+            }
+
+            self.logger.info(
+                f"[LLM Knowledge] Research complete for {company} - {duration_ms}ms "
+                f"(source: llm_knowledge, confidence: low)"
+            )
+
+            # NOTE: Do NOT cache LLM knowledge results (they may be stale)
+
+            return {
+                "company_research": company_research,
+                "company_summary": company_research["summary"],
+                "company_url": company_research["url"],
+            }
+
+        except Exception as e:
+            self.logger.error(f"[LLM Knowledge] Fallback failed for {company}: {e}")
+            return None
 
     @retry(
         stop=stop_after_attempt(2),
