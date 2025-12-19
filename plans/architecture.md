@@ -731,6 +731,77 @@ class PlannedAnswer(TypedDict):
     answer_type: str  # "text" | "markdown" | "generated" (for source tracking)
 ```
 
+---
+
+## Common Modules (NEW - 2025-12-19)
+
+### ClaudeCLI Wrapper (`src/common/claude_cli.py`)
+
+**Purpose**: Reusable wrapper for invoking Claude Code CLI in headless mode with three-tier model support.
+
+**Three-Tier Model System**:
+```python
+CLAUDE_MODEL_TIERS = {
+    "fast": "claude-haiku-4-5-20251101",        # Lowest cost, good for bulk
+    "balanced": "claude-sonnet-4-5-20251101",   # DEFAULT - best quality/cost
+    "quality": "claude-opus-4-5-20251101",      # Highest quality
+}
+```
+
+**Key Features**:
+- Single invocation: `cli.invoke(prompt, job_id="123")`
+- Batch invocation: `await cli.invoke_batch(prompts_with_ids, max_concurrent=3)`
+- Model tier selection: Configure per environment
+- JSON output parsing: Automatic structured output extraction
+- Logging hooks: Integration with Redis live-tail (future)
+
+**Usage**:
+```python
+cli = ClaudeCLI(tier="balanced")
+result = cli.invoke(prompt, job_id="123")
+```
+
+**Cost Estimate** (per 1K tokens):
+- Fast (Haiku): $0.00025 input, $0.00125 output
+- Balanced (Sonnet): $0.003 input, $0.015 output
+- Quality (Opus): $0.015 input, $0.075 output
+
+### ClaudeWebResearcher (`src/common/claude_web_research.py`)
+
+**Purpose**: Web research using Claude API with integrated WebSearch for company, role, and people research.
+
+**Key Features**:
+- Company research: Mission, products, culture, team size, compensation
+- Role research: Requirements, team structure, compensation trends, career progression
+- People research: Hiring team discovery via WebSearch
+- Three-tier model support (same as ClaudeCLI)
+- Integrated WebSearch: 3-5 queries per research, real-time data
+
+**API Methods**:
+```python
+researcher = ClaudeWebResearcher(tier="balanced")
+
+# Company research
+result = await researcher.research_company("Acme Corp", job_context="...")
+
+# Role research
+result = await researcher.research_role("Acme Corp", "Head of Engineering")
+
+# People research (discovery)
+contacts = await researcher.research_people("Acme Corp", role="Engineering Manager")
+```
+
+**WebSearch Integration**:
+- Searches embedded in Claude prompt (no separate API calls)
+- Rate limited by Claude API, not separate quota
+- Timeout: 30s per research call
+- Real-time data vs FireCrawl cached results
+
+**MongoDB Collection**:
+- `company_cache`: Caches research results with 7-day TTL
+
+---
+
 **MongoDB Collections**:
 | Collection | Purpose | TTL |
 |------------|---------|-----|
