@@ -297,7 +297,9 @@ document.addEventListener('alpine:init', () => {
                     return { success: false, error: errorMsg };
                 }
 
-                if (result.success) {
+                // Handle both QueueOperationResponse (has success) and
+                // StreamingOperationResponse (has run_id but no success)
+                if (result.success || (result.run_id && result.success !== false)) {
                     // Store result
                     this.lastResults[action] = {
                         success: true,
