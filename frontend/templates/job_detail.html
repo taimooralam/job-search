@@ -59,7 +59,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="job-detail-page">
+<div class="job-detail-page two-column">
     <!-- ========== HEADER WRAPPER (Full Width) ========== -->
     <div class="job-detail-header-wrapper" x-data="stickyHeader()" x-init="init()">
         <!-- Back navigation and header actions -->
@@ -84,20 +84,96 @@
             {% include 'components/linkedin_import.html' %}
         </div>
 
-        <!-- Full Header (visible at top) - Compact single-line layout -->
-        <div class="job-detail-header-full">
-            <div class="job-detail-header-content job-detail-header-compact-layout">
+        <!-- Full Header (visible at top) - Enhanced with metadata -->
+        <div class="job-detail-header-full job-detail-header-enhanced">
+            <div class="job-detail-header-content">
                 <div class="job-detail-header-info">
+                    <!-- Title Row with Status and Score -->
                     <div class="job-detail-header-title-row">
                         <h1 class="job-detail-header-title">
                             {{ job.title or 'Untitled Position' }}
                             <span class="job-detail-header-title-company">@ {{ job.company or 'Unknown' }}</span>
                         </h1>
-                        {% if job.score is not none %}
-                        <span class="job-detail-header-score">{{ job.score }}%</span>
+                        <div class="header-badges">
+                            <span class="status-badge {{ (job.status or 'not processed') | replace(' ', '-') }}">
+                                {{ job.status or 'not processed' }}
+                            </span>
+                            {% if job.score is not none %}
+                            <span class="fit-score-pill">{{ job.score }}%</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Metadata Chips Row -->
+                    <div class="job-detail-header-meta-enhanced">
+                        {% if job.location %}
+                        <span class="meta-chip location">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            {{ job.location }}
+                        </span>
+                        {% endif %}
+
+                        {% set salary = job.salary_range or (job.extracted_jd.salary if job.extracted_jd else none) %}
+                        {% if salary %}
+                        <span class="meta-chip salary">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ salary }}
+                        </span>
+                        {% endif %}
+
+                        {% set source = job.source or job.imported_from %}
+                        {% if source %}
+                        <span class="meta-chip source">Source: {{ source }}</span>
+                        {% endif %}
+
+                        {% if job.createdAt %}
+                        <span class="meta-chip date">Posted: {{ job.createdAt[:10] }}</span>
                         {% endif %}
                     </div>
+
+                    <!-- Quick Action Icons -->
+                    <div class="job-detail-header-quick-actions">
+                        <button onclick="copyJobLink('{{ job._id }}')" title="Copy job link" class="quick-action-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                            </svg>
+                        </button>
+                        <button onclick="exportDossierPDF('{{ job._id }}')" title="Export dossier" class="quick-action-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                            </svg>
+                        </button>
+                        <button onclick="toggleBookmark('{{ job._id }}')" title="Bookmark" class="quick-action-icon" id="bookmark-btn">
+                            <svg fill="{{ 'currentColor' if job.bookmarked else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                            </svg>
+                        </button>
+                        <!-- Job IDs Tooltip -->
+                        <div class="meta-ids-group" x-data="{ showIds: false }" @mouseenter="showIds = true" @mouseleave="showIds = false">
+                            <button class="quick-action-icon" title="Job Details">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </button>
+                            <div x-show="showIds" x-transition x-cloak class="ids-tooltip">
+                                <div><span class="label">Job ID:</span> {{ job.jobId or job._id }}</div>
+                                {% if job.dedupeKey %}
+                                <div><span class="label">Dedupe:</span> {{ job.dedupeKey[:20] }}...</div>
+                                {% endif %}
+                                {% if job.application_url %}
+                                <div><span class="label">Apply:</span> <a href="{{ job.application_url }}" target="_blank">Open Link</a></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- View Posting Button -->
                 <div class="job-detail-header-actions">
                     {% set header_job_url = job.url or job.jobUrl %}
                     {% if header_job_url %}
@@ -166,7 +242,149 @@
         </div>
     </div>
 
-    <!-- ========== LEFT SIDEBAR ========== -->
+    <!-- ========== STREAMLINED ACTIONS BAR (v2 Redesign) ========== -->
+    <div class="job-detail-actions-bar" x-data="{ advancedOpen: localStorage.getItem('job_detail_advanced_open') === 'true' }">
+        <div class="actions-bar-primary">
+            <!-- All Ops - Hero Button -->
+            <div x-data="tieredActionButton({ action: 'all-ops', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                 class="action-primary">
+                <button @click="queueExecute()"
+                        class="btn-action-hero"
+                        :disabled="loading"
+                        title="Run complete pipeline (Alt+5)">
+                    <template x-if="loading">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </template>
+                    <template x-if="!loading">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </template>
+                    <span x-show="!loading">Run All Operations</span>
+                    <span class="tier-badge" :class="tier" x-text="tierIcon" x-show="!loading"></span>
+                </button>
+            </div>
+
+            <!-- Generate CV - Prominent Button -->
+            <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                 class="action-secondary">
+                <button @click="queueExecute()"
+                        class="btn-action-prominent"
+                        :disabled="loading"
+                        title="Generate tailored CV (Alt+4)">
+                    <template x-if="loading">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </template>
+                    <span x-show="!loading">Generate CV</span>
+                    <span class="tier-badge" :class="tier" x-text="tierIcon" x-show="!loading"></span>
+                </button>
+            </div>
+
+            <!-- Advanced Toggle -->
+            <button @click="advancedOpen = !advancedOpen; localStorage.setItem('job_detail_advanced_open', advancedOpen)"
+                    class="btn-advanced-toggle"
+                    :class="{ 'active': advancedOpen }">
+                <svg class="w-4 h-4" :class="{ 'rotate-180': advancedOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                <span x-text="advancedOpen ? 'Hide' : 'Advanced'"></span>
+            </button>
+        </div>
+
+        <!-- Advanced Actions Panel (Collapsible) -->
+        <div x-show="advancedOpen" x-collapse x-cloak class="actions-bar-advanced">
+            <div class="advanced-actions-grid">
+                <!-- Structure JD -->
+                <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
+                    <button @click="queueExecute()"
+                            class="btn-action-compact w-full"
+                            :disabled="loading">
+                        <span x-show="!loading">Structure JD</span>
+                        <span x-show="loading" class="animate-spin">...</span>
+                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
+                    </button>
+                </div>
+
+                <!-- Extract JD (Consolidated) -->
+                <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
+                    <button @click="queueExecute()"
+                            class="btn-action-compact w-full"
+                            :disabled="loading">
+                        <span x-show="!loading">Extract JD</span>
+                        <span x-show="loading" class="animate-spin">...</span>
+                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
+                    </button>
+                </div>
+
+                <!-- Research -->
+                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
+                    <button @click="queueExecute()"
+                            class="btn-action-compact w-full"
+                            :disabled="loading">
+                        <span x-show="!loading">Research</span>
+                        <span x-show="loading" class="animate-spin">...</span>
+                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions Row -->
+            <div class="quick-actions-row">
+                <button onclick="processJobDetail('{{ job._id }}', '{{ job.title | replace("'", "\\'") | replace('"', '&quot;') }}')"
+                        class="btn-quick-action">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Process (Auto)
+                </button>
+                <button onclick="copyMetaPrompt('{{ job._id }}')" class="btn-quick-action">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                    Meta Prompt
+                </button>
+                <button onclick="openAnnotationPanel('{{ job._id }}')" class="btn-quick-action">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                    </svg>
+                    Annotate JD
+                </button>
+            </div>
+
+            <!-- Status Row -->
+            <div class="status-row">
+                <div class="status-field">
+                    <label>Status</label>
+                    <select class="form-select-inline" onchange="updateJobField('status', this.value)">
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {{ 'selected' if (job.status or 'not processed') == s else '' }}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="status-field">
+                    <label>Priority</label>
+                    <select class="form-select-inline" onchange="updateJobField('priority', this.value)">
+                        <option value="" {{ 'selected' if not job.priority }}>None</option>
+                        <option value="low" {{ 'selected' if job.priority == 'low' }}>Low</option>
+                        <option value="medium" {{ 'selected' if job.priority == 'medium' }}>Medium</option>
+                        <option value="high" {{ 'selected' if job.priority == 'high' }}>High</option>
+                    </select>
+                </div>
+                <button onclick="updateJobField('status', '{{ 'not processed' if job.status == 'under processing' else 'under processing' }}')"
+                        class="btn-batch-toggle {{ 'active' if job.status == 'under processing' else '' }}">
+                    {{ 'In Batch' if job.status == 'under processing' else 'Add to Batch' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== LEFT SIDEBAR (Hidden in two-column mode) ========== -->
     <aside class="job-detail-left-sidebar">
         <!-- Status & Actions Card -->
         <div class="job-detail-card">

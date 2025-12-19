@@ -58,8 +58,8 @@ const PIPELINE_CONFIG = {
         },
         'full-extraction': {
             fast: 'gpt-4o-mini',
-            balanced: 'gpt-4o-mini',
-            quality: 'gpt-4o'
+            balanced: 'gpt-4o',
+            quality: 'claude-opus-4.5'  // Claude Opus for highest quality extraction (free with Max subscription)
         },
         'research-company': {
             fast: 'gpt-4o-mini',
