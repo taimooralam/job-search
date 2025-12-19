@@ -1056,6 +1056,135 @@ async def full_extraction_stream(
 
 
 # =============================================================================
+# All-Ops Endpoint (Phase 1: JD Extraction + Company Research in Parallel)
+# =============================================================================
+
+
+class AllOpsRequest(BaseModel):
+    """Request body for running all Phase 1 operations."""
+
+    tier: str = Field(
+        default="balanced",
+        description="Model tier: 'fast', 'balanced', or 'quality'",
+    )
+    use_llm: bool = Field(
+        default=True,
+        description="Whether to use LLM for extraction processing",
+    )
+    force_refresh: bool = Field(
+        default=False,
+        description="Force refresh for company research (ignore cache)",
+    )
+
+
+@router.post(
+    "/{job_id}/all-ops/stream",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Run all Phase 1 operations with SSE streaming",
+    description="Run JD extraction and company research in parallel with real-time progress updates",
+)
+async def all_ops_stream(
+    job_id: str,
+    request: AllOpsRequest,
+    background_tasks: BackgroundTasks,
+) -> StreamingOperationResponse:
+    """
+    Run all Phase 1 operations (JD extraction + company research) in parallel.
+
+    This is the "All Ops" button that combines:
+    - Full Extraction: Layer 1.4 (JD parsing) + Layer 2 (pain points) + Layer 4 (fit scoring)
+    - Company Research: Layer 3 (company) + Layer 3.5 (role) + Layer 5 (people contacts)
+
+    Both operations run concurrently for faster execution.
+    If one fails, the other's results are still returned (partial success).
+
+    Returns immediately with run_id. Use the log_stream_url to connect
+    to SSE and receive real-time progress updates.
+    """
+    operation = "all-ops"
+
+    # Validate tier synchronously (fast, no I/O)
+    tier = _validate_tier(request.tier)
+
+    # Create operation run for streaming IMMEDIATELY (no MongoDB yet)
+    run_id = create_operation_run(job_id, operation)
+    append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+    append_operation_log(run_id, f"Tier: {tier.value}, Use LLM: {request.use_llm}, Force refresh: {request.force_refresh}")
+
+    # Define the background task (validation happens HERE, not before response)
+    async def execute_all_ops():
+        from src.services.all_ops_service import AllOpsService
+
+        log_cb = create_log_callback(run_id)
+        layer_cb = create_layer_callback(run_id)
+
+        try:
+            update_operation_status(run_id, "running")
+
+            # Validate job exists IN THE BACKGROUND TASK
+            log_cb("Validating job exists...")
+            try:
+                await _validate_job_exists_async(job_id)
+                log_cb("Job validated")
+            except HTTPException as e:
+                log_cb(f"Job validation failed: {e.detail}")
+                update_operation_status(run_id, "failed", error=e.detail)
+                return
+
+            service = AllOpsService()
+            try:
+                # Execute all operations with progress callback for real-time updates
+                result = await service.execute(
+                    job_id=job_id,
+                    tier=tier,
+                    use_llm=request.use_llm,
+                    force_refresh=request.force_refresh,
+                    progress_callback=layer_cb,
+                )
+
+                # Determine final status based on result
+                if result.success:
+                    if result.data.get("phase1_complete"):
+                        final_status = "completed"
+                        log_cb("All operations completed successfully")
+                    else:
+                        # Partial success - some operations completed
+                        final_status = "completed"
+                        log_cb("Partial success - some operations completed")
+                else:
+                    final_status = "failed"
+                    log_cb(f"All operations failed: {result.error}")
+
+                update_operation_status(run_id, final_status, result={
+                    "success": result.success,
+                    "data": result.data,
+                    "cost_usd": result.cost_usd,
+                    "run_id": result.run_id,
+                    "model_used": result.model_used,
+                    "duration_ms": result.duration_ms,
+                    "error": result.error,
+                })
+
+            finally:
+                service.close()
+
+        except Exception as e:
+            logger.exception(f"[{run_id[:16]}] {operation} failed: {e}")
+            log_cb(f"Error: {str(e)}")
+            update_operation_status(run_id, "failed", error=str(e))
+
+    # Add to background tasks
+    background_tasks.add_task(execute_all_ops)
+
+    return StreamingOperationResponse(
+        run_id=run_id,
+        log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+        status="queued",
+    )
+
+
+# =============================================================================
 # Form Scraping and Answer Generation Endpoint
 # =============================================================================
 
@@ -1526,6 +1655,7 @@ VALID_QUEUE_OPERATIONS = {
     "research-company",
     "generate-cv",
     "extract",  # Primary JD extraction via Claude Code CLI
+    "all-ops",  # Phase 1: JD extraction + company research in parallel
 }
 
 # Estimated seconds per operation (for wait time estimation)
@@ -1535,6 +1665,7 @@ OPERATION_TIME_ESTIMATES = {
     "research-company": 60,
     "generate-cv": 30,
     "extract": 20,  # Claude CLI typically 5-15s, buffer for queue overhead
+    "all-ops": 90,  # Parallel but includes both extraction and research
 }
 
 
@@ -1858,6 +1989,21 @@ async def _execute_queued_operation(
                         model_used=extraction_result.model,
                         duration_ms=extraction_result.duration_ms,
                     )
+
+        elif operation == "all-ops":
+            # Phase 1: JD extraction + company research in parallel
+            from src.services.all_ops_service import AllOpsService
+            service = AllOpsService()
+            try:
+                result = await service.execute(
+                    job_id=job_id,
+                    tier=tier,
+                    force_refresh=force_refresh,
+                    use_llm=use_llm,
+                    progress_callback=layer_cb,
+                )
+            finally:
+                service.close()
 
         # Update operation status
         if result:
@@ -2526,6 +2672,170 @@ async def _execute_cv_bulk_task(
     except Exception as e:
         logger.exception(f"[{run_id[:16]}] Bulk CV generation failed: {e}")
         log_cb(f"❌ Error: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        if queue_id and queue_manager and queue_manager.is_connected:
+            try:
+                await queue_manager.fail(queue_id, str(e))
+            except Exception:
+                pass
+
+
+@router.post(
+    "/all-ops/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Run all Phase 1 operations for multiple jobs",
+    description="Queue multiple jobs for parallel JD extraction and company research. Returns run_ids for individual log streams.",
+)
+async def all_ops_bulk(
+    request: BulkOperationRequest,
+    background_tasks: BackgroundTasks,
+) -> BulkOperationResponse:
+    """
+    Run all Phase 1 operations for multiple jobs with queue integration.
+
+    Each job is added to the Redis queue (appears in Pipeline Queue UI),
+    and executes asynchronously with both extraction and research running
+    in parallel for each job.
+
+    Phase 1 includes:
+    - Full Extraction: JD parsing + pain points + fit scoring
+    - Company Research: Company + role research + people contacts
+
+    Returns immediately with run_ids.
+    """
+    operation = "all-ops"
+    tier = _validate_tier(request.tier)
+    responses: List[BulkOperationRunInfo] = []
+    queue_manager = _get_queue_manager()
+
+    for job_id in request.job_ids:
+        # Create operation run for log tracking
+        run_id = create_operation_run(job_id, operation)
+        append_operation_log(run_id, f"Starting {operation} for job {job_id}")
+        append_operation_log(run_id, f"Tier: {tier.value}, Use LLM: {request.use_llm}, Force refresh: {request.force_refresh}")
+
+        # Add to Redis queue if available
+        queue_id = None
+        if queue_manager and queue_manager.is_connected:
+            try:
+                job_title, company = await _get_job_details_for_bulk(job_id)
+                queue_item = await queue_manager.enqueue(
+                    job_id=job_id,
+                    job_title=job_title,
+                    company=company,
+                    operation=operation,
+                    processing_tier=tier.value,
+                )
+                queue_id = queue_item.queue_id
+                await queue_manager.link_run_id(queue_id, run_id)
+                append_operation_log(run_id, f"Queued as {queue_id}")
+            except Exception as e:
+                logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
+                append_operation_log(run_id, f"Queue unavailable: {e}")
+
+        # Add background task for execution
+        background_tasks.add_task(
+            _execute_all_ops_bulk_task,
+            run_id=run_id,
+            job_id=job_id,
+            tier=tier,
+            use_llm=request.use_llm if request.use_llm is not None else True,
+            force_refresh=request.force_refresh or False,
+            queue_id=queue_id,
+        )
+
+        responses.append(BulkOperationRunInfo(
+            run_id=run_id,
+            job_id=job_id,
+            log_stream_url=f"/api/jobs/operations/{run_id}/logs",
+            status="queued",
+        ))
+
+    logger.info(f"Bulk {operation}: queued {len(responses)} jobs")
+    return BulkOperationResponse(runs=responses, total_count=len(responses))
+
+
+async def _execute_all_ops_bulk_task(
+    run_id: str,
+    job_id: str,
+    tier: ModelTier,
+    use_llm: bool,
+    force_refresh: bool,
+    queue_id: Optional[str],
+):
+    """Execute all Phase 1 operations with queue status updates."""
+    from src.services.all_ops_service import AllOpsService
+
+    log_cb = create_log_callback(run_id)
+    layer_cb = create_layer_callback(run_id)
+    queue_manager = _get_queue_manager()
+
+    try:
+        # Move from PENDING -> RUNNING (broadcasts WebSocket event)
+        if queue_id:
+            await _start_queue_item(queue_manager, queue_id, log_cb)
+
+        update_operation_status(run_id, "running")
+
+        # Validate job exists
+        log_cb("Validating job exists...")
+        try:
+            await _validate_job_exists_async(job_id)
+            log_cb("Job validated")
+        except HTTPException as e:
+            log_cb(f"Job validation failed: {e.detail}")
+            update_operation_status(run_id, "failed", error=e.detail)
+            if queue_id and queue_manager and queue_manager.is_connected:
+                await queue_manager.fail(queue_id, e.detail)
+            return
+
+        # Execute all operations
+        service = AllOpsService()
+        try:
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,
+                use_llm=use_llm,
+                force_refresh=force_refresh,
+                progress_callback=layer_cb,
+            )
+
+            # Determine final status
+            if result.success:
+                if result.data.get("phase1_complete"):
+                    log_cb("All operations completed successfully")
+                else:
+                    log_cb("Partial success - some operations completed")
+            else:
+                log_cb(f"All operations failed: {result.error}")
+
+            update_operation_status(run_id, "completed" if result.success else "failed", result={
+                "success": result.success,
+                "data": result.data,
+                "cost_usd": result.cost_usd,
+                "run_id": result.run_id,
+                "model_used": result.model_used,
+                "duration_ms": result.duration_ms,
+                "error": result.error,
+            })
+
+            # Complete queue item
+            if queue_id and queue_manager and queue_manager.is_connected:
+                try:
+                    if result.success:
+                        await queue_manager.complete(queue_id, success=True)
+                    else:
+                        await queue_manager.fail(queue_id, result.error or "All-ops failed")
+                except Exception as e:
+                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+
+        finally:
+            service.close()
+
+    except Exception as e:
+        logger.exception(f"[{run_id[:16]}] Bulk all-ops failed: {e}")
+        log_cb(f"Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
         if queue_id and queue_manager and queue_manager.is_connected:
             try:
