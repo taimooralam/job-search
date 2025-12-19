@@ -1,6 +1,6 @@
 # Job Intelligence Pipeline - Architecture
 
-**Last Updated**: 2025-12-13 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), Cover Letter Integration into CV Generation Partial Pipeline (NEW - 2025-12-13), 1700+ total tests passing
+**Last Updated**: 2025-12-19 | **Status**: 7 layers + frontend complete, E2E Annotation Integration 100% done (11 phases, 9 backend + 2 frontend files, 89 tests), Identity-Based Persona Generation System (NEW - 33 tests), Annotation System Enhancements (Source-based Weighting P0.2, Persona SYSTEM Prompts P0.3, Suggest Strengths P1.1, ATS Keyword Placement Validator P1.2, Keyword Front-Loading P1.3 NEW), 5D annotation system (relevance, requirement_type, passion, identity, annotation_type) integrated across all layers, GAP-085 to GAP-094 complete, Full Extraction Service with dual JD output, SSE Streaming for Operations (NEW), Role Persona Registry for 8 role categories (NEW), Job List Multi-Criteria Sorting (NEW), VP Engineering role separation (NEW), Cover Letter Integration into CV Generation Partial Pipeline (NEW - 2025-12-13), Extraction Consolidation - Claude Code CLI as primary extractor (2025-12-19), 1700+ total tests passing
 
 ---
 
@@ -85,9 +85,14 @@ def some_llm_operation():
   - System prompt: Expert "HR document analyst with 20 years experience"
   - Handles: Compressed JD text where headers merge with content, bullet points inline, line breaks stripped
 
-- **JD Extractor**: Extracts structured job data: role, category, keywords
+- **JD Extractor** (Claude Code CLI, consolidated 2025-12-19): Extracts structured job data: role, category, keywords
+  - Primary extractor: `src/layer1_4/claude_jd_extractor.py` (promotes CLI extraction to unified pipeline)
+  - Replaced: Old GPT-4o-based extractor (`src/layer1_4/jd_extractor.py` - deleted)
+  - Operation rename: `extract-claude` → `extract`
+  - MongoDB field rename: `extracted_jd_claude` → `extracted_jd`
+  - Benefits: Single extraction path, reduced maintenance, consistent CLI-based processing
 - Input: Job description | Output: Structured JD analysis
-- Used by: CV Gen V2 for role-aware tailoring
+- Used by: CV Gen V2 for role-aware tailoring, full extraction service
 
 ### Layer 2: Pain Point Miner
 - Extracts 5-10 pain points, strategic needs, success metrics

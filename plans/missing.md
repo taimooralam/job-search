@@ -704,14 +704,19 @@ truncated_profile = candidate_profile[:1500]
 
 ### Today's Fixes (2025-12-10) Session 2
 
-**JD Extractor Integration - Full Extraction Service Enhancement**:
+**JD Extractor Integration - Full Extraction Service Enhancement** ✅ CONSOLIDATED (2025-12-19):
 - **Schema Alignment Fix**: `JDExtractor` now outputs structured intelligence (role_category, responsibilities, keywords, etc.) matching expected output format
 - **Layer Consolidation**: Renamed `_run_layer_1_4()` to `_run_jd_processor()` for clarity, added new `_run_jd_extractor()` method
+- **Single Extractor Model** (2025-12-19): Removed GPT-based extraction; promoted Claude Code CLI to primary extractor
+  - Renamed operation: `extract-claude` → `extract`
+  - Unified MongoDB field: `extracted_jd_claude` → `extracted_jd`
+  - Deleted: `src/layer1_4/jd_extractor.py` (GPT extractor)
+  - Promoted: `claude_jd_extractor.py` to primary extraction module
 - **Dual Output Storage**: Service now persists both `processed_jd` (HTML sections for annotation UI) and `extracted_jd` (structured intelligence for template display)
 - **Per-Layer Status Tracking**: Added `layer_status` dict for detailed pipeline logging and layer-specific error reporting
 - **Annotation Aggregation**: New `_aggregate_annotations()` method computes weighted fit scores from manual annotations
-- **Files Changed**: `src/services/full_extraction_service.py`
-- **Impact**: Extract JD button now properly displays structured intelligence from JD Extractor, fixes schema mismatch bugs
+- **Files Changed**: `src/services/full_extraction_service.py`, `src/layer1_4/claude_jd_extractor.py` (moved schemas)
+- **Impact**: Extract JD button now uses single unified extractor (Claude Code CLI); simplified architecture without dual-extraction maintenance overhead
 
 **PDF Export Module Import Fix**:
 - **Issue**: `src/api/pdf_export.py` import error when running from frontend context
@@ -1833,7 +1838,7 @@ Example: `testcorp|senior software engineer|san francisco, ca|linkedin_import`
    - `get_run_context()` - Retrieve current context for callbacks
 
 2. **17 Layer Files Updated**:
-   - `src/layer1_4/jd_extractor.py` - JD Extraction
+   - `src/layer1_4/jd_extractor.py` - JD Extraction [CONSOLIDATED with Claude extraction - 2025-12-19]
    - `src/layer2/pain_point_miner.py` - Pain Point Mining
    - `src/layer2_5/star_selector.py` - STAR Selection
    - `src/layer3/company_researcher.py` - Company Research
