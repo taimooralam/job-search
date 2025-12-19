@@ -228,7 +228,12 @@ class OutreachGenerationService(OperationService):
     5. Persists message back to the contact's record in MongoDB
     6. Returns OperationResult with generated message
 
-    Model tiers:
+    Dual-Backend Support:
+    - use_claude_cli=False (default): Uses LangChain with OpenRouter (gpt-4o, claude-sonnet)
+    - use_claude_cli=True: Uses Claude Code CLI with Claude Opus 4.5 (claude-opus-4-5-20251101)
+      for higher quality outreach with MENA cultural awareness
+
+    Model tiers (LangChain backend):
     - FAST: gpt-4o-mini (cheap, quick)
     - BALANCED: gpt-4o (good quality/cost)
     - QUALITY: claude-sonnet (best quality)
@@ -236,14 +241,27 @@ class OutreachGenerationService(OperationService):
 
     operation_name = "generate-outreach"
 
-    def __init__(self, db_client: Optional[MongoClient] = None):
+    def __init__(
+        self,
+        db_client: Optional[MongoClient] = None,
+        use_claude_cli: bool = False,
+    ):
         """
         Initialize the outreach generation service.
 
         Args:
             db_client: Optional MongoDB client. If None, creates one from env.
+            use_claude_cli: If True, use Claude Code CLI (Opus 4.5) instead of LangChain.
+                           Provides higher quality with MENA cultural awareness.
         """
         self._db_client = db_client
+        self._use_claude_cli = use_claude_cli
+        self._claude_service = None
+
+        if use_claude_cli:
+            # Lazy import to avoid circular dependencies
+            from src.services.claude_outreach_service import ClaudeOutreachService
+            self._claude_service = ClaudeOutreachService()
 
     def _get_db(self) -> MongoClient:
         """Get or create MongoDB client."""
@@ -951,6 +969,7 @@ async def generate_outreach(
     tier: ModelTier = ModelTier.BALANCED,
     message_type: MessageType = "connection",
     db_client: Optional[MongoClient] = None,
+    use_claude_cli: bool = False,
 ) -> OperationResult:
     """
     Generate outreach message for a specific contact.
@@ -964,11 +983,12 @@ async def generate_outreach(
         tier: Model tier (FAST, BALANCED, QUALITY)
         message_type: "connection" or "inmail"
         db_client: Optional MongoDB client
+        use_claude_cli: If True, use Claude Code CLI (Opus 4.5) for higher quality
 
     Returns:
         OperationResult with generated message
     """
-    service = OutreachGenerationService(db_client=db_client)
+    service = OutreachGenerationService(db_client=db_client, use_claude_cli=use_claude_cli)
     return await service.execute(
         job_id=job_id,
         contact_index=contact_index,

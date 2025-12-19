@@ -1005,7 +1005,7 @@ class TestGenerateOutreachConvenienceFunction:
                 db_client=mock_db_client,
             )
 
-        mock_init.assert_called_once_with(db_client=mock_db_client)
+        mock_init.assert_called_once_with(db_client=mock_db_client, use_claude_cli=False)
 
 
 # =============================================================================
