@@ -81,7 +81,7 @@ jobs:
   # SKIP if only docker-compose.runner.yml changed (no code to test)
   test-unit:
     needs: [quick-changes]
-    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request'
+    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -174,7 +174,7 @@ jobs:
   # SKIP if only docker-compose.runner.yml changed (no code to test)
   test-services:
     needs: [quick-changes]
-    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request'
+    if: needs.quick-changes.outputs.code-changed == 'true' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
