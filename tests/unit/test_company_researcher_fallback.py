@@ -704,9 +704,8 @@ class TestFallbackEdgeCases:
         researcher = CompanyResearcher(use_claude_api=True)
         variations = researcher._normalize_company_name("")
 
-        # Should return list with empty string
-        assert "" in variations
-        assert len(variations) >= 1
+        # Should return empty list (empty strings are discarded)
+        assert len(variations) == 0
 
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
@@ -718,7 +717,7 @@ class TestFallbackEdgeCases:
         variations = researcher._normalize_company_name("AT&T")
 
         assert "AT&T" in variations
-        assert len(variations) <= 5
+        assert len(variations) <= 8  # Increased from 5 to support suffix removal
 
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
@@ -731,7 +730,7 @@ class TestFallbackEdgeCases:
         variations = researcher._normalize_company_name(long_name)
 
         assert long_name in variations
-        assert len(variations) <= 5
+        assert len(variations) <= 8  # Increased from 5 to support suffix removal
 
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")

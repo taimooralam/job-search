@@ -1053,14 +1053,16 @@ class CompanyResearcher:
         """
         Generate name variations for company research fallback.
 
-        Generates up to 5 case variations for companies with unusual casing
-        like "DLOCAL" -> ["DLOCAL", "dLocal", "DLocal", "dlocal", "Dlocal"].
+        Generates variations by:
+        1. Case variations (DLOCAL -> dLocal, DLocal, etc.)
+        2. Suffix removal (Acme Inc. -> Acme)
+        3. Domain extraction (acme.com -> Acme)
 
         Args:
             company_name: Original company name
 
         Returns:
-            List of up to 5 name variations (including original)
+            List of up to 8 name variations (including original)
         """
         variations = set()
         name = company_name.strip()
@@ -1068,30 +1070,61 @@ class CompanyResearcher:
         # Always include original
         variations.add(name)
 
-        # All uppercase
-        variations.add(name.upper())
+        # Common suffixes to try removing
+        suffixes = [
+            " Inc", " Inc.", " Incorporated",
+            " LLC", " L.L.C.",
+            " Ltd", " Ltd.", " Limited",
+            " Corp", " Corp.", " Corporation",
+            " Co.", " Company",
+            " GmbH", " AG", " S.A.", " S.A",
+            " PLC", " Pty", " Pty Ltd",
+        ]
 
-        # All lowercase
-        variations.add(name.lower())
+        # Try removing suffixes
+        base_name = name
+        for suffix in suffixes:
+            if name.endswith(suffix):
+                base_name = name[:-len(suffix)].strip()
+                variations.add(base_name)
+                variations.add(base_name.title())
+                break
 
-        # Title case (first letter of each word capitalized)
-        variations.add(name.title())
+        # Extract from domain if URL-like (e.g., "acme.com" -> "Acme")
+        if "." in name and not any(name.endswith(s) for s in suffixes):
+            # Looks like a domain
+            domain_part = name.split(".")[0]
+            if len(domain_part) >= 2:
+                variations.add(domain_part.title())
+                variations.add(domain_part.upper())
 
-        # Capitalize first letter only
-        if name:
-            variations.add(name[0].upper() + name[1:].lower() if len(name) > 1 else name.upper())
+        # Generate case variations for base name (or original if no suffix removed)
+        for n in [name, base_name]:
+            # All uppercase
+            variations.add(n.upper())
 
-        # camelCase (lowercase first letter, capitalize rest of words)
-        words = name.split()
+            # All lowercase
+            variations.add(n.lower())
+
+            # Title case
+            variations.add(n.title())
+
+            # Capitalize first letter only
+            if n:
+                variations.add(n[0].upper() + n[1:].lower() if len(n) > 1 else n.upper())
+
+        # camelCase variations (for multi-word or dLocal pattern)
+        words = base_name.split()
         if len(words) > 1:
             camel = words[0].lower() + ''.join(w.title() for w in words[1:])
             variations.add(camel)
-        elif name:
-            # Single word: try dLocal pattern (lowercase first, rest as-is or title)
-            variations.add(name[0].lower() + name[1:].title() if len(name) > 1 else name.lower())
+        elif base_name:
+            # Single word: try dLocal pattern
+            variations.add(base_name[0].lower() + base_name[1:].title() if len(base_name) > 1 else base_name.lower())
 
-        # Limit to 5 variations
-        return list(variations)[:5]
+        # Remove empty strings and limit to 8 variations (increased for more coverage)
+        variations.discard("")
+        return list(variations)[:8]
 
     async def _research_with_llm_knowledge(
         self,

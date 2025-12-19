@@ -813,6 +813,14 @@ def test_role_researcher_node_integration(
     mock_llm.invoke.return_value = mock_response
     mock_llm_class.return_value = mock_llm
 
+    # Role researcher requires company_research to be present (not None)
+    # otherwise it skips role research (by design)
+    sample_job_state["company_research"] = {
+        "summary": "TechCorp is a technology company building scalable systems.",
+        "company_type": "employer",
+        "signals": []
+    }
+
     # Run node function (use_claude_api=False for legacy FireCrawl mode)
     updates = role_researcher_node(sample_job_state, use_claude_api=False)
 
