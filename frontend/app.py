@@ -1036,12 +1036,12 @@ def move_to_batch():
     all_ops_error = None
 
     if auto_process and job_ids:
-        runner_service_url = os.getenv("RUNNER_SERVICE_URL", "http://localhost:8001")
+        runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
         runner_token = os.getenv("RUNNER_API_SECRET", "")
 
         try:
             response = requests.post(
-                f"{runner_service_url}/api/jobs/all-ops/bulk",
+                f"{runner_url}/api/jobs/all-ops/bulk",
                 json={
                     "job_ids": job_ids,
                     "tier": tier,
