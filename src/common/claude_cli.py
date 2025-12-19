@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 
 # Three-tier Claude model system
 CLAUDE_MODEL_TIERS = {
-    "fast": "claude-haiku-4-5-20251101",       # Lowest cost, good for bulk
-    "balanced": "claude-sonnet-4-5-20251101",  # DEFAULT - best quality/cost
+    "fast": "claude-haiku-4-5-20251001",       # Lowest cost, good for bulk
+    "balanced": "claude-sonnet-4-5-20250929",  # DEFAULT - best quality/cost
     "quality": "claude-opus-4-5-20251101",     # Highest quality
 }
 

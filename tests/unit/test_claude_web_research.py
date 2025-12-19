@@ -588,7 +588,7 @@ class TestWebResearchResult:
             success=True,
             data=valid_company_research_data,
             error=None,
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=1500,
             researched_at="2024-01-01T00:00:00Z",
@@ -608,7 +608,7 @@ class TestWebResearchResult:
             success=False,
             data=None,
             error="API timeout",
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=120000,
             researched_at="2024-01-01T00:00:00Z"
@@ -624,7 +624,7 @@ class TestWebResearchResult:
             success=True,
             data={"test": "data"},
             error=None,
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=1500,
             researched_at="2024-01-01T00:00:00Z"

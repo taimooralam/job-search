@@ -51,8 +51,8 @@ logger = logging.getLogger(__name__)
 # ===== CLAUDE MODEL TIERS =====
 
 CLAUDE_MODEL_TIERS = {
-    "fast": "claude-haiku-4-5-20251101",
-    "balanced": "claude-sonnet-4-5-20251101",
+    "fast": "claude-haiku-4-5-20251001",
+    "balanced": "claude-sonnet-4-5-20250929",
     "quality": "claude-opus-4-5-20251101",
 }
 

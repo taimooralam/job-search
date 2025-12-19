@@ -37,7 +37,7 @@ def valid_cli_output():
             "output_tokens": 500,
             "total_cost_usd": 0.025
         },
-        "model": "claude-sonnet-4-5-20251101"
+        "model": "claude-sonnet-4-5-20250929"
     })
 
 
@@ -485,7 +485,7 @@ class TestCLIResult:
             result={"data": "test"},
             raw_result=None,
             error=None,
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=1500,
             invoked_at="2024-01-01T00:00:00Z",
@@ -507,7 +507,7 @@ class TestCLIResult:
             result=None,
             raw_result=None,
             error="CLI timeout",
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=180000,
             invoked_at="2024-01-01T00:00:00Z"
@@ -525,7 +525,7 @@ class TestCLIResult:
             result={"data": "test"},
             raw_result=None,
             error=None,
-            model="claude-sonnet-4-5-20251101",
+            model="claude-sonnet-4-5-20250929",
             tier="balanced",
             duration_ms=1500,
             invoked_at="2024-01-01T00:00:00Z"

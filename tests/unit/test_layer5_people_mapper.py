@@ -1054,7 +1054,7 @@ class TestClaudeAPIDiscoveryBackend:
         mock_result.success = True
         mock_result.searches_performed = 3
         mock_result.duration_ms = 1500
-        mock_result.model = "claude-sonnet-4-5-20251101"
+        mock_result.model = "claude-sonnet-4-5-20250929"
         mock_result.input_tokens = 1000
         mock_result.output_tokens = 500
         mock_result.data = {
