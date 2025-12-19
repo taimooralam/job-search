@@ -2599,6 +2599,26 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
+                    // Dispatch events for each queued job so live status badges update immediately
+                    if (result.all_ops_runs && result.all_ops_runs.length > 0) {
+                        result.all_ops_runs.forEach((run, index) => {
+                            window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                                detail: {
+                                    jobId: run.job_id,
+                                    status: 'pending',
+                                    runId: run.run_id,
+                                    operation: 'all-ops',
+                                    position: index + 1
+                                }
+                            }));
+                        });
+
+                        // Force QueuePoller to refresh immediately
+                        if (window.Alpine && Alpine.store('queue')._poller) {
+                            Alpine.store('queue')._poller.refresh();
+                        }
+                    }
+
                     showToast(`${result.updated_count} jobs moved to batch! Redirecting...`, 'success');
                     // Clear selection
                     selectedJobIds.clear();
@@ -2754,6 +2774,26 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
+                    // Dispatch events for each queued job so live status badges update immediately
+                    if (result.all_ops_runs && result.all_ops_runs.length > 0) {
+                        result.all_ops_runs.forEach((run, index) => {
+                            window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                                detail: {
+                                    jobId: run.job_id,
+                                    status: 'pending',
+                                    runId: run.run_id,
+                                    operation: 'all-ops',
+                                    position: index + 1
+                                }
+                            }));
+                        });
+
+                        // Force QueuePoller to refresh immediately
+                        if (window.Alpine && Alpine.store('queue')._poller) {
+                            Alpine.store('queue')._poller.refresh();
+                        }
+                    }
+
                     showToast(`"${jobTitle}" moved to batch!`, 'success');
                     htmx.trigger('#job-table-container', 'refresh');
                 } else {
