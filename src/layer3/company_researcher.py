@@ -28,6 +28,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, CompanySignal, CompanyResearch
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.utils import run_async
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 
 
@@ -573,7 +574,7 @@ class CompanyResearcher:
         # ===== STEP 1: Primary research with original company name =====
         primary_error = None
         try:
-            result = asyncio.run(
+            result = run_async(
                 self.claude_researcher.research_company(
                     company_name=company,
                     job_context=job_description[:1000] if job_description else "",
@@ -600,7 +601,7 @@ class CompanyResearcher:
         for variant in variations_to_try:
             self.logger.info(f"[Fallback 2a] Trying name variation: {variant}")
             try:
-                result = asyncio.run(
+                result = run_async(
                     self.claude_researcher.research_company(
                         company_name=variant,
                         job_context=job_description[:1000] if job_description else "",
@@ -677,7 +678,7 @@ class CompanyResearcher:
         # ===== STEP 2c: LLM knowledge fallback (last resort) =====
         self.logger.info(f"[Fallback 2c] Using LLM knowledge fallback for {company}")
         try:
-            llm_result = asyncio.run(
+            llm_result = run_async(
                 self._research_with_llm_knowledge(company, job_title, job_description)
             )
             if llm_result:

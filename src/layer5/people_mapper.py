@@ -36,6 +36,7 @@ from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
 from src.common.annotation_types import JDAnnotation, ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
+from src.common.utils import run_async
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -1254,8 +1255,8 @@ class PeopleMapper:
         self.logger.info(f"[Claude API] Discovering contacts at {company} for {title}")
 
         try:
-            # Run async method in sync context
-            result = asyncio.run(
+            # Run async method in sync context (handles nested event loops)
+            result = run_async(
                 self.claude_researcher.research_people(
                     company_name=company,
                     role=title,

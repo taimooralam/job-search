@@ -26,6 +26,7 @@ from src.common.state import JobState, RoleResearch
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
+from src.common.utils import run_async
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -314,8 +315,8 @@ class RoleResearcher:
 
         # Call Claude API with web search
         try:
-            # Run async method in sync context
-            result = asyncio.run(
+            # Run async method in sync context (handles nested event loops)
+            result = run_async(
                 self.claude_researcher.research_role(
                     company_name=company,
                     role_title=title,
