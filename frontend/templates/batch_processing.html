@@ -154,6 +154,19 @@
                                 <div class="text-xs theme-text-tertiary">Tailored CV</div>
                             </div>
                         </button>
+                        <div class="border-t theme-border my-1"></div>
+                        <button @click="executeBatchOperation('all-ops'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm">All Ops</div>
+                                <div class="text-xs theme-text-tertiary">Extract + Research + CV</div>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -934,7 +947,8 @@
             'full-extraction': 'Full Extraction',
             'process-jd': 'JD Extraction',
             'research-company': 'Company Research',
-            'generate-cv': 'CV Generation'
+            'generate-cv': 'CV Generation',
+            'all-ops': 'All Ops (Extract + Research + CV)'
         };
 
         // Map operations to their bulk endpoints
@@ -942,7 +956,8 @@
             'full-extraction': '/api/runner/jobs/full-extraction/bulk',
             'process-jd': '/api/runner/jobs/full-extraction/bulk',
             'research-company': '/api/runner/jobs/research-company/bulk',
-            'generate-cv': '/api/runner/jobs/generate-cv/bulk'
+            'generate-cv': '/api/runner/jobs/generate-cv/bulk',
+            'all-ops': '/api/runner/jobs/all-ops/bulk'
         };
 
         const confirmed = confirm(

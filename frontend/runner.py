@@ -920,3 +920,83 @@ def get_job_queue_status(job_id: str):
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# All Ops Endpoints (Full Pipeline: Extract + Research + Generate CV)
+# =============================================================================
+
+
+@runner_bp.route("/jobs/<job_id>/all-ops/stream", methods=["POST"])
+def all_ops_stream(job_id: str):
+    """
+    Start all operations for a single job with SSE streaming.
+
+    Runs the complete pipeline:
+    - Full extraction (Layer 1.4 + Layer 2 + Layer 4)
+    - Company research
+    - CV generation
+
+    Request Body:
+        tier: Processing tier (fast, balanced, quality)
+
+    Returns:
+        JSON with run_id for tracking the operation
+    """
+    try:
+        data = request.get_json() or {}
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/{job_id}/all-ops/stream",
+            json=data,
+            headers=get_headers(),
+            timeout=STREAMING_KICKOFF_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/all-ops/bulk", methods=["POST"])
+def all_ops_bulk():
+    """
+    Start all operations for multiple jobs.
+
+    Runs the complete pipeline for each job:
+    - Full extraction (Layer 1.4 + Layer 2 + Layer 4)
+    - Company research
+    - CV generation
+
+    Request Body:
+        job_ids: List of MongoDB job IDs
+        tier: Processing tier (fast, balanced, quality)
+
+    Returns:
+        JSON with runs array containing run_ids for each job
+    """
+    try:
+        data = request.get_json()
+        if not data or "job_ids" not in data:
+            return jsonify({"error": "job_ids array is required"}), 400
+
+        response = requests.post(
+            f"{RUNNER_URL}/api/jobs/all-ops/bulk",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

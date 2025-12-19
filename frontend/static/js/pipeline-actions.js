@@ -25,17 +25,19 @@ const PIPELINE_CONFIG = {
         'structure-jd': 'balanced',
         'full-extraction': 'balanced',
         'research-company': 'balanced',
-        'generate-cv': 'quality'
+        'generate-cv': 'quality',
+        'all-ops': 'balanced'
     },
 
     // Actions that support SSE streaming (via runner service)
-    streamingActions: ['research-company', 'generate-cv', 'full-extraction'],
+    streamingActions: ['research-company', 'generate-cv', 'full-extraction', 'all-ops'],
 
     // Streaming endpoints (via Flask proxy)
     streamingEndpoints: {
         'research-company': '/api/runner/operations/{jobId}/research-company/stream',
         'generate-cv': '/api/runner/operations/{jobId}/generate-cv/stream',
-        'full-extraction': '/api/runner/operations/{jobId}/full-extraction/stream'
+        'full-extraction': '/api/runner/operations/{jobId}/full-extraction/stream',
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
     },
 
     // Queue endpoints (for queue-first approach on detail page)
@@ -43,7 +45,8 @@ const PIPELINE_CONFIG = {
         'structure-jd': '/api/runner/jobs/{jobId}/operations/structure-jd/queue',
         'full-extraction': '/api/runner/jobs/{jobId}/operations/full-extraction/queue',
         'research-company': '/api/runner/jobs/{jobId}/operations/research-company/queue',
-        'generate-cv': '/api/runner/jobs/{jobId}/operations/generate-cv/queue'
+        'generate-cv': '/api/runner/jobs/{jobId}/operations/generate-cv/queue',
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
     },
 
     // Model mappings per tier per action
@@ -67,6 +70,11 @@ const PIPELINE_CONFIG = {
             fast: 'claude-haiku',
             balanced: 'claude-sonnet',
             quality: 'claude-opus-4.5'  // Opus 4.5 for highest quality CV generation
+        },
+        'all-ops': {
+            fast: 'gpt-4o-mini + claude-haiku',
+            balanced: 'gpt-4o-mini + claude-sonnet',
+            quality: 'gpt-4o + claude-opus-4.5'
         }
     },
 
@@ -82,7 +90,8 @@ const PIPELINE_CONFIG = {
         'structure-jd': '/api/jobs/{jobId}/process-jd',
         'full-extraction': '/api/jobs/{jobId}/full-extraction',
         'research-company': '/api/jobs/{jobId}/research-company',
-        'generate-cv': '/api/jobs/{jobId}/generate-cv'
+        'generate-cv': '/api/jobs/{jobId}/generate-cv',
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
     },
 
     // Display labels
@@ -90,7 +99,8 @@ const PIPELINE_CONFIG = {
         'structure-jd': 'Structure JD',
         'full-extraction': 'Extract JD',
         'research-company': 'Research',
-        'generate-cv': 'Generate CV'
+        'generate-cv': 'Generate CV',
+        'all-ops': 'All Ops'
     },
 
     // Tier display info
@@ -128,7 +138,8 @@ document.addEventListener('alpine:init', () => {
             'structure-jd': false,
             'full-extraction': false,
             'research-company': false,
-            'generate-cv': false
+            'generate-cv': false,
+            'all-ops': false
         },
 
         // Last execution results per action
@@ -136,7 +147,8 @@ document.addEventListener('alpine:init', () => {
             'structure-jd': null,
             'full-extraction': null,
             'research-company': null,
-            'generate-cv': null
+            'generate-cv': null,
+            'all-ops': null
         },
 
         // Accumulated costs for current session
@@ -144,7 +156,8 @@ document.addEventListener('alpine:init', () => {
             'structure-jd': 0,
             'full-extraction': 0,
             'research-company': 0,
-            'generate-cv': 0
+            'generate-cv': 0,
+            'all-ops': 0
         },
 
         /**
@@ -1087,7 +1100,8 @@ document.addEventListener('alpine:init', () => {
                 'structure-jd': ['jd-structured', 'jd-viewer'],
                 'full-extraction': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'action-buttons'],
                 'research-company': ['company-research', 'role-research', 'action-buttons'],
-                'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker']
+                'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker'],
+                'all-ops': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'company-research', 'role-research', 'cv-preview', 'action-buttons', 'outcome-tracker']
             };
             return sectionMap[action] || ['action-buttons'];
         },
@@ -1507,6 +1521,10 @@ document.addEventListener('keydown', (event) => {
             case '4':
                 event.preventDefault();
                 store.execute('generate-cv', jobId);
+                break;
+            case '5':
+                event.preventDefault();
+                store.execute('all-ops', jobId);
                 break;
         }
     }
