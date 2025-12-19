@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-19 (Claude API Migration + Performance Optimization & UI Unification)
+**Last Updated**: 2025-12-19 (Batch Move Auto-Trigger + Claude API Migration + Performance Optimization)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,38 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-19 Session 19): Batch Move Auto-Trigger Enhancement
+
+**ENHANCEMENT: Auto-Trigger All-Ops on Batch Move - COMPLETED**:
+- **Feature**: When jobs are moved to "batch" status via `POST /api/jobs/move-to-batch`, automatically queue them for `all-ops` processing
+- **Default Behavior**: Auto-trigger enabled with `balanced` tier (Sonnet) by default
+- **API Parameters**:
+  - `auto_process`: Optional boolean (default `True`) - Controls whether all-ops is auto-triggered
+  - `tier`: Optional string (default `"balanced"`) - Processing tier for all-ops (balanced/gold/bronze)
+- **Response Fields**:
+  - `auto_process`: Whether auto-processing was enabled
+  - `all_ops_queued`: Number of jobs queued for all-ops
+  - `all_ops_runs`: Array of run info with run_id, job_id, status per job
+  - `all_ops_error`: Error message if runner service call failed (null on success)
+- **Error Handling**:
+  - Graceful degradation: If runner service fails, status update still succeeds
+  - Timeout handling: 30-second timeout for bulk operations
+  - HTTP error capture: Error details returned in response for debugging
+- **Files Modified**:
+  - `frontend/app.py` - Updated `move_to_batch()` to call `/all-ops/bulk` endpoint
+  - `tests/unit/frontend/test_batch_processing.py` - Added 5 new tests for auto-trigger behavior
+- **Tests Added**:
+  - `test_moves_jobs_to_batch_successfully` - Verifies all-ops auto-trigger with balanced tier
+  - `test_auto_process_false_skips_all_ops` - Verifies opt-out behavior
+  - `test_custom_tier_is_passed_to_all_ops` - Verifies custom tier parameter
+  - `test_handles_runner_service_timeout` - Verifies graceful timeout handling
+  - `test_handles_runner_service_http_error` - Verifies HTTP error handling
+- **Impact**: Reduces friction in batch processing workflow - jobs are automatically processed when moved to batch queue, eliminating manual trigger step. Users can opt-out via `auto_process: false` if desired.
+- **Verification**: All 38 batch processing tests passing
+- **Commit**: `60ca77b6` - feat(batch): auto-trigger all-ops when jobs moved to batch status
 
 ---
 

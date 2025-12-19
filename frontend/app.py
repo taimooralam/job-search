@@ -994,16 +994,20 @@ def move_to_batch():
     Move selected jobs to batch processing queue.
 
     Updates status to "under processing" and sets batch_added_at timestamp.
-    Also auto-queues extraction for jobs that don't have extracted_jd yet.
+    Optionally auto-queues all-ops (JD extraction + company research) for all jobs.
 
     Request body:
         job_ids: List of job IDs to move to batch
+        auto_process: Optional bool (default True) - auto-queue all-ops with balanced tier
+        tier: Optional str (default "balanced") - processing tier for auto-processing
 
     Returns:
-        JSON with success status, updated count, and extraction queued count
+        JSON with success status, updated count, and all-ops queued info
     """
     data = request.get_json()
     job_ids = data.get("job_ids", [])
+    auto_process = data.get("auto_process", True)
+    tier = data.get("tier", "balanced")
 
     if not job_ids:
         return jsonify({"error": "No job_ids provided"}), 400
@@ -1026,51 +1030,58 @@ def move_to_batch():
         }}
     )
 
-    # Auto-queue extraction for jobs that don't have extracted_jd yet
-    runner_service_url = os.getenv("RUNNER_SERVICE_URL", "http://localhost:8001")
-    runner_token = os.getenv("RUNNER_API_SECRET", "")
+    # Auto-queue all-ops (JD extraction + company research) for all jobs
+    all_ops_result = None
+    all_ops_error = None
 
-    jobs_needing_extraction = collection.find(
-        {
-            "_id": {"$in": object_ids},
-            "extracted_jd": {"$exists": False}
-        },
-        {"_id": 1}
-    )
+    if auto_process and job_ids:
+        runner_service_url = os.getenv("RUNNER_SERVICE_URL", "http://localhost:8001")
+        runner_token = os.getenv("RUNNER_API_SECRET", "")
 
-    queued_count = 0
-    queue_errors = []
-    for job in jobs_needing_extraction:
-        job_id_str = str(job["_id"])
         try:
             response = requests.post(
-                f"{runner_service_url}/api/jobs/{job_id_str}/operations/extract/queue",
-                json={"tier": "balanced"},
+                f"{runner_service_url}/api/jobs/all-ops/bulk",
+                json={
+                    "job_ids": job_ids,
+                    "tier": tier,
+                    "use_llm": True,
+                    "force_refresh": False
+                },
                 headers={
                     "Authorization": f"Bearer {runner_token}",
                     "Content-Type": "application/json"
                 },
-                timeout=5
+                timeout=30  # Longer timeout for bulk operations
             )
             if response.status_code == 200:
-                queued_count += 1
+                all_ops_result = response.json()
+                logger.info(
+                    f"Auto-queued all-ops for {all_ops_result.get('total_count', 0)} jobs "
+                    f"with tier={tier}"
+                )
             else:
-                logger.warning(f"Failed to queue extraction for job {job_id_str}: HTTP {response.status_code}")
+                all_ops_error = f"HTTP {response.status_code}: {response.text[:200]}"
+                logger.warning(f"Failed to queue all-ops: {all_ops_error}")
         except requests.exceptions.Timeout:
-            logger.warning(f"Timeout queueing extraction for job {job_id_str}")
-            queue_errors.append(job_id_str)
+            all_ops_error = "Request timeout"
+            logger.warning("Timeout queueing all-ops for batch")
         except Exception as e:
-            logger.warning(f"Failed to queue extraction for job {job_id_str}: {e}")
-            queue_errors.append(job_id_str)
+            all_ops_error = str(e)
+            logger.warning(f"Failed to queue all-ops: {e}")
 
-    logger.info(f"Moved {result.modified_count} jobs to batch, queued {queued_count} extractions")
+    logger.info(
+        f"Moved {result.modified_count} jobs to batch"
+        + (f", auto-processed with tier={tier}" if auto_process else "")
+    )
 
     return jsonify({
         "success": True,
         "updated_count": result.modified_count,
         "batch_added_at": batch_added_at.isoformat(),
-        "extraction_queued_count": queued_count,
-        "extraction_queue_errors": queue_errors if queue_errors else None
+        "auto_process": auto_process,
+        "all_ops_queued": all_ops_result.get("total_count", 0) if all_ops_result else 0,
+        "all_ops_runs": all_ops_result.get("runs", []) if all_ops_result else [],
+        "all_ops_error": all_ops_error
     })
 
 

@@ -9,11 +9,14 @@ Tests the batch processing routes in frontend/app.py:
 Coverage:
 - Status updates to "under processing"
 - batch_added_at timestamp setting
+- Auto-trigger of all-ops on batch move
+- auto_process parameter handling
 - Batch job filtering and sorting
 - Error handling for invalid inputs
 """
 
 import pytest
+import requests
 from unittest.mock import MagicMock, Mock, patch
 from datetime import datetime
 from bson import ObjectId
@@ -111,14 +114,27 @@ def sample_jobs():
 class TestMoveToBatch:
     """Tests for POST /api/jobs/move-to-batch endpoint."""
 
+    @patch("frontend.app.requests.post")
     @patch("frontend.app.get_collection")
     def test_moves_jobs_to_batch_successfully(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
     ):
-        """Should update status to 'under processing' and set batch_added_at."""
+        """Should update status to 'under processing' and auto-queue all-ops."""
         # Arrange
         mock_get_collection.return_value = mock_db_collection
         mock_db_collection.update_many.return_value.modified_count = 2
+
+        # Mock successful all-ops bulk response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "runs": [
+                {"run_id": "run1", "job_id": "507f1f77bcf86cd799439011", "status": "queued"},
+                {"run_id": "run2", "job_id": "507f1f77bcf86cd799439012", "status": "queued"},
+            ],
+            "total_count": 2,
+        }
+        mock_requests_post.return_value = mock_response
 
         job_ids = ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
 
@@ -134,6 +150,10 @@ class TestMoveToBatch:
         assert data["success"] is True
         assert data["updated_count"] == 2
         assert "batch_added_at" in data
+        assert data["auto_process"] is True
+        assert data["all_ops_queued"] == 2
+        assert len(data["all_ops_runs"]) == 2
+        assert data["all_ops_error"] is None
 
         # Verify MongoDB update was called correctly
         mock_db_collection.update_many.assert_called_once()
@@ -151,6 +171,15 @@ class TestMoveToBatch:
         assert update_arg["$set"]["status"] == "under processing"
         assert "batch_added_at" in update_arg["$set"]
         assert isinstance(update_arg["$set"]["batch_added_at"], datetime)
+
+        # Verify all-ops bulk was called with correct parameters
+        mock_requests_post.assert_called_once()
+        call_kwargs = mock_requests_post.call_args
+        assert "/all-ops/bulk" in call_kwargs[0][0]
+        request_json = call_kwargs[1]["json"]
+        assert request_json["job_ids"] == job_ids
+        assert request_json["tier"] == "balanced"  # Default tier
+        assert request_json["use_llm"] is True
 
     @patch("frontend.app.get_collection")
     def test_returns_error_when_no_job_ids_provided(
@@ -219,14 +248,21 @@ class TestMoveToBatch:
         assert "error" in data
         assert "authenticated" in data["error"].lower()
 
+    @patch("frontend.app.requests.post")
     @patch("frontend.app.get_collection")
     def test_handles_zero_updates_gracefully(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
     ):
         """Should handle case where no jobs are actually updated (e.g., already in batch)."""
         # Arrange
         mock_get_collection.return_value = mock_db_collection
         mock_db_collection.update_many.return_value.modified_count = 0
+
+        # Mock successful all-ops bulk response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"runs": [], "total_count": 0}
+        mock_requests_post.return_value = mock_response
 
         # Act
         response = authenticated_client.post(
@@ -240,14 +276,21 @@ class TestMoveToBatch:
         assert data["success"] is True
         assert data["updated_count"] == 0
 
+    @patch("frontend.app.requests.post")
     @patch("frontend.app.get_collection")
     def test_batch_added_at_is_recent_timestamp(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
     ):
         """Should set batch_added_at to current UTC time."""
         # Arrange
         mock_get_collection.return_value = mock_db_collection
         mock_db_collection.update_many.return_value.modified_count = 1
+
+        # Mock successful all-ops bulk response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"runs": [], "total_count": 1}
+        mock_requests_post.return_value = mock_response
 
         before_time = datetime.utcnow()
 
@@ -265,6 +308,131 @@ class TestMoveToBatch:
 
         # Timestamp should be between before and after
         assert before_time <= batch_time <= after_time
+
+    @patch("frontend.app.requests.post")
+    @patch("frontend.app.get_collection")
+    def test_auto_process_false_skips_all_ops(
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
+    ):
+        """Should not call all-ops when auto_process is False."""
+        # Arrange
+        mock_get_collection.return_value = mock_db_collection
+        mock_db_collection.update_many.return_value.modified_count = 2
+
+        job_ids = ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": job_ids, "auto_process": False},
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["updated_count"] == 2
+        assert data["auto_process"] is False
+        assert data["all_ops_queued"] == 0
+        assert data["all_ops_runs"] == []
+        assert data["all_ops_error"] is None
+
+        # Verify runner service was NOT called
+        mock_requests_post.assert_not_called()
+
+    @patch("frontend.app.requests.post")
+    @patch("frontend.app.get_collection")
+    def test_custom_tier_is_passed_to_all_ops(
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
+    ):
+        """Should pass custom tier to all-ops bulk endpoint."""
+        # Arrange
+        mock_get_collection.return_value = mock_db_collection
+        mock_db_collection.update_many.return_value.modified_count = 1
+
+        # Mock successful all-ops bulk response
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"runs": [], "total_count": 1}
+        mock_requests_post.return_value = mock_response
+
+        job_ids = ["507f1f77bcf86cd799439011"]
+
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": job_ids, "tier": "gold"},  # Custom tier
+        )
+
+        # Assert
+        assert response.status_code == 200
+
+        # Verify all-ops bulk was called with custom tier
+        mock_requests_post.assert_called_once()
+        call_kwargs = mock_requests_post.call_args
+        request_json = call_kwargs[1]["json"]
+        assert request_json["tier"] == "gold"
+
+    @patch("frontend.app.requests.post")
+    @patch("frontend.app.get_collection")
+    def test_handles_runner_service_timeout(
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
+    ):
+        """Should handle timeout from runner service gracefully."""
+        # Arrange
+        mock_get_collection.return_value = mock_db_collection
+        mock_db_collection.update_many.return_value.modified_count = 2
+
+        # Simulate timeout
+        mock_requests_post.side_effect = requests.exceptions.Timeout("Connection timed out")
+
+        job_ids = ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
+
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": job_ids},
+        )
+
+        # Assert - should still succeed, but with error info
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["updated_count"] == 2
+        assert data["all_ops_queued"] == 0
+        assert data["all_ops_error"] == "Request timeout"
+
+    @patch("frontend.app.requests.post")
+    @patch("frontend.app.get_collection")
+    def test_handles_runner_service_http_error(
+        self, mock_get_collection, mock_requests_post, authenticated_client, mock_db_collection
+    ):
+        """Should handle HTTP error from runner service gracefully."""
+        # Arrange
+        mock_get_collection.return_value = mock_db_collection
+        mock_db_collection.update_many.return_value.modified_count = 1
+
+        # Simulate HTTP error
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_requests_post.return_value = mock_response
+
+        job_ids = ["507f1f77bcf86cd799439011"]
+
+        # Act
+        response = authenticated_client.post(
+            "/api/jobs/move-to-batch",
+            json={"job_ids": job_ids},
+        )
+
+        # Assert - should still succeed, but with error info
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["updated_count"] == 1
+        assert data["all_ops_queued"] == 0
+        assert "HTTP 500" in data["all_ops_error"]
 
 
 # ===== TESTS: GET /batch-processing =====
