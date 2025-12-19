@@ -936,6 +936,39 @@ Benefits:
   - Claude reasoning better identifies culture signals
   - Semantic understanding of company context
 
+**Fallback Chain Architecture** (handles research failures gracefully):
+
+1. **Tier 1: Claude API + WebSearch** (primary)
+   - Uses Claude API with integrated WebSearch for real-time data
+   - Searches company overview, LinkedIn, news, culture signals
+   - Returns full research object with high confidence
+
+2. **Tier 2a: Company Name Variations** (fallback on Tier 1 failure)
+   - Retries WebSearch with alternative company name variations
+   - Example: "Company Inc" → "Company Inc.", "Company", "The Company"
+   - Same WebSearch queries but with varied company names
+
+3. **Tier 2b: FireCrawl Mode** (fallback on Tier 2a failure)
+   - Activates fallback prompt that uses FireCrawl instead of WebSearch
+   - Scrapes company website and public data directly
+   - More reliable for company websites but slower
+
+4. **Tier 2c: LLM General Knowledge** (fallback on Tier 2b failure)
+   - Uses Claude's general knowledge without external research
+   - Sets `low_confidence: true` flag to indicate uncertainty
+   - Returns basic company information from training data
+
+5. **Error Handler** (complete failure)
+   - Returns `company_research: None` if all fallbacks fail
+   - Logs explicit error details showing which tiers failed and why
+   - Pipeline continues gracefully with null research
+
+**Error Visibility**:
+- Service layer (`src/services/company_research_service.py`) logs:
+  - Actual error details when research fails (not generic messages)
+  - Explicit skip reasons for dependent operations (role_research, people_research)
+  - Exception stack traces for debugging
+
 #### Layer 3.5: Role Researcher (`src/layer3_5/role_researcher.py`)
 
 - **Primary Backend**: Claude API + WebSearch

@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-19 (Batch Move Auto-Trigger + Claude API Migration + Performance Optimization)
+**Last Updated**: 2025-12-19 (Batch Move Auto-Trigger + Claude API Migration + Company Research Fallback Chain Improvements)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,34 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-19 Session 20): Company Research Fallback Chain Error Visibility Improvements
+
+**ENHANCEMENT: Improved Error Logging and Fallback Chain Visibility - COMPLETED**:
+- **Scope**: Enhanced logging and error handling in company research service to provide better visibility when research operations fail
+- **Motivation**: When company research failed, error messages were opaque and didn't show which fallbacks were attempted or why they failed
+- **Changes Made**:
+  1. **Service Layer Logging** (`src/services/company_research_service.py`):
+     - Enhanced error messages to show actual error details when company research fails (previously generic)
+     - Added explicit skip reasons for `role_research` and `people_research` operations
+     - Error messages now include exception details for debugging
+  2. **Fallback Chain Verification** (`src/layer3/company_researcher.py`):
+     - Confirmed existing 4-tier fallback chain is properly implemented:
+       - Tier 1: Claude API + WebSearch (primary)
+       - Tier 2a: Company name variations with WebSearch
+       - Tier 2b: FireCrawl mode (with fallback prompt)
+       - Tier 2c: LLM general knowledge (low_confidence flag set)
+     - Error handler properly returns `company_research: None` on complete failure
+- **Impact**: Improved observability for debugging - logs now show exactly which fallback was attempted and why each failed, reducing time spent troubleshooting research issues
+- **Files Modified**:
+  - `src/services/company_research_service.py` - Enhanced error messages and skip reasons
+  - No changes to fallback chain logic (already well-implemented)
+- **Testing**:
+  - Verified existing company research tests still pass
+  - Fallback chain behavior unchanged (only logging enhanced)
+- **Backward Compatibility**: Fully backward compatible - only improves logging/visibility
 
 ---
 
