@@ -28,6 +28,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.claude_cli import ClaudeCLI, TierType, CLAUDE_MODEL_TIERS
 from src.layer4.annotation_fit_signal import (
     AnnotationFitSignal,
     blend_fit_scores,
@@ -134,19 +135,46 @@ ANTI-HALLUCINATION CHECK:
 class OpportunityMapper:
     """
     Analyzes candidate-job fit and generates scoring.
+
+    Supports two execution backends:
+    - Claude CLI (default): Uses Claude Code CLI with three-tier model system
+    - OpenRouter (legacy): Uses LangChain with OpenRouter for backward compatibility
     """
 
-    def __init__(self):
-        """Initialize LLM for fit analysis."""
+    def __init__(
+        self,
+        tier: TierType = "balanced",
+        use_claude_cli: bool = True,
+        timeout: int = 180,
+    ):
+        """
+        Initialize the mapper.
+
+        Args:
+            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+                  Only used when use_claude_cli=True. Default is "balanced" (Sonnet 4.5).
+            use_claude_cli: If True (default), use Claude Code CLI for inference.
+                           If False, use OpenRouter via LangChain (legacy mode).
+            timeout: CLI timeout in seconds (default 180s for complex analysis).
+        """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
+        self.tier = tier
+        self.use_claude_cli = use_claude_cli
 
-        # GAP-066: Token tracking enabled
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for objective analysis
-            layer="layer4",
-        )
+        if use_claude_cli:
+            # Use Claude Code CLI with three-tier model system
+            self.cli = ClaudeCLI(tier=tier, timeout=timeout)
+            self.llm = None  # Not used in Claude CLI mode
+        else:
+            # Legacy mode: Use OpenRouter via LangChain
+            self.cli = None
+            # GAP-066: Token tracking enabled
+            self.llm = create_tracked_llm(
+                model=Config.DEFAULT_MODEL,
+                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for objective analysis
+                layer="layer4",
+            )
 
     def _derive_fit_category(self, fit_score: int) -> str:
         """
@@ -462,29 +490,45 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         company_research_text = self._format_company_research(state.get("company_research"))
         role_research_text = self._format_role_research(state.get("role_research"))
 
-        # Build prompt
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(
-                content=USER_PROMPT_TEMPLATE.format(
-                    title=state["title"],
-                    company=state["company"],
-                    job_description=state["job_description"],
-                    company_research=company_research_text,
-                    role_research=role_research_text,
-                    pain_points=pain_points_text,
-                    strategic_needs=strategic_needs_text,
-                    risks_if_unfilled=risks_text,
-                    success_metrics=metrics_text,
-                    candidate_profile=candidate_profile_text,
-                    selected_stars=selected_stars_text
-                )
-            )
-        ]
+        # Build user prompt content
+        user_prompt_content = USER_PROMPT_TEMPLATE.format(
+            title=state["title"],
+            company=state["company"],
+            job_description=state["job_description"],
+            company_research=company_research_text,
+            role_research=role_research_text,
+            pain_points=pain_points_text,
+            strategic_needs=strategic_needs_text,
+            risks_if_unfilled=risks_text,
+            success_metrics=metrics_text,
+            candidate_profile=candidate_profile_text,
+            selected_stars=selected_stars_text
+        )
 
         # Get LLM response
-        response = self.llm.invoke(messages)
-        response_text = response.content.strip()
+        if self.use_claude_cli:
+            # Claude CLI mode: Combine system + user prompt into single prompt
+            combined_prompt = f"{SYSTEM_PROMPT}\n\n---\n\n{user_prompt_content}"
+
+            # Invoke Claude CLI
+            result = self.cli.invoke(
+                prompt=combined_prompt,
+                job_id=state.get("job_id", "opportunity-mapper"),
+                validate_json=False,  # Opportunity mapper doesn't expect JSON
+            )
+
+            if not result.success:
+                raise ValueError(f"Claude CLI invocation failed: {result.error}")
+
+            response_text = result.raw_result.strip()
+        else:
+            # Legacy OpenRouter mode: Use LangChain messages
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt_content)
+            ]
+            response = self.llm.invoke(messages)
+            response_text = response.content.strip()
 
         # Parse response
         score, rationale = self._parse_llm_response(response_text)
@@ -589,12 +633,20 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
 # ===== LANGGRAPH NODE FUNCTION =====
 
-def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
+def opportunity_mapper_node(
+    state: JobState,
+    tier: TierType = "balanced",
+    use_claude_cli: bool = True,
+) -> Dict[str, Any]:
     """
     LangGraph node function for Layer 4: Opportunity Mapper (Phase 6).
 
     Args:
         state: Current job processing state
+        tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+              Default is "balanced" (Sonnet 4.5).
+        use_claude_cli: If True (default), use Claude Code CLI for inference.
+                       If False, use OpenRouter via LangChain (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state including annotation_analysis
@@ -605,9 +657,13 @@ def opportunity_mapper_node(state: JobState) -> Dict[str, Any]:
     logger.info("="*60)
     logger.info("LAYER 4: Opportunity Mapper (Phase 6 + Annotation Signal)")
     logger.info("="*60)
+    if use_claude_cli:
+        logger.info(f"Backend: Claude CLI (tier={tier}, model={CLAUDE_MODEL_TIERS.get(tier, 'balanced')})")
+    else:
+        logger.info("Backend: OpenRouter (legacy mode)")
 
     with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
-        mapper = OpportunityMapper()
+        mapper = OpportunityMapper(tier=tier, use_claude_cli=use_claude_cli)
         updates = mapper.map_opportunity(state)
 
         # Add metadata for structured logging

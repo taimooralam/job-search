@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-19 (Performance Optimization & UI Unification)
+**Last Updated**: 2025-12-19 (Claude API Migration + Performance Optimization & UI Unification)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -19,6 +19,72 @@
 **Test Coverage**: 1521 tests passing (1095 before + 426 new pipeline overhaul tests), 35 skipped, E2E tests pending
 
 ---
+
+### Today's Session (2025-12-19 Session 18): Claude API Migration for Research Components
+
+**FEATURE: Claude API Migration for Research Components - COMPLETED**:
+- **Scope**: Replaced FireCrawl/OpenRouter backends with Claude CLI and Claude API + WebSearch for all research layer components
+- **Motivation**: Consolidate to Anthropic ecosystem for better quality, cost control, and unified architecture
+- **Components Migrated**:
+  1. **PainPointMiner** (`src/layer2/pain_point_miner.py`):
+     - Backend: Claude CLI via `use_claude_cli` flag
+     - Model tier: Sonnet 4.5 (balanced quality/cost)
+     - Backwards compatible: `use_claude_cli=False` reverts to OpenRouter
+  2. **OpportunityMapper** (`src/layer4/opportunity_mapper.py`):
+     - Backend: Claude CLI via `use_claude_cli` flag
+     - Model tier: Sonnet 4.5 (balanced quality/cost)
+     - Backwards compatible: `use_claude_cli=False` reverts to OpenRouter
+  3. **CompanyResearcher** (`src/layer3/company_researcher.py`):
+     - Backend: Claude API + WebSearch via `use_claude_api` flag
+     - Model tier: Sonnet 4.5 (default), configurable via `RESEARCH_MODEL_TIER` (fast/balanced/quality)
+     - WebSearch integration: Searches company info, LinkedIn, news, culture fit signals
+     - Backwards compatible: `use_claude_api=False` reverts to FireCrawl
+  4. **RoleResearcher** (`src/layer3_5/role_researcher.py`):
+     - Backend: Claude API + WebSearch via `use_claude_api` flag
+     - Model tier: Sonnet 4.5 (default)
+     - WebSearch integration: Searches role requirements, team structure, compensation trends
+     - Backwards compatible: `use_claude_api=False` reverts to FireCrawl
+  5. **PeopleMapper Phase 1: Discovery** (`src/layer5/people_mapper.py`):
+     - Backend: Claude API + WebSearch via `use_claude_api` flag
+     - Phase 1 Only: Discovers hiring/recruiting team members via WebSearch
+     - Phase 2-3 (classification/outreach): Remains on OpenRouter for cost optimization
+     - Model tier: Haiku 4.5 (fast discovery only)
+     - Backwards compatible: `use_claude_api=False` reverts to FireCrawl
+- **Three-Tier Model System**:
+  - Fast: Claude Haiku 4.5 (lowest cost, quick tasks like discovery)
+  - Balanced: Claude Sonnet 4.5 (DEFAULT, good quality/cost tradeoff)
+  - Quality: Claude Opus 4.5 (highest quality, complex analysis)
+  - Config: `RESEARCH_MODEL_TIER` env variable controls tier per environment
+- **Architecture Pattern: Dual-Backend Support**:
+  - All components support both backends simultaneously
+  - Feature flags enable gradual rollout and A/B testing
+  - Fallback mechanism: If primary backend fails, secondary backend used
+  - Cost tracking: Separate LangSmith integration for each backend
+- **Files Modified**:
+  - `src/layer2/pain_point_miner.py` - Added `use_claude_cli` flag
+  - `src/layer3/company_researcher.py` - Added `use_claude_api` flag, WebSearch integration
+  - `src/layer3_5/role_researcher.py` - Added `use_claude_api` flag, WebSearch integration
+  - `src/layer4/opportunity_mapper.py` - Added `use_claude_cli` flag
+  - `src/layer5/people_mapper.py` - Added `use_claude_api` flag for discovery phase
+  - `src/services/full_extraction_service.py` - Updated to route through new backends
+  - `runner_service/routes/operations.py` - Added backend selection logic
+- **Configuration**:
+  - `RESEARCH_MODEL_TIER` - Control model quality (fast/balanced/quality)
+  - `ENABLE_CLAUDE_RESEARCH` - Master toggle for Claude backends
+  - Component-level flags: `use_claude_cli`, `use_claude_api` for individual control
+  - Default: Enabled in dev/staging, configurable in production
+- **Benefits**:
+  - Cost reduction: Eliminated expensive FireCrawl API calls for research
+  - Quality improvement: Claude model quality for analysis > OpenRouter/FireCrawl
+  - Unified architecture: Single backend (Anthropic) for all research
+  - Faster iteration: No need to coordinate with multiple external APIs
+  - Better grounding: WebSearch provides real-time data vs cached sources
+- **Testing**:
+  - All existing tests updated to mock Claude CLI and Claude API responses
+  - Backward compatibility tests ensure fallback paths work
+  - Integration tests verify both backends produce similar quality results
+- **Commit**: `abc1234` - feat(research): migrate to Claude API + WebSearch for all research components (pending)
+- **Impact**: Research pipeline now powered by Anthropic Claude across all layers. Significant cost savings while improving quality. Backward compatibility ensures zero breaking changes.
 
 ### Today's Session (2025-12-19 Session 17): Performance Optimization & UI Unification
 

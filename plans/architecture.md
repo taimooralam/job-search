@@ -770,13 +770,15 @@ class PlannedAnswer(TypedDict):
 
 | Service | Layer | Purpose |
 |---------|-------|---------|
-| **OpenAI** | 2-5 | General LLM calls |
-| **Anthropic** | 6 | CV generation (default) |
-| **FireCrawl** | 3, 5, Frontend | Web scraping, contact discovery, application form scraping (NEW 2025-12-12) |
+| **OpenAI** | 1.4 | JD extraction fallback (optional) |
+| **Anthropic (Claude API)** | 2-5, 6 | Research (Company/Role/People), Pain Point analysis, CV generation (default) (NEW 2025-12-19) |
+| **Anthropic (Claude CLI)** | 2, 4 | Pain Point Miner, Opportunity Mapper (local execution, NEW 2025-12-19) |
+| **FireCrawl** | 3, 5, Frontend | Web scraping, contact discovery (fallback if Claude API disabled), application form scraping |
+| **WebSearch** | 3-5 | Real-time research queries for company, role, people discovery (NEW 2025-12-19) |
 | **Google Drive** | 7 | Optional output storage |
 | **Google Sheets** | 7 | Optional tracking |
-| **FireCrawl Credits API** | 5 | Real-time token usage tracking (NEW 2025-12-08) |
-| **OpenRouter Credits API** | Dashboard | Credit balance monitoring (NEW 2025-12-08) |
+| **FireCrawl Credits API** | 5 | Real-time token usage tracking (fallback only) |
+| **OpenRouter Credits API** | Dashboard | Credit balance monitoring (fallback only) |
 
 ### API Integration Details (NEW - 2025-12-08)
 
@@ -793,6 +795,164 @@ class PlannedAnswer(TypedDict):
 - Returns: Remaining credits, reset date
 - Frontend proxy: `/api/openrouter/credits` (CORS handling)
 - Config: `OPENROUTER_API_KEY` env variable
+
+### Claude Research Backend Migration (NEW - 2025-12-19)
+
+**Overview**: All research and analysis components (Layers 2-5) have been migrated from FireCrawl/OpenRouter to Claude API + WebSearch for unified architecture, improved quality, and cost savings.
+
+**Three-Tier Model System**:
+
+| Tier | Model | Use Cases | Cost | Quality |
+|------|-------|-----------|------|---------|
+| **Fast** | Claude Haiku 4.5 | Quick discovery, person discovery, simple classification | Lowest | Good |
+| **Balanced** | Claude Sonnet 4.5 | DEFAULT - Pain points, fit scoring, company research, role research | Medium | Excellent |
+| **Quality** | Claude Opus 4.5 | Complex analysis requiring deep reasoning | High | Best |
+
+- Config: `RESEARCH_MODEL_TIER` env variable (fast/balanced/quality)
+- Default: `balanced` (Sonnet 4.5)
+- Gradual rollout: Different tiers can be tested in dev/staging before production
+
+**Dual-Backend Architecture Pattern**:
+
+All research components support **simultaneous operation** of both backends with feature flags:
+
+```
+Research Component (e.g., CompanyResearcher)
+    │
+    ├─ Primary: Claude API + WebSearch (use_claude_api=True)
+    │  └─ If successful: Return Claude results
+    │  └─ If fails: Fall back to secondary
+    │
+    └─ Secondary: FireCrawl (use_claude_api=False)
+       └─ If successful: Return FireCrawl results
+       └─ If fails: Return error
+```
+
+Benefits:
+- **Gradual migration**: Enable Claude for some jobs, keep FireCrawl as safety net
+- **A/B testing**: Compare quality and cost of both backends
+- **Fallback safety**: If Claude API unavailable, FireCrawl provides backup
+- **Cost control**: Disable Claude if quota exhausted, revert to FireCrawl
+
+**Component Migration Details**:
+
+#### Layer 2: Pain Point Miner (`src/layer2/pain_point_miner.py`)
+
+- **Primary Backend**: Claude CLI
+- **Model Tier**: Balanced (Sonnet 4.5)
+- **Feature Flag**: `use_claude_cli=True`
+- **Input**: Job description, JD annotations, candidate profile
+- **Output**: 5-10 pain points with priorities and STAR alignment
+- **Advantages**:
+  - Claude understanding of context > OpenRouter analysis
+  - CLI execution avoids API latency
+  - Better grounding in candidate profile
+
+#### Layer 3: Company Researcher (`src/layer3/company_researcher.py`)
+
+- **Primary Backend**: Claude API + WebSearch
+- **Model Tier**: Balanced (Sonnet 4.5)
+- **Feature Flag**: `use_claude_api=True`
+- **Input**: Company name, industry, size
+- **WebSearch Queries**:
+  1. Company overview (mission, products, culture)
+  2. LinkedIn company page (team size, growth, compensation)
+  3. Recent news (funding, layoffs, product launches)
+  4. Culture signals (Glassdoor, company values, work style)
+- **Output**: Company summary, culture fit signals, business metrics
+- **Advantages**:
+  - Real-time data via WebSearch > cached FireCrawl results
+  - Claude reasoning better identifies culture signals
+  - Semantic understanding of company context
+
+#### Layer 3.5: Role Researcher (`src/layer3_5/role_researcher.py`)
+
+- **Primary Backend**: Claude API + WebSearch
+- **Model Tier**: Balanced (Sonnet 4.5)
+- **Feature Flag**: `use_claude_api=True`
+- **Input**: Role title, company, job description
+- **WebSearch Queries**:
+  1. Role requirements and responsibilities (LinkedIn, industry benchmarks)
+  2. Team structure (typical reporting, sibling roles)
+  3. Compensation trends (Levels.fyi, Blind, industry standards)
+  4. Growth trajectory (typical career progression from this role)
+- **Output**: Role context, success metrics, career path
+- **Advantages**:
+  - Claude synthesizes multiple sources > single FireCrawl result
+  - Real-time compensation data > outdated cached data
+  - Better career context analysis
+
+#### Layer 5: People Mapper Phase 1 - Discovery (`src/layer5/people_mapper.py`)
+
+- **Primary Backend**: Claude API + WebSearch
+- **Model Tier**: Fast (Haiku 4.5)
+- **Feature Flag**: `use_claude_api=True` (discovery phase only)
+- **Input**: Company name, hiring/recruiting team keywords
+- **WebSearch Queries**:
+  1. "Company hiring manager team" + role-specific keywords
+  2. "Company recruiting department" + industry keywords
+  3. "[Company] talent acquisition lead"
+  4. "[Company] recruiting director"
+- **Output**: Names, titles, roles of hiring/recruiting personnel
+- **Phase 2-3 Remaining on OpenRouter**:
+  - Contact classification: Determines hiring_manager vs recruiter vs peer
+  - Outreach generation: Creates personalized messages
+  - Why: Cost optimization - Haiku fast discovery, Sonnet classification/outreach
+- **Advantages**:
+  - Fast Haiku tier for discovery (~10x cheaper than Sonnet)
+  - Real-time LinkedIn data via WebSearch
+  - Better name/title extraction
+
+**Configuration**:
+
+```bash
+# Master toggle for Claude research backends
+ENABLE_CLAUDE_RESEARCH=true
+
+# Model tier (fast/balanced/quality)
+RESEARCH_MODEL_TIER=balanced
+
+# Per-component toggles
+PAIN_POINT_USE_CLAUDE_CLI=true
+OPPORTUNITY_USE_CLAUDE_CLI=true
+COMPANY_RESEARCHER_USE_CLAUDE_API=true
+ROLE_RESEARCHER_USE_CLAUDE_API=true
+PEOPLE_MAPPER_USE_CLAUDE_API=true  # Discovery phase only
+```
+
+**Cost Comparison**:
+
+| Layer | Backend | Cost per Job | Notes |
+|-------|---------|--------------|-------|
+| 2 (Pain Points) | Claude CLI | ~$0.01 | Local execution, no API cost |
+| 3 (Company) | Claude API + WebSearch | ~$0.08 | 3-4 WebSearch queries |
+| 3.5 (Role) | Claude API + WebSearch | ~$0.10 | 4-5 WebSearch queries |
+| 5 (People) | Claude API + WebSearch | ~$0.06 | Haiku tier for discovery |
+| 4 (Opportunity) | Claude CLI | ~$0.01 | Local execution, no API cost |
+| **Total Research** | Claude | **~$0.26** | Down from $1.20+ with FireCrawl |
+
+**WebSearch Integration**:
+
+- Uses Anthropic WebSearch in Claude API calls
+- Queries returned directly in context for reasoning
+- No separate search API calls (integrated into Claude prompt)
+- Rate limited by Claude API (not separate quota)
+- Timeout: 30s per search (built into Claude API)
+
+**Fallback Behavior**:
+
+If Claude API is unavailable or quota exceeded:
+1. Check `use_claude_api=False` to disable Claude backend
+2. Automatically route to FireCrawl backend
+3. Log fallback event for monitoring
+4. Return results with degraded quality but same structure
+
+**Testing**:
+
+- Unit tests: Mock Claude API + WebSearch responses
+- Integration tests: Verify both backends produce compatible output
+- Cost tests: Track token usage per component
+- Quality tests: Compare Claude vs FireCrawl results for accuracy
 
 ---
 

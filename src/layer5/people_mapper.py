@@ -17,6 +17,7 @@ Phase 6 Enhancement (JD Annotation System):
 - Must-have requirements emphasis in outreach
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -34,6 +35,7 @@ from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
 from src.common.annotation_types import JDAnnotation, ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
+from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 
 
 # ===== SAFE NESTED ACCESS HELPER =====
@@ -502,21 +504,49 @@ Output JSON format:
 class PeopleMapper:
     """
     Phase 7: Enhanced People Mapper with multi-source discovery and classification.
+
+    Supports two discovery backends:
+    - Claude API (default): Uses Claude API with WebSearch for contact discovery
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
     """
 
-    def __init__(self):
-        """Initialize LLM and FireCrawl."""
+    def __init__(
+        self,
+        tier: TierType = "balanced",
+        use_claude_api: bool = True,
+    ):
+        """
+        Initialize the People Mapper.
+
+        Args:
+            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+                  Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
+            use_claude_api: If True (default), use Claude API with WebSearch for contact discovery.
+                           If False, use FireCrawl (legacy mode).
+                           Note: Classification and outreach always use OpenRouter LLM regardless
+                           of this setting (Phase 1 only migrates discovery).
+        """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
+        self.tier = tier
+        self.use_claude_api = use_claude_api
 
         # GAP-066: Token tracking enabled
+        # LLM is always needed for classification and outreach generation
+        # (even when using Claude API for discovery)
         self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=0.4,  # Slightly creative for outreach
             layer="layer5",
         )
 
-        # FireCrawl for contact discovery (disabled by default via config)
+        # Claude API for contact discovery (new backend)
+        self.claude_researcher = None
+        if use_claude_api:
+            self.claude_researcher = ClaudeWebResearcher(tier=tier)
+            self.logger.info(f"[Claude API] People Mapper initialized with tier={tier}")
+
+        # FireCrawl for contact discovery (legacy backend, or fallback)
         self.firecrawl_disabled = Config.DISABLE_FIRECRAWL_OUTREACH or not Config.FIRECRAWL_API_KEY
         self.firecrawl = None
         self.firecrawl_rate_limiter = None
@@ -1198,6 +1228,103 @@ class PeopleMapper:
             return f"No specific contacts found. Use role-based identifiers for {company}.", False
 
         return "\n---\n".join(raw_content_parts), True
+
+    def _discover_contacts_with_claude_api(self, state: JobState) -> Tuple[str, bool]:
+        """
+        Contact discovery using Claude API with WebSearch (new backend).
+
+        This is the primary discovery method when use_claude_api=True. It uses
+        Claude's built-in web_search tool to find contacts in a single API call,
+        replacing the multi-step FireCrawl approach.
+
+        The output is formatted to be compatible with the existing classification
+        LLM (same format as FireCrawl output), so classification and outreach
+        generation continue to work unchanged.
+
+        Args:
+            state: JobState with company, title, and job context
+
+        Returns:
+            Tuple of (formatted contact data for classification LLM, found_any_contacts)
+        """
+        company = state.get("company", "")
+        title = state.get("title", "")
+        department = "engineering"  # Default department for tech roles
+
+        self.logger.info(f"[Claude API] Discovering contacts at {company} for {title}")
+
+        try:
+            # Run async method in sync context
+            result = asyncio.run(
+                self.claude_researcher.research_people(
+                    company_name=company,
+                    role=title,
+                    department=department,
+                )
+            )
+
+            if not result.success:
+                self.logger.warning(f"[Claude API] People research failed: {result.error}")
+                return f"Claude API research failed: {result.error}. Use role-based identifiers for {company}.", False
+
+            data = result.data
+            self.logger.info(
+                f"[Claude API] People research complete - {result.searches_performed} searches, "
+                f"{result.duration_ms}ms"
+            )
+
+            # Extract contacts from response
+            primary_contacts = data.get("primary_contacts", [])
+            secondary_contacts = data.get("secondary_contacts", [])
+            all_contacts = primary_contacts + secondary_contacts
+
+            if not all_contacts:
+                self.logger.warning("[Claude API] No contacts found (will use role-based fallback)")
+                return f"No specific contacts found via Claude API. Use role-based identifiers for {company}.", False
+
+            self.logger.info(
+                f"[Claude API] Found {len(primary_contacts)} primary + "
+                f"{len(secondary_contacts)} secondary contacts"
+            )
+
+            # Format contacts for the classification LLM (same format as FireCrawl output)
+            # This ensures downstream classification works unchanged
+            raw_content_parts = []
+
+            if primary_contacts:
+                contact_strs = []
+                for c in primary_contacts:
+                    linkedin_url = c.get("linkedin_url") or "No LinkedIn URL"
+                    contact_strs.append(
+                        f"- {c.get('name', 'Unknown')} ({c.get('role', 'Unknown')}) - {linkedin_url}"
+                    )
+                raw_content_parts.append(
+                    f"[SOURCE: Claude API Primary Contacts]\n" + "\n".join(contact_strs) + "\n"
+                )
+
+            if secondary_contacts:
+                contact_strs = []
+                for c in secondary_contacts:
+                    linkedin_url = c.get("linkedin_url") or "No LinkedIn URL"
+                    contact_strs.append(
+                        f"- {c.get('name', 'Unknown')} ({c.get('role', 'Unknown')}) - {linkedin_url}"
+                    )
+                raw_content_parts.append(
+                    f"[SOURCE: Claude API Secondary Contacts]\n" + "\n".join(contact_strs) + "\n"
+                )
+
+            # Log metadata about the research
+            self.logger.info(
+                f"[Claude API] Research stats: model={result.model}, "
+                f"searches={result.searches_performed}, "
+                f"tokens={result.input_tokens or 'N/A'}/{result.output_tokens or 'N/A'}"
+            )
+
+            return "\n---\n".join(raw_content_parts), True
+
+        except Exception as e:
+            self.logger.error(f"[Claude API] People discovery failed: {e}")
+            return f"Claude API error: {str(e)}. Use role-based identifiers for {company}.", False
 
     # ===== LLM CLASSIFICATION AND ENRICHMENT =====
 
@@ -2143,19 +2270,31 @@ Return the three letters separated by \"---\" lines.
 
         try:
             # Step 1: Multi-source discovery (for regular employers only)
-            if self.firecrawl_disabled:
+            # Route to Claude API or FireCrawl based on configuration
+            if self.use_claude_api and self.claude_researcher:
+                # Claude API path (new backend)
+                self.logger.info("[Discovery] Using Claude API for contact discovery")
+                raw_contacts, found_contacts = self._discover_contacts_with_claude_api(state)
+            elif self.firecrawl_disabled:
+                # FireCrawl disabled and Claude API not configured
                 raw_contacts, found_contacts = (
-                    "FireCrawl discovery is disabled. Use role-based identifiers.",
+                    "Contact discovery is disabled. Use role-based identifiers.",
                     False
                 )
             else:
+                # FireCrawl path (legacy backend)
+                self.logger.info("[Discovery] Using FireCrawl for contact discovery")
                 raw_contacts, found_contacts = self._discover_contacts(state)
 
             if not found_contacts:
                 fallback_reason = (
-                    "FireCrawl outreach discovery disabled (role-based synthetic contacts)."
-                    if self.firecrawl_disabled
-                    else "No contacts found via FireCrawl - using role-based synthetic contacts."
+                    "Claude API contact discovery returned no results (role-based synthetic contacts)."
+                    if self.use_claude_api
+                    else (
+                        "FireCrawl outreach discovery disabled (role-based synthetic contacts)."
+                        if self.firecrawl_disabled
+                        else "No contacts found via FireCrawl - using role-based synthetic contacts."
+                    )
                 )
                 self.logger.warning(fallback_reason)
                 synthetic = self._generate_synthetic_contacts(state)
@@ -2299,12 +2438,24 @@ Return the three letters separated by \"---\" lines.
 
 # ===== NODE FUNCTION =====
 
-def people_mapper_node(state: JobState) -> Dict[str, Any]:
+def people_mapper_node(
+    state: JobState,
+    tier: TierType = "balanced",
+    use_claude_api: bool = True,
+) -> Dict[str, Any]:
     """
     LangGraph node function for Layer 5 (Phase 7).
 
+    Supports two discovery backends:
+    - Claude API (default): Uses Claude API with WebSearch for contact discovery
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+
     Args:
         state: Current job state
+        tier: Claude model tier for discovery - "fast", "balanced", or "quality".
+              Only used when use_claude_api=True. Default is "balanced".
+        use_claude_api: If True (default), use Claude API for contact discovery.
+                       If False, use FireCrawl (legacy mode).
 
     Returns:
         State updates with primary_contacts, secondary_contacts, outreach_packages
@@ -2315,7 +2466,12 @@ def people_mapper_node(state: JobState) -> Dict[str, Any]:
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
     with LayerContext(struct_logger, 5, "people_mapper") as ctx:
-        mapper = PeopleMapper()
+        # Log which backend is being used
+        ctx.add_metadata("discovery_backend", "claude_api" if use_claude_api else "firecrawl")
+        if use_claude_api:
+            ctx.add_metadata("claude_tier", tier)
+
+        mapper = PeopleMapper(tier=tier, use_claude_api=use_claude_api)
         result = mapper.map_people(state)
 
         # Add metadata

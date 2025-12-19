@@ -185,7 +185,8 @@ class TestPainPointMinerParsing:
 
     def test_parse_clean_json(self, valid_pain_point_json):
         """Parse clean JSON response."""
-        miner = PainPointMiner()
+        # Use legacy mode for testing (use_claude_cli=False)
+        miner = PainPointMiner(use_claude_cli=False)
         llm_response = json.dumps(valid_pain_point_json)
 
         result = miner._parse_json_response(llm_response)
@@ -196,7 +197,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_with_extra_text_before(self, valid_pain_point_json):
         """Parse JSON even if LLM adds text before."""
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         llm_response = "Here's the analysis:\n\n" + json.dumps(valid_pain_point_json)
 
         result = miner._parse_json_response(llm_response)
@@ -205,7 +206,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_with_extra_text_after(self, valid_pain_point_json):
         """Parse JSON even if LLM adds text after."""
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         llm_response = json.dumps(valid_pain_point_json) + "\n\nHope this helps!"
 
         result = miner._parse_json_response(llm_response)
@@ -214,7 +215,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_invalid_json(self):
         """Invalid JSON should raise ValueError."""
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         llm_response = "Not JSON at all!"
 
         with pytest.raises(ValueError, match="Failed to parse JSON"):
@@ -222,7 +223,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_missing_field(self):
         """JSON missing required field should raise ValueError with clear message."""
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         invalid_json = {
             "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
             # Missing other required fields
@@ -234,7 +235,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_too_few_items(self):
         """JSON with empty lists should raise clear validation error."""
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         invalid_json = {
             "pain_points": [],
             "strategic_needs": [],
@@ -262,7 +263,7 @@ class TestPainPointMinerWithMockedLLM:
         mock_llm_instance.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         assert result["pain_points"] == valid_pain_point_json["pain_points"]
@@ -278,7 +279,7 @@ class TestPainPointMinerWithMockedLLM:
         mock_llm_instance.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return empty lists (graceful degradation)
@@ -304,7 +305,7 @@ class TestPainPointMinerWithMockedLLM:
         mock_llm_instance.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         assert result["pain_points"] == []
@@ -326,7 +327,7 @@ class TestPainPointMinerNode:
         mock_llm_instance.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm_instance
 
-        updates = pain_point_miner_node(sample_job_state)
+        updates = pain_point_miner_node(sample_job_state, use_claude_cli=False)
 
         # Should return dict with all 4 fields
         assert "pain_points" in updates
@@ -342,7 +343,7 @@ class TestPainPointMinerNode:
         mock_llm_instance.invoke.side_effect = Exception("LLM API error")
         mock_llm_class.return_value = mock_llm_instance
 
-        updates = pain_point_miner_node(sample_job_state)
+        updates = pain_point_miner_node(sample_job_state, use_claude_cli=False)
 
         # Should return empty lists, not crash
         assert updates["pain_points"] == []
@@ -671,7 +672,7 @@ class TestBackwardCompatibilityWithoutAnnotations:
         # Ensure no annotations in state
         assert sample_job_state.get("jd_annotations") is None
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return valid results
@@ -691,7 +692,7 @@ class TestBackwardCompatibilityWithoutAnnotations:
         # Add empty annotations
         sample_job_state["jd_annotations"] = {"annotations": [], "concerns": []}
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return valid results
@@ -743,7 +744,7 @@ class TestAnnotationAwareExtraction:
 
         sample_job_state["jd_annotations"] = sample_annotations_minimal
 
-        miner = PainPointMiner()
+        miner = PainPointMiner(use_claude_cli=False)
         result = miner.extract_pain_points(sample_job_state)
 
         # Verify LLM was called

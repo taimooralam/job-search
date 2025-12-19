@@ -816,8 +816,8 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
     mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8  # 1 classification + 8 outreach calls
     mock_llm_class.return_value = mock_llm
 
-    # Run node
-    updates = people_mapper_node(sample_job_state)
+    # Run node with FireCrawl backend (use_claude_api=False)
+    updates = people_mapper_node(sample_job_state, use_claude_api=False)
 
     # Assertions
     # GAP-060: Limits total contacts to 5 (max 3 primary + 2 secondary)
@@ -891,7 +891,8 @@ class TestPeopleMapperQualityGates:
         mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
         mock_llm_class.return_value = mock_llm
 
-        mapper = PeopleMapper()
+        # Use FireCrawl backend (use_claude_api=False)
+        mapper = PeopleMapper(use_claude_api=False)
         result = mapper.map_people(sample_job_state)
 
         # GAP-060: LLM returns 4 primary + 4 secondary, limits to 3 primary + 2 secondary
@@ -930,7 +931,8 @@ class TestPeopleMapperQualityGates:
         mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
         mock_llm_class.return_value = mock_llm
 
-        mapper = PeopleMapper()
+        # Use FireCrawl backend (use_claude_api=False)
+        mapper = PeopleMapper(use_claude_api=False)
         result = mapper.map_people(sample_job_state)
 
         # Quality gate: why_relevant should be specific (not generic)
@@ -1028,9 +1030,170 @@ class TestSkipOutreachParameter:
         mock_llm = MagicMock()
         mock_llm_class.return_value = mock_llm
 
-        mapper = PeopleMapper()
+        # Use FireCrawl backend (use_claude_api=False) - FireCrawl disabled, will use synthetic
+        mapper = PeopleMapper(use_claude_api=False)
         result = mapper.map_people(sample_job_state, skip_outreach=True)
 
         # GAP-060: Max 5 total contacts (3 primary + 2 secondary)
         total_contacts = len(result["primary_contacts"]) + len(result["secondary_contacts"])
         assert total_contacts <= 5
+
+
+# ===== TESTS: Claude API Discovery Backend =====
+
+class TestClaudeAPIDiscoveryBackend:
+    """Test Claude API backend for contact discovery (Phase 1 migration)."""
+
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_claude_api_discovery_success(self, mock_llm_class, mock_researcher_class, sample_job_state):
+        """Claude API backend successfully discovers contacts."""
+        # Mock ClaudeWebResearcher
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.searches_performed = 3
+        mock_result.duration_ms = 1500
+        mock_result.model = "claude-sonnet-4-5-20251101"
+        mock_result.input_tokens = 1000
+        mock_result.output_tokens = 500
+        mock_result.data = {
+            "primary_contacts": [
+                {"name": "Sarah Chen", "role": "VP Engineering", "company": "TechCorp",
+                 "why_relevant": "Hiring manager", "linkedin_url": "https://linkedin.com/in/sarah"},
+                {"name": "John Smith", "role": "Recruiter", "company": "TechCorp",
+                 "why_relevant": "Talent acquisition", "linkedin_url": "https://linkedin.com/in/john"},
+            ],
+            "secondary_contacts": [
+                {"name": "Mike Lee", "role": "Senior Engineer", "company": "TechCorp",
+                 "why_relevant": "Potential colleague", "linkedin_url": "https://linkedin.com/in/mike"},
+            ]
+        }
+
+        # Make research_people an async function
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
+        # Mock LLM for classification - must return valid JSON for Pydantic validation
+        # PeopleMapperOutput requires at least 4 primary and 4 secondary contacts
+        mock_llm = MagicMock()
+        classification_response = MagicMock()
+        classification_response.content = json.dumps({
+            "primary_contacts": [
+                {"name": "Sarah Chen", "role": "VP Engineering", "linkedin_url": "https://linkedin.com/in/sarah",
+                 "why_relevant": "Direct hiring manager for platform team decisions", "recent_signals": []},
+                {"name": "John Smith", "role": "Technical Recruiter", "linkedin_url": "https://linkedin.com/in/john",
+                 "why_relevant": "Talent acquisition lead handling engineering roles", "recent_signals": []},
+                {"name": "Emily Davis", "role": "Engineering Director", "linkedin_url": "https://linkedin.com/in/emily",
+                 "why_relevant": "Technical leadership stakeholder", "recent_signals": []},
+                {"name": "Chris Wilson", "role": "Hiring Manager", "linkedin_url": "https://linkedin.com/in/chris",
+                 "why_relevant": "Direct team lead for the role", "recent_signals": []},
+            ],
+            "secondary_contacts": [
+                {"name": "Mike Lee", "role": "Senior Engineer", "linkedin_url": "https://linkedin.com/in/mike",
+                 "why_relevant": "Potential peer engineer and collaborator", "recent_signals": []},
+                {"name": "Alex Kim", "role": "Product Manager", "linkedin_url": "https://linkedin.com/in/alex",
+                 "why_relevant": "Cross-functional partner on projects", "recent_signals": []},
+                {"name": "Lisa Wang", "role": "Staff Engineer", "linkedin_url": "https://linkedin.com/in/lisa",
+                 "why_relevant": "Technical mentor and collaborator", "recent_signals": []},
+                {"name": "David Brown", "role": "DevOps Lead", "linkedin_url": "https://linkedin.com/in/david",
+                 "why_relevant": "Infrastructure collaboration partner", "recent_signals": []},
+            ]
+        })
+        mock_llm.invoke.return_value = classification_response
+        mock_llm_class.return_value = mock_llm
+
+        # Create mapper with Claude API backend
+        mapper = PeopleMapper(tier="balanced", use_claude_api=True)
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Verify contacts discovered (classification was called and succeeded)
+        # GAP-060 limits: max 3 primary + 2 secondary = 5 total
+        assert len(result["primary_contacts"]) >= 1
+        assert len(result["primary_contacts"]) <= 3  # GAP-060 limit
+        assert len(result["secondary_contacts"]) >= 0
+        # Verify contacts have expected fields
+        assert result["primary_contacts"][0]["name"] == "Sarah Chen"
+
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_claude_api_discovery_fallback_on_failure(self, mock_llm_class, mock_researcher_class, sample_job_state):
+        """Claude API backend falls back to synthetic contacts on failure."""
+        # Mock ClaudeWebResearcher to fail
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.error = "API error: model not found"
+        mock_result.searches_performed = 0
+        mock_result.duration_ms = 100
+
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
+        # Mock LLM (not called when Claude API fails - synthetic contacts used)
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
+        # Create mapper with Claude API backend
+        mapper = PeopleMapper(tier="balanced", use_claude_api=True)
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Should fall back to synthetic contacts
+        assert len(result["primary_contacts"]) >= 1
+        assert result["primary_contacts"][0].get("is_synthetic", False)
+
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_claude_api_discovery_empty_results_fallback(self, mock_llm_class, mock_researcher_class, sample_job_state):
+        """Claude API backend falls back when no contacts found."""
+        # Mock ClaudeWebResearcher to return empty results
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.searches_performed = 3
+        mock_result.duration_ms = 1500
+        mock_result.data = {
+            "primary_contacts": [],
+            "secondary_contacts": []
+        }
+
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_researcher_class.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
+        # Create mapper with Claude API backend
+        mapper = PeopleMapper(tier="balanced", use_claude_api=True)
+        result = mapper.map_people(sample_job_state, skip_outreach=True)
+
+        # Should fall back to synthetic contacts
+        assert len(result["primary_contacts"]) >= 1
+        assert result["primary_contacts"][0].get("is_synthetic", False)
+
+    def test_mapper_initializes_with_claude_api_tier(self):
+        """PeopleMapper initializes with correct Claude API tier."""
+        with patch('src.layer5.people_mapper.ClaudeWebResearcher') as mock_researcher_class:
+            with patch('src.layer5.people_mapper.create_tracked_llm'):
+                mapper = PeopleMapper(tier="fast", use_claude_api=True)
+                assert mapper.tier == "fast"
+                assert mapper.use_claude_api is True
+                mock_researcher_class.assert_called_once_with(tier="fast")
+
+    def test_mapper_initializes_with_firecrawl_backend(self):
+        """PeopleMapper initializes with FireCrawl backend when use_claude_api=False."""
+        with patch('src.layer5.people_mapper.create_tracked_llm'):
+            with patch.object(Config, 'FIRECRAWL_API_KEY', 'test-key'):
+                with patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False):
+                    with patch('src.layer5.people_mapper.FirecrawlApp') as mock_firecrawl:
+                        mapper = PeopleMapper(use_claude_api=False)
+                        assert mapper.use_claude_api is False
+                        assert mapper.claude_researcher is None
+                        mock_firecrawl.assert_called_once()

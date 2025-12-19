@@ -26,6 +26,7 @@ from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.annotation_types import JDAnnotation, JDAnnotations
+from src.common.claude_cli import ClaudeCLI, TierType, CLAUDE_MODEL_TIERS
 
 
 # ===== DOMAIN DETECTION =====
@@ -813,9 +814,19 @@ class PainPointMiner:
     - Domain-specific few-shot examples for quality anchoring
     - Confidence scoring for downstream weighting
     - Structured reasoning output for auditability
+
+    Supports two execution backends:
+    - Claude CLI (default): Uses Claude Code CLI with three-tier model system
+    - OpenRouter (legacy): Uses LangChain with OpenRouter for backward compatibility
     """
 
-    def __init__(self, use_enhanced_format: bool = False):
+    def __init__(
+        self,
+        use_enhanced_format: bool = False,
+        tier: TierType = "balanced",
+        use_claude_cli: bool = True,
+        timeout: int = 180,
+    ):
         """
         Initialize the miner.
 
@@ -823,13 +834,28 @@ class PainPointMiner:
             use_enhanced_format: If True, returns enhanced format with confidence.
                                 If False (default), returns legacy format (string lists)
                                 for backward compatibility.
+            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+                  Only used when use_claude_cli=True. Default is "balanced" (Sonnet 4.5).
+            use_claude_cli: If True (default), use Claude Code CLI for inference.
+                           If False, use OpenRouter via LangChain (legacy mode).
+            timeout: CLI timeout in seconds (default 180s for complex analysis).
         """
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,
-            layer="layer2",
-        )
         self.use_enhanced_format = use_enhanced_format
+        self.tier = tier
+        self.use_claude_cli = use_claude_cli
+
+        if use_claude_cli:
+            # Use Claude Code CLI with three-tier model system
+            self.cli = ClaudeCLI(tier=tier, timeout=timeout)
+            self.llm = None  # Not used in Claude CLI mode
+        else:
+            # Legacy mode: Use OpenRouter via LangChain
+            self.cli = None
+            self.llm = create_tracked_llm(
+                model=Config.DEFAULT_MODEL,
+                temperature=Config.ANALYTICAL_TEMPERATURE,
+                layer="layer2",
+            )
 
     def _get_domain_example(self, domain: JobDomain) -> tuple[str, str]:
         """Get domain-appropriate few-shot example."""
@@ -848,9 +874,14 @@ class PainPointMiner:
         job_description: str,
         domain: JobDomain,
         annotation_context: Optional[Dict[str, List[str]]] = None,
+        job_id: Optional[str] = None,
     ) -> str:
         """
         Call LLM with enhanced prompts.
+
+        Supports two backends:
+        - Claude CLI (default): Combines system + user prompt for CLI invocation
+        - OpenRouter (legacy): Uses LangChain messages for API call
 
         Args:
             title: Job title
@@ -858,6 +889,7 @@ class PainPointMiner:
             job_description: Full job description text
             domain: Detected job domain for few-shot examples
             annotation_context: Optional annotation context for priority guidance
+            job_id: Optional job ID for tracking (required for Claude CLI)
 
         Returns:
             LLM response content
@@ -880,13 +912,30 @@ class PainPointMiner:
             if annotation_prompt:
                 user_prompt = user_prompt + annotation_prompt
 
-        messages = [
-            SystemMessage(content=ENHANCED_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt)
-        ]
+        if self.use_claude_cli:
+            # Claude CLI mode: Combine system + user prompt into single prompt
+            combined_prompt = f"{ENHANCED_SYSTEM_PROMPT}\n\n---\n\n{user_prompt}"
 
-        response = self.llm.invoke(messages)
-        return response.content
+            # Invoke Claude CLI
+            result = self.cli.invoke(
+                prompt=combined_prompt,
+                job_id=job_id or "pain-point-miner",
+                validate_json=False,  # We handle JSON parsing ourselves
+            )
+
+            if not result.success:
+                raise ValueError(f"Claude CLI invocation failed: {result.error}")
+
+            return result.raw_result
+        else:
+            # Legacy OpenRouter mode: Use LangChain messages
+            messages = [
+                SystemMessage(content=ENHANCED_SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt)
+            ]
+
+            response = self.llm.invoke(messages)
+            return response.content
 
     def _extract_reasoning(self, response: str) -> str:
         """Extract reasoning block from response."""
@@ -1096,6 +1145,7 @@ class PainPointMiner:
                 job_description=state["job_description"],
                 domain=domain,
                 annotation_context=annotation_context if any(annotation_context.values()) else None,
+                job_id=state.get("job_id"),  # Pass job_id for Claude CLI tracking
             )
 
             # Extract reasoning for logging
@@ -1211,7 +1261,11 @@ class PainPointMiner:
 
 # ===== LANGGRAPH NODE FUNCTION =====
 
-def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
+def pain_point_miner_node(
+    state: JobState,
+    tier: TierType = "balanced",
+    use_claude_cli: bool = True,
+) -> Dict[str, Any]:
     """
     LangGraph node function for Layer 2: Pain-Point Miner (Enhanced).
 
@@ -1219,6 +1273,10 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
 
     Args:
         state: Current job processing state
+        tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+              Default is "balanced" (Sonnet 4.5).
+        use_claude_cli: If True (default), use Claude Code CLI for inference.
+                       If False, use OpenRouter via LangChain (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state
@@ -1231,10 +1289,18 @@ def pain_point_miner_node(state: JobState) -> Dict[str, Any]:
     logger.info("=" * 60)
     logger.info(f"Job: {state['title']} at {state['company']}")
     logger.info(f"Description length: {len(state['job_description'])} chars")
+    if use_claude_cli:
+        logger.info(f"Backend: Claude CLI (tier={tier}, model={CLAUDE_MODEL_TIERS.get(tier, 'balanced')})")
+    else:
+        logger.info("Backend: OpenRouter (legacy mode)")
 
     with LayerContext(struct_logger, 2, "pain_point_miner") as ctx:
         # Use legacy format for backward compatibility with downstream layers
-        miner = PainPointMiner(use_enhanced_format=False)
+        miner = PainPointMiner(
+            use_enhanced_format=False,
+            tier=tier,
+            use_claude_cli=use_claude_cli,
+        )
         updates = miner.extract_pain_points(state)
 
         # Add metadata for structured logging

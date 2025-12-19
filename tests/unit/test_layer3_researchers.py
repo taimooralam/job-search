@@ -220,8 +220,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run Company Researcher
-        researcher = CompanyResearcher()
+        # Run Company Researcher (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assertions
@@ -266,8 +266,8 @@ class TestCompanyResearcherWithMockedDependencies:
 
         mock_llm_class.return_value = MagicMock()
 
-        # Run Company Researcher
-        researcher = CompanyResearcher()
+        # Run Company Researcher (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assertions
@@ -336,8 +336,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert funding signal extracted
@@ -382,8 +382,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert acquisition signal extracted
@@ -428,8 +428,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert leadership_change signal extracted
@@ -474,8 +474,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert product_launch signal extracted
@@ -520,8 +520,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert partnership signal extracted
@@ -566,8 +566,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Assert growth signal extracted
@@ -632,8 +632,8 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
         mock_mongo_class.return_value = mock_mongo
 
-        # Run
-        researcher = CompanyResearcher()
+        # Run (use_claude_api=False for legacy FireCrawl mode)
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Quality gate: ≥3 signals for rich content
@@ -713,8 +713,8 @@ class TestRoleResearcherWithMockedLLM:
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        # Run Role Researcher
-        researcher = RoleResearcher()
+        # Run Role Researcher (use_claude_api=False for legacy FireCrawl mode)
+        researcher = RoleResearcher(use_claude_api=False)
         result = researcher.research_role(sample_job_state)
 
         # Assertions
@@ -748,8 +748,8 @@ class TestRoleResearcherWithMockedLLM:
         mock_llm.invoke.side_effect = Exception("LLM API error")
         mock_llm_class.return_value = mock_llm
 
-        # Run Role Researcher
-        researcher = RoleResearcher()
+        # Run Role Researcher (use_claude_api=False for legacy FireCrawl mode)
+        researcher = RoleResearcher(use_claude_api=False)
         result = researcher.research_role(sample_job_state)
 
         # Should return None but not raise exception
@@ -788,8 +788,8 @@ def test_company_researcher_node_integration(
     mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
     mock_mongo_class.return_value = mock_mongo
 
-    # Run node function
-    updates = company_researcher_node(sample_job_state)
+    # Run node function (use_claude_api=False for legacy FireCrawl mode)
+    updates = company_researcher_node(sample_job_state, use_claude_api=False)
 
     # Assertions
     assert "company_research" in updates
@@ -813,8 +813,8 @@ def test_role_researcher_node_integration(
     mock_llm.invoke.return_value = mock_response
     mock_llm_class.return_value = mock_llm
 
-    # Run node function
-    updates = role_researcher_node(sample_job_state)
+    # Run node function (use_claude_api=False for legacy FireCrawl mode)
+    updates = role_researcher_node(sample_job_state, use_claude_api=False)
 
     # Assertions
     assert "role_research" in updates
@@ -1032,7 +1032,7 @@ class TestCompanyResearcherFallback:
             url="https://techcorp.com"
         )
 
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Verify fallback was called
@@ -1118,7 +1118,7 @@ class TestSTARAwareness:
             }
         ]
 
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(use_claude_api=False)
         domains, outcomes = researcher._extract_star_context(sample_job_state)
 
         assert domains is not None
@@ -1135,7 +1135,7 @@ class TestSTARAwareness:
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, mock_mongo_class, sample_job_state):
         """STAR context extraction returns None when no selected_stars."""
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(use_claude_api=False)
         domains, outcomes = researcher._extract_star_context(sample_job_state)
 
         assert domains is None
@@ -1182,7 +1182,7 @@ class TestSTARAwareness:
             url="https://techcorp.com"
         )
 
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(use_claude_api=False)
         researcher.research_company(sample_job_state)
 
         # Verify _analyze_company_signals was called with STAR context
@@ -1210,7 +1210,7 @@ class TestRoleResearcherSTARAwareness:
             }
         ]
 
-        researcher = RoleResearcher()
+        researcher = RoleResearcher(use_claude_api=False)
         domains, outcomes = researcher._extract_star_context(sample_job_state)
 
         assert "Platform Engineering" in domains
@@ -1258,7 +1258,7 @@ class TestPhase5Integration:
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
 
         # Verify schema compliance
@@ -1310,7 +1310,7 @@ class TestPhase5Integration:
         mock_firecrawl.search.return_value = None
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        researcher = RoleResearcher()
+        researcher = RoleResearcher(use_claude_api=False)
         result = researcher.research_role(sample_job_state)
 
         # Verify schema compliance

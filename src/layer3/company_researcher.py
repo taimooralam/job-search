@@ -11,6 +11,7 @@ Phase 5.1 Update: Multi-source scraping with structured signal extraction.
 Previous Phase 1.3: Added MongoDB caching with 7-day TTL.
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -27,6 +28,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, CompanySignal, CompanyResearch
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -413,24 +415,49 @@ class CompanyResearcher:
     Researches companies using web scraping and LLM analysis.
     Phase 1.3: Includes MongoDB caching to reduce FireCrawl costs.
     Phase 5 enhancement: STAR-aware prompts and defensive fallback.
+
+    Supports two execution backends:
+    - Claude API (default): Uses Claude API with WebSearch for research
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
     """
 
-    def __init__(self):
-        """Initialize FireCrawl client, LLM, and MongoDB cache."""
+    def __init__(
+        self,
+        tier: TierType = "balanced",
+        use_claude_api: bool = True,
+    ):
+        """
+        Initialize the company researcher.
+
+        Args:
+            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+                  Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
+            use_claude_api: If True (default), use Claude API with WebSearch.
+                           If False, use FireCrawl + OpenRouter (legacy mode).
+        """
         # Logger for internal operations (no run_id context yet)
         self.logger = logging.getLogger(__name__)
+        self.tier = tier
+        self.use_claude_api = use_claude_api
 
-        # FireCrawl for web scraping
-        self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+        if use_claude_api:
+            # Claude API with WebSearch for research
+            self.claude_researcher = ClaudeWebResearcher(tier=tier)
+            self.firecrawl = None
+            self.llm = None
+        else:
+            # Legacy mode: FireCrawl + OpenRouter
+            self.claude_researcher = None
+            # FireCrawl for web scraping
+            self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+            # LLM for summarization (GAP-066: Token tracking enabled)
+            self.llm = create_tracked_llm(
+                model=Config.DEFAULT_MODEL,
+                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual summaries
+                layer="layer3_company",
+            )
 
-        # LLM for summarization (GAP-066: Token tracking enabled)
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual summaries
-            layer="layer3_company",
-        )
-
-        # MongoDB for caching (Phase 1.3)
+        # MongoDB for caching (Phase 1.3) - always enabled
         self.mongo_client = MongoClient(Config.MONGODB_URI)
         self.cache_collection = self.mongo_client["jobs"]["company_cache"]
         # Create TTL index on cached_at field (7 days)
@@ -507,6 +534,125 @@ class CompanyResearcher:
         except Exception as e:
             self.logger.warning(f"Company type classification error: {e}, defaulting to 'employer'")
             return "employer"
+
+    def _research_company_with_claude_api(self, state: JobState) -> Dict[str, Any]:
+        """
+        Research company using Claude API with WebSearch (new backend).
+
+        This is the primary research method when use_claude_api=True. It uses
+        Claude's built-in web_search tool to find and synthesize company information
+        in a single API call, replacing the multi-step FireCrawl + LLM approach.
+
+        Args:
+            state: JobState with company name, title, job_description
+
+        Returns:
+            Dict with company_research (structured) + legacy fields for compatibility
+        """
+        company = state["company"]
+        job_title = state.get("title", "")
+        job_description = state.get("job_description", "")
+
+        self.logger.info(f"[Claude API] Researching company: {company}")
+
+        # Check cache first (same caching logic as FireCrawl mode)
+        try:
+            cached_data = self._check_cache(company)
+            if cached_data:
+                self.logger.info(f"[Cache] HIT for {company}")
+                return cached_data
+        except Exception as e:
+            self.logger.info(f"[Cache] Check failed, proceeding with fresh research: {e}")
+
+        # Call Claude API with web search
+        try:
+            # Run async method in sync context
+            result = asyncio.run(
+                self.claude_researcher.research_company(
+                    company_name=company,
+                    job_context=job_description[:1000] if job_description else "",
+                    job_title=job_title,
+                )
+            )
+
+            if not result.success:
+                raise ValueError(f"Claude API research failed: {result.error}")
+
+            data = result.data
+            self.logger.info(
+                f"[Claude API] Research complete - {result.searches_performed} searches, "
+                f"{result.duration_ms}ms, {len(data.get('signals', []))} signals"
+            )
+
+            # Convert to CompanyResearch format for JobState
+            company_research: CompanyResearch = {
+                "summary": data.get("summary", ""),
+                "signals": [
+                    {
+                        "type": sig.get("type", "growth"),
+                        "description": sig.get("description", ""),
+                        "date": sig.get("date", "unknown"),
+                        "source": sig.get("source", ""),
+                    }
+                    for sig in data.get("signals", [])
+                ],
+                "url": data.get("url", self._construct_company_url(company)),
+                "company_type": data.get("company_type", "employer"),
+            }
+
+            # Store in cache
+            try:
+                # Create a CompanyResearchOutput for caching (matches Phase 5.1 format)
+                # Use classes defined at module level (not imported from self)
+                cache_output = CompanyResearchOutput(
+                    summary=company_research["summary"],
+                    signals=[
+                        CompanySignalModel(
+                            type=sig["type"],
+                            description=sig["description"],
+                            date=sig["date"],
+                            source=sig["source"],
+                        )
+                        for sig in company_research["signals"]
+                    ],
+                    url=company_research["url"],
+                )
+                self._store_cache(
+                    company,
+                    company_research=cache_output,
+                    company_type=company_research["company_type"]
+                )
+                self.logger.info(f"[Cache] ✓ Stored Claude API research for {company}")
+            except Exception as cache_error:
+                self.logger.warning(f"[Cache] ✗ Failed to cache Claude API results: {cache_error}")
+
+            # Scrape job posting if URL available (for dossier completeness)
+            scraped_job_posting = None
+            job_url = state.get("job_url", "")
+            if job_url and not self.use_claude_api:
+                # Only scrape job posting in FireCrawl mode (has scraping capability)
+                # In Claude API mode, we don't have FireCrawl available
+                pass
+
+            return {
+                "company_research": company_research,
+                "scraped_job_posting": scraped_job_posting,
+                # Legacy fields for backward compatibility
+                "company_summary": company_research["summary"],
+                "company_url": company_research["url"],
+            }
+
+        except Exception as e:
+            error_msg = f"Claude API company research failed: {str(e)}"
+            self.logger.error(error_msg)
+
+            # Return minimal result with error
+            return {
+                "company_summary": None,
+                "company_url": None,
+                "scraped_job_posting": None,
+                "errors": state.get("errors", []) + [error_msg],
+            }
 
     def _assess_content_quality(self, content: str) -> str:
         """
@@ -1222,7 +1368,16 @@ Output JSON only:
         """
         Main function to research company and generate structured research.
 
-        Strategy (Phase 5.1 with multi-source scraping + Phase 5 enhancements):
+        Supports two execution backends:
+        - Claude API (default): Uses Claude with WebSearch for research (new)
+        - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+
+        Strategy (when use_claude_api=True):
+        - Uses Claude API with web_search tool for one-shot research
+        - Caches results in MongoDB with 7-day TTL
+        - Handles company type detection inline
+
+        Strategy (when use_claude_api=False - legacy FireCrawl mode):
         0. Classify company type (employer vs recruitment agency)
         1. Check MongoDB cache (7-day TTL)
         2. If recruitment agency: minimal research (basic summary, no signals)
@@ -1241,6 +1396,14 @@ Output JSON only:
             Dict with company_research (structured) + legacy company_summary/company_url
         """
         company = state["company"]
+
+        # Route to Claude API backend if enabled (new default)
+        if self.use_claude_api:
+            self.logger.info(f"Using Claude API ({self.tier} tier) for company research")
+            return self._research_company_with_claude_api(state)
+
+        # Legacy FireCrawl + OpenRouter mode
+        self.logger.info("Using FireCrawl + OpenRouter (legacy mode) for company research")
         scraped_job_posting = self._scrape_job_posting(state.get("job_url", ""))
 
         # Step 0: Classify company type (employer vs recruitment agency)
@@ -1392,12 +1555,24 @@ Output JSON only:
 
 # ===== LANGGRAPH NODE FUNCTION =====
 
-def company_researcher_node(state: JobState) -> Dict[str, Any]:
+def company_researcher_node(
+    state: JobState,
+    tier: TierType = "balanced",
+    use_claude_api: bool = True,
+) -> Dict[str, Any]:
     """
-    LangGraph node function for Layer 3: Company Researcher (Phase 5.1).
+    LangGraph node function for Layer 3: Company Researcher.
+
+    Supports two execution backends:
+    - Claude API (default): Uses Claude with WebSearch for research
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
 
     Args:
         state: Current job processing state
+        tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+              Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
+        use_claude_api: If True (default), use Claude API with WebSearch.
+                       If False, use FireCrawl + OpenRouter (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state
@@ -1405,13 +1580,14 @@ def company_researcher_node(state: JobState) -> Dict[str, Any]:
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
+    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "FireCrawl + OpenRouter (legacy)"
     logger.info("="*60)
-    logger.info("LAYER 3: Company Researcher (Phase 5.1)")
+    logger.info(f"LAYER 3: Company Researcher - {backend_name}")
     logger.info("="*60)
     logger.info(f"Researching: {state['company']}")
 
     with LayerContext(struct_logger, 3, "company_researcher") as ctx:
-        researcher = CompanyResearcher()
+        researcher = CompanyResearcher(tier=tier, use_claude_api=use_claude_api)
         updates = researcher.research_company(state)
 
         # Log results and add metadata (Phase 5.1 format)

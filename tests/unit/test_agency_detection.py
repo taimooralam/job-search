@@ -120,6 +120,7 @@ class TestMinimalAgencyResearch:
         with patch.object(CompanyResearcher, '__init__', lambda x: None):
             researcher = CompanyResearcher.__new__(CompanyResearcher)
             researcher.logger = MagicMock()
+            researcher.use_claude_api = False  # Use legacy FireCrawl path for test
             researcher._classify_company_type = mock_classify
             researcher._scrape_job_posting = mock_scrape
             researcher._construct_company_url = lambda x: f"https://{x.lower().replace(' ', '-')}.com"

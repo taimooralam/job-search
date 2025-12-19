@@ -10,6 +10,7 @@ Analyzes the specific role's business impact and timing significance.
 New in Phase 5.2: Complete role research with "why now" analysis.
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -24,6 +25,7 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, RoleResearch
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
+from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -194,21 +196,47 @@ class RoleResearcher:
     """
     Researches roles to understand business impact and timing (Phase 5.2).
     Phase 5 enhancement: STAR-aware prompts when candidate context available.
+
+    Supports two execution backends:
+    - Claude API (default): Uses Claude with WebSearch for research
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
     """
 
-    def __init__(self):
-        """Initialize LLM and FireCrawl for role analysis."""
+    def __init__(
+        self,
+        tier: TierType = "balanced",
+        use_claude_api: bool = True,
+    ):
+        """
+        Initialize Role Researcher with dual backend support.
+
+        Args:
+            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+                  Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
+            use_claude_api: If True (default), use Claude API with WebSearch.
+                           If False, use FireCrawl + OpenRouter (legacy mode).
+        """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
+        self.tier = tier
+        self.use_claude_api = use_claude_api
 
-        # GAP-066: Token tracking enabled
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual analysis
-            layer="layer3_role",
-        )
-        # FireCrawl for role-specific context (Phase 5.2)
-        self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
+        if use_claude_api:
+            # Claude API with WebSearch for research (new default)
+            self.claude_researcher = ClaudeWebResearcher(tier=tier)
+            self.llm = None
+            self.firecrawl = None
+        else:
+            # Legacy mode: FireCrawl + OpenRouter
+            self.claude_researcher = None
+            # GAP-066: Token tracking enabled
+            self.llm = create_tracked_llm(
+                model=Config.DEFAULT_MODEL,
+                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual analysis
+                layer="layer3_role",
+            )
+            # FireCrawl for role-specific context (Phase 5.2)
+            self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
 
     def _extract_star_context(self, state: JobState) -> tuple[Optional[str], Optional[str]]:
         """
@@ -249,6 +277,97 @@ class RoleResearcher:
         outcomes_text = ", ".join(sorted(outcomes)) if outcomes else "Not specified"
 
         return domains_text, outcomes_text
+
+    def _research_role_with_claude_api(self, state: JobState) -> Dict[str, Any]:
+        """
+        Research role using Claude API with WebSearch (new backend).
+
+        This is the primary research method when use_claude_api=True. It uses
+        Claude's built-in web_search tool to find and synthesize role information
+        in a single API call, replacing the multi-step FireCrawl + LLM approach.
+
+        Args:
+            state: JobState with title, company, job_description, company_research
+
+        Returns:
+            Dict with role_research (structured)
+        """
+        title = state["title"]
+        company = state["company"]
+        job_description = state.get("job_description", "")
+
+        self.logger.info(f"[Claude API] Researching role: {title} at {company}")
+
+        # Extract company signals if available (from Phase 5.1)
+        company_signals_text = "No company signals available."
+        company_research = state.get("company_research")
+        if company_research:
+            signals = company_research.get("signals", [])
+            if signals:
+                signal_lines = []
+                for sig in signals:
+                    signal_lines.append(
+                        f"- [{sig.get('type', 'unknown')}] {sig.get('description', 'N/A')} "
+                        f"({sig.get('date', 'unknown')})"
+                    )
+                company_signals_text = "\n".join(signal_lines)
+
+        # Call Claude API with web search
+        try:
+            # Run async method in sync context
+            result = asyncio.run(
+                self.claude_researcher.research_role(
+                    company_name=company,
+                    role_title=title,
+                    job_description=job_description[:2000] if job_description else "",
+                )
+            )
+
+            if not result.success:
+                raise ValueError(f"Claude API role research failed: {result.error}")
+
+            data = result.data
+            self.logger.info(
+                f"[Claude API] Role research complete - {result.searches_performed} searches, "
+                f"{result.duration_ms}ms"
+            )
+
+            # Convert to RoleResearch format for JobState
+            role_research: RoleResearch = {
+                "summary": data.get("summary", ""),
+                "business_impact": data.get("business_impact", []),
+                "why_now": data.get("why_now", ""),
+            }
+
+            # Validate with Pydantic if needed
+            if not role_research["business_impact"] or len(role_research["business_impact"]) < 3:
+                # Ensure minimum 3 business impact points
+                default_impacts = [
+                    f"Drive key initiatives for the {title} role",
+                    f"Improve operational efficiency at {company}",
+                    "Contribute to strategic business objectives",
+                ]
+                while len(role_research["business_impact"]) < 3:
+                    role_research["business_impact"].append(
+                        default_impacts[len(role_research["business_impact"])]
+                    )
+
+            self.logger.info(
+                f"[Claude API] Extracted {len(role_research['business_impact'])} business impact points"
+            )
+
+            return {
+                "role_research": role_research
+            }
+
+        except Exception as e:
+            error_msg = f"Claude API role research failed: {str(e)}"
+            self.logger.error(error_msg)
+
+            return {
+                "role_research": None,
+                "errors": state.get("errors", []) + [error_msg]
+            }
 
     @retry(
         stop=stop_after_attempt(2),
@@ -452,6 +571,10 @@ class RoleResearcher:
         """
         Main function to analyze role and generate research.
 
+        Supports two execution backends:
+        - Claude API (default): Uses Claude with WebSearch for research
+        - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
+
         Phase 5 enhancement: STAR-aware role analysis when candidate context available.
 
         Args:
@@ -461,6 +584,14 @@ class RoleResearcher:
         Returns:
             Dict with role_research (RoleResearch structure)
         """
+        # Route to Claude API backend if enabled (new default)
+        if self.use_claude_api:
+            self.logger.info(f"Using Claude API ({self.tier} tier) for role research")
+            return self._research_role_with_claude_api(state)
+
+        # Legacy FireCrawl + OpenRouter mode
+        self.logger.info("Using FireCrawl + OpenRouter (legacy mode) for role research")
+
         try:
             # Extract company signals if available (from Phase 5.1)
             company_signals = None
@@ -532,12 +663,24 @@ class RoleResearcher:
 
 # ===== LANGGRAPH NODE FUNCTION =====
 
-def role_researcher_node(state: JobState) -> Dict[str, Any]:
+def role_researcher_node(
+    state: JobState,
+    tier: TierType = "balanced",
+    use_claude_api: bool = True,
+) -> Dict[str, Any]:
     """
-    LangGraph node function for Layer 3.5: Role Researcher (Phase 5.2).
+    LangGraph node function for Layer 3.5: Role Researcher.
+
+    Supports two execution backends:
+    - Claude API (default): Uses Claude with WebSearch for research
+    - FireCrawl (legacy): Uses FireCrawl + OpenRouter for backward compatibility
 
     Args:
         state: Current job processing state
+        tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
+              Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
+        use_claude_api: If True (default), use Claude API with WebSearch.
+                       If False, use FireCrawl + OpenRouter (legacy mode).
 
     Returns:
         Dictionary with updates to merge into state
@@ -545,8 +688,9 @@ def role_researcher_node(state: JobState) -> Dict[str, Any]:
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer3.5")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
+    backend_name = f"Claude API ({tier} tier)" if use_claude_api else "FireCrawl + OpenRouter (legacy)"
     logger.info("="*60)
-    logger.info("LAYER 3.5: Role Researcher (Phase 5.2)")
+    logger.info(f"LAYER 3.5: Role Researcher - {backend_name}")
     logger.info("="*60)
 
     # Skip role research for recruitment agencies (no client company to research)
@@ -563,7 +707,7 @@ def role_researcher_node(state: JobState) -> Dict[str, Any]:
     struct_logger.layer_start(4, "role_researcher")  # 3.5 -> use 4 slot for sub-layer
 
     try:
-        researcher = RoleResearcher()
+        researcher = RoleResearcher(tier=tier, use_claude_api=use_claude_api)
         updates = researcher.research_role(state)
 
         # Log results

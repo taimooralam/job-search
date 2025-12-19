@@ -572,7 +572,7 @@ Step 4: Score 80 based on evidence.
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper()
+        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
         result = mapper.map_opportunity(sample_job_state_with_annotations)
 
         # Should include annotation analysis
@@ -599,7 +599,7 @@ Analysis complete.
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper()
+        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
         result = mapper.map_opportunity(sample_job_state_with_annotations)
 
         # LLM score is 75
@@ -641,7 +641,7 @@ Analysis complete.
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper()
+        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
         result = mapper.map_opportunity(state_with_disqualifier)
 
         # Should flag the disqualifier
@@ -674,7 +674,7 @@ Analysis complete.
         mock_llm.invoke.return_value = mock_response
         mock_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper()
+        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
         result = mapper.map_opportunity(state_no_annotations)
 
         # Should work and return LLM score without blending
