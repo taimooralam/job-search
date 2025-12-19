@@ -1031,58 +1031,19 @@ def move_to_batch():
         }}
     )
 
-    # Auto-queue all-ops (JD extraction + company research) for all jobs
-    all_ops_result = None
-    all_ops_error = None
+    # NOTE: Pipeline auto-run has been moved to the batch page frontend.
+    # This allows the batch page to orchestrate pipeline runs directly via
+    # browser→runner calls, providing full visibility with progress panels
+    # and real-time log polling. The batch page detects recently added jobs
+    # by checking batch_added_at timestamps and auto-runs all-ops on them.
 
-    if auto_process and job_ids:
-        runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
-        runner_token = os.getenv("RUNNER_API_SECRET", "")
-
-        try:
-            response = requests.post(
-                f"{runner_url}/api/jobs/all-ops/bulk",
-                json={
-                    "job_ids": job_ids,
-                    "tier": tier,
-                    "use_llm": True,
-                    "force_refresh": False
-                },
-                headers={
-                    "Authorization": f"Bearer {runner_token}",
-                    "Content-Type": "application/json"
-                },
-                timeout=30  # Longer timeout for bulk operations
-            )
-            if response.status_code == 200:
-                all_ops_result = response.json()
-                logger.info(
-                    f"Auto-queued all-ops for {all_ops_result.get('total_count', 0)} jobs "
-                    f"with tier={tier}"
-                )
-            else:
-                all_ops_error = f"HTTP {response.status_code}: {response.text[:200]}"
-                logger.warning(f"Failed to queue all-ops: {all_ops_error}")
-        except requests.exceptions.Timeout:
-            all_ops_error = "Request timeout"
-            logger.warning("Timeout queueing all-ops for batch")
-        except Exception as e:
-            all_ops_error = str(e)
-            logger.warning(f"Failed to queue all-ops: {e}")
-
-    logger.info(
-        f"Moved {result.modified_count} jobs to batch"
-        + (f", auto-processed with tier={tier}" if auto_process else "")
-    )
+    logger.info(f"Moved {result.modified_count} jobs to batch")
 
     return jsonify({
         "success": True,
         "updated_count": result.modified_count,
         "batch_added_at": batch_added_at.isoformat(),
-        "auto_process": auto_process,
-        "all_ops_queued": all_ops_result.get("total_count", 0) if all_ops_result else 0,
-        "all_ops_runs": all_ops_result.get("runs", []) if all_ops_result else [],
-        "all_ops_error": all_ops_error
+        "job_ids": job_ids  # Return job IDs for batch page to auto-run
     })
 
 

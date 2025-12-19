@@ -810,6 +810,126 @@
     }
 
     // ============================================================================
+    // Auto-Run Pipeline for Recently Added Jobs
+    // ============================================================================
+
+    // Track jobs we've already auto-run to avoid duplicate runs on page refresh
+    const autoRunProcessedJobs = new Set();
+
+    /**
+     * Detects jobs added within the last 30 seconds and auto-runs all-ops on them.
+     * This provides full visibility via progress panels and log pollers.
+     */
+    async function autoRunRecentlyAddedJobs() {
+        const now = new Date();
+        const threshold = 30 * 1000; // 30 seconds
+
+        // Find all rows with batch_added_at attribute
+        const rows = document.querySelectorAll('[data-batch-added-at]');
+        const recentJobIds = [];
+
+        rows.forEach(row => {
+            const batchAddedAt = row.dataset.batchAddedAt;
+            const jobId = row.dataset.jobId;
+
+            if (!batchAddedAt || !jobId) return;
+            if (autoRunProcessedJobs.has(jobId)) return; // Already processed
+
+            try {
+                const addedTime = new Date(batchAddedAt);
+                const timeSinceAdded = now - addedTime;
+
+                if (timeSinceAdded <= threshold) {
+                    recentJobIds.push(jobId);
+                    autoRunProcessedJobs.add(jobId); // Mark as processed
+                }
+            } catch (e) {
+                BatchDebug.error('AUTO-RUN', `Failed to parse batch_added_at for ${jobId}:`, e);
+            }
+        });
+
+        if (recentJobIds.length === 0) {
+            BatchDebug.log('AUTO-RUN', 'No recently added jobs to auto-run');
+            return;
+        }
+
+        BatchDebug.log('AUTO-RUN', `Found ${recentJobIds.length} recently added jobs`, recentJobIds);
+
+        // Auto-select the jobs
+        recentJobIds.forEach(jobId => {
+            batchSelectedJobs.add(jobId);
+            const checkbox = document.querySelector(`.batch-row-checkbox[data-job-id="${jobId}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+        updateBatchSelectionUI();
+
+        // Auto-run all-ops with balanced tier (no confirmation dialog)
+        const tier = 'B'; // Balanced tier as requested by user
+        const tierDisplay = tierLabels[tier] || 'Balanced';
+
+        showToast(`Auto-running All Ops on ${recentJobIds.length} newly added job(s) [${tierDisplay}]...`, 'info');
+
+        // Initialize progress tracking
+        initBatchProgress(recentJobIds, 'All Ops (Auto)');
+
+        try {
+            const response = await fetch('/api/runner/jobs/all-ops/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    job_ids: recentJobIds,
+                    tier: tier,
+                    use_llm: true,
+                    force_refresh: false
+                })
+            });
+
+            const result = await response.json();
+            BatchDebug.log('AUTO-RUN', 'Bulk endpoint response', result);
+
+            if (response.ok && result.runs) {
+                showToast(`Queued ${result.total_count} jobs for pipeline. Progress panels active.`, 'success');
+
+                // Start log pollers for each job
+                result.runs.forEach((run, index) => {
+                    BatchDebug.log('AUTO-RUN', `Job ${run.job_id} queued with run_id ${run.run_id}`);
+                    updateJobProgress(run.job_id, 'queued');
+
+                    // Dispatch event for live status badges
+                    const position = run.position || (index + 1);
+                    window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                        detail: {
+                            jobId: run.job_id,
+                            status: 'pending',
+                            runId: run.run_id,
+                            operation: 'all-ops',
+                            position: position
+                        }
+                    }));
+
+                    // Connect LogPoller for each job
+                    if (run.run_id) {
+                        const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
+                        const jobTitle = jobStatus?.title || `Job ${run.job_id.slice(-6)}`;
+                        BatchDebug.log('AUTO-RUN', `Starting LogPoller for ${run.job_id}: ${run.run_id}`);
+                        connectBatchLogPoller(run.run_id, run.job_id, 'all-ops', jobTitle);
+                    }
+                });
+
+                startBatchProgressPolling();
+            } else {
+                BatchDebug.error('AUTO-RUN', 'Bulk endpoint failed', result);
+                showToast(result.error || result.detail || 'Failed to auto-start pipeline', 'error');
+                hideBatchProgress();
+            }
+        } catch (err) {
+            BatchDebug.error('AUTO-RUN', 'Auto-run failed', err);
+            showToast('Auto-run failed: ' + err.message, 'error');
+            hideBatchProgress();
+        }
+    }
+
+    // ============================================================================
     // Keyboard Shortcuts
     // ============================================================================
 
@@ -1375,6 +1495,10 @@
             // Restore expanded rows state after HTMX swap
             // Use setTimeout to ensure Alpine.js has initialized the new rows
             setTimeout(restoreExpandedRows, 50);
+
+            // Auto-run pipeline for jobs that were just moved to batch
+            // Runs after a short delay to let the UI settle
+            setTimeout(autoRunRecentlyAddedJobs, 100);
         }
     });
 

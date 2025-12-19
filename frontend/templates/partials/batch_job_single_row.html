@@ -4,6 +4,7 @@
 <tbody x-data="{ expanded: isJobExpanded('{{ job._id }}'), jobId: '{{ job._id }}' }"
        x-on:queue:job-completed.window="if ($event.detail.jobId === jobId) htmx.trigger($el, 'refresh-row')"
        data-job-id="{{ job._id }}"
+       data-batch-added-at="{{ job.batch_added_at.isoformat() if job.batch_added_at else '' }}"
        class="theme-bg-card"
        hx-get="/partials/batch-job-row/{{ job._id }}"
        hx-trigger="refresh-row"

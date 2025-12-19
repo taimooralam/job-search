@@ -2619,7 +2619,16 @@
                         }
                     }
 
-                    showToast(`${result.updated_count} jobs moved to batch! Redirecting...`, 'success');
+                    // Show warning if pipeline auto-queue failed
+                    if (result.all_ops_error) {
+                        showToast(`Jobs moved but pipeline failed: ${result.all_ops_error}`, 'error');
+                        console.error('Pipeline auto-queue failed:', result.all_ops_error);
+                    } else if (result.all_ops_queued > 0) {
+                        showToast(`${result.updated_count} jobs moved to batch, ${result.all_ops_queued} queued for processing!`, 'success');
+                    } else {
+                        showToast(`${result.updated_count} jobs moved to batch!`, 'success');
+                    }
+
                     // Clear selection
                     selectedJobIds.clear();
                     updateSelectionCount();
@@ -2794,7 +2803,15 @@
                         }
                     }
 
-                    showToast(`"${jobTitle}" moved to batch!`, 'success');
+                    // Show warning if pipeline auto-queue failed
+                    if (result.all_ops_error) {
+                        showToast(`"${jobTitle}" moved but pipeline failed: ${result.all_ops_error}`, 'error');
+                        console.error('Pipeline auto-queue failed:', result.all_ops_error);
+                    } else if (result.all_ops_queued > 0) {
+                        showToast(`"${jobTitle}" moved and queued for processing!`, 'success');
+                    } else {
+                        showToast(`"${jobTitle}" moved to batch!`, 'success');
+                    }
                     htmx.trigger('#job-table-container', 'refresh');
                 } else {
                     showToast(result.error || 'Failed to move job to batch', 'error');
