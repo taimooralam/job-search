@@ -500,6 +500,14 @@ document.addEventListener('alpine:init', () => {
         showPanel() {
             this.expanded = true;
             this._saveState();
+
+            // When showing panel, ensure active run is polling if still running
+            if (this.activeRunId) {
+                const run = this.runs[this.activeRunId];
+                if (run?.status === 'running' && !run._logPoller) {
+                    this.subscribeToLogs(this.activeRunId);
+                }
+            }
         },
 
         /**
@@ -1036,6 +1044,14 @@ document.addEventListener('alpine:init', () => {
                 this.runs[runId].startedAt = Date.now();
                 this.activeRunId = runId;
                 this.expanded = true;
+
+                // Subscribe to logs if not already polling (fixes sessionStorage restore case)
+                // When a run is restored from storage, _logPoller is null since it's not serialized
+                if (!this.runs[runId]._logPoller) {
+                    cliDebug('Run exists but no poller, subscribing to logs', runId);
+                    this.subscribeToLogs(runId);
+                }
+
                 this._saveStateImmediate();
                 return;
             }
