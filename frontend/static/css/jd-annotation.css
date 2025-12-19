@@ -591,6 +591,13 @@ section[data-section-type="about_role"] {
     background-color: var(--color-bg-selected, rgba(99, 102, 241, 0.2));
 }
 
+/* Persona panel z-index fix - ensure it renders above browser console */
+#batch-persona-panel-container,
+#persona-panel-container {
+    position: relative;
+    z-index: 51;
+}
+
 /* ============================================================================
    Print Styles
    ============================================================================ */

@@ -390,19 +390,20 @@ class TestPersonaBuilderSynthesis:
     async def test_synthesize_calls_llm_with_core_identity(
         self, builder, sample_core_identity_annotation
     ):
-        """Test synthesize calls LLM and returns SynthesizedPersona."""
+        """Test synthesize calls Claude CLI and returns SynthesizedPersona."""
         jd_annotations = {"annotations": [sample_core_identity_annotation]}
 
-        # Mock the LLM
-        mock_response = MagicMock()
-        mock_response.content = "A solutions architect who designs elegant systems"
+        # Mock the Claude CLI
+        mock_cli_result = MagicMock()
+        mock_cli_result.success = True
+        mock_cli_result.raw_result = "A solutions architect who designs elegant systems"
 
         with patch(
-            "src.common.persona_builder.create_tracked_cheap_llm"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.ainvoke = AsyncMock(return_value=mock_response)
-            mock_create_llm.return_value = mock_llm
+            "src.common.persona_builder.ClaudeCLI"
+        ) as mock_cli_class:
+            mock_cli = MagicMock()
+            mock_cli.invoke.return_value = mock_cli_result
+            mock_cli_class.return_value = mock_cli
 
             result = await builder.synthesize(jd_annotations)
 
@@ -416,19 +417,20 @@ class TestPersonaBuilderSynthesis:
     async def test_synthesize_strips_quotes_from_response(
         self, builder, sample_core_identity_annotation
     ):
-        """Test synthesize strips surrounding quotes from LLM response."""
+        """Test synthesize strips surrounding quotes from Claude CLI response."""
         jd_annotations = {"annotations": [sample_core_identity_annotation]}
 
-        # Mock the LLM with quoted response
-        mock_response = MagicMock()
-        mock_response.content = '"A solutions architect who designs elegant systems"'
+        # Mock the Claude CLI with quoted response
+        mock_cli_result = MagicMock()
+        mock_cli_result.success = True
+        mock_cli_result.raw_result = '"A solutions architect who designs elegant systems"'
 
         with patch(
-            "src.common.persona_builder.create_tracked_cheap_llm"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.ainvoke = AsyncMock(return_value=mock_response)
-            mock_create_llm.return_value = mock_llm
+            "src.common.persona_builder.ClaudeCLI"
+        ) as mock_cli_class:
+            mock_cli = MagicMock()
+            mock_cli.invoke.return_value = mock_cli_result
+            mock_cli_class.return_value = mock_cli
 
             result = await builder.synthesize(jd_annotations)
 
@@ -449,15 +451,17 @@ class TestPersonaBuilderSynthesis:
             ]
         }
 
-        mock_response = MagicMock()
-        mock_response.content = "A solutions architect and team leader"
+        # Mock the Claude CLI
+        mock_cli_result = MagicMock()
+        mock_cli_result.success = True
+        mock_cli_result.raw_result = "A solutions architect and team leader"
 
         with patch(
-            "src.common.persona_builder.create_tracked_cheap_llm"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.ainvoke = AsyncMock(return_value=mock_response)
-            mock_create_llm.return_value = mock_llm
+            "src.common.persona_builder.ClaudeCLI"
+        ) as mock_cli_class:
+            mock_cli = MagicMock()
+            mock_cli.invoke.return_value = mock_cli_result
+            mock_cli_class.return_value = mock_cli
 
             result = await builder.synthesize(jd_annotations)
 

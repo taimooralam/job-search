@@ -1355,8 +1355,8 @@ async def synthesize_persona(job_id: str) -> OperationResponse:
                 run_id=str(uuid.uuid4()),
             )
 
-        # Run async synthesis
-        persona = await builder.synthesize(jd_annotations)
+        # Run async synthesis with Claude CLI Opus
+        persona = await builder.synthesize(jd_annotations, job_id=job_id)
 
         if not persona:
             return OperationResponse(
@@ -1376,7 +1376,7 @@ async def synthesize_persona(job_id: str) -> OperationResponse:
                 "secondary": persona.secondary_identities,
                 "source_annotations": persona.source_annotations,
             },
-            cost_usd=0.001,  # Approximate cost for Haiku synthesis
+            cost_usd=0.015,  # Approximate cost for Opus synthesis
             run_id=str(uuid.uuid4()),
         )
 

@@ -23,9 +23,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from src.common.llm_factory import create_tracked_cheap_llm
+from src.common.claude_cli import ClaudeCLI
 
 logger = logging.getLogger(__name__)
 
@@ -345,13 +343,16 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         return self.has_persona_annotations(jd_annotations)
 
     async def synthesize(
-        self, jd_annotations: Dict[str, Any]
+        self, jd_annotations: Dict[str, Any], job_id: str = "unknown"
     ) -> Optional[SynthesizedPersona]:
         """
-        Synthesize persona from identity, passion, and strength annotations using LLM.
+        Synthesize persona from identity, passion, and strength annotations using Claude CLI.
+
+        Uses Claude Opus 4.5 via Claude Code CLI for high-quality persona synthesis.
 
         Args:
             jd_annotations: Full jd_annotations dict from job document
+            job_id: Job ID for logging and tracking
 
         Returns:
             SynthesizedPersona if relevant annotations exist, else None
@@ -376,21 +377,26 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         )
 
         try:
-            # Create LLM (cheap model for simple task)
-            llm = create_tracked_cheap_llm(layer=self.layer)
+            # Use Claude CLI with Opus tier for high-quality persona synthesis
+            cli = ClaudeCLI(tier="quality")  # Opus 4.5
 
-            # Build prompt
+            # Build combined prompt (system + user)
             user_prompt = self.SYNTHESIS_PROMPT.format(persona_context=persona_context)
+            full_prompt = f"{self.SYSTEM_PROMPT}\n\n{user_prompt}"
 
-            # Call LLM
-            messages = [
-                SystemMessage(content=self.SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt),
-            ]
-            response = await llm.ainvoke(messages)
+            # Call Claude CLI (no JSON validation - we want raw text)
+            result = cli.invoke(full_prompt, job_id=job_id, validate_json=False)
 
-            # Extract persona statement
-            persona_statement = response.content.strip()
+            if not result.success:
+                logger.error(f"Claude CLI failed for persona synthesis: {result.error}")
+                return None
+
+            # Extract persona statement from raw result
+            persona_statement = result.raw_result.strip() if result.raw_result else ""
+
+            if not persona_statement:
+                logger.error("Claude CLI returned empty persona statement")
+                return None
 
             # Clean up any quotes
             if persona_statement.startswith('"') and persona_statement.endswith('"'):
