@@ -20,12 +20,9 @@ from enum import Enum
 import hashlib
 
 from pydantic import BaseModel, Field
-from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
 from src.common.logger import get_logger
-from src.common.tiering import STANDARD_MODEL
 
 logger = get_logger(__name__)
 
@@ -381,126 +378,167 @@ JD_STRUCTURE_USER_TEMPLATE = """Parse this job description into structured secti
 Return ONLY valid JSON with a "sections" array."""
 
 
+def _call_claude_cli(prompt: str, model: str, timeout: int = 120) -> str:
+    """
+    Call Claude Code CLI for JD structure parsing.
+
+    Args:
+        prompt: The full prompt to send to Claude
+        model: Claude model ID (e.g., claude-sonnet-4-20250514, claude-opus-4-5-20251101)
+        timeout: CLI timeout in seconds
+
+    Returns:
+        The result text from Claude CLI
+
+    Raises:
+        Exception: If CLI fails or times out
+    """
+    import subprocess
+
+    result = subprocess.run(
+        [
+            "claude", "-p", prompt,
+            "--output-format", "json",
+            "--model", model,
+            "--max-turns", "1"
+        ],
+        capture_output=True,
+        text=True,
+        timeout=timeout
+    )
+
+    if result.returncode != 0:
+        error_msg = result.stderr or f"CLI exited with code {result.returncode}"
+        raise Exception(f"Claude CLI failed: {error_msg}")
+
+    # Parse CLI JSON output to get the result
+    cli_output = json.loads(result.stdout)
+    return cli_output.get("result", "")
+
+
+def _parse_sections_from_json(json_str: str, jd_text: str) -> List[JDSection]:
+    """
+    Parse sections from JSON response.
+
+    Args:
+        json_str: JSON string containing sections array
+        jd_text: Original JD text for offset calculation
+
+    Returns:
+        List of JDSection objects
+    """
+    # Parse JSON from response
+    json_match = re.search(r'\{[\s\S]*\}', json_str)
+    if not json_match:
+        raise ValueError("No JSON found in response")
+
+    data = json.loads(json_match.group())
+    sections_data = data.get("sections", [])
+
+    if not sections_data:
+        raise ValueError("Empty sections array")
+
+    sections = []
+    char_offset = 0
+
+    for i, section_data in enumerate(sections_data):
+        section_type_str = section_data.get("section_type", "other")
+        try:
+            section_type = JDSectionType(section_type_str)
+        except ValueError:
+            section_type = JDSectionType.OTHER
+
+        header = section_data.get("header", "")
+        items = section_data.get("items", [])
+
+        # Ensure items is a list of strings
+        if not isinstance(items, list):
+            items = [str(items)] if items else []
+        items = [str(item) for item in items if item]
+
+        section_content = '\n'.join(f"• {item}" for item in items)
+
+        # Calculate approximate character offsets
+        header_pos = jd_text.lower().find(header.lower()[:30]) if header else -1
+        if header_pos >= 0:
+            char_start = header_pos
+        else:
+            char_start = char_offset
+
+        content_len = len(header) + len(section_content) + 10
+        char_end = char_start + content_len
+        char_offset = char_end
+
+        sections.append(JDSection(
+            section_type=section_type,
+            header=header,
+            content=section_content,
+            items=items,
+            char_start=char_start,
+            char_end=min(char_end, len(jd_text)),
+            index=i,
+        ))
+
+    return sections
+
+
 async def parse_jd_sections_with_llm(
     jd_text: str,
-    model: str = None,  # Uses tier system STANDARD_MODEL by default
+    model: str = None,  # Claude model ID
 ) -> List[JDSection]:
     """
-    Parse JD into sections using LLM.
+    Parse JD into sections using Claude Code CLI.
 
-    Always uses LLM for intelligent parsing of compressed/blob JD text.
-    No regex fallback - the LLM is the primary and only parser.
-
-    Uses gpt-4o-mini from the tier system by default - a good balance of
-    quality and cost for document structuring tasks.
+    Uses Claude CLI for high-quality parsing of compressed/blob JD text.
+    Falls back to rule-based parsing if Claude CLI fails.
 
     Args:
         jd_text: Raw job description text (may be compressed without formatting)
-        model: LLM model to use (defaults to tier system's STANDARD_MODEL)
+        model: Claude model ID (defaults to claude-sonnet-4-20250514)
 
     Returns:
         List of parsed sections
     """
-    from langchain_openai import ChatOpenAI
+    import os
 
-    # Default to tier system's standard model (gpt-4o-mini)
-    # This is slightly more expensive than gemini-flash but has better
-    # JSON handling and more reliable section parsing
+    # Default to Sonnet for structure parsing (good balance of speed/quality)
+    # Can be overridden by caller for tier-based selection
     if model is None:
-        model = STANDARD_MODEL  # gpt-4o-mini from tier system
+        model = os.getenv("CLAUDE_CODE_MODEL", "claude-sonnet-4-20250514")
 
-    # Use OpenAI API directly for standard models
-    api_key = Config.OPENAI_API_KEY
-    base_url = None
+    # Build the prompt combining system and user templates
+    prompt = f"""{JD_STRUCTURE_SYSTEM_PROMPT}
+
+---
+
+{JD_STRUCTURE_USER_TEMPLATE.format(jd_text=jd_text[:12000])}
+
+Return ONLY valid JSON with a "sections" array. No markdown, no explanation."""
 
     try:
-        llm = ChatOpenAI(
-            model=model,
-            temperature=0.1,
-            api_key=api_key,
-            base_url=base_url,
-            model_kwargs={"response_format": {"type": "json_object"}} if "gpt" in model else {},
-        )
+        logger.info(f"Parsing JD with Claude CLI: {model} ({len(jd_text)} chars)")
 
-        messages = [
-            SystemMessage(content=JD_STRUCTURE_SYSTEM_PROMPT),
-            HumanMessage(content=JD_STRUCTURE_USER_TEMPLATE.format(jd_text=jd_text[:12000])),
-        ]
+        # Call Claude CLI
+        result_text = _call_claude_cli(prompt, model)
 
-        logger.info(f"Parsing JD with LLM: {model} ({len(jd_text)} chars)")
-        response = await llm.ainvoke(messages)
-        content = response.content
+        # Parse sections from response
+        sections = _parse_sections_from_json(result_text, jd_text)
 
-        # Parse JSON from response
-        json_match = re.search(r'\{[\s\S]*\}', content)
-        if not json_match:
-            logger.error(f"No JSON found in LLM response: {content[:200]}...")
-            raise ValueError("LLM did not return valid JSON")
+        # Quality check: if only 1 section returned for long JD, try rule-based
+        if len(sections) <= 1 and len(jd_text) > 1000:
+            logger.warning(f"Claude returned only {len(sections)} section(s) for {len(jd_text)} char JD, trying rule-based")
+            rule_sections = parse_jd_sections_rule_based(jd_text)
+            if len(rule_sections) > len(sections):
+                logger.info(f"Rule-based parsing found {len(rule_sections)} sections, using that instead")
+                return rule_sections
 
-        data = json.loads(json_match.group())
-        sections_data = data.get("sections", [])
-
-        if not sections_data:
-            logger.error("LLM returned empty sections array")
-            raise ValueError("LLM returned no sections")
-
-        sections = []
-        char_offset = 0
-
-        for i, section_data in enumerate(sections_data):
-            section_type_str = section_data.get("section_type", "other")
-            try:
-                section_type = JDSectionType(section_type_str)
-            except ValueError:
-                section_type = JDSectionType.OTHER
-
-            header = section_data.get("header", "")
-            items = section_data.get("items", [])
-
-            # Ensure items is a list of strings
-            if not isinstance(items, list):
-                items = [str(items)] if items else []
-            items = [str(item) for item in items if item]
-
-            section_content = '\n'.join(f"• {item}" for item in items)
-
-            # Calculate approximate character offsets
-            header_pos = jd_text.lower().find(header.lower()[:30]) if header else -1
-            if header_pos >= 0:
-                char_start = header_pos
-            else:
-                char_start = char_offset
-
-            content_len = len(header) + len(section_content) + 10
-            char_end = char_start + content_len
-            char_offset = char_end
-
-            sections.append(JDSection(
-                section_type=section_type,
-                header=header,
-                content=section_content,
-                items=items,
-                char_start=char_start,
-                char_end=min(char_end, len(jd_text)),
-                index=i,
-            ))
-
-        logger.info(f"LLM parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
+        logger.info(f"Claude CLI parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
         return sections
 
     except Exception as e:
-        logger.error(f"LLM parsing failed: {e}")
-        # Return a single "other" section with the raw text as a last resort
-        # This ensures the UI always has something to display
-        return [JDSection(
-            section_type=JDSectionType.OTHER,
-            header="Job Description",
-            content=jd_text,
-            items=[jd_text],  # Single item with full text
-            char_start=0,
-            char_end=len(jd_text),
-            index=0,
-        )]
+        logger.warning(f"Claude CLI parsing failed: {e}, falling back to rule-based")
+        # Fallback to rule-based parsing
+        return parse_jd_sections_rule_based(jd_text)
 
 
 # =============================================================================
