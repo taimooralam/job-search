@@ -484,6 +484,14 @@ document.addEventListener('alpine:init', () => {
         toggle() {
             this.expanded = !this.expanded;
             this._saveState();
+
+            // When expanding, ensure active run is polling if still running
+            if (this.expanded && this.activeRunId) {
+                const run = this.runs[this.activeRunId];
+                if (run?.status === 'running' && !run._logPoller) {
+                    this.subscribeToLogs(this.activeRunId);
+                }
+            }
         },
 
         /**
@@ -1067,9 +1075,8 @@ document.addEventListener('alpine:init', () => {
             // Note: In RxJS mode, this may be triggered by the race() subscription instead
             this._replayPendingLogs(runId);
 
-            // Subscribe to log polling for real-time updates
-            // This ensures logs are fetched even when events arrive before the run is displayed
-            this.subscribeToLogs(runId);
+            // Note: Log polling is started on-demand when user views the run
+            // (via toggle(), switchToRun(), or fetchRunLogs())
 
             // Cleanup old runs
             this._cleanup();
@@ -1175,6 +1182,11 @@ document.addEventListener('alpine:init', () => {
             if (this.runs[runId]) {
                 this.activeRunId = runId;
                 this._saveState();
+
+                // Start polling if run is still active and not already polling (on-demand)
+                if (this.runs[runId].status === 'running' && !this.runs[runId]._logPoller) {
+                    this.subscribeToLogs(runId);
+                }
             }
         },
 
