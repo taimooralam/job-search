@@ -265,7 +265,7 @@
     </div>
 
     {# Main Content Area - Split View #}
-    <div class="flex-1 flex {% if mode == 'sidebar' %}flex-col lg:flex-row{% endif %} overflow-hidden">
+    <div class="flex-1 min-h-0 flex {% if mode == 'sidebar' %}flex-col lg:flex-row{% endif %} overflow-hidden">
         {# Left: JD Viewer (Read-only with selection) #}
         <div id="{{ id_prefix }}jd-viewer-container" class="flex-1 {% if mode == 'sidebar' %}lg:w-2/3{% endif %} overflow-y-auto p-4 {{ theme_bg_tertiary }}" style="overscroll-behavior: contain;">
             <div id="{{ id_prefix }}jd-viewer-content"

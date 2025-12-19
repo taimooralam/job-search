@@ -50,76 +50,60 @@ Parameters:
     </div>
     {% endif %}
 
-    {# Top Keywords - Limited to 8 #}
+    {# Top Keywords - Show all #}
     {% if extracted.top_keywords %}
     <div>
         <h4 class="text-[10px] font-semibold text-gray-500 uppercase mb-1">Keywords</h4>
         <div class="flex flex-wrap gap-1">
-            {% for keyword in extracted.top_keywords[:8] %}
+            {% for keyword in extracted.top_keywords %}
             <span class="px-1.5 py-0.5 text-[10px] rounded bg-{{ color }}-50 text-{{ color }}-700">
                 {{ keyword }}
             </span>
             {% endfor %}
-            {% if extracted.top_keywords|length > 8 %}
-            <span class="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">
-                +{{ extracted.top_keywords|length - 8 }}
-            </span>
-            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {# Technical Skills - Limited to 6 #}
+    {# Technical Skills - Show all #}
     {% if extracted.technical_skills %}
     <div>
         <h4 class="text-[10px] font-semibold text-gray-500 uppercase mb-1">Tech Skills</h4>
         <div class="flex flex-wrap gap-1">
-            {% for skill in extracted.technical_skills[:6] %}
+            {% for skill in extracted.technical_skills %}
             <span class="px-1.5 py-0.5 text-[10px] rounded bg-green-50 text-green-700">
                 {{ skill }}
             </span>
             {% endfor %}
-            {% if extracted.technical_skills|length > 6 %}
-            <span class="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 text-gray-500">
-                +{{ extracted.technical_skills|length - 6 }}
-            </span>
-            {% endif %}
         </div>
     </div>
     {% endif %}
 
-    {# Key Responsibilities - Limited to 3 #}
+    {# Key Responsibilities - Show all #}
     {% if extracted.responsibilities %}
     <div>
         <h4 class="text-[10px] font-semibold text-gray-500 uppercase mb-1">Responsibilities</h4>
         <ul class="space-y-0.5 text-xs text-gray-700">
-            {% for resp in extracted.responsibilities[:3] %}
+            {% for resp in extracted.responsibilities %}
             <li class="flex items-start">
                 <span class="text-{{ color }}-500 mr-1 flex-shrink-0">*</span>
-                <span class="line-clamp-2">{{ resp }}</span>
+                <span>{{ resp }}</span>
             </li>
             {% endfor %}
-            {% if extracted.responsibilities|length > 3 %}
-            <li class="text-gray-400 text-[10px] ml-3">+{{ extracted.responsibilities|length - 3 }} more</li>
-            {% endif %}
         </ul>
     </div>
     {% endif %}
 
-    {# Implied Pain Points - Limited to 2 #}
+    {# Implied Pain Points - Show all #}
     {% if extracted.implied_pain_points %}
     <div>
         <h4 class="text-[10px] font-semibold text-gray-500 uppercase mb-1">Pain Points</h4>
         <ul class="space-y-0.5 text-xs text-gray-700">
-            {% for pp in extracted.implied_pain_points[:2] %}
+            {% for pp in extracted.implied_pain_points %}
             <li class="flex items-start">
                 <span class="text-orange-500 mr-1 flex-shrink-0">!</span>
-                <span class="line-clamp-2">{{ pp }}</span>
+                <span>{{ pp }}</span>
             </li>
             {% endfor %}
-            {% if extracted.implied_pain_points|length > 2 %}
-            <li class="text-gray-400 text-[10px] ml-3">+{{ extracted.implied_pain_points|length - 2 }} more</li>
-            {% endif %}
         </ul>
     </div>
     {% endif %}
