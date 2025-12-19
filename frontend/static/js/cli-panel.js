@@ -1067,6 +1067,10 @@ document.addEventListener('alpine:init', () => {
             // Note: In RxJS mode, this may be triggered by the race() subscription instead
             this._replayPendingLogs(runId);
 
+            // Subscribe to log polling for real-time updates
+            // This ensures logs are fetched even when events arrive before the run is displayed
+            this.subscribeToLogs(runId);
+
             // Cleanup old runs
             this._cleanup();
 
