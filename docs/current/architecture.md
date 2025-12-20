@@ -968,6 +968,13 @@ Benefits:
   - Actual error details when research fails (not generic messages)
   - Explicit skip reasons for dependent operations (role_research, people_research)
   - Exception stack traces for debugging
+- Role researcher (`src/layer3_5/role_researcher.py`) enhanced logging:
+  - Logs exception type, message, and full traceback on Claude API failures
+  - Returns `role_research_traceback` field with complete stack trace for debugging
+  - Metadata includes `exception_type` and `traceback` for centralized error tracking
+  - Backend visibility logs (`[Research Backend]` prefix) show which backend is used
+  - Model tier visibility logs (`[Claude API]`) show tier and model selection
+- Error details flow through entire chain: role_researcher → company_research_service → JSON response
 
 #### Layer 3.5: Role Researcher (`src/layer3_5/role_researcher.py`)
 

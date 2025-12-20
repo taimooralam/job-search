@@ -108,6 +108,34 @@
 
 ---
 
+### Session 20.1 (2025-12-19): Enhanced Error Logging with Traceback Visibility in Research Pipeline
+
+**ENHANCEMENT: Comprehensive Error Logging with Full Traceback Visibility - COMPLETED**:
+- **Scope**: Enhanced error logging in role researcher and related services to provide complete exception details and debugging information
+- **Motivation**: When research operations fail, logs were showing only error messages without exception types or tracebacks, making root cause analysis difficult
+- **Changes Made**:
+  1. **Role Researcher Enhancements** (`src/layer3_5/role_researcher.py`):
+     - Added `import traceback` at module level
+     - `_research_role_with_claude_api()` now logs exception type, message, and full traceback on failure
+     - `research_role()` method now returns `role_research_traceback` field containing complete traceback for debugging
+     - `role_researcher_node()` passes metadata with `exception_type` and `traceback` to structured logger for centralized error tracking
+  2. **Service Layer Logging** (`src/services/company_research_service.py`):
+     - Role research failure status now includes full error details (errors list, traceback) instead of truncated messages
+  3. **Backend Visibility Improvements**:
+     - Added `[Research Backend]` prefix logs showing which backend is used (Claude API vs FireCrawl) during research operations
+     - Added `[Claude API]` logs showing tier and model being used for transparent LLM selection visibility
+- **Data Flow Enhancement**:
+  - Exception details flow through: role_researcher → company_research_service → JSON response
+  - Logs include complete stack trace for each research failure point
+  - Metadata tracked: exception_type, error message, full traceback
+- **Files Modified**:
+  - `src/layer3_5/role_researcher.py` - Added traceback logging and backend visibility
+  - `src/services/company_research_service.py` - Enhanced error details in responses
+- **Impact**: Significantly improved debugging capability - developers can now see exact exception types and complete stack traces when research fails, reducing time spent troubleshooting and enabling faster root cause identification. Backend selection visibility helps diagnose API/integration issues.
+- **Backward Compatibility**: Fully backward compatible - new fields are additive (role_research_traceback, exception_type in metadata)
+
+---
+
 ### Today's Session (2025-12-19 Session 19): Batch Move Auto-Trigger Enhancement
 
 **ENHANCEMENT: Auto-Trigger All-Ops on Batch Move - COMPLETED**:
