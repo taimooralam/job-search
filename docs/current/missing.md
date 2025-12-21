@@ -23,7 +23,7 @@
 ### Today's Session (2025-12-21 Session 23): UnifiedLLM StructuredLogger Integration - Backend Visibility in User Logs
 
 **BUG FIX: Connected UnifiedLLM to StructuredLogger for User-Facing Log Visibility - COMPLETED**:
-- **Scope**: Integrated UnifiedLLM with StructuredLogger to emit LLM provider usage events (Claude CLI vs LangChain) in user-facing logs
+- **Scope**: Integrated UnifiedLLM with StructuredLogger to emit LLM provider usage events (Claude CLI vs LangChain) in user-facing logs across Layer 1.4, Layer 2, and Layer 4
 - **Motivation**: Operators need transparency about which backend was used for each LLM call (CLI or fallback), including fallback reasons and cost tracking
 - **Implementation Details**:
   1. **UnifiedLLM Integration** (`src/common/unified_llm.py`):
@@ -31,14 +31,23 @@
      - Created `_log_fallback()` method to emit structured fallback events when CLI fails
      - Enhanced `_log_completion()` method to emit `llm_call_complete()` events with backend attribution
      - Events include: step name, backend (claude_cli/langchain), model, tier, duration, cost, fallback metadata
-  2. **Layer Integration**:
+  2. **JD Processor Integration** (`src/layer1_4/jd_processor.py`):
+     - Returns `LLMMetadata` with backend attribution (backend, model, tier, duration_ms, cost_usd, fallback_reason)
+     - Handles both LLM-based and rule-based JD parsing paths
+  3. **Prepare Annotations Service** (`src/services/structure_jd_service.py`):
+     - Passes `struct_logger` to `process_jd_async()`
+     - Emits `llm_call_complete()` events with jd_structure_parsing step name
+     - Captures both UnifiedLLM and rule-based fallback paths
+  4. **Layer Integration** (also updated beyond initial Session 23 scope):
+     - `src/layer1_4/jd_processor.py` - Returns LLMMetadata for service-layer emission
      - `src/layer2/pain_point_miner.py` - Passes `struct_logger` to UnifiedLLM
      - `src/layer4/opportunity_mapper.py` - Passes `struct_logger` to UnifiedLLM
-  3. **Structured Events Emitted**:
+     - `src/services/structure_jd_service.py` - Emits events for prepare-annotations operation
+  5. **Structured Events Emitted**:
      - `llm_call_complete()` - Emitted after each LLM invocation with backend, model, cost, duration
      - `llm_call_fallback()` - Emitted when falling back from Claude CLI to LangChain with fallback reason
-  4. **Metadata Tracking**:
-     - Backend: "claude_cli" or "langchain"
+  6. **Metadata Tracking**:
+     - Backend: "claude_cli", "langchain", or "rule_based"
      - Model: Specific model identifier
      - Tier: Configuration tier (low/middle/high)
      - Duration: Milliseconds for the invocation
@@ -46,13 +55,16 @@
      - Is_fallback: Boolean flag for fallback invocations
 - **Files Modified**:
   - `src/common/unified_llm.py` - Added struct_logger parameter and event emission
+  - `src/layer1_4/jd_processor.py` - Returns LLMMetadata with backend info for all paths
   - `src/layer2/pain_point_miner.py` - Pass struct_logger to UnifiedLLM constructor
   - `src/layer4/opportunity_mapper.py` - Pass struct_logger to UnifiedLLM constructor
-- **Impact**: Operators now see in user-facing logs:
+  - `src/services/structure_jd_service.py` - Emits llm_call_complete for prepare-annotations operation
+- **Impact**: Operators now see in user-facing logs (including prepare-annotations frontend CLI panel):
   - Which backend executed each LLM call (CLI or fallback)
   - When and why fallback occurred (CLI unavailable, failure reason)
   - Cost and performance metrics for each call
   - Full transparency for debugging and cost tracking
+  - Applies to prepare-annotations, pain points, and opportunity mapping operations
 - **Backward Compatibility**: Fully backward compatible - struct_logger is optional; if not provided, logging continues via standard logger
 - **Status**: **COMPLETED 2025-12-21**
 

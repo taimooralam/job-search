@@ -73,7 +73,7 @@ def some_llm_operation():
 
 ## Pipeline Layers (10 Nodes Total)
 
-### Layer 1.4: JD Processor (Completed 2025-11-30, Enhanced 2025-12-10)
+### Layer 1.4: JD Processor (Completed 2025-11-30, Enhanced 2025-12-10, StructuredLogger Integration 2025-12-21)
 - **JD Processor**: Structures raw JD text into semantic sections using LLM-based parsing
   - Input: Raw job description (blob text with escape characters, no formatting)
   - Processing: LLM-based "HR document analyst" parses section boundaries
@@ -84,6 +84,11 @@ def some_llm_operation():
   - Output: HTML structure with `<section>` tags for annotation UI
   - System prompt: Expert "HR document analyst with 20 years experience"
   - Handles: Compressed JD text where headers merge with content, bullet points inline, line breaks stripped
+  - **Structured Logging** (NEW 2025-12-21): Returns `LLMMetadata` with backend attribution for service-layer emission
+    - Backend info: claude_cli (UnifiedLLM), langchain (fallback), or rule_based (parsing fallback)
+    - Metadata: model, tier, duration_ms, cost_usd, fallback_reason
+    - Emitted by: `src/services/structure_jd_service.py` as `llm_call_complete` event
+    - Visible in: Frontend prepare-annotations CLI panel with backend badges
 
 - **JD Extractor** (Claude Code CLI, consolidated 2025-12-19): Extracts structured job data: role, category, keywords
   - Primary extractor: `src/layer1_4/claude_jd_extractor.py` (promotes CLI extraction to unified pipeline)
