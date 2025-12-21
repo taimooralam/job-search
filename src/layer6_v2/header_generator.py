@@ -28,7 +28,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import UnifiedLLM
 from src.common.persona_builder import get_persona_guidance
 from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
 
@@ -267,12 +267,13 @@ class HeaderGenerator:
         lax_mode: bool = True,
         annotation_context: Optional[HeaderGenerationContext] = None,
         jd_annotations: Optional[Dict[str, Any]] = None,
+        job_id: Optional[str] = None,
     ):
         """
         Initialize the header generator.
 
         Args:
-            model: LLM model to use (default: Config.DEFAULT_MODEL)
+            model: LLM model to use (default: from step config)
             temperature: Generation temperature (default: 0.3 for consistency)
             skill_whitelist: Master-CV skill whitelist to prevent hallucinations.
                              Dict with 'hard_skills' and 'soft_skills' lists.
@@ -282,10 +283,12 @@ class HeaderGenerator:
                                priorities, reframes, and ATS requirements.
             jd_annotations: Raw jd_annotations dict containing synthesized_persona
                            for persona-framed profile generation.
+            job_id: Job ID for tracking (optional)
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self.lax_mode = lax_mode
+        self._job_id = job_id or "unknown"
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -329,14 +332,11 @@ class HeaderGenerator:
                 self._logger.warning(f"Failed to load skills taxonomy: {e}. Will use fallback.")
                 self._taxonomy_generator = None
 
-        # Initialize LLM (GAP-066: Token tracking enabled)
-        model_name = model or Config.DEFAULT_MODEL
-        self.llm = create_tracked_llm(
-            model=model_name,
-            temperature=temperature,
-            layer="layer6_v2_header",
+        # Use UnifiedLLM with step config (middle tier for header_generator)
+        self._llm = UnifiedLLM(step_name="header_generator", job_id=self._job_id)
+        self._logger.info(
+            f"HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier={self._llm.config.tier})"
         )
-        self._logger.info(f"HeaderGenerator initialized with model: {model_name}")
 
     def _classify_skill_category(self, skill: str) -> str:
         """
@@ -607,7 +607,7 @@ class HeaderGenerator:
         return 10  # Default for senior technical leadership
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    def _generate_profile_llm(
+    async def _generate_profile_llm(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -774,16 +774,42 @@ class HeaderGenerator:
         # Build system prompt with persona context (Phase 5: persona in SYSTEM prompt)
         system_prompt = _build_profile_system_prompt_with_persona(self._jd_annotations)
 
-        # Call LLM with structured output
-        structured_llm = self.llm.with_structured_output(ProfileResponse)
-        response = structured_llm.invoke([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ])
+        # Add schema guidance to system prompt for JSON response
+        schema_guidance = """
+Return JSON matching this ProfileResponse schema:
+{
+  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "tagline": "15-25 word persona-driven hook (max 200 chars, third-person absent voice)",
+  "key_achievements": ["5-6 quantified achievements starting with action verbs"],
+  "core_competencies": ["6-8 ATS-friendly keywords"],
+  "highlights_used": ["exact metrics used"],
+  "keywords_integrated": ["JD keywords included"],
+  "exact_title_used": "the exact title from JD",
+  "answers_who": true,
+  "answers_what_problems": true,
+  "answers_proof": true,
+  "answers_why_you": true
+}"""
+        full_system_prompt = system_prompt + "\n\n" + schema_guidance
 
+        # Use UnifiedLLM with JSON validation
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=full_system_prompt,
+            validate_json=True,
+        )
+
+        if not result.success:
+            raise ValueError(f"LLM profile generation failed: {result.error}")
+
+        if not result.parsed_json:
+            raise ValueError("LLM response was not valid JSON")
+
+        # Parse into Pydantic model
+        response = ProfileResponse(**result.parsed_json)
         return response, provenance
 
-    def generate_profile(
+    async def generate_profile(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -813,7 +839,7 @@ class HeaderGenerator:
 
         provenance = None
         try:
-            response, provenance = self._generate_profile_llm(
+            response, provenance = await self._generate_profile_llm(
                 stitched_cv, extracted_jd, candidate_name, regional_variant
             )
 
@@ -1151,7 +1177,7 @@ class HeaderGenerator:
         self._logger.info(f"Extracted {sum(s.skill_count for s in sections)} skills across {len(sections)} categories")
         return sections
 
-    def generate(
+    async def generate(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -1194,7 +1220,7 @@ class HeaderGenerator:
             languages = candidate_data.get("languages", [])
 
         # Generate profile
-        profile = self.generate_profile(stitched_cv, extracted_jd, candidate_name)
+        profile = await self.generate_profile(stitched_cv, extracted_jd, candidate_name)
 
         # Generate skills
         skills_sections = self.generate_skills(stitched_cv, extracted_jd)
@@ -1252,7 +1278,7 @@ class HeaderGenerator:
         return filtered_sections
 
 
-def generate_header(
+async def generate_header(
     stitched_cv: StitchedCV,
     extracted_jd: Dict,
     candidate_data: Dict,
@@ -1260,6 +1286,7 @@ def generate_header(
     lax_mode: bool = True,
     annotation_context: Optional[HeaderGenerationContext] = None,
     jd_annotations: Optional[Dict[str, Any]] = None,
+    job_id: Optional[str] = None,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -1275,6 +1302,7 @@ def generate_header(
                            reframes, and ATS requirements.
         jd_annotations: Raw jd_annotations dict containing synthesized_persona for
                        persona-framed profile generation.
+        job_id: Job ID for tracking (optional)
 
     Returns:
         HeaderOutput with all header sections
@@ -1284,5 +1312,6 @@ def generate_header(
         lax_mode=lax_mode,
         annotation_context=annotation_context,
         jd_annotations=jd_annotations,
+        job_id=job_id,
     )
-    return generator.generate(stitched_cv, extracted_jd, candidate_data)
+    return await generator.generate(stitched_cv, extracted_jd, candidate_data)

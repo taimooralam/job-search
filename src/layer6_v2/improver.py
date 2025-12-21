@@ -23,7 +23,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import UnifiedLLM
 from src.layer6_v2.types import (
     GradeResult,
     ImprovementResult,
@@ -100,25 +100,25 @@ class CVImprover:
         self,
         model: Optional[str] = None,
         temperature: float = 0.3,
+        job_id: Optional[str] = None,
     ):
         """
         Initialize the improver.
 
         Args:
-            model: LLM model to use (default: Config.DEFAULT_MODEL)
+            model: LLM model to use (default: from step config)
             temperature: Temperature for improvement (default: 0.3)
+            job_id: Job ID for tracking (optional)
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
+        self._job_id = job_id or "unknown"
 
-        # GAP-066: Token tracking enabled
-        model_name = model or Config.DEFAULT_MODEL
-        self.llm = create_tracked_llm(
-            model=model_name,
-            temperature=temperature,
-            layer="layer6_v2_improver",
+        # Use UnifiedLLM with step config (high tier for improver)
+        self._llm = UnifiedLLM(step_name="improver", job_id=self._job_id)
+        self._logger.info(
+            f"CVImprover initialized with UnifiedLLM (step=improver, tier={self._llm.config.tier})"
         )
-        self._logger.info(f"CVImprover initialized with model: {model_name}")
 
     def _build_improvement_prompt(
         self,
@@ -180,7 +180,7 @@ ROLE CATEGORY: {role_category}
 Return the improved CV with changes highlighted in your summary."""
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    def _call_improvement_llm(
+    async def _call_improvement_llm(
         self,
         cv_text: str,
         grade_result: GradeResult,
@@ -213,21 +213,34 @@ QUALITY STANDARDS:
 - Strategic framing for leadership roles
 - No vague statements or filler content
 
-Return the improved CV and a summary of changes made."""
+Return JSON matching this ImprovementResponse schema:
+{
+  "improved_cv": "The improved CV text",
+  "changes_made": ["List of specific changes made"],
+  "improvement_summary": "Brief summary of improvements"
+}"""
 
         user_prompt = self._build_improvement_prompt(
             cv_text, grade_result, extracted_jd, target_dimension
         )
 
-        structured_llm = self.llm.with_structured_output(ImprovementResponse)
-        response = structured_llm.invoke([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ])
+        # Use UnifiedLLM with JSON validation
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=system_prompt,
+            validate_json=True,
+        )
 
-        return response
+        if not result.success:
+            raise ValueError(f"LLM improvement failed: {result.error}")
 
-    def improve(
+        if not result.parsed_json:
+            raise ValueError("LLM response was not valid JSON")
+
+        # Parse into Pydantic model
+        return ImprovementResponse(**result.parsed_json)
+
+    async def improve(
         self,
         cv_text: str,
         grade_result: GradeResult,
@@ -266,7 +279,7 @@ Return the improved CV and a summary of changes made."""
         self._logger.info(f"Targeting {target_dimension} (score: {original_score}/10)")
 
         try:
-            response = self._call_improvement_llm(
+            response = await self._call_improvement_llm(
                 cv_text, grade_result, extracted_jd, target_dimension
             )
 
@@ -297,7 +310,7 @@ Return the improved CV and a summary of changes made."""
 
         return result
 
-    def improve_specific_dimension(
+    async def improve_specific_dimension(
         self,
         cv_text: str,
         target_dimension: str,
@@ -322,7 +335,7 @@ Return the improved CV and a summary of changes made."""
         original_score = target_score.score if target_score else 0
 
         try:
-            response = self._call_improvement_llm(
+            response = await self._call_improvement_llm(
                 cv_text, grade_result, extracted_jd, target_dimension
             )
 
@@ -347,10 +360,11 @@ Return the improved CV and a summary of changes made."""
             )
 
 
-def improve_cv(
+async def improve_cv(
     cv_text: str,
     grade_result: GradeResult,
     extracted_jd: Dict,
+    job_id: Optional[str] = None,
 ) -> ImprovementResult:
     """
     Convenience function to improve a CV.
@@ -359,9 +373,10 @@ def improve_cv(
         cv_text: The CV text to improve
         grade_result: Grading result from CVGrader
         extracted_jd: Extracted JD intelligence
+        job_id: Job ID for tracking (optional)
 
     Returns:
         ImprovementResult with improved CV
     """
-    improver = CVImprover()
-    return improver.improve(cv_text, grade_result, extracted_jd)
+    improver = CVImprover(job_id=job_id)
+    return await improver.improve(cv_text, grade_result, extracted_jd)

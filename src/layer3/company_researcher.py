@@ -30,6 +30,7 @@ from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import run_async
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
+from src.common.unified_llm import UnifiedLLM, invoke_unified_sync
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -472,6 +473,8 @@ class CompanyResearcher:
         direct employer or a recruitment/staffing agency. Agencies get
         minimal research and different outreach strategies.
 
+        Migrated to UnifiedLLM: Uses step_name="classify_company_type" (low tier).
+
         Args:
             state: JobState with company, title, job_description
 
@@ -481,6 +484,7 @@ class CompanyResearcher:
         company = state.get("company", "")
         job_title = state.get("title", "")
         job_description = state.get("job_description", "")
+        job_id = state.get("job_id", "unknown")
 
         # Quick heuristic check first (avoid LLM call for obvious cases)
         company_lower = company.lower()
@@ -496,30 +500,42 @@ class CompanyResearcher:
                 self.logger.info(f"Agency detected by keyword '{keyword}' in company name")
                 return "recruitment_agency"
 
-        # LLM classification for ambiguous cases
+        # LLM classification for ambiguous cases using UnifiedLLM
         try:
-            messages = [
-                SystemMessage(content=SYSTEM_PROMPT_COMPANY_TYPE),
-                HumanMessage(
-                    content=USER_PROMPT_COMPANY_TYPE_TEMPLATE.format(
-                        company=company,
-                        job_title=job_title,
-                        job_description=job_description[:800]  # Limit for token efficiency
-                    )
-                )
-            ]
+            user_prompt = USER_PROMPT_COMPANY_TYPE_TEMPLATE.format(
+                company=company,
+                job_title=job_title,
+                job_description=job_description[:800]  # Limit for token efficiency
+            )
 
-            response = self.llm.invoke(messages)
-            llm_output = response.content.strip()
+            # Use UnifiedLLM with step config for classify_company_type (low tier)
+            result = invoke_unified_sync(
+                prompt=user_prompt,
+                step_name="classify_company_type",
+                system=SYSTEM_PROMPT_COMPANY_TYPE,
+                job_id=job_id,
+                validate_json=True,
+            )
 
-            # Remove markdown code blocks if present
-            if llm_output.startswith("```"):
-                llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
-                llm_output = re.sub(r'\s*```$', '', llm_output)
-                llm_output = llm_output.strip()
+            if not result.success:
+                self.logger.warning(f"Company type classification LLM call failed: {result.error}, defaulting to 'employer'")
+                return "employer"
 
-            # Parse and validate
-            data = json.loads(llm_output)
+            # Log backend attribution
+            self.logger.info(f"Company type classification via {result.backend} ({result.model}) in {result.duration_ms}ms")
+
+            # Parse and validate using parsed_json if available
+            if result.parsed_json:
+                data = result.parsed_json
+            else:
+                # Fallback to manual parsing
+                llm_output = result.content.strip()
+                if llm_output.startswith("```"):
+                    llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
+                    llm_output = re.sub(r'\s*```$', '', llm_output)
+                    llm_output = llm_output.strip()
+                data = json.loads(llm_output)
+
             classification = CompanyTypeClassification(**data)
 
             self.logger.info(
@@ -559,6 +575,7 @@ class CompanyResearcher:
         company = state["company"]
         job_title = state.get("title", "")
         job_description = state.get("job_description", "")
+        job_id = state.get("job_id", "unknown")
 
         self.logger.info(f"[Claude API] Researching company: {company}")
 
@@ -635,7 +652,8 @@ class CompanyResearcher:
                         company, scraped_data,
                         star_domains=star_domains,
                         star_outcomes=star_outcomes,
-                        annotation_focus=annotation_focus
+                        annotation_focus=annotation_focus,
+                        job_id=job_id
                     )
 
                     if company_research_output:
@@ -1313,36 +1331,54 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
     def _summarize_with_llm(
         self,
         company: str,
-        website_content: Optional[str] = None
+        website_content: Optional[str] = None,
+        job_id: str = "unknown"
     ) -> str:
         """
         Generate company summary using LLM.
 
         If website_content is provided, summarize it.
         Otherwise, use LLM's general knowledge as fallback.
+
+        Migrated to UnifiedLLM: Uses step_name="summarize_with_llm" (low tier).
+
+        Args:
+            company: Company name
+            website_content: Optional scraped website content
+            job_id: Job ID for tracking (optional)
+
+        Returns:
+            Company summary string
         """
         if website_content:
             # Use scraped content
-            messages = [
-                SystemMessage(content=SYSTEM_PROMPT_SCRAPE),
-                HumanMessage(
-                    content=USER_PROMPT_SCRAPE_TEMPLATE.format(
-                        company=company,
-                        website_content=website_content
-                    )
-                )
-            ]
+            system_prompt = SYSTEM_PROMPT_SCRAPE
+            user_prompt = USER_PROMPT_SCRAPE_TEMPLATE.format(
+                company=company,
+                website_content=website_content
+            )
         else:
             # Fallback to general knowledge
-            messages = [
-                SystemMessage(content=SYSTEM_PROMPT_FALLBACK),
-                HumanMessage(
-                    content=USER_PROMPT_FALLBACK_TEMPLATE.format(company=company)
-                )
-            ]
+            system_prompt = SYSTEM_PROMPT_FALLBACK
+            user_prompt = USER_PROMPT_FALLBACK_TEMPLATE.format(company=company)
 
-        response = self.llm.invoke(messages)
-        return response.content.strip()
+        # Use UnifiedLLM with step config for summarize_with_llm (low tier)
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="summarize_with_llm",
+            system=system_prompt,
+            job_id=job_id,
+            validate_json=False,  # Summary is plain text, not JSON
+        )
+
+        if not result.success:
+            self.logger.warning(f"Company summarization LLM call failed: {result.error}")
+            raise ValueError(f"LLM summarization failed: {result.error}")
+
+        # Log backend attribution
+        self.logger.info(f"Company summary via {result.backend} ({result.model}) in {result.duration_ms}ms")
+
+        return result.content.strip()
 
     @retry(
         stop=stop_after_attempt(2),
@@ -1487,7 +1523,8 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
         scraped_data: Dict[str, Dict[str, str]],
         star_domains: Optional[str] = None,
         star_outcomes: Optional[str] = None,
-        annotation_focus: Optional[str] = None
+        annotation_focus: Optional[str] = None,
+        job_id: str = "unknown"
     ) -> CompanyResearchOutput:
         """
         Extract company signals from scraped content using LLM (Phase 5.2 enhanced).
@@ -1499,12 +1536,15 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
         - STAR-aware when candidate context available
         - Phase 4: Annotation-aware when JD annotations available
 
+        Migrated to UnifiedLLM: Uses step_name="analyze_company_signals" (middle tier).
+
         Args:
             company: Company name
             scraped_data: Dict of {source_name: {"url": str, "content": str, "quality": str}}
             star_domains: Optional candidate domain areas from selected STARs
             star_outcomes: Optional candidate outcome types from selected STARs
             annotation_focus: Optional focus areas from JD annotations
+            job_id: Job ID for tracking (optional)
 
         Returns:
             CompanyResearchOutput with validated signals and reasoning block
@@ -1543,35 +1583,49 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
         else:
             system_prompt = SYSTEM_PROMPT_COMPANY_SIGNALS
 
-        # Call LLM for signal extraction
-        # Phase 5.2: Increased content limit (5000 → 8000) for better extraction
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(
-                content=USER_PROMPT_COMPANY_SIGNALS_TEMPLATE.format(
-                    company=company,
-                    scraped_content=scraped_content[:8000]  # Phase 5.2: Increased limit
-                )
-            )
-        ]
+        # Build user prompt
+        # Phase 5.2: Increased content limit (5000 -> 8000) for better extraction
+        user_prompt = USER_PROMPT_COMPANY_SIGNALS_TEMPLATE.format(
+            company=company,
+            scraped_content=scraped_content[:8000]  # Phase 5.2: Increased limit
+        )
 
-        response = self.llm.invoke(messages)
-        llm_output = response.content.strip()
+        # Use UnifiedLLM with step config for analyze_company_signals (middle tier)
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="analyze_company_signals",
+            system=system_prompt,
+            job_id=job_id,
+            validate_json=True,
+        )
 
-        # Phase 5.2: Simple JSON parsing (Python's json module handles nested structures)
-        # Remove markdown code blocks if present
-        if llm_output.startswith("```"):
-            llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
-            llm_output = re.sub(r'\s*```$', '', llm_output)
-            llm_output = llm_output.strip()
+        if not result.success:
+            self.logger.error(f"Company signals LLM call failed: {result.error}")
+            raise ValueError(f"LLM signal extraction failed: {result.error}")
 
-        # Parse JSON directly - Python handles nested structures automatically
-        try:
-            data = json.loads(llm_output)
-        except json.JSONDecodeError as e:
-            self.logger.error(f"JSON parsing failed: {e}")
-            self.logger.error(f"LLM output:\n{llm_output}")
-            raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_output[:500]}")
+        # Log backend attribution
+        self.logger.info(f"Company signals via {result.backend} ({result.model}) in {result.duration_ms}ms")
+
+        # Use parsed_json if available, otherwise parse manually
+        if result.parsed_json:
+            data = result.parsed_json
+        else:
+            llm_output = result.content.strip()
+
+            # Phase 5.2: Simple JSON parsing (Python's json module handles nested structures)
+            # Remove markdown code blocks if present
+            if llm_output.startswith("```"):
+                llm_output = re.sub(r'^```(?:json)?\s*', '', llm_output)
+                llm_output = re.sub(r'\s*```$', '', llm_output)
+                llm_output = llm_output.strip()
+
+            # Parse JSON directly - Python handles nested structures automatically
+            try:
+                data = json.loads(llm_output)
+            except json.JSONDecodeError as e:
+                self.logger.error(f"JSON parsing failed: {e}")
+                self.logger.error(f"LLM output:\n{llm_output}")
+                raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {llm_output[:500]}")
 
         # Validate with Pydantic
         try:
@@ -1585,7 +1639,7 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
 
             self.logger.error(f"Pydantic validation failed:")
             self.logger.error(f"Errors: {error_messages}")
-            self.logger.error(f"Full LLM output:\n{llm_output}")
+            self.logger.error(f"LLM output:\n{result.content}")
             self.logger.error(f"Parsed data:\n{json.dumps(data, indent=2)}")
 
             raise ValueError(
@@ -1599,7 +1653,8 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
     def _fallback_signal_extraction(
         self,
         company: str,
-        official_site_data: Dict[str, str]
+        official_site_data: Dict[str, str],
+        job_id: str = "unknown"
     ) -> CompanyResearchOutput:
         """
         Defensive fallback: Extract minimal signals from official site content only.
@@ -1607,16 +1662,20 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
         Phase 5 enhancement: When multi-source scrape yields 0 signals or LLM returns empty,
         run a second-pass extraction using only official_site content with best-effort rules.
 
+        Migrated to UnifiedLLM: Uses step_name="fallback_signal_extraction" (middle tier).
+
         Args:
             company: Company name
             official_site_data: {"url": str, "content": str} from official site
+            job_id: Job ID for tracking (optional)
 
         Returns:
             CompanyResearchOutput with at least 1 signal (or minimal valid output)
         """
         self.logger.info("Running fallback signal extraction from official site")
 
-        fallback_prompt = f"""Analyze this official company website content and extract ANY factual information as signals.
+        system_prompt = "You are a business analyst. Extract factual company information. Output JSON only."
+        user_prompt = f"""Analyze this official company website content and extract ANY factual information as signals.
 
 COMPANY: {company}
 
@@ -1637,21 +1696,57 @@ SCRAPED CONTENT FROM OFFICIAL SITE:
 Output JSON only:
 {{"summary": "...", "signals": [...], "url": "{official_site_data['url']}"}}"""
 
-        messages = [
-            SystemMessage(content="You are a business analyst. Extract factual company information. Output JSON only."),
-            HumanMessage(content=fallback_prompt)
-        ]
+        # Use UnifiedLLM with step config for fallback_signal_extraction (middle tier)
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="fallback_signal_extraction",
+            system=system_prompt,
+            job_id=job_id,
+            validate_json=True,
+        )
 
-        response = self.llm.invoke(messages)
-        llm_output = response.content.strip()
+        if not result.success:
+            self.logger.warning(f"Fallback signal extraction LLM call failed: {result.error}")
+            # Return minimal valid output
+            return CompanyResearchOutput(
+                summary=f"{company} is a business (limited information available from website).",
+                signals=[{
+                    "type": "growth",
+                    "description": f"{company} official website found",
+                    "date": "unknown",
+                    "source": official_site_data['url']
+                }],
+                url=official_site_data['url']
+            )
 
-        # Extract JSON
-        json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
-        json_str = json_match.group(0) if json_match else llm_output
+        # Log backend attribution
+        self.logger.info(f"Fallback signals via {result.backend} ({result.model}) in {result.duration_ms}ms")
+
+        # Use parsed_json if available, otherwise parse manually
+        if result.parsed_json:
+            data = result.parsed_json
+        else:
+            llm_output = result.content.strip()
+            # Extract JSON
+            json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
+            json_str = json_match.group(0) if json_match else llm_output
+
+            try:
+                data = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                self.logger.warning(f"Fallback JSON parsing failed: {e}, returning minimal output")
+                return CompanyResearchOutput(
+                    summary=f"{company} is a business (limited information available from website).",
+                    signals=[{
+                        "type": "growth",
+                        "description": f"{company} official website found",
+                        "date": "unknown",
+                        "source": official_site_data['url']
+                    }],
+                    url=official_site_data['url']
+                )
 
         try:
-            data = json.loads(json_str)
-
             # Ensure at least one signal if none extracted
             if not data.get('signals'):
                 data['signals'] = [{
@@ -1663,9 +1758,9 @@ Output JSON only:
 
             return CompanyResearchOutput(**data)
 
-        except (json.JSONDecodeError, ValidationError) as e:
+        except ValidationError as e:
             # Last resort: return minimal valid output
-            self.logger.warning(f"Fallback parsing failed: {e}, returning minimal output")
+            self.logger.warning(f"Fallback validation failed: {e}, returning minimal output")
             return CompanyResearchOutput(
                 summary=f"{company} is a business (limited information available from website).",
                 signals=[{
@@ -1709,6 +1804,7 @@ Output JSON only:
             Dict with company_research (structured) + legacy company_summary/company_url
         """
         company = state["company"]
+        job_id = state.get("job_id", "unknown")
 
         # Route to Claude API backend if enabled (new default)
         if self.use_claude_api:
@@ -1776,7 +1872,8 @@ Output JSON only:
                 company, scraped_data,
                 star_domains=star_domains,
                 star_outcomes=star_outcomes,
-                annotation_focus=annotation_focus
+                annotation_focus=annotation_focus,
+                job_id=job_id
             )
 
             self.logger.info(f"Extracted {len(company_research_output.signals)} signal(s)")
@@ -1785,7 +1882,8 @@ Output JSON only:
             if len(company_research_output.signals) == 0 and 'official_site' in scraped_data:
                 self.logger.warning("No signals extracted, running fallback extraction")
                 company_research_output = self._fallback_signal_extraction(
-                    company, scraped_data['official_site']
+                    company, scraped_data['official_site'],
+                    job_id=job_id
                 )
                 self.logger.info(f"Fallback extracted {len(company_research_output.signals)} signal(s)")
 
@@ -1836,7 +1934,7 @@ Output JSON only:
                 else:
                     self.logger.info("Using LLM general knowledge fallback")
 
-                company_summary = self._summarize_with_llm(company, website_content)
+                company_summary = self._summarize_with_llm(company, website_content, job_id=job_id)
                 self.logger.info(f"Generated summary ({len(company_summary)} chars)")
 
                 # Store in cache (legacy format)

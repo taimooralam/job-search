@@ -31,7 +31,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm_for_model
+from src.common.unified_llm import UnifiedLLM
 from src.common.tiering import (
     ProcessingTier,
     TierConfig,
@@ -114,6 +114,7 @@ class EnsembleHeaderGenerator:
         temperature: float = 0.3,
         annotation_context: Optional[HeaderGenerationContext] = None,
         jd_annotations: Optional[Dict[str, Any]] = None,
+        job_id: Optional[str] = None,
     ):
         """
         Initialize the ensemble header generator.
@@ -125,11 +126,13 @@ class EnsembleHeaderGenerator:
             annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
             jd_annotations: Raw jd_annotations dict containing synthesized_persona
                            for persona-framed profile generation.
+            job_id: Job ID for tracking (optional)
         """
         self._logger = get_logger(__name__)
         self.tier_config = tier_config
         self._skill_whitelist = skill_whitelist or {}
         self.temperature = temperature
+        self._job_id = job_id or "unknown"
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -142,9 +145,11 @@ class EnsembleHeaderGenerator:
                 f"{len(annotation_context.must_have_priorities)} must-haves"
             )
 
-        # Create LLMs for generation and synthesis
-        self._generation_llm = self._create_llm(tier_config.cv_model)
-        self._synthesis_llm = self._create_llm(CLAUDE_STANDARD)  # Always use cheaper model
+        # Use UnifiedLLM with step config (middle tier for ensemble_header)
+        self._llm = UnifiedLLM(step_name="ensemble_header", job_id=self._job_id)
+        self._logger.info(
+            f"EnsembleHeaderGenerator initialized with UnifiedLLM (step=ensemble_header, tier={self._llm.config.tier})"
+        )
 
         # Fallback generator for Bronze/Skip tiers (pass annotation context and persona)
         self._fallback_generator = HeaderGenerator(
@@ -152,22 +157,14 @@ class EnsembleHeaderGenerator:
             skill_whitelist=skill_whitelist,
             annotation_context=annotation_context,
             jd_annotations=jd_annotations,
+            job_id=job_id,
         )
 
         self._logger.info(
-            f"EnsembleHeaderGenerator initialized: tier={tier_config.tier.value}, "
-            f"gen_model={tier_config.cv_model}, synth_model={CLAUDE_STANDARD}"
+            f"EnsembleHeaderGenerator initialized: tier={tier_config.tier.value}"
         )
 
-    def _create_llm(self, model: str):
-        """Create an LLM instance with tracking, auto-detecting provider from model name."""
-        return create_tracked_llm_for_model(
-            model=model,
-            temperature=self.temperature,
-            layer="layer6_v2_ensemble",
-        )
-
-    def generate(
+    async def generate(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -191,7 +188,7 @@ class EnsembleHeaderGenerator:
 
         # Route to appropriate strategy
         if tier == ProcessingTier.GOLD:
-            header = self._generate_gold_tier(stitched_cv, extracted_jd, candidate_data)
+            header = await self._generate_gold_tier(stitched_cv, extracted_jd, candidate_data)
             passes = 3
             personas = [p.value for p in self.TIER_PERSONAS[tier]]
             synthesis_applied = True
@@ -199,7 +196,7 @@ class EnsembleHeaderGenerator:
                 header.profile, stitched_cv, self._skill_whitelist
             )
         elif tier == ProcessingTier.SILVER:
-            header = self._generate_silver_tier(stitched_cv, extracted_jd, candidate_data)
+            header = await self._generate_silver_tier(stitched_cv, extracted_jd, candidate_data)
             passes = 2
             personas = [p.value for p in self.TIER_PERSONAS[tier]]
             synthesis_applied = True
@@ -207,7 +204,7 @@ class EnsembleHeaderGenerator:
         else:
             # Bronze/Skip: Use existing single-shot
             self._logger.info("Using single-shot generation for Bronze/Skip tier")
-            header = self._fallback_generator.generate(
+            header = await self._fallback_generator.generate(
                 stitched_cv, extracted_jd, candidate_data
             )
             passes = 1
@@ -234,7 +231,7 @@ class EnsembleHeaderGenerator:
 
         return header
 
-    def _generate_gold_tier(
+    async def _generate_gold_tier(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -252,14 +249,14 @@ class EnsembleHeaderGenerator:
         persona_results = []
         for persona in self.TIER_PERSONAS[ProcessingTier.GOLD]:
             self._logger.info(f"  Running {persona.value} persona...")
-            result = self._generate_with_persona(
+            result = await self._generate_with_persona(
                 persona, stitched_cv, extracted_jd, candidate_name
             )
             persona_results.append(result)
 
         # Synthesize best elements
         self._logger.info("  Running synthesis...")
-        synthesized_profile = self._synthesize_profiles(
+        synthesized_profile = await self._synthesize_profiles(
             persona_results, extracted_jd, candidate_data
         )
 
@@ -277,7 +274,7 @@ class EnsembleHeaderGenerator:
             languages=candidate_data.get("languages", []),
         )
 
-    def _generate_silver_tier(
+    async def _generate_silver_tier(
         self,
         stitched_cv: StitchedCV,
         extracted_jd: Dict,
@@ -295,14 +292,14 @@ class EnsembleHeaderGenerator:
         persona_results = []
         for persona in self.TIER_PERSONAS[ProcessingTier.SILVER]:
             self._logger.info(f"  Running {persona.value} persona...")
-            result = self._generate_with_persona(
+            result = await self._generate_with_persona(
                 persona, stitched_cv, extracted_jd, candidate_name
             )
             persona_results.append(result)
 
         # Synthesize best elements
         self._logger.info("  Running synthesis...")
-        synthesized_profile = self._synthesize_profiles(
+        synthesized_profile = await self._synthesize_profiles(
             persona_results, extracted_jd, candidate_data
         )
 
@@ -321,7 +318,7 @@ class EnsembleHeaderGenerator:
         )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
-    def _generate_with_persona(
+    async def _generate_with_persona(
         self,
         persona: PersonaType,
         stitched_cv: StitchedCV,
@@ -367,12 +364,39 @@ class EnsembleHeaderGenerator:
             candidate_differentiators=extracted_jd.get("differentiators", []),
         )
 
-        # Call LLM with structured output
-        structured_llm = self._generation_llm.with_structured_output(ProfileResponse)
-        response = structured_llm.invoke([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ])
+        # Add schema guidance for JSON response
+        schema_guidance = """
+Return JSON matching this ProfileResponse schema:
+{
+  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "tagline": "15-25 word persona-driven hook (max 200 chars)",
+  "key_achievements": ["5-6 quantified achievements"],
+  "core_competencies": ["6-8 ATS-friendly keywords"],
+  "highlights_used": ["exact metrics used"],
+  "keywords_integrated": ["JD keywords included"],
+  "exact_title_used": "the exact title from JD",
+  "answers_who": true,
+  "answers_what_problems": true,
+  "answers_proof": true,
+  "answers_why_you": true
+}"""
+        full_system_prompt = system_prompt + "\n\n" + schema_guidance
+
+        # Use UnifiedLLM with JSON validation
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=full_system_prompt,
+            validate_json=True,
+        )
+
+        if not result.success:
+            raise ValueError(f"LLM persona generation failed: {result.error}")
+
+        if not result.parsed_json:
+            raise ValueError("LLM response was not valid JSON")
+
+        # Parse into Pydantic model
+        response = ProfileResponse(**result.parsed_json)
 
         # Convert to ProfileOutput (hybrid format)
         profile = ProfileOutput(
@@ -400,7 +424,7 @@ class EnsembleHeaderGenerator:
         )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10))
-    def _synthesize_profiles(
+    async def _synthesize_profiles(
         self,
         persona_results: List[PersonaProfileResult],
         extracted_jd: Dict,
@@ -428,19 +452,46 @@ class EnsembleHeaderGenerator:
             years_experience=years_experience,
         )
 
-        # Call synthesis LLM (cheaper model)
-        structured_llm = self._synthesis_llm.with_structured_output(ProfileResponse)
-        response = structured_llm.invoke([
-            {"role": "system", "content": SYNTHESIS_SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ])
+        # Add schema guidance for JSON response
+        schema_guidance = """
+Return JSON matching this ProfileResponse schema:
+{
+  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
+  "tagline": "15-25 word synthesized hook (max 200 chars)",
+  "key_achievements": ["5-6 best quantified achievements from all personas"],
+  "core_competencies": ["6-8 ATS-friendly keywords"],
+  "highlights_used": ["exact metrics used"],
+  "keywords_integrated": ["JD keywords included"],
+  "exact_title_used": "the exact title from JD",
+  "answers_who": true,
+  "answers_what_problems": true,
+  "answers_proof": true,
+  "answers_why_you": true
+}"""
+        full_system_prompt = SYNTHESIS_SYSTEM_PROMPT + "\n\n" + schema_guidance
+
+        # Use UnifiedLLM with JSON validation for synthesis
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=full_system_prompt,
+            validate_json=True,
+        )
+
+        if not result.success:
+            raise ValueError(f"LLM synthesis failed: {result.error}")
+
+        if not result.parsed_json:
+            raise ValueError("LLM response was not valid JSON")
+
+        # Parse into Pydantic model
+        response = ProfileResponse(**result.parsed_json)
 
         # Merge all metrics and keywords from all personas
         all_metrics = set()
         all_keywords = set()
-        for result in persona_results:
-            all_metrics.update(result.metrics_found)
-            all_keywords.update(result.keywords_found)
+        for pr in persona_results:
+            all_metrics.update(pr.metrics_found)
+            all_keywords.update(pr.keywords_found)
 
         return ProfileOutput(
             headline=response.headline,
@@ -590,7 +641,7 @@ class EnsembleHeaderGenerator:
         }
 
 
-def generate_ensemble_header(
+async def generate_ensemble_header(
     stitched_cv: StitchedCV,
     extracted_jd: Dict,
     candidate_data: Dict,
@@ -599,6 +650,7 @@ def generate_ensemble_header(
     skill_whitelist: Optional[Dict[str, List[str]]] = None,
     annotation_context: Optional[HeaderGenerationContext] = None,
     jd_annotations: Optional[Dict[str, Any]] = None,
+    job_id: Optional[str] = None,
 ) -> HeaderOutput:
     """
     Convenience function for ensemble header generation.
@@ -613,6 +665,7 @@ def generate_ensemble_header(
         annotation_context: Phase 4.5 - HeaderGenerationContext with annotation priorities
         jd_annotations: Raw jd_annotations dict containing synthesized_persona for
                        persona-framed profile generation.
+        job_id: Job ID for tracking (optional)
 
     Returns:
         HeaderOutput with profile, skills, and ensemble metadata
@@ -631,6 +684,7 @@ def generate_ensemble_header(
         skill_whitelist=skill_whitelist,
         annotation_context=annotation_context,
         jd_annotations=jd_annotations,
+        job_id=job_id,
     )
 
-    return generator.generate(stitched_cv, extracted_jd, candidate_data)
+    return await generator.generate(stitched_cv, extracted_jd, candidate_data)

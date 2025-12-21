@@ -17,7 +17,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import UnifiedLLM
 from src.common.state import ExtractedJD
 from src.common.logger import get_logger
 from src.layer6_v2.cv_loader import RoleData
@@ -128,30 +128,37 @@ class RoleGenerator:
     while maintaining full traceability to prevent hallucination.
     """
 
-    def __init__(self, model: Optional[str] = None, temperature: Optional[float] = None):
+    def __init__(
+        self,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        job_id: Optional[str] = None,
+    ):
         """
         Initialize the generator with LLM.
 
         Args:
-            model: Model to use (defaults to Config.DEFAULT_MODEL)
+            model: Model to use (defaults to step config)
             temperature: Temperature for generation (defaults to 0.3 for consistency)
+            job_id: Job ID for tracking (optional)
         """
         self.model = model or Config.DEFAULT_MODEL
         self.temperature = temperature if temperature is not None else 0.3  # Lower for consistency
-        # GAP-066: Token tracking enabled
-        self.llm = create_tracked_llm(
-            model=self.model,
-            temperature=self.temperature,
-            layer="layer6_v2_role",
-        )
+        self._job_id = job_id or "unknown"
         self._logger = get_logger(__name__)
+
+        # Use UnifiedLLM with step config (middle tier for role_generator)
+        self._llm = UnifiedLLM(step_name="role_generator", job_id=self._job_id)
+        self._logger.info(
+            f"RoleGenerator initialized with UnifiedLLM (step=role_generator, tier={self._llm.config.tier})"
+        )
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True
     )
-    def _call_llm(
+    async def _call_llm(
         self,
         role: RoleData,
         extracted_jd: ExtractedJD,
@@ -168,7 +175,7 @@ class RoleGenerator:
             target_bullet_count: Target number of bullets
 
         Returns:
-            Raw LLM response string
+            Raw LLM response string (JSON)
         """
         user_prompt = build_role_generation_user_prompt(
             role=role,
@@ -177,13 +184,18 @@ class RoleGenerator:
             target_bullet_count=target_bullet_count,
         )
 
-        messages = [
-            SystemMessage(content=ROLE_GENERATION_SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ]
+        # Use UnifiedLLM with JSON validation
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=ROLE_GENERATION_SYSTEM_PROMPT,
+            validate_json=True,
+        )
 
-        response = self.llm.invoke(messages)
-        return response.content
+        if not result.success:
+            raise ValueError(f"LLM role generation failed: {result.error}")
+
+        # Return the raw JSON content for parsing
+        return result.content
 
     def _parse_response(self, llm_response: str, role: RoleData) -> RoleBullets:
         """
@@ -238,7 +250,7 @@ class RoleGenerator:
 
         return validated.to_role_bullets(role)
 
-    def generate(
+    async def generate(
         self,
         role: RoleData,
         extracted_jd: ExtractedJD,
@@ -275,7 +287,7 @@ class RoleGenerator:
         self._logger.info(f"Source achievements: {len(role.achievements)}")
 
         # Call LLM
-        llm_response = self._call_llm(
+        llm_response = await self._call_llm(
             role=role,
             extracted_jd=extracted_jd,
             career_context=career_context,
@@ -425,7 +437,7 @@ class RoleGenerator:
                 return match.group(0)
         return None
 
-    def generate_with_variant_fallback(
+    async def generate_with_variant_fallback(
         self,
         role: RoleData,
         extracted_jd: ExtractedJD,
@@ -458,19 +470,19 @@ class RoleGenerator:
                 target_bullet_count=target_bullet_count,
             )
             if variant_result and variant_result.bullet_count > 0:
-                self._logger.info(f"✓ Used variant selection for {role.company}")
+                self._logger.info(f"Used variant selection for {role.company}")
                 return variant_result
 
         # Fall back to LLM generation
         self._logger.info(f"Using LLM generation for {role.company}")
-        return self.generate(
+        return await self.generate(
             role=role,
             extracted_jd=extracted_jd,
             career_context=career_context,
             target_bullet_count=target_bullet_count,
         )
 
-    def generate_with_star_enforcement(
+    async def generate_with_star_enforcement(
         self,
         role: RoleData,
         extracted_jd: ExtractedJD,
@@ -512,7 +524,7 @@ class RoleGenerator:
             )
 
         # Step 1: Generate initial bullets
-        role_bullets = self.generate(
+        role_bullets = await self.generate(
             role=role,
             extracted_jd=extracted_jd,
             career_context=career_context,
@@ -524,7 +536,7 @@ class RoleGenerator:
         star_result = qa.check_star_format(role_bullets)
 
         if star_result.passed:
-            self._logger.info(f"✓ STAR validation passed ({star_result.star_coverage:.0%} coverage)")
+            self._logger.info(f"STAR validation passed ({star_result.star_coverage:.0%} coverage)")
             return role_bullets
 
         # Step 3: Correction loop for failing bullets
@@ -539,7 +551,7 @@ class RoleGenerator:
 
             if not failing_indices:
                 self._logger.info("No specific failing bullets identified - regenerating all")
-                role_bullets = self.generate(
+                role_bullets = await self.generate(
                     role=role,
                     extracted_jd=extracted_jd,
                     career_context=career_context,
@@ -551,7 +563,7 @@ class RoleGenerator:
                     if idx < len(role_bullets.bullets):
                         bullet = role_bullets.bullets[idx]
                         missing = self._get_missing_star_elements(bullet.text, qa)
-                        corrected_text = self._correct_bullet_star(
+                        corrected_text = await self._correct_bullet_star(
                             bullet=bullet,
                             missing_elements=missing,
                             role=role,
@@ -573,7 +585,7 @@ class RoleGenerator:
             star_result = qa.check_star_format(role_bullets)
             if star_result.star_coverage >= star_threshold:
                 self._logger.info(
-                    f"✓ STAR validation passed after {retry + 1} retry(s) "
+                    f"STAR validation passed after {retry + 1} retry(s) "
                     f"({star_result.star_coverage:.0%} coverage)"
                 )
                 break
@@ -618,7 +630,7 @@ class RoleGenerator:
 
         return missing
 
-    def _correct_bullet_star(
+    async def _correct_bullet_star(
         self,
         bullet: GeneratedBullet,
         missing_elements: list[str],
@@ -638,13 +650,17 @@ class RoleGenerator:
                 company=role.company,
             )
 
-            messages = [
-                SystemMessage(content=STAR_CORRECTION_SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt),
-            ]
+            # Use UnifiedLLM for STAR correction (no JSON needed)
+            result = await self._llm.invoke(
+                prompt=user_prompt,
+                system=STAR_CORRECTION_SYSTEM_PROMPT,
+                validate_json=False,  # Plain text response expected
+            )
 
-            response = self.llm.invoke(messages)
-            corrected = response.content.strip()
+            if not result.success:
+                raise ValueError(f"STAR correction failed: {result.error}")
+
+            corrected = result.content.strip()
 
             # Clean up the response
             if corrected.startswith('"') and corrected.endswith('"'):
@@ -660,7 +676,7 @@ class RoleGenerator:
             return None
 
 
-def generate_all_roles_sequential(
+async def generate_all_roles_sequential(
     roles: List[RoleData],
     extracted_jd: ExtractedJD,
     generator: Optional[RoleGenerator] = None,
@@ -702,16 +718,16 @@ def generate_all_roles_sequential(
         )
 
         try:
-            role_bullets = generator.generate(
+            role_bullets = await generator.generate(
                 role=role,
                 extracted_jd=extracted_jd,
                 career_context=career_context,
             )
             results.append(role_bullets)
-            logger.info(f"✓ Generated {role_bullets.bullet_count} bullets for {role.company}")
+            logger.info(f"Generated {role_bullets.bullet_count} bullets for {role.company}")
 
         except Exception as e:
-            logger.error(f"✗ Failed to generate for {role.company}: {e}")
+            logger.error(f"Failed to generate for {role.company}: {e}")
             # Create empty RoleBullets to maintain order
             results.append(RoleBullets(
                 role_id=role.id,
@@ -739,7 +755,7 @@ def generate_all_roles_sequential(
     return results
 
 
-def generate_all_roles_with_star_enforcement(
+async def generate_all_roles_with_star_enforcement(
     roles: List[RoleData],
     extracted_jd: ExtractedJD,
     generator: Optional[RoleGenerator] = None,
@@ -790,7 +806,7 @@ def generate_all_roles_with_star_enforcement(
         )
 
         try:
-            role_bullets = generator.generate_with_star_enforcement(
+            role_bullets = await generator.generate_with_star_enforcement(
                 role=role,
                 extracted_jd=extracted_jd,
                 career_context=career_context,
@@ -805,10 +821,10 @@ def generate_all_roles_with_star_enforcement(
             star_result = qa.check_star_format(role_bullets)
             if star_result.passed:
                 star_pass_count += 1
-            logger.info(f"  ✓ Generated {role_bullets.bullet_count} bullets (STAR: {star_result.star_coverage:.0%})")
+            logger.info(f"  Generated {role_bullets.bullet_count} bullets (STAR: {star_result.star_coverage:.0%})")
 
         except Exception as e:
-            logger.error(f"  ✗ Failed: {e}")
+            logger.error(f"  Failed: {e}")
             results.append(RoleBullets(
                 role_id=role.id,
                 company=role.company,
@@ -836,7 +852,7 @@ def generate_all_roles_with_star_enforcement(
     return results
 
 
-def generate_all_roles_from_variants(
+async def generate_all_roles_from_variants(
     roles: List[RoleData],
     extracted_jd: ExtractedJD,
     generator: Optional[RoleGenerator] = None,
@@ -916,16 +932,16 @@ def generate_all_roles_from_variants(
                     variant_count += 1
                     # Phase 4: Log annotation influence
                     ann_count = sum(1 for b in role_bullets.bullets if b.annotation_influenced)
-                    ann_info = f" [📌 {ann_count} boosted]" if ann_count > 0 else ""
+                    ann_info = f" [{ann_count} boosted]" if ann_count > 0 else ""
                     logger.info(
-                        f"  ✓ Selected {role_bullets.bullet_count} variants "
+                        f"  Selected {role_bullets.bullet_count} variants "
                         f"({role_bullets.word_count} words){ann_info}"
                     )
                     continue
 
             # Fallback to LLM if enabled
             if fallback_to_llm:
-                role_bullets = generator.generate(
+                role_bullets = await generator.generate(
                     role=role,
                     extracted_jd=extracted_jd,
                     career_context=career_context,
@@ -934,13 +950,13 @@ def generate_all_roles_from_variants(
                 results.append(role_bullets)
                 llm_count += 1
                 logger.info(
-                    f"  ⚡ LLM generated {role_bullets.bullet_count} bullets "
+                    f"  LLM generated {role_bullets.bullet_count} bullets "
                     f"({role_bullets.word_count} words)"
                 )
             else:
                 # Skip role if no variants and no fallback
                 skip_count += 1
-                logger.warning(f"  ⊘ Skipped - no variants and LLM fallback disabled")
+                logger.warning(f"  Skipped - no variants and LLM fallback disabled")
                 results.append(RoleBullets(
                     role_id=role.id,
                     company=role.company,
@@ -955,7 +971,7 @@ def generate_all_roles_from_variants(
                 ))
 
         except Exception as e:
-            logger.error(f"  ✗ Failed: {e}")
+            logger.error(f"  Failed: {e}")
             results.append(RoleBullets(
                 role_id=role.id,
                 company=role.company,

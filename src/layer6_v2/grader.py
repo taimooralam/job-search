@@ -25,7 +25,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.logger import get_logger
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import UnifiedLLM
 from src.layer6_v2.types import (
     DimensionScore,
     GradeResult,
@@ -81,27 +81,27 @@ class CVGrader:
         model: Optional[str] = None,
         passing_threshold: float = 8.5,
         use_llm_grading: bool = True,
+        job_id: Optional[str] = None,
     ):
         """
         Initialize the grader.
 
         Args:
-            model: LLM model to use (default: Config.DEFAULT_MODEL)
+            model: LLM model to use (default: from step config)
             passing_threshold: Score threshold for passing (default: 8.5)
             use_llm_grading: Whether to use LLM for grading (default: True)
+            job_id: Job ID for tracking (optional)
         """
         self._logger = get_logger(__name__)
         self.passing_threshold = passing_threshold
         self.use_llm_grading = use_llm_grading
+        self._job_id = job_id or "unknown"
 
-        # GAP-066: Token tracking enabled
-        model_name = model or Config.DEFAULT_MODEL
-        self.llm = create_tracked_llm(
-            model=model_name,
-            temperature=0.1,  # Low temperature for consistent grading
-            layer="layer6_v2_grader",
+        # Use UnifiedLLM with step config (low tier for grader)
+        self._llm = UnifiedLLM(step_name="grader", job_id=self._job_id)
+        self._logger.info(
+            f"CVGrader initialized with UnifiedLLM (step=grader, tier={self._llm.config.tier})"
         )
-        self._logger.info(f"CVGrader initialized with model: {model_name}")
 
     def _count_keywords(self, text: str, keywords: List[str]) -> Tuple[int, List[str]]:
         """Count how many keywords appear in text."""
@@ -459,7 +459,7 @@ class CVGrader:
         )
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    def _grade_with_llm(
+    async def _grade_with_llm(
         self,
         cv_text: str,
         extracted_jd: Dict,
@@ -498,7 +498,13 @@ DIMENSION 5: ANTI-HALLUCINATION (weight: 15%)
 - Metric preservation: Numbers exact, not inflated?
 - No fabrication: No invented achievements?
 
-Return JSON matching this schema exactly."""
+Return JSON matching the GradingResponse schema exactly with these fields:
+- ats_optimization: {score, feedback, issues, strengths}
+- impact_clarity: {score, feedback, issues, strengths}
+- jd_alignment: {score, feedback, issues, strengths}
+- executive_presence: {score, feedback, issues, strengths}
+- anti_hallucination: {score, feedback, issues, strengths}
+- exemplary_sections: []"""
 
         user_prompt = f"""Grade this CV:
 
@@ -516,15 +522,23 @@ Return JSON matching this schema exactly."""
 
 Grade each dimension 1-10 with specific feedback."""
 
-        structured_llm = self.llm.with_structured_output(GradingResponse)
-        response = structured_llm.invoke([
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ])
+        # Use UnifiedLLM with JSON validation
+        result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=system_prompt,
+            validate_json=True,
+        )
 
-        return response
+        if not result.success:
+            raise ValueError(f"LLM grading failed: {result.error}")
 
-    def grade(
+        if not result.parsed_json:
+            raise ValueError("LLM response was not valid JSON")
+
+        # Parse into Pydantic model
+        return GradingResponse(**result.parsed_json)
+
+    async def grade(
         self,
         cv_text: str,
         extracted_jd: Dict,
@@ -548,7 +562,7 @@ Grade each dimension 1-10 with specific feedback."""
 
         if self.use_llm_grading:
             try:
-                llm_response = self._grade_with_llm(cv_text, extracted_jd, master_cv_text)
+                llm_response = await self._grade_with_llm(cv_text, extracted_jd, master_cv_text)
 
                 # Convert LLM response to DimensionScores
                 dimension_scores = [
@@ -649,11 +663,12 @@ Grade each dimension 1-10 with specific feedback."""
         return dimension_scores, exemplary
 
 
-def grade_cv(
+async def grade_cv(
     cv_text: str,
     extracted_jd: Dict,
     master_cv_text: str,
     passing_threshold: float = 8.5,
+    job_id: Optional[str] = None,
 ) -> GradeResult:
     """
     Convenience function to grade a CV.
@@ -663,9 +678,10 @@ def grade_cv(
         extracted_jd: Extracted JD intelligence
         master_cv_text: Original master CV for hallucination check
         passing_threshold: Score threshold for passing
+        job_id: Job ID for tracking (optional)
 
     Returns:
         GradeResult with dimension scores and composite
     """
-    grader = CVGrader(passing_threshold=passing_threshold)
-    return grader.grade(cv_text, extracted_jd, master_cv_text)
+    grader = CVGrader(passing_threshold=passing_threshold, job_id=job_id)
+    return await grader.grade(cv_text, extracted_jd, master_cv_text)

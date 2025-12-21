@@ -659,7 +659,7 @@ class TestOperationServiceIntegration:
         service = CVGenerationService()
 
         # Run the service
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             service.execute("job_789", ModelTier.QUALITY)
         )
 
@@ -697,7 +697,7 @@ class TestOperationServiceIntegration:
         import asyncio
 
         service = FailingService()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             service.execute("job_123", ModelTier.FAST)
         )
 

@@ -28,7 +28,8 @@ from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.claude_cli import ClaudeCLI, TierType, CLAUDE_MODEL_TIERS
+from src.common.unified_llm import UnifiedLLM, LLMResult
+from src.common.llm_config import TierType, TIER_TO_CLAUDE_MODEL
 from src.layer4.annotation_fit_signal import (
     AnnotationFitSignal,
     blend_fit_scores,
@@ -136,45 +137,34 @@ class OpportunityMapper:
     """
     Analyzes candidate-job fit and generates scoring.
 
-    Supports two execution backends:
-    - Claude CLI (default): Uses Claude Code CLI with three-tier model system
-    - OpenRouter (legacy): Uses LangChain with OpenRouter for backward compatibility
+    Uses UnifiedLLM for LLM invocations with Claude CLI primary and LangChain fallback.
     """
 
     def __init__(
         self,
-        tier: TierType = "balanced",
-        use_claude_cli: bool = True,
-        timeout: int = 180,
+        tier: TierType = "middle",
     ):
         """
         Initialize the mapper.
 
         Args:
-            tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
-                  Only used when use_claude_cli=True. Default is "balanced" (Sonnet 4.5).
-            use_claude_cli: If True (default), use Claude Code CLI for inference.
-                           If False, use OpenRouter via LangChain (legacy mode).
-            timeout: CLI timeout in seconds (default 180s for complex analysis).
+            tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus).
+                  Default is "middle" (Sonnet 4.5).
         """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
         self.tier = tier
-        self.use_claude_cli = use_claude_cli
+        # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
+        self._unified_llm: Optional[UnifiedLLM] = None
 
-        if use_claude_cli:
-            # Use Claude Code CLI with three-tier model system
-            self.cli = ClaudeCLI(tier=tier, timeout=timeout)
-            self.llm = None  # Not used in Claude CLI mode
-        else:
-            # Legacy mode: Use OpenRouter via LangChain
-            self.cli = None
-            # GAP-066: Token tracking enabled
-            self.llm = create_tracked_llm(
-                model=Config.DEFAULT_MODEL,
-                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for objective analysis
-                layer="layer4",
-            )
+    def _get_unified_llm(self, job_id: Optional[str] = None) -> UnifiedLLM:
+        """Get or create UnifiedLLM instance for this invocation."""
+        # Create new instance per invocation to allow job_id tracking
+        return UnifiedLLM(
+            step_name="fit_analysis",
+            tier=self.tier,
+            job_id=job_id,
+        )
 
     def _derive_fit_category(self, fit_score: int) -> str:
         """
@@ -466,9 +456,11 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True
     )
-    def _analyze_fit(self, state: JobState) -> Tuple[int, str, str]:
+    async def _analyze_fit_async(self, state: JobState) -> Tuple[int, str, str]:
         """
-        Use LLM to analyze candidate-job fit (Phase 6).
+        Use LLM to analyze candidate-job fit (Phase 6) - async version.
+
+        Uses UnifiedLLM which handles Claude CLI primary with LangChain fallback.
 
         Returns:
             Tuple of (fit_score, fit_rationale, fit_category)
@@ -505,30 +497,20 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             selected_stars=selected_stars_text
         )
 
-        # Get LLM response
-        if self.use_claude_cli:
-            # Claude CLI mode: Combine system + user prompt into single prompt
-            combined_prompt = f"{SYSTEM_PROMPT}\n\n---\n\n{user_prompt_content}"
+        # Use UnifiedLLM - handles Claude CLI primary with LangChain fallback
+        job_id = state.get("job_id", "opportunity-mapper")
+        llm = self._get_unified_llm(job_id)
+        result: LLMResult = await llm.invoke(
+            prompt=user_prompt_content,
+            system=SYSTEM_PROMPT,
+            job_id=job_id,
+            validate_json=False,  # Opportunity mapper doesn't expect JSON
+        )
 
-            # Invoke Claude CLI
-            result = self.cli.invoke(
-                prompt=combined_prompt,
-                job_id=state.get("job_id", "opportunity-mapper"),
-                validate_json=False,  # Opportunity mapper doesn't expect JSON
-            )
+        if not result.success:
+            raise ValueError(f"LLM invocation failed: {result.error}")
 
-            if not result.success:
-                raise ValueError(f"Claude CLI invocation failed: {result.error}")
-
-            response_text = result.raw_result.strip()
-        else:
-            # Legacy OpenRouter mode: Use LangChain messages
-            messages = [
-                SystemMessage(content=SYSTEM_PROMPT),
-                HumanMessage(content=user_prompt_content)
-            ]
-            response = self.llm.invoke(messages)
-            response_text = response.content.strip()
+        response_text = result.content.strip()
 
         # Parse response
         score, rationale = self._parse_llm_response(response_text)
@@ -550,6 +532,38 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         category = self._derive_fit_category(score)
 
         return score, rationale, category
+
+    def _analyze_fit(self, state: JobState) -> Tuple[int, str, str]:
+        """
+        Use LLM to analyze candidate-job fit (Phase 6) - sync wrapper.
+
+        Uses UnifiedLLM which handles Claude CLI primary with LangChain fallback.
+
+        Returns:
+            Tuple of (fit_score, fit_rationale, fit_category)
+
+        Raises:
+            ValueError: If rationale fails validation (triggers retry)
+        """
+        import asyncio
+
+        # Run async method in event loop
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If we're already in an async context, create a new task
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(
+                        asyncio.run,
+                        self._analyze_fit_async(state)
+                    )
+                    return future.result()
+            else:
+                return loop.run_until_complete(self._analyze_fit_async(state))
+        except RuntimeError:
+            # No event loop exists
+            return asyncio.run(self._analyze_fit_async(state))
 
     def map_opportunity(self, state: JobState) -> Dict[str, Any]:
         """
@@ -635,18 +649,17 @@ KEY METRICS: {star.get('metrics', 'N/A')}
 
 def opportunity_mapper_node(
     state: JobState,
-    tier: TierType = "balanced",
-    use_claude_cli: bool = True,
+    tier: TierType = "middle",
 ) -> Dict[str, Any]:
     """
     LangGraph node function for Layer 4: Opportunity Mapper (Phase 6).
 
+    Uses UnifiedLLM with Claude CLI primary and LangChain fallback.
+
     Args:
         state: Current job processing state
-        tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
-              Default is "balanced" (Sonnet 4.5).
-        use_claude_cli: If True (default), use Claude Code CLI for inference.
-                       If False, use OpenRouter via LangChain (legacy mode).
+        tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus).
+              Default is "middle" (Sonnet 4.5).
 
     Returns:
         Dictionary with updates to merge into state including annotation_analysis
@@ -657,13 +670,10 @@ def opportunity_mapper_node(
     logger.info("="*60)
     logger.info("LAYER 4: Opportunity Mapper (Phase 6 + Annotation Signal)")
     logger.info("="*60)
-    if use_claude_cli:
-        logger.info(f"Backend: Claude CLI (tier={tier}, model={CLAUDE_MODEL_TIERS.get(tier, 'balanced')})")
-    else:
-        logger.info("Backend: OpenRouter (legacy mode)")
+    logger.info(f"Backend: UnifiedLLM (tier={tier}, model={TIER_TO_CLAUDE_MODEL.get(tier, 'middle')})")
 
     with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
-        mapper = OpportunityMapper(tier=tier, use_claude_cli=use_claude_cli)
+        mapper = OpportunityMapper(tier=tier)
         updates = mapper.map_opportunity(state)
 
         # Add metadata for structured logging

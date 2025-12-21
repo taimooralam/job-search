@@ -6,7 +6,7 @@ Tests JSON parsing, schema validation, and error handling with mocked LLM respon
 
 import json
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from pydantic import ValidationError
 
 from src.layer2.pain_point_miner import (
@@ -15,6 +15,7 @@ from src.layer2.pain_point_miner import (
     pain_point_miner_node
 )
 from src.common.state import JobState
+from src.common.unified_llm import LLMResult
 
 
 # ===== FIXTURES =====
@@ -185,8 +186,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_clean_json(self, valid_pain_point_json):
         """Parse clean JSON response."""
-        # Use legacy mode for testing (use_claude_cli=False)
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         llm_response = json.dumps(valid_pain_point_json)
 
         result = miner._parse_json_response(llm_response)
@@ -197,7 +197,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_with_extra_text_before(self, valid_pain_point_json):
         """Parse JSON even if LLM adds text before."""
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         llm_response = "Here's the analysis:\n\n" + json.dumps(valid_pain_point_json)
 
         result = miner._parse_json_response(llm_response)
@@ -206,7 +206,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_with_extra_text_after(self, valid_pain_point_json):
         """Parse JSON even if LLM adds text after."""
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         llm_response = json.dumps(valid_pain_point_json) + "\n\nHope this helps!"
 
         result = miner._parse_json_response(llm_response)
@@ -215,7 +215,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_invalid_json(self):
         """Invalid JSON should raise ValueError."""
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         llm_response = "Not JSON at all!"
 
         with pytest.raises(ValueError, match="Failed to parse JSON"):
@@ -223,7 +223,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_missing_field(self):
         """JSON missing required field should raise ValueError with clear message."""
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         invalid_json = {
             "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
             # Missing other required fields
@@ -235,7 +235,7 @@ class TestPainPointMinerParsing:
 
     def test_parse_json_too_few_items(self):
         """JSON with empty lists should raise clear validation error."""
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         invalid_json = {
             "pain_points": [],
             "strategic_needs": [],
@@ -250,36 +250,47 @@ class TestPainPointMinerParsing:
 
 # ===== INTEGRATION TESTS WITH MOCKED LLM =====
 
+def _create_mock_llm_result(content: str, success: bool = True) -> LLMResult:
+    """Helper to create a mock LLMResult."""
+    return LLMResult(
+        content=content,
+        backend="claude_cli",
+        model="claude-sonnet-4-5-20250929",
+        tier="middle",
+        duration_ms=100,
+        success=success,
+        error=None if success else "Mock error",
+    )
+
+
 class TestPainPointMinerWithMockedLLM:
     """Test full extraction flow with mocked LLM calls."""
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_successful_extraction(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_successful_extraction(self, mock_unified_llm_class, sample_job_state, valid_pain_point_json):
         """Successful LLM call should return validated data."""
-        # Mock LLM to return valid JSON
+        # Mock UnifiedLLM to return valid JSON
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_pain_point_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(valid_pain_point_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         assert result["pain_points"] == valid_pain_point_json["pain_points"]
         assert result["strategic_needs"] == valid_pain_point_json["strategic_needs"]
         assert "errors" not in result
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_llm_returns_invalid_json(self, mock_llm_class, sample_job_state):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_llm_returns_invalid_json(self, mock_unified_llm_class, sample_job_state):
         """LLM returning invalid JSON should return empty lists with error."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "Not valid JSON at all!"
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result("Not valid JSON at all!")
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return empty lists (graceful degradation)
@@ -292,20 +303,19 @@ class TestPainPointMinerWithMockedLLM:
         assert len(result["errors"]) > 0
         assert "failed" in result["errors"][0].lower()
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_llm_returns_incomplete_schema(self, mock_llm_class, sample_job_state):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_llm_returns_incomplete_schema(self, mock_unified_llm_class, sample_job_state):
         """LLM returning incomplete schema should return empty lists with error."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
         incomplete_json = {
             "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
             # Missing other fields
         }
-        mock_response.content = json.dumps(incomplete_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(incomplete_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         assert result["pain_points"] == []
@@ -318,16 +328,15 @@ class TestPainPointMinerWithMockedLLM:
 class TestPainPointMinerNode:
     """Test LangGraph node wrapper function."""
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_node_returns_updates_dict(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_node_returns_updates_dict(self, mock_unified_llm_class, sample_job_state, valid_pain_point_json):
         """Node function should return dict with pain point updates."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_pain_point_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(valid_pain_point_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
-        updates = pain_point_miner_node(sample_job_state, use_claude_cli=False)
+        updates = pain_point_miner_node(sample_job_state)
 
         # Should return dict with all 4 fields
         assert "pain_points" in updates
@@ -336,14 +345,14 @@ class TestPainPointMinerNode:
         assert "success_metrics" in updates
         assert len(updates["pain_points"]) == 3
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_node_handles_errors_gracefully(self, mock_llm_class, sample_job_state):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_node_handles_errors_gracefully(self, mock_unified_llm_class, sample_job_state):
         """Node function should handle errors without crashing."""
         mock_llm_instance = MagicMock()
-        mock_llm_instance.invoke.side_effect = Exception("LLM API error")
-        mock_llm_class.return_value = mock_llm_instance
+        mock_llm_instance.invoke = AsyncMock(side_effect=Exception("LLM API error"))
+        mock_unified_llm_class.return_value = mock_llm_instance
 
-        updates = pain_point_miner_node(sample_job_state, use_claude_cli=False)
+        updates = pain_point_miner_node(sample_job_state)
 
         # Should return empty lists, not crash
         assert updates["pain_points"] == []
@@ -660,19 +669,18 @@ class TestPainPointRankingWithAnnotations:
 class TestBackwardCompatibilityWithoutAnnotations:
     """Test that pain point miner works correctly without annotations."""
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_miner_works_without_annotations(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_miner_works_without_annotations(self, mock_unified_llm_class, sample_job_state, valid_pain_point_json):
         """Miner should work normally when no annotations are present."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_pain_point_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(valid_pain_point_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
         # Ensure no annotations in state
         assert sample_job_state.get("jd_annotations") is None
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return valid results
@@ -680,19 +688,18 @@ class TestBackwardCompatibilityWithoutAnnotations:
         assert result["strategic_needs"] == valid_pain_point_json["strategic_needs"]
         assert "errors" not in result
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
-    def test_miner_works_with_empty_annotations(self, mock_llm_class, sample_job_state, valid_pain_point_json):
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_miner_works_with_empty_annotations(self, mock_unified_llm_class, sample_job_state, valid_pain_point_json):
         """Miner should work with empty annotations dict."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_pain_point_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(valid_pain_point_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
         # Add empty annotations
         sample_job_state["jd_annotations"] = {"annotations": [], "concerns": []}
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         # Should return valid results
@@ -731,20 +738,19 @@ class TestAnnotationAwareExtraction:
             "concerns": [],
         }
 
-    @patch('src.layer2.pain_point_miner.create_tracked_llm')
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
     def test_extraction_with_annotations_includes_context(
-        self, mock_llm_class, sample_job_state, sample_annotations_minimal, valid_pain_point_json
+        self, mock_unified_llm_class, sample_job_state, sample_annotations_minimal, valid_pain_point_json
     ):
         """Extraction with annotations should include annotation context in prompt."""
         mock_llm_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_pain_point_json)
-        mock_llm_instance.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm_instance
+        mock_result = _create_mock_llm_result(json.dumps(valid_pain_point_json))
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
 
         sample_job_state["jd_annotations"] = sample_annotations_minimal
 
-        miner = PainPointMiner(use_claude_cli=False)
+        miner = PainPointMiner()
         result = miner.extract_pain_points(sample_job_state)
 
         # Verify LLM was called
@@ -752,9 +758,9 @@ class TestAnnotationAwareExtraction:
 
         # Check that the call included annotation context (inspect the prompt)
         call_args = mock_llm_instance.invoke.call_args
-        messages = call_args[0][0] if call_args[0] else call_args[1].get("messages", [])
+        # UnifiedLLM.invoke takes prompt and system as keyword args
+        prompt_text = str(call_args)
 
         # The prompt should contain reference to annotation priorities
-        prompt_text = str(messages)
         # Note: This checks the prompt structure, actual implementation may vary
         assert len(result["pain_points"]) > 0
