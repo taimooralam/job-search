@@ -1131,32 +1131,66 @@ function updateScoreBadgeDetail(display, score) {
     display.innerHTML = `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">${displayText}</span>`;
 }
 
-// GAP-045: Tier selection
-let selectedTier = 'auto';
+// Unified tier selection (Phase 2 refactoring)
+let selectedTier = 'balanced';
+
+// Unified tier labels and icons
 const tierLabels = {
-    'auto': 'Auto',
-    'A': 'Gold (A)',
-    'B': 'Silver (B)',
-    'C': 'Bronze (C)',
-    'D': 'Skip (D)'
+    'fast': 'Fast',
+    'balanced': 'Balanced',
+    'quality': 'Quality',
+    // Legacy aliases for backward compatibility
+    'auto': 'Balanced',
+    'A': 'Quality',
+    'B': 'Balanced',
+    'C': 'Fast',
+    'D': 'Fast'
 };
 
-function setProcessingTier(tier) {
-    selectedTier = tier;
-    document.getElementById('selected-tier').value = tier;
-    document.getElementById('process-btn-label').textContent = `Process (${tierLabels[tier]})`;
+const tierIcons = {
+    'fast': '\u26A1',      // Lightning bolt
+    'balanced': '\u2696\uFE0F', // Balance scale
+    'quality': '\u2728',   // Sparkles
+};
 
-    document.querySelectorAll('.tier-option').forEach(btn => {
-        const checkIcon = btn.querySelector('[id^="tier-check-"]');
-        if (checkIcon) checkIcon.classList.add('hidden');
+/**
+ * Normalize legacy tier codes (A/B/C/D, auto) to new format (fast/balanced/quality)
+ */
+function normalizeTierCode(tier) {
+    const legacyMapping = {
+        'auto': 'balanced',
+        'A': 'quality',
+        'B': 'balanced',
+        'C': 'fast',
+        'D': 'fast',
+        'Gold': 'quality',
+        'Silver': 'balanced',
+        'Bronze': 'fast'
+    };
+    return legacyMapping[tier] || tier;
+}
+
+function setProcessingTier(tier) {
+    // Normalize legacy tier codes
+    const normalizedTier = normalizeTierCode(tier);
+    selectedTier = normalizedTier;
+    document.getElementById('selected-tier').value = normalizedTier;
+    document.getElementById('process-btn-label').textContent = `Process (${tierLabels[normalizedTier]})`;
+
+    // Update visual selection in dropdown
+    document.querySelectorAll('.tier-option[data-tier]').forEach(btn => {
+        if (btn.dataset.tier === normalizedTier) {
+            btn.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20');
+        } else {
+            btn.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/20');
+        }
     });
-    const selectedCheck = document.getElementById(`tier-check-${tier}`);
-    if (selectedCheck) selectedCheck.classList.remove('hidden');
 }
 
 async function processJobDetail(jobId, jobTitle) {
-    const tier = document.getElementById('selected-tier')?.value || 'auto';
-    const tierDisplay = tierLabels[tier] || 'Auto';
+    const rawTier = document.getElementById('selected-tier')?.value || 'balanced';
+    const tier = normalizeTierCode(rawTier);
+    const tierDisplay = tierLabels[tier] || 'Balanced';
 
     const confirmed = confirm(
         `Process job through pipeline?\n\n` +
