@@ -19,7 +19,7 @@ Annotation Signal Integration:
 
 import logging
 import re
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Dict, Any, Tuple, List, Optional, TYPE_CHECKING
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -35,6 +35,9 @@ from src.layer4.annotation_fit_signal import (
     blend_fit_scores,
     get_annotation_analysis,
 )
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 
 # ===== PROMPT DESIGN =====
@@ -143,6 +146,7 @@ class OpportunityMapper:
     def __init__(
         self,
         tier: TierType = "middle",
+        struct_logger: Optional["StructuredLogger"] = None,
     ):
         """
         Initialize the mapper.
@@ -150,10 +154,13 @@ class OpportunityMapper:
         Args:
             tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus).
                   Default is "middle" (Sonnet 4.5).
+            struct_logger: Optional StructuredLogger for emitting LLM call events
+                to the frontend log stream.
         """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
         self.tier = tier
+        self._struct_logger = struct_logger
         # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
         self._unified_llm: Optional[UnifiedLLM] = None
 
@@ -164,6 +171,7 @@ class OpportunityMapper:
             step_name="fit_analysis",
             tier=self.tier,
             job_id=job_id,
+            struct_logger=self._struct_logger,
         )
 
     def _derive_fit_category(self, fit_score: int) -> str:
@@ -673,7 +681,7 @@ def opportunity_mapper_node(
     logger.info(f"Backend: UnifiedLLM (tier={tier}, model={TIER_TO_CLAUDE_MODEL.get(tier, 'middle')})")
 
     with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
-        mapper = OpportunityMapper(tier=tier)
+        mapper = OpportunityMapper(tier=tier, struct_logger=struct_logger)
         updates = mapper.map_opportunity(state)
 
         # Add metadata for structured logging
