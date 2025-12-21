@@ -573,14 +573,16 @@ IMPORTANT: Use WebSearch to find current information. Return your findings as va
         company_name: str,
         job_context: str = "",
         job_title: str = "",
+        job_id: str = "unknown",
     ) -> WebResearchResult:
         """
-        Research a company using web search.
+        Research a company using web search via Claude CLI.
 
         Args:
             company_name: Name of the company to research
             job_context: Optional context about the job (JD summary)
             job_title: Optional job title for context
+            job_id: Job ID for tracking
 
         Returns:
             WebResearchResult with CompanyResearch data
@@ -616,31 +618,31 @@ IMPORTANT: Use WebSearch to find current information. Return your findings as va
 Return structured JSON with your findings.'''
 
         try:
-            # Call Claude API with web search tool (with retry on transient failures)
-            response = self._call_api_with_retry(
+            # Invoke Claude CLI with WebSearch enabled
+            llm_result = self._invoke_cli_research(
                 system_prompt=COMPANY_RESEARCH_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
                 research_type="company",
+                job_id=job_id,
             )
 
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-
             # Parse and validate response (with partial extraction fallback)
-            data, search_count, is_partial = self._parse_response(response, CompanyResearchModel)
+            data, is_partial = self._parse_llm_result(llm_result, CompanyResearchModel)
 
             return WebResearchResult(
                 success=True,
                 data=data,
                 error=None,
-                model=self.model,
+                model=llm_result.model,
                 tier=self.tier,
-                duration_ms=duration_ms,
+                duration_ms=llm_result.duration_ms,
                 researched_at=start_time.isoformat(),
-                searches_performed=search_count,
-                input_tokens=response.usage.input_tokens if hasattr(response, "usage") else None,
-                output_tokens=response.usage.output_tokens if hasattr(response, "usage") else None,
+                searches_performed=0,  # CLI doesn't report search count
+                input_tokens=llm_result.input_tokens,
+                output_tokens=llm_result.output_tokens,
                 partial=is_partial,
                 quality_score=calculate_quality_score(data, "company"),
+                cost_usd=llm_result.cost_usd,
             )
 
         except Exception as e:
@@ -661,14 +663,16 @@ Return structured JSON with your findings.'''
         company_name: str,
         role: str,
         department: str = "",
+        job_id: str = "unknown",
     ) -> WebResearchResult:
         """
-        Research key people at a company for networking.
+        Research key people at a company for networking via Claude CLI.
 
         Args:
             company_name: Name of the company
             role: The role the job seeker is applying for
             department: Optional department context
+            job_id: Job ID for tracking
 
         Returns:
             WebResearchResult with PeopleResearch data
@@ -706,31 +710,31 @@ Prioritize LinkedIn profiles and professional information.
 Return structured JSON with primary (decision makers) and secondary (potential colleagues) contacts.'''
 
         try:
-            # Use retry helper for resilience against transient failures
-            response = self._call_api_with_retry(
+            # Invoke Claude CLI with WebSearch enabled
+            llm_result = self._invoke_cli_research(
                 system_prompt=PEOPLE_RESEARCH_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
                 research_type="people",
+                job_id=job_id,
             )
 
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-
             # Parse and validate response (with partial extraction fallback)
-            data, search_count, is_partial = self._parse_response(response, PeopleResearchModel)
+            data, is_partial = self._parse_llm_result(llm_result, PeopleResearchModel)
 
             return WebResearchResult(
                 success=True,
                 data=data,
                 error=None,
-                model=self.model,
+                model=llm_result.model,
                 tier=self.tier,
-                duration_ms=duration_ms,
+                duration_ms=llm_result.duration_ms,
                 researched_at=start_time.isoformat(),
-                searches_performed=search_count,
-                input_tokens=response.usage.input_tokens if hasattr(response, "usage") else None,
-                output_tokens=response.usage.output_tokens if hasattr(response, "usage") else None,
+                searches_performed=0,  # CLI doesn't report search count
+                input_tokens=llm_result.input_tokens,
+                output_tokens=llm_result.output_tokens,
                 partial=is_partial,
                 quality_score=calculate_quality_score(data, "people"),
+                cost_usd=llm_result.cost_usd,
             )
 
         except Exception as e:
@@ -751,14 +755,16 @@ Return structured JSON with primary (decision makers) and secondary (potential c
         company_name: str,
         role_title: str,
         job_description: str = "",
+        job_id: str = "unknown",
     ) -> WebResearchResult:
         """
-        Research what a specific role means at a company.
+        Research what a specific role means at a company via Claude CLI.
 
         Args:
             company_name: Name of the company
             role_title: The job title/role
             job_description: Optional JD for context
+            job_id: Job ID for tracking
 
         Returns:
             WebResearchResult with RoleResearch data
@@ -795,31 +801,31 @@ Return structured JSON with primary (decision makers) and secondary (potential c
 Return structured JSON with business impact, why now, team context, and challenges.'''
 
         try:
-            # Use retry helper for resilience against transient failures
-            response = self._call_api_with_retry(
+            # Invoke Claude CLI with WebSearch enabled
+            llm_result = self._invoke_cli_research(
                 system_prompt=ROLE_RESEARCH_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
                 research_type="role",
+                job_id=job_id,
             )
 
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-
             # Parse and validate response (with partial extraction fallback)
-            data, search_count, is_partial = self._parse_response(response, RoleResearchModel)
+            data, is_partial = self._parse_llm_result(llm_result, RoleResearchModel)
 
             return WebResearchResult(
                 success=True,
                 data=data,
                 error=None,
-                model=self.model,
+                model=llm_result.model,
                 tier=self.tier,
-                duration_ms=duration_ms,
+                duration_ms=llm_result.duration_ms,
                 researched_at=start_time.isoformat(),
-                searches_performed=search_count,
-                input_tokens=response.usage.input_tokens if hasattr(response, "usage") else None,
-                output_tokens=response.usage.output_tokens if hasattr(response, "usage") else None,
+                searches_performed=0,  # CLI doesn't report search count
+                input_tokens=llm_result.input_tokens,
+                output_tokens=llm_result.output_tokens,
                 partial=is_partial,
                 quality_score=calculate_quality_score(data, "role"),
+                cost_usd=llm_result.cost_usd,
             )
 
         except Exception as e:
@@ -837,21 +843,21 @@ Return structured JSON with business impact, why now, team context, and challeng
 
     def check_api_available(self) -> bool:
         """
-        Check if Claude API is available and authenticated.
+        Check if Claude CLI is available for research.
 
         Returns:
-            True if API is accessible
+            True if CLI is accessible
         """
         try:
-            # Simple test call
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=10,
-                messages=[{"role": "user", "content": "Say 'ok'"}],
+            # Test by invoking a simple prompt via UnifiedLLM
+            result = invoke_unified_sync(
+                prompt="Say 'ok'",
+                tier="low",
+                validate_json=False,
             )
-            return True
+            return result.success
         except Exception as e:
-            logger.warning(f"Claude API not available: {e}")
+            logger.warning(f"Claude CLI not available: {e}")
             return False
 
     @staticmethod
@@ -903,17 +909,19 @@ async def research_people(
     company_name: str,
     role: str,
     tier: TierType = "balanced",
+    job_id: str = "unknown",
 ) -> WebResearchResult:
     """Convenience function for people research."""
     researcher = ClaudeWebResearcher(tier=tier)
-    return await researcher.research_people(company_name, role)
+    return await researcher.research_people(company_name, role, job_id=job_id)
 
 
 async def research_role(
     company_name: str,
     role_title: str,
     tier: TierType = "balanced",
+    job_id: str = "unknown",
 ) -> WebResearchResult:
     """Convenience function for role research."""
     researcher = ClaudeWebResearcher(tier=tier)
-    return await researcher.research_role(company_name, role_title)
+    return await researcher.research_role(company_name, role_title, job_id=job_id)
