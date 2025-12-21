@@ -152,12 +152,17 @@ class FullExtractionService(OperationService):
         return processed_jd_to_dict(processed)
 
     def _run_jd_extractor(
-        self, job: Dict[str, Any], jd_text: str
+        self, job: Dict[str, Any], jd_text: str, log_callback: callable = None
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """
         Run JD Extractor: Extract structured intelligence from JD.
 
         Uses Claude Code CLI for high-quality extraction.
+
+        Args:
+            job: Job document from MongoDB
+            jd_text: Job description text
+            log_callback: Optional callback for log streaming with backend visibility
 
         Returns:
             Tuple of (extracted_jd, error_message):
@@ -168,7 +173,7 @@ class FullExtractionService(OperationService):
         title = job.get("title", "")
         company = job.get("firm") or job.get("company", "")
 
-        extractor = JDExtractor()
+        extractor = JDExtractor(log_callback=log_callback)
         result = extractor.extract(
             job_id=job_id,
             title=title,
@@ -447,6 +452,7 @@ class FullExtractionService(OperationService):
         tier: ModelTier,
         use_llm: bool = True,
         progress_callback: callable = None,
+        log_callback: callable = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -457,6 +463,7 @@ class FullExtractionService(OperationService):
             tier: Model tier for quality/cost selection
             use_llm: Whether to use LLM for processing (default True)
             progress_callback: Optional callback(layer_key, status, message) for real-time updates
+            log_callback: Optional callback(message: str) for log streaming to frontend
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -470,6 +477,16 @@ class FullExtractionService(OperationService):
                     await asyncio.sleep(0)  # CRITICAL: Yield to event loop for SSE delivery
                 except Exception as e:
                     logger.warning(f"Progress callback failed: {e}")
+
+        # Create JSON log callback wrapper for JDExtractor
+        # This converts JDExtractor's dict logs to JSON strings for Redis streaming
+        # The frontend parses these JSON logs to display backend/LLM provider badges
+        import json as _json
+        def jd_log_callback(job_id: str, level: str, data: Dict[str, Any]) -> None:
+            if log_callback:
+                # Emit JSON log with backend field for frontend visibility
+                log_callback(_json.dumps(data))
+
         run_id = self.create_run_id()
         logger.info(f"[{run_id[:16]}] Starting full-extraction for job {job_id}")
 
@@ -520,7 +537,7 @@ class FullExtractionService(OperationService):
                 # 4b. Run JD Extractor: Extract structured intelligence
                 await emit_progress("jd_extractor", "processing", "Extracting role intelligence")
                 logger.info(f"[{run_id[:16]}] Running JD Extractor: Extracting role info")
-                extracted_jd, extractor_error = self._run_jd_extractor(job, jd_text)
+                extracted_jd, extractor_error = self._run_jd_extractor(job, jd_text, jd_log_callback)
                 if extracted_jd:
                     role_category = extracted_jd.get("role_category", "unknown")
                     keywords_count = len(extracted_jd.get("top_keywords", []))

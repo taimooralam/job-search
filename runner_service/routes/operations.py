@@ -1085,6 +1085,7 @@ async def full_extraction_start(
                 tier=tier,
                 use_llm=request.use_llm,
                 progress_callback=layer_cb,  # Pass layer_cb for real-time progress
+                log_callback=log_cb,  # Pass log_cb for LLM backend visibility
             )
 
             # Final layer statuses are already emitted by the service via progress_callback
@@ -2086,6 +2087,7 @@ async def _execute_queued_operation(
                 tier=tier,
                 use_llm=use_llm,
                 progress_callback=layer_cb,
+                log_callback=log_cb,  # Pass log_cb for LLM backend visibility
             )
 
         elif operation in ("research-company", "discover-contacts", "generate-outreach"):
@@ -2582,6 +2584,7 @@ async def _execute_extraction_bulk_task(
             tier=tier,
             use_llm=use_llm,
             progress_callback=layer_cb,
+            log_callback=log_cb,  # Pass log_cb for LLM backend visibility
         )
 
         # Update status
