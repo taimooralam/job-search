@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from typing import Callable, Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
 from firecrawl import FirecrawlApp
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -31,6 +31,9 @@ from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import run_async
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
 from src.common.unified_llm import UnifiedLLM, invoke_unified_sync
+
+# Type alias for log callback function
+LogCallback = Callable[[str], None]
 
 
 # ===== FIRECRAWL RESPONSE NORMALIZER =====
@@ -427,6 +430,7 @@ class CompanyResearcher:
         self,
         tier: TierType = "balanced",
         use_claude_api: bool = True,
+        log_callback: Optional[LogCallback] = None,
     ):
         """
         Initialize the company researcher.
@@ -436,11 +440,14 @@ class CompanyResearcher:
                   Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
             use_claude_api: If True (default), use Claude API with WebSearch.
                            If False, use FireCrawl + OpenRouter (legacy mode).
+            log_callback: Optional callback for log streaming (Redis live-tail).
+                Signature: (json_string: str) -> None
         """
         # Logger for internal operations (no run_id context yet)
         self.logger = logging.getLogger(__name__)
         self.tier = tier
         self.use_claude_api = use_claude_api
+        self._log_callback = log_callback
 
         if use_claude_api:
             # Claude API with WebSearch for research
@@ -464,6 +471,14 @@ class CompanyResearcher:
         self.cache_collection = self.mongo_client["jobs"]["company_cache"]
         # Create TTL index on cached_at field (7 days)
         self.cache_collection.create_index("cached_at", expireAfterSeconds=7*24*60*60)
+
+    def _emit_log(self, data: Dict[str, Any]) -> None:
+        """Emit a log event via log_callback if configured."""
+        if self._log_callback:
+            try:
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Don't let logging errors break the pipeline
 
     def _classify_company_type(self, state: JobState) -> str:
         """
@@ -543,6 +558,15 @@ class CompanyResearcher:
                 f"(confidence: {classification.confidence}) - {classification.reasoning}"
             )
 
+            # Emit classification log with backend attribution
+            self._emit_log({
+                "message": f"Company type: {classification.company_type}",
+                "company_type": classification.company_type,
+                "confidence": classification.confidence,
+                "backend": result.backend,
+                "model": result.model,
+            })
+
             return classification.company_type
 
         except (json.JSONDecodeError, ValidationError) as e:
@@ -578,6 +602,13 @@ class CompanyResearcher:
         job_id = state.get("job_id", "unknown")
 
         self.logger.info(f"[Claude API] Researching company: {company}")
+
+        # Emit log for Claude API research start
+        self._emit_log({
+            "message": f"Researching {company} via Claude web search...",
+            "backend": "claude_api",
+            "model": CLAUDE_MODEL_TIERS.get(self.tier, "claude-sonnet-4-20250514"),
+        })
 
         # Check cache first (same caching logic as FireCrawl mode)
         try:
@@ -740,9 +771,22 @@ class CompanyResearcher:
         Returns:
             Dict with company_research + legacy fields
         """
+        signals_count = len(data.get("signals", []))
         self.logger.info(
-            f"[Claude API] Research complete - {len(data.get('signals', []))} signals"
+            f"[Claude API] Research complete - {signals_count} signals"
         )
+
+        # Emit completion log
+        summary_preview = data.get("summary", "")[:100]
+        if len(data.get("summary", "")) > 100:
+            summary_preview += "..."
+        self._emit_log({
+            "message": f"Company research complete: {signals_count} signals found",
+            "summary_preview": summary_preview,
+            "signals_count": signals_count,
+            "backend": "claude_api",
+            "model": CLAUDE_MODEL_TIERS.get(self.tier, "claude-sonnet-4-20250514"),
+        })
 
         # Convert to CompanyResearch format for JobState
         company_research: CompanyResearch = {
@@ -1806,6 +1850,9 @@ Output JSON only:
         company = state["company"]
         job_id = state.get("job_id", "unknown")
 
+        # Emit start of research log
+        self._emit_log({"message": f"Starting company research for {company}..."})
+
         # Route to Claude API backend if enabled (new default)
         if self.use_claude_api:
             self.logger.info(f"Using Claude API ({self.tier} tier) for company research")
@@ -1818,6 +1865,10 @@ Output JSON only:
         # Step 0: Classify company type (employer vs recruitment agency)
         company_type = self._classify_company_type(state)
         self.logger.info(f"Company classification: {company_type}")
+        self._emit_log({
+            "message": f"Company type: {company_type}",
+            "company_type": company_type,
+        })
 
         # Step 0.5: Handle recruitment agencies with minimal research
         if company_type == "recruitment_agency":
@@ -1878,6 +1929,15 @@ Output JSON only:
 
             self.logger.info(f"Extracted {len(company_research_output.signals)} signal(s)")
 
+            # Emit signal extraction result log
+            signals_count = len(company_research_output.signals)
+            signal_types = [sig.type for sig in company_research_output.signals]
+            self._emit_log({
+                "message": f"Found {signals_count} company signals",
+                "signals_count": signals_count,
+                "signal_types": signal_types[:5],  # Limit to first 5 for brevity
+            })
+
             # Phase 5 defensive fallback: If 0 signals, try second-pass extraction
             if len(company_research_output.signals) == 0 and 'official_site' in scraped_data:
                 self.logger.warning("No signals extracted, running fallback extraction")
@@ -1910,6 +1970,14 @@ Output JSON only:
                 "url": company_research_output.url,
                 "company_type": "employer"  # Classified as direct employer
             }
+
+            # Emit completion log with summary
+            summary_preview = company_research_output.summary[:100] + "..." if len(company_research_output.summary) > 100 else company_research_output.summary
+            self._emit_log({
+                "message": f"Company research complete: {len(company_research_output.signals)} signals found",
+                "summary_preview": summary_preview,
+                "signals_count": len(company_research_output.signals),
+            })
 
             return {
                 "company_research": company_research,

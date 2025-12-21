@@ -221,6 +221,9 @@ class UnifiedLLM:
 
         # Try Claude CLI first
         if self._should_use_cli():
+            # Log LLM call start for frontend visibility
+            self._log_llm_start("claude_cli", job_id)
+
             try:
                 result = await self._invoke_cli(combined_prompt, job_id, validate_json)
                 if result.success:
@@ -231,21 +234,29 @@ class UnifiedLLM:
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] Claude CLI failed: {result.error}"
                 )
+                # Log CLI error to StructuredLogger for frontend visibility
+                self._log_cli_error(job_id, cli_error_reason, result.duration_ms)
             except subprocess.TimeoutExpired as e:
                 cli_error_reason = f"CLI timeout after {e.timeout}s"
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] {cli_error_reason}"
                 )
+                # Log CLI error to StructuredLogger for frontend visibility
+                self._log_cli_error(job_id, cli_error_reason)
             except FileNotFoundError:
                 cli_error_reason = "Claude CLI not found in PATH"
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] {cli_error_reason}"
                 )
+                # Log CLI error to StructuredLogger for frontend visibility
+                self._log_cli_error(job_id, cli_error_reason)
             except Exception as e:
                 cli_error_reason = f"CLI exception: {type(e).__name__}: {e}"
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] Claude CLI exception: {e}"
                 )
+                # Log CLI error to StructuredLogger for frontend visibility
+                self._log_cli_error(job_id, cli_error_reason)
         else:
             cli_error_reason = "CLI disabled via DISABLE_CLAUDE_CLI env var"
 
@@ -356,6 +367,9 @@ class UnifiedLLM:
         start_time = datetime.utcnow()
         fallback_model = self.config.get_fallback_model()
 
+        # Log LangChain call start for frontend visibility
+        self._log_llm_start("langchain", job_id)
+
         try:
             # Create LangChain LLM with tracking
             llm = create_tracked_llm_for_model(
@@ -393,7 +407,10 @@ class UnifiedLLM:
                 input_tokens = response.usage_metadata.get('input_tokens')
                 output_tokens = response.usage_metadata.get('output_tokens')
 
-            self._log_success("langchain", None, job_id, duration_ms, fallback_model, is_fallback=True)
+            self._log_success(
+                "langchain", None, job_id, duration_ms, fallback_model,
+                is_fallback=True, input_tokens=input_tokens, output_tokens=output_tokens
+            )
 
             return LLMResult(
                 content=content,
@@ -411,6 +428,17 @@ class UnifiedLLM:
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             error_msg = f"LangChain fallback failed: {str(e)}"
             logger.error(f"[UnifiedLLM:{self.step_name}] {error_msg}")
+
+            # Log LangChain error to StructuredLogger for frontend visibility
+            if self._struct_logger:
+                self._struct_logger.llm_call_error(
+                    step_name=self.step_name,
+                    backend="langchain",
+                    model=fallback_model,
+                    tier=self.config.tier,
+                    error=error_msg,
+                    duration_ms=duration_ms,
+                )
 
             return LLMResult(
                 content="",
@@ -465,6 +493,64 @@ class UnifiedLLM:
         tasks = [invoke_with_limit(item) for item in items]
         return await asyncio.gather(*tasks)
 
+    def _log_llm_start(self, backend: str, job_id: str) -> None:
+        """
+        Log LLM call start for frontend visibility.
+
+        Args:
+            backend: Which backend is being attempted ("claude_cli" or "langchain")
+            job_id: Job ID for tracking
+        """
+        # Log to Python logger (for debug/file logs)
+        logger.debug(
+            f"[UnifiedLLM:{self.step_name}] "
+            f"Starting LLM call via {backend}, Job={job_id}"
+        )
+
+        # Emit to structured logger if available (for frontend logs)
+        if self._struct_logger:
+            # Get the model that will be used
+            if backend == "claude_cli":
+                model = TIER_TO_CLAUDE_MODEL.get(self.config.tier, "claude-sonnet-4-20250514")
+            else:
+                model = self.config.get_fallback_model()
+
+            self._struct_logger.llm_call_start(
+                step_name=self.step_name,
+                backend=backend,
+                model=model,
+                tier=self.config.tier,
+            )
+
+    def _log_cli_error(
+        self,
+        job_id: str,
+        error: str,
+        duration_ms: Optional[int] = None,
+    ) -> None:
+        """
+        Log CLI error for frontend visibility.
+
+        This method ensures CLI failures are visible in the frontend log stream,
+        not just in the Python debug logs.
+
+        Args:
+            job_id: Job ID for tracking
+            error: Error message describing the failure
+            duration_ms: Duration before failure (if available)
+        """
+        # Emit to structured logger if available (for frontend logs)
+        if self._struct_logger:
+            model = TIER_TO_CLAUDE_MODEL.get(self.config.tier, "claude-sonnet-4-20250514")
+            self._struct_logger.llm_call_error(
+                step_name=self.step_name,
+                backend="claude_cli",
+                model=model,
+                tier=self.config.tier,
+                error=error,
+                duration_ms=duration_ms,
+            )
+
     def _log_success(
         self,
         backend: str,
@@ -473,6 +559,8 @@ class UnifiedLLM:
         duration_ms: Optional[int] = None,
         model: Optional[str] = None,
         is_fallback: bool = False,
+        input_tokens: Optional[int] = None,
+        output_tokens: Optional[int] = None,
     ) -> None:
         """
         Log successful invocation for transparency.
@@ -486,24 +574,42 @@ class UnifiedLLM:
             duration_ms: Duration in milliseconds (for LangChain results)
             model: Model used (for LangChain results)
             is_fallback: Whether this was a fallback invocation
+            input_tokens: Number of input tokens (for LangChain results)
+            output_tokens: Number of output tokens (for LangChain results)
         """
         if result:
             duration_ms = result.duration_ms
             model = result.model
             cost_usd = result.cost_usd
+            input_tokens = result.input_tokens
+            output_tokens = result.output_tokens
         else:
             cost_usd = None
 
         # Log to Python logger (for debug/file logs)
         fallback_marker = " [fallback]" if is_fallback else ""
+        tokens_info = ""
+        if input_tokens is not None or output_tokens is not None:
+            tokens_info = f", Tokens(in={input_tokens}, out={output_tokens})"
         logger.info(
             f"[UnifiedLLM:{self.step_name}] "
             f"Backend={backend}, Model={model}, "
-            f"Duration={duration_ms}ms, Job={job_id}{fallback_marker}"
+            f"Duration={duration_ms}ms{tokens_info}, Job={job_id}{fallback_marker}"
         )
 
         # Emit to structured logger if available (for frontend logs)
         if self._struct_logger:
+            # Build metadata with token counts and fallback flag
+            metadata: Optional[Dict[str, Any]] = None
+            if is_fallback or input_tokens is not None or output_tokens is not None:
+                metadata = {}
+                if is_fallback:
+                    metadata["is_fallback"] = True
+                if input_tokens is not None:
+                    metadata["input_tokens"] = input_tokens
+                if output_tokens is not None:
+                    metadata["output_tokens"] = output_tokens
+
             self._struct_logger.llm_call_complete(
                 step_name=self.step_name,
                 backend=backend,
@@ -511,7 +617,7 @@ class UnifiedLLM:
                 tier=self.config.tier,
                 duration_ms=duration_ms or 0,
                 cost_usd=cost_usd,
-                metadata={"is_fallback": is_fallback} if is_fallback else None,
+                metadata=metadata,
             )
 
     def _log_fallback(self, job_id: str, reason: str) -> None:
