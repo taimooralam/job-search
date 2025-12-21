@@ -557,8 +557,8 @@ document.addEventListener('alpine:init', () => {
                             }
                         }));
 
-                        // Connect to SSE for log streaming
-                        this._connectToOperationLogs(result.run_id, action, jobId);
+                        // NOTE: CLI panel handles log subscription via startRun() -> subscribeToLogs()
+                        // Do NOT call _connectToOperationLogs() here - it creates a duplicate LogPoller
                     }
 
                     return result;

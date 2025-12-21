@@ -2708,18 +2708,14 @@ window.addEventListener('ui:refresh-job', (event) => {
         return;
     }
 
-    // Note: We use full page reload instead of HTMX partial swap because:
-    // 1. The page contains inline scripts with global const/let declarations
-    // 2. HTMX innerHTML swap re-executes scripts, causing redeclaration errors
-    // 3. CLI panel state is preserved via sessionStorage across reload
+    // Note: We NO LONGER auto-reload the page because:
+    // 1. Page reload kills all JS state including log polling
+    // 2. Users want to see real-time logs streaming during operation
+    // 3. Manual refresh is more predictable for debugging
     //
-    // The 2-second delay allows users to see the completion status in CLI panel
+    // User can manually refresh to see updated data
 
-    showToast('Pipeline completed! Refreshing page...', 'success');
-
-    setTimeout(() => {
-        window.location.reload();
-    }, 2000);
+    showToast('Pipeline completed! Refresh the page to see results.', 'success');
 });
 
 // ============================================================================
