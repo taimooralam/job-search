@@ -28,21 +28,8 @@ from typing import Optional, Dict, Any, List, Literal
 from dataclasses import dataclass, asdict, field
 from pydantic import BaseModel, Field, ValidationError
 
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
-)
-
-try:
-    import anthropic
-    ANTHROPIC_AVAILABLE = True
-except ImportError:
-    ANTHROPIC_AVAILABLE = False
-
 from src.common.json_utils import parse_llm_json
+from src.common.unified_llm import invoke_unified_sync, LLMResult
 
 
 logger = logging.getLogger(__name__)
@@ -363,91 +350,85 @@ class ClaudeWebResearcher:
         """
         Initialize the Claude web researcher.
 
+        Uses Claude CLI via UnifiedLLM with ANTHROPIC_AUTH_TOKEN for web research.
+        WebSearch is enabled via --dangerously-skip-permissions flag in CLI.
+
         Args:
             tier: Model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus)
             max_searches: Maximum web searches per operation (default 8)
             timeout: Request timeout in seconds (default 120)
         """
-        if not ANTHROPIC_AVAILABLE:
-            raise ImportError("anthropic package not installed. Run: pip install anthropic")
-
         self.tier = tier
         self.model = self._get_model_for_tier(tier)
         self.max_searches = max_searches
         self.timeout = timeout
-        self.client = anthropic.Anthropic(
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            timeout=timeout,
-        )
+        # Map tier names to UnifiedLLM tier names
+        self._unified_tier_map = {
+            "fast": "low",
+            "balanced": "middle",
+            "quality": "high",
+        }
 
     def _get_model_for_tier(self, tier: TierType) -> str:
         """Get Claude model ID for the given tier."""
         return CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["balanced"])
 
-    def _create_web_search_tool(self, research_type: str = "company") -> Dict[str, Any]:
-        """
-        Create the web search tool configuration for Claude API.
-
-        Args:
-            research_type: Type of research ("company", "people", "role")
-                          Used to set appropriate max_uses
-        """
-        # Dynamic search limits based on research type
-        search_limits = {
-            "company": 10,  # Comprehensive - needs multiple sources
-            "people": 6,    # Focused - LinkedIn + company pages
-            "role": 4,      # Specific - team info + tech stack
-        }
-        max_uses = search_limits.get(research_type, self.max_searches)
-
-        return {
-            "type": "web_search_20250305",
-            "name": "web_search",
-            "max_uses": max_uses,
-        }
-
-    def _call_api_with_retry(
+    def _invoke_cli_research(
         self,
         system_prompt: str,
         user_prompt: str,
         research_type: str = "company",
-    ) -> Any:
+        job_id: str = "unknown",
+    ) -> LLMResult:
         """
-        Call Claude API with automatic retry on transient failures.
+        Invoke Claude CLI for web research via UnifiedLLM.
 
-        Uses tenacity for exponential backoff on rate limits and connection errors.
+        Uses Claude CLI with --dangerously-skip-permissions to enable WebSearch.
+        This routes through the ANTHROPIC_AUTH_TOKEN (Max subscription, $0 cost).
 
         Args:
             system_prompt: System prompt for the research
             user_prompt: User prompt with specific request
-            research_type: Type of research for search limit configuration
+            research_type: Type of research (for logging)
+            job_id: Job ID for tracking
 
         Returns:
-            Claude API response object
+            LLMResult with research content and backend attribution
 
         Raises:
-            anthropic.APIError: On non-retryable API errors
+            RuntimeError: If research fails (propagated to console)
         """
-        @retry(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-            retry=retry_if_exception_type((
-                anthropic.RateLimitError,
-                anthropic.APIConnectionError,
-                anthropic.APITimeoutError,
-            )),
-            before_sleep=before_sleep_log(logger, logging.WARNING),
-        )
-        def _make_request():
-            return self.client.messages.create(
-                model=self.model,
-                max_tokens=2048,
-                system=system_prompt,
-                tools=[self._create_web_search_tool(research_type)],
-                messages=[{"role": "user", "content": user_prompt}],
-            )
+        # Combine prompts - CLI doesn't have separate system prompt in headless mode
+        combined_prompt = f"""{system_prompt}
 
-        return _make_request()
+---
+
+{user_prompt}
+
+IMPORTANT: Use WebSearch to find current information. Return your findings as valid JSON."""
+
+        # Map tier to UnifiedLLM tier
+        unified_tier = self._unified_tier_map.get(self.tier, "middle")
+
+        # Invoke via UnifiedLLM (routes to Claude CLI with WebSearch enabled)
+        result = invoke_unified_sync(
+            prompt=combined_prompt,
+            step_name=f"research_{research_type}",
+            tier=unified_tier,
+            job_id=job_id,
+            validate_json=True,  # Parse JSON response
+        )
+
+        # Propagate errors to console as requested
+        if not result.success:
+            raise RuntimeError(f"Research failed ({research_type}): {result.error}")
+
+        logger.info(
+            f"Research complete: type={research_type}, backend={result.backend}, "
+            f"model={result.model}, duration={result.duration_ms}ms"
+        )
+
+        return result
 
     def _extract_partial_data(
         self,

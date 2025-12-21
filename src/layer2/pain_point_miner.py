@@ -14,7 +14,7 @@ Phase 5 Update: Enhanced prompts with persona, chain-of-thought reasoning,
 import json
 import re
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
+from typing import Callable, List, Dict, Any, Optional, Literal, TYPE_CHECKING
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -31,6 +31,9 @@ from src.common.llm_config import TierType, TIER_TO_CLAUDE_MODEL
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
+
+# Type alias for log callback function
+LogCallback = Callable[[str], None]
 
 
 # ===== DOMAIN DETECTION =====
@@ -827,6 +830,7 @@ class PainPointMiner:
         use_enhanced_format: bool = False,
         tier: TierType = "middle",
         struct_logger: Optional["StructuredLogger"] = None,
+        log_callback: Optional[LogCallback] = None,
     ):
         """
         Initialize the miner.
@@ -839,12 +843,23 @@ class PainPointMiner:
                   Default is "middle" (Sonnet 4.5).
             struct_logger: Optional StructuredLogger for emitting LLM call events
                 to the frontend log stream.
+            log_callback: Optional callback for log streaming (Redis live-tail).
+                Signature: (json_string: str) -> None
         """
         self.use_enhanced_format = use_enhanced_format
         self.tier = tier
         self._struct_logger = struct_logger
+        self._log_callback = log_callback
         # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
         self._unified_llm: Optional[UnifiedLLM] = None
+
+    def _emit_log(self, data: Dict[str, Any]) -> None:
+        """Emit a log event via log_callback if configured."""
+        if self._log_callback:
+            try:
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Don't let logging errors break the pipeline
 
     def _get_unified_llm(self, job_id: Optional[str] = None) -> UnifiedLLM:
         """Get or create UnifiedLLM instance for this invocation."""
@@ -874,7 +889,7 @@ class PainPointMiner:
         domain: JobDomain,
         annotation_context: Optional[Dict[str, List[str]]] = None,
         job_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMResult:
         """
         Call LLM with enhanced prompts using UnifiedLLM (async version).
 
@@ -889,7 +904,7 @@ class PainPointMiner:
             job_id: Optional job ID for tracking
 
         Returns:
-            LLM response content
+            LLMResult with content, backend, model, and success fields
         """
         example_jd, example_output = self._get_domain_example(domain)
 
@@ -921,7 +936,7 @@ class PainPointMiner:
         if not result.success:
             raise ValueError(f"LLM invocation failed: {result.error}")
 
-        return result.content
+        return result
 
     def _call_llm(
         self,
@@ -931,7 +946,7 @@ class PainPointMiner:
         domain: JobDomain,
         annotation_context: Optional[Dict[str, List[str]]] = None,
         job_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMResult:
         """
         Call LLM with enhanced prompts (sync wrapper).
 
@@ -946,7 +961,7 @@ class PainPointMiner:
             job_id: Optional job ID for tracking
 
         Returns:
-            LLM response content
+            LLMResult with content, backend, model, and success fields
         """
         import asyncio
 
@@ -1154,6 +1169,7 @@ class PainPointMiner:
             # Detect domain for appropriate examples
             domain = detect_domain(state["title"], state["job_description"])
             logger.info(f"Detected job domain: {domain.value}")
+            self._emit_log({"message": f"Detected job domain: {domain.value}"})
 
             # Extract annotation context if annotations exist
             jd_annotations = state.get("jd_annotations")
@@ -1182,8 +1198,11 @@ class PainPointMiner:
             else:
                 logger.info("No annotation context available - using standard extraction")
 
+            # Log before LLM call
+            self._emit_log({"message": "Extracting pain points via LLM..."})
+
             # Call LLM with enhanced prompts (including annotation context)
-            llm_response = self._call_llm(
+            llm_result = self._call_llm(
                 title=state["title"],
                 company=state["company"],
                 job_description=state["job_description"],
@@ -1192,15 +1211,22 @@ class PainPointMiner:
                 job_id=state.get("job_id"),  # Pass job_id for Claude CLI tracking
             )
 
+            # Log after LLM call with backend attribution
+            self._emit_log({
+                "message": "Pain points extracted",
+                "backend": llm_result.backend,
+                "model": llm_result.model,
+            })
+
             # Extract reasoning for logging
-            reasoning = self._extract_reasoning(llm_response)
+            reasoning = self._extract_reasoning(llm_result.content)
             if reasoning:
                 logger.info("Reasoning summary:")
                 for line in reasoning.split('\n')[:5]:  # Log first 5 lines
                     logger.info(f"  {line.strip()}")
 
             # Parse and validate
-            analysis = self._parse_response(llm_response)
+            analysis = self._parse_response(llm_result.content)
 
             # Log confidence distribution
             all_items = (
@@ -1275,6 +1301,11 @@ class PainPointMiner:
             logger.info(f"  Strategic needs: {len(analysis.strategic_needs)}")
             logger.info(f"  Risks if unfilled: {len(analysis.risks_if_unfilled)}")
             logger.info(f"  Success metrics: {len(analysis.success_metrics)}")
+
+            # Log completion for frontend visibility
+            self._emit_log({
+                "message": f"Layer 2 complete: {len(analysis.pain_points)} pain points, {len(analysis.strategic_needs)} strategic needs"
+            })
 
             return result
 

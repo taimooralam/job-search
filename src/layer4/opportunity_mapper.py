@@ -573,21 +573,46 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             # No event loop exists
             return asyncio.run(self._analyze_fit_async(state))
 
-    def map_opportunity(self, state: JobState) -> Dict[str, Any]:
+    def map_opportunity(
+        self,
+        state: JobState,
+        log_callback: Optional[callable] = None,
+    ) -> Dict[str, Any]:
         """
         Main function to analyze candidate-job fit (Phase 6).
 
         Args:
             state: Current JobState with job details, pain points, company/role research, STARs
+            log_callback: Optional callback for log streaming to frontend.
+                          Expects JSON string: log_callback(json.dumps({...}))
 
         Returns:
             Dict with fit_score, fit_rationale, fit_category, and annotation_analysis keys
         """
+        import json
+
+        def emit_log(message: str, **kwargs) -> None:
+            """Emit log to callback if available."""
+            if log_callback:
+                log_data = {"message": message, **kwargs}
+                log_callback(json.dumps(log_data))
+
         try:
             self.logger.info(f"Analyzing fit for: {state['title']} at {state['company']}")
 
+            # Log before LLM scoring
+            emit_log("Calculating fit score via LLM...")
+
             # Get LLM-based fit score
             llm_score, rationale, _ = self._analyze_fit(state)
+
+            # Log after LLM scoring with model attribution
+            # Note: UnifiedLLM tracks backend/model internally, expose tier here
+            emit_log(
+                f"LLM fit score: {llm_score}/100",
+                backend="unified_llm",
+                model=TIER_TO_CLAUDE_MODEL.get(self.tier, "claude-sonnet-4-20250514"),
+            )
 
             # Get annotation analysis and blend with LLM score
             jd_annotations = state.get("jd_annotations")
@@ -604,10 +629,25 @@ KEY METRICS: {star.get('metrics', 'N/A')}
                     f"gaps={annotation_analysis['gap_count']})"
                 )
                 self.logger.info(f"LLM score: {llm_score}, Blended score: {final_score}")
+
+                # Emit annotation adjustment log for frontend
+                adjustment = final_score - llm_score
+                if adjustment != 0:
+                    emit_log(
+                        f"Annotation adjustment applied: {adjustment:+d} points",
+                        core_strengths=annotation_analysis.get("core_strength_count", 0),
+                        gaps=annotation_analysis.get("gap_count", 0),
+                    )
+
                 if annotation_analysis.get("has_disqualifier"):
                     self.logger.warning(f"DISQUALIFIER detected: {annotation_analysis.get('disqualifier_warning')}")
+                    emit_log(
+                        f"Warning: Disqualifier detected - {annotation_analysis.get('disqualifier_warning')}",
+                        level="warning",
+                    )
             else:
                 self.logger.info("No annotations - using LLM score directly")
+                emit_log("No annotations available - using LLM score directly")
 
             # Derive category from final (blended) score
             category = self._derive_fit_category(final_score)
@@ -627,6 +667,13 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             self.logger.info(f"Final fit score: {final_score}/100 ({category})")
             self.logger.info(f"Generated rationale ({len(rationale)} chars)")
             self.logger.info("Rationale validation: see any quality warnings above")
+
+            # Emit final score log for frontend
+            emit_log(
+                f"Final fit score: {final_score}/100 ({category})",
+                fit_score=final_score,
+                fit_category=category,
+            )
 
             return {
                 "fit_score": final_score,
