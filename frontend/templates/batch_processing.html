@@ -434,126 +434,48 @@
         active: false,
         totalJobs: 0,
         completedJobs: 0,
-        jobStatuses: new Map(), // jobId -> { status: 'pending'|'running'|'success'|'error', title: string }
+        jobStatuses: new Map(), // jobId -> { status, title, runId } for tracking and cli:complete matching
         cancelled: false
     };
 
-    // Active log pollers for bulk operations (one per job)
-    const activeBatchPollers = new Map(); // runId -> LogPoller instance
-
     // ============================================================================
-    // Log Polling for Bulk Operations (replaces SSE for reliability)
+    // CLI Panel Integration for Log Streaming
     // ============================================================================
+    //
+    // ARCHITECTURE: Batch page delegates ALL log polling to CLI panel.
+    // We only dispatch cli:start-run events; the CLI panel creates and manages
+    // LogPoller instances to avoid duplicate pollers conflicting.
 
     /**
-     * Connect LogPoller for a batch operation job
-     * Uses direct browser → runner communication for 200ms polling
+     * Connect batch job to CLI panel for log streaming
+     *
+     * IMPORTANT: This function does NOT create its own LogPoller.
+     * Instead, it dispatches a cli:start-run event and lets the CLI panel
+     * handle all log polling via its existing infrastructure.
+     *
+     * This avoids the dual-poller conflict where both batch page and CLI panel
+     * were creating separate LogPollers for the same runId.
+     *
      * @param {string} runId - The run ID returned from the bulk operation
      * @param {string} jobId - The job ID for progress tracking
      * @param {string} operation - Operation name for logging
      * @param {string} jobTitle - Job title for CLI panel display
      */
     function connectBatchLogPoller(runId, jobId, operation, jobTitle) {
-        BatchDebug.log('POLLER', `Connecting LogPoller for run ${runId}`, { jobId, operation });
+        BatchDebug.log('POLLER', `Delegating to CLI panel for run ${runId}`, { jobId, operation });
 
-        // Check if LogPoller is available
-        if (typeof window.LogPoller === 'undefined') {
-            BatchDebug.error('POLLER', 'LogPoller not available - logs will not be streamed');
-            return;
-        }
+        // Dispatch CLI start event - CLI panel will create the LogPoller
+        // and handle all log streaming via cli-panel.js startRun() method
+        window.dispatchEvent(new CustomEvent('cli:start-run', {
+            detail: {
+                runId: runId,
+                jobId: jobId,
+                jobTitle: jobTitle || 'Unknown Job',
+                action: operation
+            }
+        }));
 
-        // Stop existing poller for this run if any
-        if (activeBatchPollers.has(runId)) {
-            BatchDebug.log('POLLER', `Stopping existing poller for ${runId}`);
-            activeBatchPollers.get(runId).stop();
-            activeBatchPollers.delete(runId);
-        }
-
-        try {
-            const poller = new window.LogPoller(runId, {
-                pollInterval: 200,  // 200ms for near-instant feel
-                debug: false
-            });
-
-            // Dispatch CLI start event to create tab in CLI panel
-            window.dispatchEvent(new CustomEvent('cli:start-run', {
-                detail: {
-                    runId: runId,
-                    jobId: jobId,
-                    jobTitle: jobTitle || 'Unknown Job',
-                    action: operation
-                }
-            }));
-
-            // Handle log messages
-            poller.onLog((log) => {
-                BatchDebug.log('POLLER', `[${runId}] Log: ${log.message}`);
-                const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
-                window.dispatchEvent(new CustomEvent('cli:log', {
-                    detail: {
-                        runId: runId,
-                        text: log.message,
-                        logType: logType
-                    }
-                }));
-            });
-
-            // Handle layer status updates
-            poller.onLayerStatus((layerStatus) => {
-                BatchDebug.log('POLLER', `[${runId}] Layer status:`, layerStatus);
-                window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                    detail: { runId: runId, layerStatus: layerStatus }
-                }));
-            });
-
-            // Handle completion
-            poller.onComplete((status, error) => {
-                BatchDebug.log('POLLER', `[${runId}] Complete with status: ${status}`);
-
-                // Update batch progress
-                const mappedStatus = status === 'completed' ? 'success' : 'error';
-                updateJobProgress(jobId, mappedStatus);
-
-                // Dispatch CLI complete event
-                window.dispatchEvent(new CustomEvent('cli:complete', {
-                    detail: {
-                        runId: runId,
-                        status: mappedStatus,
-                        error: error
-                    }
-                }));
-
-                // Dispatch queue event for live status badge
-                window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
-                    detail: {
-                        jobId: jobId,
-                        status: mappedStatus,
-                        operation: operation
-                    }
-                }));
-
-                // Update batch completion count
-                batchOperationState.completedJobs++;
-                updateBatchProgressUI();
-
-                // Clean up poller
-                activeBatchPollers.delete(runId);
-            });
-
-            // Handle errors (LogPoller auto-retries, so just log)
-            poller.onError((err) => {
-                BatchDebug.log('POLLER', `[${runId}] Polling error:`, err);
-            });
-
-            // Start polling
-            poller.start();
-            activeBatchPollers.set(runId, poller);
-
-            BatchDebug.log('POLLER', `Started LogPoller for ${runId} (${activeBatchPollers.size} active pollers)`);
-
-        } catch (e) {
-            BatchDebug.error('POLLER', `Failed to create LogPoller for ${runId}:`, e);
-        }
+        BatchDebug.log('POLLER', `Dispatched cli:start-run for ${runId} - CLI panel will handle log polling`);
     }
 
     /**
@@ -653,21 +575,13 @@
     }
 
     /**
-     * Stop all active batch log pollers
-     * Called when cancelling batch operation or cleaning up
+     * Cleanup function for batch operations
+     * NOTE: Log pollers are managed by CLI panel, so this is now a no-op stub
+     * kept for backward compatibility with hideBatchProgress() calls
      */
     function cleanupBatchPollers() {
-        if (activeBatchPollers.size > 0) {
-            BatchDebug.log('POLLER', `Stopping ${activeBatchPollers.size} active pollers`);
-            activeBatchPollers.forEach((poller, runId) => {
-                try {
-                    poller.stop();
-                } catch (e) {
-                    BatchDebug.error('POLLER', `Error stopping poller ${runId}:`, e);
-                }
-            });
-            activeBatchPollers.clear();
-        }
+        // No-op: CLI panel manages all LogPoller instances
+        BatchDebug.log('CLEANUP', 'Batch cleanup called (CLI panel manages pollers)');
     }
 
     // Alias for backward compatibility
@@ -890,10 +804,17 @@
             if (response.ok && result.runs) {
                 showToast(`Queued ${result.total_count} jobs for pipeline. Progress panels active.`, 'success');
 
-                // Start log pollers for each job
+                // Delegate to CLI panel for log streaming (no duplicate LogPollers)
                 result.runs.forEach((run, index) => {
                     BatchDebug.log('AUTO-RUN', `Job ${run.job_id} queued with run_id ${run.run_id}`);
-                    updateJobProgress(run.job_id, 'queued');
+
+                    // Store runId in job status for cli:complete event matching
+                    const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
+                    if (jobStatus) {
+                        jobStatus.runId = run.run_id;
+                        jobStatus.status = 'queued';
+                    }
+                    renderProgressDetails();
 
                     // Dispatch event for live status badges
                     const position = run.position || (index + 1);
@@ -907,11 +828,10 @@
                         }
                     }));
 
-                    // Connect LogPoller for each job
+                    // Delegate to CLI panel for log streaming
                     if (run.run_id) {
-                        const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
                         const jobTitle = jobStatus?.title || `Job ${run.job_id.slice(-6)}`;
-                        BatchDebug.log('AUTO-RUN', `Starting LogPoller for ${run.job_id}: ${run.run_id}`);
+                        BatchDebug.log('AUTO-RUN', `Delegating to CLI panel for ${run.job_id}: ${run.run_id}`);
                         connectBatchLogPoller(run.run_id, run.job_id, 'all-ops', jobTitle);
                     }
                 });
@@ -1126,10 +1046,17 @@
                 // Success - jobs are queued
                 showToast(`Queued ${result.total_count} jobs for ${operationNames[operation]}. Check Pipeline Queue for progress.`, 'success');
 
-                // Mark all jobs as queued in progress panel and start log pollers
+                // Mark all jobs as queued in progress panel and delegate to CLI panel for log streaming
                 result.runs.forEach((run, index) => {
                     BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
-                    updateJobProgress(run.job_id, 'queued');
+
+                    // Store runId in job status so we can match cli:complete events later
+                    const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
+                    if (jobStatus) {
+                        jobStatus.runId = run.run_id;
+                        jobStatus.status = 'queued';
+                    }
+                    renderProgressDetails();
 
                     // Immediately dispatch event so live status badges update
                     // Show 'pending' status first with queue position for better UX
@@ -1147,12 +1074,11 @@
                     }));
                     BatchDebug.log('QUEUE', `Dispatched queue:job-status-changed for ${run.job_id} (position #${position})`);
 
-                    // Connect LogPoller for EACH job to get real-time 200ms logs
-                    // This replaces the old SSE approach which only worked for the first job
+                    // Delegate to CLI panel for log streaming - CLI panel will create the LogPoller
+                    // and handle all log polling. This avoids dual-poller conflicts.
                     if (run.run_id) {
-                        const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
                         const jobTitle = jobStatus?.title || `Job ${run.job_id.slice(-6)}`;
-                        BatchDebug.log('POLLER', `Starting LogPoller for job ${run.job_id}: ${run.run_id}`);
+                        BatchDebug.log('POLLER', `Delegating to CLI panel for job ${run.job_id}: ${run.run_id}`);
                         connectBatchLogPoller(run.run_id, run.job_id, operation, jobTitle);
                     }
                 });
@@ -1569,6 +1495,40 @@
                 updateJobProgress(jobId, 'error');
                 batchOperationState.completedJobs++;
                 updateBatchProgressUI();
+            }
+        });
+
+        // Listen for CLI panel completion events (from LogPoller in cli-panel.js)
+        // This is the primary way batch page tracks job completion since we delegate
+        // log polling to the CLI panel
+        window.addEventListener('cli:complete', function(e) {
+            const { runId, status, error } = e.detail || {};
+            BatchDebug.log('CLI-EVENT', `Received cli:complete for ${runId}`, { status, error });
+
+            // Find the job ID for this run - we need to look through our batch state
+            // to match runId back to jobId
+            let matchedJobId = null;
+            for (const [jobId, jobState] of batchOperationState.jobStatuses.entries()) {
+                // The batch operation stores runId in a Map keyed by jobId
+                // We need to check if this completion event matches any of our tracked jobs
+                if (jobState.runId === runId) {
+                    matchedJobId = jobId;
+                    break;
+                }
+            }
+
+            // Also dispatch queue event for live status badges if we found the job
+            if (matchedJobId) {
+                const mappedStatus = status === 'success' ? 'success' : 'error';
+                updateJobProgress(matchedJobId, mappedStatus);
+
+                window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
+                    detail: {
+                        jobId: matchedJobId,
+                        status: mappedStatus,
+                        operation: 'pipeline'
+                    }
+                }));
             }
         });
     });
