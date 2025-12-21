@@ -18,7 +18,6 @@ Usage:
     extractor = JDExtractor(log_callback=redis_publisher)
 """
 
-import subprocess
 import json
 import logging
 import asyncio
@@ -31,6 +30,8 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 
 from src.common.state import ExtractedJD
 from src.common.json_utils import parse_llm_json
+from src.common.unified_llm import invoke_unified_sync, LLMResult
+from src.common.llm_config import TierType
 from src.layer1_4.prompts import (
     JD_EXTRACTION_SYSTEM_PROMPT,
     JD_EXTRACTION_USER_TEMPLATE,
@@ -245,7 +246,8 @@ class JDExtractor:
         self,
         model: Optional[str] = None,
         timeout: int = 120,
-        log_callback: Optional[LogCallback] = None
+        log_callback: Optional[LogCallback] = None,
+        tier: TierType = "middle",
     ):
         """
         Initialize the JD extractor.
@@ -254,10 +256,12 @@ class JDExtractor:
             model: Claude model ID. Defaults to CLAUDE_CODE_MODEL env var or Opus 4.5.
             timeout: CLI timeout in seconds (default 120s).
             log_callback: Optional callback for log events (for Redis live-tail).
+            tier: LLM tier for UnifiedLLM ("low", "middle", "high"). Default "middle".
         """
         self.model = model or os.getenv("CLAUDE_CODE_MODEL", self.DEFAULT_MODEL)
         self.timeout = timeout
         self._log_callback = log_callback or self._default_log
+        self.tier: TierType = tier
 
     def _default_log(self, job_id: str, level: str, data: Dict[str, Any]) -> None:
         """Default logging - replace with Redis publisher later."""
@@ -379,10 +383,10 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
         job_description: str
     ) -> ExtractionResult:
         """
-        Extract structured JD using Claude Code CLI.
+        Extract structured JD using UnifiedLLM (Claude CLI primary, LangChain fallback).
 
         Returns ExtractionResult for consistent batch handling.
-        Retries are handled by the CLI itself (built-in retry logic).
+        Uses the unified LLM infrastructure for automatic fallback when CLI fails.
 
         Args:
             job_id: MongoDB job ID for tracking
@@ -394,46 +398,62 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
             ExtractionResult with success/failure status and extracted data
         """
         start_time = datetime.utcnow()
-        self._emit_log(job_id, "info", message=f"Starting extraction with {self.model}")
+
+        # Log environment for debugging
+        has_auth_token = bool(os.getenv("ANTHROPIC_AUTH_TOKEN"))
+        self._emit_log(
+            job_id, "debug",
+            message=f"Auth token present: {has_auth_token}, tier: {self.tier}"
+        )
+        self._emit_log(job_id, "info", message=f"Starting extraction with tier={self.tier}")
 
         # Build the prompt
         prompt = self._build_prompt(title, company, job_description)
         self._emit_log(job_id, "debug", message=f"Prompt length: {len(prompt)} chars")
 
         try:
-            self._emit_log(job_id, "debug", message="Invoking Claude CLI...")
+            self._emit_log(job_id, "debug", message="Invoking UnifiedLLM...")
 
-            # Run Claude CLI in headless mode
-            result = subprocess.run(
-                [
-                    "claude", "-p", prompt,
-                    "--output-format", "json",
-                    "--model", self.model,
-                    "--max-turns", "1"  # Single turn for extraction
-                ],
-                capture_output=True,
-                text=True,
-                timeout=self.timeout
+            # Use UnifiedLLM with fallback support
+            llm_result: LLMResult = invoke_unified_sync(
+                prompt=prompt,
+                step_name="jd_extraction",
+                tier=self.tier,
+                job_id=job_id,
+                validate_json=True,
             )
 
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
 
-            # Check for CLI errors
-            if result.returncode != 0:
-                error_msg = result.stderr or f"CLI exited with code {result.returncode}"
-                self._emit_log(job_id, "error", message=f"CLI failed: {error_msg}")
+            # Check for LLM errors
+            if not llm_result.success:
+                error_msg = llm_result.error or "Unknown LLM error"
+                self._emit_log(
+                    job_id, "error",
+                    message=f"LLM failed (backend={llm_result.backend}): {error_msg}"
+                )
                 return ExtractionResult(
                     job_id=job_id,
                     success=False,
                     extracted_jd=None,
                     error=error_msg,
-                    model=self.model,
+                    model=llm_result.model or self.model,
                     duration_ms=duration_ms,
                     extracted_at=start_time.isoformat()
                 )
 
-            # Parse CLI output
-            extracted_data = self._parse_cli_output(result.stdout)
+            # Log which backend was used
+            self._emit_log(
+                job_id, "info",
+                message=f"LLM responded via backend={llm_result.backend}, model={llm_result.model}"
+            )
+
+            # Get parsed JSON from LLM result
+            if llm_result.parsed_json:
+                extracted_data = llm_result.parsed_json
+            else:
+                # Fallback: parse content as JSON if parsed_json not available
+                extracted_data = parse_llm_json(llm_result.content)
 
             # Validate and convert
             validated_jd = self._validate_and_convert(extracted_data)
@@ -442,6 +462,7 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
                 job_id, "info",
                 message=f"Extraction complete: {validated_jd.get('role_category', 'unknown')}",
                 duration_ms=duration_ms,
+                backend=llm_result.backend,
                 role_category=validated_jd.get("role_category"),
                 keywords_count=len(validated_jd.get("top_keywords", []))
             )
@@ -451,21 +472,7 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
                 success=True,
                 extracted_jd=validated_jd,
                 error=None,
-                model=self.model,
-                duration_ms=duration_ms,
-                extracted_at=start_time.isoformat()
-            )
-
-        except subprocess.TimeoutExpired:
-            duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
-            error_msg = f"CLI timeout after {self.timeout}s"
-            self._emit_log(job_id, "error", message=error_msg)
-            return ExtractionResult(
-                job_id=job_id,
-                success=False,
-                extracted_jd=None,
-                error=error_msg,
-                model=self.model,
+                model=llm_result.model or self.model,
                 duration_ms=duration_ms,
                 extracted_at=start_time.isoformat()
             )
@@ -539,18 +546,12 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
         """
         Check if Claude CLI is installed and authenticated.
 
-        Useful for health checks and graceful degradation.
+        Useful for health checks. Note that with UnifiedLLM, extraction
+        will still work via fallback even if CLI is unavailable.
         """
-        try:
-            result = subprocess.run(
-                ["claude", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            return False
+        from src.common.unified_llm import UnifiedLLM
+        llm = UnifiedLLM(step_name="jd_extraction", tier=self.tier)
+        return llm.check_cli_available()
 
 
 # Convenience function for quick extraction
@@ -589,7 +590,8 @@ def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = 
     """
     LangGraph node for JD extraction (Layer 1.4).
 
-    Extracts structured intelligence from job descriptions using Claude Code CLI.
+    Extracts structured intelligence from job descriptions using UnifiedLLM
+    (Claude CLI primary with LangChain fallback).
     This node bridges the JDExtractor class to LangGraph's JobState pattern.
 
     Args:
@@ -621,25 +623,21 @@ def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = 
     # 3. Get tier config for model selection (if available)
     tier_config = state.get("tier_config")
     model = None
-    if tier_config and tier_config.get("research_model"):
-        # Use tier-configured model for extraction
-        model = tier_config.get("research_model")
-        logger.debug(f"[JDExtractor] Using tier model: {model}")
+    tier: TierType = "middle"
+    if tier_config:
+        if tier_config.get("research_model"):
+            model = tier_config.get("research_model")
+            logger.debug(f"[JDExtractor] Using tier model: {model}")
+        if tier_config.get("tier"):
+            tier = tier_config.get("tier")
+            logger.debug(f"[JDExtractor] Using tier: {tier}")
 
     # 4. Process with error handling
     try:
-        extractor = JDExtractor(model=model)
+        extractor = JDExtractor(model=model, tier=tier)
 
-        # Check CLI availability first
-        if not extractor.check_cli_available():
-            error_msg = "Claude CLI not available or not authenticated"
-            logger.error(f"[JDExtractor] {error_msg}")
-            return {
-                "extracted_jd": None,
-                "errors": state.get("errors", []) + [f"Layer 1.4: {error_msg}"],
-            }
-
-        # Run extraction (synchronous - CLI-based)
+        # Note: No CLI availability check needed - UnifiedLLM handles fallback
+        # Run extraction (synchronous - uses UnifiedLLM with fallback)
         result: ExtractionResult = extractor.extract(
             job_id=job_id,
             title=title,
@@ -653,7 +651,7 @@ def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = 
                 f"[JDExtractor] Extraction complete: "
                 f"role_category={result.extracted_jd.get('role_category')}, "
                 f"keywords={len(result.extracted_jd.get('top_keywords', []))}, "
-                f"duration={result.duration_ms}ms"
+                f"duration={result.duration_ms}ms, model={result.model}"
             )
             return {
                 "extracted_jd": result.extracted_jd,

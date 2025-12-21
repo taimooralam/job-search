@@ -1,12 +1,12 @@
 """
 Unit Tests for Layer 1.4: JD Extractor
 
-Tests structured job description extraction using Claude Code CLI:
+Tests structured job description extraction using UnifiedLLM:
 - Role category classification (EM, Staff, Director, Head of Eng, CTO)
 - Competency weights validation (sum = 100)
 - ATS keyword extraction (15 keywords)
 - Pydantic schema validation
-- CLI response parsing
+- LLM response parsing
 - ExtractionResult handling
 """
 
@@ -24,6 +24,7 @@ from src.layer1_4.claude_jd_extractor import (
     SeniorityLevel,
     RemotePolicy,
 )
+from src.common.unified_llm import LLMResult
 
 
 # ===== FIXTURES =====
@@ -277,18 +278,22 @@ class TestExtractedJDModelValidation:
         assert python_count == 1
 
 
-# ===== TESTS: JDExtractor CLI Integration =====
+# ===== TESTS: JDExtractor UnifiedLLM Integration =====
 
 class TestJDExtractorCLI:
-    """Test JDExtractor CLI-based extraction."""
+    """Test JDExtractor UnifiedLLM-based extraction."""
 
-    @patch('subprocess.run')
-    def test_successful_extraction(self, mock_run, sample_job_params, sample_extracted_jd):
-        """Successful CLI extraction returns ExtractionResult with data."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=create_cli_output(sample_extracted_jd),
-            stderr=""
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_successful_extraction(self, mock_invoke, sample_job_params, sample_extracted_jd):
+        """Successful LLM extraction returns ExtractionResult with data."""
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(sample_extracted_jd),
+            parsed_json=sample_extracted_jd,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,
         )
 
         extractor = JDExtractor()
@@ -301,13 +306,17 @@ class TestJDExtractorCLI:
         assert result.extracted_jd["competency_weights"]["leadership"] == 40
         assert result.error is None
 
-    @patch('subprocess.run')
-    def test_cli_failure_returns_error(self, mock_run, sample_job_params):
-        """CLI failure returns ExtractionResult with error."""
-        mock_run.return_value = MagicMock(
-            returncode=1,
-            stdout="",
-            stderr="CLI authentication failed"
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_cli_failure_returns_error(self, mock_invoke, sample_job_params):
+        """LLM failure (when fallback disabled) returns ExtractionResult with error."""
+        mock_invoke.return_value = LLMResult(
+            content="",
+            backend="none",
+            model="",
+            tier="middle",
+            duration_ms=0,
+            success=False,
+            error="CLI authentication failed and fallback is disabled",
         )
 
         extractor = JDExtractor()
@@ -315,15 +324,19 @@ class TestJDExtractorCLI:
 
         assert result.success is False
         assert result.extracted_jd is None
-        assert "CLI authentication failed" in result.error
+        assert "failed" in result.error.lower()
 
-    @patch('subprocess.run')
-    def test_invalid_json_returns_error(self, mock_run, sample_job_params):
-        """Invalid JSON in CLI output returns error."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="not valid json at all",
-            stderr=""
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_invalid_json_returns_error(self, mock_invoke, sample_job_params):
+        """Invalid JSON in LLM output returns error."""
+        mock_invoke.return_value = LLMResult(
+            content="not valid json at all",
+            parsed_json=None,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,  # LLM call succeeded but content is invalid
         )
 
         extractor = JDExtractor()
@@ -331,18 +344,23 @@ class TestJDExtractorCLI:
 
         assert result.success is False
         assert result.extracted_jd is None
-        assert "parse" in result.error.lower()
+        assert "parse" in result.error.lower() or "json" in result.error.lower()
 
-    @patch('subprocess.run')
-    def test_validation_error_returns_error(self, mock_run, sample_job_params, sample_extracted_jd):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_validation_error_returns_error(self, mock_invoke, sample_job_params, sample_extracted_jd):
         """Schema validation failure returns error."""
         # Make the response fail validation by removing required field
-        del sample_extracted_jd["role_category"]
+        invalid_jd = {**sample_extracted_jd}
+        del invalid_jd["role_category"]
 
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=create_cli_output(sample_extracted_jd),
-            stderr=""
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(invalid_jd),
+            parsed_json=invalid_jd,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,
         )
 
         extractor = JDExtractor()
@@ -352,11 +370,18 @@ class TestJDExtractorCLI:
         assert result.extracted_jd is None
         assert "validation" in result.error.lower()
 
-    @patch('subprocess.run')
-    def test_timeout_returns_error(self, mock_run, sample_job_params):
-        """CLI timeout returns ExtractionResult with timeout error."""
-        import subprocess
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=120)
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_timeout_returns_error(self, mock_invoke, sample_job_params):
+        """LLM timeout returns ExtractionResult with timeout error."""
+        mock_invoke.return_value = LLMResult(
+            content="",
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=120000,
+            success=False,
+            error="CLI timeout after 120s",
+        )
 
         extractor = JDExtractor(timeout=120)
         result = extractor.extract(**sample_job_params)
@@ -365,13 +390,17 @@ class TestJDExtractorCLI:
         assert result.extracted_jd is None
         assert "timeout" in result.error.lower()
 
-    @patch('subprocess.run')
-    def test_tracks_duration(self, mock_run, sample_job_params, sample_extracted_jd):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_tracks_duration(self, mock_invoke, sample_job_params, sample_extracted_jd):
         """Extraction tracks duration in milliseconds."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=create_cli_output(sample_extracted_jd),
-            stderr=""
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(sample_extracted_jd),
+            parsed_json=sample_extracted_jd,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,
         )
 
         extractor = JDExtractor()
@@ -379,6 +408,26 @@ class TestJDExtractorCLI:
 
         assert result.duration_ms >= 0
         assert result.extracted_at is not None
+
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_fallback_to_langchain(self, mock_invoke, sample_job_params, sample_extracted_jd):
+        """When CLI fails, fallback to LangChain succeeds."""
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(sample_extracted_jd),
+            parsed_json=sample_extracted_jd,
+            backend="langchain",  # Fallback was used
+            model="gpt-4o",
+            tier="middle",
+            duration_ms=3000,
+            success=True,
+        )
+
+        extractor = JDExtractor()
+        result = extractor.extract(**sample_job_params)
+
+        assert result.success is True
+        assert result.model == "gpt-4o"  # Fallback model
+        assert result.extracted_jd is not None
 
 
 # ===== TESTS: TypedDict Conversion =====

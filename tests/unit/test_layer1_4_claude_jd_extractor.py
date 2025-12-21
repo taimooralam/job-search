@@ -1,14 +1,14 @@
 """
 Unit Tests for Layer 1.4: Claude JD Extractor
 
-Tests Claude Code CLI-based job description extraction:
+Tests UnifiedLLM-based job description extraction with fallback support:
 - ExtractionResult dataclass validation
-- CLI subprocess mocking
-- JSON parsing from CLI output
+- UnifiedLLM invocation (mocked)
+- JSON parsing from LLM output
 - Pydantic schema validation
 - Batch extraction with concurrency
 - Log callback functionality
-- Error handling (timeout, invalid JSON, validation errors)
+- Error handling (LLM failures, validation errors)
 """
 
 import json
@@ -22,6 +22,7 @@ from src.layer1_4.claude_jd_extractor import (
     ExtractionResult,
     extract_jd_with_claude,
 )
+from src.common.unified_llm import LLMResult
 
 
 # ===== FIXTURES =====
@@ -105,7 +106,7 @@ def sample_extracted_jd():
 
 @pytest.fixture
 def sample_cli_output(sample_extracted_jd):
-    """Sample Claude CLI JSON output."""
+    """Sample Claude CLI JSON output (legacy format, for _parse_cli_output tests)."""
     return json.dumps({
         "result": json.dumps(sample_extracted_jd),
         "model": "claude-opus-4-5-20251101",
@@ -116,6 +117,37 @@ def sample_cli_output(sample_extracted_jd):
         },
         "duration_ms": 5200
     })
+
+
+@pytest.fixture
+def sample_llm_result_success(sample_extracted_jd):
+    """Sample successful LLMResult from UnifiedLLM."""
+    return LLMResult(
+        content=json.dumps(sample_extracted_jd),
+        parsed_json=sample_extracted_jd,
+        backend="claude_cli",
+        model="claude-opus-4-5-20251101",
+        tier="middle",
+        duration_ms=5200,
+        success=True,
+        input_tokens=1500,
+        output_tokens=800,
+        cost_usd=0.05,
+    )
+
+
+@pytest.fixture
+def sample_llm_result_failure():
+    """Sample failed LLMResult from UnifiedLLM."""
+    return LLMResult(
+        content="",
+        backend="none",
+        model="",
+        tier="middle",
+        duration_ms=0,
+        success=False,
+        error="Claude CLI failed and fallback is disabled",
+    )
 
 
 # ===== TESTS: ExtractionResult Dataclass =====
@@ -280,19 +312,15 @@ class TestValidationAndConversion:
         assert "validation failed" in str(exc_info.value).lower()
 
 
-# ===== TESTS: Full Extraction Flow (Subprocess Mocked) =====
+# ===== TESTS: Full Extraction Flow (UnifiedLLM Mocked) =====
 
 class TestExtraction:
-    """Test full extraction flow with mocked subprocess."""
+    """Test full extraction flow with mocked UnifiedLLM."""
 
-    @patch('subprocess.run')
-    def test_successful_extraction(self, mock_run, sample_job_data, sample_cli_output):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_successful_extraction(self, mock_invoke, sample_job_data, sample_llm_result_success):
         """Successful extraction returns valid ExtractionResult."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=sample_cli_output,
-            stderr=""
-        )
+        mock_invoke.return_value = sample_llm_result_success
 
         extractor = ClaudeJDExtractor(model="claude-opus-4-5-20251101")
         result = extractor.extract(
@@ -307,14 +335,10 @@ class TestExtraction:
         assert result.extracted_jd["role_category"] == "engineering_manager"
         assert result.error is None
 
-    @patch('subprocess.run')
-    def test_cli_error_returns_failure(self, mock_run, sample_job_data):
-        """CLI error returns failed ExtractionResult."""
-        mock_run.return_value = MagicMock(
-            returncode=1,
-            stdout="",
-            stderr="Error: Authentication failed"
-        )
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_llm_error_returns_failure(self, mock_invoke, sample_job_data, sample_llm_result_failure):
+        """LLM error (when fallback disabled) returns failed ExtractionResult."""
+        mock_invoke.return_value = sample_llm_result_failure
 
         extractor = ClaudeJDExtractor()
         result = extractor.extract(
@@ -326,13 +350,20 @@ class TestExtraction:
 
         assert result.success is False
         assert result.extracted_jd is None
-        assert "Authentication failed" in result.error
+        assert "failed" in result.error.lower() or "disabled" in result.error.lower()
 
-    @patch('subprocess.run')
-    def test_timeout_returns_failure(self, mock_run, sample_job_data):
-        """CLI timeout returns failed ExtractionResult."""
-        import subprocess
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=120)
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_llm_timeout_returns_failure(self, mock_invoke, sample_job_data):
+        """LLM timeout returns failed ExtractionResult."""
+        mock_invoke.return_value = LLMResult(
+            content="",
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=120000,
+            success=False,
+            error="CLI timeout after 120s",
+        )
 
         extractor = ClaudeJDExtractor(timeout=120)
         result = extractor.extract(
@@ -346,13 +377,18 @@ class TestExtraction:
         assert "timeout" in result.error.lower()
         assert result.duration_ms >= 0
 
-    @patch('subprocess.run')
-    def test_invalid_json_response_returns_failure(self, mock_run, sample_job_data):
-        """Invalid JSON from CLI returns failed ExtractionResult."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout='{"result": "not json inside"}',
-            stderr=""
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_invalid_json_response_returns_failure(self, mock_invoke, sample_job_data):
+        """Invalid JSON from LLM returns failed ExtractionResult after validation."""
+        # LLM returns success but with invalid/unparseable content
+        mock_invoke.return_value = LLMResult(
+            content="not json inside",
+            parsed_json=None,  # JSON parsing failed
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,  # LLM call succeeded, but content is not valid JSON
         )
 
         extractor = ClaudeJDExtractor()
@@ -365,43 +401,77 @@ class TestExtraction:
 
         assert result.success is False
         assert result.extracted_jd is None
-        assert "parse" in result.error.lower() or "validation" in result.error.lower()
+        # Error should mention parsing or JSON
+        assert "parse" in result.error.lower() or "json" in result.error.lower()
+
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_fallback_to_langchain_on_cli_failure(self, mock_invoke, sample_job_data, sample_extracted_jd):
+        """When CLI fails but fallback succeeds, extraction succeeds with fallback model."""
+        # Simulate successful fallback to LangChain
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(sample_extracted_jd),
+            parsed_json=sample_extracted_jd,
+            backend="langchain",  # Fallback was used
+            model="gpt-4o",
+            tier="middle",
+            duration_ms=3000,
+            success=True,
+        )
+
+        extractor = ClaudeJDExtractor()
+        result = extractor.extract(
+            job_id=sample_job_data["job_id"],
+            title=sample_job_data["title"],
+            company=sample_job_data["company"],
+            job_description=sample_job_data["job_description"]
+        )
+
+        assert result.success is True
+        assert result.model == "gpt-4o"  # Fallback model was used
+        assert result.extracted_jd["role_category"] == "engineering_manager"
 
 
 # ===== TESTS: CLI Availability Check =====
 
 class TestCLIAvailability:
-    """Test Claude CLI availability check."""
+    """Test Claude CLI availability check via UnifiedLLM."""
 
-    @patch('subprocess.run')
-    def test_cli_available_returns_true(self, mock_run):
+    @patch('src.common.unified_llm.UnifiedLLM')
+    def test_cli_available_returns_true(self, mock_unified_llm_class):
         """Returns True when CLI is available."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_instance = MagicMock()
+        mock_instance.check_cli_available.return_value = True
+        mock_unified_llm_class.return_value = mock_instance
 
         extractor = ClaudeJDExtractor()
         assert extractor.check_cli_available() is True
 
-    @patch('subprocess.run')
-    def test_cli_unavailable_returns_false(self, mock_run):
+    @patch('src.common.unified_llm.UnifiedLLM')
+    def test_cli_unavailable_returns_false(self, mock_unified_llm_class):
         """Returns False when CLI is not available."""
-        mock_run.return_value = MagicMock(returncode=1)
+        mock_instance = MagicMock()
+        mock_instance.check_cli_available.return_value = False
+        mock_unified_llm_class.return_value = mock_instance
 
         extractor = ClaudeJDExtractor()
         assert extractor.check_cli_available() is False
 
-    @patch('subprocess.run')
-    def test_cli_not_found_returns_false(self, mock_run):
+    @patch('src.common.unified_llm.UnifiedLLM')
+    def test_cli_not_found_returns_false(self, mock_unified_llm_class):
         """Returns False when CLI binary not found."""
-        mock_run.side_effect = FileNotFoundError()
+        mock_instance = MagicMock()
+        mock_instance.check_cli_available.return_value = False
+        mock_unified_llm_class.return_value = mock_instance
 
         extractor = ClaudeJDExtractor()
         assert extractor.check_cli_available() is False
 
-    @patch('subprocess.run')
-    def test_cli_timeout_returns_false(self, mock_run):
+    @patch('src.common.unified_llm.UnifiedLLM')
+    def test_cli_timeout_returns_false(self, mock_unified_llm_class):
         """Returns False when CLI check times out."""
-        import subprocess
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="claude", timeout=10)
+        mock_instance = MagicMock()
+        mock_instance.check_cli_available.return_value = False
+        mock_unified_llm_class.return_value = mock_instance
 
         extractor = ClaudeJDExtractor()
         assert extractor.check_cli_available() is False
@@ -412,14 +482,10 @@ class TestCLIAvailability:
 class TestLogCallback:
     """Test log callback functionality."""
 
-    @patch('subprocess.run')
-    def test_custom_log_callback_is_called(self, mock_run, sample_job_data, sample_cli_output):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_custom_log_callback_is_called(self, mock_invoke, sample_job_data, sample_llm_result_success):
         """Custom log callback receives log events."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=sample_cli_output,
-            stderr=""
-        )
+        mock_invoke.return_value = sample_llm_result_success
 
         log_events = []
 
@@ -446,17 +512,17 @@ class TestBatchExtraction:
     """Test batch extraction with concurrency control."""
 
     @pytest.mark.asyncio
-    @patch('subprocess.run')
-    async def test_batch_extraction_returns_all_results(self, mock_run, sample_extracted_jd):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    async def test_batch_extraction_returns_all_results(self, mock_invoke, sample_extracted_jd):
         """Batch extraction returns results for all jobs."""
-        cli_output = json.dumps({
-            "result": json.dumps(sample_extracted_jd),
-            "model": "claude-opus-4-5-20251101"
-        })
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=cli_output,
-            stderr=""
+        mock_invoke.return_value = LLMResult(
+            content=json.dumps(sample_extracted_jd),
+            parsed_json=sample_extracted_jd,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="middle",
+            duration_ms=5000,
+            success=True,
         )
 
         jobs = [
@@ -475,24 +541,35 @@ class TestBatchExtraction:
         assert results[2].job_id == "batch_003"
 
     @pytest.mark.asyncio
-    @patch('subprocess.run')
-    async def test_batch_extraction_handles_mixed_results(self, mock_run, sample_extracted_jd):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    async def test_batch_extraction_handles_mixed_results(self, mock_invoke, sample_extracted_jd):
         """Batch extraction handles mix of success and failure."""
-        cli_output_success = json.dumps({
-            "result": json.dumps(sample_extracted_jd),
-            "model": "claude-opus-4-5-20251101"
-        })
-
         # First call succeeds, second fails, third succeeds
         call_count = [0]
 
         def side_effect(*args, **kwargs):
             call_count[0] += 1
             if call_count[0] == 2:
-                return MagicMock(returncode=1, stdout="", stderr="API Error")
-            return MagicMock(returncode=0, stdout=cli_output_success, stderr="")
+                return LLMResult(
+                    content="",
+                    backend="none",
+                    model="",
+                    tier="middle",
+                    duration_ms=0,
+                    success=False,
+                    error="LLM call failed",
+                )
+            return LLMResult(
+                content=json.dumps(sample_extracted_jd),
+                parsed_json=sample_extracted_jd,
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="middle",
+                duration_ms=5000,
+                success=True,
+            )
 
-        mock_run.side_effect = side_effect
+        mock_invoke.side_effect = side_effect
 
         jobs = [
             {"job_id": "mix_001", "title": "EM 1", "company": "Co 1", "job_description": "Test JD 1"},
@@ -514,14 +591,10 @@ class TestBatchExtraction:
 class TestConvenienceFunction:
     """Test the extract_jd_with_claude convenience function."""
 
-    @patch('subprocess.run')
-    def test_convenience_function_works(self, mock_run, sample_cli_output):
+    @patch('src.layer1_4.claude_jd_extractor.invoke_unified_sync')
+    def test_convenience_function_works(self, mock_invoke, sample_llm_result_success):
         """Convenience function creates extractor and extracts."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=sample_cli_output,
-            stderr=""
-        )
+        mock_invoke.return_value = sample_llm_result_success
 
         result = extract_jd_with_claude(
             job_id="conv_001",
