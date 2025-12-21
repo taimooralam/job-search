@@ -20,37 +20,126 @@
    ============================================================================ */
 
 const PIPELINE_CONFIG = {
-    // Default tiers per action
+    // ============================================================================
+    // Operation Aliases (backward compatibility: old name -> new name)
+    // ============================================================================
+    operationAliases: {
+        'full-extraction': 'analyze-job',
+        'structure-jd': 'prepare-annotations',
+        'all-ops': 'full-analysis',
+        'process-jd': 'analyze-job'  // Remove duplicate
+    },
+
+    // Reverse aliases (new name -> old name for backend compatibility)
+    reverseAliases: {
+        'analyze-job': 'full-extraction',
+        'prepare-annotations': 'structure-jd',
+        'full-analysis': 'all-ops',
+        'discover-contacts': 'research-company',  // Temporarily map to parent
+        'generate-cover-letter': 'generate-cv',   // Temporarily map to parent
+        'generate-outreach': 'research-company'   // Temporarily map to parent
+    },
+
+    // Default tiers per action (using new operation names)
     defaultTiers: {
+        'analyze-job': 'balanced',
+        'prepare-annotations': 'balanced',
+        'research-company': 'balanced',
+        'discover-contacts': 'balanced',
+        'generate-cv': 'quality',
+        'generate-cover-letter': 'quality',
+        'generate-outreach': 'balanced',
+        'full-analysis': 'balanced',
+        // Legacy aliases (for backward compatibility)
         'structure-jd': 'balanced',
         'full-extraction': 'balanced',
-        'research-company': 'balanced',
-        'generate-cv': 'quality',
         'all-ops': 'balanced'
     },
 
-    // Actions that support SSE streaming (via runner service)
-    streamingActions: ['research-company', 'generate-cv', 'full-extraction', 'all-ops'],
+    // Actions that support background execution (via runner service)
+    // NOTE: These don't actually use SSE streaming - they initiate background operations
+    // and return a run_id for HTTP polling at 200ms intervals
+    streamingActions: ['research-company', 'generate-cv', 'analyze-job', 'full-analysis', 'discover-contacts', 'generate-cover-letter', 'generate-outreach',
+        // Legacy aliases
+        'full-extraction', 'all-ops'],
 
-    // Streaming endpoints (via Flask proxy)
+    // Start endpoints (via Flask proxy) - using new /start naming (replaces /stream)
+    // NOTE: The name "streaming" is misleading - these endpoints just start background
+    // operations and return a run_id. Actual progress comes via HTTP polling.
     streamingEndpoints: {
-        'research-company': '/api/runner/operations/{jobId}/research-company/stream',
-        'generate-cv': '/api/runner/operations/{jobId}/generate-cv/stream',
-        'full-extraction': '/api/runner/operations/{jobId}/full-extraction/stream',
-        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
+        'research-company': '/api/runner/operations/{jobId}/research-company/start',
+        'generate-cv': '/api/runner/operations/{jobId}/generate-cv/start',
+        'analyze-job': '/api/runner/operations/{jobId}/full-extraction/start',
+        'prepare-annotations': '/api/runner/operations/{jobId}/structure-jd/start',
+        'full-analysis': '/api/runner/jobs/{jobId}/all-ops/start',
+        'discover-contacts': '/api/runner/operations/{jobId}/research-company/start',  // Maps to research-company for now
+        'generate-cover-letter': '/api/runner/operations/{jobId}/generate-cv/start',   // Maps to generate-cv for now
+        'generate-outreach': '/api/runner/operations/{jobId}/research-company/start',  // Maps to research-company for now
+        // Legacy aliases
+        'full-extraction': '/api/runner/operations/{jobId}/full-extraction/start',
+        'structure-jd': '/api/runner/operations/{jobId}/structure-jd/start',
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/start'
     },
 
     // Queue endpoints (for queue-first approach on detail page)
     queueEndpoints: {
+        'analyze-job': '/api/runner/jobs/{jobId}/operations/full-extraction/queue',
+        'prepare-annotations': '/api/runner/jobs/{jobId}/operations/structure-jd/queue',
+        'research-company': '/api/runner/jobs/{jobId}/operations/research-company/queue',
+        'discover-contacts': '/api/runner/jobs/{jobId}/operations/research-company/queue',  // Maps to research-company for now
+        'generate-cv': '/api/runner/jobs/{jobId}/operations/generate-cv/queue',
+        'generate-cover-letter': '/api/runner/jobs/{jobId}/operations/generate-cv/queue',   // Maps to generate-cv for now
+        'generate-outreach': '/api/runner/jobs/{jobId}/operations/research-company/queue',  // Maps to research-company for now
+        'full-analysis': '/api/runner/jobs/{jobId}/all-ops/start',  // Use /start (not /stream)
+        // Legacy aliases
         'structure-jd': '/api/runner/jobs/{jobId}/operations/structure-jd/queue',
         'full-extraction': '/api/runner/jobs/{jobId}/operations/full-extraction/queue',
-        'research-company': '/api/runner/jobs/{jobId}/operations/research-company/queue',
-        'generate-cv': '/api/runner/jobs/{jobId}/operations/generate-cv/queue',
-        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/start'  // Use /start (not /stream)
     },
 
     // Model mappings per tier per action
     models: {
+        'analyze-job': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o',
+            quality: 'claude-opus-4.5'
+        },
+        'prepare-annotations': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o-mini',
+            quality: 'gpt-4o'
+        },
+        'research-company': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o-mini',
+            quality: 'gpt-4o'
+        },
+        'discover-contacts': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o-mini',
+            quality: 'gpt-4o'
+        },
+        'generate-cv': {
+            fast: 'claude-haiku',
+            balanced: 'claude-sonnet',
+            quality: 'claude-opus-4.5'
+        },
+        'generate-cover-letter': {
+            fast: 'claude-haiku',
+            balanced: 'claude-sonnet',
+            quality: 'claude-opus-4.5'
+        },
+        'generate-outreach': {
+            fast: 'gpt-4o-mini',
+            balanced: 'gpt-4o-mini',
+            quality: 'gpt-4o'
+        },
+        'full-analysis': {
+            fast: 'gpt-4o-mini + claude-haiku',
+            balanced: 'gpt-4o-mini + claude-sonnet',
+            quality: 'gpt-4o + claude-opus-4.5'
+        },
+        // Legacy aliases
         'structure-jd': {
             fast: 'gpt-4o-mini',
             balanced: 'gpt-4o-mini',
@@ -59,17 +148,7 @@ const PIPELINE_CONFIG = {
         'full-extraction': {
             fast: 'gpt-4o-mini',
             balanced: 'gpt-4o',
-            quality: 'claude-opus-4.5'  // Claude Opus for highest quality extraction (free with Max subscription)
-        },
-        'research-company': {
-            fast: 'gpt-4o-mini',
-            balanced: 'gpt-4o-mini',
-            quality: 'gpt-4o'
-        },
-        'generate-cv': {
-            fast: 'claude-haiku',
-            balanced: 'claude-sonnet',
-            quality: 'claude-opus-4.5'  // Opus 4.5 for highest quality CV generation
+            quality: 'claude-opus-4.5'
         },
         'all-ops': {
             fast: 'gpt-4o-mini + claude-haiku',
@@ -82,28 +161,85 @@ const PIPELINE_CONFIG = {
     costs: {
         fast: 0.02,
         balanced: 0.05,
-        quality: 0.50  // Higher due to Opus 4.5
+        quality: 0.50
     },
 
     // API endpoints (relative to /api/jobs/{jobId}/)
     endpoints: {
+        'analyze-job': '/api/jobs/{jobId}/full-extraction',
+        'prepare-annotations': '/api/jobs/{jobId}/process-jd',
+        'research-company': '/api/jobs/{jobId}/research-company',
+        'discover-contacts': '/api/jobs/{jobId}/research-company',  // Maps to research-company for now
+        'generate-cv': '/api/jobs/{jobId}/generate-cv',
+        'generate-cover-letter': '/api/jobs/{jobId}/generate-cv',   // Maps to generate-cv for now
+        'generate-outreach': '/api/jobs/{jobId}/research-company',  // Maps to research-company for now
+        'full-analysis': '/api/runner/jobs/{jobId}/all-ops/start',  // Use /start (not /stream)
+        // Legacy aliases
         'structure-jd': '/api/jobs/{jobId}/process-jd',
         'full-extraction': '/api/jobs/{jobId}/full-extraction',
-        'research-company': '/api/jobs/{jobId}/research-company',
-        'generate-cv': '/api/jobs/{jobId}/generate-cv',
-        'all-ops': '/api/runner/jobs/{jobId}/all-ops/stream'
+        'all-ops': '/api/runner/jobs/{jobId}/all-ops/start'  // Use /start (not /stream)
     },
 
-    // Display labels
+    // Display labels (new unified names)
     labels: {
-        'structure-jd': 'Structure JD',
-        'full-extraction': 'Extract JD',
-        'research-company': 'Research',
+        'analyze-job': 'Analyze Job',
+        'prepare-annotations': 'Prepare Annotations',
+        'research-company': 'Research Company',
+        'discover-contacts': 'Discover Contacts',
         'generate-cv': 'Generate CV',
-        'all-ops': 'All Ops'
+        'generate-cover-letter': 'Generate Cover Letter',
+        'generate-outreach': 'Generate Outreach',
+        'full-analysis': 'Full Analysis',
+        // Legacy aliases for backward compatibility
+        'structure-jd': 'Prepare Annotations',
+        'full-extraction': 'Analyze Job',
+        'all-ops': 'Full Analysis'
     },
 
-    // Tier display info
+    // Operation descriptions (for menu tooltips - short form)
+    descriptions: {
+        'analyze-job': 'JD + pain points + fit score',
+        'prepare-annotations': 'For annotation editor',
+        'research-company': 'Company + role intel',
+        'discover-contacts': 'Find hiring team',
+        'generate-cv': 'Tailored CV',
+        'generate-cover-letter': 'Standalone letter',
+        'generate-outreach': 'Contact messages',
+        'full-analysis': 'Complete job analysis'
+    },
+
+    // Operation subtext (for learning curve - longer descriptions)
+    subtext: {
+        'full-analysis': 'Run all analysis steps in parallel',
+        'analyze-job': 'Extract JD, identify pain points, calculate fit score',
+        'prepare-annotations': 'Structure JD into sections for annotation editor',
+        'research-company': 'Gather company signals, funding, news, and role context',
+        'discover-contacts': 'Find hiring managers, recruiters, and relevant peers',
+        'generate-cv': 'Create tailored CV matched to job requirements',
+        'generate-cover-letter': 'Write personalized cover letter for this role',
+        'generate-outreach': 'Create LinkedIn and email messages for contacts'
+    },
+
+    // Operation categories for menu grouping
+    categories: {
+        'ANALYSIS': ['analyze-job', 'prepare-annotations'],
+        'RESEARCH': ['research-company', 'discover-contacts'],
+        'GENERATION': ['generate-cv', 'generate-cover-letter', 'generate-outreach']
+    },
+
+    // Operation icons (emoji)
+    icons: {
+        'analyze-job': '\uD83D\uDCC4',           // Document
+        'prepare-annotations': '\u270F\uFE0F',    // Pencil
+        'research-company': '\uD83C\uDFE2',       // Building
+        'discover-contacts': '\uD83D\uDC65',      // People
+        'generate-cv': '\uD83D\uDCDD',            // Memo
+        'generate-cover-letter': '\uD83D\uDC8C',  // Love letter
+        'generate-outreach': '\uD83D\uDCE8',      // Envelope with arrow
+        'full-analysis': '\u26A1'                 // Lightning
+    },
+
+    // Tier display info (unified naming: fast/balanced/quality)
     tierInfo: {
         fast: {
             label: 'Fast',
@@ -116,12 +252,65 @@ const PIPELINE_CONFIG = {
             description: 'Good quality/cost balance'
         },
         quality: {
-            label: 'High-Quality',
+            label: 'Quality',
             icon: '\u2728', // Sparkles
             description: 'Best results, higher cost'
         }
+    },
+
+    // Tier code mappings (for backward compatibility with A/B/C/D)
+    tierAliases: {
+        'A': 'quality',
+        'B': 'balanced',
+        'C': 'fast',
+        'D': 'fast',
+        'auto': 'balanced',
+        'Gold': 'quality',
+        'Silver': 'balanced',
+        'Bronze': 'fast'
     }
 };
+
+/* ============================================================================
+   Helper Functions
+   ============================================================================ */
+
+/**
+ * Normalize tier value to standard format (fast/balanced/quality)
+ * Handles legacy A/B/C/D and Gold/Silver/Bronze formats
+ * @param {string} tier - Input tier value
+ * @returns {string} Normalized tier (fast, balanced, or quality)
+ */
+function normalizeTier(tier) {
+    if (!tier) return 'balanced';
+    const normalized = PIPELINE_CONFIG.tierAliases[tier];
+    if (normalized) return normalized;
+    if (['fast', 'balanced', 'quality'].includes(tier)) return tier;
+    return 'balanced';
+}
+
+/**
+ * Get operation name, resolving any aliases
+ * @param {string} operation - Operation name (may be old or new)
+ * @returns {string} Canonical operation name
+ */
+function resolveOperation(operation) {
+    return PIPELINE_CONFIG.operationAliases[operation] || operation;
+}
+
+/**
+ * Get backend operation name for API calls
+ * @param {string} operation - Operation name (new format)
+ * @returns {string} Backend operation name
+ */
+function getBackendOperation(operation) {
+    return PIPELINE_CONFIG.reverseAliases[operation] || operation;
+}
+
+// Export helpers for global use
+window.normalizeTier = normalizeTier;
+window.resolveOperation = resolveOperation;
+window.getBackendOperation = getBackendOperation;
 
 /* ============================================================================
    Alpine.js Store Initialization
@@ -133,30 +322,54 @@ document.addEventListener('alpine:init', () => {
         // Per-action tier selections
         tiers: { ...PIPELINE_CONFIG.defaultTiers },
 
-        // Loading states per action
+        // Loading states per action (includes both new and legacy names)
         loading: {
+            // New operation names
+            'analyze-job': false,
+            'prepare-annotations': false,
+            'research-company': false,
+            'discover-contacts': false,
+            'generate-cv': false,
+            'generate-cover-letter': false,
+            'generate-outreach': false,
+            'full-analysis': false,
+            // Legacy aliases
             'structure-jd': false,
             'full-extraction': false,
-            'research-company': false,
-            'generate-cv': false,
             'all-ops': false
         },
 
         // Last execution results per action
         lastResults: {
+            // New operation names
+            'analyze-job': null,
+            'prepare-annotations': null,
+            'research-company': null,
+            'discover-contacts': null,
+            'generate-cv': null,
+            'generate-cover-letter': null,
+            'generate-outreach': null,
+            'full-analysis': null,
+            // Legacy aliases
             'structure-jd': null,
             'full-extraction': null,
-            'research-company': null,
-            'generate-cv': null,
             'all-ops': null
         },
 
         // Accumulated costs for current session
         sessionCosts: {
+            // New operation names
+            'analyze-job': 0,
+            'prepare-annotations': 0,
+            'research-company': 0,
+            'discover-contacts': 0,
+            'generate-cv': 0,
+            'generate-cover-letter': 0,
+            'generate-outreach': 0,
+            'full-analysis': 0,
+            // Legacy aliases
             'structure-jd': 0,
             'full-extraction': 0,
-            'research-company': 0,
-            'generate-cv': 0,
             'all-ops': 0
         },
 
@@ -1099,10 +1312,18 @@ document.addEventListener('alpine:init', () => {
          */
         _getRefreshSections(action) {
             const sectionMap = {
+                // New operation names
+                'analyze-job': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'action-buttons'],
+                'prepare-annotations': ['jd-structured', 'jd-viewer'],
+                'research-company': ['company-research', 'role-research', 'action-buttons'],
+                'discover-contacts': ['company-research', 'role-research', 'contacts', 'action-buttons'],
+                'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker'],
+                'generate-cover-letter': ['cover-letter', 'action-buttons', 'outcome-tracker'],
+                'generate-outreach': ['outreach', 'contacts', 'action-buttons'],
+                'full-analysis': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'company-research', 'role-research', 'cv-preview', 'action-buttons', 'outcome-tracker'],
+                // Legacy operation names
                 'structure-jd': ['jd-structured', 'jd-viewer'],
                 'full-extraction': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'action-buttons'],
-                'research-company': ['company-research', 'role-research', 'action-buttons'],
-                'generate-cv': ['cv-preview', 'action-buttons', 'outcome-tracker'],
                 'all-ops': ['jd-structured', 'jd-viewer', 'pain-points', 'fit-score', 'company-research', 'role-research', 'cv-preview', 'action-buttons', 'outcome-tracker']
             };
             return sectionMap[action] || ['action-buttons'];
@@ -1494,12 +1715,13 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// Handle keyboard shortcuts for pipeline actions
+// Handle keyboard shortcuts for pipeline actions (unified operation names)
 document.addEventListener('keydown', (event) => {
-    // Alt+1: Structure JD (Layer 1.4 only)
-    // Alt+2: Full Extraction (Layer 1.4 + 2 + 4)
+    // Alt+1: Analyze Job (JD + pain points + fit score)
+    // Alt+2: Prepare Annotations
     // Alt+3: Research Company
     // Alt+4: Generate CV
+    // Alt+5: Full Analysis (complete pipeline)
     if (event.altKey && !event.ctrlKey && !event.metaKey) {
         const jobId = document.querySelector('[data-job-id]')?.dataset.jobId;
         if (!jobId) return;
@@ -1510,11 +1732,11 @@ document.addEventListener('keydown', (event) => {
         switch (event.key) {
             case '1':
                 event.preventDefault();
-                store.execute('structure-jd', jobId);
+                store.execute('analyze-job', jobId);
                 break;
             case '2':
                 event.preventDefault();
-                store.execute('full-extraction', jobId);
+                store.execute('prepare-annotations', jobId);
                 break;
             case '3':
                 event.preventDefault();
@@ -1526,7 +1748,7 @@ document.addEventListener('keydown', (event) => {
                 break;
             case '5':
                 event.preventDefault();
-                store.execute('all-ops', jobId);
+                store.execute('full-analysis', jobId);
                 break;
         }
     }

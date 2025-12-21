@@ -774,23 +774,64 @@ class OperationStatusResponse(BaseModel):
     operation: Optional[str] = Field(default=None, description="Operation type")
 
 
+# =============================================================================
+# Deprecation Helper for /stream -> /start Migration
+# =============================================================================
+
+
+def _log_stream_deprecation(job_id: str, operation: str) -> None:
+    """Log deprecation warning when /stream endpoint is used instead of /start."""
+    logger.warning(
+        f"DEPRECATED: /{job_id}/{operation}/stream called. "
+        f"Use /{job_id}/{operation}/start instead. "
+        "The /stream endpoint will be removed in a future version."
+    )
+
+
+def _log_bulk_deprecation(operation: str) -> None:
+    """Log deprecation warning when /bulk endpoint is used instead of /batch."""
+    logger.warning(
+        f"DEPRECATED: /{operation}/bulk called. "
+        f"Use /{operation}/batch instead. "
+        "The /bulk endpoint will be removed in a future version."
+    )
+
+
+# =============================================================================
+# Streaming Operation Endpoints - New Canonical Names (/start)
+# =============================================================================
+
+
+@router.post(
+    "/{job_id}/research-company/start",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start company research operation",
+    description="Start company research and return run_id for log polling",
+)
 @router.post(
     "/{job_id}/research-company/stream",
     response_model=StreamingOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Start company research with SSE streaming",
-    description="Start company research and return run_id for SSE log streaming",
+    summary="[DEPRECATED] Start company research - use /start instead",
+    description="DEPRECATED: Use /start endpoint. Start company research and return run_id for log polling",
+    deprecated=True,
 )
-async def research_company_stream(
+async def research_company_start(
     job_id: str,
     request: ResearchCompanyRequest,
     background_tasks: BackgroundTasks,
 ) -> StreamingOperationResponse:
     """
-    Start company research with SSE streaming support.
+    Start company research operation.
 
-    Returns immediately with run_id. Use the log_stream_url to connect
-    to SSE and receive real-time progress updates.
+    Returns immediately with run_id. Poll /api/logs/{run_id} for progress
+    updates at 200ms intervals using LogPoller on the frontend.
+
+    NOTE: This does NOT use Server-Sent Events (SSE) streaming.
+    The name "stream" was misleading - this endpoint initiates a background
+    operation and returns a run_id for HTTP polling. Use /start endpoint
+    going forward; /stream is deprecated.
 
     NOTE: Job validation happens in the background task, not here.
     This allows sub-second response times for the kickoff.
@@ -867,22 +908,35 @@ async def research_company_stream(
 
 
 @router.post(
+    "/{job_id}/generate-cv/start",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start CV generation operation",
+    description="Start CV generation and return run_id for log polling",
+)
+@router.post(
     "/{job_id}/generate-cv/stream",
     response_model=StreamingOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Start CV generation with SSE streaming",
-    description="Start CV generation and return run_id for SSE log streaming",
+    summary="[DEPRECATED] Start CV generation - use /start instead",
+    description="DEPRECATED: Use /start endpoint. Start CV generation and return run_id for log polling",
+    deprecated=True,
 )
-async def generate_cv_stream(
+async def generate_cv_start(
     job_id: str,
     request: GenerateCVRequest,
     background_tasks: BackgroundTasks,
 ) -> StreamingOperationResponse:
     """
-    Start CV generation with SSE streaming support.
+    Start CV generation operation.
 
-    Returns immediately with run_id. Use the log_stream_url to connect
-    to SSE and receive real-time progress updates.
+    Returns immediately with run_id. Poll /api/logs/{run_id} for progress
+    updates at 200ms intervals using LogPoller on the frontend.
+
+    NOTE: This does NOT use Server-Sent Events (SSE) streaming.
+    The name "stream" was misleading - this endpoint initiates a background
+    operation and returns a run_id for HTTP polling. Use /start endpoint
+    going forward; /stream is deprecated.
 
     NOTE: Job validation happens in the background task, not here.
     This allows sub-second response times for the kickoff.
@@ -960,22 +1014,35 @@ async def generate_cv_stream(
 
 
 @router.post(
+    "/{job_id}/full-extraction/start",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start full extraction operation",
+    description="Start full JD extraction and return run_id for log polling",
+)
+@router.post(
     "/{job_id}/full-extraction/stream",
     response_model=StreamingOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Start full extraction with SSE streaming",
-    description="Start full JD extraction and return run_id for SSE log streaming",
+    summary="[DEPRECATED] Start full extraction - use /start instead",
+    description="DEPRECATED: Use /start endpoint. Start full JD extraction and return run_id for log polling",
+    deprecated=True,
 )
-async def full_extraction_stream(
+async def full_extraction_start(
     job_id: str,
     request: FullExtractionRequest,
     background_tasks: BackgroundTasks,
 ) -> StreamingOperationResponse:
     """
-    Start full JD extraction with SSE streaming support.
+    Start full JD extraction operation.
 
-    Returns immediately with run_id. Use the log_stream_url to connect
-    to SSE and receive real-time progress updates.
+    Returns immediately with run_id. Poll /api/logs/{run_id} for progress
+    updates at 200ms intervals using LogPoller on the frontend.
+
+    NOTE: This does NOT use Server-Sent Events (SSE) streaming.
+    The name "stream" was misleading - this endpoint initiates a background
+    operation and returns a run_id for HTTP polling. Use /start endpoint
+    going forward; /stream is deprecated.
 
     NOTE: Job validation happens in the background task, not here.
     This allows sub-second response times for the kickoff.
@@ -1078,19 +1145,27 @@ class AllOpsRequest(BaseModel):
 
 
 @router.post(
+    "/{job_id}/all-ops/start",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start all Phase 1 operations",
+    description="Start JD extraction and company research in parallel with real-time progress updates",
+)
+@router.post(
     "/{job_id}/all-ops/stream",
     response_model=StreamingOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Run all Phase 1 operations with SSE streaming",
-    description="Run JD extraction and company research in parallel with real-time progress updates",
+    summary="[DEPRECATED] Start all Phase 1 operations - use /start instead",
+    description="DEPRECATED: Use /start endpoint. Start JD extraction and company research in parallel",
+    deprecated=True,
 )
-async def all_ops_stream(
+async def all_ops_start(
     job_id: str,
     request: AllOpsRequest,
     background_tasks: BackgroundTasks,
 ) -> StreamingOperationResponse:
     """
-    Run all Phase 1 operations (JD extraction + company research) in parallel.
+    Start all Phase 1 operations (JD extraction + company research) in parallel.
 
     This is the "All Ops" button that combines:
     - Full Extraction: Layer 1.4 (JD parsing) + Layer 2 (pain points) + Layer 4 (fit scoring)
@@ -1099,8 +1174,11 @@ async def all_ops_stream(
     Both operations run concurrently for faster execution.
     If one fails, the other's results are still returned (partial success).
 
-    Returns immediately with run_id. Use the log_stream_url to connect
-    to SSE and receive real-time progress updates.
+    Returns immediately with run_id. Poll /api/logs/{run_id} for progress
+    updates at 200ms intervals using LogPoller on the frontend.
+
+    NOTE: This does NOT use Server-Sent Events (SSE) streaming.
+    The name "stream" was misleading. Use /start endpoint going forward.
     """
     operation = "all-ops"
 
@@ -1203,19 +1281,27 @@ class ScrapeFormAnswersRequest(BaseModel):
 
 
 @router.post(
+    "/{job_id}/scrape-form-answers/start",
+    response_model=StreamingOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start form scraping and answer generation",
+    description="Scrape the application form URL, extract fields, and generate personalized answers",
+)
+@router.post(
     "/{job_id}/scrape-form-answers/stream",
     response_model=StreamingOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Scrape application form and generate answers with SSE streaming",
-    description="Scrape the application form URL, extract fields, and generate personalized answers",
+    summary="[DEPRECATED] Start form scraping - use /start instead",
+    description="DEPRECATED: Use /start endpoint. Scrape form and generate answers",
+    deprecated=True,
 )
-async def scrape_form_answers_stream(
+async def scrape_form_answers_start(
     job_id: str,
     request: ScrapeFormAnswersRequest,
     background_tasks: BackgroundTasks,
 ) -> StreamingOperationResponse:
     """
-    Scrape application form and generate personalized answers with SSE streaming.
+    Start form scraping and personalized answer generation.
 
     This endpoint:
     1. Fetches the application_url from the job document
@@ -1224,8 +1310,11 @@ async def scrape_form_answers_stream(
     4. Generates personalized answers for each field
     5. Saves results to MongoDB
 
-    Returns immediately with run_id. Use the log_stream_url to connect
-    to SSE and receive real-time progress updates.
+    Returns immediately with run_id. Poll /api/logs/{run_id} for progress
+    updates at 200ms intervals using LogPoller on the frontend.
+
+    NOTE: This does NOT use Server-Sent Events (SSE) streaming.
+    Use /start endpoint going forward; /stream is deprecated.
     """
     operation = "scrape-form-answers"
 
@@ -1648,25 +1737,121 @@ async def suggest_strengths(
 # Queue-Based Operation Endpoints (Job Detail Page)
 # =============================================================================
 
-# Valid operations that can be queued from the detail page
+# =============================================================================
+# Operation Naming System
+# =============================================================================
+#
+# Canonical operation names (new naming convention):
+#   analyze-job          - JD extraction + pain points + fit scoring (was: full-extraction)
+#   prepare-annotations  - JD parsing for annotation editor (was: structure-jd)
+#   research-company     - Company + role research (unchanged)
+#   discover-contacts    - Contact discovery (was bundled in research-company)
+#   generate-cv          - CV generation (unchanged)
+#   generate-cover-letter - Cover letter generation (was bundled in generate-cv)
+#   generate-outreach    - Outreach message generation (new)
+#   full-analysis        - All Phase 1 operations in parallel (was: all-ops)
+#
+# Legacy operation names are supported via OPERATION_ALIASES for backward compatibility.
+# Using a legacy name will log a deprecation warning.
+# =============================================================================
+
+# Canonical operation names (new naming convention)
 VALID_QUEUE_OPERATIONS = {
+    # Analysis operations
+    "analyze-job",           # JD extraction + pain points + fit scoring
+    "prepare-annotations",   # JD parsing for annotation editor only
+    # Research operations
+    "research-company",      # Company + role research
+    "discover-contacts",     # Contact discovery (separated from research)
+    # Generation operations
+    "generate-cv",           # CV generation
+    "generate-cover-letter", # Cover letter generation (separated from CV)
+    "generate-outreach",     # Outreach message generation
+    # Combo operations
+    "full-analysis",         # All Phase 1 operations in parallel
+    # Legacy names (still valid for backward compatibility, but aliases are preferred)
     "structure-jd",
     "full-extraction",
-    "research-company",
-    "generate-cv",
-    "extract",  # Primary JD extraction via Claude Code CLI
-    "all-ops",  # Phase 1: JD extraction + company research in parallel
+    "extract",               # Primary JD extraction via Claude Code CLI
+    "all-ops",               # Phase 1: JD extraction + company research in parallel
+}
+
+# Aliases for backward compatibility (legacy name -> canonical name)
+# When a legacy name is used, it gets resolved to the canonical name
+# and a deprecation warning is logged
+OPERATION_ALIASES = {
+    "full-extraction": "analyze-job",
+    "structure-jd": "prepare-annotations",
+    "all-ops": "full-analysis",
+    "process-jd": "analyze-job",  # Duplicate operation that was removed
+}
+
+# Temporary routing for new operations that don't have their own services yet
+# These route to existing parent services until the services are fully decoupled
+OPERATION_ROUTING = {
+    # New operations that route to existing services
+    "discover-contacts": "research-company",     # Until discover_contacts_service.py exists
+    "generate-cover-letter": "generate-cv",      # Until cover_letter_service.py exists
+    "generate-outreach": "research-company",     # Until outreach_service.py exists
 }
 
 # Estimated seconds per operation (for wait time estimation)
 OPERATION_TIME_ESTIMATES = {
+    # Canonical names
+    "analyze-job": 45,
+    "prepare-annotations": 15,
+    "research-company": 60,
+    "discover-contacts": 30,
+    "generate-cv": 30,
+    "generate-cover-letter": 20,
+    "generate-outreach": 25,
+    "full-analysis": 90,
+    # Legacy names (same times as their canonical equivalents)
     "structure-jd": 15,
     "full-extraction": 45,
-    "research-company": 60,
-    "generate-cv": 30,
     "extract": 20,  # Claude CLI typically 5-15s, buffer for queue overhead
     "all-ops": 90,  # Parallel but includes both extraction and research
 }
+
+
+def resolve_operation_alias(operation: str) -> str:
+    """
+    Resolve an operation name to its canonical form.
+
+    If the operation is an alias (legacy name), logs a deprecation warning
+    and returns the canonical name. Otherwise returns the operation unchanged.
+
+    Args:
+        operation: The operation name (may be alias or canonical)
+
+    Returns:
+        The canonical operation name
+    """
+    if operation in OPERATION_ALIASES:
+        canonical = OPERATION_ALIASES[operation]
+        logger.warning(
+            f"DEPRECATED: Operation '{operation}' is deprecated. "
+            f"Use '{canonical}' instead. "
+            f"Legacy names will be removed in a future version."
+        )
+        return canonical
+    return operation
+
+
+def get_routed_operation(operation: str) -> str:
+    """
+    Get the actual operation to execute for a given operation name.
+
+    Some new operations don't have their own services yet and are
+    temporarily routed to existing parent services.
+
+    Args:
+        operation: The canonical operation name
+
+    Returns:
+        The operation name to actually execute (may be same or parent service)
+    """
+    return OPERATION_ROUTING.get(operation, operation)
 
 
 @router.post(
@@ -1692,25 +1877,41 @@ async def queue_operation(
     - Button click -> queue operation -> WebSocket status updates
     - User can view logs on-demand via "View Logs" button
 
+    Supports both canonical and legacy operation names:
+    - Canonical: analyze-job, prepare-annotations, full-analysis, etc.
+    - Legacy: full-extraction, structure-jd, all-ops (deprecated, logs warning)
+
     Args:
         job_id: MongoDB ObjectId of the job
-        operation: Operation type (structure-jd, full-extraction, research-company, generate-cv)
+        operation: Operation type (canonical or legacy name)
         request: Queue operation request parameters
         background_tasks: FastAPI background tasks for async execution
 
     Returns:
         QueueOperationResponse with queue_id and position
     """
+    # Resolve operation alias (logs deprecation warning if legacy name used)
+    original_operation = operation
+    operation = resolve_operation_alias(operation)
+
+    # Get the actual operation to execute (for new ops that route to parent services)
+    routed_operation = get_routed_operation(operation)
+
     # Validate operation type
-    if operation not in VALID_QUEUE_OPERATIONS:
+    if operation not in VALID_QUEUE_OPERATIONS and original_operation not in VALID_QUEUE_OPERATIONS:
+        # Show canonical names in error message (not legacy names)
+        canonical_ops = sorted([
+            op for op in VALID_QUEUE_OPERATIONS
+            if op not in {"structure-jd", "full-extraction", "extract", "all-ops"}
+        ])
         return QueueOperationResponse(
             success=False,
             queue_id="",
             job_id=job_id,
-            operation=operation,
+            operation=original_operation,
             status="failed",
             position=0,
-            error=f"Invalid operation: {operation}. Valid: {', '.join(sorted(VALID_QUEUE_OPERATIONS))}",
+            error=f"Invalid operation: {original_operation}. Valid: {', '.join(canonical_ops)}",
         )
 
     # Validate tier
@@ -1770,12 +1971,13 @@ async def queue_operation(
         estimated_wait = (position - 1) * avg_time if position > 1 else 0
 
         # Add background task to execute the operation
+        # Use routed_operation for execution (may differ from canonical name for new ops)
         background_tasks.add_task(
             _execute_queued_operation,
             queue_id=queue_item.queue_id,
             run_id=run_id,
             job_id=job_id,
-            operation=operation,
+            operation=routed_operation,  # Use routed operation for actual execution
             tier=tier,
             force_refresh=request.force_refresh or False,
             use_llm=request.use_llm if request.use_llm is not None else True,
@@ -1860,9 +2062,13 @@ async def _execute_queued_operation(
             return
 
         # Execute the appropriate operation
+        # Note: Both canonical names and legacy names are supported here.
+        # The operation name may have been resolved through OPERATION_ALIASES,
+        # but we still accept both for backward compatibility with direct calls.
         result = None
 
-        if operation == "structure-jd":
+        if operation in ("structure-jd", "prepare-annotations"):
+            # Legacy: structure-jd | Canonical: prepare-annotations
             from src.services.structure_jd_service import StructureJDService
             service = StructureJDService()
             result = await service.execute(
@@ -1871,7 +2077,8 @@ async def _execute_queued_operation(
                 use_llm=use_llm,
             )
 
-        elif operation == "full-extraction":
+        elif operation in ("full-extraction", "analyze-job"):
+            # Legacy: full-extraction | Canonical: analyze-job
             from src.services.full_extraction_service import FullExtractionService
             service = FullExtractionService()
             result = await service.execute(
@@ -1881,7 +2088,7 @@ async def _execute_queued_operation(
                 progress_callback=layer_cb,
             )
 
-        elif operation == "research-company":
+        elif operation in ("research-company", "discover-contacts", "generate-outreach"):
             from src.services.company_research_service import CompanyResearchService
             service = CompanyResearchService()
             try:
@@ -1894,7 +2101,8 @@ async def _execute_queued_operation(
             finally:
                 service.close()
 
-        elif operation == "generate-cv":
+        elif operation in ("generate-cv", "generate-cover-letter"):
+            # Canonical: generate-cv, generate-cover-letter (both use CV service for now)
             from src.services.cv_generation_service import CVGenerationService
             service = CVGenerationService()
             result = await service.execute(
@@ -1990,7 +2198,8 @@ async def _execute_queued_operation(
                         duration_ms=extraction_result.duration_ms,
                     )
 
-        elif operation == "all-ops":
+        elif operation in ("all-ops", "full-analysis"):
+            # Legacy: all-ops | Canonical: full-analysis
             # Phase 1: JD extraction + company research in parallel
             from src.services.all_ops_service import AllOpsService
             service = AllOpsService()
@@ -2215,14 +2424,27 @@ def _get_queue_manager():
         return None
 
 
+# =============================================================================
+# Batch Operation Endpoints - New Canonical Names (/batch)
+# =============================================================================
+
+
+@router.post(
+    "/full-extraction/batch",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start full extraction for multiple jobs",
+    description="Queue multiple jobs for extraction (Layer 1.4 + 2 + 4). Returns run_ids for log polling.",
+)
 @router.post(
     "/full-extraction/bulk",
     response_model=BulkOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Start full extraction for multiple jobs",
-    description="Queue multiple jobs for extraction (Layer 1.4 + 2 + 4). Returns run_ids for individual log streams.",
+    summary="[DEPRECATED] Start full extraction batch - use /batch instead",
+    description="DEPRECATED: Use /batch endpoint. Queue multiple jobs for extraction.",
+    deprecated=True,
 )
-async def full_extraction_bulk(
+async def full_extraction_batch(
     request: BulkOperationRequest,
     background_tasks: BackgroundTasks,
 ) -> BulkOperationResponse:
@@ -2396,13 +2618,21 @@ async def _execute_extraction_bulk_task(
 
 
 @router.post(
-    "/research-company/bulk",
+    "/research-company/batch",
     response_model=BulkOperationResponse,
     dependencies=[Depends(verify_token)],
     summary="Start company research for multiple jobs",
-    description="Queue multiple jobs for company research. Returns run_ids for individual log streams.",
+    description="Queue multiple jobs for company research. Returns run_ids for log polling.",
 )
-async def research_company_bulk(
+@router.post(
+    "/research-company/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="[DEPRECATED] Start company research batch - use /batch instead",
+    description="DEPRECATED: Use /batch endpoint. Queue multiple jobs for company research.",
+    deprecated=True,
+)
+async def research_company_batch(
     request: BulkOperationRequest,
     background_tasks: BackgroundTasks,
 ) -> BulkOperationResponse:
@@ -2542,13 +2772,21 @@ async def _execute_research_bulk_task(
 
 
 @router.post(
-    "/generate-cv/bulk",
+    "/generate-cv/batch",
     response_model=BulkOperationResponse,
     dependencies=[Depends(verify_token)],
     summary="Start CV generation for multiple jobs",
-    description="Queue multiple jobs for CV generation. Returns run_ids for individual log streams.",
+    description="Queue multiple jobs for CV generation. Returns run_ids for log polling.",
 )
-async def generate_cv_bulk(
+@router.post(
+    "/generate-cv/bulk",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="[DEPRECATED] Start CV generation batch - use /batch instead",
+    description="DEPRECATED: Use /batch endpoint. Queue multiple jobs for CV generation.",
+    deprecated=True,
+)
+async def generate_cv_batch(
     request: BulkOperationRequest,
     background_tasks: BackgroundTasks,
 ) -> BulkOperationResponse:
@@ -2681,18 +2919,26 @@ async def _execute_cv_bulk_task(
 
 
 @router.post(
+    "/all-ops/batch",
+    response_model=BulkOperationResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Start all Phase 1 operations for multiple jobs",
+    description="Queue multiple jobs for parallel JD extraction and company research. Returns run_ids for log polling.",
+)
+@router.post(
     "/all-ops/bulk",
     response_model=BulkOperationResponse,
     dependencies=[Depends(verify_token)],
-    summary="Run all Phase 1 operations for multiple jobs",
-    description="Queue multiple jobs for parallel JD extraction and company research. Returns run_ids for individual log streams.",
+    summary="[DEPRECATED] Start all Phase 1 ops batch - use /batch instead",
+    description="DEPRECATED: Use /batch endpoint. Queue multiple jobs for parallel JD extraction and company research.",
+    deprecated=True,
 )
-async def all_ops_bulk(
+async def all_ops_batch(
     request: BulkOperationRequest,
     background_tasks: BackgroundTasks,
 ) -> BulkOperationResponse:
     """
-    Run all Phase 1 operations for multiple jobs with queue integration.
+    Start all Phase 1 operations for multiple jobs with queue integration.
 
     Each job is added to the Redis queue (appears in Pipeline Queue UI),
     and executes asynchronously with both extraction and research running

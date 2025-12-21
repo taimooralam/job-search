@@ -324,25 +324,31 @@ def health_check():
 
 
 # =============================================================================
-# Streaming Operation Proxy Routes (SSE Support for Small Actions)
+# Operation Start Proxy Routes (New Canonical Names)
 # =============================================================================
+# NOTE: The /stream endpoints are deprecated in favor of /start.
+# These endpoints initiate background operations and return a run_id for
+# HTTP polling (NOT Server-Sent Events streaming).
 
 
-@runner_bp.route("/operations/<job_id>/research-company/stream", methods=["POST"])
-def research_company_stream(job_id: str):
+@runner_bp.route("/operations/<job_id>/research-company/start", methods=["POST"])
+@runner_bp.route("/operations/<job_id>/research-company/stream", methods=["POST"])  # Deprecated alias
+def research_company_start(job_id: str):
     """
-    Start company research with SSE streaming.
+    Start company research operation.
 
-    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    Returns run_id immediately; client should poll /api/runner/logs/{run_id} for progress.
+    NOTE: /stream is deprecated, use /start instead.
     """
     try:
         data = request.get_json() or {}
 
+        # Use /start endpoint on backend (handles both /start and /stream)
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/research-company/stream",
+            f"{RUNNER_URL}/api/jobs/{job_id}/research-company/start",
             json=data,
             headers=get_headers(),
-            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
+            timeout=STREAMING_KICKOFF_TIMEOUT,
         )
 
         return jsonify(response.json()), response.status_code
@@ -355,21 +361,23 @@ def research_company_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/operations/<job_id>/generate-cv/stream", methods=["POST"])
-def generate_cv_stream(job_id: str):
+@runner_bp.route("/operations/<job_id>/generate-cv/start", methods=["POST"])
+@runner_bp.route("/operations/<job_id>/generate-cv/stream", methods=["POST"])  # Deprecated alias
+def generate_cv_start(job_id: str):
     """
-    Start CV generation with SSE streaming.
+    Start CV generation operation.
 
-    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    Returns run_id immediately; client should poll /api/runner/logs/{run_id} for progress.
+    NOTE: /stream is deprecated, use /start instead.
     """
     try:
         data = request.get_json() or {}
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/generate-cv/stream",
+            f"{RUNNER_URL}/api/jobs/{job_id}/generate-cv/start",
             json=data,
             headers=get_headers(),
-            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
+            timeout=STREAMING_KICKOFF_TIMEOUT,
         )
 
         return jsonify(response.json()), response.status_code
@@ -382,21 +390,23 @@ def generate_cv_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/operations/<job_id>/full-extraction/stream", methods=["POST"])
-def full_extraction_stream(job_id: str):
+@runner_bp.route("/operations/<job_id>/full-extraction/start", methods=["POST"])
+@runner_bp.route("/operations/<job_id>/full-extraction/stream", methods=["POST"])  # Deprecated alias
+def full_extraction_start(job_id: str):
     """
-    Start full JD extraction with SSE streaming.
+    Start full JD extraction operation.
 
-    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    Returns run_id immediately; client should poll /api/runner/logs/{run_id} for progress.
+    NOTE: /stream is deprecated, use /start instead.
     """
     try:
         data = request.get_json() or {}
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/full-extraction/stream",
+            f"{RUNNER_URL}/api/jobs/{job_id}/full-extraction/start",
             json=data,
             headers=get_headers(),
-            timeout=STREAMING_KICKOFF_TIMEOUT,  # Longer timeout for streaming init
+            timeout=STREAMING_KICKOFF_TIMEOUT,
         )
 
         return jsonify(response.json()), response.status_code
@@ -409,18 +419,20 @@ def full_extraction_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/operations/<job_id>/scrape-form-answers/stream", methods=["POST"])
-def scrape_form_answers_stream(job_id: str):
+@runner_bp.route("/operations/<job_id>/scrape-form-answers/start", methods=["POST"])
+@runner_bp.route("/operations/<job_id>/scrape-form-answers/stream", methods=["POST"])  # Deprecated alias
+def scrape_form_answers_start(job_id: str):
     """
-    Start form scraping and answer generation with SSE streaming.
+    Start form scraping and answer generation operation.
 
-    Returns run_id immediately; client should connect to log_stream_url for SSE.
+    Returns run_id immediately; client should poll /api/runner/logs/{run_id} for progress.
+    NOTE: /stream is deprecated, use /start instead.
     """
     try:
         data = request.get_json() or {}
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/scrape-form-answers/stream",
+            f"{RUNNER_URL}/api/jobs/{job_id}/scrape-form-answers/start",
             json=data,
             headers=get_headers(),
             timeout=STREAMING_KICKOFF_TIMEOUT,
@@ -742,22 +754,26 @@ def get_queue_item_by_job(job_id: str):
 
 
 # =============================================================================
-# Bulk Operation Proxy Routes (Batch Processing)
+# Batch Operation Proxy Routes (New Canonical Names)
 # =============================================================================
+# NOTE: The /bulk endpoints are deprecated in favor of /batch.
 
 
-@runner_bp.route("/jobs/full-extraction/bulk", methods=["POST"])
-def full_extraction_bulk():
+@runner_bp.route("/jobs/full-extraction/batch", methods=["POST"])
+@runner_bp.route("/jobs/full-extraction/bulk", methods=["POST"])  # Deprecated alias
+def full_extraction_batch():
     """
     Start full extraction for multiple jobs.
 
     Request Body:
         job_ids: List of MongoDB job IDs
-        tier: Processing tier (A, B, C)
+        tier: Processing tier (fast, balanced, quality)
         use_llm: Whether to use LLM (default True)
 
     Returns:
         JSON with runs array containing run_ids for each job
+
+    NOTE: /bulk is deprecated, use /batch instead.
     """
     try:
         data = request.get_json()
@@ -765,7 +781,7 @@ def full_extraction_bulk():
             return jsonify({"error": "job_ids array is required"}), 400
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/full-extraction/bulk",
+            f"{RUNNER_URL}/api/jobs/full-extraction/batch",
             json=data,
             headers=get_headers(),
             timeout=REQUEST_TIMEOUT,
@@ -781,18 +797,21 @@ def full_extraction_bulk():
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/jobs/research-company/bulk", methods=["POST"])
-def research_company_bulk():
+@runner_bp.route("/jobs/research-company/batch", methods=["POST"])
+@runner_bp.route("/jobs/research-company/bulk", methods=["POST"])  # Deprecated alias
+def research_company_batch():
     """
     Start company research for multiple jobs.
 
     Request Body:
         job_ids: List of MongoDB job IDs
-        tier: Processing tier (A, B, C)
+        tier: Processing tier (fast, balanced, quality)
         force_refresh: Whether to force refresh (default False)
 
     Returns:
         JSON with runs array containing run_ids for each job
+
+    NOTE: /bulk is deprecated, use /batch instead.
     """
     try:
         data = request.get_json()
@@ -800,7 +819,7 @@ def research_company_bulk():
             return jsonify({"error": "job_ids array is required"}), 400
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/research-company/bulk",
+            f"{RUNNER_URL}/api/jobs/research-company/batch",
             json=data,
             headers=get_headers(),
             timeout=REQUEST_TIMEOUT,
@@ -816,17 +835,20 @@ def research_company_bulk():
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/jobs/generate-cv/bulk", methods=["POST"])
-def generate_cv_bulk():
+@runner_bp.route("/jobs/generate-cv/batch", methods=["POST"])
+@runner_bp.route("/jobs/generate-cv/bulk", methods=["POST"])  # Deprecated alias
+def generate_cv_batch():
     """
     Start CV generation for multiple jobs.
 
     Request Body:
         job_ids: List of MongoDB job IDs
-        tier: Processing tier (A, B, C)
+        tier: Processing tier (fast, balanced, quality)
 
     Returns:
         JSON with runs array containing run_ids for each job
+
+    NOTE: /bulk is deprecated, use /batch instead.
     """
     try:
         data = request.get_json()
@@ -834,7 +856,7 @@ def generate_cv_bulk():
             return jsonify({"error": "job_ids array is required"}), 400
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/generate-cv/bulk",
+            f"{RUNNER_URL}/api/jobs/generate-cv/batch",
             json=data,
             headers=get_headers(),
             timeout=REQUEST_TIMEOUT,
@@ -927,10 +949,11 @@ def get_job_queue_status(job_id: str):
 # =============================================================================
 
 
-@runner_bp.route("/jobs/<job_id>/all-ops/stream", methods=["POST"])
-def all_ops_stream(job_id: str):
+@runner_bp.route("/jobs/<job_id>/all-ops/start", methods=["POST"])
+@runner_bp.route("/jobs/<job_id>/all-ops/stream", methods=["POST"])  # Deprecated alias
+def all_ops_start(job_id: str):
     """
-    Start all operations for a single job with SSE streaming.
+    Start all operations for a single job.
 
     Runs the complete pipeline:
     - Full extraction (Layer 1.4 + Layer 2 + Layer 4)
@@ -942,12 +965,14 @@ def all_ops_stream(job_id: str):
 
     Returns:
         JSON with run_id for tracking the operation
+
+    NOTE: /stream is deprecated, use /start instead.
     """
     try:
         data = request.get_json() or {}
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/all-ops/stream",
+            f"{RUNNER_URL}/api/jobs/{job_id}/all-ops/start",
             json=data,
             headers=get_headers(),
             timeout=STREAMING_KICKOFF_TIMEOUT,
@@ -963,8 +988,9 @@ def all_ops_stream(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
-@runner_bp.route("/jobs/all-ops/bulk", methods=["POST"])
-def all_ops_bulk():
+@runner_bp.route("/jobs/all-ops/batch", methods=["POST"])
+@runner_bp.route("/jobs/all-ops/bulk", methods=["POST"])  # Deprecated alias
+def all_ops_batch():
     """
     Start all operations for multiple jobs.
 
@@ -979,6 +1005,8 @@ def all_ops_bulk():
 
     Returns:
         JSON with runs array containing run_ids for each job
+
+    NOTE: /bulk is deprecated, use /batch instead.
     """
     try:
         data = request.get_json()
@@ -986,7 +1014,7 @@ def all_ops_bulk():
             return jsonify({"error": "job_ids array is required"}), 400
 
         response = requests.post(
-            f"{RUNNER_URL}/api/jobs/all-ops/bulk",
+            f"{RUNNER_URL}/api/jobs/all-ops/batch",
             json=data,
             headers=get_headers(),
             timeout=REQUEST_TIMEOUT,

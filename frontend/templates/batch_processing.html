@@ -86,7 +86,7 @@
 
             <div class="h-6 w-px theme-bg-tertiary"></div>
 
-            <!-- Pipeline Operations Dropdown -->
+            <!-- Pipeline Operations Dropdown (Unified Menu) -->
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open"
                         id="batch-process-btn"
@@ -101,104 +101,154 @@
                     </svg>
                 </button>
                 <div x-show="open" x-cloak x-transition
-                     class="absolute left-0 mt-2 w-64 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
+                     class="absolute left-0 mt-2 w-72 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
                     <div class="py-1">
-                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
-                            Pipeline Operations
+                        <!-- Full Analysis (Hero Action) -->
+                        <button @click="executeBatchOperation('full-analysis'); open = false"
+                                class="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center gap-3 border-b theme-border bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+                            <span class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg">
+                                &#9889;
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-semibold text-sm theme-text-primary">Full Analysis</div>
+                                <div class="text-xs theme-text-tertiary">Run all analysis steps in parallel</div>
+                            </div>
+                        </button>
+
+                        <!-- ANALYSIS Section -->
+                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border bg-gray-50 dark:bg-gray-900/50">
+                            Analysis
                         </div>
-                        <button @click="executeBatchOperation('full-extraction'); open = false"
+                        <button @click="executeBatchOperation('analyze-job'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
+                            <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm">
+                                &#128196;
                             </span>
                             <div class="flex-1">
-                                <div class="font-medium text-sm">Full Extraction</div>
-                                <div class="text-xs theme-text-tertiary">JD + Research + CV</div>
+                                <div class="font-medium text-sm theme-text-primary">Analyze Job</div>
+                                <div class="text-xs theme-text-tertiary">Extract JD, identify pain points, calculate fit score</div>
                             </div>
                         </button>
-                        <button @click="executeBatchOperation('process-jd'); open = false"
+                        <button @click="executeBatchOperation('prepare-annotations'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
+                            <span class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm">
+                                &#9999;&#65039;
                             </span>
                             <div class="flex-1">
-                                <div class="font-medium text-sm">Extract JD</div>
-                                <div class="text-xs theme-text-tertiary">Parse job description</div>
+                                <div class="font-medium text-sm theme-text-primary">Prepare Annotations</div>
+                                <div class="text-xs theme-text-tertiary">Structure JD into sections for annotation editor</div>
                             </div>
                         </button>
+
+                        <!-- RESEARCH Section -->
+                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border bg-gray-50 dark:bg-gray-900/50">
+                            Research
+                        </div>
                         <button @click="executeBatchOperation('research-company'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
+                            <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-sm">
+                                &#127970;
                             </span>
                             <div class="flex-1">
-                                <div class="font-medium text-sm">Research Company</div>
-                                <div class="text-xs theme-text-tertiary">Company intel</div>
+                                <div class="font-medium text-sm theme-text-primary">Research Company</div>
+                                <div class="text-xs theme-text-tertiary">Gather company signals, funding, news, and role context</div>
                             </div>
                         </button>
+                        <button @click="executeBatchOperation('discover-contacts'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-sm">
+                                &#128101;
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm theme-text-primary">Discover Contacts</div>
+                                <div class="text-xs theme-text-tertiary">Find hiring managers, recruiters, and relevant peers</div>
+                            </div>
+                        </button>
+
+                        <!-- GENERATION Section -->
+                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border bg-gray-50 dark:bg-gray-900/50">
+                            Generation
+                        </div>
                         <button @click="executeBatchOperation('generate-cv'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
+                            <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm">
+                                &#128221;
                             </span>
                             <div class="flex-1">
-                                <div class="font-medium text-sm">Generate CV</div>
-                                <div class="text-xs theme-text-tertiary">Tailored CV</div>
+                                <div class="font-medium text-sm theme-text-primary">Generate CV</div>
+                                <div class="text-xs theme-text-tertiary">Create tailored CV matched to job requirements</div>
                             </div>
                         </button>
-                        <div class="border-t theme-border my-1"></div>
-                        <button @click="executeBatchOperation('all-ops'); open = false"
+                        <button @click="executeBatchOperation('generate-cover-letter'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
-                            <span class="w-6 h-6 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
-                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
+                            <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm">
+                                &#128140;
                             </span>
                             <div class="flex-1">
-                                <div class="font-medium text-sm">All Ops</div>
-                                <div class="text-xs theme-text-tertiary">Extract + Research + CV</div>
+                                <div class="font-medium text-sm theme-text-primary">Generate Cover Letter</div>
+                                <div class="text-xs theme-text-tertiary">Write personalized cover letter for this role</div>
+                            </div>
+                        </button>
+                        <button @click="executeBatchOperation('generate-outreach'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
+                            <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm">
+                                &#128232;
+                            </span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm theme-text-primary">Generate Outreach</div>
+                                <div class="text-xs theme-text-tertiary">Create LinkedIn and email messages for contacts</div>
                             </div>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Tier Selection -->
+            <!-- Unified Tier Selection (Fast/Balanced/Quality) -->
             <div class="relative" x-data="{ open: false }" @click.away="open = false">
-                <input type="hidden" id="batch-tier" value="auto">
+                <input type="hidden" id="batch-tier" value="balanced">
                 <button @click="open = !open"
                         class="btn btn-ghost btn-md flex items-center gap-2">
-                    <span id="batch-tier-label">Tier: Auto</span>
+                    <span id="batch-tier-icon" class="text-base">&#9878;&#65039;</span>
+                    <span id="batch-tier-label">Balanced</span>
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </button>
                 <div x-show="open" x-cloak x-transition
-                     class="absolute left-0 mt-2 w-48 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
+                     class="absolute left-0 mt-2 w-56 rounded-lg shadow-xl bg-white dark:bg-gray-800 border theme-border z-[100]">
                     <div class="py-1">
-                        <button @click="setBatchTier('auto'); open = false"
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
-                            Auto (by score)
+                        <div class="px-4 py-2 text-xs font-semibold theme-text-tertiary uppercase tracking-wide border-b theme-border">
+                            Processing Tier
+                        </div>
+                        <button @click="setBatchTier('fast'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                                data-tier="fast">
+                            <span class="text-lg">&#9889;</span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm theme-text-primary">Fast</div>
+                                <div class="text-xs theme-text-tertiary">gpt-4o-mini + claude-haiku</div>
+                            </div>
+                            <span class="text-xs theme-text-tertiary">~$0.02</span>
                         </button>
-                        <button @click="setBatchTier('A'); open = false"
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
-                            Gold (A)
+                        <button @click="setBatchTier('balanced'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 bg-indigo-50 dark:bg-indigo-900/20"
+                                data-tier="balanced">
+                            <span class="text-lg">&#9878;&#65039;</span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm theme-text-primary">Balanced</div>
+                                <div class="text-xs theme-text-tertiary">gpt-4o-mini + claude-sonnet</div>
+                            </div>
+                            <span class="text-xs theme-text-tertiary">~$0.05</span>
                         </button>
-                        <button @click="setBatchTier('B'); open = false"
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
-                            Silver (B)
-                        </button>
-                        <button @click="setBatchTier('C'); open = false"
-                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">
-                            Bronze (C)
+                        <button @click="setBatchTier('quality'); open = false"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                                data-tier="quality">
+                            <span class="text-lg">&#10024;</span>
+                            <div class="flex-1">
+                                <div class="font-medium text-sm theme-text-primary">Quality</div>
+                                <div class="text-xs theme-text-tertiary">gpt-4o + claude-opus-4.5</div>
+                            </div>
+                            <span class="text-xs theme-text-tertiary">~$0.50</span>
                         </button>
                     </div>
                 </div>
@@ -313,7 +363,7 @@
                     <kbd class="px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 rounded">Ctrl + A</kbd>
                 </div>
                 <div class="flex items-center justify-between py-2 border-b theme-border">
-                    <span class="text-sm theme-text-secondary">Run full extraction on selected</span>
+                    <span class="text-sm theme-text-secondary">Run full analysis on selected</span>
                     <kbd class="px-2 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 rounded">Ctrl + Enter</kbd>
                 </div>
                 <div class="flex items-center justify-between py-2 border-b theme-border">
@@ -348,13 +398,13 @@
         </div>
 
         <!-- Quick Actions -->
-        <button onclick="executeBatchOperation('full-extraction')"
+        <button onclick="executeBatchOperation('full-analysis')"
                 class="btn btn-success btn-sm flex items-center gap-2"
-                title="Run Full Extraction (Ctrl+Enter)">
+                title="Run Full Analysis (Ctrl+Enter)">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            <span>Run Pipeline</span>
+            <span>Full Analysis</span>
         </button>
 
         <button onclick="batchUpdateStatus('applied')"
@@ -427,7 +477,52 @@
     // ============================================================================
 
     const batchSelectedJobs = new Set();
-    const tierLabels = { 'auto': 'Auto', 'A': 'Gold (A)', 'B': 'Silver (B)', 'C': 'Bronze (C)' };
+    // Unified tier labels and icons (Phase 2 refactoring)
+    const tierLabels = {
+        'fast': 'Fast',
+        'balanced': 'Balanced',
+        'quality': 'Quality',
+        // Legacy aliases for backward compatibility
+        'auto': 'Balanced',
+        'A': 'Quality',
+        'B': 'Balanced',
+        'C': 'Fast'
+    };
+    const tierIcons = {
+        'fast': '\u26A1',      // Lightning bolt
+        'balanced': '\u2696\uFE0F', // Balance scale
+        'quality': '\u2728',   // Sparkles
+        // Legacy aliases
+        'auto': '\u2696\uFE0F',
+        'A': '\u2728',
+        'B': '\u2696\uFE0F',
+        'C': '\u26A1'
+    };
+    // Operation name mappings (new -> backend)
+    const operationAliases = {
+        'full-analysis': 'all-ops',
+        'analyze-job': 'full-extraction',
+        'prepare-annotations': 'structure-jd',
+        'discover-contacts': 'research-company',
+        'generate-cover-letter': 'generate-cv',
+        'generate-outreach': 'research-company'
+    };
+    // Operation display names
+    const operationNames = {
+        'full-analysis': 'Full Analysis',
+        'analyze-job': 'Analyze Job',
+        'prepare-annotations': 'Prepare Annotations',
+        'research-company': 'Research Company',
+        'discover-contacts': 'Discover Contacts',
+        'generate-cv': 'Generate CV',
+        'generate-cover-letter': 'Generate Cover Letter',
+        'generate-outreach': 'Generate Outreach',
+        // Legacy names
+        'full-extraction': 'Analyze Job',
+        'process-jd': 'Analyze Job',
+        'structure-jd': 'Prepare Annotations',
+        'all-ops': 'Full Analysis'
+    };
 
     // Batch operation tracking
     const batchOperationState = {
@@ -777,17 +872,17 @@
         });
         updateBatchSelectionUI();
 
-        // Auto-run all-ops with balanced tier (no confirmation dialog)
-        const tier = 'B'; // Balanced tier as requested by user
+        // Auto-run full-analysis with balanced tier (no confirmation dialog)
+        const tier = 'balanced'; // Using new tier naming
         const tierDisplay = tierLabels[tier] || 'Balanced';
 
-        showToast(`Auto-running All Ops on ${recentJobIds.length} newly added job(s) [${tierDisplay}]...`, 'info');
+        showToast(`Auto-running Full Analysis on ${recentJobIds.length} newly added job(s) [${tierDisplay}]...`, 'info');
 
         // Initialize progress tracking
-        initBatchProgress(recentJobIds, 'All Ops (Auto)');
+        initBatchProgress(recentJobIds, 'Full Analysis (Auto)');
 
         try {
-            const response = await fetch('/api/runner/jobs/all-ops/bulk', {
+            const response = await fetch('/api/runner/jobs/all-ops/batch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -871,11 +966,11 @@
                 return;
             }
 
-            // Ctrl+Enter: Execute full-extraction on selected
+            // Ctrl+Enter: Execute full-analysis on selected
             if (e.ctrlKey && e.key === 'Enter') {
                 e.preventDefault();
                 if (batchSelectedJobs.size > 0) {
-                    executeBatchOperation('full-extraction');
+                    executeBatchOperation('full-analysis');
                 }
                 return;
             }
@@ -965,8 +1060,45 @@
     // ============================================================================
 
     function setBatchTier(tier) {
-        document.getElementById('batch-tier').value = tier;
-        document.getElementById('batch-tier-label').textContent = `Tier: ${tierLabels[tier] || tier}`;
+        // Normalize legacy tier codes to new format
+        const normalizedTier = normalizeTierCode(tier);
+        document.getElementById('batch-tier').value = normalizedTier;
+        document.getElementById('batch-tier-label').textContent = tierLabels[normalizedTier] || normalizedTier;
+        document.getElementById('batch-tier-icon').textContent = tierIcons[normalizedTier] || '\u2696\uFE0F';
+
+        // Update selected state in dropdown
+        document.querySelectorAll('[data-tier]').forEach(btn => {
+            if (btn.dataset.tier === normalizedTier) {
+                btn.classList.add('bg-indigo-50', 'dark:bg-indigo-900/20');
+            } else {
+                btn.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/20');
+            }
+        });
+    }
+
+    /**
+     * Normalize legacy tier codes (A/B/C/D, auto) to new format (fast/balanced/quality)
+     */
+    function normalizeTierCode(tier) {
+        const legacyMapping = {
+            'auto': 'balanced',
+            'A': 'quality',
+            'B': 'balanced',
+            'C': 'fast',
+            'D': 'fast',
+            'Gold': 'quality',
+            'Silver': 'balanced',
+            'Bronze': 'fast'
+        };
+        return legacyMapping[tier] || tier;
+    }
+
+    /**
+     * Get the backend operation name for an operation
+     * Maps new frontend operation names to backend endpoint names
+     */
+    function getBackendOperationName(operation) {
+        return operationAliases[operation] || operation;
     }
 
     // ============================================================================
@@ -976,28 +1108,35 @@
     async function executeBatchOperation(operation) {
         if (batchSelectedJobs.size === 0) return;
 
-        const tier = document.getElementById('batch-tier').value || 'B';
+        // Get tier and normalize it
+        const rawTier = document.getElementById('batch-tier').value || 'balanced';
+        const tier = normalizeTierCode(rawTier);
         const tierDisplay = tierLabels[tier] || tier;
         const count = batchSelectedJobs.size;
         const jobIds = Array.from(batchSelectedJobs);
 
-        BatchDebug.log('BATCH', `Starting ${operation}`, { count, tier, jobIds });
+        // Get backend operation name
+        const backendOp = getBackendOperationName(operation);
 
-        const operationNames = {
-            'full-extraction': 'Full Extraction',
-            'process-jd': 'JD Extraction',
-            'research-company': 'Company Research',
-            'generate-cv': 'CV Generation',
-            'all-ops': 'All Ops (Extract + Research + CV)'
-        };
+        BatchDebug.log('BATCH', `Starting ${operation} (backend: ${backendOp})`, { count, tier, jobIds });
 
-        // Map operations to their bulk endpoints
+        // Map operations to their batch endpoints (using new /batch naming)
+        // NOTE: /bulk endpoints are deprecated in favor of /batch
         const bulkEndpoints = {
-            'full-extraction': '/api/runner/jobs/full-extraction/bulk',
-            'process-jd': '/api/runner/jobs/full-extraction/bulk',
-            'research-company': '/api/runner/jobs/research-company/bulk',
-            'generate-cv': '/api/runner/jobs/generate-cv/bulk',
-            'all-ops': '/api/runner/jobs/all-ops/bulk'
+            // New operation names (map to existing backend endpoints)
+            'full-analysis': '/api/runner/jobs/all-ops/batch',
+            'analyze-job': '/api/runner/jobs/full-extraction/batch',
+            'prepare-annotations': '/api/runner/jobs/full-extraction/batch',  // Uses same endpoint for now
+            'discover-contacts': '/api/runner/jobs/research-company/batch',   // Maps to research-company
+            'generate-cover-letter': '/api/runner/jobs/generate-cv/batch',    // Maps to generate-cv
+            'generate-outreach': '/api/runner/jobs/research-company/batch',   // Maps to research-company
+            // Existing backend operations
+            'full-extraction': '/api/runner/jobs/full-extraction/batch',
+            'process-jd': '/api/runner/jobs/full-extraction/batch',
+            'research-company': '/api/runner/jobs/research-company/batch',
+            'generate-cv': '/api/runner/jobs/generate-cv/batch',
+            'all-ops': '/api/runner/jobs/all-ops/batch',
+            'structure-jd': '/api/runner/jobs/full-extraction/batch'
         };
 
         const confirmed = confirm(
