@@ -14,7 +14,7 @@ Phase 5 Update: Enhanced prompts with persona, chain-of-thought reasoning,
 import json
 import re
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional, Literal
+from typing import List, Dict, Any, Optional, Literal, TYPE_CHECKING
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -28,6 +28,9 @@ from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.annotation_types import JDAnnotation, JDAnnotations
 from src.common.unified_llm import UnifiedLLM, LLMResult
 from src.common.llm_config import TierType, TIER_TO_CLAUDE_MODEL
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 
 # ===== DOMAIN DETECTION =====
@@ -823,6 +826,7 @@ class PainPointMiner:
         self,
         use_enhanced_format: bool = False,
         tier: TierType = "middle",
+        struct_logger: Optional["StructuredLogger"] = None,
     ):
         """
         Initialize the miner.
@@ -833,9 +837,12 @@ class PainPointMiner:
                                 for backward compatibility.
             tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus).
                   Default is "middle" (Sonnet 4.5).
+            struct_logger: Optional StructuredLogger for emitting LLM call events
+                to the frontend log stream.
         """
         self.use_enhanced_format = use_enhanced_format
         self.tier = tier
+        self._struct_logger = struct_logger
         # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
         self._unified_llm: Optional[UnifiedLLM] = None
 
@@ -846,6 +853,7 @@ class PainPointMiner:
             step_name="pain_point_extraction",
             tier=self.tier,
             job_id=job_id,
+            struct_logger=self._struct_logger,
         )
 
     def _get_domain_example(self, domain: JobDomain) -> tuple[str, str]:
@@ -1330,6 +1338,7 @@ def pain_point_miner_node(
         miner = PainPointMiner(
             use_enhanced_format=False,
             tier=tier,
+            struct_logger=struct_logger,
         )
         updates = miner.extract_pain_points(state)
 

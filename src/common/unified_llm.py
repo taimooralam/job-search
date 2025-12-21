@@ -50,6 +50,11 @@ from src.common.llm_config import (
 )
 from src.common.json_utils import parse_llm_json
 
+# Import TYPE_CHECKING to avoid circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
+
 logger = logging.getLogger(__name__)
 
 
@@ -115,6 +120,7 @@ class UnifiedLLM:
         tier: Optional[TierType] = None,
         config: Optional[StepConfig] = None,
         job_id: Optional[str] = None,
+        struct_logger: Optional["StructuredLogger"] = None,
     ):
         """
         Initialize the UnifiedLLM wrapper.
@@ -124,6 +130,9 @@ class UnifiedLLM:
             tier: Explicit tier override ("low", "middle", "high")
             config: Explicit StepConfig (overrides step_name lookup)
             job_id: Default job ID for tracking (can be overridden per-call)
+            struct_logger: Optional StructuredLogger for emitting LLM call events
+                to the frontend log stream. When provided, LLM calls will be
+                visible in the pipeline execution logs.
 
         Note:
             If step_name is provided, config is loaded from STEP_CONFIGS.
@@ -148,6 +157,7 @@ class UnifiedLLM:
         self.job_id = job_id or "unknown"
         self._cli: Optional[ClaudeCLI] = None
         self._langchain_llm = None
+        self._struct_logger = struct_logger
 
     @property
     def cli(self) -> ClaudeCLI:
@@ -225,6 +235,8 @@ class UnifiedLLM:
             logger.info(
                 f"[UnifiedLLM:{self.step_name}] Falling back to LangChain"
             )
+            # Log fallback event for visibility
+            self._log_fallback(job_id, "CLI failed or unavailable")
             return await self._invoke_langchain(prompt, system, job_id, validate_json)
         else:
             return LLMResult(
@@ -362,7 +374,7 @@ class UnifiedLLM:
                 input_tokens = response.usage_metadata.get('input_tokens')
                 output_tokens = response.usage_metadata.get('output_tokens')
 
-            self._log_success("langchain", None, job_id, duration_ms, fallback_model)
+            self._log_success("langchain", None, job_id, duration_ms, fallback_model, is_fallback=True)
 
             return LLMResult(
                 content=content,
@@ -441,17 +453,74 @@ class UnifiedLLM:
         job_id: str,
         duration_ms: Optional[int] = None,
         model: Optional[str] = None,
+        is_fallback: bool = False,
     ) -> None:
-        """Log successful invocation for transparency."""
+        """
+        Log successful invocation for transparency.
+
+        Logs to both Python logger (for debug) and structured logger (for frontend).
+
+        Args:
+            backend: Which backend was used ("claude_cli" or "langchain")
+            result: LLMResult if available (for CLI results)
+            job_id: Job ID for tracking
+            duration_ms: Duration in milliseconds (for LangChain results)
+            model: Model used (for LangChain results)
+            is_fallback: Whether this was a fallback invocation
+        """
         if result:
             duration_ms = result.duration_ms
             model = result.model
+            cost_usd = result.cost_usd
+        else:
+            cost_usd = None
 
+        # Log to Python logger (for debug/file logs)
+        fallback_marker = " [fallback]" if is_fallback else ""
         logger.info(
             f"[UnifiedLLM:{self.step_name}] "
             f"Backend={backend}, Model={model}, "
-            f"Duration={duration_ms}ms, Job={job_id}"
+            f"Duration={duration_ms}ms, Job={job_id}{fallback_marker}"
         )
+
+        # Emit to structured logger if available (for frontend logs)
+        if self._struct_logger:
+            self._struct_logger.llm_call_complete(
+                step_name=self.step_name,
+                backend=backend,
+                model=model or "unknown",
+                tier=self.config.tier,
+                duration_ms=duration_ms or 0,
+                cost_usd=cost_usd,
+                metadata={"is_fallback": is_fallback} if is_fallback else None,
+            )
+
+    def _log_fallback(self, job_id: str, reason: str) -> None:
+        """
+        Log when falling back from Claude CLI to LangChain.
+
+        Args:
+            job_id: Job ID for tracking
+            reason: Reason for the fallback
+        """
+        fallback_model = self.config.get_fallback_model()
+
+        logger.info(
+            f"[UnifiedLLM:{self.step_name}] "
+            f"Falling back: claude_cli -> langchain ({fallback_model}), "
+            f"Reason={reason}, Job={job_id}"
+        )
+
+        # Emit to structured logger if available
+        if self._struct_logger:
+            self._struct_logger.llm_call_fallback(
+                step_name=self.step_name,
+                from_backend="claude_cli",
+                to_backend="langchain",
+                model=fallback_model,
+                tier=self.config.tier,
+                reason=reason,
+            )
 
     def check_cli_available(self) -> bool:
         """
@@ -474,6 +543,7 @@ async def invoke_unified(
     system: Optional[str] = None,
     job_id: str = "unknown",
     validate_json: bool = True,
+    struct_logger: Optional["StructuredLogger"] = None,
 ) -> LLMResult:
     """
     Convenience function for single UnifiedLLM invocation.
@@ -487,6 +557,7 @@ async def invoke_unified(
         system: System prompt
         job_id: Job ID for tracking
         validate_json: Whether to parse response as JSON
+        struct_logger: Optional StructuredLogger for frontend visibility
 
     Returns:
         LLMResult with response and backend attribution
@@ -499,7 +570,7 @@ async def invoke_unified(
         ...     job_id="job_123"
         ... )
     """
-    llm = UnifiedLLM(step_name=step_name, tier=tier, job_id=job_id)
+    llm = UnifiedLLM(step_name=step_name, tier=tier, job_id=job_id, struct_logger=struct_logger)
     return await llm.invoke(prompt, system=system, validate_json=validate_json)
 
 
@@ -510,6 +581,7 @@ def invoke_unified_sync(
     system: Optional[str] = None,
     job_id: str = "unknown",
     validate_json: bool = True,
+    struct_logger: Optional["StructuredLogger"] = None,
 ) -> LLMResult:
     """
     Synchronous convenience function for UnifiedLLM invocation.
@@ -523,6 +595,7 @@ def invoke_unified_sync(
         system: System prompt
         job_id: Job ID for tracking
         validate_json: Whether to parse response as JSON
+        struct_logger: Optional StructuredLogger for frontend visibility
 
     Returns:
         LLMResult with response and backend attribution
@@ -542,4 +615,5 @@ def invoke_unified_sync(
         system=system,
         job_id=job_id,
         validate_json=validate_json,
+        struct_logger=struct_logger,
     ))
