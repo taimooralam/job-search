@@ -222,23 +222,24 @@
                     <!-- Log Lines -->
                     <template x-for="(log, index) in $store.cli.runs[$store.cli.activeRunId].logs" :key="index">
                         <div class="cli-log-line"
+                             x-data="{ detectedBackend: log.backend || $store.cli.detectBackendFromText(log.text) }"
                              :class="{
                                  'cli-log--error': log.type === 'error',
                                  'cli-log--warning': log.type === 'warning',
                                  'cli-log--success': log.type === 'success',
                                  'cli-log--debug': log.type === 'debug',
-                                 'claude-cli': log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]')),
-                                 'langchain-fallback': log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]')))
+                                 'claude-cli': detectedBackend === 'claude_cli',
+                                 'langchain-fallback': detectedBackend === 'langchain'
                              }">
                             <!-- Backend indicator icon -->
                             <span class="cli-log-backend-icon"
-                                  x-show="log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]'))"
+                                  x-show="detectedBackend === 'claude_cli'"
                                   title="Claude CLI">&#129302;</span>
                             <span class="cli-log-backend-icon"
-                                  x-show="log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]')))"
+                                  x-show="detectedBackend === 'langchain'"
                                   title="LangChain Fallback">&#9888;&#65039;</span>
                             <span class="cli-log-prefix"
-                                  x-show="!(log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]'))) && !(log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]'))))">></span>
+                                  x-show="!detectedBackend">></span>
                             <span x-text="log.text"></span>
                             <!-- Tier badge if available -->
                             <span class="cli-tier-badge"

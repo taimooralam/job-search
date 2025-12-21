@@ -1467,15 +1467,16 @@ document.addEventListener('alpine:init', () => {
 
             run.logs.forEach(log => {
                 const text = log.text || '';
-                const backend = log.backend;
+                // Use the stored backend field or detect from text
+                const backend = log.backend || this.detectBackendFromText(text);
 
                 // Check for Claude CLI backend
-                if (backend === 'claude_cli' || text.includes('[Claude CLI]')) {
+                if (backend === 'claude_cli') {
                     claudeCli++;
                     claudeCliCost += log.cost_usd || 0;
                 }
                 // Check for LangChain fallback
-                else if (backend === 'langchain' || text.includes('[Fallback]') || text.includes('[LangChain]')) {
+                else if (backend === 'langchain') {
                     langchain++;
                     langchainCost += log.cost_usd || 0;
                 }
@@ -1547,8 +1548,16 @@ document.addEventListener('alpine:init', () => {
          */
         detectBackendFromText(text) {
             if (!text) return null;
+            // Check for explicit tags
             if (text.includes('[Claude CLI]')) return 'claude_cli';
             if (text.includes('[Fallback]') || text.includes('[LangChain]')) return 'langchain';
+            // Check for backend= format in log text (e.g., "backend=langchain" or "backend=claude_cli")
+            const backendMatch = text.match(/backend=(\w+)/);
+            if (backendMatch) {
+                const backend = backendMatch[1].toLowerCase();
+                if (backend === 'claude_cli' || backend === 'claude-cli' || backend === 'claudecli') return 'claude_cli';
+                if (backend === 'langchain' || backend === 'openai') return 'langchain';
+            }
             return null;
         },
 
