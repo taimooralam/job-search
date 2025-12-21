@@ -798,7 +798,8 @@ document.addEventListener('alpine:init', () => {
 
                     if (this.runs[runId]) {
                         // Map backend status to CLI status
-                        this.runs[runId].status = status === 'completed' ? 'success' : 'error';
+                        const cliStatus = status === 'completed' ? 'success' : 'error';
+                        this.runs[runId].status = cliStatus;
                         this.runs[runId].completedAt = Date.now();
 
                         if (error) {
@@ -810,6 +811,17 @@ document.addEventListener('alpine:init', () => {
 
                         // Save state
                         this._saveStateImmediate();
+
+                        // Dispatch cli:complete event for pipeline-actions.js to handle
+                        // This enables the event-based completion flow where CLI panel
+                        // owns the LogPoller and pipeline-actions listens for completion
+                        window.dispatchEvent(new CustomEvent('cli:complete', {
+                            detail: {
+                                runId: runId,
+                                status: cliStatus,
+                                error: error || null
+                            }
+                        }));
 
                         // Show toast if panel is collapsed
                         if (!this.expanded && typeof showToast === 'function') {
@@ -894,12 +906,22 @@ document.addEventListener('alpine:init', () => {
 
                     // Check if completed
                     if (data.status === 'completed' || data.status === 'failed') {
-                        this.runs[runId].status = data.status === 'completed' ? 'success' : 'error';
+                        const cliStatus = data.status === 'completed' ? 'success' : 'error';
+                        this.runs[runId].status = cliStatus;
                         this.runs[runId].completedAt = Date.now();
                         this.runs[runId].error = data.error || null;
                         clearInterval(pollInterval);
                         this.runs[runId]._pollingInterval = null;
                         this._saveStateImmediate();
+
+                        // Dispatch cli:complete event for pipeline-actions.js
+                        window.dispatchEvent(new CustomEvent('cli:complete', {
+                            detail: {
+                                runId: runId,
+                                status: cliStatus,
+                                error: data.error || null
+                            }
+                        }));
                     }
 
                 } catch (err) {

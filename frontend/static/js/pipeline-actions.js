@@ -558,7 +558,7 @@ document.addEventListener('alpine:init', () => {
                         }));
 
                         // NOTE: CLI panel handles log subscription via startRun() -> subscribeToLogs()
-                        // Do NOT call _connectToOperationLogs() here - it creates a duplicate LogPoller
+                        // No additional log polling needed here - CLI panel owns the LogPoller
                     }
 
                     return result;
@@ -668,66 +668,24 @@ document.addEventListener('alpine:init', () => {
                     }
                 }));
 
-                // Step 2: Connect to log polling for real-time updates
+                // Step 2: Wait for CLI panel to signal completion via cli:complete event
+                // NOTE: CLI panel handles all log polling via its subscribeToLogs() method.
+                // We just listen for the completion event to update state and resolve.
                 return new Promise((resolve) => {
-                    console.log(`[${action}] Creating LogPoller for run: ${runId}`);
+                    console.log(`[${action}] Waiting for cli:complete event from CLI panel for run: ${runId}`);
 
-                    // Check if LogPoller is available
-                    if (typeof window.LogPoller === 'undefined') {
-                        console.error(`[${action}] LogPoller not available, falling back to status polling`);
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
-                        return;
-                    }
+                    const completionHandler = (event) => {
+                        // Only handle events for this specific run
+                        if (event.detail.runId !== runId) return;
 
-                    let poller;
-                    try {
-                        poller = new window.LogPoller(runId, {
-                            pollInterval: 200,  // 200ms for near-instant feel
-                            debug: false,
-                        });
-                        console.log(`[${action}] LogPoller created`);
-                    } catch (e) {
-                        console.error(`[${action}] Failed to create LogPoller:`, e);
-                        // Fall back to polling immediately
-                        this.pollOperationStatus(action, jobId, runId, actionLabel, tier, resolve);
-                        return;
-                    }
+                        console.log(`[${action}] Received cli:complete for run: ${runId}, status: ${event.detail.status}`);
 
-                    let lastLayerStatus = {};
+                        // Remove listener to prevent memory leaks
+                        window.removeEventListener('cli:complete', completionHandler);
 
-                    // Handle regular log messages
-                    poller.onLog((log) => {
-                        console.log(`[${action}] Log: ${log.message}`);
-                        // Dispatch CLI log event
-                        const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
-                        window.dispatchEvent(new CustomEvent('cli:log', {
-                            detail: {
-                                runId: runId,
-                                text: log.message,
-                                logType
-                            }
-                        }));
-                    });
-
-                    // Handle layer status updates
-                    poller.onLayerStatus((layerStatus) => {
-                        lastLayerStatus = layerStatus;
-                        console.log(`[${action}] Layer status:`, lastLayerStatus);
-                        // Dispatch CLI layer status event
-                        window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                            detail: {
-                                runId: runId,
-                                layerStatus: lastLayerStatus
-                            }
-                        }));
-                    });
-
-                    // Handle completion/failure
-                    poller.onComplete((status, error) => {
-                        console.log(`[${action}] Ended with status: ${status}`);
                         this.loading[action] = false;
 
-                        if (status === 'completed') {
+                        if (event.detail.status === 'success') {
                             // Fetch final result from status endpoint
                             this._fetchFinalResult(runId).then(finalResult => {
                                 // Store result
@@ -740,15 +698,6 @@ document.addEventListener('alpine:init', () => {
 
                                 // Update session costs
                                 this.sessionCosts[action] += finalResult?.cost_usd || this.getCost(tier);
-
-                                // Dispatch CLI complete event
-                                window.dispatchEvent(new CustomEvent('cli:complete', {
-                                    detail: {
-                                        runId: runId,
-                                        status: 'success',
-                                        result: finalResult
-                                    }
-                                }));
 
                                 // Dispatch UI refresh event
                                 window.dispatchEvent(new CustomEvent('ui:refresh-job', {
@@ -767,16 +716,7 @@ document.addEventListener('alpine:init', () => {
                             });
                         } else {
                             // Failed
-                            const errorMsg = error || 'Operation failed';
-
-                            // Dispatch CLI complete with error
-                            window.dispatchEvent(new CustomEvent('cli:complete', {
-                                detail: {
-                                    runId: runId,
-                                    status: 'error',
-                                    error: errorMsg
-                                }
-                            }));
+                            const errorMsg = event.detail.error || 'Operation failed';
 
                             this.lastResults[action] = {
                                 success: false,
@@ -786,16 +726,10 @@ document.addEventListener('alpine:init', () => {
 
                             resolve({ success: false, error: errorMsg });
                         }
-                    });
+                    };
 
-                    // Handle polling errors (LogPoller auto-retries)
-                    poller.onError((err) => {
-                        console.warn(`[${action}] Log polling error:`, err);
-                        // LogPoller auto-retries, so we just log
-                    });
-
-                    // Start the poller (fire-and-forget with error handling)
-                    poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
+                    // Listen for completion from CLI panel
+                    window.addEventListener('cli:complete', completionHandler);
                 });
 
             } catch (error) {
@@ -990,106 +924,6 @@ document.addEventListener('alpine:init', () => {
             };
 
             poll();
-        },
-
-        /**
-         * Connect to log polling for operation logs (used by queueExecution)
-         *
-         * This method connects to the log polling endpoint after an operation
-         * has been queued. Unlike executeWithSSE() which waits for completion,
-         * this is fire-and-forget - logs are streamed to CLI panel but we don't
-         * block on completion (the queue handles that).
-         *
-         * Uses LogPoller for reliable streaming during long operations.
-         *
-         * @param {string} runId - The operation run ID from the queue response
-         * @param {string} action - Action name (e.g., 'research-company')
-         * @param {string} jobId - MongoDB job ID
-         */
-        _connectToOperationLogs(runId, action, jobId) {
-            console.log(`[${action}] Connecting to log polling for queued operation: ${runId}`);
-
-            // Check if LogPoller is available
-            if (typeof window.LogPoller === 'undefined') {
-                console.warn(`[${action}] LogPoller not available, skipping log connection`);
-                // Logs are persisted on server, CLI panel should handle subscription
-                return;
-            }
-
-            let poller;
-            try {
-                poller = new window.LogPoller(runId, {
-                    pollInterval: 200,  // 200ms for near-instant feel
-                    debug: false,
-                });
-                console.log(`[${action}] LogPoller created for queued op`);
-            } catch (e) {
-                console.error(`[${action}] Failed to create LogPoller for queued operation:`, e);
-                // Logs are persisted on server, user can fetch via status endpoint
-                return;
-            }
-
-            // Handle regular log messages
-            poller.onLog((log) => {
-                console.log(`[${action}] Queued log: ${log.message}`);
-                const logType = window.cliDetectLogType ? window.cliDetectLogType(log.message) : 'info';
-                window.dispatchEvent(new CustomEvent('cli:log', {
-                    detail: {
-                        runId: runId,
-                        text: log.message,
-                        logType
-                    }
-                }));
-            });
-
-            // Handle layer status updates
-            poller.onLayerStatus((layerStatus) => {
-                console.log(`[${action}] Queued layer status:`, layerStatus);
-                window.dispatchEvent(new CustomEvent('cli:layer-status', {
-                    detail: {
-                        runId: runId,
-                        layerStatus: layerStatus
-                    }
-                }));
-            });
-
-            // Handle completion/failure
-            poller.onComplete((status, error) => {
-                console.log(`[${action}] Queued operation ended with status: ${status}`);
-
-                // Dispatch CLI complete event
-                window.dispatchEvent(new CustomEvent('cli:complete', {
-                    detail: {
-                        runId: runId,
-                        status: status === 'completed' ? 'success' : 'error',
-                        error: status !== 'completed' ? error || `Operation ${status}` : null
-                    }
-                }));
-
-                // If completed successfully, trigger UI refresh
-                if (status === 'completed') {
-                    window.dispatchEvent(new CustomEvent('ui:refresh-job', {
-                        detail: {
-                            jobId,
-                            sections: this._getRefreshSections(action)
-                        }
-                    }));
-
-                    // Dispatch custom event for other listeners
-                    document.dispatchEvent(new CustomEvent('pipeline-action-complete', {
-                        detail: { action, jobId, result: { success: true } }
-                    }));
-                }
-            });
-
-            // Handle errors (LogPoller auto-retries, so just log)
-            poller.onError((err) => {
-                console.warn(`[${action}] Log polling error for queued operation:`, err);
-                // Don't dispatch error - poller will retry and logs are persisted
-            });
-
-            // Start polling (fire-and-forget with error handling)
-            poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
         },
 
         /**
