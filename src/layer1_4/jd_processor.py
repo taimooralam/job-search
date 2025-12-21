@@ -14,6 +14,7 @@ Processing steps:
 
 import re
 import json
+import os
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from enum import Enum
@@ -23,6 +24,8 @@ from pydantic import BaseModel, Field
 
 from src.common.config import Config
 from src.common.logger import get_logger
+from src.common.unified_llm import invoke_unified_sync, LLMResult
+from src.common.llm_config import TierType
 
 logger = get_logger(__name__)
 
@@ -378,42 +381,50 @@ JD_STRUCTURE_USER_TEMPLATE = """Parse this job description into structured secti
 Return ONLY valid JSON with a "sections" array."""
 
 
-def _call_claude_cli(prompt: str, model: str, timeout: int = 120) -> str:
+def _call_claude_cli(
+    prompt: str,
+    job_id: Optional[str] = None,
+    tier: TierType = "low"
+) -> str:
     """
-    Call Claude Code CLI for JD structure parsing.
+    Call Claude CLI with UnifiedLLM for automatic fallback.
+
+    Uses UnifiedLLM infrastructure which provides Claude CLI as primary backend
+    with automatic fallback to LangChain when CLI fails or is unavailable.
 
     Args:
         prompt: The full prompt to send to Claude
-        model: Claude model ID (e.g., claude-sonnet-4-20250514, claude-opus-4-5-20251101)
-        timeout: CLI timeout in seconds
+        job_id: Optional job ID for tracking/logging
+        tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
 
     Returns:
-        The result text from Claude CLI
+        The result text from LLM
 
     Raises:
-        Exception: If CLI fails or times out
+        Exception: If both primary and fallback LLM fail
     """
-    import subprocess
+    # Log environment for debugging
+    has_auth_token = bool(os.getenv("ANTHROPIC_AUTH_TOKEN"))
+    logger.debug(f"[JD Processor] Auth token present: {has_auth_token}, tier: {tier}")
 
-    result = subprocess.run(
-        [
-            "claude", "-p", prompt,
-            "--output-format", "json",
-            "--model", model,
-            "--max-turns", "1"
-        ],
-        capture_output=True,
-        text=True,
-        timeout=timeout
+    llm_result: LLMResult = invoke_unified_sync(
+        prompt=prompt,
+        step_name="jd_structure_parsing",
+        tier=tier,
+        job_id=job_id or "unknown",
+        validate_json=True,
     )
 
-    if result.returncode != 0:
-        error_msg = result.stderr or f"CLI exited with code {result.returncode}"
-        raise Exception(f"Claude CLI failed: {error_msg}")
+    if not llm_result.success:
+        raise Exception(f"LLM failed (backend={llm_result.backend}): {llm_result.error}")
 
-    # Parse CLI JSON output to get the result
-    cli_output = json.loads(result.stdout)
-    return cli_output.get("result", "")
+    logger.info(
+        f"[JD Processor] LLM responded via backend={llm_result.backend}, "
+        f"model={llm_result.model}, duration={llm_result.duration_ms}ms"
+    )
+
+    # Return raw content - caller will parse JSON
+    return llm_result.content
 
 
 def _parse_sections_from_json(json_str: str, jd_text: str) -> List[JDSection]:
@@ -484,28 +495,26 @@ def _parse_sections_from_json(json_str: str, jd_text: str) -> List[JDSection]:
 
 async def parse_jd_sections_with_llm(
     jd_text: str,
-    model: str = None,  # Claude model ID
+    model: str = None,  # Deprecated - use tier instead
+    job_id: Optional[str] = None,
+    tier: TierType = "low",
 ) -> List[JDSection]:
     """
-    Parse JD into sections using Claude Code CLI.
+    Parse JD into sections using UnifiedLLM (Claude CLI primary, LangChain fallback).
 
-    Uses Claude CLI for high-quality parsing of compressed/blob JD text.
-    Falls back to rule-based parsing if Claude CLI fails.
+    Uses UnifiedLLM for high-quality parsing of compressed/blob JD text with
+    automatic fallback when Claude CLI is unavailable.
+    Falls back to rule-based parsing if all LLM attempts fail.
 
     Args:
         jd_text: Raw job description text (may be compressed without formatting)
-        model: Claude model ID (defaults to claude-sonnet-4-20250514)
+        model: Deprecated - ignored in favor of tier-based selection
+        job_id: Optional job ID for tracking/logging
+        tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
 
     Returns:
         List of parsed sections
     """
-    import os
-
-    # Default to Sonnet for structure parsing (good balance of speed/quality)
-    # Can be overridden by caller for tier-based selection
-    if model is None:
-        model = os.getenv("CLAUDE_CODE_MODEL", "claude-sonnet-4-20250514")
-
     # Build the prompt combining system and user templates
     prompt = f"""{JD_STRUCTURE_SYSTEM_PROMPT}
 
@@ -516,27 +525,27 @@ async def parse_jd_sections_with_llm(
 Return ONLY valid JSON with a "sections" array. No markdown, no explanation."""
 
     try:
-        logger.info(f"Parsing JD with Claude CLI: {model} ({len(jd_text)} chars)")
+        logger.info(f"Parsing JD with UnifiedLLM tier={tier} ({len(jd_text)} chars)")
 
-        # Call Claude CLI
-        result_text = _call_claude_cli(prompt, model)
+        # Call UnifiedLLM (Claude CLI with LangChain fallback)
+        result_text = _call_claude_cli(prompt, job_id=job_id, tier=tier)
 
         # Parse sections from response
         sections = _parse_sections_from_json(result_text, jd_text)
 
         # Quality check: if only 1 section returned for long JD, try rule-based
         if len(sections) <= 1 and len(jd_text) > 1000:
-            logger.warning(f"Claude returned only {len(sections)} section(s) for {len(jd_text)} char JD, trying rule-based")
+            logger.warning(f"LLM returned only {len(sections)} section(s) for {len(jd_text)} char JD, trying rule-based")
             rule_sections = parse_jd_sections_rule_based(jd_text)
             if len(rule_sections) > len(sections):
                 logger.info(f"Rule-based parsing found {len(rule_sections)} sections, using that instead")
                 return rule_sections
 
-        logger.info(f"Claude CLI parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
+        logger.info(f"LLM parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
         return sections
 
     except Exception as e:
-        logger.warning(f"Claude CLI parsing failed: {e}, falling back to rule-based")
+        logger.warning(f"LLM parsing failed: {e}, falling back to rule-based")
         # Fallback to rule-based parsing
         return parse_jd_sections_rule_based(jd_text)
 
@@ -676,27 +685,30 @@ def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
 async def process_jd(
     jd_text: str,
     use_llm: bool = True,  # Kept for backward compatibility, but always uses LLM
-    model: str = None,  # Defaults to tier system's STANDARD_MODEL
+    model: str = None,  # Deprecated - use tier instead
+    job_id: Optional[str] = None,
+    tier: TierType = "low",
 ) -> ProcessedJD:
     """
-    Process a job description into structured format using LLM.
+    Process a job description into structured format using UnifiedLLM.
 
     Always uses LLM for intelligent parsing of compressed/blob JD text.
     The use_llm parameter is kept for backward compatibility but is ignored.
 
-    Uses gpt-4o-mini (STANDARD_MODEL from tier system) by default, providing
-    a good balance of quality and cost for JD structuring.
+    Uses UnifiedLLM with Claude CLI primary and LangChain fallback.
 
     Args:
         jd_text: Raw job description text (may be compressed without formatting)
         use_llm: Deprecated - always uses LLM
-        model: LLM model to use (defaults to tier system's STANDARD_MODEL)
+        model: Deprecated - ignored in favor of tier-based selection
+        job_id: Optional job ID for tracking/logging
+        tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
 
     Returns:
         ProcessedJD with sections and HTML
     """
     # Always use LLM for intelligent parsing
-    sections = await parse_jd_sections_with_llm(jd_text, model)
+    sections = await parse_jd_sections_with_llm(jd_text, job_id=job_id, tier=tier)
 
     # Generate HTML
     html = generate_processed_html(sections)
