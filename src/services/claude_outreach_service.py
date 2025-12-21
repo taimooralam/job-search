@@ -1,9 +1,9 @@
 """
-Claude CLI-Based Outreach Generation Service.
+Unified LLM-Based Outreach Generation Service.
 
-Provides multi-agent outreach generation using Claude Code CLI with:
-- Claude Opus 4.5 (claude-opus-4-5-20251101) for message generation
-- Claude Haiku 4.5 (claude-haiku-4-5-20251101) for MENA region detection
+Provides multi-agent outreach generation using UnifiedLLM with:
+- Claude Opus 4.5 (claude-opus-4-5-20251101) via CLI as primary
+- Automatic LangChain/GPT-4o fallback when CLI fails
 - MENA/Saudi cultural awareness
 - Parallel processing for multiple contacts
 
@@ -24,7 +24,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from src.common.claude_cli import CLIResult, ClaudeCLI
+from src.common.unified_llm import UnifiedLLM, LLMResult
+from src.common.llm_config import TierType
 from src.common.mena_detector import MenaContext, detect_mena_region
 from src.layer6_v2.prompts.outreach_prompts import (
     CONNECTION_CHAR_LIMIT,
@@ -108,12 +109,13 @@ class ClaudeOutreachService:
     """
     Opus-based outreach generation with MENA awareness.
 
-    Uses Claude Opus 4.5 via Claude Code CLI for high-quality outreach
-    generation with cultural adaptation for MENA/Saudi opportunities.
+    Uses UnifiedLLM with Claude Opus 4.5 (via CLI) as primary for high-quality
+    outreach generation, with automatic LangChain fallback when CLI fails.
+    Includes cultural adaptation for MENA/Saudi opportunities.
 
     Attributes:
-        outreach_cli: ClaudeCLI configured for Opus (quality tier)
-        timeout: CLI timeout in seconds
+        tier: LLM tier level ("high" for Opus quality)
+        timeout: LLM timeout in seconds
     """
 
     def __init__(
@@ -126,12 +128,12 @@ class ClaudeOutreachService:
         Initialize the Claude outreach service.
 
         Args:
-            timeout: CLI timeout in seconds (default 180s)
+            timeout: LLM timeout in seconds (default 180s)
             candidate_name: Override candidate name (default from constant)
             calendly_link: Override Calendly link (default from constant)
         """
-        # Use Opus tier for outreach generation
-        self.outreach_cli = ClaudeCLI(tier="quality", timeout=timeout)
+        # Use high tier (Opus) for outreach generation
+        self.tier: TierType = "high"
         self.timeout = timeout
 
         # Candidate info
@@ -217,25 +219,29 @@ class ClaudeOutreachService:
             f"MENA: {mena_context.is_mena}, Region: {mena_context.region}"
         )
 
-        # Invoke Claude CLI
-        result = self.outreach_cli.invoke(
+        # Invoke UnifiedLLM (Claude CLI primary, LangChain fallback)
+        llm = UnifiedLLM(
+            step_name="outreach_generation",
+            tier=self.tier,
+            job_id=job_id,
+        )
+        result = await llm.invoke(
             prompt=full_prompt,
             job_id=job_id,
-            max_turns=1,
             validate_json=True,
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
 
         if not result.success:
-            logger.error(f"Claude CLI failed for {contact_name}: {result.error}")
+            logger.error(f"LLM invocation failed for {contact_name}: {result.error}")
             # Return fallback package
             return self._create_fallback_package(
                 contact_name=contact_name,
                 contact_role=contact_role,
                 contact_type=contact_type,
                 mena_context=mena_context,
-                error=result.error,
+                error=result.error or "Unknown error",
                 duration_ms=duration_ms,
             )
 
@@ -315,7 +321,7 @@ class ClaudeOutreachService:
 
     def _parse_outreach_result(
         self,
-        result: CLIResult,
+        result: LLMResult,
         contact_name: str,
         contact_role: str,
         contact_type: str,
@@ -323,10 +329,10 @@ class ClaudeOutreachService:
         duration_ms: int,
     ) -> OutreachPackage:
         """
-        Parse CLI result into OutreachPackage.
+        Parse LLM result into OutreachPackage.
 
         Args:
-            result: CLIResult from Claude CLI
+            result: LLMResult from UnifiedLLM
             contact_name: Contact's name
             contact_role: Contact's role
             contact_type: Contact type classification
@@ -337,7 +343,10 @@ class ClaudeOutreachService:
             OutreachPackage with parsed messages
         """
         try:
-            data = result.result
+            # Use parsed_json if available, otherwise parse content
+            data = result.parsed_json
+            if data is None:
+                data = json.loads(result.content)
 
             # Extract LinkedIn connection
             connection_data = data.get("linkedin_connection", {})

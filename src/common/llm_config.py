@@ -162,6 +162,9 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
 
     # LinkedIn
     "linkedin_optimization": StepConfig(tier="middle"),
+
+    # Outreach Generation
+    "outreach_generation": StepConfig(tier="high", timeout_seconds=180),
 }
 
 
