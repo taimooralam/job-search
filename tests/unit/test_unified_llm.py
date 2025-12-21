@@ -620,18 +620,29 @@ class TestStructuredLoggerIntegration:
 
         await llm.invoke(prompt="Test", job_id="test")
 
-        # Check that event was emitted to stdout
+        # Check that events were emitted to stdout
         captured = capsys.readouterr()
         assert captured.out.strip() != ""
 
-        event = json.loads(captured.out.strip())
-        assert event["event"] == "llm_call_complete"
+        # Parse all events (start + complete)
+        lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
+
+        # Find the complete event
+        complete_events = [e for e in events if e["event"] == "llm_call_complete"]
+        assert len(complete_events) == 1
+        event = complete_events[0]
+
         assert event["backend"] == "claude_cli"
         assert event["model"] == "claude-sonnet-4-5-20250929"
         assert event["step_name"] == "grader"
         # duration_ms is calculated at runtime, so just check it exists and is non-negative
         assert "duration_ms" in event
         assert event["duration_ms"] >= 0
+
+        # Also verify start event was emitted
+        start_events = [e for e in events if e["event"] == "llm_call_start"]
+        assert len(start_events) == 1
 
     @pytest.mark.asyncio
     async def test_invoke_no_event_when_no_logger(self, mocker, capsys):
@@ -698,20 +709,28 @@ class TestStructuredLoggerIntegration:
         # Check events were emitted
         captured = capsys.readouterr()
         lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
 
-        # Should have 2 events: fallback notification + completion
-        assert len(lines) == 2
+        # Should have events: cli_start, cli_error, fallback, langchain_start, completion
+        # Find key events
+        fallback_events = [e for e in events if e["event"] == "llm_call_fallback"]
+        complete_events = [e for e in events if e["event"] == "llm_call_complete"]
+        error_events = [e for e in events if e["event"] == "llm_call_error"]
 
-        # First should be fallback event
-        fallback_event = json.loads(lines[0])
-        assert fallback_event["event"] == "llm_call_fallback"
+        # Should have fallback event
+        assert len(fallback_events) == 1
+        fallback_event = fallback_events[0]
         assert fallback_event["backend"] == "langchain"
 
-        # Second should be completion
-        complete_event = json.loads(lines[1])
-        assert complete_event["event"] == "llm_call_complete"
+        # Should have completion event
+        assert len(complete_events) == 1
+        complete_event = complete_events[0]
         assert complete_event["backend"] == "langchain"
         assert complete_event["metadata"]["is_fallback"] is True
+
+        # Should have CLI error event
+        assert len(error_events) == 1
+        assert error_events[0]["backend"] == "claude_cli"
 
     def test_convenience_function_accepts_struct_logger(self):
         """invoke_unified_sync should accept struct_logger parameter."""
@@ -751,8 +770,17 @@ class TestStructuredLoggerIntegration:
         await llm.invoke(prompt="Test", job_id="test")
 
         captured = capsys.readouterr()
-        event = json.loads(captured.out.strip())
-        assert event["step_name"] == "custom_step"
+        lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
+
+        # Find the complete event
+        complete_events = [e for e in events if e["event"] == "llm_call_complete"]
+        assert len(complete_events) == 1
+        assert complete_events[0]["step_name"] == "custom_step"
+
+        # All events should have the same step_name
+        for event in events:
+            assert event["step_name"] == "custom_step"
 
     @pytest.mark.asyncio
     async def test_event_includes_all_required_metadata(self, mocker, capsys):
@@ -782,7 +810,13 @@ class TestStructuredLoggerIntegration:
         await llm.invoke(prompt="Test prompt", job_id="job_789")
 
         captured = capsys.readouterr()
-        event = json.loads(captured.out.strip())
+        lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
+
+        # Find the complete event
+        complete_events = [e for e in events if e["event"] == "llm_call_complete"]
+        assert len(complete_events) == 1
+        event = complete_events[0]
 
         # Verify all expected fields exist
         required_fields = ["event", "backend", "model", "step_name"]
@@ -791,6 +825,11 @@ class TestStructuredLoggerIntegration:
 
         # Verify cost tracking is included
         assert event.get("cost_usd") == 0.05
+
+        # Verify token counts are in metadata
+        assert event.get("metadata") is not None
+        assert "input_tokens" in event["metadata"]
+        assert "output_tokens" in event["metadata"]
 
     @pytest.mark.asyncio
     async def test_event_includes_backend_and_model_on_success(self, mocker, capsys):
@@ -820,7 +859,14 @@ class TestStructuredLoggerIntegration:
         await llm.invoke(prompt="Test", job_id="test")
 
         captured = capsys.readouterr()
-        event = json.loads(captured.out.strip())
+        lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
+
+        # Find the complete event
+        complete_events = [e for e in events if e["event"] == "llm_call_complete"]
+        assert len(complete_events) == 1
+        event = complete_events[0]
+
         assert event["backend"] == "claude_cli"
         assert event["model"] == "claude-sonnet"
 
@@ -857,10 +903,13 @@ class TestStructuredLoggerIntegration:
 
         captured = capsys.readouterr()
         lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
 
-        # First event should be fallback with primary error
-        fallback_event = json.loads(lines[0])
-        assert fallback_event["event"] == "llm_call_fallback"
+        # Find the fallback event
+        fallback_events = [e for e in events if e["event"] == "llm_call_fallback"]
+        assert len(fallback_events) == 1
+        fallback_event = fallback_events[0]
+
         # Primary backend error should be captured in metadata
         assert "metadata" in fallback_event
         # Specific error reason should be in metadata.reason
@@ -899,9 +948,13 @@ class TestStructuredLoggerIntegration:
 
         captured = capsys.readouterr()
         lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
 
-        fallback_event = json.loads(lines[0])
-        assert fallback_event["event"] == "llm_call_fallback"
+        # Find the fallback event
+        fallback_events = [e for e in events if e["event"] == "llm_call_fallback"]
+        assert len(fallback_events) == 1
+        fallback_event = fallback_events[0]
+
         assert "CLI timeout after 120s" in fallback_event["metadata"]["reason"]
 
     @pytest.mark.asyncio
@@ -932,9 +985,13 @@ class TestStructuredLoggerIntegration:
 
         captured = capsys.readouterr()
         lines = captured.out.strip().split("\n")
+        events = [json.loads(line) for line in lines]
 
-        fallback_event = json.loads(lines[0])
-        assert fallback_event["event"] == "llm_call_fallback"
+        # Find the fallback event
+        fallback_events = [e for e in events if e["event"] == "llm_call_fallback"]
+        assert len(fallback_events) == 1
+        fallback_event = fallback_events[0]
+
         assert "CLI not found in PATH" in fallback_event["metadata"]["reason"]
 
     @pytest.mark.asyncio
