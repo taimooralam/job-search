@@ -38,6 +38,7 @@ env:
 jobs:
   # Quick change detection - runs first to determine if tests are needed
   # This allows skipping tests for compose-only changes (env vars, etc.)
+  # FIX: Now checks ALL commits in the push, not just HEAD~1
   quick-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -46,13 +47,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Need previous commit for comparison
+          fetch-depth: 0  # Full history to check all commits in push
 
       - name: Detect change type
         id: detect
         run: |
-          # Get list of changed files
-          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
+          # Get the base SHA for comparison
+          # For pushes, use the 'before' SHA from the push event
+          # This ensures we check ALL commits in the push, not just HEAD~1
+          BASE_SHA="${{ github.event.before }}"
+
+          # Fallback to HEAD~1 if before SHA is not available or is zero SHA (first push)
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            BASE_SHA="HEAD~1"
+          fi
+
+          echo "Comparing $BASE_SHA..HEAD"
+
+          # Get list of ALL changed files in this push (could be multiple commits)
+          CHANGED_FILES=$(git diff --name-only ${BASE_SHA}..HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
           echo "Changed files:"
           echo "$CHANGED_FILES"
 
@@ -66,7 +79,7 @@ jobs:
           if [[ $CODE_CHANGES -gt 0 ]]; then
             echo "code-changed=true" >> $GITHUB_OUTPUT
             echo "compose-only=false" >> $GITHUB_OUTPUT
-            echo "🔄 Code changes detected - tests required"
+            echo "🔄 Code changes detected ($CODE_CHANGES files) - tests required"
           elif [[ $COMPOSE_ONLY -gt 0 && $TOTAL_RUNNER_FILES -eq $COMPOSE_ONLY ]]; then
             echo "code-changed=false" >> $GITHUB_OUTPUT
             echo "compose-only=true" >> $GITHUB_OUTPUT
@@ -74,7 +87,7 @@ jobs:
           else
             echo "code-changed=false" >> $GITHUB_OUTPUT
             echo "compose-only=false" >> $GITHUB_OUTPUT
-            echo "✅ No relevant changes"
+            echo "✅ No relevant changes in this push"
           fi
 
   # Unit tests split into parallel jobs for faster execution
