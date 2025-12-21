@@ -302,6 +302,7 @@ class CompanyResearchService(OperationService):
         tier: ModelTier,
         force_refresh: bool = False,
         progress_callback: callable = None,
+        log_callback: callable = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -312,6 +313,7 @@ class CompanyResearchService(OperationService):
             tier: Model tier for quality/cost selection
             force_refresh: If True, skip cache and re-research
             progress_callback: Optional callback(layer_key, status, message) for real-time updates
+            log_callback: Optional callback(message: str) for log streaming to frontend
             **kwargs: Additional parameters (unused)
 
         Returns:
@@ -410,7 +412,10 @@ class CompanyResearchService(OperationService):
                 # Run Company Research (Layer 3)
                 await emit_progress("company_research", "processing", f"Researching {company_name}")
                 logger.info(f"[{run_id[:16]}] Running company research for {company_name}")
-                company_result = self.company_researcher.research_company(state)
+
+                # Create CompanyResearcher with log_callback for this invocation
+                researcher = CompanyResearcher(log_callback=log_callback)
+                company_result = researcher.research_company(state)
 
                 company_research = company_result.get("company_research")
                 scraped_job_posting = company_result.get("scraped_job_posting")

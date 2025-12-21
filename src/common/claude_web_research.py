@@ -524,55 +524,45 @@ IMPORTANT: Use WebSearch to find current information. Return your findings as va
 
         return None
 
-    def _parse_response(
+    def _parse_llm_result(
         self,
-        response: Any,
+        result: LLMResult,
         schema: type[BaseModel],
-    ) -> tuple[Optional[Dict[str, Any]], int, bool]:
+    ) -> tuple[Optional[Dict[str, Any]], bool]:
         """
-        Parse Claude API response and validate against schema.
+        Parse LLMResult and validate against schema.
 
         Attempts partial extraction on validation failure to salvage useful data.
 
         Args:
-            response: Claude API response object
+            result: LLMResult from invoke_unified_sync()
             schema: Pydantic model to validate against
 
         Returns:
-            Tuple of (parsed_data, search_count, is_partial)
+            Tuple of (parsed_data, is_partial)
             - is_partial=False for fully validated data
             - is_partial=True for partially extracted data
         """
-        # Extract text content from response
-        text_content = None
-        search_count = 0
-
-        for block in response.content:
-            if hasattr(block, "type"):
-                if block.type == "text":
-                    text_content = block.text
-                elif block.type == "tool_use" and getattr(block, "name", None) == "web_search":
-                    search_count += 1
-
-        if not text_content:
-            raise ValueError("No text content in response")
-
-        # Parse JSON from response
-        try:
-            data = parse_llm_json(text_content)
-        except ValueError as e:
-            raise ValueError(f"Failed to parse response JSON: {e}")
+        # Get data from LLMResult (already parsed by UnifiedLLM if validate_json=True)
+        if result.parsed_json:
+            data = result.parsed_json
+        else:
+            # Fallback: parse from content string
+            try:
+                data = parse_llm_json(result.content)
+            except ValueError as e:
+                raise ValueError(f"Failed to parse response JSON: {e}")
 
         # Validate against schema
         try:
             validated = schema(**data)
-            return validated.model_dump(), search_count, False  # Full validation success
+            return validated.model_dump(), False  # Full validation success
         except ValidationError as e:
             # Try partial extraction before giving up
             partial_data = self._extract_partial_data(data, schema)
             if partial_data:
                 logger.info(f"Using partial data extraction after validation failure")
-                return partial_data, search_count, True  # Partial extraction success
+                return partial_data, True  # Partial extraction success
 
             # No partial data could be extracted, raise original error
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}" for err in e.errors()]
