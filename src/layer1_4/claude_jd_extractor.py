@@ -341,6 +341,23 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
         if "remote_policy" in data:
             data["remote_policy"] = data["remote_policy"].lower().replace(" ", "_").replace("-", "_")
 
+        # Defensive truncation: Claude Opus 4.5 extracts more thoroughly than GPT-4o,
+        # so truncate lists to schema max_length before Pydantic validation
+        list_limits = {
+            "responsibilities": 15,
+            "qualifications": 12,
+            "nice_to_haves": 10,
+            "technical_skills": 20,
+            "soft_skills": 10,
+            "implied_pain_points": 8,
+            "success_metrics": 8,
+            "top_keywords": 20,
+        }
+        for field, limit in list_limits.items():
+            if field in data and isinstance(data[field], list) and len(data[field]) > limit:
+                logger.debug(f"Truncating {field} from {len(data[field])} to {limit} items")
+                data[field] = data[field][:limit]
+
         try:
             validated = ExtractedJDModel(**data)
             # Convert to TypedDict, then to dict for JSON serialization
@@ -564,3 +581,95 @@ def extract_jd(
 # Backwards compatibility alias
 ClaudeJDExtractor = JDExtractor
 extract_jd_with_claude = extract_jd
+
+
+# ===== LANGGRAPH NODE FUNCTION =====
+
+def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    LangGraph node for JD extraction (Layer 1.4).
+
+    Extracts structured intelligence from job descriptions using Claude Code CLI.
+    This node bridges the JDExtractor class to LangGraph's JobState pattern.
+
+    Args:
+        state: Current pipeline state (JobState)
+        config: Runtime configuration (RunnableConfig)
+
+    Returns:
+        Dict with state updates:
+        - extracted_jd: ExtractedJD dict if successful, None on failure
+        - errors: Updated error list if extraction fails
+    """
+    # 1. Extract inputs from state
+    job_id = state.get("job_id", "")
+    title = state.get("title", "")
+    company = state.get("company", "")
+    job_description = state.get("job_description", "")
+
+    logger.info(f"[JDExtractor] Starting extraction for job_id={job_id}")
+
+    # 2. Validate inputs
+    if not job_description:
+        error_msg = "Missing job_description in state"
+        logger.warning(f"[JDExtractor] {error_msg}")
+        return {
+            "extracted_jd": None,
+            "errors": state.get("errors", []) + [f"Layer 1.4: {error_msg}"],
+        }
+
+    # 3. Get tier config for model selection (if available)
+    tier_config = state.get("tier_config")
+    model = None
+    if tier_config and tier_config.get("research_model"):
+        # Use tier-configured model for extraction
+        model = tier_config.get("research_model")
+        logger.debug(f"[JDExtractor] Using tier model: {model}")
+
+    # 4. Process with error handling
+    try:
+        extractor = JDExtractor(model=model)
+
+        # Check CLI availability first
+        if not extractor.check_cli_available():
+            error_msg = "Claude CLI not available or not authenticated"
+            logger.error(f"[JDExtractor] {error_msg}")
+            return {
+                "extracted_jd": None,
+                "errors": state.get("errors", []) + [f"Layer 1.4: {error_msg}"],
+            }
+
+        # Run extraction (synchronous - CLI-based)
+        result: ExtractionResult = extractor.extract(
+            job_id=job_id,
+            title=title,
+            company=company,
+            job_description=job_description,
+        )
+
+        # 5. Handle result
+        if result.success and result.extracted_jd:
+            logger.info(
+                f"[JDExtractor] Extraction complete: "
+                f"role_category={result.extracted_jd.get('role_category')}, "
+                f"keywords={len(result.extracted_jd.get('top_keywords', []))}, "
+                f"duration={result.duration_ms}ms"
+            )
+            return {
+                "extracted_jd": result.extracted_jd,
+            }
+        else:
+            error_msg = result.error or "Unknown extraction error"
+            logger.warning(f"[JDExtractor] Extraction failed: {error_msg}")
+            return {
+                "extracted_jd": None,
+                "errors": state.get("errors", []) + [f"Layer 1.4: {error_msg}"],
+            }
+
+    except Exception as e:
+        error_msg = f"Unexpected error in JD extraction: {str(e)}"
+        logger.error(f"[JDExtractor] {error_msg}", exc_info=True)
+        return {
+            "extracted_jd": None,
+            "errors": state.get("errors", []) + [f"Layer 1.4: {error_msg}"],
+        }

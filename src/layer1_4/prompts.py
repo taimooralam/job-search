@@ -133,7 +133,10 @@ Return ONLY valid JSON matching this exact schema:
 4. For years_experience_required, extract the number if stated; use null if not
 5. Competency weights MUST sum to exactly 100
 6. Extract 5-10 responsibilities, 3-8 qualifications
-7. Nice-to-haves should be from "preferred" or "bonus" sections
+7. Nice-to-haves should be from "preferred" or "bonus" sections (max 10)
+8. Technical skills: extract up to 20, prioritizing most relevant/frequently mentioned
+9. Soft skills: extract up to 10, prioritizing most emphasized
+10. Implied pain points and success metrics: max 8 each
 
 Return ONLY valid JSON. No markdown code blocks, no preamble, no explanation."""
 
@@ -156,9 +159,11 @@ Analyze this job description and extract structured intelligence.
 **Remember:**
 1. Classify into exactly ONE role category (engineering_manager, staff_principal_engineer, director_of_engineering, head_of_engineering, vp_engineering, cto, tech_lead, senior_engineer)
 2. Competency weights MUST sum to 100
-3. Extract exactly 15 ATS keywords
+3. Extract exactly 15 ATS keywords (max 20)
 4. Include 5-10 responsibilities and 3-8 qualifications
-5. Infer 2-4 implied pain points and success metrics
+5. Technical skills: max 20, prioritize most relevant
+6. Soft skills: max 10
+7. Infer 2-4 implied pain points and success metrics (max 8 each)
 
 Output ONLY the JSON object. No markdown, no explanation."""
 
