@@ -455,6 +455,89 @@ class TestConvenienceFunctions:
         from src.common.unified_llm import invoke_unified
         assert invoke_unified is not None
 
+    @pytest.mark.asyncio
+    async def test_invoke_unified_sync_works_from_running_event_loop(self, mocker):
+        """Should handle nested event loop without RuntimeError."""
+        # Mock ClaudeCLI to avoid real API calls
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"test_key": "test_value"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 1000
+        mock_result.model = "claude-sonnet-4-5-20250929"
+        mock_result.tier = "middle"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.cost_usd = 0.01
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import invoke_unified_sync
+
+        # This test is running inside an async event loop (pytest-asyncio)
+        # Verify there IS a running loop
+        try:
+            loop = asyncio.get_running_loop()
+            assert loop is not None, "Test should be running in an event loop"
+        except RuntimeError:
+            pytest.fail("Test should be running in an async event loop")
+
+        # Now call invoke_unified_sync from within this running loop
+        # Before fix: This would raise "RuntimeError: asyncio.run() cannot be called from a running event loop"
+        # After fix: This should use run_async() which handles nested loops via thread pool
+        result = invoke_unified_sync(
+            prompt="Test prompt",
+            step_name="grader",
+            job_id="test_nested"
+        )
+
+        # Verify the result is correct
+        assert result.success is True
+        assert result.backend == "claude_cli"
+        assert result.parsed_json == {"test_key": "test_value"}
+        assert result.model == "claude-sonnet-4-5-20250929"
+
+    def test_invoke_unified_sync_works_from_sync_context(self, mocker):
+        """Should work normally from synchronous context."""
+        # Mock ClaudeCLI to avoid real API calls
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"sync_key": "sync_value"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 800
+        mock_result.model = "claude-sonnet-4-5-20250929"
+        mock_result.tier = "low"
+        mock_result.input_tokens = 50
+        mock_result.output_tokens = 25
+        mock_result.cost_usd = 0.005
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import invoke_unified_sync
+
+        # This test is NOT async - running in regular sync context
+        # Verify there is NO running loop
+        try:
+            asyncio.get_running_loop()
+            pytest.fail("Should not have a running loop in sync test")
+        except RuntimeError:
+            # Expected - no running loop
+            pass
+
+        # Call from sync context - should use asyncio.run() directly
+        result = invoke_unified_sync(
+            prompt="Sync test prompt",
+            step_name="grader",
+            job_id="test_sync"
+        )
+
+        # Verify the result
+        assert result.success is True
+        assert result.backend == "claude_cli"
+        assert result.parsed_json == {"sync_key": "sync_value"}
+
 
 class TestConfigIntegration:
     """Tests for integration with llm_config.py."""
