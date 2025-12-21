@@ -190,10 +190,11 @@ class TestTierRouting:
 class TestEnsembleGeneratorInit:
     """Test EnsembleHeaderGenerator initialization."""
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
+    @pytest.mark.asyncio
+    @patch('src.layer6_v2.ensemble_header_generator.UnifiedLLM')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
-    def test_initializes_with_gold_tier(
-        self, mock_header_gen, mock_create_llm, gold_tier_config, sample_skill_whitelist
+    async def test_initializes_with_gold_tier(
+        self, mock_header_gen, mock_unified_llm, gold_tier_config, sample_skill_whitelist
     ):
         """Initializes correctly with Gold tier."""
         generator = EnsembleHeaderGenerator(
@@ -203,10 +204,11 @@ class TestEnsembleGeneratorInit:
         assert generator.tier_config == gold_tier_config
         assert generator._skill_whitelist == sample_skill_whitelist
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
+    @pytest.mark.asyncio
+    @patch('src.layer6_v2.ensemble_header_generator.UnifiedLLM')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
-    def test_initializes_with_silver_tier(
-        self, mock_header_gen, mock_create_llm, silver_tier_config
+    async def test_initializes_with_silver_tier(
+        self, mock_header_gen, mock_unified_llm, silver_tier_config
     ):
         """Initializes correctly with Silver tier."""
         generator = EnsembleHeaderGenerator(
@@ -321,28 +323,30 @@ class TestEnsembleMetadata:
 class TestGenerateWithMockedLLMs:
     """Test generate() with mocked LLM calls."""
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
+    @pytest.mark.asyncio
+    @patch('src.layer6_v2.ensemble_header_generator.UnifiedLLM')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
-    def test_bronze_tier_uses_fallback(
+    async def test_bronze_tier_uses_fallback(
         self,
         mock_header_gen_class,
-        mock_create_llm,
+        mock_unified_llm,
         bronze_tier_config,
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
     ):
         """Bronze tier uses fallback single-shot generator."""
-        # Setup mock
+        # Setup mock - need to return async mock
+        from unittest.mock import AsyncMock
         mock_header_output = Mock(spec=HeaderOutput)
         mock_header_output.profile = Mock()
         mock_header_output.profile.word_count = 100
         mock_header_output.skills_sections = []
         mock_header_output.ensemble_metadata = None
-        mock_header_gen_class.return_value.generate.return_value = mock_header_output
+        mock_header_gen_class.return_value.generate = AsyncMock(return_value=mock_header_output)
 
         generator = EnsembleHeaderGenerator(tier_config=bronze_tier_config)
-        result = generator.generate(
+        result = await generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -363,8 +367,9 @@ class TestGenerateWithMockedLLMs:
 class TestConvenienceFunction:
     """Test generate_ensemble_header convenience function."""
 
+    @pytest.mark.asyncio
     @patch('src.layer6_v2.ensemble_header_generator.EnsembleHeaderGenerator')
-    def test_convenience_function_with_fit_score(
+    async def test_convenience_function_with_fit_score(
         self,
         mock_generator_class,
         sample_stitched_cv,
@@ -372,10 +377,11 @@ class TestConvenienceFunction:
         sample_candidate_data,
     ):
         """Convenience function uses fit score for tier."""
+        from unittest.mock import AsyncMock
         mock_header = Mock(spec=HeaderOutput)
-        mock_generator_class.return_value.generate.return_value = mock_header
+        mock_generator_class.return_value.generate = AsyncMock(return_value=mock_header)
 
-        result = generate_ensemble_header(
+        result = await generate_ensemble_header(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -384,8 +390,9 @@ class TestConvenienceFunction:
 
         mock_generator_class.return_value.generate.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch('src.layer6_v2.ensemble_header_generator.EnsembleHeaderGenerator')
-    def test_convenience_function_with_tier_override(
+    async def test_convenience_function_with_tier_override(
         self,
         mock_generator_class,
         sample_stitched_cv,
@@ -393,10 +400,11 @@ class TestConvenienceFunction:
         sample_candidate_data,
     ):
         """Convenience function respects tier override."""
+        from unittest.mock import AsyncMock
         mock_header = Mock(spec=HeaderOutput)
-        mock_generator_class.return_value.generate.return_value = mock_header
+        mock_generator_class.return_value.generate = AsyncMock(return_value=mock_header)
 
-        result = generate_ensemble_header(
+        result = await generate_ensemble_header(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -417,12 +425,13 @@ class TestLanguagesBugFix:
         assert "languages" in sample_candidate_data
         assert len(sample_candidate_data["languages"]) == 2
 
-    @patch('src.layer6_v2.ensemble_header_generator.create_tracked_llm_for_model')
+    @pytest.mark.asyncio
+    @patch('src.layer6_v2.ensemble_header_generator.UnifiedLLM')
     @patch('src.layer6_v2.ensemble_header_generator.HeaderGenerator')
-    def test_languages_passed_to_header_output(
+    async def test_languages_passed_to_header_output(
         self,
         mock_header_gen_class,
-        mock_create_llm,
+        mock_unified_llm,
         bronze_tier_config,
         sample_stitched_cv,
         sample_extracted_jd,
@@ -430,16 +439,17 @@ class TestLanguagesBugFix:
     ):
         """Languages are passed through to header output."""
         # Setup mock that preserves languages
+        from unittest.mock import AsyncMock
         mock_header_output = Mock(spec=HeaderOutput)
         mock_header_output.profile = Mock()
         mock_header_output.profile.word_count = 100
         mock_header_output.skills_sections = []
         mock_header_output.ensemble_metadata = None
         mock_header_output.languages = sample_candidate_data["languages"]
-        mock_header_gen_class.return_value.generate.return_value = mock_header_output
+        mock_header_gen_class.return_value.generate = AsyncMock(return_value=mock_header_output)
 
         generator = EnsembleHeaderGenerator(tier_config=bronze_tier_config)
-        result = generator.generate(
+        result = await generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,

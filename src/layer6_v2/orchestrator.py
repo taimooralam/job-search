@@ -16,6 +16,7 @@ Usage:
     workflow.add_node("generator", cv_generator_v2_node)
 """
 
+import asyncio
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -276,7 +277,7 @@ class CVGeneratorV2:
             # Use ensemble generator for Gold/Silver tiers, single-shot for Bronze/Skip
             if tier in [ProcessingTier.GOLD, ProcessingTier.SILVER]:
                 self._logger.info(f"  Using ensemble generation ({tier.value} tier)")
-                header_output = generate_ensemble_header(
+                header_output = asyncio.run(generate_ensemble_header(
                     stitched_cv,
                     extracted_jd,
                     candidate_dict,
@@ -284,7 +285,7 @@ class CVGeneratorV2:
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
-                )
+                ))
                 # Log ensemble metadata
                 if header_output.ensemble_metadata:
                     meta = header_output.ensemble_metadata
@@ -293,14 +294,14 @@ class CVGeneratorV2:
                         self._logger.warning(f"  Validation flags: {meta.validation_flags.total_flags} items flagged")
             else:
                 self._logger.info(f"  Using single-shot generation ({tier.value} tier)")
-                header_output = generate_header(
+                header_output = asyncio.run(generate_header(
                     stitched_cv,
                     extracted_jd,
                     candidate_dict,
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
-                )
+                ))
 
             # Phase 4.5: Log annotation influence
             if header_output.profile.annotation_influenced:
@@ -346,13 +347,13 @@ class CVGeneratorV2:
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
             master_cv_text = self._get_master_cv_text()
-            grade_result = grade_cv(cv_text, extracted_jd, master_cv_text)
+            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text))
             self._log_grade_result(grade_result)
 
             improvement_result = None
             if not grade_result.passed:
                 self._logger.info("  CV below threshold - applying single-pass improvement...")
-                improvement_result = improve_cv(cv_text, grade_result, extracted_jd)
+                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd))
                 if improvement_result.improved:
                     cv_text = improvement_result.cv_text
                     self._logger.info(f"  Improved {improvement_result.target_dimension}")

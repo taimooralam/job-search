@@ -402,13 +402,14 @@ class TestCVGraderRuleBased:
         assert score.dimension == "anti_hallucination"
         assert score.score >= 7  # Metrics match source
 
-    def test_full_grade_rule_based(
+    @pytest.mark.asyncio
+    async def test_full_grade_rule_based(
         self, sample_cv_text, sample_extracted_jd, sample_master_cv
     ):
         """Runs full rule-based grading."""
         grader = CVGrader(use_llm_grading=False)
 
-        result = grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
+        result = await grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
 
         assert len(result.dimension_scores) == 5
         assert result.composite_score > 0
@@ -420,8 +421,9 @@ class TestCVGraderRuleBased:
 class TestCVGraderWithLLM:
     """Test CVGrader with mocked LLM."""
 
+    @pytest.mark.asyncio
     @patch.object(CVGrader, '_grade_with_llm')
-    def test_uses_llm_grading(
+    async def test_uses_llm_grading(
         self, mock_llm, sample_cv_text, sample_extracted_jd, sample_master_cv
     ):
         """Uses LLM for grading when enabled."""
@@ -446,20 +448,21 @@ class TestCVGraderWithLLM:
         mock_llm.return_value = mock_response
 
         grader = CVGrader(use_llm_grading=True)
-        result = grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
+        result = await grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
 
         assert mock_llm.called
         assert len(result.dimension_scores) == 5
 
+    @pytest.mark.asyncio
     @patch.object(CVGrader, '_grade_with_llm')
-    def test_falls_back_on_llm_failure(
+    async def test_falls_back_on_llm_failure(
         self, mock_llm, sample_cv_text, sample_extracted_jd, sample_master_cv
     ):
         """Falls back to rule-based when LLM fails."""
         mock_llm.side_effect = Exception("LLM error")
 
         grader = CVGrader(use_llm_grading=True)
-        result = grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
+        result = await grader.grade(sample_cv_text, sample_extracted_jd, sample_master_cv)
 
         # Should still get results from fallback
         assert len(result.dimension_scores) == 5
@@ -471,7 +474,8 @@ class TestCVGraderWithLLM:
 class TestCVImprover:
     """Test CVImprover."""
 
-    def test_skips_improvement_if_passing(self, sample_cv_text, sample_extracted_jd):
+    @pytest.mark.asyncio
+    async def test_skips_improvement_if_passing(self, sample_cv_text, sample_extracted_jd):
         """Skips improvement if CV already passes."""
         # Create passing grade
         dims = [
@@ -484,13 +488,14 @@ class TestCVImprover:
         passing_grade = GradeResult(dimension_scores=dims, passing_threshold=8.5)
 
         improver = CVImprover()
-        result = improver.improve(sample_cv_text, passing_grade, sample_extracted_jd)
+        result = await improver.improve(sample_cv_text, passing_grade, sample_extracted_jd)
 
         assert result.improved is False
         assert "already meets" in result.improvement_summary.lower()
 
+    @pytest.mark.asyncio
     @patch.object(CVImprover, '_call_improvement_llm')
-    def test_targets_lowest_dimension(
+    async def test_targets_lowest_dimension(
         self, mock_llm, sample_cv_text, sample_extracted_jd
     ):
         """Targets lowest-scoring dimension for improvement."""
@@ -512,14 +517,15 @@ class TestCVImprover:
         mock_llm.return_value = mock_response
 
         improver = CVImprover()
-        result = improver.improve(sample_cv_text, failing_grade, sample_extracted_jd)
+        result = await improver.improve(sample_cv_text, failing_grade, sample_extracted_jd)
 
         assert result.improved is True
         assert result.target_dimension == "jd_alignment"
         assert mock_llm.called
 
+    @pytest.mark.asyncio
     @patch.object(CVImprover, '_call_improvement_llm')
-    def test_handles_improvement_failure(
+    async def test_handles_improvement_failure(
         self, mock_llm, sample_cv_text, sample_extracted_jd
     ):
         """Handles LLM improvement failure gracefully."""
@@ -535,7 +541,7 @@ class TestCVImprover:
         mock_llm.side_effect = Exception("LLM error")
 
         improver = CVImprover()
-        result = improver.improve(sample_cv_text, failing_grade, sample_extracted_jd)
+        result = await improver.improve(sample_cv_text, failing_grade, sample_extracted_jd)
 
         assert result.improved is False
         assert "failed" in result.improvement_summary.lower()
@@ -546,14 +552,15 @@ class TestCVImprover:
 class TestConvenienceFunctions:
     """Test convenience functions."""
 
-    def test_grade_cv_function(
+    @pytest.mark.asyncio
+    async def test_grade_cv_function(
         self, sample_cv_text, sample_extracted_jd, sample_master_cv
     ):
         """grade_cv convenience function works."""
         with patch.object(CVGrader, '_grade_with_llm') as mock_llm:
             mock_llm.side_effect = Exception("Skip LLM")
 
-            result = grade_cv(
+            result = await grade_cv(
                 sample_cv_text,
                 sample_extracted_jd,
                 sample_master_cv,
@@ -563,12 +570,13 @@ class TestConvenienceFunctions:
             assert result is not None
             assert len(result.dimension_scores) == 5
 
-    def test_improve_cv_function(self, sample_cv_text, sample_extracted_jd):
+    @pytest.mark.asyncio
+    async def test_improve_cv_function(self, sample_cv_text, sample_extracted_jd):
         """improve_cv convenience function works."""
         dims = [DimensionScore("ats", 9.0, 1.0, "")]
         passing_grade = GradeResult(dimension_scores=dims, passing_threshold=8.0)
 
-        result = improve_cv(sample_cv_text, passing_grade, sample_extracted_jd)
+        result = await improve_cv(sample_cv_text, passing_grade, sample_extracted_jd)
 
         assert result is not None
         assert result.improved is False  # Already passing
@@ -579,16 +587,18 @@ class TestConvenienceFunctions:
 class TestEdgeCases:
     """Test edge cases."""
 
-    def test_empty_cv_text(self, sample_extracted_jd, sample_master_cv):
+    @pytest.mark.asyncio
+    async def test_empty_cv_text(self, sample_extracted_jd, sample_master_cv):
         """Handles empty CV text."""
         grader = CVGrader(use_llm_grading=False)
-        result = grader.grade("", sample_extracted_jd, sample_master_cv)
+        result = await grader.grade("", sample_extracted_jd, sample_master_cv)
 
         # Should still return valid result
         assert len(result.dimension_scores) == 5
         assert result.composite_score < 5  # Should be low
 
-    def test_empty_jd_keywords(self, sample_cv_text, sample_master_cv):
+    @pytest.mark.asyncio
+    async def test_empty_jd_keywords(self, sample_cv_text, sample_master_cv):
         """Handles empty JD keywords."""
         extracted_jd = {
             "top_keywords": [],
@@ -600,7 +610,7 @@ class TestEdgeCases:
         }
 
         grader = CVGrader(use_llm_grading=False)
-        result = grader.grade(sample_cv_text, extracted_jd, sample_master_cv)
+        result = await grader.grade(sample_cv_text, extracted_jd, sample_master_cv)
 
         assert len(result.dimension_scores) == 5
 

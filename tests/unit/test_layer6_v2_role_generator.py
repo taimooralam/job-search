@@ -613,14 +613,19 @@ class TestRoleQAATSKeywords:
 class TestPhase3Integration:
     """Integration tests for Phase 3 components."""
 
-    @patch('src.layer6_v2.role_generator.create_tracked_llm')
-    def test_generator_with_mocked_llm(
-        self, mock_llm_class, sample_role_data, sample_extracted_jd
+    @pytest.mark.asyncio
+    @patch('src.layer6_v2.role_generator.UnifiedLLM')
+    async def test_generator_with_mocked_llm(
+        self, mock_unified_llm_class, sample_role_data, sample_extracted_jd
     ):
         """RoleGenerator works with mocked LLM."""
-        # Mock LLM response
+        # Mock LLM response - need to mock the invoke method properly
+        from unittest.mock import AsyncMock
+        from src.common.unified_llm import LLMResult
+
+        # Create mock LLM instance
         mock_llm = MagicMock()
-        mock_llm.invoke.return_value.content = json.dumps({
+        json_content = json.dumps({
             "bullets": [
                 {
                     "text": "Led team of 10 engineers to deliver platform migration",
@@ -633,10 +638,19 @@ class TestPhase3Integration:
             "total_word_count": 9,
             "keywords_integrated": ["team"],
         })
-        mock_llm_class.return_value = mock_llm
+        mock_llm.invoke = AsyncMock(return_value=LLMResult(
+            content=json_content,
+            backend="claude_cli",
+            model="claude-opus-4",
+            tier="primary",
+            duration_ms=100,
+            success=True,
+            error=None
+        ))
+        mock_unified_llm_class.return_value = mock_llm
 
         generator = RoleGenerator()
-        result = generator.generate(sample_role_data, sample_extracted_jd)
+        result = await generator.generate(sample_role_data, sample_extracted_jd)
 
         assert result.bullet_count == 1
         assert result.company == "Test Company"
@@ -793,12 +807,13 @@ class TestVariantBasedGeneration:
 
         assert len(result.keywords_integrated) > 0
 
-    def test_generate_with_variant_fallback_uses_variants(
+    @pytest.mark.asyncio
+    async def test_generate_with_variant_fallback_uses_variants(
         self, sample_role_with_variants, sample_extracted_jd
     ):
         """generate_with_variant_fallback uses variants when available."""
         generator = RoleGenerator()
-        result = generator.generate_with_variant_fallback(
+        result = await generator.generate_with_variant_fallback(
             role=sample_role_with_variants,
             extracted_jd=sample_extracted_jd,
             target_bullet_count=3,

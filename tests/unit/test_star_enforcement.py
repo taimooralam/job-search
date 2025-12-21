@@ -328,12 +328,13 @@ class TestSTAREnforcementIntegration:
             "competency_weights": {"delivery": 30, "process": 20, "architecture": 30, "leadership": 20},
         }
 
-    def test_identifies_failing_bullets(self):
+    @pytest.mark.asyncio
+    async def test_identifies_failing_bullets(self):
         """Should correctly identify bullets that fail STAR validation."""
         from src.layer6_v2.role_generator import RoleGenerator
 
         # Create a generator (won't actually call LLM in this test)
-        with patch('src.layer6_v2.role_generator.create_tracked_llm'):
+        with patch('src.layer6_v2.role_generator.UnifiedLLM'):
             generator = RoleGenerator()
 
         # Create bullets with mixed STAR compliance
@@ -367,11 +368,12 @@ class TestSTAREnforcementIntegration:
         assert 1 in failing_indices  # Second bullet fails
         assert 2 in failing_indices  # Third bullet fails
 
-    def test_gets_missing_star_elements(self):
+    @pytest.mark.asyncio
+    async def test_gets_missing_star_elements(self):
         """Should correctly identify which STAR elements are missing."""
         from src.layer6_v2.role_generator import RoleGenerator
 
-        with patch('src.layer6_v2.role_generator.create_tracked_llm'):
+        with patch('src.layer6_v2.role_generator.UnifiedLLM'):
             generator = RoleGenerator()
 
         qa = RoleQA()

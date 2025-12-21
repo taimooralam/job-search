@@ -551,8 +551,9 @@ class TestSkillsValidation:
 class TestFullHeaderGeneration:
     """Test full header generation flow."""
 
+    @pytest.mark.asyncio
     @patch.object(HeaderGenerator, '_generate_profile_llm')
-    def test_generates_complete_header(
+    async def test_generates_complete_header(
         self,
         mock_llm,
         sample_stitched_cv,
@@ -562,6 +563,7 @@ class TestFullHeaderGeneration:
     ):
         """Generates complete header with all sections."""
         # Mock LLM response
+        from unittest.mock import AsyncMock
         mock_response = Mock()
         mock_response.profile_text = "Engineering leader with track record of building high-performing teams."
         mock_response.highlights_used = ["75% latency reduction"]
@@ -570,7 +572,7 @@ class TestFullHeaderGeneration:
 
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
-        header = generator.generate(
+        header = await generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -581,8 +583,9 @@ class TestFullHeaderGeneration:
         assert len(header.education) == 2
         assert header.contact_info["name"] == "John Developer"
 
+    @pytest.mark.asyncio
     @patch.object(HeaderGenerator, '_generate_profile_llm')
-    def test_validates_skills(
+    async def test_validates_skills(
         self,
         mock_llm,
         sample_stitched_cv,
@@ -599,7 +602,7 @@ class TestFullHeaderGeneration:
 
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
-        header = generator.generate(
+        header = await generator.generate(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -616,8 +619,9 @@ class TestFullHeaderGeneration:
 class TestProfileGeneration:
     """Test profile generation."""
 
+    @pytest.mark.asyncio
     @patch.object(HeaderGenerator, '_generate_profile_llm')
-    def test_generates_profile_with_llm(
+    async def test_generates_profile_with_llm(
         self,
         mock_llm,
         sample_stitched_cv,
@@ -631,7 +635,7 @@ class TestProfileGeneration:
         mock_llm.return_value = mock_response
 
         generator = HeaderGenerator()
-        profile = generator.generate_profile(
+        profile = await generator.generate_profile(
             sample_stitched_cv,
             sample_extracted_jd,
             "John Developer",
@@ -640,8 +644,9 @@ class TestProfileGeneration:
         assert "Engineering leader" in profile.text
         assert profile.word_count > 0
 
+    @pytest.mark.asyncio
     @patch.object(HeaderGenerator, '_generate_profile_llm')
-    def test_uses_fallback_on_llm_failure(
+    async def test_uses_fallback_on_llm_failure(
         self,
         mock_llm,
         sample_stitched_cv,
@@ -651,7 +656,7 @@ class TestProfileGeneration:
         mock_llm.side_effect = Exception("LLM error")
 
         generator = HeaderGenerator()
-        profile = generator.generate_profile(
+        profile = await generator.generate_profile(
             sample_stitched_cv,
             sample_extracted_jd,
             "John Developer",
@@ -743,8 +748,9 @@ class TestSkillsGeneration:
 class TestConvenienceFunction:
     """Test generate_header convenience function."""
 
+    @pytest.mark.asyncio
     @patch.object(HeaderGenerator, '_generate_profile_llm')
-    def test_convenience_function_works(
+    async def test_convenience_function_works(
         self,
         mock_llm,
         sample_stitched_cv,
@@ -758,7 +764,7 @@ class TestConvenienceFunction:
         mock_response.keywords_integrated = []
         mock_llm.return_value = mock_response
 
-        header = generate_header(
+        header = await generate_header(
             sample_stitched_cv,
             sample_extracted_jd,
             sample_candidate_data,
@@ -799,7 +805,8 @@ class TestEdgeCases:
         # Should still generate skills (without JD prioritization)
         assert len(sections) >= 0
 
-    def test_missing_candidate_contact(self, sample_stitched_cv, sample_extracted_jd):
+    @pytest.mark.asyncio
+    async def test_missing_candidate_contact(self, sample_stitched_cv, sample_extracted_jd):
         """Handles missing candidate contact info."""
         candidate_data = {
             "header": {"name": "John"},
@@ -815,7 +822,7 @@ class TestEdgeCases:
             mock_response.keywords_integrated = []
             mock_llm.return_value = mock_response
 
-            header = generator.generate(
+            header = await generator.generate(
                 sample_stitched_cv,
                 sample_extracted_jd,
                 candidate_data,
