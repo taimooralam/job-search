@@ -1250,6 +1250,7 @@ class PeopleMapper:
         """
         company = state.get("company", "")
         title = state.get("title", "")
+        job_id = state.get("job_id", "unknown")
         department = "engineering"  # Default department for tech roles
 
         self.logger.info(f"[Claude API] Discovering contacts at {company} for {title}")
@@ -1261,6 +1262,7 @@ class PeopleMapper:
                     company_name=company,
                     role=title,
                     department=department,
+                    job_id=job_id,
                 )
             )
 
