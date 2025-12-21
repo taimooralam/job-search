@@ -627,6 +627,7 @@ class CompanyResearcher:
                     company_name=company,
                     job_context=job_description[:1000] if job_description else "",
                     job_title=job_title,
+                    job_id=job_id,
                 )
             )
 
@@ -654,6 +655,7 @@ class CompanyResearcher:
                         company_name=variant,
                         job_context=job_description[:1000] if job_description else "",
                         job_title=job_title,
+                        job_id=job_id,
                     )
                 )
 
