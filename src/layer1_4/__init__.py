@@ -24,6 +24,8 @@ from src.layer1_4.claude_jd_extractor import (
     SeniorityLevel,
     RemotePolicy,
     extract_jd,
+    # LangGraph node function
+    jd_extractor_node,
     # Backwards compatibility aliases
     ClaudeJDExtractor,
     extract_jd_with_claude,
@@ -50,6 +52,8 @@ __all__ = [
     "SeniorityLevel",
     "RemotePolicy",
     "extract_jd",
+    # LangGraph node function
+    "jd_extractor_node",
     # Backwards compatibility
     "ClaudeJDExtractor",
     "extract_jd_with_claude",
