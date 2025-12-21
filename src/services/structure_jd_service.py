@@ -19,8 +19,9 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
+from src.common.structured_logger import StructuredLogger
 from src.common.token_tracker import TokenTracker, get_global_tracker
-from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
+from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,9 @@ class StructureJDService(OperationService):
         run_id = self.create_run_id()
         logger.info(f"[{run_id[:16]}] Starting structure-jd for job {job_id}")
 
+        # Create structured logger for frontend-visible LLM events
+        struct_logger = StructuredLogger(job_id=job_id)
+
         with self.timed_execution() as timer:
             # Track per-layer status for detailed logging
             layer_status = {}
@@ -246,14 +250,41 @@ class StructureJDService(OperationService):
                     f"use_llm={use_llm}, jd_length={len(jd_text)}"
                 )
 
-                # 4. Process JD
+                # 4. Process JD - now returns tuple (processed, llm_metadata)
                 logger.info(f"[{run_id[:16]}] Processing JD with {'LLM' if use_llm else 'rules'}")
+                llm_metadata: LLMMetadata
                 if use_llm:
-                    processed = await process_jd(jd_text, use_llm=True, model=model)
+                    processed, llm_metadata = await process_jd(
+                        jd_text,
+                        use_llm=True,
+                        model=model,
+                        job_id=job_id,
+                        struct_logger=struct_logger,
+                    )
                 else:
-                    processed = process_jd_sync(jd_text, use_llm=False)
+                    processed, llm_metadata = process_jd_sync(jd_text, use_llm=False)
 
-                # 5. Convert to dict
+                # 5. Emit structured LLM event for frontend visibility
+                # Note: If struct_logger was passed to process_jd, events are already emitted
+                # by UnifiedLLM. But if rule-based fallback happened, we emit manually here.
+                if llm_metadata.backend == "rule_based":
+                    # Rule-based fallback - emit event for visibility
+                    struct_logger.emit(
+                        event="llm_call_complete",
+                        step_name="jd_structure_parsing",
+                        backend=llm_metadata.backend,
+                        model=llm_metadata.model,
+                        tier=llm_metadata.tier,
+                        duration_ms=llm_metadata.duration_ms,
+                        cost_usd=llm_metadata.cost_usd,
+                        status="complete",
+                        metadata={
+                            "fallback_reason": llm_metadata.fallback_reason,
+                            "is_rule_based": True,
+                        } if llm_metadata.fallback_reason else {"is_rule_based": True},
+                    )
+
+                # 6. Convert to dict
                 result_data = processed_jd_to_dict(processed)
                 section_count = len(result_data.get("sections", []))
                 section_types = result_data.get("section_ids", [])
@@ -261,11 +292,16 @@ class StructureJDService(OperationService):
                     "status": "success",
                     "sections": section_count,
                     "section_types": section_types,
-                    "message": f"Parsed {section_count} sections: {', '.join(section_types[:3])}{'...' if len(section_types) > 3 else ''}"
+                    "backend": llm_metadata.backend,
+                    "model": llm_metadata.model,
+                    "message": f"Parsed {section_count} sections via {llm_metadata.backend}: {', '.join(section_types[:3])}{'...' if len(section_types) > 3 else ''}"
                 }
-                logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections")
+                logger.info(
+                    f"[{run_id[:16]}] JD Processor complete: {section_count} sections "
+                    f"via backend={llm_metadata.backend}, model={llm_metadata.model}"
+                )
 
-                # 6. Persist result
+                # 7. Persist result
                 logger.info(f"[{run_id[:16]}] Persisting results to database")
                 persisted = self._persist_result(job_id, result_data)
                 if persisted:
@@ -282,20 +318,18 @@ class StructureJDService(OperationService):
                         f"[{run_id[:16]}] Failed to persist result, but processing succeeded"
                     )
 
-                # 7. Estimate tokens and cost
-                # For LLM processing, estimate based on JD length
+                # 8. Use actual cost from LLM metadata if available
                 input_tokens = 0
                 output_tokens = 0
-                cost_usd = 0.0
+                cost_usd = llm_metadata.cost_usd or 0.0
 
-                if use_llm:
-                    # Rough estimates: ~1 token per 4 chars for input
-                    # Output is typically smaller (just JSON structure)
+                if use_llm and cost_usd == 0.0:
+                    # Fallback to estimate if no actual cost available
                     input_tokens = len(jd_text) // 4 + 500  # Add system prompt overhead
                     output_tokens = len(str(result_data.get("sections", []))) // 4
                     cost_usd = self.estimate_cost(tier, input_tokens, output_tokens)
 
-                # 8. Build response data with layer_status
+                # 9. Build response data with layer_status and LLM metadata
                 response_data = {
                     "processed_jd": result_data,
                     "section_count": section_count,
@@ -304,15 +338,17 @@ class StructureJDService(OperationService):
                     "used_llm": use_llm,
                     "persisted": persisted,
                     "layer_status": layer_status,
+                    # Add LLM backend attribution for transparency
+                    "llm_metadata": llm_metadata.to_dict(),
                 }
 
                 logger.info(
                     f"[{run_id[:16]}] Completed structure-jd: "
                     f"{response_data['section_count']} sections, "
-                    f"cost=${cost_usd:.4f}"
+                    f"backend={llm_metadata.backend}, cost=${cost_usd:.4f}"
                 )
 
-                # 9. Persist operation run for tracking
+                # 10. Persist operation run for tracking
                 result = self.create_success_result(
                     run_id=run_id,
                     data=response_data,
@@ -320,7 +356,7 @@ class StructureJDService(OperationService):
                     duration_ms=timer.duration_ms,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
-                    model_used=model if use_llm else "rule-based",
+                    model_used=llm_metadata.model if use_llm else "rule-based",
                 )
 
                 # Persist run record

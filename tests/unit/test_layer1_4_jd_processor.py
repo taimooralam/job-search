@@ -24,6 +24,7 @@ from src.layer1_4.jd_processor import (
     JDSectionType,
     JDSection,
     ProcessedJD,
+    LLMMetadata,
 )
 from src.common.unified_llm import LLMResult
 
@@ -153,7 +154,7 @@ class TestCallClaudeCLI:
 
     @patch('src.layer1_4.jd_processor.invoke_unified_sync')
     def test_successful_invocation(self, mock_invoke, sample_llm_result_success):
-        """Successful invocation returns content."""
+        """Successful invocation returns LLMResult with content."""
         mock_invoke.return_value = sample_llm_result_success
 
         result = _call_claude_cli(
@@ -162,13 +163,16 @@ class TestCallClaudeCLI:
             tier="low"
         )
 
-        assert '"sections"' in result
+        assert isinstance(result, LLMResult)
+        assert '"sections"' in result.content
+        assert result.backend == "claude_cli"
         mock_invoke.assert_called_once_with(
             prompt="Parse this JD",
             step_name="jd_structure_parsing",
             tier="low",
             job_id="test_001",
             validate_json=True,
+            struct_logger=None,
         )
 
     @patch('src.layer1_4.jd_processor.invoke_unified_sync')
@@ -210,6 +214,17 @@ class TestCallClaudeCLI:
 
         call_kwargs = mock_invoke.call_args[1]
         assert call_kwargs["tier"] == "middle"
+
+    @patch('src.layer1_4.jd_processor.invoke_unified_sync')
+    def test_passes_struct_logger(self, mock_invoke, sample_llm_result_success):
+        """Passes struct_logger to invoke_unified_sync."""
+        mock_invoke.return_value = sample_llm_result_success
+        mock_logger = MagicMock()
+
+        _call_claude_cli(prompt="Parse this JD", struct_logger=mock_logger)
+
+        call_kwargs = mock_invoke.call_args[1]
+        assert call_kwargs["struct_logger"] is mock_logger
 
 
 # ===== TESTS: _parse_sections_from_json =====
@@ -297,11 +312,11 @@ class TestParseJDSectionsWithLLM:
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor._call_claude_cli')
-    async def test_successful_parsing(self, mock_cli, sample_jd_text, sample_sections_json):
-        """Successful parsing returns sections."""
-        mock_cli.return_value = json.dumps(sample_sections_json)
+    async def test_successful_parsing(self, mock_cli, sample_jd_text, sample_sections_json, sample_llm_result_success):
+        """Successful parsing returns sections and metadata."""
+        mock_cli.return_value = sample_llm_result_success
 
-        sections = await parse_jd_sections_with_llm(
+        sections, llm_metadata = await parse_jd_sections_with_llm(
             sample_jd_text,
             job_id="test_001",
             tier="low"
@@ -309,12 +324,14 @@ class TestParseJDSectionsWithLLM:
 
         assert len(sections) == 4
         assert sections[0].section_type == JDSectionType.ABOUT_COMPANY
+        assert isinstance(llm_metadata, LLMMetadata)
+        assert llm_metadata.backend == "claude_cli"
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor._call_claude_cli')
-    async def test_passes_job_id_to_cli(self, mock_cli, sample_jd_text, sample_sections_json):
+    async def test_passes_job_id_to_cli(self, mock_cli, sample_jd_text, sample_sections_json, sample_llm_result_success):
         """Passes job_id to _call_claude_cli."""
-        mock_cli.return_value = json.dumps(sample_sections_json)
+        mock_cli.return_value = sample_llm_result_success
 
         await parse_jd_sections_with_llm(
             sample_jd_text,
@@ -327,9 +344,9 @@ class TestParseJDSectionsWithLLM:
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor._call_claude_cli')
-    async def test_passes_tier_to_cli(self, mock_cli, sample_jd_text, sample_sections_json):
+    async def test_passes_tier_to_cli(self, mock_cli, sample_jd_text, sample_sections_json, sample_llm_result_success):
         """Passes tier to _call_claude_cli."""
-        mock_cli.return_value = json.dumps(sample_sections_json)
+        mock_cli.return_value = sample_llm_result_success
 
         await parse_jd_sections_with_llm(
             sample_jd_text,
@@ -345,33 +362,72 @@ class TestParseJDSectionsWithLLM:
         """Falls back to rule-based parsing when LLM fails."""
         mock_cli.side_effect = Exception("LLM API timeout")
 
-        sections = await parse_jd_sections_with_llm(sample_jd_text)
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
 
         # Should get sections from rule-based fallback
         assert len(sections) >= 1
         # Rule-based parser should detect standard sections
         section_types = [s.section_type for s in sections]
         assert JDSectionType.RESPONSIBILITIES in section_types or len(sections) > 0
+        # Metadata should indicate rule-based fallback
+        assert llm_metadata.backend == "rule_based"
+        assert "LLM API timeout" in llm_metadata.fallback_reason
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor._call_claude_cli')
     async def test_falls_back_when_llm_returns_few_sections(self, mock_cli, sample_jd_text):
         """Falls back to rule-based if LLM returns too few sections for long JD."""
         # LLM returns only 1 section for a JD that should have more
-        mock_cli.return_value = json.dumps({
-            "sections": [
-                {
-                    "section_type": "other",
-                    "header": "Job Description",
-                    "items": ["Some content"]
-                }
-            ]
-        })
+        mock_cli.return_value = LLMResult(
+            content=json.dumps({
+                "sections": [
+                    {
+                        "section_type": "other",
+                        "header": "Job Description",
+                        "items": ["Some content"]
+                    }
+                ]
+            }),
+            backend="claude_cli",
+            model="claude-haiku-4-5-20251001",
+            tier="low",
+            duration_ms=1000,
+            success=True,
+        )
 
-        sections = await parse_jd_sections_with_llm(sample_jd_text)
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
 
         # Rule-based should find more sections in this structured JD
         assert len(sections) >= 1
+        # Metadata should indicate LLM was used but quality fallback occurred
+        assert llm_metadata.backend == "claude_cli"
+
+    @pytest.mark.asyncio
+    @patch('src.layer1_4.jd_processor._call_claude_cli')
+    async def test_returns_llm_metadata(self, mock_cli, sample_jd_text, sample_llm_result_success):
+        """Returns LLMMetadata with backend attribution."""
+        mock_cli.return_value = sample_llm_result_success
+
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
+
+        assert llm_metadata.backend == "claude_cli"
+        assert llm_metadata.model == "claude-haiku-4-5-20251001"
+        assert llm_metadata.tier == "low"
+        assert llm_metadata.duration_ms == 2500
+        assert llm_metadata.cost_usd == 0.002
+        assert llm_metadata.success is True
+
+    @pytest.mark.asyncio
+    @patch('src.layer1_4.jd_processor._call_claude_cli')
+    async def test_passes_struct_logger_to_cli(self, mock_cli, sample_jd_text, sample_llm_result_success):
+        """Passes struct_logger to _call_claude_cli."""
+        mock_cli.return_value = sample_llm_result_success
+        mock_logger = MagicMock()
+
+        await parse_jd_sections_with_llm(sample_jd_text, struct_logger=mock_logger)
+
+        call_kwargs = mock_cli.call_args[1]
+        assert call_kwargs["struct_logger"] is mock_logger
 
 
 # ===== TESTS: parse_jd_sections_rule_based =====
@@ -437,35 +493,52 @@ class TestParseJDSectionsRuleBased:
 class TestProcessJD:
     """Test the main process_jd function."""
 
+    @pytest.fixture
+    def sample_llm_metadata(self):
+        """Sample LLMMetadata for mocking."""
+        return LLMMetadata(
+            backend="claude_cli",
+            model="claude-haiku-4-5-20251001",
+            tier="low",
+            duration_ms=2000,
+            cost_usd=0.001,
+            success=True,
+        )
+
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
-    async def test_returns_processed_jd(self, mock_parse, sample_jd_text):
+    async def test_returns_processed_jd(self, mock_parse, sample_jd_text, sample_llm_metadata):
         """Returns ProcessedJD with all fields."""
-        mock_parse.return_value = [
-            JDSection(
-                section_type=JDSectionType.RESPONSIBILITIES,
-                header="Responsibilities",
-                content="Test content",
-                items=["Item 1", "Item 2"],
-                char_start=0,
-                char_end=100,
-                index=0
-            )
-        ]
+        mock_parse.return_value = (
+            [
+                JDSection(
+                    section_type=JDSectionType.RESPONSIBILITIES,
+                    header="Responsibilities",
+                    content="Test content",
+                    items=["Item 1", "Item 2"],
+                    char_start=0,
+                    char_end=100,
+                    index=0
+                )
+            ],
+            sample_llm_metadata
+        )
 
-        result = await process_jd(sample_jd_text)
+        result, llm_metadata = await process_jd(sample_jd_text)
 
         assert isinstance(result, ProcessedJD)
         assert result.raw_text == sample_jd_text
         assert len(result.sections) == 1
         assert "<section" in result.html
         assert result.content_hash is not None
+        assert isinstance(llm_metadata, LLMMetadata)
+        assert llm_metadata.backend == "claude_cli"
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
-    async def test_passes_job_id(self, mock_parse, sample_jd_text):
+    async def test_passes_job_id(self, mock_parse, sample_jd_text, sample_llm_metadata):
         """Passes job_id to parse function."""
-        mock_parse.return_value = []
+        mock_parse.return_value = ([], sample_llm_metadata)
 
         await process_jd(sample_jd_text, job_id="test_job_456")
 
@@ -474,9 +547,9 @@ class TestProcessJD:
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
-    async def test_passes_tier(self, mock_parse, sample_jd_text):
+    async def test_passes_tier(self, mock_parse, sample_jd_text, sample_llm_metadata):
         """Passes tier to parse function."""
-        mock_parse.return_value = []
+        mock_parse.return_value = ([], sample_llm_metadata)
 
         await process_jd(sample_jd_text, tier="middle")
 
@@ -485,44 +558,59 @@ class TestProcessJD:
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
-    async def test_generates_section_ids(self, mock_parse, sample_jd_text):
+    async def test_generates_section_ids(self, mock_parse, sample_jd_text, sample_llm_metadata):
         """Generates section IDs from section types."""
-        mock_parse.return_value = [
-            JDSection(
-                section_type=JDSectionType.RESPONSIBILITIES,
-                header="Responsibilities",
-                content="",
-                items=[],
-                char_start=0,
-                char_end=100,
-                index=0
-            ),
-            JDSection(
-                section_type=JDSectionType.QUALIFICATIONS,
-                header="Qualifications",
-                content="",
-                items=[],
-                char_start=100,
-                char_end=200,
-                index=1
-            )
-        ]
+        mock_parse.return_value = (
+            [
+                JDSection(
+                    section_type=JDSectionType.RESPONSIBILITIES,
+                    header="Responsibilities",
+                    content="",
+                    items=[],
+                    char_start=0,
+                    char_end=100,
+                    index=0
+                ),
+                JDSection(
+                    section_type=JDSectionType.QUALIFICATIONS,
+                    header="Qualifications",
+                    content="",
+                    items=[],
+                    char_start=100,
+                    char_end=200,
+                    index=1
+                )
+            ],
+            sample_llm_metadata
+        )
 
-        result = await process_jd(sample_jd_text)
+        result, _ = await process_jd(sample_jd_text)
 
         assert result.section_ids == ["responsibilities", "qualifications"]
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
-    async def test_generates_content_hash(self, mock_parse, sample_jd_text):
+    async def test_generates_content_hash(self, mock_parse, sample_jd_text, sample_llm_metadata):
         """Generates MD5 hash of JD content."""
-        mock_parse.return_value = []
+        mock_parse.return_value = ([], sample_llm_metadata)
 
-        result = await process_jd(sample_jd_text)
+        result, _ = await process_jd(sample_jd_text)
 
         # MD5 hash should be 32 hex characters
         assert len(result.content_hash) == 32
         assert all(c in "0123456789abcdef" for c in result.content_hash)
+
+    @pytest.mark.asyncio
+    @patch('src.layer1_4.jd_processor.parse_jd_sections_with_llm')
+    async def test_passes_struct_logger(self, mock_parse, sample_jd_text, sample_llm_metadata):
+        """Passes struct_logger to parse function."""
+        mock_parse.return_value = ([], sample_llm_metadata)
+        mock_logger = MagicMock()
+
+        await process_jd(sample_jd_text, struct_logger=mock_logger)
+
+        call_kwargs = mock_parse.call_args[1]
+        assert call_kwargs["struct_logger"] is mock_logger
 
 
 # ===== TESTS: Integration with UnifiedLLM =====
@@ -552,10 +640,12 @@ class TestUnifiedLLMIntegration:
         """Works correctly when LangChain fallback is used."""
         mock_invoke.return_value = sample_llm_result_langchain_fallback
 
-        sections = await parse_jd_sections_with_llm(sample_jd_text)
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
 
         # Should still parse sections correctly from fallback response
         assert len(sections) == 4
+        # Metadata should reflect langchain backend
+        assert llm_metadata.backend == "langchain"
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.invoke_unified_sync')
@@ -594,9 +684,11 @@ class TestErrorHandling:
         )
 
         # Should not raise, should fall back to rule-based
-        sections = await parse_jd_sections_with_llm(sample_jd_text)
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
 
         assert len(sections) >= 1
+        assert llm_metadata.backend == "rule_based"
+        assert "CLI timeout" in str(llm_metadata.fallback_reason)
 
     @pytest.mark.asyncio
     @patch('src.layer1_4.jd_processor.invoke_unified_sync')
@@ -615,6 +707,58 @@ class TestErrorHandling:
         )
 
         # Should fall back to rule-based parsing
-        sections = await parse_jd_sections_with_llm(sample_jd_text)
+        sections, llm_metadata = await parse_jd_sections_with_llm(sample_jd_text)
 
         assert len(sections) >= 1
+        assert llm_metadata.backend == "rule_based"
+
+
+# ===== TESTS: LLMMetadata =====
+
+
+class TestLLMMetadata:
+    """Test LLMMetadata dataclass."""
+
+    def test_default_values(self):
+        """LLMMetadata has sensible defaults."""
+        metadata = LLMMetadata()
+
+        assert metadata.backend == "unknown"
+        assert metadata.model == "unknown"
+        assert metadata.tier == "low"
+        assert metadata.duration_ms == 0
+        assert metadata.cost_usd is None
+        assert metadata.fallback_reason is None
+        assert metadata.success is True
+
+    def test_to_dict(self):
+        """to_dict returns dictionary with non-None values."""
+        metadata = LLMMetadata(
+            backend="claude_cli",
+            model="claude-haiku",
+            tier="low",
+            duration_ms=1500,
+            cost_usd=0.001,
+            success=True,
+        )
+
+        result = metadata.to_dict()
+
+        assert result["backend"] == "claude_cli"
+        assert result["model"] == "claude-haiku"
+        assert result["tier"] == "low"
+        assert result["duration_ms"] == 1500
+        assert result["cost_usd"] == 0.001
+        assert result["success"] is True
+        assert "fallback_reason" not in result
+
+    def test_to_dict_with_fallback_reason(self):
+        """to_dict includes fallback_reason when present."""
+        metadata = LLMMetadata(
+            backend="rule_based",
+            fallback_reason="LLM timeout",
+        )
+
+        result = metadata.to_dict()
+
+        assert result["fallback_reason"] == "LLM timeout"

@@ -38,6 +38,7 @@ from src.layer1_4.jd_processor import (
     ProcessedJD,
     JDSection,
     JDSectionType,
+    LLMMetadata,
     processed_jd_to_dict,
     dict_to_processed_jd,
 )
@@ -63,6 +64,7 @@ __all__ = [
     "ProcessedJD",
     "JDSection",
     "JDSectionType",
+    "LLMMetadata",
     "processed_jd_to_dict",
     "dict_to_processed_jd",
 ]

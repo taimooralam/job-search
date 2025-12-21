@@ -24,7 +24,7 @@ from pymongo import MongoClient
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.common.state import JobState
-from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict
+from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
 from src.layer1_4.claude_jd_extractor import JDExtractor
 from src.services.operation_base import OperationResult, OperationService
 
@@ -123,11 +123,12 @@ class FullExtractionService(OperationService):
         logger.warning("No candidate profile found - fit analysis may lack grounding")
         return None
 
-    def _run_jd_processor(self, jd_text: str, model: str, use_llm: bool) -> Dict[str, Any]:
+    def _run_jd_processor(self, jd_text: str, model: str, use_llm: bool) -> Tuple[Dict[str, Any], LLMMetadata]:
         """
         Run JD Processor: Parse JD into HTML sections for annotation.
 
-        Returns processed JD dict with html, sections, section_ids.
+        Returns:
+            Tuple of (processed JD dict with html, sections, section_ids, LLMMetadata for backend attribution)
         """
         import asyncio
 
@@ -141,15 +142,15 @@ class FullExtractionService(OperationService):
                     future = executor.submit(
                         asyncio.run, process_jd(jd_text, use_llm=True, model=model)
                     )
-                    processed = future.result()
+                    processed, llm_metadata = future.result()
             else:
-                processed = loop.run_until_complete(
+                processed, llm_metadata = loop.run_until_complete(
                     process_jd(jd_text, use_llm=True, model=model)
                 )
         else:
-            processed = process_jd_sync(jd_text, use_llm=False)
+            processed, llm_metadata = process_jd_sync(jd_text, use_llm=False)
 
-        return processed_jd_to_dict(processed)
+        return processed_jd_to_dict(processed), llm_metadata
 
     def _run_jd_extractor(
         self, job: Dict[str, Any], jd_text: str, log_callback: callable = None
@@ -190,9 +191,16 @@ class FullExtractionService(OperationService):
                 error_message = error_message[:197] + "..."
             return None, error_message
 
-    def _run_layer_2(self, job: Dict[str, Any], jd_text: str) -> Dict[str, Any]:
+    def _run_layer_2(
+        self, job: Dict[str, Any], jd_text: str, log_callback: callable = None
+    ) -> Dict[str, Any]:
         """
         Run Layer 2: Pain Point Mining.
+
+        Args:
+            job: Job document from MongoDB
+            jd_text: Job description text
+            log_callback: Optional callback for log streaming with backend visibility
 
         Returns dict with pain_points, strategic_needs, risks_if_unfilled, success_metrics.
         """
@@ -205,7 +213,7 @@ class FullExtractionService(OperationService):
             "job_description": jd_text,
         }
 
-        miner = PainPointMiner(use_enhanced_format=False)
+        miner = PainPointMiner(use_enhanced_format=False, log_callback=log_callback)
         return miner.extract_pain_points(state)
 
     def _aggregate_annotations(self, job: Dict[str, Any]) -> Dict[str, Any]:
@@ -302,12 +310,23 @@ class FullExtractionService(OperationService):
         }
 
     def _run_layer_4(
-        self, job: Dict[str, Any], jd_text: str, pain_points_data: Dict[str, Any]
+        self,
+        job: Dict[str, Any],
+        jd_text: str,
+        pain_points_data: Dict[str, Any],
+        log_callback: callable = None,
     ) -> Dict[str, Any]:
         """
         Run Layer 4: Opportunity Mapping / Fit Scoring.
 
-        Returns dict with fit_score, fit_rationale, fit_category.
+        Args:
+            job: Job document from MongoDB
+            jd_text: Job description text
+            pain_points_data: Output from Layer 2 pain point mining
+            log_callback: Optional callback for log streaming to frontend
+
+        Returns:
+            Dict with fit_score, fit_rationale, fit_category.
         """
         from src.layer4.opportunity_mapper import OpportunityMapper
 
@@ -337,7 +356,7 @@ class FullExtractionService(OperationService):
         }
 
         mapper = OpportunityMapper()
-        result = mapper.map_opportunity(state)
+        result = mapper.map_opportunity(state, log_callback=log_callback)
 
         # Add annotation summary to result
         result["annotation_signals"] = annotation_signals
@@ -504,6 +523,8 @@ class FullExtractionService(OperationService):
                 # 2. Extract JD text
                 try:
                     jd_text = self._get_jd_text(job)
+                    if log_callback:
+                        log_callback(_json.dumps({"message": f"JD text extracted: {len(jd_text)} chars"}))
                 except ValueError as e:
                     return self.create_error_result(
                         run_id=run_id,
@@ -524,15 +545,17 @@ class FullExtractionService(OperationService):
                 # 4a. Run JD Processor: Parse into HTML sections
                 await emit_progress("jd_processor", "processing", "Parsing job description")
                 logger.info(f"[{run_id[:16]}] Running JD Processor: Parsing into sections")
-                processed_jd = self._run_jd_processor(jd_text, model, use_llm)
+                processed_jd, jd_processor_llm_metadata = self._run_jd_processor(jd_text, model, use_llm)
                 section_count = len(processed_jd.get("sections", []))
                 layer_status["jd_processor"] = {
                     "status": "success",
                     "sections": section_count,
-                    "message": f"Parsed {section_count} sections"
+                    "backend": jd_processor_llm_metadata.backend,
+                    "model": jd_processor_llm_metadata.model,
+                    "message": f"Parsed {section_count} sections via {jd_processor_llm_metadata.backend}"
                 }
-                await emit_progress("jd_processor", "success", f"Parsed {section_count} sections")
-                logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections")
+                await emit_progress("jd_processor", "success", f"Parsed {section_count} sections via {jd_processor_llm_metadata.backend}")
+                logger.info(f"[{run_id[:16]}] JD Processor complete: {section_count} sections via backend={jd_processor_llm_metadata.backend}")
 
                 # 4b. Run JD Extractor: Extract structured intelligence
                 await emit_progress("jd_extractor", "processing", "Extracting role intelligence")
@@ -563,7 +586,7 @@ class FullExtractionService(OperationService):
                 # 5. Run Layer 2: Pain Point Mining
                 await emit_progress("pain_points", "processing", "Mining pain points")
                 logger.info(f"[{run_id[:16]}] Running Layer 2: Pain Point Mining")
-                pain_points_data = self._run_layer_2(job, jd_text)
+                pain_points_data = self._run_layer_2(job, jd_text, log_callback=log_callback)
                 pain_count = len(pain_points_data.get("pain_points", []))
                 layer_status["layer_2"] = {
                     "status": "success",
@@ -577,7 +600,16 @@ class FullExtractionService(OperationService):
                 # 6. Run Layer 4: Fit Scoring (with annotation signals)
                 await emit_progress("fit_scoring", "processing", "Calculating fit score")
                 logger.info(f"[{run_id[:16]}] Running Layer 4: Fit Scoring")
-                fit_data = self._run_layer_4(job, jd_text, pain_points_data)
+
+                # Log annotation aggregation before fit scoring
+                existing_annotations = job.get("jd_annotations", {}).get("annotations", [])
+                if existing_annotations:
+                    match_count = sum(1 for a in existing_annotations if a.get("relevance") in ("core_strength", "extremely_relevant", "relevant", "tangential"))
+                    gap_count = sum(1 for a in existing_annotations if a.get("relevance") == "gap")
+                    if log_callback:
+                        log_callback(_json.dumps({"message": f"Aggregating annotations: {match_count} matches, {gap_count} gaps"}))
+
+                fit_data = self._run_layer_4(job, jd_text, pain_points_data, log_callback=log_callback)
                 fit_score = fit_data.get("fit_score")
                 fit_category = fit_data.get("fit_category")
                 annotation_signals = fit_data.get("annotation_signals", {})
@@ -597,10 +629,14 @@ class FullExtractionService(OperationService):
 
                 # 7. Persist results (pass both processed_jd and extracted_jd)
                 await emit_progress("save_results", "processing", "Saving to database")
+                if log_callback:
+                    log_callback(_json.dumps({"message": "Persisting extraction results to database..."}))
                 persisted = self._persist_results(
                     job_id, processed_jd, extracted_jd, pain_points_data, fit_data
                 )
                 if persisted:
+                    if log_callback:
+                        log_callback(_json.dumps({"message": "Results saved successfully"}))
                     await emit_progress("save_results", "success", "Results saved")
                 else:
                     await emit_progress("save_results", "failed", "Persistence failed")
@@ -610,6 +646,8 @@ class FullExtractionService(OperationService):
                 input_tokens = len(jd_text) // 4 * 4 + 2000  # 4x JD + prompts
                 output_tokens = 3000  # Approximate
                 cost_usd = self.estimate_cost(tier, input_tokens, output_tokens)
+                if log_callback:
+                    log_callback(_json.dumps({"message": f"Estimated cost: ${cost_usd:.4f} ({tier.value} tier)"}))
 
                 # 9. Build combined response with layer status
                 response_data = {

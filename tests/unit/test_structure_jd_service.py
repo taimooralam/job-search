@@ -13,6 +13,7 @@ from bson import ObjectId
 from src.services.structure_jd_service import StructureJDService, structure_jd
 from src.services.operation_base import OperationResult
 from src.common.model_tiers import ModelTier
+from src.layer1_4 import LLMMetadata
 
 
 # =============================================================================
@@ -109,6 +110,32 @@ def mock_db_client():
     """Mock MongoDB client."""
     mock = MagicMock()
     return mock
+
+
+@pytest.fixture
+def sample_llm_metadata():
+    """Sample LLMMetadata for mocking."""
+    return LLMMetadata(
+        backend="claude_cli",
+        model="claude-haiku-4-5-20251001",
+        tier="low",
+        duration_ms=2000,
+        cost_usd=0.002,
+        success=True,
+    )
+
+
+@pytest.fixture
+def sample_rule_based_metadata():
+    """Sample LLMMetadata for rule-based fallback."""
+    return LLMMetadata(
+        backend="rule_based",
+        model="rule_based",
+        tier="low",
+        duration_ms=0,
+        cost_usd=0.0,
+        success=True,
+    )
 
 
 # =============================================================================
@@ -262,7 +289,7 @@ class TestStructureJDServiceExecuteSuccess:
     """Tests for successful execute method calls."""
 
     @pytest.fixture
-    def service_with_mocks(self, sample_job_document, mock_processed_jd):
+    def service_with_mocks(self, sample_job_document, mock_processed_jd, sample_llm_metadata):
         """Service with mocked dependencies."""
         service = StructureJDService()
 
@@ -275,7 +302,7 @@ class TestStructureJDServiceExecuteSuccess:
         return service
 
     @pytest.mark.asyncio
-    async def test_returns_operation_result(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_returns_operation_result(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should return OperationResult."""
         with patch(
             "src.services.structure_jd_service.process_jd",
@@ -288,7 +315,8 @@ class TestStructureJDServiceExecuteSuccess:
             mock_result.sections = []
             mock_result.section_ids = mock_processed_jd["section_ids"]
             mock_result.content_hash = mock_processed_jd["content_hash"]
-            mock_process.return_value = mock_result
+            # Return tuple (processed, llm_metadata)
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -303,14 +331,14 @@ class TestStructureJDServiceExecuteSuccess:
         assert isinstance(result, OperationResult)
 
     @pytest.mark.asyncio
-    async def test_success_true_on_valid_input(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_success_true_on_valid_input(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should return success=True for valid job."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -325,14 +353,14 @@ class TestStructureJDServiceExecuteSuccess:
         assert result.error is None
 
     @pytest.mark.asyncio
-    async def test_uses_llm_when_requested(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_uses_llm_when_requested(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should use LLM processing when use_llm=True."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -350,14 +378,14 @@ class TestStructureJDServiceExecuteSuccess:
 
     @pytest.mark.asyncio
     async def test_uses_rule_based_when_llm_disabled(
-        self, service_with_mocks, sample_job_id, mock_processed_jd
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_rule_based_metadata
     ):
         """Execute should use rule-based processing when use_llm=False."""
         with patch(
             "src.services.structure_jd_service.process_jd_sync",
         ) as mock_process_sync:
             mock_result = MagicMock()
-            mock_process_sync.return_value = mock_result
+            mock_process_sync.return_value = (mock_result, sample_rule_based_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -374,7 +402,7 @@ class TestStructureJDServiceExecuteSuccess:
 
     @pytest.mark.asyncio
     async def test_includes_section_count_in_response(
-        self, service_with_mocks, sample_job_id, mock_processed_jd
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
     ):
         """Execute should include section_count in response data."""
         with patch(
@@ -382,7 +410,7 @@ class TestStructureJDServiceExecuteSuccess:
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -398,7 +426,7 @@ class TestStructureJDServiceExecuteSuccess:
 
     @pytest.mark.asyncio
     async def test_includes_section_types_in_response(
-        self, service_with_mocks, sample_job_id, mock_processed_jd
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
     ):
         """Execute should include section_types in response data."""
         with patch(
@@ -406,7 +434,7 @@ class TestStructureJDServiceExecuteSuccess:
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -421,14 +449,14 @@ class TestStructureJDServiceExecuteSuccess:
         assert result.data["section_types"] == ["about_company", "responsibilities", "qualifications"]
 
     @pytest.mark.asyncio
-    async def test_persists_result_to_db(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_persists_result_to_db(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should persist result to MongoDB."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -442,16 +470,16 @@ class TestStructureJDServiceExecuteSuccess:
         service_with_mocks._persist_result.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_estimates_cost_for_llm_processing(
-        self, service_with_mocks, sample_job_id, mock_processed_jd
+    async def test_uses_cost_from_llm_metadata(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
     ):
-        """Execute should estimate cost when using LLM."""
+        """Execute should use cost from LLM metadata when available."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -463,17 +491,17 @@ class TestStructureJDServiceExecuteSuccess:
                     use_llm=True,
                 )
 
-        # Should have non-zero cost for LLM processing
-        assert result.cost_usd > 0
+        # Should use cost from LLMMetadata (0.002)
+        assert result.cost_usd == 0.002
 
     @pytest.mark.asyncio
-    async def test_zero_cost_for_rule_based(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_zero_cost_for_rule_based(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_rule_based_metadata):
         """Execute should have zero cost for rule-based processing."""
         with patch(
             "src.services.structure_jd_service.process_jd_sync",
         ) as mock_process_sync:
             mock_result = MagicMock()
-            mock_process_sync.return_value = mock_result
+            mock_process_sync.return_value = (mock_result, sample_rule_based_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -488,14 +516,14 @@ class TestStructureJDServiceExecuteSuccess:
         assert result.cost_usd == 0.0
 
     @pytest.mark.asyncio
-    async def test_includes_model_used(self, service_with_mocks, sample_job_id, mock_processed_jd):
-        """Execute should include model_used in result."""
+    async def test_includes_model_from_llm_metadata(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
+        """Execute should include model_used from LLM metadata."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -508,18 +536,18 @@ class TestStructureJDServiceExecuteSuccess:
                 )
 
         assert result.model_used is not None
-        # Balanced tier uses analytical model for structure-jd
-        assert result.model_used == "gpt-4o-mini"
+        # Should use model from LLM metadata
+        assert result.model_used == "claude-haiku-4-5-20251001"
 
     @pytest.mark.asyncio
-    async def test_includes_duration_ms(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_includes_duration_ms(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should include duration_ms in result."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -533,14 +561,14 @@ class TestStructureJDServiceExecuteSuccess:
         assert result.duration_ms >= 0
 
     @pytest.mark.asyncio
-    async def test_generates_unique_run_id(self, service_with_mocks, sample_job_id, mock_processed_jd):
+    async def test_generates_unique_run_id(self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata):
         """Execute should generate unique run_id."""
         with patch(
             "src.services.structure_jd_service.process_jd",
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",
@@ -557,6 +585,218 @@ class TestStructureJDServiceExecuteSuccess:
 
         assert result1.run_id != result2.run_id
         assert result1.run_id.startswith("op_structure-jd_")
+
+    @pytest.mark.asyncio
+    async def test_includes_llm_metadata_in_response(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
+    ):
+        """Execute should include llm_metadata in response data."""
+        with patch(
+            "src.services.structure_jd_service.process_jd",
+            new_callable=AsyncMock,
+        ) as mock_process:
+            mock_result = MagicMock()
+            mock_process.return_value = (mock_result, sample_llm_metadata)
+
+            with patch(
+                "src.services.structure_jd_service.processed_jd_to_dict",
+                return_value=mock_processed_jd,
+            ):
+                result = await service_with_mocks.execute(
+                    job_id=sample_job_id,
+                    tier=ModelTier.BALANCED,
+                )
+
+        assert "llm_metadata" in result.data
+        assert result.data["llm_metadata"]["backend"] == "claude_cli"
+        assert result.data["llm_metadata"]["model"] == "claude-haiku-4-5-20251001"
+
+    @pytest.mark.asyncio
+    async def test_creates_struct_logger_with_job_id(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
+    ):
+        """Execute should create StructuredLogger with job_id."""
+        with patch(
+            "src.services.structure_jd_service.StructuredLogger"
+        ) as mock_logger_class:
+            mock_logger_instance = MagicMock()
+            mock_logger_class.return_value = mock_logger_instance
+
+            with patch(
+                "src.services.structure_jd_service.process_jd",
+                new_callable=AsyncMock,
+            ) as mock_process:
+                mock_result = MagicMock()
+                mock_process.return_value = (mock_result, sample_llm_metadata)
+
+                with patch(
+                    "src.services.structure_jd_service.processed_jd_to_dict",
+                    return_value=mock_processed_jd,
+                ):
+                    await service_with_mocks.execute(
+                        job_id=sample_job_id,
+                        tier=ModelTier.BALANCED,
+                        use_llm=True,
+                    )
+
+        # Verify StructuredLogger was created with job_id
+        mock_logger_class.assert_called_once_with(job_id=sample_job_id)
+
+    @pytest.mark.asyncio
+    async def test_passes_struct_logger_to_process_jd(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
+    ):
+        """Execute should pass struct_logger to process_jd."""
+        mock_logger_instance = MagicMock()
+
+        with patch(
+            "src.services.structure_jd_service.StructuredLogger"
+        ) as mock_logger_class:
+            mock_logger_class.return_value = mock_logger_instance
+
+            with patch(
+                "src.services.structure_jd_service.process_jd",
+                new_callable=AsyncMock,
+            ) as mock_process:
+                mock_result = MagicMock()
+                mock_process.return_value = (mock_result, sample_llm_metadata)
+
+                with patch(
+                    "src.services.structure_jd_service.processed_jd_to_dict",
+                    return_value=mock_processed_jd,
+                ):
+                    await service_with_mocks.execute(
+                        job_id=sample_job_id,
+                        tier=ModelTier.BALANCED,
+                        use_llm=True,
+                    )
+
+        # Verify struct_logger was passed to process_jd
+        call_kwargs = mock_process.call_args[1]
+        assert call_kwargs["struct_logger"] is mock_logger_instance
+
+    @pytest.mark.asyncio
+    async def test_emits_llm_call_complete_for_rule_based_fallback(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_rule_based_metadata
+    ):
+        """Execute should emit llm_call_complete event when rule-based fallback occurs."""
+        mock_logger_instance = MagicMock()
+
+        with patch(
+            "src.services.structure_jd_service.StructuredLogger"
+        ) as mock_logger_class:
+            mock_logger_class.return_value = mock_logger_instance
+
+            with patch(
+                "src.services.structure_jd_service.process_jd_sync"
+            ) as mock_process_sync:
+                mock_result = MagicMock()
+                mock_process_sync.return_value = (mock_result, sample_rule_based_metadata)
+
+                with patch(
+                    "src.services.structure_jd_service.processed_jd_to_dict",
+                    return_value=mock_processed_jd,
+                ):
+                    await service_with_mocks.execute(
+                        job_id=sample_job_id,
+                        tier=ModelTier.FAST,
+                        use_llm=False,
+                    )
+
+        # Verify llm_call_complete event was emitted
+        mock_logger_instance.emit.assert_called_once_with(
+            event="llm_call_complete",
+            step_name="jd_structure_parsing",
+            backend="rule_based",
+            model="rule_based",
+            tier="low",
+            duration_ms=0,
+            cost_usd=0.0,
+            status="complete",
+            metadata={"is_rule_based": True},
+        )
+
+    @pytest.mark.asyncio
+    async def test_emits_llm_call_complete_with_fallback_reason(
+        self, service_with_mocks, sample_job_id, mock_processed_jd
+    ):
+        """Execute should include fallback_reason in event metadata when present."""
+        mock_logger_instance = MagicMock()
+
+        # Create metadata with fallback_reason
+        rule_based_with_reason = LLMMetadata(
+            backend="rule_based",
+            model="rule_based",
+            tier="low",
+            duration_ms=0,
+            cost_usd=0.0,
+            success=True,
+            fallback_reason="LLM API timeout",
+        )
+
+        with patch(
+            "src.services.structure_jd_service.StructuredLogger"
+        ) as mock_logger_class:
+            mock_logger_class.return_value = mock_logger_instance
+
+            with patch(
+                "src.services.structure_jd_service.process_jd",
+                new_callable=AsyncMock,
+            ) as mock_process:
+                mock_result = MagicMock()
+                mock_process.return_value = (mock_result, rule_based_with_reason)
+
+                with patch(
+                    "src.services.structure_jd_service.processed_jd_to_dict",
+                    return_value=mock_processed_jd,
+                ):
+                    await service_with_mocks.execute(
+                        job_id=sample_job_id,
+                        tier=ModelTier.BALANCED,
+                        use_llm=True,
+                    )
+
+        # Verify event was emitted with fallback_reason in metadata
+        mock_logger_instance.emit.assert_called_once()
+        call_kwargs = mock_logger_instance.emit.call_args[1]
+        assert call_kwargs["event"] == "llm_call_complete"
+        assert call_kwargs["backend"] == "rule_based"
+        assert "metadata" in call_kwargs
+        assert call_kwargs["metadata"]["fallback_reason"] == "LLM API timeout"
+        assert call_kwargs["metadata"]["is_rule_based"] is True
+
+    @pytest.mark.asyncio
+    async def test_does_not_emit_event_for_successful_llm_call(
+        self, service_with_mocks, sample_job_id, mock_processed_jd, sample_llm_metadata
+    ):
+        """Execute should not emit event when LLM succeeds (UnifiedLLM emits it)."""
+        mock_logger_instance = MagicMock()
+
+        with patch(
+            "src.services.structure_jd_service.StructuredLogger"
+        ) as mock_logger_class:
+            mock_logger_class.return_value = mock_logger_instance
+
+            with patch(
+                "src.services.structure_jd_service.process_jd",
+                new_callable=AsyncMock,
+            ) as mock_process:
+                mock_result = MagicMock()
+                # Successful LLM call - backend is NOT "rule_based"
+                mock_process.return_value = (mock_result, sample_llm_metadata)
+
+                with patch(
+                    "src.services.structure_jd_service.processed_jd_to_dict",
+                    return_value=mock_processed_jd,
+                ):
+                    await service_with_mocks.execute(
+                        job_id=sample_job_id,
+                        tier=ModelTier.BALANCED,
+                        use_llm=True,
+                    )
+
+        # Verify NO event was emitted (UnifiedLLM handles it)
+        mock_logger_instance.emit.assert_not_called()
 
 
 # =============================================================================
@@ -630,7 +870,7 @@ class TestStructureJDServiceExecuteErrors:
         assert "LLM API error" in result.error
 
     @pytest.mark.asyncio
-    async def test_continues_on_persist_failure(self, sample_job_id, sample_job_document, mock_processed_jd):
+    async def test_continues_on_persist_failure(self, sample_job_id, sample_job_document, mock_processed_jd, sample_llm_metadata):
         """Execute should succeed even if persistence fails."""
         service = StructureJDService()
         service._get_job = MagicMock(return_value=sample_job_document)
@@ -641,7 +881,7 @@ class TestStructureJDServiceExecuteErrors:
             new_callable=AsyncMock,
         ) as mock_process:
             mock_result = MagicMock()
-            mock_process.return_value = mock_result
+            mock_process.return_value = (mock_result, sample_llm_metadata)
 
             with patch(
                 "src.services.structure_jd_service.processed_jd_to_dict",

@@ -15,8 +15,8 @@ Processing steps:
 import re
 import json
 import os
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
+from dataclasses import dataclass, field
 from enum import Enum
 import hashlib
 
@@ -24,8 +24,11 @@ from pydantic import BaseModel, Field
 
 from src.common.config import Config
 from src.common.logger import get_logger
-from src.common.unified_llm import invoke_unified_sync, LLMResult
+from src.common.unified_llm import invoke_unified_sync, invoke_unified, LLMResult
 from src.common.llm_config import TierType
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 logger = get_logger(__name__)
 
@@ -146,6 +149,38 @@ class ProcessedJD:
     html: str                      # Structured HTML for TipTap
     section_ids: List[str]         # List of section IDs in order
     content_hash: str              # Hash of content for change detection
+
+
+@dataclass
+class LLMMetadata:
+    """
+    Metadata from LLM invocation for backend attribution.
+
+    Used to propagate LLM call details (backend, model, duration, cost)
+    from jd_processor to the calling service for structured logging.
+    """
+    backend: str = "unknown"          # "claude_cli", "langchain", or "rule_based"
+    model: str = "unknown"            # Model ID used
+    tier: str = "low"                 # Tier level: "low", "middle", "high"
+    duration_ms: int = 0              # Call duration in milliseconds
+    cost_usd: Optional[float] = None  # Estimated cost in USD
+    fallback_reason: Optional[str] = None  # Reason if fallback was used
+    success: bool = True              # Whether the call succeeded
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization."""
+        result = {
+            "backend": self.backend,
+            "model": self.model,
+            "tier": self.tier,
+            "duration_ms": self.duration_ms,
+            "success": self.success,
+        }
+        if self.cost_usd is not None:
+            result["cost_usd"] = self.cost_usd
+        if self.fallback_reason:
+            result["fallback_reason"] = self.fallback_reason
+        return result
 
 
 class JDStructureModel(BaseModel):
@@ -384,8 +419,9 @@ Return ONLY valid JSON with a "sections" array."""
 def _call_claude_cli(
     prompt: str,
     job_id: Optional[str] = None,
-    tier: TierType = "low"
-) -> str:
+    tier: TierType = "low",
+    struct_logger: Optional["StructuredLogger"] = None,
+) -> LLMResult:
     """
     Call Claude CLI with UnifiedLLM for automatic fallback.
 
@@ -396,9 +432,10 @@ def _call_claude_cli(
         prompt: The full prompt to send to Claude
         job_id: Optional job ID for tracking/logging
         tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
+        struct_logger: Optional StructuredLogger for frontend-visible LLM events.
 
     Returns:
-        The result text from LLM
+        The full LLMResult with backend attribution metadata
 
     Raises:
         Exception: If both primary and fallback LLM fail
@@ -413,6 +450,7 @@ def _call_claude_cli(
         tier=tier,
         job_id=job_id or "unknown",
         validate_json=True,
+        struct_logger=struct_logger,
     )
 
     if not llm_result.success:
@@ -423,8 +461,8 @@ def _call_claude_cli(
         f"model={llm_result.model}, duration={llm_result.duration_ms}ms"
     )
 
-    # Return raw content - caller will parse JSON
-    return llm_result.content
+    # Return full LLMResult for backend attribution
+    return llm_result
 
 
 def _parse_sections_from_json(json_str: str, jd_text: str) -> List[JDSection]:
@@ -498,7 +536,8 @@ async def parse_jd_sections_with_llm(
     model: str = None,  # Deprecated - use tier instead
     job_id: Optional[str] = None,
     tier: TierType = "low",
-) -> List[JDSection]:
+    struct_logger: Optional["StructuredLogger"] = None,
+) -> Tuple[List[JDSection], LLMMetadata]:
     """
     Parse JD into sections using UnifiedLLM (Claude CLI primary, LangChain fallback).
 
@@ -511,9 +550,10 @@ async def parse_jd_sections_with_llm(
         model: Deprecated - ignored in favor of tier-based selection
         job_id: Optional job ID for tracking/logging
         tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
+        struct_logger: Optional StructuredLogger for frontend-visible LLM events.
 
     Returns:
-        List of parsed sections
+        Tuple of (sections, llm_metadata) where llm_metadata contains backend attribution
     """
     # Build the prompt combining system and user templates
     prompt = f"""{JD_STRUCTURE_SYSTEM_PROMPT}
@@ -528,10 +568,20 @@ Return ONLY valid JSON with a "sections" array. No markdown, no explanation."""
         logger.info(f"Parsing JD with UnifiedLLM tier={tier} ({len(jd_text)} chars)")
 
         # Call UnifiedLLM (Claude CLI with LangChain fallback)
-        result_text = _call_claude_cli(prompt, job_id=job_id, tier=tier)
+        llm_result = _call_claude_cli(prompt, job_id=job_id, tier=tier, struct_logger=struct_logger)
+
+        # Build LLM metadata from result
+        llm_metadata = LLMMetadata(
+            backend=llm_result.backend,
+            model=llm_result.model,
+            tier=llm_result.tier,
+            duration_ms=llm_result.duration_ms,
+            cost_usd=llm_result.cost_usd,
+            success=llm_result.success,
+        )
 
         # Parse sections from response
-        sections = _parse_sections_from_json(result_text, jd_text)
+        sections = _parse_sections_from_json(llm_result.content, jd_text)
 
         # Quality check: if only 1 section returned for long JD, try rule-based
         if len(sections) <= 1 and len(jd_text) > 1000:
@@ -539,15 +589,28 @@ Return ONLY valid JSON with a "sections" array. No markdown, no explanation."""
             rule_sections = parse_jd_sections_rule_based(jd_text)
             if len(rule_sections) > len(sections):
                 logger.info(f"Rule-based parsing found {len(rule_sections)} sections, using that instead")
-                return rule_sections
+                # Mark as rule-based fallback in metadata
+                llm_metadata.fallback_reason = f"LLM returned only {len(sections)} section(s), rule-based found {len(rule_sections)}"
+                return rule_sections, llm_metadata
 
         logger.info(f"LLM parsed JD into {len(sections)} sections: {[s.section_type.value for s in sections]}")
-        return sections
+        return sections, llm_metadata
 
     except Exception as e:
         logger.warning(f"LLM parsing failed: {e}, falling back to rule-based")
         # Fallback to rule-based parsing
-        return parse_jd_sections_rule_based(jd_text)
+        rule_sections = parse_jd_sections_rule_based(jd_text)
+        # Create metadata for rule-based fallback
+        rule_metadata = LLMMetadata(
+            backend="rule_based",
+            model="rule_based",
+            tier=tier,
+            duration_ms=0,
+            cost_usd=0.0,
+            fallback_reason=str(e),
+            success=True,  # Rule-based succeeded even though LLM failed
+        )
+        return rule_sections, rule_metadata
 
 
 # =============================================================================
@@ -650,7 +713,7 @@ def generate_processed_html(sections: List[JDSection]) -> str:
 # MAIN PROCESSOR
 # =============================================================================
 
-def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
+def process_jd_sync(jd_text: str, use_llm: bool = False) -> Tuple[ProcessedJD, LLMMetadata]:
     """
     Process a job description into structured format (synchronous).
 
@@ -659,10 +722,20 @@ def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
         use_llm: Whether to use LLM for parsing (default: rule-based)
 
     Returns:
-        ProcessedJD with sections and HTML
+        Tuple of (ProcessedJD with sections and HTML, LLMMetadata for backend attribution)
     """
-    # Parse sections
+    # Parse sections using rule-based (sync doesn't support LLM)
     sections = parse_jd_sections_rule_based(jd_text)
+
+    # Create metadata for rule-based processing
+    llm_metadata = LLMMetadata(
+        backend="rule_based",
+        model="rule_based",
+        tier="low",
+        duration_ms=0,
+        cost_usd=0.0,
+        success=True,
+    )
 
     # Generate HTML
     html = generate_processed_html(sections)
@@ -673,13 +746,15 @@ def process_jd_sync(jd_text: str, use_llm: bool = False) -> ProcessedJD:
     # Content hash for change detection
     content_hash = hashlib.md5(jd_text.encode()).hexdigest()
 
-    return ProcessedJD(
+    processed_jd = ProcessedJD(
         raw_text=jd_text,
         sections=sections,
         html=html,
         section_ids=section_ids,
         content_hash=content_hash,
     )
+
+    return processed_jd, llm_metadata
 
 
 async def process_jd(
@@ -688,7 +763,8 @@ async def process_jd(
     model: str = None,  # Deprecated - use tier instead
     job_id: Optional[str] = None,
     tier: TierType = "low",
-) -> ProcessedJD:
+    struct_logger: Optional["StructuredLogger"] = None,
+) -> Tuple[ProcessedJD, LLMMetadata]:
     """
     Process a job description into structured format using UnifiedLLM.
 
@@ -703,12 +779,15 @@ async def process_jd(
         model: Deprecated - ignored in favor of tier-based selection
         job_id: Optional job ID for tracking/logging
         tier: LLM tier ("low", "middle", "high"). Default "low" for structure parsing.
+        struct_logger: Optional StructuredLogger for frontend-visible LLM events.
 
     Returns:
-        ProcessedJD with sections and HTML
+        Tuple of (ProcessedJD with sections and HTML, LLMMetadata for backend attribution)
     """
     # Always use LLM for intelligent parsing
-    sections = await parse_jd_sections_with_llm(jd_text, job_id=job_id, tier=tier)
+    sections, llm_metadata = await parse_jd_sections_with_llm(
+        jd_text, job_id=job_id, tier=tier, struct_logger=struct_logger
+    )
 
     # Generate HTML
     html = generate_processed_html(sections)
@@ -719,13 +798,15 @@ async def process_jd(
     # Content hash for change detection
     content_hash = hashlib.md5(jd_text.encode()).hexdigest()
 
-    return ProcessedJD(
+    processed_jd = ProcessedJD(
         raw_text=jd_text,
         sections=sections,
         html=html,
         section_ids=section_ids,
         content_hash=content_hash,
     )
+
+    return processed_jd, llm_metadata
 
 
 def processed_jd_to_dict(processed: ProcessedJD) -> Dict[str, Any]:
