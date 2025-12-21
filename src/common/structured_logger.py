@@ -30,6 +30,10 @@ class EventType(str, Enum):
     LAYER_SKIP = "layer_skip"
     PIPELINE_START = "pipeline_start"
     PIPELINE_COMPLETE = "pipeline_complete"
+    LLM_CALL_START = "llm_call_start"
+    LLM_CALL_COMPLETE = "llm_call_complete"
+    LLM_CALL_ERROR = "llm_call_error"
+    LLM_CALL_FALLBACK = "llm_call_fallback"
 
 
 class LayerStatus(str, Enum):
@@ -52,6 +56,12 @@ class LogEvent:
     duration_ms: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    # LLM-specific fields for backend attribution
+    backend: Optional[str] = None       # "claude_cli" or "langchain"
+    model: Optional[str] = None         # Model ID used (e.g., "claude-sonnet-4-5-20250929")
+    tier: Optional[str] = None          # Tier level: "low", "middle", "high"
+    cost_usd: Optional[float] = None    # Estimated cost in USD
+    step_name: Optional[str] = None     # Pipeline step name (e.g., "grader")
 
     def to_json(self) -> str:
         """Convert to JSON string, excluding None values."""
@@ -114,6 +124,11 @@ class StructuredLogger:
         duration_ms: Optional[int] = None,
         metadata: Optional[Dict[str, Any]] = None,
         error: Optional[str] = None,
+        backend: Optional[str] = None,
+        model: Optional[str] = None,
+        tier: Optional[str] = None,
+        cost_usd: Optional[float] = None,
+        step_name: Optional[str] = None,
     ) -> None:
         """
         Emit a custom log event.
@@ -126,6 +141,11 @@ class StructuredLogger:
             duration_ms: Duration in milliseconds
             metadata: Additional event metadata
             error: Error message if applicable
+            backend: LLM backend used ("claude_cli" or "langchain")
+            model: Model ID used
+            tier: Tier level ("low", "middle", "high")
+            cost_usd: Estimated cost in USD
+            step_name: Pipeline step name
         """
         if layer is not None and layer_name is None:
             layer_name = self._get_layer_name(layer)
@@ -140,6 +160,11 @@ class StructuredLogger:
             duration_ms=duration_ms,
             metadata=metadata,
             error=error,
+            backend=backend,
+            model=model,
+            tier=tier,
+            cost_usd=cost_usd,
+            step_name=step_name,
         )
         self._emit(log_event)
 
@@ -269,6 +294,203 @@ class StructuredLogger:
             status=status,
             duration_ms=duration_ms,
             metadata=metadata,
+        )
+
+    # ===== LLM Call Tracking Methods =====
+
+    def emit_llm_call(
+        self,
+        step_name: str,
+        backend: str,
+        model: str,
+        tier: str,
+        status: str,
+        duration_ms: Optional[int] = None,
+        cost_usd: Optional[float] = None,
+        error: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Emit standardized LLM call event for console display and tracking.
+
+        This method provides a consistent interface for logging all LLM
+        invocations across the pipeline, enabling backend attribution
+        and cost tracking.
+
+        Args:
+            step_name: The pipeline step name (e.g., "grader", "header_generator")
+            backend: LLM backend used ("claude_cli" or "langchain")
+            model: Model ID used (e.g., "claude-sonnet-4-5-20250929")
+            tier: Tier level ("low", "middle", "high")
+            status: Call status ("start", "complete", "error", "fallback")
+            duration_ms: Duration in milliseconds (for complete/error status)
+            cost_usd: Estimated cost in USD (if available)
+            error: Error message (for error status)
+            metadata: Additional context metadata
+
+        Example:
+            >>> logger.emit_llm_call(
+            ...     step_name="grader",
+            ...     backend="claude_cli",
+            ...     model="claude-sonnet-4-5-20250929",
+            ...     tier="middle",
+            ...     status="complete",
+            ...     duration_ms=1500,
+            ...     cost_usd=0.05,
+            ... )
+        """
+        # Map status to event type
+        event_map = {
+            "start": EventType.LLM_CALL_START.value,
+            "complete": EventType.LLM_CALL_COMPLETE.value,
+            "error": EventType.LLM_CALL_ERROR.value,
+            "fallback": EventType.LLM_CALL_FALLBACK.value,
+        }
+        event = event_map.get(status, EventType.LLM_CALL_COMPLETE.value)
+
+        self.emit(
+            event=event,
+            status=status,
+            duration_ms=duration_ms,
+            metadata=metadata,
+            error=error,
+            backend=backend,
+            model=model,
+            tier=tier,
+            cost_usd=cost_usd,
+            step_name=step_name,
+        )
+
+    def llm_call_start(
+        self,
+        step_name: str,
+        backend: str,
+        model: str,
+        tier: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Log LLM call start.
+
+        Args:
+            step_name: Pipeline step name
+            backend: Backend being used ("claude_cli" or "langchain")
+            model: Model ID
+            tier: Tier level
+            metadata: Additional context
+        """
+        self.emit_llm_call(
+            step_name=step_name,
+            backend=backend,
+            model=model,
+            tier=tier,
+            status="start",
+            metadata=metadata,
+        )
+
+    def llm_call_complete(
+        self,
+        step_name: str,
+        backend: str,
+        model: str,
+        tier: str,
+        duration_ms: int,
+        cost_usd: Optional[float] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Log LLM call completion.
+
+        Args:
+            step_name: Pipeline step name
+            backend: Backend used
+            model: Model ID
+            tier: Tier level
+            duration_ms: Call duration
+            cost_usd: Estimated cost
+            metadata: Additional context
+        """
+        self.emit_llm_call(
+            step_name=step_name,
+            backend=backend,
+            model=model,
+            tier=tier,
+            status="complete",
+            duration_ms=duration_ms,
+            cost_usd=cost_usd,
+            metadata=metadata,
+        )
+
+    def llm_call_error(
+        self,
+        step_name: str,
+        backend: str,
+        model: str,
+        tier: str,
+        error: str,
+        duration_ms: Optional[int] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Log LLM call error.
+
+        Args:
+            step_name: Pipeline step name
+            backend: Backend that failed
+            model: Model ID
+            tier: Tier level
+            error: Error message
+            duration_ms: Call duration before failure
+            metadata: Additional context
+        """
+        self.emit_llm_call(
+            step_name=step_name,
+            backend=backend,
+            model=model,
+            tier=tier,
+            status="error",
+            error=error,
+            duration_ms=duration_ms,
+            metadata=metadata,
+        )
+
+    def llm_call_fallback(
+        self,
+        step_name: str,
+        from_backend: str,
+        to_backend: str,
+        model: str,
+        tier: str,
+        reason: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Log LLM backend fallback.
+
+        Args:
+            step_name: Pipeline step name
+            from_backend: Original backend that failed
+            to_backend: Fallback backend being used
+            model: Model ID for fallback
+            tier: Tier level
+            reason: Reason for fallback
+            metadata: Additional context
+        """
+        fallback_metadata = {
+            "from_backend": from_backend,
+            "to_backend": to_backend,
+            "reason": reason,
+        }
+        if metadata:
+            fallback_metadata.update(metadata)
+
+        self.emit_llm_call(
+            step_name=step_name,
+            backend=to_backend,
+            model=model,
+            tier=tier,
+            status="fallback",
+            metadata=fallback_metadata,
         )
 
 

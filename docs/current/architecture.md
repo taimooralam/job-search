@@ -735,6 +735,84 @@ class PlannedAnswer(TypedDict):
 
 ## Common Modules (NEW - 2025-12-19)
 
+## UnifiedLLM Architecture (NEW - 2025-12-21)
+
+**Purpose**: Unified LLM invocation system providing Claude CLI primary execution with automatic LangChain fallback.
+
+All LLM calls in the pipeline go through UnifiedLLM which ensures:
+1. **Claude CLI Primary**: Uses Claude Code CLI for all invocations (local execution, full transparency)
+2. **LangChain Fallback**: Automatic fallback to LangChain if CLI fails (network resilience)
+3. **Per-Step Configuration**: Each pipeline step has configurable tier settings via `src/common/llm_config.py`
+4. **Backend Attribution**: All calls logged with backend (claude_cli/langchain) for cost tracking and debugging
+
+### Three-Tier Model System
+
+**Tier naming conventions**:
+- **StepConfig tier system** (`src/common/llm_config.py`): Uses `low` / `middle` / `high` naming
+- **ClaudeCLI tier system** (`src/common/claude_cli.py`): Uses `fast` / `balanced` / `quality` naming
+- **Mapping**: low ↔ fast (Haiku), middle ↔ balanced (Sonnet), high ↔ quality (Opus)
+
+**StepConfig Tiers** (`src/common/llm_config.py`):
+```python
+TIER_TO_CLAUDE_MODEL = {
+    "low": "claude-haiku-4-5-20251001",          # Lowest cost, bulk operations
+    "middle": "claude-sonnet-4-5-20250929",      # DEFAULT - best quality/cost (recommended)
+    "high": "claude-opus-4-5-20251101",          # Highest quality for critical tasks
+}
+```
+
+**Tier Comparison Table**:
+| Tier | ClaudeCLI | StepConfig | Model | Use Cases | Cost/1K Tokens | Quality |
+|------|-----------|-----------|-------|-----------|----------------|---------|
+| Level 1 | `fast` | `low` | Haiku 4.5 | Bulk ops, discovery, validation | $0.00025/$0.00125 | Good |
+| Level 2 | `balanced` | `middle` | Sonnet 4.5 | Research, analysis, default | $0.003/$0.015 | Excellent |
+| Level 3 | `quality` | `high` | Opus 4.5 | Complex reasoning, critical tasks | $0.015/$0.075 | Best-in-class |
+
+### Per-Step Configuration (`src/common/llm_config.py`)
+
+**Configuration pattern**:
+```python
+from src.common.llm_config import get_step_config
+
+# Get config for a step
+config = get_step_config("grader")
+print(config.tier)  # "low"
+print(config.get_claude_model())  # "claude-haiku-4-5-20251001"
+```
+
+**Environment variable overrides**:
+```bash
+# Override tier for a specific step
+export LLM_TIER_grader=high           # Use Opus for grader
+export LLM_MODEL_header_generator=... # Override model explicitly
+export LLM_TIMEOUT_grader=300         # Set timeout in seconds
+export LLM_RETRIES_grader=3           # Set max retries
+export LLM_USE_FALLBACK_grader=true   # Enable/disable fallback
+```
+
+**Default step configurations**:
+| Step | Tier | Model | Purpose |
+|------|------|-------|---------|
+| `grader` | `low` | Haiku | Quick quality checks |
+| `improver` | `high` | Opus | High-quality CV improvements |
+| `header_generator` | `middle` | Sonnet | Generate CV headers |
+| `role_generator` | `middle` | Sonnet | Generate role/responsibilities |
+| `persona_synthesis` | `high` | Opus | Synthesize persona for personalization |
+| `pain_point_extraction` | `middle` | Sonnet | Extract pain points from JD |
+| `fit_analysis` | `middle` | Sonnet | Analyze job fit |
+| Research operations | `middle` | Sonnet | Company/role/people research |
+
+**Logging output**:
+```json
+{
+  "backend": "claude_cli",
+  "model": "claude-sonnet-4-5-20250929",
+  "tier": "middle",
+  "cost_usd": 0.042,
+  "duration_ms": 1250
+}
+```
+
 ### ClaudeCLI Wrapper (`src/common/claude_cli.py`)
 
 **Purpose**: Reusable wrapper for invoking Claude Code CLI in headless mode with three-tier model support.

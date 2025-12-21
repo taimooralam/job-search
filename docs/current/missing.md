@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-19 (Multi-Agent Outreach with Claude CLI + MENA Cultural Awareness)
+**Last Updated**: 2025-12-21 (UnifiedLLM Migration Documentation)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -17,6 +17,63 @@
 | **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Today's Session (2025-12-21 Session 22): UnifiedLLM Migration - Documentation Complete
+
+**DOCUMENTATION: UnifiedLLM Architecture - COMPLETED**:
+- **Scope**: Documented the new unified LLM invocation architecture with Claude CLI primary + LangChain fallback per-step configuration
+- **Motivation**: Provide clear architectural guidance for LLM integration patterns with per-step tier selection and automatic fallback support
+- **Implementation files created**:
+  - `src/common/llm_config.py` - Per-step LLM configuration system with environment variable overrides
+  - `tests/unit/test_llm_config.py` - Comprehensive test suite for configuration system
+- **Documentation Updates**:
+  1. **Architecture File** (`docs/current/architecture.md`):
+     - Added new section: "UnifiedLLM Architecture (NEW - 2025-12-21)"
+     - Documented Claude CLI primary execution with LangChain fallback
+     - Clarified dual tier naming systems:
+       - `ClaudeCLI`: Uses `fast` / `balanced` / `quality` naming
+       - `StepConfig`: Uses `low` / `middle` / `high` naming
+       - Mapping: low ↔ fast (Haiku), middle ↔ balanced (Sonnet), high ↔ quality (Opus)
+     - Created tier comparison table showing both naming conventions
+     - Documented per-pipeline-step configuration via `src/common/llm_config.py`
+     - Environment variable override pattern: `LLM_TIER_{step_name}`, `LLM_MODEL_{step_name}`, etc.
+     - Listed default step configurations with tier assignments
+     - Showed logging output format with backend attribution, cost tracking, and performance metrics
+  2. **Tier System Documentation**:
+     - Created dual-tier naming documentation for clarity (ClaudeCLI vs StepConfig)
+     - Clarified tier mapping: Haiku/Sonnet/Opus models with three-tier system
+     - Created detailed comparison table showing costs, use cases, and quality levels per tier
+     - Documented cost estimates per 1K tokens for each tier
+  3. **Configuration Pattern**:
+     - Environment variable naming pattern: `LLM_{SETTING}_{step_name}`
+     - Settings: TIER, MODEL, FALLBACK_MODEL, TIMEOUT, RETRIES, USE_FALLBACK
+     - Example configurations for major steps (grader, improver, persona_synthesis, etc.)
+     - Configuration code examples with usage patterns
+- **Files Modified**:
+  - `docs/current/architecture.md` - Added comprehensive UnifiedLLM section with dual-tier documentation
+  - `docs/current/missing.md` - Updated last-modified timestamp and added detailed session entry
+- **Key Architectural Concepts Documented**:
+  - Claude CLI primary: Local execution, full transparency, headless mode
+  - LangChain fallback: Network resilience when CLI unavailable
+  - Per-step configuration: Different tiers for different layer requirements
+  - Backend attribution: Structured logging with `backend` field (claude_cli/langchain)
+  - Fallback models: GPT-4o-mini (low), GPT-4o (middle), Claude Opus via API (high)
+- **Verification**:
+  - Architecture documentation is complete with both tier naming systems
+  - Per-step configuration system fully documented
+  - Environment variable override patterns explained
+  - Default configurations listed for all major steps
+  - Backend attribution and cost tracking documented
+  - Backward compatibility ensured with LangChain fallback
+- **Impact**: Developers now have clear guidance on:
+  - Choosing tier levels for different pipeline steps
+  - Configuring tiers via environment variables
+  - Understanding dual tier naming conventions
+  - Implementing fallback behavior for robustness
+  - Tracking costs and backend selection in logs
+- **Status**: **COMPLETED 2025-12-21**
 
 ---
 

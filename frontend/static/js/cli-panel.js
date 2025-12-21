@@ -1418,6 +1418,107 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Get backend usage statistics for a specific run
+         * Analyzes logs to count Claude CLI vs LangChain fallback usage
+         * @param {string} runId - The run ID to analyze
+         * @returns {Object} - { claudeCli, langchain, claudeCliCost, langchainCost }
+         */
+        getBackendStats(runId) {
+            const run = this.runs[runId];
+            if (!run || !run.logs) {
+                return { claudeCli: 0, langchain: 0, claudeCliCost: 0, langchainCost: 0 };
+            }
+
+            let claudeCli = 0, langchain = 0, claudeCliCost = 0, langchainCost = 0;
+
+            run.logs.forEach(log => {
+                const text = log.text || '';
+                const backend = log.backend;
+
+                // Check for Claude CLI backend
+                if (backend === 'claude_cli' || text.includes('[Claude CLI]')) {
+                    claudeCli++;
+                    claudeCliCost += log.cost_usd || 0;
+                }
+                // Check for LangChain fallback
+                else if (backend === 'langchain' || text.includes('[Fallback]') || text.includes('[LangChain]')) {
+                    langchain++;
+                    langchainCost += log.cost_usd || 0;
+                }
+            });
+
+            return { claudeCli, langchain, claudeCliCost, langchainCost };
+        },
+
+        /**
+         * Get Claude CLI call count for a run
+         * @param {string} runId - The run ID
+         * @returns {number} - Number of Claude CLI calls
+         */
+        getClaudeCliCount(runId) {
+            return this.getBackendStats(runId).claudeCli;
+        },
+
+        /**
+         * Get LangChain fallback call count for a run
+         * @param {string} runId - The run ID
+         * @returns {number} - Number of LangChain fallback calls
+         */
+        getLangchainCount(runId) {
+            return this.getBackendStats(runId).langchain;
+        },
+
+        /**
+         * Get Claude CLI cost for a run
+         * @param {string} runId - The run ID
+         * @returns {number} - Cost in USD
+         */
+        getClaudeCliCost(runId) {
+            return this.getBackendStats(runId).claudeCliCost;
+        },
+
+        /**
+         * Get LangChain fallback cost for a run
+         * @param {string} runId - The run ID
+         * @returns {number} - Cost in USD
+         */
+        getLangchainCost(runId) {
+            return this.getBackendStats(runId).langchainCost;
+        },
+
+        /**
+         * Get total cost for a run (Claude CLI + LangChain)
+         * @param {string} runId - The run ID
+         * @returns {number} - Total cost in USD
+         */
+        getTotalCost(runId) {
+            const stats = this.getBackendStats(runId);
+            return stats.claudeCliCost + stats.langchainCost;
+        },
+
+        /**
+         * Check if a run has any backend tracking data
+         * @param {string} runId - The run ID
+         * @returns {boolean} - True if there's backend data to display
+         */
+        hasBackendData(runId) {
+            const stats = this.getBackendStats(runId);
+            return stats.claudeCli > 0 || stats.langchain > 0;
+        },
+
+        /**
+         * Detect backend type from log text
+         * @param {string} text - Log message text
+         * @returns {string|null} - 'claude_cli', 'langchain', or null
+         */
+        detectBackendFromText(text) {
+            if (!text) return null;
+            if (text.includes('[Claude CLI]')) return 'claude_cli';
+            if (text.includes('[Fallback]') || text.includes('[LangChain]')) return 'langchain';
+            return null;
+        },
+
+        /**
          * Get the title of the active or running run
          */
         getActiveRunTitle() {

@@ -226,14 +226,72 @@
                                  'cli-log--error': log.type === 'error',
                                  'cli-log--warning': log.type === 'warning',
                                  'cli-log--success': log.type === 'success',
-                                 'cli-log--debug': log.type === 'debug'
+                                 'cli-log--debug': log.type === 'debug',
+                                 'claude-cli': log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]')),
+                                 'langchain-fallback': log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]')))
                              }">
-                            <span class="cli-log-prefix">></span>
+                            <!-- Backend indicator icon -->
+                            <span class="cli-log-backend-icon"
+                                  x-show="log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]'))"
+                                  title="Claude CLI">&#129302;</span>
+                            <span class="cli-log-backend-icon"
+                                  x-show="log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]')))"
+                                  title="LangChain Fallback">&#9888;&#65039;</span>
+                            <span class="cli-log-prefix"
+                                  x-show="!(log.backend === 'claude_cli' || (log.text && log.text.includes('[Claude CLI]'))) && !(log.backend === 'langchain' || (log.text && (log.text.includes('[Fallback]') || log.text.includes('[LangChain]'))))">></span>
                             <span x-text="log.text"></span>
+                            <!-- Tier badge if available -->
+                            <span class="cli-tier-badge"
+                                  x-show="log.tier"
+                                  :class="log.tier"
+                                  x-text="log.tier"></span>
                         </div>
                     </template>
                 </div>
             </template>
+        </div>
+
+        <!-- Backend Stats / Cost Panel (collapsible) -->
+        <div class="cli-cost-panel"
+             x-show="$store.cli.activeRunId && $store.cli.runs[$store.cli.activeRunId] && $store.cli.hasBackendData($store.cli.activeRunId)"
+             x-data="{ costPanelOpen: true }">
+            <div class="cli-cost-header">
+                <span class="cli-cost-title">Backend Stats</span>
+                <button class="cli-cost-toggle" @click="costPanelOpen = !costPanelOpen" :title="costPanelOpen ? 'Collapse' : 'Expand'">
+                    <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-180': !costPanelOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="cli-cost-content" x-show="costPanelOpen" x-collapse>
+                <!-- Claude CLI row -->
+                <div class="cli-cost-row">
+                    <div class="cli-cost-row-label">
+                        <span class="icon">&#129302;</span>
+                        <span>Claude CLI</span>
+                    </div>
+                    <div class="cli-cost-row-stats">
+                        <span class="cli-cost-count" x-text="$store.cli.getClaudeCliCount($store.cli.activeRunId) + ' calls'"></span>
+                        <span class="cli-cost-amount" x-text="'$' + $store.cli.getClaudeCliCost($store.cli.activeRunId).toFixed(4)"></span>
+                    </div>
+                </div>
+                <!-- LangChain Fallback row -->
+                <div class="cli-cost-row fallback" x-show="$store.cli.getLangchainCount($store.cli.activeRunId) > 0">
+                    <div class="cli-cost-row-label">
+                        <span class="icon">&#9888;&#65039;</span>
+                        <span>LangChain Fallback</span>
+                    </div>
+                    <div class="cli-cost-row-stats">
+                        <span class="cli-cost-count" x-text="$store.cli.getLangchainCount($store.cli.activeRunId) + ' calls'"></span>
+                        <span class="cli-cost-amount" x-text="'$' + $store.cli.getLangchainCost($store.cli.activeRunId).toFixed(4)"></span>
+                    </div>
+                </div>
+                <!-- Total row (only show if there are costs) -->
+                <div class="cli-cost-total" x-show="$store.cli.getTotalCost($store.cli.activeRunId) > 0">
+                    <span class="cli-cost-total-label">Total</span>
+                    <span class="cli-cost-total-amount" x-text="'$' + $store.cli.getTotalCost($store.cli.activeRunId).toFixed(4)"></span>
+                </div>
+            </div>
         </div>
 
         <!-- Layer Status Footer -->

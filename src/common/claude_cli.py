@@ -3,9 +3,9 @@ Claude Code CLI Wrapper with Three-Tier Model Support
 
 Provides a reusable wrapper for invoking Claude Code CLI in headless mode.
 Supports three Claude model tiers for cost/quality tradeoffs:
-- Fast: Claude Haiku 4.5 (lowest cost, good for bulk)
-- Balanced: Claude Sonnet 4.5 (DEFAULT - best quality/cost ratio)
-- Quality: Claude Opus 4.5 (highest quality)
+- Low: Claude Haiku 4.5 (lowest cost, good for bulk)
+- Middle: Claude Sonnet 4.5 (DEFAULT - best quality/cost ratio)
+- High: Claude Opus 4.5 (highest quality)
 
 Usage:
     # Single invocation with default tier (Sonnet)
@@ -13,11 +13,11 @@ Usage:
     result = cli.invoke(prompt, job_id="123")
 
     # With specific tier
-    cli = ClaudeCLI(tier="fast")  # Haiku for bulk processing
+    cli = ClaudeCLI(tier="low")  # Haiku for bulk processing
     result = cli.invoke(prompt, job_id="123")
 
-    # With quality tier
-    cli = ClaudeCLI(tier="quality")  # Opus for critical extractions
+    # With high tier
+    cli = ClaudeCLI(tier="high")  # Opus for critical extractions
     result = cli.invoke(prompt, job_id="123")
 
     # Batch invocation
@@ -43,23 +43,30 @@ logger = logging.getLogger(__name__)
 
 # Three-tier Claude model system
 CLAUDE_MODEL_TIERS = {
-    "fast": "claude-haiku-4-5-20251001",       # Lowest cost, good for bulk
-    "balanced": "claude-sonnet-4-5-20250929",  # DEFAULT - best quality/cost
-    "quality": "claude-opus-4-5-20251101",     # Highest quality
+    "low": "claude-haiku-4-5-20251001",       # Lowest cost, good for bulk
+    "middle": "claude-sonnet-4-5-20250929",   # DEFAULT - best quality/cost
+    "high": "claude-opus-4-5-20251101",       # Highest quality
+}
+
+# Legacy tier name aliases for backward compatibility
+TIER_ALIASES = {
+    "fast": "low",
+    "balanced": "middle",
+    "quality": "high",
 }
 
 # Default tier for batch operations
-DEFAULT_BATCH_TIER = "balanced"  # Sonnet 4.5 by default
+DEFAULT_BATCH_TIER = "middle"  # Sonnet 4.5 by default
 
 # Approximate costs per 1K tokens (USD)
 CLAUDE_TIER_COSTS = {
-    "fast": {"input": 0.00025, "output": 0.00125},      # Haiku
-    "balanced": {"input": 0.003, "output": 0.015},      # Sonnet
-    "quality": {"input": 0.015, "output": 0.075},       # Opus
+    "low": {"input": 0.00025, "output": 0.00125},      # Haiku
+    "middle": {"input": 0.003, "output": 0.015},       # Sonnet
+    "high": {"input": 0.015, "output": 0.075},         # Opus
 }
 
 # Type alias for tier
-TierType = Literal["fast", "balanced", "quality"]
+TierType = Literal["low", "middle", "high"]
 
 
 @dataclass
@@ -102,7 +109,7 @@ class ClaudeCLI:
     tradeoffs.
 
     Attributes:
-        tier: Model tier ("fast", "balanced", "quality")
+        tier: Model tier ("low", "middle", "high")
         model: Actual Claude model ID
         timeout: Maximum seconds to wait for CLI response
         log_callback: Optional callback for log streaming
@@ -110,7 +117,7 @@ class ClaudeCLI:
 
     def __init__(
         self,
-        tier: TierType = "balanced",
+        tier: TierType = "middle",
         timeout: int = 180,
         log_callback: Optional[LogCallback] = None,
         model_override: Optional[str] = None,
@@ -119,11 +126,14 @@ class ClaudeCLI:
         Initialize the Claude CLI wrapper.
 
         Args:
-            tier: Model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus)
+            tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus)
             timeout: CLI timeout in seconds (default 180s for complex operations)
             log_callback: Optional callback for log events (for Redis live-tail)
             model_override: Override model selection (for testing or special cases)
         """
+        # Handle legacy tier names for backward compatibility
+        if tier in TIER_ALIASES:
+            tier = TIER_ALIASES[tier]  # type: ignore
         self.tier = tier
         self.model = model_override or self._get_model_for_tier(tier)
         self.timeout = timeout
@@ -137,7 +147,7 @@ class ClaudeCLI:
             logger.debug(f"Using model from CLAUDE_CODE_MODEL env: {env_override}")
             return env_override
 
-        return CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["balanced"])
+        return CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["middle"])
 
     def _default_log(self, job_id: str, level: str, data: Dict[str, Any]) -> None:
         """Default logging - replace with Redis publisher if needed."""
@@ -418,14 +428,17 @@ class ClaudeCLI:
         Estimate cost for token usage at given tier.
 
         Args:
-            tier: Model tier
+            tier: Model tier ("low", "middle", "high")
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
 
         Returns:
             Estimated cost in USD
         """
-        costs = CLAUDE_TIER_COSTS.get(tier, CLAUDE_TIER_COSTS["balanced"])
+        # Handle legacy tier names
+        if tier in TIER_ALIASES:
+            tier = TIER_ALIASES[tier]  # type: ignore
+        costs = CLAUDE_TIER_COSTS.get(tier, CLAUDE_TIER_COSTS["middle"])
         input_cost = (input_tokens / 1000) * costs["input"]
         output_cost = (output_tokens / 1000) * costs["output"]
         return input_cost + output_cost
@@ -440,24 +453,24 @@ class ClaudeCLI:
         """
         return [
             {
-                "value": "fast",
-                "label": "Fast",
+                "value": "low",
+                "label": "Low (Haiku)",
                 "model": "Claude Haiku 4.5",
                 "description": "Lowest cost, good for bulk processing",
                 "icon": "zap",
                 "badge": "~$0.01/op",
             },
             {
-                "value": "balanced",
-                "label": "Balanced (Default)",
+                "value": "middle",
+                "label": "Middle (Sonnet)",
                 "model": "Claude Sonnet 4.5",
                 "description": "Best quality/cost ratio - recommended for most tasks",
                 "icon": "scale",
                 "badge": "~$0.05/op",
             },
             {
-                "value": "quality",
-                "label": "Quality",
+                "value": "high",
+                "label": "High (Opus)",
                 "model": "Claude Opus 4.5",
                 "description": "Highest quality for critical extractions",
                 "icon": "star",
@@ -470,7 +483,7 @@ class ClaudeCLI:
 def invoke_claude(
     prompt: str,
     job_id: str,
-    tier: TierType = "balanced",
+    tier: TierType = "middle",
     timeout: int = 180,
 ) -> CLIResult:
     """
@@ -479,7 +492,7 @@ def invoke_claude(
     Args:
         prompt: Full prompt text
         job_id: Tracking ID
-        tier: Model tier (default "balanced" = Sonnet)
+        tier: Model tier (default "middle" = Sonnet)
         timeout: CLI timeout in seconds
 
     Returns:
