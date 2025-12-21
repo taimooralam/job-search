@@ -827,8 +827,8 @@ document.addEventListener('alpine:init', () => {
                     // Poller will auto-retry, so just log the error
                 });
 
-                // Start polling
-                poller.start();
+                // Start polling (fire-and-forget with error handling)
+                poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
                 cliDebug(`Log polling subscription established for ${runId}`);
 
             } catch (err) {

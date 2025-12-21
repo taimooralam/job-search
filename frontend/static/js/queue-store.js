@@ -119,8 +119,8 @@ document.addEventListener('alpine:init', () => {
                 this.error = error?.message || 'Connection error';
             });
 
-            // Start polling
-            this._poller.start();
+            // Start polling (fire-and-forget with error handling)
+            this._poller.start().catch(err => console.error('[QueueStore] Polling failed:', err));
             console.log('[QueueStore] Initialized with HTTP polling');
         },
 

@@ -794,8 +794,8 @@ document.addEventListener('alpine:init', () => {
                         // LogPoller auto-retries, so we just log
                     });
 
-                    // Start the poller
-                    poller.start();
+                    // Start the poller (fire-and-forget with error handling)
+                    poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
                 });
 
             } catch (error) {
@@ -1088,8 +1088,8 @@ document.addEventListener('alpine:init', () => {
                 // Don't dispatch error - poller will retry and logs are persisted
             });
 
-            // Start polling
-            poller.start();
+            // Start polling (fire-and-forget with error handling)
+            poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
         },
 
         /**
