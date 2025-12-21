@@ -14,6 +14,7 @@ import asyncio
 import json
 import logging
 import re
+import traceback
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
 from firecrawl import FirecrawlApp
@@ -297,6 +298,8 @@ class RoleResearcher:
         company = state["company"]
         job_description = state.get("job_description", "")
 
+        # Log which method is being used for visibility
+        self.logger.info(f"[Claude API] Using Claude API ({self.tier} tier, model: {CLAUDE_MODEL_TIERS.get(self.tier, 'unknown')}) for role research")
         self.logger.info(f"[Claude API] Researching role: {title} at {company}")
 
         # Extract company signals if available (from Phase 5.1)
@@ -362,12 +365,14 @@ class RoleResearcher:
             }
 
         except Exception as e:
-            error_msg = f"Claude API role research failed: {str(e)}"
-            self.logger.error(error_msg)
+            tb = traceback.format_exc()
+            error_msg = f"Claude API role research failed: {type(e).__name__}: {str(e)}"
+            self.logger.error(f"{error_msg}\nTraceback:\n{tb}")
 
             return {
                 "role_research": None,
-                "errors": state.get("errors", []) + [error_msg]
+                "errors": state.get("errors", []) + [error_msg],
+                "role_research_traceback": tb,
             }
 
     @retry(
@@ -587,11 +592,11 @@ class RoleResearcher:
         """
         # Route to Claude API backend if enabled (new default)
         if self.use_claude_api:
-            self.logger.info(f"Using Claude API ({self.tier} tier) for role research")
+            self.logger.info(f"[Research Backend] Using Claude API ({self.tier} tier) for role research")
             return self._research_role_with_claude_api(state)
 
         # Legacy FireCrawl + OpenRouter mode
-        self.logger.info("Using FireCrawl + OpenRouter (legacy mode) for role research")
+        self.logger.info(f"[Research Backend] Using FireCrawl + OpenRouter (legacy mode) for role research")
 
         try:
             # Extract company signals if available (from Phase 5.1)
@@ -652,13 +657,15 @@ class RoleResearcher:
             }
 
         except Exception as e:
-            # Log error and return empty (don't block pipeline)
-            error_msg = f"Layer 3.5 (Role Researcher) failed: {str(e)}"
-            self.logger.error(error_msg)
+            # Log error with full traceback and return empty (don't block pipeline)
+            tb = traceback.format_exc()
+            error_msg = f"Layer 3.5 (Role Researcher) failed: {type(e).__name__}: {str(e)}"
+            self.logger.error(f"{error_msg}\nTraceback:\n{tb}")
 
             return {
                 "role_research": None,
-                "errors": state.get("errors", []) + [error_msg]
+                "errors": state.get("errors", []) + [error_msg],
+                "role_research_traceback": tb,
             }
 
 
@@ -737,7 +744,18 @@ def role_researcher_node(
             struct_logger.layer_complete(4, "role_researcher")
 
     except Exception as e:
-        struct_logger.layer_error(4, str(e), "role_researcher")
+        tb = traceback.format_exc()
+        error_detail = f"{type(e).__name__}: {str(e)}"
+        struct_logger.layer_error(
+            4,
+            error_detail,
+            "role_researcher",
+            metadata={
+                "exception_type": type(e).__name__,
+                "traceback": tb,
+            }
+        )
+        logger.error(f"Role research failed: {error_detail}\n{tb}")
         raise
 
     logger.info("="*60)

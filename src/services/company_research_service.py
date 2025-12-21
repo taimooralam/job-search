@@ -459,11 +459,18 @@ class CompanyResearchService(OperationService):
                             # Update state with role research for people mapper
                             state["role_research"] = role_research
                         else:
+                            # Extract detailed error information from the result
+                            role_errors = role_result.get("errors", [])
+                            role_traceback = role_result.get("role_research_traceback", "")
+                            error_detail = role_errors[-1] if role_errors else "Unknown error"
+
                             layer_status["role_research"] = {
                                 "status": "failed",
-                                "message": "Role research failed"
+                                "message": f"Role research failed: {error_detail}",
+                                "errors": role_errors,
+                                "traceback": role_traceback,
                             }
-                            await emit_progress("role_research", "failed", "Role research failed")
+                            await emit_progress("role_research", "failed", f"Role research failed: {error_detail}")
                     else:
                         layer_status["role_research"] = {
                             "status": "skipped",
