@@ -1,8 +1,8 @@
 /**
- * LogPoller - HTTP polling replacement for SSE log streaming
+ * LogPoller - HTTP polling for pipeline log streaming
  *
- * This class replaces EventSource SSE streaming with HTTP polling.
- * It enables the "replay + live tail" pattern:
+ * Replaces EventSource SSE streaming with HTTP polling.
+ * Enables the "replay + live tail" pattern:
  * 1. On start, fetch all past logs (since=0)
  * 2. Poll every 200ms for new logs
  * 3. Stop polling when status is completed/failed
@@ -12,7 +12,11 @@
  * - 200ms polling for near-instant feel
  * - Automatic completion detection
  * - Layer status updates
- * - Direct browser → runner communication (bypasses Flask proxy for speed)
+ * - Backend attribution (Claude CLI vs LangChain)
+ * - Tier tracking (low, middle, high)
+ * - Cost tracking per log entry
+ * - Direct browser -> runner communication (bypasses Flask proxy for speed)
+ * - Dispatches events to execution store for unified state management
  *
  * Architecture Note:
  * Log polling calls the runner service DIRECTLY (not through Flask proxy).
@@ -57,6 +61,7 @@
             this.totalCount = 0;
             this.status = 'unknown';
             this.lastLayerStatus = null;
+            this._consecutiveErrors = 0;
 
             // Callbacks
             this._onLogCallbacks = [];
@@ -72,7 +77,7 @@
          * Register callback for each log entry.
          *
          * @param {function} callback - Function called with (log) for each entry
-         *   log = { index: number, message: string }
+         *   log = { index: number, message: string, backend: string|null, tier: string|null, cost_usd: number }
          */
         onLog(callback) {
             if (typeof callback === 'function') {
@@ -161,12 +166,15 @@
                     const data = await this._fetchLogs();
 
                     if (data === null) {
-                        // Error occurred, wait and retry
-                        await this._sleep(this.errorInterval);
+                        // Error occurred, wait and retry with backoff
+                        await this._sleep(this._getBackoffInterval());
                         continue;
                     }
 
-                    // Emit each log
+                    // Reset error counter on success
+                    this._consecutiveErrors = 0;
+
+                    // Emit each log with backend attribution
                     for (const log of data.logs) {
                         this._emitLog(log);
                     }
@@ -215,6 +223,18 @@
         }
 
         /**
+         * Calculate backoff interval for consecutive errors
+         */
+        _getBackoffInterval() {
+            if (this._consecutiveErrors <= 3) {
+                return this.errorInterval;
+            }
+            // Exponential backoff with max of 10 seconds
+            const backoff = this.errorInterval * Math.pow(2, this._consecutiveErrors - 3);
+            return Math.min(backoff, 10000);
+        }
+
+        /**
          * Internal: Fetch logs from server.
          * Calls runner directly (cross-origin) - no credentials needed.
          */
@@ -241,6 +261,7 @@
                 if (response.status === 404) {
                     // Run not found - could be too early or expired
                     this._log('Run not found (404)');
+                    this._consecutiveErrors++;
                     return null;
                 }
 
@@ -252,6 +273,7 @@
 
             } catch (error) {
                 this._log('Fetch error:', error.message);
+                this._consecutiveErrors++;
 
                 // Dispatch poll-end event (failure)
                 this._dispatchPollEvent('poller:poll-end', { success: false, error: error.message });
@@ -282,11 +304,22 @@
 
         /**
          * Internal: Emit log to listeners.
+         * Includes backend attribution, tier, and cost data.
          */
         _emitLog(log) {
+            // Normalize log entry with backend attribution
+            const normalizedLog = {
+                index: log.index,
+                message: log.message || log.text || '',
+                backend: log.backend || this._detectBackend(log.message || log.text || ''),
+                tier: log.tier || null,
+                cost_usd: log.cost_usd || 0,
+                timestamp: log.timestamp || Date.now()
+            };
+
             for (const callback of this._onLogCallbacks) {
                 try {
-                    callback(log);
+                    callback(normalizedLog);
                 } catch (e) {
                     console.error('[LogPoller] Log callback error:', e);
                 }
@@ -294,9 +327,26 @@
         }
 
         /**
+         * Internal: Detect backend from log message text
+         */
+        _detectBackend(text) {
+            if (!text) return null;
+            if (text.includes('[Claude CLI]')) return 'claude_cli';
+            if (text.includes('[Fallback]') || text.includes('[LangChain]')) return 'langchain';
+            return null;
+        }
+
+        /**
          * Internal: Emit layer status to listeners.
          */
         _emitLayerStatus(layerStatus) {
+            // Dispatch to execution store for unified tracking
+            if (typeof global.dispatchEvent === 'function') {
+                global.dispatchEvent(new CustomEvent('execution:layer-status', {
+                    detail: { runId: this.runId, layerStatus }
+                }));
+            }
+
             for (const callback of this._onLayerStatusCallbacks) {
                 try {
                     callback(layerStatus);
@@ -310,6 +360,13 @@
          * Internal: Emit completion to listeners.
          */
         _emitComplete(status, error) {
+            // Dispatch to execution store for unified tracking
+            if (typeof global.dispatchEvent === 'function') {
+                global.dispatchEvent(new CustomEvent('execution:complete', {
+                    detail: { runId: this.runId, status, error }
+                }));
+            }
+
             for (const callback of this._onCompleteCallbacks) {
                 try {
                     callback(status, error);

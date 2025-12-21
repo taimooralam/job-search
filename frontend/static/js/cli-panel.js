@@ -738,12 +738,31 @@ document.addEventListener('alpine:init', () => {
                     const text = log.message;
                     const logType = window.cliDetectLogType?.(text) || 'info';
 
+                    // Detect backend from log entry or message text
+                    const backend = log.backend || this.detectBackendFromText(text);
+
+                    // Extract tier if present in log
+                    const tier = log.tier || null;
+
+                    // Extract cost if present
+                    const cost_usd = log.cost_usd || 0;
+
                     // Use spread for Alpine.js reactivity
                     this.runs[runId].logs = [...this.runs[runId].logs, {
                         ts: Date.now(),
                         type: logType,
-                        text
+                        text,
+                        backend,
+                        tier,
+                        cost_usd
                     }];
+
+                    // Dispatch to execution store for unified tracking
+                    if (typeof window.dispatchEvent === 'function') {
+                        window.dispatchEvent(new CustomEvent('execution:log', {
+                            detail: { runId, log: { message: text, backend, tier, cost_usd, type: logType } }
+                        }));
+                    }
 
                     // Trim if too many logs
                     if (this.runs[runId].logs.length > MAX_LOGS_PER_RUN) {
@@ -1082,6 +1101,13 @@ document.addEventListener('alpine:init', () => {
             // Expand panel to show logs
             this.expanded = true;
 
+            // Dispatch to execution store for unified tracking
+            if (typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('execution:start', {
+                    detail: { runId, jobId, jobTitle, action }
+                }));
+            }
+
             // Emit to RxJS runCreated$ subject (triggers race() in _queuePendingLog)
             if (this._rxjsAvailable && this._rxjsSubjects?.runCreated$) {
                 this._rxjsSubjects.runCreated$.next({ runId, jobId });
@@ -1179,6 +1205,13 @@ document.addEventListener('alpine:init', () => {
             }
 
             console.log('[CLI] Run completed:', { runId, status });
+
+            // Dispatch to execution store for unified tracking
+            if (typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('execution:complete', {
+                    detail: { runId, status: status === 'success' ? 'completed' : 'failed', error }
+                }));
+            }
 
             // Show toast if panel is collapsed
             if (!this.expanded && typeof showToast === 'function') {

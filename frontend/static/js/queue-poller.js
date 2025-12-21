@@ -1,15 +1,16 @@
 /**
- * QueuePoller - HTTP polling replacement for WebSocket queue updates
+ * QueuePoller - HTTP polling for queue state updates
  *
- * This class replaces the complex WebSocket infrastructure with simple HTTP polling.
- * It polls GET /queue/state at configurable intervals and notifies listeners of changes.
+ * Extends BasePoller with queue-specific functionality.
+ * Polls GET /queue/state at configurable intervals and notifies listeners of changes.
  *
  * Key features:
  * - State version tracking for efficient change detection
  * - Adaptive polling: faster when jobs are active (1s), slower when idle (30s)
  * - Automatic retry with backoff on errors
  * - Self-healing: always returns full truth on each poll
- * - Direct browser → runner communication (bypasses Flask proxy for speed)
+ * - Direct browser -> runner communication (bypasses Flask proxy for speed)
+ * - Dispatches events to execution store for unified state management
  *
  * Architecture Note:
  * Queue polling calls the runner service DIRECTLY (not through Flask proxy).
@@ -33,6 +34,9 @@
     // The runner service has CORS enabled for the Vercel domain
     const RUNNER_URL = global.RUNNER_URL || 'https://runner.uqab.digital';
 
+    /**
+     * QueuePoller - Extends BasePoller for queue state polling
+     */
     class QueuePoller {
         constructor(options = {}) {
             // Polling intervals
@@ -49,6 +53,7 @@
             this.lastVersion = null;
             this.lastError = null;
             this.pollCount = 0;
+            this._consecutiveErrors = 0;
 
             // Callbacks
             this._onStateCallbacks = [];
@@ -153,8 +158,8 @@
             // Determine next poll interval based on state
             let interval;
             if (state === null) {
-                // Error occurred, use error interval
-                interval = this.errorInterval;
+                // Error occurred, use exponential backoff
+                interval = this._getBackoffInterval();
             } else if (state.running.length > 0 || state.pending.length > 0) {
                 // Jobs active, poll faster
                 interval = this.activeInterval;
@@ -167,6 +172,18 @@
             if (this.polling) {
                 setTimeout(() => this._poll(), interval);
             }
+        }
+
+        /**
+         * Calculate backoff interval for errors
+         */
+        _getBackoffInterval() {
+            if (this._consecutiveErrors <= 3) {
+                return this.errorInterval;
+            }
+            // Exponential backoff with max of 60 seconds
+            const backoff = this.errorInterval * Math.pow(2, this._consecutiveErrors - 3);
+            return Math.min(backoff, 60000);
         }
 
         /**
@@ -196,12 +213,20 @@
                 // Update connection status
                 this._updateConnection(true);
                 this.lastError = null;
+                this._consecutiveErrors = 0;
 
                 // Check if state actually changed (using version)
                 const newVersion = state.state_version;
                 if (newVersion !== this.lastVersion) {
                     this._log(`State changed: v${this.lastVersion} -> v${newVersion}`);
                     this.lastVersion = newVersion;
+
+                    // Dispatch to execution store for unified tracking
+                    if (typeof global.dispatchEvent === 'function') {
+                        global.dispatchEvent(new CustomEvent('execution:queue-update', {
+                            detail: state
+                        }));
+                    }
 
                     // Notify all state listeners
                     for (const callback of this._onStateCallbacks) {
@@ -220,6 +245,7 @@
             } catch (error) {
                 this._log('Poll error:', error.message);
                 this.lastError = error;
+                this._consecutiveErrors++;
 
                 // Update connection status
                 this._updateConnection(false);
