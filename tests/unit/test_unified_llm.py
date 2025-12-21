@@ -639,3 +639,144 @@ class TestStructuredLoggerIntegration:
         params = list(sig.parameters.keys())
 
         assert "struct_logger" in params
+
+    @pytest.mark.asyncio
+    async def test_event_has_correct_step_name(self, mocker, capsys):
+        """Should emit event with correct step_name from initialization."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"data": "test"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 1000
+        mock_result.model = "claude-sonnet-4-5-20250929"
+        mock_result.tier = "middle"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.cost_usd = 0.01
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-123", enabled=True)
+        llm = UnifiedLLM(step_name="custom_step", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        event = json.loads(captured.out.strip())
+        assert event["step_name"] == "custom_step"
+
+    @pytest.mark.asyncio
+    async def test_event_includes_all_required_metadata(self, mocker, capsys):
+        """Should emit event with all required metadata fields."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"data": "test"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 2500
+        mock_result.model = "claude-sonnet-4-5-20250929"
+        mock_result.tier = "high"
+        mock_result.input_tokens = 500
+        mock_result.output_tokens = 300
+        mock_result.cost_usd = 0.05
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-456", enabled=True)
+        llm = UnifiedLLM(step_name="test_step", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test prompt", job_id="job_789")
+
+        captured = capsys.readouterr()
+        event = json.loads(captured.out.strip())
+
+        # Verify all expected fields exist
+        required_fields = ["event", "backend", "model", "step_name"]
+        for field in required_fields:
+            assert field in event, f"Missing required field: {field}"
+
+        # Verify cost tracking is included
+        assert event.get("cost_usd") == 0.05
+
+    @pytest.mark.asyncio
+    async def test_event_includes_backend_and_model_on_success(self, mocker, capsys):
+        """Should include backend and model in event when primary succeeds."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"data": "test"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 1000
+        mock_result.model = "claude-sonnet"
+        mock_result.tier = "middle"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.cost_usd = 0.01
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-111", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        event = json.loads(captured.out.strip())
+        assert event["backend"] == "claude_cli"
+        assert event["model"] == "claude-sonnet"
+
+    @pytest.mark.asyncio
+    async def test_fallback_event_primary_error_captured(self, mocker, capsys):
+        """Should capture primary error reason in fallback event."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_langchain = mocker.patch("src.common.llm_factory.create_tracked_llm_for_model")
+
+        # CLI fails with specific error
+        cli_result = MagicMock()
+        cli_result.success = False
+        cli_result.error = "Connection timeout after 30s"
+        cli_result.model = "claude-sonnet"
+        cli_result.tier = "middle"
+        mock_cli_class.return_value.invoke.return_value = cli_result
+
+        # LangChain succeeds
+        mock_llm = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = '{"data": "fallback"}'
+        mock_response.usage_metadata = None
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        mock_langchain.return_value = mock_llm
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-222", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split("\n")
+
+        # First event should be fallback with primary error
+        fallback_event = json.loads(lines[0])
+        assert fallback_event["event"] == "llm_call_fallback"
+        # Primary backend error should be captured in metadata or event
+        assert "metadata" in fallback_event or "primary_error" in fallback_event
