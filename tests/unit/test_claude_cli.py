@@ -65,23 +65,23 @@ class TestClaudeCLIInitialization:
     """Test ClaudeCLI initialization and configuration."""
 
     def test_init_with_default_tier(self):
-        """Should initialize with balanced tier by default."""
+        """Should initialize with middle tier by default."""
         cli = ClaudeCLI()
-        assert cli.tier == "balanced"
-        assert cli.model == CLAUDE_MODEL_TIERS["balanced"]
+        assert cli.tier == "middle"
+        assert cli.model == CLAUDE_MODEL_TIERS["middle"]
         assert cli.timeout == 180
 
-    def test_init_with_fast_tier(self):
-        """Should initialize with fast tier (Haiku)."""
-        cli = ClaudeCLI(tier="fast")
-        assert cli.tier == "fast"
-        assert cli.model == CLAUDE_MODEL_TIERS["fast"]
+    def test_init_with_low_tier(self):
+        """Should initialize with low tier (Haiku)."""
+        cli = ClaudeCLI(tier="low")
+        assert cli.tier == "low"
+        assert cli.model == CLAUDE_MODEL_TIERS["low"]
 
-    def test_init_with_quality_tier(self):
-        """Should initialize with quality tier (Opus)."""
-        cli = ClaudeCLI(tier="quality")
-        assert cli.tier == "quality"
-        assert cli.model == CLAUDE_MODEL_TIERS["quality"]
+    def test_init_with_high_tier(self):
+        """Should initialize with high tier (Opus)."""
+        cli = ClaudeCLI(tier="high")
+        assert cli.tier == "high"
+        assert cli.model == CLAUDE_MODEL_TIERS["high"]
 
     def test_init_with_custom_timeout(self):
         """Should accept custom timeout value."""
@@ -117,7 +117,7 @@ class TestClaudeCLIInvoke:
         """Successful invocation returns CLIResult with parsed data."""
         mock_subprocess_run.return_value = mock_successful_subprocess
 
-        cli = ClaudeCLI(tier="balanced")
+        cli = ClaudeCLI(tier="middle")
         result = cli.invoke(
             prompt="Extract pain points from this JD",
             job_id="test_001"
@@ -131,13 +131,13 @@ class TestClaudeCLIInvoke:
         assert "--output-format" in call_args
         assert "json" in call_args
         assert "--model" in call_args
-        assert CLAUDE_MODEL_TIERS["balanced"] in call_args
+        assert CLAUDE_MODEL_TIERS["middle"] in call_args
 
         # Verify result
         assert result.success is True
         assert result.job_id == "test_001"
-        assert result.model == CLAUDE_MODEL_TIERS["balanced"]
-        assert result.tier == "balanced"
+        assert result.model == CLAUDE_MODEL_TIERS["middle"]
+        assert result.tier == "middle"
         assert result.result is not None
         assert "pain_points" in result.result
 
@@ -467,9 +467,9 @@ class TestTierDisplayInfo:
 
         # Verify tier values
         tier_values = [t["value"] for t in tiers]
-        assert "fast" in tier_values
-        assert "balanced" in tier_values
-        assert "quality" in tier_values
+        assert "low" in tier_values
+        assert "middle" in tier_values
+        assert "high" in tier_values
 
 
 # ===== CLIRESULT DATACLASS TESTS =====
@@ -552,12 +552,12 @@ class TestConvenienceFunction:
         result = invoke_claude(
             prompt="test prompt",
             job_id="test_001",
-            tier="fast",
+            tier="low",
             timeout=120
         )
 
         assert result.success is True
-        assert result.tier == "fast"
+        assert result.tier == "low"
         assert result.job_id == "test_001"
 
 
