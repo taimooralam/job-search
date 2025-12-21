@@ -1287,6 +1287,32 @@ async def get_diagnostics() -> DiagnosticsResponse:
 # =============================================================================
 
 
+# Main event loop reference for thread-safe callbacks from sync threads
+# Set during startup, used by operation_streaming.append_operation_log()
+_main_loop: Optional[asyncio.AbstractEventLoop] = None
+
+
+def get_main_loop() -> Optional[asyncio.AbstractEventLoop]:
+    """
+    Get the main event loop for thread-safe callbacks.
+
+    Used by operation_streaming.append_operation_log() to safely signal
+    the log_event from worker threads that are running blocking operations.
+
+    Returns:
+        The main event loop, or None if not yet initialized
+    """
+    return _main_loop
+
+
+@app.on_event("startup")
+async def startup_store_event_loop():
+    """Store reference to main event loop for thread-safe callbacks."""
+    global _main_loop
+    _main_loop = asyncio.get_running_loop()
+    logger.info("Stored main event loop reference for thread-safe callbacks")
+
+
 @app.on_event("startup")
 async def startup_queue_manager():
     """Initialize queue manager on startup if Redis is configured."""

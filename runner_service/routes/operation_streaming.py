@@ -93,9 +93,67 @@ def get_operation_state(run_id: str) -> Optional[OperationState]:
     return _operation_runs.get(run_id)
 
 
+def _is_main_thread_loop() -> bool:
+    """
+    Check if we're running in the main event loop thread.
+
+    Returns True if:
+    - There's a running event loop in this thread
+    - It matches the stored main loop
+
+    Returns False if we're in a worker thread (e.g., ThreadPoolExecutor).
+    """
+    try:
+        current_loop = asyncio.get_running_loop()
+        # Import here to avoid circular imports
+        from runner_service.app import get_main_loop
+        main_loop = get_main_loop()
+        return main_loop is not None and current_loop is main_loop
+    except RuntimeError:
+        # No running loop in this thread = we're in a worker thread
+        return False
+
+
+def _schedule_async_task(coro) -> None:
+    """
+    Schedule an async coroutine for execution in a thread-safe manner.
+
+    Works from both the main event loop thread and worker threads.
+    """
+    if _is_main_thread_loop():
+        asyncio.create_task(coro)
+    else:
+        from runner_service.app import get_main_loop
+        main_loop = get_main_loop()
+        if main_loop and not main_loop.is_closed():
+            asyncio.run_coroutine_threadsafe(coro, main_loop)
+
+
+def _signal_log_event(state: OperationState) -> None:
+    """
+    Signal the log_event in a thread-safe manner.
+
+    Works from both the main event loop thread and worker threads.
+    """
+    if not state.log_event:
+        return
+
+    if _is_main_thread_loop():
+        state.log_event.set()
+    else:
+        from runner_service.app import get_main_loop
+        main_loop = get_main_loop()
+        if main_loop and not main_loop.is_closed():
+            main_loop.call_soon_threadsafe(state.log_event.set)
+
+
 def append_operation_log(run_id: str, message: str) -> None:
     """
     Append a log message to an operation run.
+
+    Thread-safe: Works correctly when called from either:
+    - The main event loop thread (FastAPI handlers, background tasks)
+    - Worker threads (ThreadPoolExecutor running blocking operations)
 
     Args:
         run_id: Operation run ID
@@ -108,16 +166,15 @@ def append_operation_log(run_id: str, message: str) -> None:
     state.logs.append(message)
     state.updated_at = datetime.utcnow()
 
-    # Signal SSE generator that new logs are available (reactive streaming)
-    if state.log_event:
-        state.log_event.set()
-
     # Trim logs if exceeding buffer limit
     if len(state.logs) > MAX_LOG_BUFFER:
         state.logs = state.logs[-MAX_LOG_BUFFER:]
 
+    # Signal SSE generator that new logs are available (reactive streaming)
+    _signal_log_event(state)
+
     # Persist to Redis (fire-and-forget, non-blocking)
-    asyncio.create_task(_persist_log_to_redis(run_id, message))
+    _schedule_async_task(_persist_log_to_redis(run_id, message))
 
 
 def update_operation_status(
@@ -128,6 +185,8 @@ def update_operation_status(
 ) -> None:
     """
     Update operation status.
+
+    Thread-safe: Works from both the main event loop and worker threads.
 
     Args:
         run_id: Operation run ID
@@ -148,15 +207,14 @@ def update_operation_status(
         state.error = error
 
     # Signal SSE generator that status changed (for immediate completion notification)
-    if state.log_event:
-        state.log_event.set()
+    _signal_log_event(state)
 
     # Persist status update to Redis
-    asyncio.create_task(_persist_operation_meta_to_redis(run_id, state))
+    _schedule_async_task(_persist_operation_meta_to_redis(run_id, state))
 
     # Set TTL on completion/failure (logs expire after 24 hours)
     if status in {"completed", "failed"}:
-        asyncio.create_task(_set_redis_log_ttl(run_id))
+        _schedule_async_task(_set_redis_log_ttl(run_id))
 
 
 def update_layer_status(
@@ -167,6 +225,8 @@ def update_layer_status(
 ) -> None:
     """
     Update layer-level progress for an operation.
+
+    Thread-safe: Works from both the main event loop and worker threads.
 
     Args:
         run_id: Operation run ID
@@ -187,7 +247,7 @@ def update_layer_status(
     state.updated_at = datetime.utcnow()
 
     # Persist layer status to Redis (fire-and-forget, non-blocking)
-    asyncio.create_task(_persist_layer_status_to_redis(run_id, state.layer_status))
+    _schedule_async_task(_persist_layer_status_to_redis(run_id, state.layer_status))
 
 
 def create_log_callback(run_id: str) -> Callable[[str], None]:

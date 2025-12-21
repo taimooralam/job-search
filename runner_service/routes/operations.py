@@ -36,6 +36,42 @@ from pymongo import MongoClient
 # Increased from 4 to 8 workers to handle concurrent streaming operations
 _db_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="mongo_")
 
+# Thread pool for running service operations that may internally block
+# (e.g., services using run_async() which blocks with future.result())
+# Using a separate pool to avoid starving MongoDB operations
+_service_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="service_")
+
+
+def _run_async_in_thread(coro) -> None:
+    """
+    Run an async coroutine in a separate thread with its own event loop.
+
+    This solves the blocking issue where services internally use run_async()
+    which blocks the event loop via future.result(). By running in a separate
+    thread, the blocking only affects that thread while the main event loop
+    remains responsive for log polling endpoints.
+
+    Args:
+        coro: The coroutine to run (e.g., execute_extraction())
+    """
+    asyncio.run(coro)
+
+
+async def run_service_in_executor(coro) -> None:
+    """
+    Schedule a service coroutine to run in the executor thread pool.
+
+    This is the async wrapper that can be used with BackgroundTasks.
+    It offloads the blocking async operation to a separate thread,
+    keeping the main event loop responsive.
+
+    Args:
+        coro: The coroutine to run (will be executed in a separate thread)
+    """
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(_service_executor, _run_async_in_thread, coro)
+
+
 from src.common.model_tiers import (
     ModelTier,
     get_model_for_operation,
@@ -897,8 +933,8 @@ async def research_company_start(
             log_cb(f"❌ Error: {str(e)}")
             update_operation_status(run_id, "failed", error=str(e))
 
-    # Add to background tasks
-    background_tasks.add_task(execute_research)
+    # Add to background tasks - run in executor to avoid blocking the event loop
+    background_tasks.add_task(run_service_in_executor, execute_research())
 
     return StreamingOperationResponse(
         run_id=run_id,
@@ -1003,8 +1039,8 @@ async def generate_cv_start(
             log_cb(f"❌ Error: {str(e)}")
             update_operation_status(run_id, "failed", error=str(e))
 
-    # Add to background tasks
-    background_tasks.add_task(execute_cv_generation)
+    # Add to background tasks - run in executor to avoid blocking the event loop
+    background_tasks.add_task(run_service_in_executor, execute_cv_generation())
 
     return StreamingOperationResponse(
         run_id=run_id,
@@ -1113,8 +1149,10 @@ async def full_extraction_start(
             log_cb(f"❌ Error: {str(e)}")
             update_operation_status(run_id, "failed", error=str(e))
 
-    # Add to background tasks
-    background_tasks.add_task(execute_extraction)
+    # Add to background tasks - run in executor to avoid blocking the event loop
+    # The service.execute() internally uses run_async() which blocks with future.result()
+    # By running in a separate thread, the main event loop stays responsive for log polling
+    background_tasks.add_task(run_service_in_executor, execute_extraction())
 
     return StreamingOperationResponse(
         run_id=run_id,
@@ -1253,8 +1291,8 @@ async def all_ops_start(
             log_cb(f"Error: {str(e)}")
             update_operation_status(run_id, "failed", error=str(e))
 
-    # Add to background tasks
-    background_tasks.add_task(execute_all_ops)
+    # Add to background tasks - run in executor to avoid blocking the event loop
+    background_tasks.add_task(run_service_in_executor, execute_all_ops())
 
     return StreamingOperationResponse(
         run_id=run_id,
@@ -1388,8 +1426,8 @@ async def scrape_form_answers_start(
             log_cb(f"Error: {str(e)}")
             update_operation_status(run_id, "failed", error=str(e))
 
-    # Add to background tasks
-    background_tasks.add_task(execute_scrape_and_generate)
+    # Add to background tasks - run in executor to avoid blocking the event loop
+    background_tasks.add_task(run_service_in_executor, execute_scrape_and_generate())
 
     return StreamingOperationResponse(
         run_id=run_id,
@@ -1971,18 +2009,20 @@ async def queue_operation(
         avg_time = OPERATION_TIME_ESTIMATES.get(operation, 30)
         estimated_wait = (position - 1) * avg_time if position > 1 else 0
 
-        # Add background task to execute the operation
+        # Add background task to execute the operation - run in executor to avoid blocking
         # Use routed_operation for execution (may differ from canonical name for new ops)
         background_tasks.add_task(
-            _execute_queued_operation,
-            queue_id=queue_item.queue_id,
-            run_id=run_id,
-            job_id=job_id,
-            operation=routed_operation,  # Use routed operation for actual execution
-            tier=tier,
-            force_refresh=request.force_refresh or False,
-            use_llm=request.use_llm if request.use_llm is not None else True,
-            use_annotations=request.use_annotations if request.use_annotations is not None else True,
+            run_service_in_executor,
+            _execute_queued_operation(
+                queue_id=queue_item.queue_id,
+                run_id=run_id,
+                job_id=job_id,
+                operation=routed_operation,  # Use routed operation for actual execution
+                tier=tier,
+                force_refresh=request.force_refresh or False,
+                use_llm=request.use_llm if request.use_llm is not None else True,
+                use_annotations=request.use_annotations if request.use_annotations is not None else True,
+            )
         )
 
         logger.info(
