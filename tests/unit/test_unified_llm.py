@@ -486,3 +486,156 @@ class TestConfigIntegration:
         llm = UnifiedLLM(step_name="unknown_step_xyz")
 
         assert llm.config.tier == "middle"  # Default
+
+
+class TestStructuredLoggerIntegration:
+    """Tests for StructuredLogger integration with UnifiedLLM."""
+
+    def test_init_accepts_struct_logger_parameter(self):
+        """Should accept struct_logger parameter."""
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+
+        mock_logger = StructuredLogger(job_id="test", enabled=False)
+        llm = UnifiedLLM(step_name="grader", struct_logger=mock_logger)
+
+        assert llm._struct_logger is mock_logger
+
+    def test_init_struct_logger_defaults_to_none(self):
+        """Should default struct_logger to None."""
+        from src.common.unified_llm import UnifiedLLM
+
+        llm = UnifiedLLM(step_name="grader")
+
+        assert llm._struct_logger is None
+
+    @pytest.mark.asyncio
+    async def test_invoke_emits_llm_call_event_when_logger_provided(self, mocker, capsys):
+        """Should emit llm_call_complete event when struct_logger provided."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+
+        # Mock CLI success
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"data": "test"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 1500
+        mock_result.model = "claude-sonnet-4-5-20250929"
+        mock_result.tier = "middle"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.cost_usd = 0.025
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-123", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        # Check that event was emitted to stdout
+        captured = capsys.readouterr()
+        assert captured.out.strip() != ""
+
+        event = json.loads(captured.out.strip())
+        assert event["event"] == "llm_call_complete"
+        assert event["backend"] == "claude_cli"
+        assert event["model"] == "claude-sonnet-4-5-20250929"
+        assert event["step_name"] == "grader"
+        # duration_ms is calculated at runtime, so just check it exists and is non-negative
+        assert "duration_ms" in event
+        assert event["duration_ms"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_invoke_no_event_when_no_logger(self, mocker, capsys):
+        """Should not emit event when struct_logger not provided."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.result = {"data": "test"}
+        mock_result.raw_result = None
+        mock_result.error = None
+        mock_result.duration_ms = 1500
+        mock_result.model = "claude-sonnet"
+        mock_result.tier = "middle"
+        mock_result.input_tokens = 100
+        mock_result.output_tokens = 50
+        mock_result.cost_usd = 0.025
+        mock_cli_class.return_value.invoke.return_value = mock_result
+
+        from src.common.unified_llm import UnifiedLLM
+
+        # No struct_logger provided
+        llm = UnifiedLLM(step_name="grader")
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        # Should not emit to stdout (no structured logger)
+        captured = capsys.readouterr()
+        # Note: logger.info goes to stderr or logging handler, not stdout
+        # So stdout should be empty
+        assert captured.out.strip() == ""
+
+    @pytest.mark.asyncio
+    async def test_fallback_emits_fallback_event(self, mocker, capsys):
+        """Should emit llm_call_fallback event when falling back."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_langchain = mocker.patch("src.common.llm_factory.create_tracked_llm_for_model")
+
+        # CLI fails
+        cli_result = MagicMock()
+        cli_result.success = False
+        cli_result.error = "Timeout"
+        cli_result.model = "claude-sonnet"
+        cli_result.tier = "middle"
+        mock_cli_class.return_value.invoke.return_value = cli_result
+
+        # LangChain succeeds
+        mock_llm = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = '{"data": "fallback"}'
+        mock_response.usage_metadata = None
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        mock_langchain.return_value = mock_llm
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-123", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        # Check events were emitted
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split("\n")
+
+        # Should have 2 events: fallback notification + completion
+        assert len(lines) == 2
+
+        # First should be fallback event
+        fallback_event = json.loads(lines[0])
+        assert fallback_event["event"] == "llm_call_fallback"
+        assert fallback_event["backend"] == "langchain"
+
+        # Second should be completion
+        complete_event = json.loads(lines[1])
+        assert complete_event["event"] == "llm_call_complete"
+        assert complete_event["backend"] == "langchain"
+        assert complete_event["metadata"]["is_fallback"] is True
+
+    def test_convenience_function_accepts_struct_logger(self):
+        """invoke_unified_sync should accept struct_logger parameter."""
+        from src.common.unified_llm import invoke_unified_sync
+        import inspect
+
+        sig = inspect.signature(invoke_unified_sync)
+        params = list(sig.parameters.keys())
+
+        assert "struct_logger" in params
