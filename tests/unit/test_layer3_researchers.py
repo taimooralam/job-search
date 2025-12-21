@@ -14,6 +14,8 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime
 
+from src.common.unified_llm import LLMResult
+
 
 def create_firecrawl_mock(scrape_markdown: str, search_url: str = "https://techcorp.com"):
     """
@@ -188,14 +190,14 @@ class TestCompanyResearcherSchema:
 class TestCompanyResearcherWithMockedDependencies:
     """Test Company Researcher with mocked FireCrawl and LLM."""
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_multi_source_scraping_and_signal_extraction(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state,
         valid_company_research_json
     ):
@@ -206,12 +208,16 @@ class TestCompanyResearcherWithMockedDependencies:
         )
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        # Mock LLM to return valid company research JSON
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(valid_company_research_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        # Mock UnifiedLLM to return valid company research JSON
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(valid_company_research_json),
+            parsed_json=valid_company_research_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         # Mock MongoDB (empty cache)
         mock_mongo = MagicMock()
@@ -279,15 +285,7 @@ class TestCompanyResearcherWithMockedDependencies:
         # Job posting scrape may happen (intentional), but search shouldn't be called
         mock_firecrawl.search.assert_not_called()
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
-    @patch('src.layer3.company_researcher.MongoClient')
-    @patch('src.layer3.company_researcher.FirecrawlApp')
-    def test_hallucination_controls_in_prompt(
-        self,
-        mock_firecrawl_class,
-        mock_mongo_class,
-        mock_llm_class
-    ):
+    def test_hallucination_controls_in_prompt(self):
         """Prompt includes hallucination prevention instructions."""
         from src.layer3.company_researcher import SYSTEM_PROMPT_COMPANY_SIGNALS
 
@@ -298,14 +296,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "NEVER invent" in SYSTEM_PROMPT_COMPANY_SIGNALS
         assert "unknown" in SYSTEM_PROMPT_COMPANY_SIGNALS.lower()
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_funding(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract funding signal type correctly."""
@@ -324,11 +322,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("TechCorp raised $100M Series C")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(funding_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(funding_signal_json),
+            parsed_json=funding_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -344,14 +346,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "funding"
         assert "100M" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_acquisition(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract acquisition signal type correctly."""
@@ -370,11 +372,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("TechCorp acquired DataCo")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(acquisition_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(acquisition_signal_json),
+            parsed_json=acquisition_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -390,14 +396,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "acquisition"
         assert "DataCo" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_leadership_change(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract leadership_change signal type correctly."""
@@ -416,11 +422,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("Jane Smith joins as CTO")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(leadership_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(leadership_signal_json),
+            parsed_json=leadership_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -436,14 +446,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "leadership_change"
         assert "Jane Smith" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_product_launch(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract product_launch signal type correctly."""
@@ -462,11 +472,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("New AI analytics platform launched")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(product_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(product_signal_json),
+            parsed_json=product_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -482,14 +496,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "product_launch"
         assert "analytics" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_partnership(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract partnership signal type correctly."""
@@ -508,11 +522,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("Partnership with AWS")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(partnership_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(partnership_signal_json),
+            parsed_json=partnership_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -528,14 +546,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "partnership"
         assert "AWS" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_growth(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Extract growth signal type correctly."""
@@ -554,11 +572,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("Team grew to 200 engineers")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(growth_signal_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(growth_signal_json),
+            parsed_json=growth_signal_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -574,14 +596,14 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_research"]["signals"][0]["type"] == "growth"
         assert "200" in result["company_research"]["signals"][0]["description"]
 
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     @patch('src.layer3.company_researcher.MongoClient')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_quality_gate_minimum_signals(
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_unified,
         sample_job_state
     ):
         """Quality gate: Extract ≥3 signals for rich content."""
@@ -620,11 +642,15 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl = create_firecrawl_mock("TechCorp raised $100M, acquired DataCo, Jane Smith CTO, new AI platform")
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = json.dumps(rich_signals_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(rich_signals_json),
+            parsed_json=rich_signals_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         mock_mongo = MagicMock()
         mock_collection = MagicMock()
@@ -761,13 +787,13 @@ class TestRoleResearcherWithMockedLLM:
 # ===== INTEGRATION TESTS =====
 
 @pytest.mark.integration
-@patch('src.layer3.company_researcher.create_tracked_llm')
+@patch('src.layer3.company_researcher.invoke_unified_sync')
 @patch('src.layer3.company_researcher.MongoClient')
 @patch('src.layer3.company_researcher.FirecrawlApp')
 def test_company_researcher_node_integration(
     mock_firecrawl_class,
     mock_mongo_class,
-    mock_llm_class,
+    mock_unified,
     sample_job_state,
     valid_company_research_json
 ):
@@ -776,11 +802,15 @@ def test_company_researcher_node_integration(
     mock_firecrawl = create_firecrawl_mock("TechCorp is a cloud provider.")
     mock_firecrawl_class.return_value = mock_firecrawl
 
-    mock_llm = MagicMock()
-    mock_response = MagicMock()
-    mock_response.content = json.dumps(valid_company_research_json)
-    mock_llm.invoke.return_value = mock_response
-    mock_llm_class.return_value = mock_llm
+    mock_unified.return_value = LLMResult(
+        success=True,
+        content=json.dumps(valid_company_research_json),
+        parsed_json=valid_company_research_json,
+        backend="mocked",
+        model="test-model",
+        tier="middle",
+        duration_ms=0
+    )
 
     mock_mongo = MagicMock()
     mock_collection = MagicMock()
@@ -1234,10 +1264,10 @@ class TestPhase5Integration:
     @patch.object(CompanyResearcher, '_scrape_job_posting')
     @patch.object(CompanyResearcher, '_scrape_multiple_sources')
     @patch.object(CompanyResearcher, '_store_cache')
-    @patch('src.layer3.company_researcher.create_tracked_llm')
+    @patch('src.layer3.company_researcher.invoke_unified_sync')
     def test_company_researcher_produces_valid_output(
         self,
-        mock_llm_class,
+        mock_unified,
         mock_store,
         mock_scrape_multi,
         mock_scrape_job,
@@ -1253,18 +1283,23 @@ class TestPhase5Integration:
             "official_site": {"url": "https://techcorp.com", "content": "TechCorp is a cloud infrastructure company."}
         }
 
-        # Mock LLM
-        mock_llm = Mock()
-        mock_response = Mock()
-        mock_response.content = json.dumps({
+        # Mock UnifiedLLM
+        response_json = {
             "summary": "TechCorp is a cloud infrastructure company.",
             "signals": [
                 {"type": "growth", "description": "Cloud infrastructure provider", "date": "unknown", "source": "https://techcorp.com"}
             ],
             "url": "https://techcorp.com"
-        })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        }
+        mock_unified.return_value = LLMResult(
+            success=True,
+            content=json.dumps(response_json),
+            parsed_json=response_json,
+            backend="mocked",
+            model="test-model",
+            tier="middle",
+            duration_ms=0
+        )
 
         researcher = CompanyResearcher(use_claude_api=False)
         result = researcher.research_company(sample_job_state)
