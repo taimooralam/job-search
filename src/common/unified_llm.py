@@ -36,6 +36,7 @@ Usage:
 import asyncio
 import logging
 import json
+import subprocess
 from dataclasses import dataclass, asdict
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -215,6 +216,9 @@ class UnifiedLLM:
         job_id = job_id or self.job_id
         combined_prompt = f"{system}\n\n{prompt}" if system else prompt
 
+        # Track specific CLI error reason for fallback logging
+        cli_error_reason: Optional[str] = None
+
         # Try Claude CLI first
         if self._should_use_cli():
             try:
@@ -222,22 +226,36 @@ class UnifiedLLM:
                 if result.success:
                     self._log_success("claude_cli", result, job_id)
                     return result
-                # CLI failed, log and try fallback
+                # CLI failed, capture specific error reason
+                cli_error_reason = f"CLI returned error: {result.error}"
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] Claude CLI failed: {result.error}"
                 )
+            except subprocess.TimeoutExpired as e:
+                cli_error_reason = f"CLI timeout after {e.timeout}s"
+                logger.warning(
+                    f"[UnifiedLLM:{self.step_name}] {cli_error_reason}"
+                )
+            except FileNotFoundError:
+                cli_error_reason = "Claude CLI not found in PATH"
+                logger.warning(
+                    f"[UnifiedLLM:{self.step_name}] {cli_error_reason}"
+                )
             except Exception as e:
+                cli_error_reason = f"CLI exception: {type(e).__name__}: {e}"
                 logger.warning(
                     f"[UnifiedLLM:{self.step_name}] Claude CLI exception: {e}"
                 )
+        else:
+            cli_error_reason = "CLI disabled via DISABLE_CLAUDE_CLI env var"
 
         # Fallback to LangChain
         if self.config.use_fallback:
             logger.info(
                 f"[UnifiedLLM:{self.step_name}] Falling back to LangChain"
             )
-            # Log fallback event for visibility
-            self._log_fallback(job_id, "CLI failed or unavailable")
+            # Log fallback event with specific reason for visibility
+            self._log_fallback(job_id, cli_error_reason or "CLI unavailable")
             return await self._invoke_langchain(prompt, system, job_id, validate_json)
         else:
             return LLMResult(

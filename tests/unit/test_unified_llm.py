@@ -861,5 +861,110 @@ class TestStructuredLoggerIntegration:
         # First event should be fallback with primary error
         fallback_event = json.loads(lines[0])
         assert fallback_event["event"] == "llm_call_fallback"
-        # Primary backend error should be captured in metadata or event
-        assert "metadata" in fallback_event or "primary_error" in fallback_event
+        # Primary backend error should be captured in metadata
+        assert "metadata" in fallback_event
+        # Specific error reason should be in metadata.reason
+        assert "reason" in fallback_event["metadata"]
+        # The reason should contain the specific CLI error, not generic message
+        assert "Connection timeout" in fallback_event["metadata"]["reason"]
+
+    @pytest.mark.asyncio
+    async def test_fallback_reason_for_cli_timeout(self, mocker, capsys):
+        """Should capture CLI timeout in fallback reason."""
+        import subprocess
+
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_langchain = mocker.patch("src.common.llm_factory.create_tracked_llm_for_model")
+
+        # CLI raises TimeoutExpired
+        timeout_exc = subprocess.TimeoutExpired(cmd="claude", timeout=120)
+        mock_cli_class.return_value.invoke.side_effect = timeout_exc
+
+        # LangChain succeeds
+        mock_llm = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = '{"data": "fallback"}'
+        mock_response.usage_metadata = None
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        mock_langchain.return_value = mock_llm
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-timeout", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split("\n")
+
+        fallback_event = json.loads(lines[0])
+        assert fallback_event["event"] == "llm_call_fallback"
+        assert "CLI timeout after 120s" in fallback_event["metadata"]["reason"]
+
+    @pytest.mark.asyncio
+    async def test_fallback_reason_for_cli_not_found(self, mocker, capsys):
+        """Should capture CLI not found in fallback reason."""
+        mock_cli_class = mocker.patch("src.common.unified_llm.ClaudeCLI")
+        mock_langchain = mocker.patch("src.common.llm_factory.create_tracked_llm_for_model")
+
+        # CLI raises FileNotFoundError
+        mock_cli_class.return_value.invoke.side_effect = FileNotFoundError("claude not found")
+
+        # LangChain succeeds
+        mock_llm = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = '{"data": "fallback"}'
+        mock_response.usage_metadata = None
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        mock_langchain.return_value = mock_llm
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-notfound", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split("\n")
+
+        fallback_event = json.loads(lines[0])
+        assert fallback_event["event"] == "llm_call_fallback"
+        assert "CLI not found in PATH" in fallback_event["metadata"]["reason"]
+
+    @pytest.mark.asyncio
+    async def test_fallback_reason_for_cli_disabled(self, mocker, capsys, monkeypatch):
+        """Should capture CLI disabled in fallback reason."""
+        # Disable CLI via env var
+        monkeypatch.setenv("DISABLE_CLAUDE_CLI", "true")
+
+        mock_langchain = mocker.patch("src.common.llm_factory.create_tracked_llm_for_model")
+
+        # LangChain succeeds
+        mock_llm = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = '{"data": "fallback"}'
+        mock_response.usage_metadata = None
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        mock_langchain.return_value = mock_llm
+
+        from src.common.unified_llm import UnifiedLLM
+        from src.common.structured_logger import StructuredLogger
+        import json
+
+        struct_logger = StructuredLogger(job_id="test-disabled", enabled=True)
+        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+
+        await llm.invoke(prompt="Test", job_id="test")
+
+        captured = capsys.readouterr()
+        lines = captured.out.strip().split("\n")
+
+        fallback_event = json.loads(lines[0])
+        assert fallback_event["event"] == "llm_call_fallback"
+        assert "CLI disabled via DISABLE_CLAUDE_CLI" in fallback_event["metadata"]["reason"]

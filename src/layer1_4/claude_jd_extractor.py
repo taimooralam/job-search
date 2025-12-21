@@ -442,11 +442,17 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
                     extracted_at=start_time.isoformat()
                 )
 
-            # Log which backend was used
-            self._emit_log(
-                job_id, "info",
-                message=f"LLM responded via backend={llm_result.backend}, model={llm_result.model}"
-            )
+            # Log which backend was used - show warning if fallback was used
+            if llm_result.backend == "langchain":
+                self._emit_log(
+                    job_id, "warning",
+                    message=f"LLM responded via FALLBACK backend={llm_result.backend}, model={llm_result.model} (CLI was unavailable)"
+                )
+            else:
+                self._emit_log(
+                    job_id, "info",
+                    message=f"LLM responded via backend={llm_result.backend}, model={llm_result.model}"
+                )
 
             # Get parsed JSON from LLM result
             if llm_result.parsed_json:
