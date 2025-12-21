@@ -20,6 +20,44 @@
 
 ---
 
+### Today's Session (2025-12-21 Session 23): UnifiedLLM StructuredLogger Integration - Backend Visibility in User Logs
+
+**BUG FIX: Connected UnifiedLLM to StructuredLogger for User-Facing Log Visibility - COMPLETED**:
+- **Scope**: Integrated UnifiedLLM with StructuredLogger to emit LLM provider usage events (Claude CLI vs LangChain) in user-facing logs
+- **Motivation**: Operators need transparency about which backend was used for each LLM call (CLI or fallback), including fallback reasons and cost tracking
+- **Implementation Details**:
+  1. **UnifiedLLM Integration** (`src/common/unified_llm.py`):
+     - Added optional `struct_logger` parameter to `UnifiedLLM.__init__()`
+     - Created `_log_fallback()` method to emit structured fallback events when CLI fails
+     - Enhanced `_log_completion()` method to emit `llm_call_complete()` events with backend attribution
+     - Events include: step name, backend (claude_cli/langchain), model, tier, duration, cost, fallback metadata
+  2. **Layer Integration**:
+     - `src/layer2/pain_point_miner.py` - Passes `struct_logger` to UnifiedLLM
+     - `src/layer4/opportunity_mapper.py` - Passes `struct_logger` to UnifiedLLM
+  3. **Structured Events Emitted**:
+     - `llm_call_complete()` - Emitted after each LLM invocation with backend, model, cost, duration
+     - `llm_call_fallback()` - Emitted when falling back from Claude CLI to LangChain with fallback reason
+  4. **Metadata Tracking**:
+     - Backend: "claude_cli" or "langchain"
+     - Model: Specific model identifier
+     - Tier: Configuration tier (low/middle/high)
+     - Duration: Milliseconds for the invocation
+     - Cost: USD cost estimate (if available)
+     - Is_fallback: Boolean flag for fallback invocations
+- **Files Modified**:
+  - `src/common/unified_llm.py` - Added struct_logger parameter and event emission
+  - `src/layer2/pain_point_miner.py` - Pass struct_logger to UnifiedLLM constructor
+  - `src/layer4/opportunity_mapper.py` - Pass struct_logger to UnifiedLLM constructor
+- **Impact**: Operators now see in user-facing logs:
+  - Which backend executed each LLM call (CLI or fallback)
+  - When and why fallback occurred (CLI unavailable, failure reason)
+  - Cost and performance metrics for each call
+  - Full transparency for debugging and cost tracking
+- **Backward Compatibility**: Fully backward compatible - struct_logger is optional; if not provided, logging continues via standard logger
+- **Status**: **COMPLETED 2025-12-21**
+
+---
+
 ### Today's Session (2025-12-21 Session 22): UnifiedLLM Migration - Documentation Complete
 
 **DOCUMENTATION: UnifiedLLM Architecture - COMPLETED**:

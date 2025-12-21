@@ -813,6 +813,66 @@ export LLM_USE_FALLBACK_grader=true   # Enable/disable fallback
 }
 ```
 
+### Structured Logger Integration (NEW - 2025-12-21)
+
+**Purpose**: Emit LLM provider usage events to StructuredLogger for user-facing backend transparency and fallback visibility.
+
+**Integration Pattern**:
+```python
+from src.common.unified_llm import UnifiedLLM
+from src.common.structured_logger import StructuredLogger
+
+# Pass struct_logger to UnifiedLLM for event emission
+struct_logger = StructuredLogger(...)
+llm = UnifiedLLM(step_name="pain_point_miner", struct_logger=struct_logger)
+
+# Events are automatically emitted:
+# 1. llm_call_complete() - After successful invocation with backend attribution
+# 2. llm_call_fallback() - When falling back from CLI to LangChain
+```
+
+**Events Emitted**:
+
+1. **llm_call_complete()** - Emitted after each LLM invocation:
+   - `step_name`: Pipeline step name (e.g., "pain_point_miner")
+   - `backend`: "claude_cli" or "langchain"
+   - `model`: Model identifier (e.g., "claude-sonnet-4-5-20250929")
+   - `tier`: Configuration tier (low/middle/high)
+   - `duration_ms`: Milliseconds for invocation
+   - `cost_usd`: Estimated cost in USD (if available)
+   - `metadata`: Optional metadata (e.g., is_fallback flag for fallback calls)
+
+2. **llm_call_fallback()** - Emitted when falling back from CLI to LangChain:
+   - `step_name`: Pipeline step name
+   - `from_backend`: "claude_cli" (always)
+   - `to_backend`: "langchain" (always)
+   - `model`: Fallback model identifier
+   - `tier`: Configuration tier
+   - `reason`: Why fallback occurred (e.g., "CLI failed or unavailable")
+
+**Usage in Layers**:
+- Layer 2 (`src/layer2/pain_point_miner.py`): Receives struct_logger via LayerContext
+- Layer 4 (`src/layer4/opportunity_mapper.py`): Receives struct_logger via LayerContext
+- Both pass struct_logger to UnifiedLLM constructor for automatic event emission
+
+**User-Facing Log Output Example**:
+```
+[pain_point_miner] LLM Invocation Complete
+  Backend: claude_cli
+  Model: claude-sonnet-4-5-20250929
+  Tier: middle
+  Duration: 1250ms
+  Cost: $0.042
+```
+
+```
+[opportunity_mapper] LLM Fallback Triggered
+  From: claude_cli
+  To: langchain
+  Model: gpt-4o (middle)
+  Reason: CLI failed or unavailable
+```
+
 ### ClaudeCLI Wrapper (`src/common/claude_cli.py`)
 
 **Purpose**: Reusable wrapper for invoking Claude Code CLI in headless mode with three-tier model support.
