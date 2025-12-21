@@ -381,90 +381,336 @@
         <div x-show="advancedOpen" x-collapse x-cloak class="actions-bar-advanced">
             <div class="advanced-actions-grid">
                 <!-- ANALYSIS GROUP -->
-                <div x-data="tieredActionButton({ action: 'analyze-job', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Extract JD, identify pain points, calculate fit score">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Analyze Job</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">Extract JD, pain points, fit score</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'analyze-job', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Extract JD, identify pain points, calculate fit score">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Analyze Job</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">Extract JD, pain points, fit score</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'prepare-annotations', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Structure JD into sections for annotation editor">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Prepare Annotations</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">Structure JD for annotation editor</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'prepare-annotations', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Structure JD into sections for annotation editor">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Prepare Annotations</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">Structure JD for annotation editor</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- RESEARCH GROUP -->
-                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Gather company signals, funding, news, and role context">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Research Company</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">Signals, funding, news, role context</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Gather company signals, funding, news, and role context">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Research Company</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">Signals, funding, news, role context</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'discover-contacts', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Find hiring managers, recruiters, and relevant peers">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Discover Contacts</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">Hiring managers, recruiters, peers</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'discover-contacts', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Find hiring managers, recruiters, and relevant peers">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Discover Contacts</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">Hiring managers, recruiters, peers</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- GENERATION GROUP -->
-                <div x-data="tieredActionButton({ action: 'generate-cover-letter', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Write personalized cover letter for this role">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Cover Letter</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">Personalized letter for this role</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'generate-cover-letter', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Write personalized cover letter for this role">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Cover Letter</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">Personalized letter for this role</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'generate-outreach', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })">
-                    <button @click="queueExecute()"
-                            class="btn-action-compact-with-subtext w-full"
-                            :disabled="loading"
-                            title="Create LinkedIn and email messages for contacts">
-                        <span class="btn-action-content">
-                            <span class="btn-action-label" x-show="!loading">Outreach</span>
-                            <span x-show="loading" class="animate-spin">...</span>
-                            <span class="btn-action-subtext" x-show="!loading">LinkedIn and email messages</span>
-                        </span>
-                        <span class="tier-badge-compact" x-text="tierIcon" x-show="!loading"></span>
-                    </button>
+                <div x-data="tieredActionButton({ action: 'generate-outreach', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                     class="action-compact-wrapper">
+                    <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
+                        <button @click="queueExecute()"
+                                class="btn-action-compact-with-subtext flex-1 rounded-r-none"
+                                :disabled="loading"
+                                title="Create LinkedIn and email messages for contacts">
+                            <span class="btn-action-content">
+                                <span class="btn-action-label" x-show="!loading">Outreach</span>
+                                <span x-show="loading" class="animate-spin">...</span>
+                                <span class="btn-action-subtext" x-show="!loading">LinkedIn and email messages</span>
+                            </span>
+                        </button>
+                        <button @click="open = !open"
+                                @keydown="handleKeydown"
+                                class="btn-action-dropdown-compact"
+                                :aria-expanded="open"
+                                :disabled="loading"
+                                title="Select execution tier">
+                            <span class="tier-badge-compact" x-text="tierIcon"></span>
+                            <svg class="w-3 h-3 ml-0.5 dropdown-chevron" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Tier Dropdown Menu -->
+                    <div x-show="open"
+                         x-cloak
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="tier-dropdown-menu tier-dropdown-compact">
+                        <div class="tier-dropdown-header">Select Execution Tier</div>
+                        <template x-for="t in allTiers" :key="t">
+                            <button @click="setTier(t)"
+                                    class="tier-option"
+                                    :class="{ 'selected': isTierSelected(t) }">
+                                <span class="tier-option-icon" x-text="getTierIcon(t)"></span>
+                                <div class="tier-option-content">
+                                    <span class="tier-option-label" x-text="getTierLabel(t)"></span>
+                                    <span class="tier-option-model" x-text="getTierModel(t)"></span>
+                                </div>
+                                <span class="tier-option-cost" x-text="getTierCost(t)"></span>
+                                <svg x-show="isTierSelected(t)" class="tier-option-check w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
 

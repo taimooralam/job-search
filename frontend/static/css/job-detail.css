@@ -1444,9 +1444,52 @@
   color: var(--color-primary-600, #4f46e5);
 }
 
+/* Compact action wrapper for advanced buttons with dropdowns */
+.action-compact-wrapper {
+  position: relative;
+}
+
+/* Compact action button group (split button pattern) */
+.btn-action-compact-group {
+  display: flex;
+  width: 100%;
+}
+
+.btn-action-compact-group .btn-action-compact-with-subtext {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.btn-action-compact-group .btn-action-dropdown-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.75rem;
+  background: var(--bg-secondary, #f3f4f6);
+  border: 1px solid var(--border-default, #e5e7eb);
+  border-left: 1px solid var(--border-default, #e5e7eb);
+  border-radius: 0 0.375rem 0.375rem 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-action-compact-group .btn-action-dropdown-compact:hover {
+  background: var(--bg-card, #ffffff);
+  border-color: var(--color-primary-300, #a5b4fc);
+}
+
+.btn-action-compact-group .btn-action-dropdown-compact:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Tier dropdown compact variant */
 .tier-dropdown-compact {
   min-width: 12rem;
+  right: 0;
+  left: auto;
 }
 
 /* Quick actions row */
