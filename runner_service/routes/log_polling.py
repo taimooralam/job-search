@@ -21,6 +21,81 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
 
+
+def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
+    """
+    Parse a log entry string into a structured log object.
+
+    Logs from StructuredLogger are JSON-formatted with fields like:
+    - message: Human-readable log text
+    - backend: LLM backend ("claude_cli" or "langchain")
+    - tier: Tier level ("low", "middle", "high")
+    - cost_usd: Estimated cost in USD
+    - event: Event type (layer_start, llm_call_complete, etc.)
+
+    For non-JSON logs (plain text), returns just the message.
+
+    Args:
+        log: Raw log string (may be JSON or plain text)
+        index: Log index for ordering
+
+    Returns:
+        Dict with index, message, and optional backend/tier/cost_usd fields
+    """
+    log_obj: Dict[str, Any] = {"index": index}
+
+    # Try to parse as JSON (structured log from StructuredLogger)
+    if log.strip().startswith("{"):
+        try:
+            parsed = json.loads(log)
+
+            # Build human-readable message from structured log
+            # Priority: explicit message > layer event > event type
+            if "message" in parsed:
+                log_obj["message"] = parsed["message"]
+            elif parsed.get("event") in ("layer_start", "layer_complete", "layer_error"):
+                layer_name = parsed.get("layer_name", f"layer_{parsed.get('layer', '?')}")
+                status = parsed.get("status", "")
+                duration = parsed.get("duration_ms")
+                duration_str = f" ({duration}ms)" if duration else ""
+                log_obj["message"] = f"{layer_name}: {parsed['event']}{duration_str}"
+            elif parsed.get("event") in ("llm_call_start", "llm_call_complete", "llm_call_error", "llm_call_fallback"):
+                step = parsed.get("step_name", "llm_call")
+                status = parsed.get("status", "")
+                backend = parsed.get("backend", "")
+                duration = parsed.get("duration_ms")
+                duration_str = f" ({duration}ms)" if duration else ""
+                backend_str = f" [{backend}]" if backend else ""
+                log_obj["message"] = f"{step}: {status}{backend_str}{duration_str}"
+            else:
+                # Fallback: use event type or raw log
+                log_obj["message"] = parsed.get("event", log)
+
+            # Extract LLM attribution fields for frontend backend stats
+            if parsed.get("backend"):
+                log_obj["backend"] = parsed["backend"]
+            if parsed.get("tier"):
+                log_obj["tier"] = parsed["tier"]
+            if parsed.get("cost_usd") is not None:
+                log_obj["cost_usd"] = parsed["cost_usd"]
+
+            # Include event type for frontend filtering/display
+            if parsed.get("event"):
+                log_obj["event"] = parsed["event"]
+
+            # Include model info if available
+            if parsed.get("model"):
+                log_obj["model"] = parsed["model"]
+
+        except json.JSONDecodeError:
+            # Not valid JSON, treat as plain text
+            log_obj["message"] = log
+    else:
+        # Plain text log
+        log_obj["message"] = log
+
+    return log_obj
+
 # Redis key prefixes (must match operation_streaming.py)
 REDIS_LOG_PREFIX = "logs:"
 
@@ -100,11 +175,11 @@ async def poll_logs(
             from runner_service.routes.operation_streaming import get_operation_state
             state = get_operation_state(run_id)
             if state:
-                # Return from in-memory state
+                # Return from in-memory state (also parse for structured data)
                 logs_slice = state.logs[since:since + limit]
                 return {
                     "logs": [
-                        {"index": since + i, "message": msg}
+                        _parse_log_entry(msg, since + i)
                         for i, msg in enumerate(logs_slice)
                     ],
                     "next_index": since + len(logs_slice),
@@ -131,10 +206,9 @@ async def poll_logs(
     for i, log in enumerate(logs_raw):
         if isinstance(log, bytes):
             log = log.decode("utf-8")
-        logs.append({
-            "index": since + i,
-            "message": log,
-        })
+
+        log_obj = _parse_log_entry(log, since + i)
+        logs.append(log_obj)
 
     # Get total count
     total_count = await redis.llen(logs_key)
