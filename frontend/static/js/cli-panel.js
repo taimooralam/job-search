@@ -485,11 +485,13 @@ document.addEventListener('alpine:init', () => {
             this.expanded = !this.expanded;
             this._saveState();
 
-            // When expanding, ensure active run is polling if still running
-            if (this.expanded && this.activeRunId) {
-                const run = this.runs[this.activeRunId];
-                if (run?.status === 'running' && !run._logPoller) {
-                    this.subscribeToLogs(this.activeRunId);
+            // When expanding, ensure ALL running operations are polling
+            // This handles cases where polling was missed (e.g., page refresh during batch ops)
+            if (this.expanded) {
+                for (const [runId, run] of Object.entries(this.runs)) {
+                    if (run?.status === 'running' && !run._logPoller) {
+                        this.subscribeToLogs(runId);
+                    }
                 }
             }
         },
@@ -501,11 +503,11 @@ document.addEventListener('alpine:init', () => {
             this.expanded = true;
             this._saveState();
 
-            // When showing panel, ensure active run is polling if still running
-            if (this.activeRunId) {
-                const run = this.runs[this.activeRunId];
+            // When showing panel, ensure ALL running operations are polling
+            // This handles cases where polling was missed (e.g., page refresh during batch ops)
+            for (const [runId, run] of Object.entries(this.runs)) {
                 if (run?.status === 'running' && !run._logPoller) {
-                    this.subscribeToLogs(this.activeRunId);
+                    this.subscribeToLogs(runId);
                 }
             }
         },
@@ -1117,11 +1119,10 @@ document.addEventListener('alpine:init', () => {
             // Note: In RxJS mode, this may be triggered by the race() subscription instead
             this._replayPendingLogs(runId);
 
-            // Auto-subscribe to log polling when run starts and panel is expanded
-            // This ensures logs stream immediately without requiring user interaction
-            if (this.expanded) {
-                this.subscribeToLogs(runId);
-            }
+            // Always subscribe to log polling when run starts
+            // This ensures 200ms polling begins immediately regardless of panel state
+            // Logs are buffered in memory and displayed when panel is expanded
+            this.subscribeToLogs(runId);
 
             // Cleanup old runs
             this._cleanup();
