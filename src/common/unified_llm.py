@@ -49,6 +49,7 @@ from src.common.llm_config import (
     TierType,
 )
 from src.common.json_utils import parse_llm_json
+from src.common.utils import run_async
 
 # Import TYPE_CHECKING to avoid circular imports
 from typing import TYPE_CHECKING
@@ -608,7 +609,7 @@ def invoke_unified_sync(
         ...     job_id="job_123"
         ... )
     """
-    return asyncio.run(invoke_unified(
+    return run_async(invoke_unified(
         prompt=prompt,
         step_name=step_name,
         tier=tier,
