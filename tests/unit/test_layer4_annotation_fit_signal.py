@@ -13,7 +13,7 @@ TDD approach: Tests written first, implementation follows.
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch, AsyncMock
 from typing import Dict, Any, List, Optional
 
 
@@ -548,17 +548,18 @@ class TestDisqualifierHandling:
 class TestOpportunityMapperIntegration:
     """Tests for OpportunityMapper integration with annotation signals."""
 
-    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
+    @patch('src.layer4.opportunity_mapper.UnifiedLLM')
     def test_mapper_includes_annotation_analysis_in_output(
-        self, mock_llm_class, sample_job_state_with_annotations
+        self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """OpportunityMapper includes annotation analysis in output."""
         from src.layer4.opportunity_mapper import OpportunityMapper
+        from src.common.unified_llm import LLMResult
 
-        # Mock LLM response
+        # Mock UnifiedLLM response
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = """
+        mock_result = LLMResult(
+            content="""
 **REASONING:**
 Step 1: The candidate has strong Kubernetes experience (core_strength annotation).
 Step 2: Gap in Terraform, but learnable.
@@ -568,38 +569,51 @@ Step 4: Score 80 based on evidence.
 **SCORE:** 80
 
 **RATIONALE:** At Previous Inc, candidate achieved 75% incident reduction and 10x deployment speed improvement. The Kubernetes core strength directly addresses the platform scalability pain point. The Terraform gap is a learnable skill given the strong infrastructure background.
-"""
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+""",
+            backend="mock",
+            model="mock-model",
+            tier="middle",
+            duration_ms=100,
+            success=True
+        )
+        mock_llm.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
+        mapper = OpportunityMapper()
         result = mapper.map_opportunity(sample_job_state_with_annotations)
 
         # Should include annotation analysis
         assert "annotation_analysis" in result
         assert result["annotation_analysis"] is not None
 
-    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
+    @patch('src.layer4.opportunity_mapper.UnifiedLLM')
     def test_mapper_blends_annotation_signal_with_llm_score(
-        self, mock_llm_class, sample_job_state_with_annotations
+        self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """OpportunityMapper blends annotation signal with LLM score."""
         from src.layer4.opportunity_mapper import OpportunityMapper
+        from src.common.unified_llm import LLMResult
 
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = """
+        mock_result = LLMResult(
+            content="""
 **REASONING:**
 Analysis complete.
 
 **SCORE:** 75
 
 **RATIONALE:** At Previous Inc, candidate achieved 75% incident reduction. Strong Kubernetes background addresses platform needs.
-"""
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+""",
+            backend="mock",
+            model="mock-model",
+            tier="middle",
+            duration_ms=100,
+            success=True
+        )
+        mock_llm.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
+        mapper = OpportunityMapper()
         result = mapper.map_opportunity(sample_job_state_with_annotations)
 
         # LLM score is 75
@@ -609,12 +623,13 @@ Analysis complete.
         # Check annotation analysis contains raw LLM score for transparency
         assert "llm_score" in result.get("annotation_analysis", {})
 
-    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
+    @patch('src.layer4.opportunity_mapper.UnifiedLLM')
     def test_mapper_flags_disqualifier_in_output(
-        self, mock_llm_class, sample_jd_annotations_with_disqualifier
+        self, mock_unified_llm_class, sample_jd_annotations_with_disqualifier
     ):
         """OpportunityMapper flags disqualifier in output."""
         from src.layer4.opportunity_mapper import OpportunityMapper
+        from src.common.unified_llm import LLMResult
 
         state_with_disqualifier = {
             "job_id": "test_002",
@@ -632,26 +647,33 @@ Analysis complete.
         }
 
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = """
+        mock_result = LLMResult(
+            content="""
 **SCORE:** 70
 
 **RATIONALE:** Technical fit is reasonable but requires on-call rotation which may be a concern.
-"""
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+""",
+            backend="mock",
+            model="mock-model",
+            tier="middle",
+            duration_ms=100,
+            success=True
+        )
+        mock_llm.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
+        mapper = OpportunityMapper()
         result = mapper.map_opportunity(state_with_disqualifier)
 
         # Should flag the disqualifier
         annotation_analysis = result.get("annotation_analysis", {})
         assert annotation_analysis.get("has_disqualifier") is True
 
-    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
-    def test_mapper_works_without_annotations(self, mock_llm_class):
+    @patch('src.layer4.opportunity_mapper.UnifiedLLM')
+    def test_mapper_works_without_annotations(self, mock_unified_llm_class):
         """OpportunityMapper works when jd_annotations is None."""
         from src.layer4.opportunity_mapper import OpportunityMapper
+        from src.common.unified_llm import LLMResult
 
         state_no_annotations = {
             "job_id": "test_003",
@@ -669,12 +691,18 @@ Analysis complete.
         }
 
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "**SCORE:** 70\n\n**RATIONALE:** Reasonable fit."
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_result = LLMResult(
+            content="**SCORE:** 70\n\n**RATIONALE:** Reasonable fit.",
+            backend="mock",
+            model="mock-model",
+            tier="middle",
+            duration_ms=100,
+            success=True
+        )
+        mock_llm.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm
 
-        mapper = OpportunityMapper(use_claude_cli=False)  # Use legacy LLM for test
+        mapper = OpportunityMapper()
         result = mapper.map_opportunity(state_no_annotations)
 
         # Should work and return LLM score without blending
@@ -691,22 +719,29 @@ Analysis complete.
 class TestNodeFunctionIntegration:
     """Tests for opportunity_mapper_node with annotations."""
 
-    @patch('src.layer4.opportunity_mapper.create_tracked_llm')
+    @patch('src.layer4.opportunity_mapper.UnifiedLLM')
     def test_node_returns_annotation_analysis(
-        self, mock_llm_class, sample_job_state_with_annotations
+        self, mock_unified_llm_class, sample_job_state_with_annotations
     ):
         """Node function returns annotation analysis in state update."""
         from src.layer4.opportunity_mapper import opportunity_mapper_node
+        from src.common.unified_llm import LLMResult
 
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = """
+        mock_result = LLMResult(
+            content="""
 **SCORE:** 82
 
 **RATIONALE:** At Previous Inc, candidate achieved 75% incident reduction. Strong Kubernetes experience addresses platform needs.
-"""
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+""",
+            backend="mock",
+            model="mock-model",
+            tier="middle",
+            duration_ms=100,
+            success=True
+        )
+        mock_llm.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm
 
         updates = opportunity_mapper_node(sample_job_state_with_annotations)
 
