@@ -104,8 +104,9 @@
 
         /**
          * Start polling for queue state.
+         * Returns a Promise for consistent API with LogPoller.
          */
-        start() {
+        async start() {
             if (this.polling) {
                 this._log('Already polling');
                 return;
@@ -113,7 +114,7 @@
 
             this._log('Starting queue polling');
             this.polling = true;
-            this._poll();
+            await this._poll();
         }
 
         /**
