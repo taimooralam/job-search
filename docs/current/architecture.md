@@ -5017,6 +5017,568 @@ function startOutreachLogStreaming(jobId, contactIndex, contactType) {
 
 ---
 
+## Pipeline Operations Reference (2025-12-21)
+
+### Executive Summary
+
+Complete reference for pipeline operations from UI button click through MongoDB storage. This section documents operation naming, tier system, E2E flow, layer-by-layer processing, field dependencies, and MongoDB schema.
+
+---
+
+### Part 1: Operation Naming Unified
+
+The pipeline operations have been standardized with clear, action-oriented names. The following table maps old names to new standardized names.
+
+#### Operation Mapping Table
+
+| Current Code | Current UI Label | Proposed Code | Proposed Label | Layers | Status |
+|--------------|-----------------|---------------|-----------------|--------|--------|
+| `full-extraction` | Full Extraction | `analyze-job` | **Analyze Job** | 1.4 → 2 → 4 | Refactoring Phase 2 |
+| `process-jd` | Extract JD | (duplicate) | (REMOVE) | - | DEPRECATED |
+| `structure-jd` | Structure JD | `prepare-annotations` | **Prepare Annotations** | 1.4 only | Refactoring Phase 2 |
+| `research-company` | Research Company | `research-company` | **Research Company** | 3 → 3.5 | Unchanged |
+| (bundled) | (none) | `discover-contacts` | **Discover Contacts** | 5 | NEW - Phase 2 |
+| `generate-cv` | Generate CV | `generate-cv` | **Generate CV** | 6v2 | Unchanged |
+| (bundled) | (included in CV) | `generate-cover-letter` | **Generate Cover Letter** | 6 partial | NEW - Phase 2 |
+| (internal) | (none) | `generate-outreach` | **Generate Outreach** | 5b | NEW - Phase 2 |
+| `all-ops` | All Ops | `full-analysis` | **Full Analysis** | All Phase 1 | Refactoring Phase 2 |
+
+#### What Each Operation Does
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  analyze-job (was: full-extraction)                             │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 1.4: Parse JD → HTML sections + extracted_jd             │
+│  Layer 2:   Pain points, strategic needs, risks, success metrics│
+│  Layer 4:   Fit score (0-100), fit category, tier assignment    │
+│                                                                 │
+│  MongoDB: extracted_jd, pain_points, fit_score, fit_category,  │
+│           tier                                                  │
+│  Purpose: Complete JD analysis for batch display + prioritization
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  prepare-annotations (was: structure-jd)                        │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 1.4: Parse JD → HTML sections ONLY                       │
+│                                                                 │
+│  MongoDB: jd_annotations.processed_jd_html, processed_jd_sections
+│  Purpose: Prepare JD for annotation editor (no analysis)        │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  research-company (unchanged but DECOUPLED from contacts)       │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 3:   Company research (signals, funding, news)           │
+│  Layer 3.5: Role research (business impact, why now)            │
+│                                                                 │
+│  MongoDB: company_research, role_research                       │
+│  Purpose: Company intel for personalization                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  discover-contacts (NEW - extracted from research-company)      │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 5: Contact discovery (no outreach generation)            │
+│                                                                 │
+│  MongoDB: primary_contacts, secondary_contacts                  │
+│  Purpose: Find hiring managers, recruiters, peers               │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  generate-outreach (NEW - was internal only)                    │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 5b: Generate personalized messages for each contact      │
+│                                                                 │
+│  MongoDB: outreach_packages, contact.linkedin_connection_message
+│  Purpose: Create connection requests, InMails, emails           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  generate-cover-letter (NEW - decoupled from CV)                │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 6 partial: Cover letter generation only                  │
+│                                                                 │
+│  MongoDB: cover_letter                                          │
+│  Purpose: Standalone cover letter without CV regeneration       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  generate-cv (unchanged but NO cover letter bundled)            │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Layer 6v2: Full CV generation pipeline                         │
+│                                                                 │
+│  MongoDB: cv_text, cv_editor_state, cv_path                     │
+│  Purpose: Tailored CV only                                      │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  full-analysis (was: all-ops)                                   │
+│  ═══════════════════════════════════════════════════════════════ │
+│  Parallel: analyze-job ‖ research-company ‖ discover-contacts   │
+│                                                                 │
+│  MongoDB: All Phase 1 fields                                    │
+│  Purpose: One-click complete analysis                           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Part 2: Unified Button Menu & Tier System
+
+#### Unified Menu Structure (Both Batch & Detail Pages)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ⚡ Full Analysis                    [Tier: Balanced ▼]         │
+├─────────────────────────────────────────────────────────────────┤
+│  ANALYSIS                                                       │
+│    📄 Analyze Job             Extract JD, identify pain points, │
+│                               calculate fit score                │
+│    ✏️  Prepare Annotations     Structure JD into sections for    │
+│                               annotation editor                 │
+├─────────────────────────────────────────────────────────────────┤
+│  RESEARCH                                                       │
+│    🏢 Research Company        Gather company signals, funding,  │
+│                               news, and role context             │
+│    👥 Discover Contacts       Find hiring managers, recruiters, │
+│                               and relevant peers                │
+├─────────────────────────────────────────────────────────────────┤
+│  GENERATION                                                     │
+│    📝 Generate CV             Create tailored CV matched to job  │
+│                               requirements                       │
+│    💌 Generate Cover Letter   Write personalized cover letter   │
+│                               for this role                      │
+│    📨 Generate Outreach       Create LinkedIn and email          │
+│                               messages for contacts              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Tier Selection (Unified Fast/Balanced/Quality)
+
+| Tier | Display | Icon | Primary Model | Secondary Model | Est. Cost | Est. Speed |
+|------|---------|------|---------------|-----------------|-----------|-----------|
+| `fast` | **Fast** | ⚡ | gpt-4o-mini | claude-haiku | ~$0.02 | 20-30s |
+| `balanced` | **Balanced** | ⚖️ | gpt-4o-mini | claude-sonnet | ~$0.05 | 30-45s |
+| `quality` | **Quality** | ✨ | gpt-4o | claude-opus-4.5 | ~$0.50 | 45-60s |
+
+**Note**: Removes legacy A/B/C/D letters, Gold/Silver/Bronze labels, and "Auto" option for clarity.
+
+---
+
+### Part 3: E2E Flow from UI to MongoDB
+
+#### Button → Endpoint Mapping
+
+**Batch Processing Page** (`batch_processing.html`):
+
+| Button | JS Handler | Flask Route | Runner Endpoint | Tier | Operation |
+|--------|-----------|-------------|-----------------|------|-----------|
+| **Full Analysis** | `executeBatchOperation('full-analysis')` | `POST /api/runner/jobs/full-analysis/bulk` | `POST /jobs/full-analysis/bulk` | Tier dropdown | Parallel: analyze-job ‖ research-company ‖ discover-contacts |
+| **Analyze Job** | `executeBatchOperation('analyze-job')` | `POST /api/runner/jobs/analyze-job/bulk` | `POST /jobs/analyze-job/bulk` | Tier dropdown | Layers 1.4 → 2 → 4 |
+| **Prepare Annotations** | `executeBatchOperation('prepare-annotations')` | `POST /api/runner/jobs/prepare-annotations/bulk` | `POST /jobs/prepare-annotations/bulk` | Tier dropdown | Layer 1.4 only |
+| **Research Company** | `executeBatchOperation('research-company')` | `POST /api/runner/jobs/research-company/bulk` | `POST /jobs/research-company/bulk` | Tier dropdown | Layers 3 → 3.5 |
+| **Discover Contacts** | `executeBatchOperation('discover-contacts')` | `POST /api/runner/jobs/discover-contacts/bulk` | `POST /jobs/discover-contacts/bulk` | Tier dropdown | Layer 5 |
+| **Generate CV** | `executeBatchOperation('generate-cv')` | `POST /api/runner/jobs/generate-cv/bulk` | `POST /jobs/generate-cv/bulk` | Tier dropdown | Layer 6v2 |
+| **Generate Cover Letter** | `executeBatchOperation('generate-cover-letter')` | `POST /api/runner/jobs/generate-cover-letter/bulk` | `POST /jobs/generate-cover-letter/bulk` | Tier dropdown | Layer 6 partial |
+| **Generate Outreach** | `executeBatchOperation('generate-outreach')` | `POST /api/runner/jobs/generate-outreach/bulk` | `POST /jobs/generate-outreach/bulk` | Tier dropdown | Layer 5b |
+
+**Job Detail Page** (`job_detail.html`):
+
+| Button | JS Handler | Flask Route | Runner Endpoint | Operation |
+|--------|-----------|-------------|-----------------|-----------|
+| **Full Analysis** | Via dropdown | `POST /api/runner/operations/{id}/full-analysis/stream` | `POST /{id}/full-analysis/stream` | Parallel phases |
+| **Analyze Job** | Via dropdown | `POST /api/runner/operations/{id}/analyze-job/stream` | `POST /{id}/analyze-job/stream` | Layers 1.4 → 2 → 4 |
+| **Generate CV** | Via dropdown | `POST /api/runner/operations/{id}/generate-cv/stream` | `POST /{id}/generate-cv/stream` | Layer 6v2 |
+
+#### Request/Response Flow
+
+```
+User clicks "Analyze Job" on Batch Page
+           │
+           ▼
+JavaScript: executeBatchOperation('analyze-job')
+           │
+           ▼
+POST /api/runner/jobs/analyze-job/bulk
+  Headers: { Authorization, Content-Type }
+  Body: { job_ids: ["job1", "job2"], tier: "balanced" }
+           │
+           ▼
+Flask Proxy (frontend/runner.py)
+  - Validates job_ids exist in MongoDB
+  - Forwards to VPS Runner
+           │
+           ▼
+POST /jobs/analyze-job/bulk (runner_service/routes/operations.py)
+  - Starts background task per job_id
+  - Returns: { run_id: "uuid", status: "queued" }
+           │
+           ▼
+Client polls: GET /logs/{run_id}
+  - Real-time log streaming (every 100-200ms)
+  - Shows progress: "Processing JD..." → "Mining pain points..." → "Scoring fit..."
+           │
+           ▼
+Backend executes AnalyzeJobService.execute()
+  - Layer 1.4: JD Parser extracts sections
+  - Layer 2: Pain Point Miner extracts insights
+  - Layer 4: Opportunity Mapper scores fit
+           │
+           ▼
+Persists to MongoDB level-2 collection:
+  { _id, extracted_jd, pain_points, fit_score, fit_category, tier, ... }
+           │
+           ▼
+Frontend displays:
+  - Job card with fit score badge
+  - Pain points summary
+  - Tier assignment indicator
+```
+
+---
+
+### Part 4: Layer-by-Layer Analysis
+
+#### Layer 1.4: JD Processor & Extractor
+
+**Input**: Raw job description text
+**Output**: `extracted_jd` object + HTML sections
+
+| Phase | Component | Model | Output |
+|-------|-----------|-------|--------|
+| **1.4a** | JD Processor | `google/gemini-flash-1.5-8b` | Structured HTML with `<section>` tags |
+| **1.4b** | JD Extractor | Claude Code CLI | `extracted_jd` JSON object |
+
+**Key Fields** (`extracted_jd`):
+
+| Field | Type | Downstream Usage |
+|-------|------|------------------|
+| `title` | str | Display, matching |
+| `role_category` | enum (8 types) | CV template selection, competency emphasis |
+| `seniority_level` | enum | CV tone adjustment |
+| `competency_weights` | dict | **CRITICAL**: Drives CV bullet emphasis (delivery/process/architecture/leadership) |
+| `responsibilities` | List[str] | Pain point extraction |
+| `qualifications` | List[str] | Gap detection |
+| `technical_skills` | List[str] | ATS keywords |
+| `soft_skills` | List[str] | Outreach personalization |
+| `implied_pain_points` | List[str] | Layer 2 input |
+| `success_metrics` | List[str] | Cover letter, outreach |
+| `top_keywords` | List[str] | **CRITICAL**: CV keyword placement (15 keywords) |
+
+**MongoDB Storage**: Stored as `extracted_jd` subdocument in `level-2` collection.
+
+#### Layer 2: Pain Point Miner
+
+**Input**: JD sections, implied pain points, competencies
+**Output**: Pain point analysis with evidence
+
+| Field | Type | Constraints | Downstream Usage |
+|-------|------|-------------|------------------|
+| `pain_points` | Array | 2-6 items with evidence+confidence | **CRITICAL**: STAR selection, fit scoring, CV bullets |
+| `strategic_needs` | Array | 2-5 items | Outreach framing, cover letter |
+| `risks_if_unfilled` | Array | 2-5 items | Urgency messaging |
+| `success_metrics` | Array | 2-6 items | Achievement alignment |
+| `why_now` | str | Hiring urgency reason | **CRITICAL**: Outreach hook |
+
+**Annotation Integration**:
+- Must-have keywords: +10 boost to pain point narrative
+- Gap keywords: -5 penalty
+- Passion (love_it): +5 boost
+- Identity (core): +3 boost
+
+**MongoDB Storage**: Top-level arrays `pain_points`, `strategic_needs`, `risks_if_unfilled`, `success_metrics`.
+
+#### Layer 3 & 3.5: Company & Role Research
+
+**Layer 3 Input**: Company name
+**Layer 3 Output**: Company signals and research summary
+
+| Field | Type | Description | Downstream Usage |
+|-------|------|-------------|------------------|
+| `summary` | str | 2-3 sentence overview | Outreach personalization |
+| `signals` | Array | 0-10 business events with sources | **CRITICAL**: "Why now" context, interview prep |
+| `company_type` | str | employer/recruitment_agency | Process routing |
+
+**Layer 3.5 Input**: Company research, JD, extracted role
+**Layer 3.5 Output**: Role research
+
+| Field | Type | Description | Downstream Usage |
+|-------|------|-------------|------------------|
+| `summary` | str | 2-3 sentence role overview | Cover letter |
+| `business_impact` | Array | 3-5 bullets | Achievement alignment |
+| `why_now` | str | 1-2 sentences | **CRITICAL**: Outreach hook, interview |
+
+**MongoDB Storage**: `company_research`, `role_research` subdocuments.
+
+#### Layer 4: Opportunity Mapper (Fit Scoring)
+
+**Input**: Pain points, JD, CV annotations
+**Output**: Fit score 0-100 with rationale
+
+| Field | Type | Description | Downstream Usage |
+|-------|------|-------------|------------------|
+| `fit_score` | int | 0-100 | **CRITICAL**: Tier assignment, prioritization |
+| `fit_category` | str | exceptional/strong/good/moderate/weak | UI display |
+| `fit_rationale` | str | 2-3 sentences with STAR citations | Cover letter |
+| `tier` | str | A(85+)/B(70-84)/C(50-69)/D(<50) | Model selection |
+
+**Scoring Logic**:
+- 70% LLM score (job requirements vs CV match)
+- 30% annotation signal (annotation coverage + match)
+
+**MongoDB Storage**: `fit_score`, `fit_category`, `fit_rationale`, `tier`.
+
+#### Layer 5: People Mapper
+
+**Input**: Company research, JD, candidate profile
+**Output**: Contact list with personalized messages
+
+| Contact Field | Type | Description |
+|----------------|------|-------------|
+| `name` | str | Contact name |
+| `role` | str | Job title |
+| `linkedin_url` | str | Profile URL |
+| `contact_type` | str | hiring_manager/recruiter/vp_director/executive/peer |
+| `linkedin_connection_message` | str | ≤300 chars (warm, brief) |
+| `linkedin_inmail` | str | 400-600 chars (professional, value-focused) |
+| `email_body` | str | 95-205 words |
+| `is_synthetic` | bool | `True` if placeholder, `False` if discovered |
+
+**Contact Type Strategies**:
+
+| Type | Focus | Length | Tone |
+|------|-------|--------|------|
+| `hiring_manager` | JD match + metrics | Peer-level | Technical credibility |
+| `recruiter` | JD keywords + achievements | Efficient | Quantified results |
+| `vp_director` | Strategic outcomes | 50-150 words | Business impact |
+| `executive` | Industry trends | Extreme brevity | Strategic vision |
+| `peer` | Technical depth | Collaborative | Technical rapport |
+
+**MongoDB Storage**: `primary_contacts`, `secondary_contacts` arrays.
+
+#### Layer 6v2: CV Generator
+
+**Input**: Extracted JD, pain points, role research, master CV
+**Output**: Tailored CV text + optional cover letter
+
+**6-Phase Pipeline**:
+1. **CV Loader**: Load pre-split role files
+2. **Role Generator**: Generate 3-5 STAR bullets per role (JD keywords + annotation boost)
+3. **Role QA**: Hallucination detection + STAR validation
+4. **Stitcher**: Deduplication, word budget
+5. **Header Generator**: Profile summary (achievements-grounded)
+6. **Grader & Improver**: Multi-dimensional quality assessment
+
+**Key Prompt Aspects**:
+- Use STAR format (Situation-Task-Action-Result)
+- Inject JD keywords naturally
+- Ground all metrics in source text (no hallucination)
+- Cite annotation evidence (passion, identity, core strengths)
+
+**MongoDB Storage**: `cv_text`, `cv_editor_state`, `cv_path`.
+
+**Cover Letter Generation** (NEW - integrated after CV):
+- Reuses job state (pain_points, company_research, role_research)
+- Atomically persists both CV and cover letter in single transaction
+- 220-380 words, pain point mapping required
+
+---
+
+### Part 5: Field Dependency Graph
+
+```
+INPUT (MongoDB level-2)
+    ├── title, company, job_description, job_url
+    │
+    ▼
+LAYER 1.4: JD Extractor
+    ├── extracted_jd ──────────────────────────────────────┐
+    │   ├── role_category ─────────────────────────────────┼──→ Layer 6 (CV template)
+    │   ├── competency_weights ────────────────────────────┼──→ Layer 6 (bullet emphasis)
+    │   ├── top_keywords ──────────────────────────────────┼──→ Layer 6 (ATS placement)
+    │   ├── implied_pain_points ───────────────────────────┼──→ Layer 2 (enrichment)
+    │   └── qualifications ────────────────────────────────┼──→ Layer 4 (gap analysis)
+    │                                                      │
+    ▼                                                      │
+LAYER 2: Pain Point Miner                                  │
+    ├── pain_points ───────────────────────────────────────┼──→ Layer 4 (fit scoring)
+    │                                                      │    Layer 6 (CV bullets)
+    ├── strategic_needs ───────────────────────────────────┼──→ Layer 6 (cover letter)
+    ├── risks_if_unfilled ─────────────────────────────────┼──→ Outreach (urgency)
+    └── success_metrics ───────────────────────────────────┼──→ Layer 4 (alignment)
+                                                           │
+    ▼                                                      │
+LAYER 3 & 3.5: Company & Role Research                     │
+    ├── company_research ──────────────────────────────────┤
+    │   ├── summary ───────────────────────────────────────┼──→ Outreach personalization
+    │   ├── signals ───────────────────────────────────────┼──→ Layer 3.5 (why_now)
+    │   └── company_type ──────────────────────────────────┼──→ Process routing
+    │                                                      │
+    └── role_research                                      │
+        ├── business_impact ───────────────────────────────┼──→ CV header
+        └── why_now ───────────────────────────────────────┼──→ Outreach hook
+                                                           │
+    ▼                                                      │
+LAYER 4: Opportunity Mapper                                │
+    ├── fit_score ─────────────────────────────────────────┼──→ Tier assignment
+    ├── fit_category ──────────────────────────────────────┼──→ UI display
+    └── tier ──────────────────────────────────────────────┼──→ Model selection
+                                                           │
+    ▼                                                      │
+LAYER 5: People Mapper                                     │
+    ├── primary_contacts ──────────────────────────────────┼──→ Layer 7 (dossier)
+    └── secondary_contacts ────────────────────────────────┼──→ Layer 7 (dossier)
+                                                           │
+    ▼                                                      │
+LAYER 6: CV Generator + Cover Letter                       │
+    ├── cv_text ───────────────────────────────────────────┼──→ Layer 7 (dossier)
+    └── cover_letter ──────────────────────────────────────┼──→ Layer 7 (dossier)
+                                                           │
+    ▼                                                      │
+LAYER 7: Dossier Generator                                 │
+    └── dossier_path, drive_folder_url ────────────────────┴──→ OUTPUT
+```
+
+---
+
+### Part 6: MongoDB Field Reference
+
+Complete mapping of MongoDB fields in `level-2` collection:
+
+| Field Path | Type | Written By | Read By | Critical | Notes |
+|------------|------|------------|---------|----------|-------|
+| `extracted_jd` | Object | Layer 1.4 | 2, 4, 5, 6 | **Yes** | Foundation for all downstream |
+| `extracted_jd.role_category` | String | Layer 1.4 | Layer 6 | **Yes** | CV template selection |
+| `extracted_jd.competency_weights` | Object | Layer 1.4 | Layer 6 | **Yes** | Bullet emphasis directive |
+| `extracted_jd.top_keywords` | Array | Layer 1.4 | Layer 6 | **Yes** | ATS keyword placement |
+| `pain_points` | Array | Layer 2 | 4, 6, 7 | **Yes** | Drives fit scoring + CV |
+| `strategic_needs` | Array | Layer 2 | 6 | No | Useful for cover letter |
+| `risks_if_unfilled` | Array | Layer 2 | Outreach | No | Urgency messaging |
+| `success_metrics` | Array | Layer 2 | 4, 7 | No | Achievement alignment |
+| `company_research` | Object | Layer 3 | 3.5, 5, 7 | **Yes** | Company signals and intel |
+| `company_research.signals` | Array | Layer 3 | 3.5, Outreach | **Yes** | "Why now" + interview prep |
+| `role_research` | Object | Layer 3.5 | 6, 7 | **Yes** | Role impact and timing |
+| `role_research.why_now` | String | Layer 3.5 | Outreach | **Yes** | Outreach hook |
+| `fit_score` | Integer | Layer 4 | UI, Tier | **Yes** | Primary prioritization metric |
+| `fit_category` | String | Layer 4 | UI | No | Display category |
+| `fit_rationale` | String | Layer 4 | Layer 7 | No | Scoring explanation |
+| `tier` | String | Layer 4 | Model selection | **Yes** | Model tier assignment |
+| `primary_contacts` | Array | Layer 5 | Layer 7 | **Yes** | Direct outreach targets |
+| `secondary_contacts` | Array | Layer 5 | Layer 7 | No | Backup contacts |
+| `cv_text` | String | Layer 6 | Layer 7 | **Yes** | Final CV deliverable |
+| `cover_letter` | String | Layer 6 | Layer 7 | **Yes** | Final cover letter deliverable |
+| `cv_reasoning` | String | Layer 6 | Debug | No | Generation explanation |
+| `dossier_path` | String | Layer 7 | UI | No | Drive folder link |
+
+---
+
+### Part 7: Technical Debt & Migration Plan
+
+#### Phase 1: Frontend Button Unification (COMPLETED - 2025-12-21)
+
+**Status**: Batch page and Job Detail page now have unified dropdown menu with:
+- Full Analysis (hero button)
+- ANALYSIS section: Analyze Job, Prepare Annotations
+- RESEARCH section: Research Company, Discover Contacts
+- GENERATION section: Generate CV, Generate Cover Letter, Generate Outreach
+- Backward compatibility aliases for old operation names
+
+**Files Modified**:
+- `frontend/templates/batch_processing.html`
+- `frontend/templates/job_detail.html`
+- `frontend/static/js/pipeline-actions.js`
+- `frontend/static/js/job-detail.js`
+
+#### Phase 2: Backend Operation Refactoring (PENDING)
+
+**Services to Create/Rename**:
+1. Rename `full_extraction_service.py` → `analyze_job_service.py`
+2. Rename `structure_jd_service.py` → `prepare_annotations_service.py`
+3. Rename `all_ops_service.py` → `full_analysis_service.py`
+4. Create new `discover_contacts_service.py` (extract from company_research_service)
+5. Create new `cover_letter_service.py` (extract from cv_generation_service)
+6. Create new `outreach_service.py` (expose existing internal service)
+
+**Routes to Add** (`runner_service/routes/operations.py`):
+- `POST /{jobId}/analyze-job/start` (was: `/full-extraction/stream`)
+- `POST /{jobId}/prepare-annotations/start` (was: `/structure-jd/stream`)
+- `POST /{jobId}/discover-contacts/start` (new)
+- `POST /{jobId}/generate-cover-letter/start` (new)
+- `POST /{jobId}/generate-outreach/start` (new)
+
+#### Phase 3: Endpoint Naming (OPTIONAL)
+
+**Proposed Changes**:
+- `/stream` → `/start` for operation initiation (clearer intent)
+- `/logs/{id}` → `/logs/{id}/stream` (indicates SSE endpoint)
+- Keep old endpoints with deprecation warnings for 6 months
+
+---
+
+### Part 8: Migration & Backward Compatibility
+
+#### Alias System (Implemented)
+
+```python
+OPERATION_ALIASES = {
+    "full-extraction": "analyze-job",
+    "structure-jd": "prepare-annotations",
+    "process-jd": "analyze-job",  # duplicate
+    "all-ops": "full-analysis",
+}
+
+# Tier aliases (UI to backend)
+TIER_ALIASES = {
+    "A": "quality",
+    "B": "balanced",
+    "C": "fast",
+    "D": "fast",
+}
+```
+
+#### Keyboard Shortcuts (Updated)
+
+| Shortcut | Operation | New Code |
+|----------|-----------|----------|
+| Alt+1 | Full Analysis | `full-analysis` |
+| Alt+2 | Analyze Job | `analyze-job` |
+| Alt+3 | Research Company | `research-company` |
+| Alt+4 | Generate CV | `generate-cv` |
+| Alt+5 | Discover Contacts | `discover-contacts` |
+
+---
+
+### Part 9: Prompt Quality Summary
+
+| Layer | Persona | Anti-Hallucination | Domain-Aware | Confidence | Grade |
+|-------|---------|-------------------|--------------|------------|-------|
+| 1.4 | Expert HR analyst | Source citation | 8 role categories | N/A | A |
+| 2 | Revenue Diagnostician | Evidence+confidence | 8 domains | Yes | A+ |
+| 3 | BI Analyst | Source URLs required | N/A | N/A | A |
+| 3.5 | Role Analyst | Signal references | N/A | N/A | B+ |
+| 4 | Executive Recruiter | STAR citations | Rubric-based | Implicit | A |
+| 5 | Discovery + Classification | Contact verification | Contact types | N/A | B+ |
+| 6 | CV Expert | Source text matching | Role-aware | QA phase | A |
+
+---
+
+### Part 10: Operation Execution Summary
+
+| Operation | Layers | Execution | Est. Duration | Est. Cost |
+|-----------|--------|-----------|---------------|-----------|
+| **Analyze Job** | 1.4 → 2 → 4 | Sequential | 20-30s | $0.02-0.15 |
+| **Prepare Annotations** | 1.4 | Single | 5-10s | $0.01-0.05 |
+| **Research Company** | 3 → 3.5 | Sequential | 40-60s | $0.03-0.20 |
+| **Discover Contacts** | 5 | Single | 30-45s | $0.02-0.10 |
+| **Generate CV** | 6v2 (6 phases) | Sequential | 60-90s | $0.05-0.50 |
+| **Generate Cover Letter** | 6 partial | Single | 20-30s | $0.02-0.15 |
+| **Generate Outreach** | 5b | Single | 10-20s | $0.01-0.10 |
+| **Full Analysis** | (1.4→2→4) ‖ (3→3.5) | Parallel | 50-60s | $0.05-0.35 |
+
+---
+
 ## Anti-Hallucination Pattern (NEW - 2025-12-08)
 
 ### Architecture: Three-Layer Validation System
