@@ -2223,6 +2223,8 @@ async def _execute_queued_operation(
                 job_id=job_id,
                 tier=tier,
                 use_llm=use_llm,
+                progress_callback=layer_cb,
+                log_callback=log_cb,  # Pass log_cb for LLM backend visibility
             )
 
         elif operation in ("full-extraction", "analyze-job"):

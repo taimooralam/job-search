@@ -10,10 +10,12 @@ Usage:
     result = await service.execute(job_id="...", tier=ModelTier.BALANCED, use_llm=True)
 """
 
+import asyncio
+import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from bson import ObjectId
 from pymongo import MongoClient
@@ -180,6 +182,8 @@ class StructureJDService(OperationService):
         job_id: str,
         tier: ModelTier,
         use_llm: bool = True,
+        progress_callback: Optional[Callable] = None,
+        log_callback: Optional[Callable] = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -189,6 +193,8 @@ class StructureJDService(OperationService):
             job_id: MongoDB ObjectId of the job to process
             tier: Model tier for quality/cost selection
             use_llm: Whether to use LLM for intelligent structuring (default True)
+            progress_callback: Optional callback for progress updates (layer_key, status, message)
+            log_callback: Optional callback for log messages (JSON string)
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -196,6 +202,23 @@ class StructureJDService(OperationService):
         """
         run_id = self.create_run_id()
         logger.info(f"[{run_id[:16]}] Starting structure-jd for job {job_id}")
+
+        # Progress callback helper for SSE streaming
+        async def emit_progress(layer_key: str, status: str, message: str):
+            if progress_callback:
+                try:
+                    progress_callback(layer_key, status, message)
+                    await asyncio.sleep(0)  # Yield to event loop for SSE
+                except Exception as e:
+                    logger.warning(f"Progress callback failed: {e}")
+
+        # Log callback helper for backend visibility
+        def emit_log(message: str, **log_kwargs):
+            if log_callback:
+                try:
+                    log_callback(json.dumps({"message": message, **log_kwargs}))
+                except Exception:
+                    pass
 
         # Create structured logger for frontend-visible LLM events
         struct_logger = StructuredLogger(job_id=job_id)
@@ -206,6 +229,7 @@ class StructureJDService(OperationService):
 
             try:
                 # 1. Fetch job
+                await emit_progress("fetch_job", "processing", "Loading job data")
                 logger.info(f"[{run_id[:16]}] Fetching job from database")
                 job = self._get_job(job_id)
                 if not job:
@@ -213,17 +237,21 @@ class StructureJDService(OperationService):
                         "status": "failed",
                         "message": f"Job not found: {job_id}"
                     }
+                    await emit_progress("fetch_job", "failed", f"Job not found: {job_id}")
                     return self.create_error_result(
                         run_id=run_id,
                         error=f"Job not found: {job_id}",
                         duration_ms=timer.duration_ms,
                     )
+                job_title = job.get('title', 'Unknown')
                 layer_status["fetch_job"] = {
                     "status": "success",
-                    "message": f"Found job: {job.get('title', 'Unknown')}"
+                    "message": f"Found job: {job_title}"
                 }
+                await emit_progress("fetch_job", "success", f"Found job: {job_title}")
 
                 # 2. Extract JD text
+                await emit_progress("extract_text", "processing", "Extracting JD text")
                 logger.info(f"[{run_id[:16]}] Extracting JD text")
                 try:
                     jd_text = self._get_jd_text(job)
@@ -232,11 +260,14 @@ class StructureJDService(OperationService):
                         "length": len(jd_text),
                         "message": f"Extracted {len(jd_text)} characters"
                     }
+                    await emit_progress("extract_text", "success", f"JD text extracted: {len(jd_text)} chars")
+                    emit_log(f"JD text extracted: {len(jd_text)} chars")
                 except ValueError as e:
                     layer_status["extract_text"] = {
                         "status": "failed",
                         "message": str(e)
                     }
+                    await emit_progress("extract_text", "failed", str(e))
                     return self.create_error_result(
                         run_id=run_id,
                         error=str(e),
@@ -251,6 +282,8 @@ class StructureJDService(OperationService):
                 )
 
                 # 4. Process JD - now returns tuple (processed, llm_metadata)
+                await emit_progress("jd_processor", "processing", f"Parsing JD with {'LLM' if use_llm else 'rules'}")
+                emit_log(f"Processing JD with {'LLM' if use_llm else 'rule-based'}, model={model}")
                 logger.info(f"[{run_id[:16]}] Processing JD with {'LLM' if use_llm else 'rules'}")
                 llm_metadata: LLMMetadata
                 if use_llm:
@@ -300,8 +333,15 @@ class StructureJDService(OperationService):
                     f"[{run_id[:16]}] JD Processor complete: {section_count} sections "
                     f"via backend={llm_metadata.backend}, model={llm_metadata.model}"
                 )
+                await emit_progress("jd_processor", "success", f"Parsed {section_count} sections via {llm_metadata.backend}")
+                emit_log(
+                    f"LLM responded via backend={llm_metadata.backend}, model={llm_metadata.model}",
+                    backend=llm_metadata.backend,
+                    model=llm_metadata.model,
+                )
 
                 # 7. Persist result
+                await emit_progress("persist", "processing", "Saving to database")
                 logger.info(f"[{run_id[:16]}] Persisting results to database")
                 persisted = self._persist_result(job_id, result_data)
                 if persisted:
@@ -309,11 +349,13 @@ class StructureJDService(OperationService):
                         "status": "success",
                         "message": "Saved to database"
                     }
+                    await emit_progress("persist", "success", "Results saved")
                 else:
                     layer_status["persist"] = {
                         "status": "warning",
                         "message": "Processing succeeded but persistence failed"
                     }
+                    await emit_progress("persist", "warning", "Persistence failed but processing succeeded")
                     logger.warning(
                         f"[{run_id[:16]}] Failed to persist result, but processing succeeded"
                     )
