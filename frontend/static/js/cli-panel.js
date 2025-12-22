@@ -320,6 +320,7 @@ document.addEventListener('alpine:init', () => {
         _setupEventListeners() {
             // Start a new pipeline run
             window.addEventListener('cli:start-run', (e) => {
+                console.log('[CLI] Received cli:start-run event:', e.detail);
                 this.startRun(e.detail);
             });
 
@@ -722,6 +723,7 @@ document.addEventListener('alpine:init', () => {
             }
 
             cliDebug(`Subscribing to log polling: ${runId}`);
+            console.log('[CLI] Creating LogPoller for:', runId);
 
             try {
                 const poller = new window.LogPoller(runId, {
@@ -729,6 +731,7 @@ document.addEventListener('alpine:init', () => {
                     debug: false,
                 });
                 this.runs[runId]._logPoller = poller;
+                console.log('[CLI] LogPoller created for:', runId);
 
                 // Handle each log message
                 poller.onLog((log) => {
@@ -844,7 +847,9 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 // Start polling (fire-and-forget with error handling)
+                console.log('[CLI] Starting LogPoller for:', runId);
                 poller.start().catch(err => console.error('[LogPoller] Polling failed:', err));
+                console.log('[CLI] LogPoller started for:', runId);
                 cliDebug(`Log polling subscription established for ${runId}`);
 
             } catch (err) {

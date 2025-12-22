@@ -157,6 +157,7 @@
                 return;
             }
 
+            console.log('[LogPoller] Starting poll loop for:', this.runId);
             this._log('Starting log polling for', this.runId);
             this.polling = true;
 
@@ -190,6 +191,7 @@
          * Internal: Main poll loop.
          */
         async _pollLoop() {
+            console.log('[LogPoller] Poll loop started for:', this.runId);
             while (this.polling) {
                 try {
                     const data = await this._fetchLogs();
