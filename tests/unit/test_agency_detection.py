@@ -121,6 +121,7 @@ class TestMinimalAgencyResearch:
             researcher = CompanyResearcher.__new__(CompanyResearcher)
             researcher.logger = MagicMock()
             researcher.use_claude_api = False  # Use legacy FireCrawl path for test
+            researcher._log_callback = None  # Required for _emit_log method
             researcher._classify_company_type = mock_classify
             researcher._scrape_job_posting = mock_scrape
             researcher._construct_company_url = lambda x: f"https://{x.lower().replace(' ', '-')}.com"
@@ -203,7 +204,9 @@ class TestFitRationaleAgencyNote:
         with patch.object(OpportunityMapper, '__init__', lambda x: None):
             mapper = OpportunityMapper.__new__(OpportunityMapper)
             mapper.logger = MagicMock()
+            mapper.tier = "middle"  # Required for model attribution
             mapper._analyze_fit = mock_analyze
+            mapper._derive_fit_category = lambda score: "strong" if score >= 70 else "weak"
 
             result = mapper.map_opportunity(sample_agency_state)
 
@@ -220,7 +223,9 @@ class TestFitRationaleAgencyNote:
         with patch.object(OpportunityMapper, '__init__', lambda x: None):
             mapper = OpportunityMapper.__new__(OpportunityMapper)
             mapper.logger = MagicMock()
+            mapper.tier = "middle"  # Required for model attribution
             mapper._analyze_fit = mock_analyze
+            mapper._derive_fit_category = lambda score: "exceptional" if score >= 80 else "strong"
 
             result = mapper.map_opportunity(sample_employer_state)
 
