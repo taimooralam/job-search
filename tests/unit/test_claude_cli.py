@@ -158,6 +158,7 @@ class TestClaudeCLIInvoke:
         """Should handle CLI errors gracefully."""
         mock_result = MagicMock()
         mock_result.returncode = 1
+        mock_result.stdout = ""  # Empty stdout
         mock_result.stderr = "Authentication failed"
         mock_subprocess_run.return_value = mock_result
 

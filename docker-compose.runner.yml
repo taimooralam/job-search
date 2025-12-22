@@ -17,7 +17,8 @@ services:
       # Multiple origins: Vercel production, localhost dev, custom domain
       - CORS_ORIGINS=https://job-search-inky-sigma.vercel.app,http://localhost:5001,http://127.0.0.1:5001,https://jobs.uqab.digital
       # Claude Code CLI OAuth token (Max subscription - set in .env file on server)
-      - ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN:-}
+      # Use `claude setup-token` to generate a long-lived token (valid 1 year)
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
       - CLAUDE_CODE_MODEL=${CLAUDE_CODE_MODEL:-claude-opus-4-5-20251101}
     # Traefik handles external traffic via HTTPS; keep direct port for local/fallback
     ports:
@@ -55,7 +56,7 @@ services:
       - ./credentials:/app/credentials:ro
       # Master CV data directory (file fallback for MongoDB)
       - ./data/master-cv:/app/data/master-cv:ro
-      # Claude Code CLI auth is via ANTHROPIC_AUTH_TOKEN env var (see environment section)
+      # Claude Code CLI auth is via CLAUDE_CODE_OAUTH_TOKEN env var (see environment section)
       # No file mount needed - the OAuth token is passed as environment variable
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

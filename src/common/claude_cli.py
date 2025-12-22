@@ -203,6 +203,42 @@ class ClaudeCLI:
 
         return parsed_data, input_tokens, output_tokens, cost_usd
 
+    def _extract_cli_error(self, stdout: str, stderr: str, returncode: int) -> str:
+        """
+        Extract meaningful error message from CLI failure.
+
+        Claude CLI writes errors to stdout in JSON format when using --output-format json.
+        The JSON contains `is_error: true` and the actual error in `result` field.
+        Example: {"is_error": true, "result": "Credit balance is too low", ...}
+
+        Args:
+            stdout: CLI stdout (may contain JSON with error details)
+            stderr: CLI stderr (traditional error output)
+            returncode: CLI exit code
+
+        Returns:
+            Human-readable error message
+        """
+        # Try to parse JSON error from stdout first (preferred for --output-format json)
+        if stdout:
+            try:
+                cli_output = json.loads(stdout)
+                if cli_output.get("is_error"):
+                    error_result = cli_output.get("result", "")
+                    if error_result:
+                        return error_result
+            except json.JSONDecodeError:
+                # stdout is plain text, not JSON - use it as error message
+                if stdout.strip():
+                    return stdout.strip()
+
+        # Fall back to stderr
+        if stderr and stderr.strip():
+            return stderr.strip()
+
+        # Generic fallback
+        return f"CLI exited with code {returncode}"
+
     def invoke(
         self,
         prompt: str,
@@ -252,7 +288,7 @@ class ClaudeCLI:
 
             # Check for CLI errors
             if result.returncode != 0:
-                error_msg = result.stderr or f"CLI exited with code {result.returncode}"
+                error_msg = self._extract_cli_error(result.stdout, result.stderr, result.returncode)
                 self._emit_log(job_id, "error", message=f"CLI failed: {error_msg}")
                 return CLIResult(
                     job_id=job_id,
