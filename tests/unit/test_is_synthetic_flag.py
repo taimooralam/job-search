@@ -430,8 +430,23 @@ class TestSyntheticContactEndToEnd:
             assert contact.get("is_synthetic") is True
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', True)
-    def test_skip_outreach_synthetic_contacts_have_flag(self, sample_job_state):
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
+    def test_skip_outreach_synthetic_contacts_have_flag(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=True with synthetic contacts should still set is_synthetic=True."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = False
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_claude_researcher_class.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=True)
 

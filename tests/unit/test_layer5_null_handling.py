@@ -6,7 +6,7 @@ from Layer 3 (Company Research) and Layer 2.5 (STAR Selector).
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 from src.layer5.people_mapper import (
     PeopleMapper,
@@ -117,9 +117,26 @@ class TestSafeGetNested:
 class TestNullCompanyResearchHandling:
     """Test that Layer 5 handles missing/None company_research gracefully."""
 
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
-    def test_handles_none_company_research(self, mock_outreach, state_with_none_company_research):
+    def test_handles_none_company_research(self, mock_outreach, mock_llm_class, mock_claude_researcher_class, state_with_none_company_research):
         """Test that Layer 5 doesn't crash when company_research is None."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        # Create mock research result that indicates failure
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.error = "No company research available"
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_claude_researcher_class.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         # Mock outreach generation to avoid LLM calls
         mock_outreach.return_value = {
             "contact_name": "Test Contact",
@@ -147,9 +164,24 @@ class TestNullCompanyResearchHandling:
         # Should log warning but not error
         assert len(result.get("errors", [])) == 0
 
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
-    def test_handles_missing_company_research(self, mock_outreach, state_with_missing_company_research):
+    def test_handles_missing_company_research(self, mock_outreach, mock_llm_class, mock_claude_researcher_class, state_with_missing_company_research):
         """Test that Layer 5 doesn't crash when company_research key is missing."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = False
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_claude_researcher_class.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         mock_outreach.return_value = {
             "contact_name": "Test Contact",
             "contact_role": "Engineer",
@@ -175,9 +207,24 @@ class TestNullCompanyResearchHandling:
         # Should not have errors
         assert len(result.get("errors", [])) == 0
 
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
-    def test_handles_partial_company_research(self, mock_outreach, state_with_partial_company_research):
+    def test_handles_partial_company_research(self, mock_outreach, mock_llm_class, mock_claude_researcher_class, state_with_partial_company_research):
         """Test that Layer 5 handles company_research missing 'url' field."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = False
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_claude_researcher_class.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         mock_outreach.return_value = {
             "contact_name": "Test Contact",
             "contact_role": "Engineer",
@@ -253,9 +300,19 @@ class TestUpstreamDependencyValidation:
         # Should return empty contacts
         assert result["primary_contacts"] == []
 
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
-    def test_warns_on_missing_optional_fields(self, mock_outreach, minimal_job_state, caplog):
+    def test_warns_on_missing_optional_fields(self, mock_outreach, mock_llm_class, mock_claude_researcher, minimal_job_state, caplog):
         """Test that Layer 5 logs warnings for missing optional fields but continues."""
+        # Mock ClaudeWebResearcher
+        mock_researcher = MagicMock()
+        mock_claude_researcher.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         # Remove all optional fields
         state = minimal_job_state.copy()
         # pain_points, company_research, role_research, selected_stars already missing
@@ -343,9 +400,19 @@ class TestFormatFunctionsNullHandling:
 class TestNodeFunctionNullHandling:
     """Test people_mapper_node integration with null data."""
 
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
+    @patch('src.layer5.people_mapper.create_tracked_llm')
     @patch('src.layer5.people_mapper.PeopleMapper._generate_outreach_package')
-    def test_node_handles_none_company_research(self, mock_outreach, state_with_none_company_research):
+    def test_node_handles_none_company_research(self, mock_outreach, mock_llm_class, mock_claude_researcher, state_with_none_company_research):
         """Test that node function handles None company_research."""
+        # Mock ClaudeWebResearcher
+        mock_researcher = MagicMock()
+        mock_claude_researcher.return_value = mock_researcher
+
+        # Mock LLM
+        mock_llm = MagicMock()
+        mock_llm_class.return_value = mock_llm
+
         mock_outreach.return_value = {
             "contact_name": "Test Contact",
             "contact_role": "Engineer",
@@ -362,4 +429,5 @@ class TestNodeFunctionNullHandling:
 
         # Should not crash
         assert "primary_contacts" in result
+        # With proper mocks, should not have errors
         assert len(result.get("errors", [])) == 0

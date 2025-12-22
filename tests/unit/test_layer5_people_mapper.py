@@ -950,9 +950,14 @@ class TestSkipOutreachParameter:
     """Test skip_outreach parameter for Research button integration."""
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)  # FireCrawl disabled = synthetic contacts
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_returns_contacts_without_messages(self, mock_llm_class, sample_job_state):
+    def test_skip_outreach_returns_contacts_without_messages(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=True returns contacts without generating outreach messages."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_claude_researcher_class.return_value = mock_researcher
+
         mock_llm = MagicMock()
         mock_llm_class.return_value = mock_llm
 
@@ -977,9 +982,15 @@ class TestSkipOutreachParameter:
             assert "email_body" not in contact or contact.get("email_body") == ""
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_false_generates_messages(self, mock_llm_class, sample_job_state):
+    def test_skip_outreach_false_generates_messages(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=False (default) generates outreach messages."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_claude_researcher_class.return_value = mock_researcher
+
+        # Mock LLM for outreach generation
         mock_llm = MagicMock()
         outreach_response = MagicMock()
         outreach_response.content = json.dumps({
@@ -993,6 +1004,7 @@ class TestSkipOutreachParameter:
         mock_llm.invoke.return_value = outreach_response
         mock_llm_class.return_value = mock_llm
 
+        # Create mapper AFTER mocks are set up
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=False)
 
