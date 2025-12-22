@@ -480,6 +480,37 @@ class CVGeneratorV2:
                 "traceback": full_traceback,
             }
 
+    def _run_async_safely(self, coro):
+        """
+        Run async coroutine safely from sync context, even when called from async.
+
+        This handles the case where we're called from CVGenerationService.execute()
+        which is async, but we need to run async code from this sync method.
+
+        Args:
+            coro: Coroutine to execute
+
+        Returns:
+            Result of the coroutine
+        """
+        import asyncio
+        import concurrent.futures
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            # Already in async context - use thread pool to avoid nested loop issues
+            self._logger.info("Detected running event loop - using ThreadPoolExecutor")
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, coro)
+                return future.result(timeout=180)
+        else:
+            # No running loop - safe to use asyncio.run directly
+            return asyncio.run(coro)
+
     def _generate_with_claude_cli(self, state: JobState) -> Dict[str, Any]:
         """
         Generate CV using Claude CLI multi-agent pipeline.
@@ -495,8 +526,6 @@ class CVGeneratorV2:
         Returns:
             Dictionary with cv_text, cv_path, cv_reasoning, and generation metadata
         """
-        import asyncio
-
         self._logger.info("CLAUDE CLI CV GENERATION: Starting multi-agent pipeline")
 
         try:
@@ -530,15 +559,10 @@ class CVGeneratorV2:
                 "candidate_profile": state.get("candidate_profile") or {},
             }
 
-            # Run async generation
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                cv_result = loop.run_until_complete(
-                    self._claude_cv_service.generate_cv(job_state_dict, candidate_dict)
-                )
-            finally:
-                loop.close()
+            # Run async generation safely (handles nested event loop case)
+            cv_result = self._run_async_safely(
+                self._claude_cv_service.generate_cv(job_state_dict, candidate_dict)
+            )
 
             # Assemble CV text from result
             cv_text = self._assemble_claude_cv_text(cv_result, candidate_data, state)
