@@ -464,14 +464,14 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         wait=wait_exponential(multiplier=1, min=2, max=10),
         reraise=True
     )
-    async def _analyze_fit_async(self, state: JobState) -> Tuple[int, str, str]:
+    async def _analyze_fit_async(self, state: JobState) -> Tuple[int, str, str, str, str]:
         """
         Use LLM to analyze candidate-job fit (Phase 6) - async version.
 
         Uses UnifiedLLM which handles Claude CLI primary with LangChain fallback.
 
         Returns:
-            Tuple of (fit_score, fit_rationale, fit_category)
+            Tuple of (fit_score, fit_rationale, fit_category, backend, model)
 
         Raises:
             ValueError: If rationale fails validation (triggers retry)
@@ -539,16 +539,16 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         # Phase 6: Derive category from score
         category = self._derive_fit_category(score)
 
-        return score, rationale, category
+        return score, rationale, category, result.backend, result.model
 
-    def _analyze_fit(self, state: JobState) -> Tuple[int, str, str]:
+    def _analyze_fit(self, state: JobState) -> Tuple[int, str, str, str, str]:
         """
         Use LLM to analyze candidate-job fit (Phase 6) - sync wrapper.
 
         Uses UnifiedLLM which handles Claude CLI primary with LangChain fallback.
 
         Returns:
-            Tuple of (fit_score, fit_rationale, fit_category)
+            Tuple of (fit_score, fit_rationale, fit_category, backend, model)
 
         Raises:
             ValueError: If rationale fails validation (triggers retry)
@@ -603,15 +603,19 @@ KEY METRICS: {star.get('metrics', 'N/A')}
             # Log before LLM scoring
             emit_log("Calculating fit score via LLM...")
 
-            # Get LLM-based fit score
-            llm_score, rationale, _ = self._analyze_fit(state)
+            # Get LLM-based fit score (now includes actual backend/model used)
+            llm_score, rationale, _, backend, model = self._analyze_fit(state)
 
-            # Log after LLM scoring with model attribution
-            # Note: UnifiedLLM tracks backend/model internally, expose tier here
+            # Log after LLM scoring with actual backend attribution (human-readable for console)
+            emit_log(
+                f"LLM responded via backend={backend}, model={model}",
+                backend=backend,
+                model=model,
+            )
             emit_log(
                 f"LLM fit score: {llm_score}/100",
-                backend="unified_llm",
-                model=TIER_TO_CLAUDE_MODEL.get(self.tier, "claude-sonnet-4-20250514"),
+                backend=backend,
+                model=model,
             )
 
             # Get annotation analysis and blend with LLM score

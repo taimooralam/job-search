@@ -1211,9 +1211,9 @@ class PainPointMiner:
                 job_id=state.get("job_id"),  # Pass job_id for Claude CLI tracking
             )
 
-            # Log after LLM call with backend attribution
+            # Log after LLM call with backend attribution (human-readable for console)
             self._emit_log({
-                "message": "Pain points extracted",
+                "message": f"LLM responded via backend={llm_result.backend}, model={llm_result.model}",
                 "backend": llm_result.backend,
                 "model": llm_result.model,
             })
