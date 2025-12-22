@@ -199,7 +199,8 @@ class TestFitRationaleAgencyNote:
         """Agency note is appended to fit rationale for agencies."""
         from src.layer4.opportunity_mapper import OpportunityMapper
 
-        mock_analyze.return_value = (75, "Good fit based on skills.", "strong")
+        # _analyze_fit returns 5 values: (score, rationale, category, backend, model)
+        mock_analyze.return_value = (75, "Good fit based on skills.", "strong", "openrouter", "anthropic/claude-sonnet")
 
         with patch.object(OpportunityMapper, '__init__', lambda x: None):
             mapper = OpportunityMapper.__new__(OpportunityMapper)
@@ -218,7 +219,8 @@ class TestFitRationaleAgencyNote:
         """No agency note for direct employer jobs."""
         from src.layer4.opportunity_mapper import OpportunityMapper
 
-        mock_analyze.return_value = (85, "Excellent fit.", "exceptional")
+        # _analyze_fit returns 5 values: (score, rationale, category, backend, model)
+        mock_analyze.return_value = (85, "Excellent fit.", "exceptional", "openrouter", "anthropic/claude-sonnet")
 
         with patch.object(OpportunityMapper, '__init__', lambda x: None):
             mapper = OpportunityMapper.__new__(OpportunityMapper)
