@@ -377,118 +377,168 @@ class CompanyResearchService(OperationService):
                 # Check cache (unless force_refresh)
                 await emit_progress("cache_check", "processing", "Checking cache")
                 cached = self._check_cache(company_name, force_refresh)
+
+                # Track if we need to run contact discovery even with cached company research
+                use_cached_company_research = False
+                cached_research = None
+
                 if cached and not force_refresh:
-                    # Return cached data
                     cached_research = cached.get("company_research", {})
-                    logger.info(f"[{run_id[:16]}] Returning cached research for {company_name}")
+
+                    # Check if contacts already exist in job document
+                    has_contacts = (
+                        job.get("primary_contacts") or
+                        job.get("secondary_contacts")
+                    )
+
+                    if has_contacts:
+                        # Full cache hit - company AND contacts exist
+                        logger.info(f"[{run_id[:16]}] Full cache hit - returning cached research + contacts for {company_name}")
+                        layer_status["cache_check"] = {
+                            "status": "success",
+                            "message": f"Cache hit for {company_name} (company + contacts)"
+                        }
+                        await emit_progress("cache_check", "success", f"Cache hit for {company_name}")
+
+                        return self.create_success_result(
+                            run_id=run_id,
+                            data={
+                                "company_research": cached_research,
+                                "role_research": None,  # Role research not cached separately
+                                "primary_contacts": job.get("primary_contacts", []),
+                                "secondary_contacts": job.get("secondary_contacts", []),
+                                "from_cache": True,
+                                "company": company_name,
+                                "layer_status": layer_status,
+                            },
+                            cost_usd=0.0,  # No cost for cached data
+                            duration_ms=timer.duration_ms,
+                            model_used=model,
+                        )
+                    else:
+                        # Partial cache hit - company exists but contacts missing
+                        logger.info(f"[{run_id[:16]}] Partial cache hit - using cached company research, running contact discovery for {company_name}")
+                        layer_status["cache_check"] = {
+                            "status": "success",
+                            "message": f"Cache hit for {company_name} (contacts pending)"
+                        }
+                        await emit_progress("cache_check", "success", f"Cache hit for {company_name} (contacts pending)")
+                        use_cached_company_research = True
+                        # Continue to contact discovery below
+
+                if not use_cached_company_research:
                     layer_status["cache_check"] = {
                         "status": "success",
-                        "message": f"Cache hit for {company_name}"
+                        "message": "Cache miss - running fresh research"
                     }
-                    await emit_progress("cache_check", "success", f"Cache hit for {company_name}")
-
-                    return self.create_success_result(
-                        run_id=run_id,
-                        data={
-                            "company_research": cached_research,
-                            "role_research": None,  # Role research not cached separately
-                            "from_cache": True,
-                            "company": company_name,
-                            "layer_status": layer_status,
-                        },
-                        cost_usd=0.0,  # No cost for cached data
-                        duration_ms=timer.duration_ms,
-                        model_used=model,
-                    )
-                layer_status["cache_check"] = {
-                    "status": "success",
-                    "message": "Cache miss - running fresh research"
-                }
-                await emit_progress("cache_check", "success", "Cache miss - running fresh research")
+                    await emit_progress("cache_check", "success", "Cache miss - running fresh research")
 
                 # Build JobState for research
                 state = self._build_job_state(job)
 
-                # Run Company Research (Layer 3)
-                await emit_progress("company_research", "processing", f"Researching {company_name}")
-                logger.info(f"[{run_id[:16]}] Running company research for {company_name}")
+                # Initialize variables for company/role research
+                company_research = None
+                company_result = {}  # Empty dict for cached case
+                scraped_job_posting = None
+                role_research = None
 
-                # Create CompanyResearcher with log_callback for this invocation
-                researcher = CompanyResearcher(log_callback=log_callback)
-                company_result = researcher.research_company(state)
-
-                company_research = company_result.get("company_research")
-                scraped_job_posting = company_result.get("scraped_job_posting")
-
-                if company_research:
-                    signals_count = len(company_research.get("signals", []))
-                    company_type = company_research.get("company_type", "unknown")
+                # Skip company research if using cached data
+                if use_cached_company_research:
+                    # Use cached company research, skip fresh research
+                    company_research = cached_research
+                    state["company_research"] = company_research
                     layer_status["company_research"] = {
                         "status": "success",
-                        "signals": signals_count,
-                        "company_type": company_type,
-                        "message": f"Found {signals_count} signals, type: {company_type}"
+                        "message": "Using cached company research",
+                        "from_cache": True,
                     }
-                    await emit_progress("company_research", "success", f"Found {signals_count} signals")
-                    state["company_research"] = company_research
+                    await emit_progress("company_research", "success", "Using cached research")
+                    layer_status["role_research"] = {
+                        "status": "skipped",
+                        "message": "Skipped (using cached data)"
+                    }
+                    await emit_progress("role_research", "skipped", "Skipped (using cached data)")
+                    logger.info(f"[{run_id[:16]}] Using cached company research, skipping role research")
                 else:
-                    # Extract error details from the result
-                    errors = company_result.get("errors", [])
-                    error_detail = errors[-1] if errors else "No details available"
-                    layer_status["company_research"] = {
-                        "status": "failed",
-                        "message": f"Company research failed: {error_detail}",
-                        "errors": errors,
-                    }
-                    await emit_progress("company_research", "failed", f"Failed after all fallbacks: {error_detail}")
-                logger.info(f"[{run_id[:16]}] Company research complete: {layer_status['company_research']['message']}")
+                    # Run Company Research (Layer 3)
+                    await emit_progress("company_research", "processing", f"Researching {company_name}")
+                    logger.info(f"[{run_id[:16]}] Running company research for {company_name}")
 
-                # Run Role Research (Layer 3.5) if company research succeeded
-                role_research = None
-                if company_research:
-                    # Skip role research for recruitment agencies
-                    company_type = company_research.get("company_type", "employer")
-                    if company_type != "recruitment_agency":
-                        await emit_progress("role_research", "processing", "Researching role context")
-                        logger.info(f"[{run_id[:16]}] Running role research")
-                        role_result = self.role_researcher.research_role(state)
-                        role_research = role_result.get("role_research")
-                        if role_research:
-                            business_impact_count = len(role_research.get("business_impact", []))
-                            layer_status["role_research"] = {
-                                "status": "success",
-                                "business_impacts": business_impact_count,
-                                "message": f"Found {business_impact_count} business impacts"
-                            }
-                            await emit_progress("role_research", "success", f"Found {business_impact_count} impacts")
-                            # Update state with role research for people mapper
-                            state["role_research"] = role_research
+                    # Create CompanyResearcher with log_callback for this invocation
+                    researcher = CompanyResearcher(log_callback=log_callback)
+                    company_result = researcher.research_company(state)
+
+                    company_research = company_result.get("company_research")
+                    scraped_job_posting = company_result.get("scraped_job_posting")
+
+                    if company_research:
+                        signals_count = len(company_research.get("signals", []))
+                        company_type = company_research.get("company_type", "unknown")
+                        layer_status["company_research"] = {
+                            "status": "success",
+                            "signals": signals_count,
+                            "company_type": company_type,
+                            "message": f"Found {signals_count} signals, type: {company_type}"
+                        }
+                        await emit_progress("company_research", "success", f"Found {signals_count} signals")
+                        state["company_research"] = company_research
+                    else:
+                        # Extract error details from the result
+                        errors = company_result.get("errors", [])
+                        error_detail = errors[-1] if errors else "No details available"
+                        layer_status["company_research"] = {
+                            "status": "failed",
+                            "message": f"Company research failed: {error_detail}",
+                            "errors": errors,
+                        }
+                        await emit_progress("company_research", "failed", f"Failed after all fallbacks: {error_detail}")
+                    logger.info(f"[{run_id[:16]}] Company research complete: {layer_status['company_research']['message']}")
+
+                    # Run Role Research (Layer 3.5) if company research succeeded
+                    if company_research:
+                        # Skip role research for recruitment agencies
+                        company_type = company_research.get("company_type", "employer")
+                        if company_type != "recruitment_agency":
+                            await emit_progress("role_research", "processing", "Researching role context")
+                            logger.info(f"[{run_id[:16]}] Running role research")
+                            role_result = self.role_researcher.research_role(state)
+                            role_research = role_result.get("role_research")
+                            if role_research:
+                                business_impact_count = len(role_research.get("business_impact", []))
+                                layer_status["role_research"] = {
+                                    "status": "success",
+                                    "business_impacts": business_impact_count,
+                                    "message": f"Found {business_impact_count} business impacts"
+                                }
+                                await emit_progress("role_research", "success", f"Found {business_impact_count} impacts")
+                                # Update state with role research for people mapper
+                                state["role_research"] = role_research
+                            else:
+                                # Extract detailed error information from the result
+                                role_errors = role_result.get("errors", [])
+                                role_traceback = role_result.get("role_research_traceback", "")
+                                error_detail = role_errors[-1] if role_errors else "Unknown error"
+
+                                layer_status["role_research"] = {
+                                    "status": "failed",
+                                    "message": f"Role research failed: {error_detail}",
+                                    "errors": role_errors,
+                                    "traceback": role_traceback,
+                                }
+                                await emit_progress("role_research", "failed", f"Role research failed: {error_detail}")
                         else:
-                            # Extract detailed error information from the result
-                            role_errors = role_result.get("errors", [])
-                            role_traceback = role_result.get("role_research_traceback", "")
-                            error_detail = role_errors[-1] if role_errors else "Unknown error"
-
                             layer_status["role_research"] = {
-                                "status": "failed",
-                                "message": f"Role research failed: {error_detail}",
-                                "errors": role_errors,
-                                "traceback": role_traceback,
+                                "status": "skipped",
+                                "message": "Skipped for recruitment agency"
                             }
-                            await emit_progress("role_research", "failed", f"Role research failed: {error_detail}")
+                            await emit_progress("role_research", "skipped", "Skipped (recruitment agency)")
+                            logger.info(f"[{run_id[:16]}] Skipping role research (recruitment agency)")
                     else:
                         layer_status["role_research"] = {
                             "status": "skipped",
-                            "message": "Skipped for recruitment agency"
+                            "message": "Skipped - company research failed"
                         }
-                        await emit_progress("role_research", "skipped", "Skipped (recruitment agency)")
-                        logger.info(f"[{run_id[:16]}] Skipping role research (recruitment agency)")
-                else:
-                    layer_status["role_research"] = {
-                        "status": "skipped",
-                        "message": "Skipped - company research failed"
-                    }
-                    await emit_progress("role_research", "skipped", "Skipped (company research failed)")
+                        await emit_progress("role_research", "skipped", "Skipped (company research failed)")
 
                 # Run People Research (Layer 5) with skip_outreach=True
                 # Contact discovery happens here; outreach generation is triggered separately

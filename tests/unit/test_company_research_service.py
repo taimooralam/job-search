@@ -252,7 +252,12 @@ class TestCompanyResearchServiceExecute:
     async def test_execute_returns_cached_data_on_cache_hit(
         self, mock_cache, mock_fetch, sample_job_doc, sample_company_research
     ):
-        """Execute returns cached data when cache hit."""
+        """Execute returns cached data when full cache hit (company + contacts)."""
+        # Add contacts to job doc for FULL cache hit
+        sample_job_doc["primary_contacts"] = [
+            {"name": "Test Manager", "role": "Hiring Manager"}
+        ]
+        sample_job_doc["secondary_contacts"] = []
         mock_fetch.return_value = sample_job_doc
         mock_cache.return_value = {"company_research": sample_company_research}
 
@@ -267,6 +272,53 @@ class TestCompanyResearchServiceExecute:
         assert result.data["from_cache"] is True
         assert result.data["company_research"] == sample_company_research
         assert result.cost_usd == 0.0  # No cost for cached data
+        # Verify contacts are included from job doc
+        assert result.data["primary_contacts"] == sample_job_doc["primary_contacts"]
+
+    @pytest.mark.asyncio
+    @patch('src.services.company_research_service.PeopleMapper')
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    async def test_execute_runs_contact_discovery_on_partial_cache_hit(
+        self,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        mock_people_mapper_class,
+        sample_job_doc,
+        sample_company_research,
+    ):
+        """Execute runs contact discovery when company cached but contacts missing."""
+        # Job doc has NO contacts - triggers partial cache hit
+        mock_fetch.return_value = sample_job_doc
+        mock_cache.return_value = {"company_research": sample_company_research}
+
+        # Mock PeopleMapper to prevent real LLM calls
+        mock_people_mapper = MagicMock()
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": [{"name": "Discovered Contact", "role": "Manager"}],
+            "secondary_contacts": [],
+        }
+        mock_people_mapper_class.return_value = mock_people_mapper
+
+        service = CompanyResearchService()
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+            force_refresh=False,
+        )
+
+        assert result.success is True
+        # PeopleMapper should have been called for contact discovery
+        mock_people_mapper.map_people.assert_called_once()
+        # Should use cached company research
+        assert result.data["layer_status"]["company_research"]["from_cache"] is True
+        # Contacts should come from people_mapper
+        assert len(result.data["primary_contacts"]) == 1
+        assert result.data["primary_contacts"][0]["name"] == "Discovered Contact"
 
     @pytest.mark.asyncio
     @patch('src.services.company_research_service.CompanyResearcher')
