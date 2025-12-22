@@ -154,9 +154,14 @@ async def poll_logs(
             "layer_status": {"fetch_job": {"status": "success"}}
         }
     """
+    # DIAGNOSTIC: Log request entry
+    logger.info(f"[LOG_POLL] Request received: run_id={run_id}, since={since}, limit={limit}")
+
     redis = _get_redis_client()
+    logger.info(f"[LOG_POLL] Redis client: {'connected' if redis else 'None'}")
 
     if not redis:
+        logger.warning(f"[LOG_POLL] Redis not available for run_id={run_id}")
         raise HTTPException(
             status_code=503,
             detail="Log service unavailable (Redis not connected)"
@@ -168,7 +173,14 @@ async def poll_logs(
     layers_key = f"{REDIS_LOG_PREFIX}{run_id}:layers"
 
     # Check if run exists
-    exists = await redis.exists(logs_key) or await redis.exists(meta_key)
+    logger.info(f"[LOG_POLL] Checking Redis for run_id={run_id}")
+    try:
+        exists = await redis.exists(logs_key) or await redis.exists(meta_key)
+        logger.info(f"[LOG_POLL] Redis exists check: {exists}")
+    except Exception as e:
+        logger.error(f"[LOG_POLL] Redis exists check failed: {e}")
+        raise HTTPException(status_code=503, detail=f"Redis error: {e}")
+
     if not exists:
         # Check in-memory state as fallback
         try:

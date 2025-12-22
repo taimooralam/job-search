@@ -2639,14 +2639,17 @@ async def full_extraction_batch(
                 logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
                 append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
 
-        # Add background task for execution
+        # Add background task for execution - run in executor to avoid blocking the event loop
+        # This ensures log polling (/api/logs) remains responsive during bulk operations
         background_tasks.add_task(
-            _execute_extraction_bulk_task,
-            run_id=run_id,
-            job_id=job_id,
-            tier=tier,
-            use_llm=request.use_llm,
-            queue_id=queue_id,
+            run_service_in_executor,
+            _execute_extraction_bulk_task(
+                run_id=run_id,
+                job_id=job_id,
+                tier=tier,
+                use_llm=request.use_llm,
+                queue_id=queue_id,
+            ),
         )
 
         responses.append(BulkOperationRunInfo(
@@ -2826,14 +2829,17 @@ async def research_company_batch(
                 logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
                 append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
 
-        # Add background task for execution
+        # Add background task for execution - run in executor to avoid blocking the event loop
+        # This ensures log polling (/api/logs) remains responsive during bulk operations
         background_tasks.add_task(
-            _execute_research_bulk_task,
-            run_id=run_id,
-            job_id=job_id,
-            tier=tier,
-            force_refresh=request.force_refresh or False,
-            queue_id=queue_id,
+            run_service_in_executor,
+            _execute_research_bulk_task(
+                run_id=run_id,
+                job_id=job_id,
+                tier=tier,
+                force_refresh=request.force_refresh or False,
+                queue_id=queue_id,
+            ),
         )
 
         responses.append(BulkOperationRunInfo(
@@ -2980,13 +2986,16 @@ async def generate_cv_batch(
                 logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
                 append_operation_log(run_id, f"⚠️ Queue unavailable: {e}")
 
-        # Add background task for execution
+        # Add background task for execution - run in executor to avoid blocking the event loop
+        # This ensures log polling (/api/logs) remains responsive during bulk operations
         background_tasks.add_task(
-            _execute_cv_bulk_task,
-            run_id=run_id,
-            job_id=job_id,
-            tier=tier,
-            queue_id=queue_id,
+            run_service_in_executor,
+            _execute_cv_bulk_task(
+                run_id=run_id,
+                job_id=job_id,
+                tier=tier,
+                queue_id=queue_id,
+            ),
         )
 
         responses.append(BulkOperationRunInfo(
@@ -3134,15 +3143,18 @@ async def all_ops_batch(
                 logger.warning(f"[{run_id[:16]}] Failed to add to queue: {e}")
                 append_operation_log(run_id, f"Queue unavailable: {e}")
 
-        # Add background task for execution
+        # Add background task for execution - run in executor to avoid blocking the event loop
+        # This ensures log polling (/api/logs) remains responsive during bulk operations
         background_tasks.add_task(
-            _execute_all_ops_bulk_task,
-            run_id=run_id,
-            job_id=job_id,
-            tier=tier,
-            use_llm=request.use_llm if request.use_llm is not None else True,
-            force_refresh=request.force_refresh or False,
-            queue_id=queue_id,
+            run_service_in_executor,
+            _execute_all_ops_bulk_task(
+                run_id=run_id,
+                job_id=job_id,
+                tier=tier,
+                use_llm=request.use_llm if request.use_llm is not None else True,
+                force_refresh=request.force_refresh or False,
+                queue_id=queue_id,
+            ),
         )
 
         responses.append(BulkOperationRunInfo(
