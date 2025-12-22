@@ -444,9 +444,10 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
 
             # Log which backend was used - show warning if fallback was used
             if llm_result.backend == "langchain":
+                cli_error = getattr(llm_result, 'error', None) or "unknown"
                 self._emit_log(
                     job_id, "warning",
-                    message=f"LLM responded via FALLBACK backend={llm_result.backend}, model={llm_result.model} (CLI was unavailable)"
+                    message=f"LLM responded via FALLBACK backend={llm_result.backend}, model={llm_result.model} (CLI error: {cli_error})"
                 )
             else:
                 self._emit_log(
