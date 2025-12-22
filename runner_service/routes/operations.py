@@ -51,10 +51,42 @@ def _run_async_in_thread(coro) -> None:
     thread, the blocking only affects that thread while the main event loop
     remains responsive for log polling endpoints.
 
+    IMPORTANT: The coroutine should NOT directly await Redis/aioredis operations
+    because those are bound to the main event loop. Use run_on_main_loop() for
+    any operations that need the main loop (e.g., queue manager calls).
+
     Args:
         coro: The coroutine to run (e.g., execute_extraction())
     """
     asyncio.run(coro)
+
+
+def run_on_main_loop(coro):
+    """
+    Schedule a coroutine to run on the main event loop from a worker thread.
+
+    This is essential for aioredis operations which are bound to the main loop.
+    Call this from within _run_async_in_thread() when you need to interact with
+    Redis queue manager or other main-loop-bound async resources.
+
+    Args:
+        coro: The coroutine to schedule on the main event loop
+
+    Returns:
+        The result of the coroutine (blocks until complete)
+
+    Raises:
+        RuntimeError: If main loop reference is not available
+    """
+    from runner_service.app import get_main_loop
+
+    main_loop = get_main_loop()
+    if main_loop is None:
+        raise RuntimeError("Main event loop not available - startup may not be complete")
+
+    # Schedule coroutine on main loop and wait for result
+    future = asyncio.run_coroutine_threadsafe(coro, main_loop)
+    return future.result(timeout=30)  # 30 second timeout for queue ops
 
 
 async def run_service_in_executor(coro) -> None:
@@ -106,6 +138,75 @@ from .operation_streaming import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs", tags=["operations"])
+
+
+# =============================================================================
+# Thread-Safe Queue Operation Wrappers
+# =============================================================================
+# These functions safely call async Redis queue operations from worker threads
+# by scheduling them on the main event loop where the aioredis client lives.
+
+
+def _queue_start_item_threadsafe(queue_manager, queue_id: str, log_cb) -> bool:
+    """
+    Thread-safe wrapper to start a queue item from a worker thread.
+
+    Schedules the async operation on the main event loop where the
+    Redis client was created. Required because aioredis clients are
+    bound to the event loop they were created on.
+
+    Args:
+        queue_manager: The QueueManager instance
+        queue_id: Queue item ID to start
+        log_cb: Logging callback function
+
+    Returns:
+        True if started successfully, False otherwise
+    """
+    async def _start():
+        return await _start_queue_item(queue_manager, queue_id, log_cb)
+
+    try:
+        return run_on_main_loop(_start())
+    except Exception as e:
+        logger.warning(f"Failed to start queue item {queue_id}: {e}")
+        return False
+
+
+def _queue_complete_threadsafe(queue_manager, queue_id: str, success: bool = True) -> None:
+    """
+    Thread-safe wrapper to complete a queue item from a worker thread.
+
+    Args:
+        queue_manager: The QueueManager instance
+        queue_id: Queue item ID to complete
+        success: Whether the operation succeeded
+    """
+    async def _complete():
+        await queue_manager.complete(queue_id, success=success)
+
+    try:
+        run_on_main_loop(_complete())
+    except Exception as e:
+        logger.warning(f"Failed to complete queue item {queue_id}: {e}")
+
+
+def _queue_fail_threadsafe(queue_manager, queue_id: str, error: str) -> None:
+    """
+    Thread-safe wrapper to fail a queue item from a worker thread.
+
+    Args:
+        queue_manager: The QueueManager instance
+        queue_id: Queue item ID to fail
+        error: Error message describing the failure
+    """
+    async def _fail():
+        await queue_manager.fail(queue_id, error)
+
+    try:
+        run_on_main_loop(_fail())
+    except Exception as e:
+        logger.warning(f"Failed to fail queue item {queue_id}: {e}")
 
 
 # =============================================================================
@@ -2069,6 +2170,11 @@ async def _execute_queued_operation(
     This is the worker function that runs after queuing.
     Updates both operation state and queue state with progress.
 
+    NOTE: This function runs in a worker thread via run_service_in_executor().
+    All Redis queue operations MUST use the thread-safe wrappers
+    (_queue_start_item_threadsafe, _queue_complete_threadsafe, _queue_fail_threadsafe)
+    to avoid "Future attached to different loop" errors.
+
     Args:
         queue_id: Queue item ID
         run_id: Operation run ID (for log streaming)
@@ -2085,8 +2191,9 @@ async def _execute_queued_operation(
 
     try:
         # Move from PENDING -> RUNNING (broadcasts WebSocket event)
+        # Use thread-safe wrapper since we're running in executor thread
         if queue_id:
-            await _start_queue_item(queue_manager, queue_id, log_cb)
+            _queue_start_item_threadsafe(queue_manager, queue_id, log_cb)
 
         update_operation_status(run_id, "running")
 
@@ -2099,7 +2206,7 @@ async def _execute_queued_operation(
             log_cb(f"Job validation failed: {e.detail}")
             update_operation_status(run_id, "failed", error=e.detail)
             if queue_id and queue_manager and queue_manager.is_connected:
-                await queue_manager.fail(queue_id, e.detail)
+                _queue_fail_threadsafe(queue_manager, queue_id, e.detail)
             return
 
         # Execute the appropriate operation
@@ -2274,12 +2381,13 @@ async def _execute_queued_operation(
             log_cb(f"Operation complete" if result.success else f"Operation failed: {result.error}")
 
             # Complete queue item (broadcasts WebSocket event)
+            # Use thread-safe wrapper since we're running in executor thread
             if queue_id and queue_manager and queue_manager.is_connected:
                 try:
                     if result.success:
-                        await queue_manager.complete(queue_id, success=True)
+                        _queue_complete_threadsafe(queue_manager, queue_id, success=True)
                     else:
-                        await queue_manager.fail(queue_id, result.error or "Operation failed")
+                        _queue_fail_threadsafe(queue_manager, queue_id, result.error or "Operation failed")
                 except Exception as e:
                     logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
 
@@ -2287,9 +2395,10 @@ async def _execute_queued_operation(
         logger.exception(f"[{run_id[:16]}] Queued {operation} failed: {e}")
         log_cb(f"Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
+        # Use thread-safe wrapper since we're running in executor thread
         if queue_id and queue_manager and queue_manager.is_connected:
             try:
-                await queue_manager.fail(queue_id, str(e))
+                _queue_fail_threadsafe(queue_manager, queue_id, str(e))
             except Exception:
                 pass
 

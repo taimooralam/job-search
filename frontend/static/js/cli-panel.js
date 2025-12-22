@@ -737,7 +737,9 @@ document.addEventListener('alpine:init', () => {
                         return;
                     }
 
-                    const text = log.message;
+                    const text = typeof log.message === 'string'
+                        ? log.message
+                        : (log.message != null ? JSON.stringify(log.message) : '');
                     const logType = window.cliDetectLogType?.(text) || 'info';
 
                     // Detect backend from log entry or message text

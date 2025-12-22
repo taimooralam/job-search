@@ -1,8 +1,8 @@
 """
 Unit tests for src/common/claude_web_research.py
 
-Tests the ClaudeWebResearcher for company/role/people research via Claude API.
-Covers web search integration, schema validation, error handling, and tier support.
+Tests the ClaudeWebResearcher for company/role/people research via Claude CLI.
+Covers web search integration via invoke_unified_sync, schema validation, error handling, and tier support.
 """
 
 import json
@@ -23,6 +23,7 @@ from src.common.claude_web_research import (
     research_role,
     CLAUDE_MODEL_TIERS,
 )
+from src.common.unified_llm import LLMResult
 
 
 # ===== FIXTURES =====
@@ -107,13 +108,24 @@ def valid_role_research_data():
 
 
 @pytest.fixture
-def mock_anthropic_response():
-    """Mock Anthropic API response object."""
-    mock_response = MagicMock()
-    mock_response.usage = MagicMock()
-    mock_response.usage.input_tokens = 1000
-    mock_response.usage.output_tokens = 500
-    return mock_response
+def mock_llm_result_factory():
+    """Factory to create mock LLMResult objects."""
+    def _create_result(data_dict=None, success=True, error=None):
+        """Create a mock LLMResult with the given data."""
+        return LLMResult(
+            content=json.dumps(data_dict) if data_dict and success else "",
+            parsed_json=data_dict if data_dict and success else None,
+            backend="claude_cli",
+            model="claude-sonnet-4-5-20250929",
+            tier="middle",
+            duration_ms=1500,
+            success=success,
+            error=error,
+            input_tokens=1000,
+            output_tokens=500,
+            cost_usd=0.05
+        )
+    return _create_result
 
 
 # ===== SCHEMA VALIDATION TESTS =====
@@ -217,8 +229,7 @@ class TestPydanticSchemas:
 class TestClaudeWebResearcherInitialization:
     """Test ClaudeWebResearcher initialization."""
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_init_with_default_tier(self, mock_anthropic_class):
+    def test_init_with_default_tier(self):
         """Should initialize with balanced tier by default."""
         researcher = ClaudeWebResearcher()
 
@@ -227,34 +238,25 @@ class TestClaudeWebResearcherInitialization:
         assert researcher.max_searches == 8
         assert researcher.timeout == 120
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_init_with_fast_tier(self, mock_anthropic_class):
+    def test_init_with_fast_tier(self):
         """Should initialize with fast tier (Haiku)."""
         researcher = ClaudeWebResearcher(tier="fast")
 
         assert researcher.tier == "fast"
         assert researcher.model == CLAUDE_MODEL_TIERS["fast"]
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_init_with_quality_tier(self, mock_anthropic_class):
+    def test_init_with_quality_tier(self):
         """Should initialize with quality tier (Opus)."""
         researcher = ClaudeWebResearcher(tier="quality")
 
         assert researcher.tier == "quality"
         assert researcher.model == CLAUDE_MODEL_TIERS["quality"]
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_init_with_custom_max_searches(self, mock_anthropic_class):
+    def test_init_with_custom_max_searches(self):
         """Should accept custom max_searches."""
         researcher = ClaudeWebResearcher(max_searches=12)
 
         assert researcher.max_searches == 12
-
-    def test_init_fails_without_anthropic_package(self):
-        """Should raise ImportError if anthropic package not available."""
-        with patch.dict('src.common.claude_web_research.__dict__', {'ANTHROPIC_AVAILABLE': False}):
-            with pytest.raises(ImportError, match="anthropic package not installed"):
-                ClaudeWebResearcher()
 
 
 # ===== COMPANY RESEARCH TESTS =====
@@ -263,22 +265,16 @@ class TestCompanyResearch:
     """Test company research functionality."""
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_successful_company_research(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_company_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
         """Should successfully research company and return validated data."""
-        # Mock API response
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_company_research_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        # Mock invoke_unified_sync to return LLMResult with company data
+        mock_invoke.return_value = mock_llm_result_factory(valid_company_research_data)
 
         researcher = ClaudeWebResearcher(tier="balanced")
         result = await researcher.research_company(
@@ -291,44 +287,35 @@ class TestCompanyResearch:
         assert result.success is True
         assert result.data["summary"] == valid_company_research_data["summary"]
         assert len(result.data["signals"]) == 2
-        assert result.model == CLAUDE_MODEL_TIERS["balanced"]
+        assert result.model == "claude-sonnet-4-5-20250929"
         assert result.input_tokens == 1000
         assert result.output_tokens == 500
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_company_research_with_web_search_tool(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_company_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
-        """Should configure web search tool correctly."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_company_research_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        """Should invoke unified LLM correctly (web search is handled by Claude CLI)."""
+        mock_invoke.return_value = mock_llm_result_factory(valid_company_research_data)
 
         researcher = ClaudeWebResearcher(max_searches=10)
         await researcher.research_company("TechCorp")
 
-        # Verify tools parameter
-        call_kwargs = mock_client.messages.create.call_args[1]
-        assert "tools" in call_kwargs
-        tool = call_kwargs["tools"][0]
-        assert tool["type"] == "web_search_20250305"
-        assert tool["max_uses"] == 10
+        # Verify invoke_unified_sync was called
+        assert mock_invoke.called
+        call_kwargs = mock_invoke.call_args[1]
+        assert call_kwargs["step_name"] == "research_company"
+        assert call_kwargs["validate_json"] is True
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    async def test_company_research_handles_api_error(self, mock_anthropic_class):
+    @patch('src.common.claude_web_research.invoke_unified_sync')
+    async def test_company_research_handles_api_error(self, mock_invoke):
         """Should handle API errors gracefully."""
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = Exception("API Error")
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.side_effect = RuntimeError("API Error")
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_company("TechCorp")
@@ -337,20 +324,18 @@ class TestCompanyResearch:
         assert "API Error" in result.error
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_company_research_handles_invalid_json(
         self,
-        mock_anthropic_class,
-        mock_anthropic_response
+        mock_invoke,
+        mock_llm_result_factory
     ):
         """Should handle invalid JSON from API."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = "Not valid JSON!"
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        # Return success=True but with invalid JSON content
+        bad_result = mock_llm_result_factory()
+        bad_result.content = "Not valid JSON!"
+        bad_result.parsed_json = None
+        mock_invoke.return_value = bad_result
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_company("TechCorp")
@@ -359,16 +344,13 @@ class TestCompanyResearch:
         assert "JSON" in result.error
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_company_research_validates_schema(
         self,
-        mock_anthropic_class,
-        mock_anthropic_response
+        mock_invoke,
+        mock_llm_result_factory
     ):
         """Should validate response against Pydantic schema."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
         # Missing required field 'url'
         invalid_data = {
             "summary": "Test",
@@ -376,10 +358,7 @@ class TestCompanyResearch:
             # Missing 'url'
             "company_type": "employer"
         }
-        mock_text_block.text = json.dumps(invalid_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.return_value = mock_llm_result_factory(invalid_data)
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_company("TechCorp")
@@ -394,21 +373,15 @@ class TestPeopleResearch:
     """Test people research functionality."""
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_successful_people_research(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_people_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
         """Should successfully research people and return validated data."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_people_research_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.return_value = mock_llm_result_factory(valid_people_research_data)
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_people(
@@ -423,21 +396,15 @@ class TestPeopleResearch:
         assert result.data["primary_contacts"][0]["name"] == "Sarah Chen"
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_people_research_includes_role_context(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_people_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
         """Should include role and department context in prompt."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_people_research_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.return_value = mock_llm_result_factory(valid_people_research_data)
 
         researcher = ClaudeWebResearcher()
         await researcher.research_people(
@@ -447,13 +414,12 @@ class TestPeopleResearch:
         )
 
         # Verify prompt includes context
-        call_kwargs = mock_client.messages.create.call_args[1]
-        messages = call_kwargs["messages"]
-        user_message = messages[0]["content"]
+        call_kwargs = mock_invoke.call_args[1]
+        prompt = call_kwargs["prompt"]
 
-        assert "TechCorp" in user_message
-        assert "Senior Software Engineer" in user_message
-        assert "Platform Engineering" in user_message
+        assert "TechCorp" in prompt
+        assert "Senior Software Engineer" in prompt
+        assert "Platform Engineering" in prompt
 
 
 # ===== ROLE RESEARCH TESTS =====
@@ -462,21 +428,15 @@ class TestRoleResearch:
     """Test role research functionality."""
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_successful_role_research(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_role_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
         """Should successfully research role and return validated data."""
-        mock_client = MagicMock()
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_role_research_data)
-        mock_anthropic_response.content = [mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.return_value = mock_llm_result_factory(valid_role_research_data)
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_role(
@@ -497,37 +457,21 @@ class TestSearchCountTracking:
     """Test web search count tracking."""
 
     @pytest.mark.asyncio
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
+    @patch('src.common.claude_web_research.invoke_unified_sync')
     async def test_tracks_search_count(
         self,
-        mock_anthropic_class,
+        mock_invoke,
         valid_company_research_data,
-        mock_anthropic_response
+        mock_llm_result_factory
     ):
-        """Should track number of web searches performed."""
-        mock_client = MagicMock()
-
-        # Mock response with tool use blocks
-        mock_text_block = MagicMock()
-        mock_text_block.type = "text"
-        mock_text_block.text = json.dumps(valid_company_research_data)
-
-        mock_tool_block1 = MagicMock()
-        mock_tool_block1.type = "tool_use"
-        mock_tool_block1.name = "web_search"
-
-        mock_tool_block2 = MagicMock()
-        mock_tool_block2.type = "tool_use"
-        mock_tool_block2.name = "web_search"
-
-        mock_anthropic_response.content = [mock_tool_block1, mock_tool_block2, mock_text_block]
-        mock_client.messages.create.return_value = mock_anthropic_response
-        mock_anthropic_class.return_value = mock_client
+        """Should track number of web searches performed (currently 0 for CLI mode)."""
+        mock_invoke.return_value = mock_llm_result_factory(valid_company_research_data)
 
         researcher = ClaudeWebResearcher()
         result = await researcher.research_company("TechCorp")
 
-        assert result.searches_performed == 2
+        # CLI doesn't report search count currently
+        assert result.searches_performed == 0
 
 
 # ===== API AVAILABILITY CHECK TESTS =====
@@ -535,23 +479,25 @@ class TestSearchCountTracking:
 class TestAPIAvailabilityCheck:
     """Test API availability checking."""
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_check_api_available_success(self, mock_anthropic_class):
+    @patch('src.common.claude_web_research.invoke_unified_sync')
+    def test_check_api_available_success(self, mock_invoke):
         """Should return True when API is available."""
-        mock_client = MagicMock()
-        mock_response = MagicMock()
-        mock_client.messages.create.return_value = mock_response
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.return_value = LLMResult(
+            content="ok",
+            backend="claude_cli",
+            model="test",
+            tier="low",
+            duration_ms=100,
+            success=True
+        )
 
         researcher = ClaudeWebResearcher()
         assert researcher.check_api_available() is True
 
-    @patch('src.common.claude_web_research.anthropic.Anthropic')
-    def test_check_api_not_available(self, mock_anthropic_class):
+    @patch('src.common.claude_web_research.invoke_unified_sync')
+    def test_check_api_not_available(self, mock_invoke):
         """Should return False when API fails."""
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = Exception("API error")
-        mock_anthropic_class.return_value = mock_client
+        mock_invoke.side_effect = Exception("API error")
 
         researcher = ClaudeWebResearcher()
         assert researcher.check_api_available() is False

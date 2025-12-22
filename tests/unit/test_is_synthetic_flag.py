@@ -396,11 +396,21 @@ class TestSyntheticContactEndToEnd:
     """End-to-end tests for synthetic contact generation with is_synthetic flag."""
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', True)
+    @patch('src.layer5.people_mapper.ClaudeWebResearcher')
     @patch('src.layer5.people_mapper.create_tracked_llm')
     def test_map_people_with_synthetic_contacts_sets_flag(
-        self, mock_llm_class, sample_job_state
+        self, mock_llm_class, mock_claude_researcher_class, sample_job_state
     ):
         """map_people() with FireCrawl disabled should generate synthetic contacts with is_synthetic=True."""
+        # Mock ClaudeWebResearcher to prevent real API calls
+        mock_researcher = MagicMock()
+        mock_result = MagicMock()
+        mock_result.success = False
+        async def mock_research_people(*args, **kwargs):
+            return mock_result
+        mock_researcher.research_people = mock_research_people
+        mock_claude_researcher_class.return_value = mock_researcher
+
         # FireCrawl is disabled, so synthetic contacts will be generated
         mock_llm = MagicMock()
         outreach_response = MagicMock()

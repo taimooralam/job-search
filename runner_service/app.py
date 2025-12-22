@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, WebSocket
-from fastapi.responses import StreamingResponse
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, WebSocket
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from io import BytesIO
@@ -77,6 +77,26 @@ if settings.cors_origins_list:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure CORS headers are sent even on unexpected errors."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+
+    response = JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
+
+    # Add CORS headers to error responses
+    origin = request.headers.get("origin")
+    if origin and settings.cors_origins_list and origin in settings.cors_origins_list:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+
+    return response
+
 
 # Include modular route handlers
 app.include_router(operations_router)

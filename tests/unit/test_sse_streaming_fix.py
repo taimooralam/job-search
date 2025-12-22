@@ -21,6 +21,7 @@ from src.services.full_extraction_service import FullExtractionService
 from src.services.company_research_service import CompanyResearchService
 from src.services.cv_generation_service import CVGenerationService
 from src.common.model_tiers import ModelTier
+from src.layer1_4.jd_processor import LLMMetadata
 
 
 # ===== FIXTURES =====
@@ -62,6 +63,19 @@ def mock_progress_callback():
     return mock
 
 
+@pytest.fixture
+def mock_llm_metadata():
+    """Mock LLMMetadata for JD processor."""
+    return LLMMetadata(
+        backend="claude_cli",
+        model="claude-3-5-haiku-20241022",
+        tier="low",
+        duration_ms=100,
+        cost_usd=0.001,
+        success=True
+    )
+
+
 # ===== ASYNC EMIT_PROGRESS TESTS =====
 
 
@@ -69,17 +83,20 @@ class TestAsyncEmitProgress:
     """Test that emit_progress is async and yields to event loop."""
 
     @pytest.mark.asyncio
-    async def test_full_extraction_emit_progress_is_async(self, mock_job_doc, mock_progress_callback):
+    async def test_full_extraction_emit_progress_is_async(self, mock_job_doc, mock_progress_callback, mock_llm_metadata):
         """FullExtractionService.execute calls progress callback asynchronously."""
         service = FullExtractionService()
 
         # Mock all dependencies
         with patch.object(service, '_get_job', return_value=mock_job_doc), \
-             patch.object(service, '_run_jd_processor', return_value={
-                 "html": "<div>test</div>",
-                 "sections": [{"id": "s1", "heading": "Overview"}],
-                 "content_hash": "abc123"
-             }), \
+             patch.object(service, '_run_jd_processor', return_value=(
+                 {
+                     "html": "<div>test</div>",
+                     "sections": [{"id": "s1", "heading": "Overview"}],
+                     "content_hash": "abc123"
+                 },
+                 mock_llm_metadata
+             )), \
              patch.object(service, '_run_jd_extractor', return_value=(
                  {"role_category": "engineering", "top_keywords": ["python", "aws"]},
                  None  # No error
@@ -112,7 +129,7 @@ class TestAsyncEmitProgress:
             assert "fit_scoring" in layer_keys
 
     @pytest.mark.asyncio
-    async def test_emit_progress_yields_to_event_loop(self, mock_job_doc):
+    async def test_emit_progress_yields_to_event_loop(self, mock_job_doc, mock_llm_metadata):
         """emit_progress includes asyncio.sleep(0) to yield control."""
         # Track asyncio.sleep calls
         sleep_calls = []
@@ -127,11 +144,14 @@ class TestAsyncEmitProgress:
         service = FullExtractionService()
 
         with patch.object(service, '_get_job', return_value=mock_job_doc), \
-             patch.object(service, '_run_jd_processor', return_value={
-                 "html": "<div>test</div>",
-                 "sections": [{"id": "s1"}],
-                 "content_hash": "abc"
-             }), \
+             patch.object(service, '_run_jd_processor', return_value=(
+                 {
+                     "html": "<div>test</div>",
+                     "sections": [{"id": "s1"}],
+                     "content_hash": "abc"
+                 },
+                 mock_llm_metadata
+             )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={
@@ -242,7 +262,7 @@ class TestAsyncEmitProgress:
             assert "fetch_job" in layer_keys
 
     @pytest.mark.asyncio
-    async def test_emit_progress_handles_callback_exceptions_gracefully(self, mock_job_doc):
+    async def test_emit_progress_handles_callback_exceptions_gracefully(self, mock_job_doc, mock_llm_metadata):
         """emit_progress continues execution even if callback raises exception."""
         def failing_callback(layer_key: str, status: str, message: str):
             raise RuntimeError("Callback failed!")
@@ -250,11 +270,14 @@ class TestAsyncEmitProgress:
         service = FullExtractionService()
 
         with patch.object(service, '_get_job', return_value=mock_job_doc), \
-             patch.object(service, '_run_jd_processor', return_value={
-                 "html": "<div>test</div>",
-                 "sections": [{"id": "s1"}],
-                 "content_hash": "abc"
-             }), \
+             patch.object(service, '_run_jd_processor', return_value=(
+                 {
+                     "html": "<div>test</div>",
+                     "sections": [{"id": "s1"}],
+                     "content_hash": "abc"
+                 },
+                 mock_llm_metadata
+             )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={
@@ -428,7 +451,7 @@ class TestSSEStreamingIntegration:
     """Integration tests for end-to-end SSE streaming."""
 
     @pytest.mark.asyncio
-    async def test_progress_updates_delivered_in_real_time(self, mock_job_doc):
+    async def test_progress_updates_delivered_in_real_time(self, mock_job_doc, mock_llm_metadata):
         """Progress updates are delivered during execution, not batched at end."""
         received_updates = []
         update_timestamps = []
@@ -444,7 +467,10 @@ class TestSSEStreamingIntegration:
         def delayed_jd_processor(*args, **kwargs):
             import time
             time.sleep(0.01)  # Small delay
-            return {"html": "<div>test</div>", "sections": [{"id": "s1"}], "content_hash": "abc"}
+            return (
+                {"html": "<div>test</div>", "sections": [{"id": "s1"}], "content_hash": "abc"},
+                mock_llm_metadata
+            )
 
         def delayed_layer_2(*args, **kwargs):
             import time
@@ -476,7 +502,7 @@ class TestSSEStreamingIntegration:
             assert time_span > 0.01  # Updates spread over time
 
     @pytest.mark.asyncio
-    async def test_multiple_rapid_progress_updates_all_delivered(self, mock_job_doc):
+    async def test_multiple_rapid_progress_updates_all_delivered(self, mock_job_doc, mock_llm_metadata):
         """Rapid consecutive progress updates are all delivered (no loss)."""
         received_updates = []
 
@@ -486,9 +512,10 @@ class TestSSEStreamingIntegration:
         service = FullExtractionService()
 
         with patch.object(service, '_get_job', return_value=mock_job_doc), \
-             patch.object(service, '_run_jd_processor', return_value={
-                 "html": "<div>test</div>", "sections": [{"id": "s1"}], "content_hash": "abc"
-             }), \
+             patch.object(service, '_run_jd_processor', return_value=(
+                 {"html": "<div>test</div>", "sections": [{"id": "s1"}], "content_hash": "abc"},
+                 mock_llm_metadata
+             )), \
              patch.object(service, '_run_jd_extractor', return_value=(None, "Test error")), \
              patch.object(service, '_run_layer_2', return_value={"pain_points": []}), \
              patch.object(service, '_run_layer_4', return_value={

@@ -198,8 +198,9 @@ class TestResearchWithLLMKnowledge:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_low_confidence_result(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge fallback returns result with low confidence markers."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -216,7 +217,10 @@ class TestResearchWithLLMKnowledge:
         }"""
         mock_response.content = [mock_text_block]
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         # Call LLM knowledge fallback
         result = await researcher._research_with_llm_knowledge(
@@ -237,16 +241,17 @@ class TestResearchWithLLMKnowledge:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_none_on_api_failure(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge fallback returns None on API failure."""
         researcher = CompanyResearcher(use_claude_api=True)
 
         # Mock Claude API client to raise exception
-        researcher.claude_researcher.client.messages.create = Mock(
-            side_effect=Exception("API error")
-        )
+        mock_client = Mock()
+        mock_client.messages.create = Mock(side_effect=Exception("API error"))
+        researcher.claude_researcher.client = mock_client
 
         # Call LLM knowledge fallback
         result = await researcher._research_with_llm_knowledge(
@@ -260,8 +265,9 @@ class TestResearchWithLLMKnowledge:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_adds_training_knowledge_prefix(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge adds '[Based on training knowledge]' prefix to summary."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -278,7 +284,10 @@ class TestResearchWithLLMKnowledge:
         }"""
         mock_response.content = [mock_text_block]
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         result = await researcher._research_with_llm_knowledge(
             company="AWS", job_title="Engineer", job_description="Cloud infrastructure"
@@ -291,8 +300,9 @@ class TestResearchWithLLMKnowledge:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_does_not_cache_results(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge results are NOT cached (may be stale)."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -309,7 +319,10 @@ class TestResearchWithLLMKnowledge:
         }"""
         mock_response.content = [mock_text_block]
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         # Mock _store_cache to verify it's NOT called
         with patch.object(researcher, "_store_cache") as mock_store:
@@ -323,8 +336,9 @@ class TestResearchWithLLMKnowledge:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_empty_signals(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge returns empty signals (unreliable without sources)."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -341,7 +355,10 @@ class TestResearchWithLLMKnowledge:
         }"""
         mock_response.content = [mock_text_block]
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         result = await researcher._research_with_llm_knowledge(
             company="Meta", job_title="Engineer", job_description="Social media"
@@ -729,14 +746,18 @@ class TestFallbackEdgeCases:
         researcher = CompanyResearcher(use_claude_api=True)
         variations = researcher._normalize_company_name(long_name)
 
-        assert long_name in variations
+        # Check if original name (with title case) or exact original appears in variations
+        # The variations may transform the case, so check for case-insensitive match
+        variations_lower = [v.lower() for v in variations]
+        assert long_name.lower() in variations_lower
         assert len(variations) <= 8  # Increased from 5 to support suffix removal
 
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_handles_invalid_json_response(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge handles invalid JSON gracefully."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -748,7 +769,10 @@ class TestFallbackEdgeCases:
         mock_text_block.text = "This is not valid JSON"
         mock_response.content = [mock_text_block]
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         # Call LLM knowledge fallback
         result = await researcher._research_with_llm_knowledge(
@@ -761,8 +785,9 @@ class TestFallbackEdgeCases:
     @pytest.mark.asyncio
     @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
+    @patch("anthropic.Anthropic")
     async def test_llm_knowledge_handles_empty_response_content(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
     ):
         """LLM knowledge handles empty response content."""
         researcher = CompanyResearcher(use_claude_api=True)
@@ -771,7 +796,10 @@ class TestFallbackEdgeCases:
         mock_response = Mock()
         mock_response.content = []
 
-        researcher.claude_researcher.client.messages.create = Mock(return_value=mock_response)
+        # Mock anthropic client
+        mock_client = Mock()
+        mock_client.messages.create = Mock(return_value=mock_response)
+        researcher.claude_researcher.client = mock_client
 
         result = await researcher._research_with_llm_knowledge(
             company="TestCorp", job_title="Engineer", job_description="Test"

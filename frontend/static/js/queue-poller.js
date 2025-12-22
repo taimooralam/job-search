@@ -34,6 +34,16 @@
     // The runner service has CORS enabled for the Vercel domain
     const RUNNER_URL = global.RUNNER_URL || 'https://runner.uqab.digital';
 
+    // Shared service status coordination between QueuePoller and LogPoller
+    // Prevents duplicate toast messages when both pollers detect service unavailability
+    if (!global._pollerServiceStatus) {
+        global._pollerServiceStatus = {
+            isUnavailable: false,
+            lastToastTime: 0,
+            toastCooldownMs: 5000  // Don't show duplicate toasts within 5 seconds
+        };
+    }
+
     /**
      * QueuePoller - Extends BasePoller for queue state polling
      */
@@ -43,6 +53,11 @@
             this.activeInterval = options.activeInterval || 1000;  // 1s when jobs active
             this.idleInterval = options.idleInterval || 30000;     // 30s when idle
             this.errorInterval = options.errorInterval || 5000;    // 5s on error
+
+            // Backoff configuration for service unavailability (502/503)
+            this._serviceUnavailableBackoff = 1000;  // Start at 1 second
+            this._maxServiceUnavailableBackoff = 30000;  // Max 30 seconds
+            this._isServiceUnavailable = false;  // Track if service is currently unavailable
 
             // Endpoint - direct to runner service (not Flask proxy)
             // This eliminates Vercel cold-start latency and sync HTTP bottlenecks
@@ -59,6 +74,7 @@
             this._onStateCallbacks = [];
             this._onErrorCallbacks = [];
             this._onConnectionCallbacks = [];
+            this._onServiceStatusCallbacks = [];
 
             // Connection status for UI indicator
             this._connected = false;
@@ -99,6 +115,18 @@
         onConnection(callback) {
             if (typeof callback === 'function') {
                 this._onConnectionCallbacks.push(callback);
+            }
+        }
+
+        /**
+         * Register callback for service status changes (available/unavailable).
+         * Used to show user-friendly messages during service restarts.
+         *
+         * @param {function} callback - Function called with (isUnavailable, message)
+         */
+        onServiceStatus(callback) {
+            if (typeof callback === 'function') {
+                this._onServiceStatusCallbacks.push(callback);
             }
         }
 
@@ -177,8 +205,14 @@
 
         /**
          * Calculate backoff interval for errors
+         * Uses service unavailable backoff for 502/503/network errors
          */
         _getBackoffInterval() {
+            // Use dedicated backoff for service unavailability
+            if (this._isServiceUnavailable) {
+                return this._serviceUnavailableBackoff;
+            }
+
             if (this._consecutiveErrors <= 3) {
                 return this.errorInterval;
             }
@@ -190,6 +224,10 @@
         /**
          * Internal: Fetch state from server.
          * Calls runner directly (cross-origin) - no credentials needed.
+         *
+         * Handles special cases:
+         * - 502/503: Service unavailable (deployment restart) - uses exponential backoff
+         * - Network/CORS errors: Treated as service unavailable
          */
         async _fetchState() {
             this.pollCount++;
@@ -205,11 +243,20 @@
                     mode: 'cors',
                 });
 
+                // Handle service unavailable (502/503 from Traefik during restarts)
+                if (response.status === 502 || response.status === 503) {
+                    this._handleServiceUnavailable(`Service restarting (${response.status})`);
+                    return null;
+                }
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const state = await response.json();
+
+                // Service is back online - reset backoff and notify
+                this._handleServiceRestored();
 
                 // Update connection status
                 this._updateConnection(true);
@@ -248,19 +295,134 @@
                 this.lastError = error;
                 this._consecutiveErrors++;
 
-                // Update connection status
-                this._updateConnection(false);
+                // Check if this is a network/CORS error (service unavailable)
+                // These errors have no response status and typically occur during deployments
+                if (this._isNetworkOrCorsError(error)) {
+                    this._handleServiceUnavailable('Service temporarily unavailable');
+                } else {
+                    // Update connection status for other errors
+                    this._updateConnection(false);
 
-                // Notify error listeners
-                for (const callback of this._onErrorCallbacks) {
-                    try {
-                        callback(error);
-                    } catch (e) {
-                        console.error('[QueuePoller] Error callback error:', e);
+                    // Notify error listeners
+                    for (const callback of this._onErrorCallbacks) {
+                        try {
+                            callback(error);
+                        } catch (e) {
+                            console.error('[QueuePoller] Error callback error:', e);
+                        }
                     }
                 }
 
                 return null;
+            }
+        }
+
+        /**
+         * Check if an error is likely a network or CORS error
+         * These occur when the service is completely unreachable
+         * @private
+         */
+        _isNetworkOrCorsError(error) {
+            if (!error) return false;
+            const message = error.message?.toLowerCase() || '';
+            // TypeErrors with 'failed to fetch' indicate network issues
+            // CORS errors also manifest as fetch failures
+            return error.name === 'TypeError' ||
+                   message.includes('failed to fetch') ||
+                   message.includes('network') ||
+                   message.includes('cors') ||
+                   message.includes('load failed');
+        }
+
+        /**
+         * Handle service unavailable state (502/503 or network errors)
+         * Shows toast message and applies exponential backoff
+         * Uses shared state to prevent duplicate toasts from multiple pollers
+         * @private
+         */
+        _handleServiceUnavailable(reason) {
+            const wasUnavailable = this._isServiceUnavailable;
+            this._isServiceUnavailable = true;
+            global._pollerServiceStatus.isUnavailable = true;
+
+            // Only show toast on first occurrence (not every retry)
+            // Also check shared state to prevent duplicate toasts from LogPoller
+            const now = Date.now();
+            const canShowToast = now - global._pollerServiceStatus.lastToastTime > global._pollerServiceStatus.toastCooldownMs;
+
+            if (!wasUnavailable && canShowToast) {
+                this._log('Service unavailable:', reason);
+                global._pollerServiceStatus.lastToastTime = now;
+
+                // Show user-friendly toast
+                if (typeof global.showToast === 'function') {
+                    global.showToast('Runner service restarting, please wait...', 'warning');
+                }
+
+                // Notify service status listeners
+                this._notifyServiceStatus(true, reason);
+            }
+
+            // Update connection status
+            this._updateConnection(false);
+
+            // Increase backoff for next retry
+            this._serviceUnavailableBackoff = Math.min(
+                this._serviceUnavailableBackoff * 2,
+                this._maxServiceUnavailableBackoff
+            );
+
+            this._log(`Next retry in ${this._serviceUnavailableBackoff}ms`);
+        }
+
+        /**
+         * Handle service restored after being unavailable
+         * Resets backoff and notifies listeners
+         * Uses shared state to prevent duplicate toasts from multiple pollers
+         * @private
+         */
+        _handleServiceRestored() {
+            if (this._isServiceUnavailable) {
+                this._log('Service restored');
+
+                // Only show toast if shared state still shows unavailable
+                // (prevents duplicate "reconnected" toasts from multiple pollers)
+                const now = Date.now();
+                const canShowToast = global._pollerServiceStatus.isUnavailable &&
+                                     now - global._pollerServiceStatus.lastToastTime > global._pollerServiceStatus.toastCooldownMs;
+
+                if (canShowToast) {
+                    global._pollerServiceStatus.lastToastTime = now;
+
+                    // Show success toast
+                    if (typeof global.showToast === 'function') {
+                        global.showToast('Runner service reconnected', 'success');
+                    }
+                }
+
+                // Notify service status listeners
+                this._notifyServiceStatus(false, 'Service restored');
+
+                // Reset local state
+                this._isServiceUnavailable = false;
+                this._serviceUnavailableBackoff = 1000;  // Reset to initial backoff
+
+                // Reset shared state
+                global._pollerServiceStatus.isUnavailable = false;
+            }
+        }
+
+        /**
+         * Notify service status listeners
+         * @private
+         */
+        _notifyServiceStatus(isUnavailable, message) {
+            for (const callback of this._onServiceStatusCallbacks) {
+                try {
+                    callback(isUnavailable, message);
+                } catch (e) {
+                    console.error('[QueuePoller] Service status callback error:', e);
+                }
             }
         }
 
