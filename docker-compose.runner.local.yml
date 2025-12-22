@@ -25,7 +25,7 @@ services:
       - ./applications:/app/applications
       - ./credentials:/app/credentials:ro
       - ./data/master-cv:/app/data/master-cv:ro
-      - ~/.claude:/root/.claude:ro  # Claude Code CLI auth (optional)
+      - ~/.claude:/home/runner/.claude:ro  # Claude Code CLI auth (optional)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

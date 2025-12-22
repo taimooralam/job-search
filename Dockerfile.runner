@@ -35,11 +35,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude Code CLI globally
-# Uses Max subscription auth via mounted ~/.claude config
+# Uses Max subscription auth via mounted ~/.claude config or ANTHROPIC_AUTH_TOKEN env var
 RUN npm install -g @anthropic-ai/claude-code
 
-# Create directory for Claude auth config (will be mounted as volume)
-RUN mkdir -p /root/.claude
+# Create non-root user for Claude CLI security
+# Claude CLI refuses --dangerously-skip-permissions when running as root
+RUN useradd -m -u 1000 runner \
+    && mkdir -p /home/runner/.claude \
+    && chown -R runner:runner /home/runner
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
@@ -47,6 +50,12 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && python -m playwright install --with-deps chromium
 
 COPY . .
+
+# Set ownership for app directory so runner user can write logs/artifacts
+RUN chown -R runner:runner /app
+
+# Switch to non-root user for Claude CLI compatibility
+USER runner
 
 EXPOSE 8000
 
