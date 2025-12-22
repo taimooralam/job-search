@@ -2052,6 +2052,27 @@ class AnnotationManager {
         if (barEl) barEl.style.width = `${coverage}%`;
         if (pctEl) pctEl.textContent = `${coverage}%`;
 
+        // Update section coverage list with actual counts
+        const sectionCoverageList = document.getElementById('section-coverage-list');
+        if (sectionCoverageList) {
+            Object.entries(sectionTargets).forEach(([section, target]) => {
+                const count = annotatedSections[section] || 0;
+                const span = sectionCoverageList.querySelector(`[data-section="${section}"]`);
+                if (span) {
+                    span.textContent = `${count}/${target}`;
+                    // Color based on coverage: green=complete, orange=partial, gray=none
+                    span.classList.remove('text-gray-500', 'text-orange-500', 'text-green-500');
+                    if (count >= target) {
+                        span.classList.add('text-green-500');
+                    } else if (count > 0) {
+                        span.classList.add('text-orange-500');
+                    } else {
+                        span.classList.add('text-gray-500');
+                    }
+                }
+            });
+        }
+
         // Phase 10 (GAP-093): Update coverage warning display
         const warningsEl = document.getElementById('coverage-warnings');
         if (warningsEl) {
