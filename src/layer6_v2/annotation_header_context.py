@@ -20,10 +20,10 @@ Usage:
     # Pass context to HeaderGenerator, TaxonomyBasedSkillsGenerator, etc.
 """
 
-import logging
 from typing import Dict, List, Optional, Any, Set, Tuple
 from dataclasses import dataclass, field
 
+from src.common.logger import get_logger
 from src.common.annotation_types import (
     JDAnnotation,
     RELEVANCE_MULTIPLIERS,
@@ -37,7 +37,7 @@ from src.layer6_v2.types import (
     ATSRequirement,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # =============================================================================

@@ -17,9 +17,11 @@ Usage:
 """
 
 import asyncio
+import json
 import os
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 
 from src.common.config import Config
 from src.common.state import JobState
@@ -118,6 +120,8 @@ class CVGeneratorV2:
         use_star_enforcement: bool = True,  # GAP-005: STAR format enforcement
         use_variant_selection: bool = True,  # Use pre-written variants (zero hallucination)
         use_claude_cli: bool = False,  # Phase 3: Claude CLI multi-agent CV generation
+        log_callback: Optional[Callable[[str], None]] = None,  # Frontend streaming
+        job_id: Optional[str] = None,
     ):
         """
         Initialize the CV Generator V2 orchestrator.
@@ -130,8 +134,12 @@ class CVGeneratorV2:
             use_star_enforcement: Enable STAR format enforcement with retry (default: True)
             use_variant_selection: Use pre-written variants for zero-hallucination generation (default: True)
             use_claude_cli: Enable Claude CLI multi-agent CV generation (default: False)
+            log_callback: Optional callback for frontend log streaming (JSON string)
+            job_id: Job ID for tracking
         """
         self._logger = get_logger(__name__)
+        self._log_callback = log_callback
+        self._job_id = job_id
         self.model = model or Config.DEFAULT_MODEL
         self.passing_threshold = passing_threshold
         self.word_budget = word_budget  # None = unlimited
@@ -170,6 +178,30 @@ class CVGeneratorV2:
 
         self._logger.info(f"CVGeneratorV2 initialized with model: {self.model}")
 
+    def _emit_log(self, event: str, message: str, **kwargs) -> None:
+        """
+        Emit log event via log_callback for frontend streaming.
+
+        Args:
+            event: Event type (e.g., "phase_start", "phase_complete")
+            message: Human-readable message
+            **kwargs: Additional data to include in the log event
+        """
+        if self._log_callback:
+            try:
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "cv_generator_v2",
+                    "event": event,
+                    "message": message,
+                    "job_id": self._job_id,
+                    **kwargs,
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Don't let logging errors break the pipeline
+
     def generate(
         self,
         state: JobState,
@@ -186,6 +218,7 @@ class CVGeneratorV2:
         self._logger.info("=" * 60)
         self._logger.info("CV GENERATION V2: Starting 6-phase pipeline")
         self._logger.info("=" * 60)
+        self._emit_log("pipeline_start", "Starting CV generation pipeline")
 
         # Phase 3: Route to Claude CLI if enabled
         if self.use_claude_cli and self._claude_cv_service:
@@ -205,39 +238,55 @@ class CVGeneratorV2:
         try:
             # Phase 1: Load candidate data
             self._logger.info("Phase 1: Loading candidate data...")
+            self._emit_log("phase_start", "Loading candidate data...", phase=1)
             candidate_data = self.cv_loader.load()
             roles = candidate_data.roles
             self._logger.info(f"  Loaded {len(roles)} roles from master CV")
+            self._emit_log("phase_complete", f"Loaded {len(roles)} roles", phase=1, roles_count=len(roles))
 
             # Phase 2: Generate tailored bullets for each role
             # Phase 4: Pass JD annotations for boost calculation
             jd_annotations = state.get("jd_annotations")
             self._logger.info("Phase 2: Generating tailored bullets per role...")
+            self._emit_log("phase_start", "Generating role bullets...", phase=2)
             if jd_annotations:
                 self._logger.info("  📌 JD annotations detected - will apply boost")
             role_bullets_list = self._generate_all_role_bullets(roles, extracted_jd, jd_annotations)
             self._logger.info(f"  Generated bullets for {len(role_bullets_list)} roles")
+            self._emit_log("phase_complete", f"Generated bullets for {len(role_bullets_list)} roles", phase=2)
 
             # Phase 3: Run QA on all roles
             self._logger.info("Phase 3: Running hallucination QA...")
+            self._emit_log("phase_start", "Running quality assurance...", phase=3)
             qa_results, ats_results = run_qa_on_all_roles(
                 role_bullets_list,
                 roles,  # Pass full RoleData objects
                 extracted_jd.get("top_keywords", []),
             )
             self._log_qa_summary(qa_results, role_bullets_list)
+            qa_passed = sum(1 for qa in qa_results if qa.passed)
+            self._emit_log("phase_complete", f"QA passed: {qa_passed}/{len(qa_results)} roles", phase=3)
 
             # Phase 4: Stitch roles together
             self._logger.info("Phase 4: Stitching roles with deduplication...")
+            self._emit_log("phase_start", "Stitching CV sections...", phase=4)
             stitched_cv = stitch_all_roles(
                 role_bullets_list,
                 word_budget=self.word_budget,
                 target_keywords=extracted_jd.get("top_keywords", []),
             )
             self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
+            self._emit_log(
+                "phase_complete",
+                f"Stitched {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets",
+                phase=4,
+                word_count=stitched_cv.total_word_count,
+                bullet_count=stitched_cv.total_bullet_count,
+            )
 
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
+            self._emit_log("phase_start", "Generating profile header...", phase=5)
             # GAP-001 FIX: Pass skill whitelist to prevent hallucinated skills
             skill_whitelist = self.cv_loader.get_skill_whitelist()
             self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
@@ -313,6 +362,13 @@ class CVGeneratorV2:
 
             self._logger.info(f"  Profile: {header_output.profile.word_count} words")
             self._logger.info(f"  Skills sections: {len(header_output.skills_sections)}")
+            self._emit_log(
+                "phase_complete",
+                f"Profile: {header_output.profile.word_count} words",
+                phase=5,
+                profile_word_count=header_output.profile.word_count,
+                skills_sections=len(header_output.skills_sections),
+            )
 
             # Assemble full CV text
             # GAP-014: Pass job location for Middle East relocation tagline
@@ -346,18 +402,35 @@ class CVGeneratorV2:
 
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
+            self._emit_log("phase_start", "Grading CV...", phase=6)
             master_cv_text = self._get_master_cv_text()
-            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text))
+            job_id = state.get("job_id")
+            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text, job_id=job_id))
             self._log_grade_result(grade_result)
+            self._emit_log(
+                "grade_complete",
+                f"Score: {grade_result.composite_score:.1f}/10",
+                phase=6,
+                score=grade_result.composite_score,
+                passed=grade_result.passed,
+            )
 
             improvement_result = None
             if not grade_result.passed:
                 self._logger.info("  CV below threshold - applying single-pass improvement...")
-                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd))
+                self._emit_log("improve_start", "Improving CV...", phase=6)
+                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd, job_id=job_id))
                 if improvement_result.improved:
                     cv_text = improvement_result.cv_text
                     self._logger.info(f"  Improved {improvement_result.target_dimension}")
                     self._logger.info(f"  Changes: {len(improvement_result.changes_made)}")
+                    self._emit_log(
+                        "improve_complete",
+                        f"Improved {improvement_result.target_dimension}",
+                        phase=6,
+                        target_dimension=improvement_result.target_dimension,
+                        changes_count=len(improvement_result.changes_made),
+                    )
 
             # Save CV to disk
             cv_path = self._save_cv_to_disk(cv_text, company, title)
@@ -372,6 +445,12 @@ class CVGeneratorV2:
             self._logger.info(f"  Final score: {grade_result.composite_score:.1f}/10")
             self._logger.info(f"  Passed: {grade_result.passed}")
             self._logger.info("=" * 60)
+            self._emit_log(
+                "pipeline_complete",
+                f"CV generation complete - Score: {grade_result.composite_score:.1f}/10",
+                final_score=grade_result.composite_score,
+                passed=grade_result.passed,
+            )
 
             return {
                 "cv_text": cv_text,
@@ -1236,12 +1315,16 @@ def cv_generator_v2_node(state: JobState) -> Dict[str, Any]:
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer6_v2")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
+    # Extract log_callback and job_id for frontend streaming
+    log_callback = state.get("log_callback")
+    job_id = state.get("job_id")
+
     logger.info("=" * 60)
     logger.info("LAYER 6 V2: CV Generation Pipeline")
     logger.info("=" * 60)
 
     with LayerContext(struct_logger, 6, "cv_generator_v2") as ctx:
-        generator = CVGeneratorV2()
+        generator = CVGeneratorV2(log_callback=log_callback, job_id=job_id)
         updates = generator.generate(state)
 
         # Add metadata from CV Gen V2 output

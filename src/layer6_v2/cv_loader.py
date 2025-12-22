@@ -777,23 +777,23 @@ class CVLoader:
         return [role for role in self._candidate.roles if role.has_variants]
 
     def print_enhanced_summary(self) -> None:
-        """Print a summary of enhanced role data for debugging."""
+        """Log a summary of enhanced role data for debugging."""
         if self._candidate is None:
             self.load()
 
-        print("\n=== CV Loader Enhanced Summary ===")
-        print(f"Total roles: {len(self._candidate.roles)}")
-        print(f"Roles with variants: {len(self.get_roles_with_variants())}")
-        print(f"Total variants: {self.get_total_variants()}")
-        print(f"Achievement keywords: {len(self.get_all_achievement_keywords())}")
+        self._logger.info("=== CV Loader Enhanced Summary ===")
+        self._logger.info(f"Total roles: {len(self._candidate.roles)}")
+        self._logger.info(f"Roles with variants: {len(self.get_roles_with_variants())}")
+        self._logger.info(f"Total variants: {self.get_total_variants()}")
+        self._logger.info(f"Achievement keywords: {len(self.get_all_achievement_keywords())}")
 
         if self._enhanced_roles:
-            print("\nPer-role breakdown:")
+            self._logger.info("Per-role breakdown:")
             for role_id, enhanced in self._enhanced_roles.items():
-                print(f"  {role_id}:")
-                print(f"    Achievements: {enhanced.achievement_count}")
-                print(f"    Variants: {enhanced.total_variants}")
-                print(f"    Keywords: {len(enhanced.all_keywords)}")
+                self._logger.info(f"  {role_id}:")
+                self._logger.info(f"    Achievements: {enhanced.achievement_count}")
+                self._logger.info(f"    Variants: {enhanced.total_variants}")
+                self._logger.info(f"    Keywords: {len(enhanced.all_keywords)}")
 
     # =========================================================================
     # DATA SOURCE PROPERTIES

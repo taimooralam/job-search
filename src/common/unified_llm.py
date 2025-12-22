@@ -159,7 +159,16 @@ class UnifiedLLM:
         self.job_id = job_id or "unknown"
         self._cli: Optional[ClaudeCLI] = None
         self._langchain_llm = None
-        self._struct_logger = struct_logger
+
+        # Auto-create struct_logger from job_id if not explicitly provided
+        # This enables LLM call tracking for all components without code changes
+        if struct_logger:
+            self._struct_logger = struct_logger
+        elif self.job_id and self.job_id != "unknown":
+            from src.common.structured_logger import get_structured_logger
+            self._struct_logger = get_structured_logger(self.job_id)
+        else:
+            self._struct_logger = None
 
     @property
     def cli(self) -> ClaudeCLI:

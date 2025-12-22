@@ -13,9 +13,10 @@ The top 1/3 of a CV is critical for both ATS scanning and 6-7 second human revie
 from typing import List, Dict, Optional, Any
 from dataclasses import dataclass, field
 import re
-import logging
 
-logger = logging.getLogger(__name__)
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -129,7 +130,7 @@ class KeywordPlacementValidator:
     """
 
     def __init__(self):
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = get_logger(self.__class__.__name__)
 
     def validate(
         self,
