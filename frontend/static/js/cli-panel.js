@@ -420,6 +420,11 @@ document.addEventListener('alpine:init', () => {
                     if (this.activeRunId === queuedRunId) {
                         this.activeRunId = runId;  // Switch to actual run
                     }
+                    // Ensure log subscription for existing run
+                    if (!this.runs[runId]._logPoller && this.runs[runId].status === 'running') {
+                        console.log('[CLI] Subscribing to logs for existing run:', runId);
+                        this.subscribeToLogs(runId);
+                    }
                 } else if (runId) {
                     // SSE hasn't created the run tab yet - transition queued tab to running
                     const queuedTab = this.runs[queuedRunId];
@@ -454,6 +459,10 @@ document.addEventListener('alpine:init', () => {
                     }
 
                     this._saveStateImmediate();
+
+                    // Subscribe to logs immediately (even if panel not expanded)
+                    console.log('[CLI] Subscribing to logs for newly started run:', runId);
+                    this.subscribeToLogs(runId);
                 } else {
                     // No runId provided - just remove queued tab (shouldn't normally happen)
                     delete this.runs[queuedRunId];

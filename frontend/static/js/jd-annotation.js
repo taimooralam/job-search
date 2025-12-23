@@ -33,7 +33,7 @@ const REQUIREMENT_COLORS = {
     disqualifier: { bg: 'bg-red-100', text: 'text-red-700' }
 };
 
-const AUTOSAVE_DELAY = 1500; // 1.5 seconds
+const AUTOSAVE_DELAY = 1000; // 1 second (reduced for smoother UX)
 
 // ============================================================================
 // Annotation Manager Class
@@ -826,7 +826,13 @@ class AnnotationManager {
         // Reset form state first
         this.resetPopoverForm();
 
-        // If editing, populate with existing values
+        // Auto-select defaults for new annotations (smoother UX)
+        if (!editingAnnotation) {
+            this.setPopoverRelevance('core_strength');
+            this.setPopoverRequirement('must_have');
+        }
+
+        // If editing, populate with existing values (overrides defaults)
         if (editingAnnotation) {
             this.populatePopoverWithAnnotation(editingAnnotation);
         }

@@ -11,7 +11,7 @@ Usage:
 
 import json
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Callable
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -859,6 +859,7 @@ async def generate_all_roles_from_variants(
     bullet_counts: Optional[Dict[str, int]] = None,
     fallback_to_llm: bool = True,
     jd_annotations: Optional[Dict[str, Any]] = None,
+    progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
 ) -> List[RoleBullets]:
     """
     Generate bullets for all roles using variant selection.
@@ -903,6 +904,19 @@ async def generate_all_roles_from_variants(
 
     for i, role in enumerate(roles):
         logger.info(f"\n[Role {i+1}/{total_roles}] {role.company} - {role.title}")
+
+        # Emit progress for frontend visibility
+        if progress_callback:
+            progress_callback(
+                "role_progress",
+                f"Generating bullets for role {i+1}/{total_roles}: {role.title}",
+                {
+                    "role_index": i + 1,
+                    "total_roles": total_roles,
+                    "role_title": role.title,
+                    "company": role.company,
+                },
+            )
 
         # Determine target bullet count
         target_count = None

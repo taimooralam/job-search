@@ -783,6 +783,7 @@ class CVGeneratorV2:
                 generator=self.role_generator,
                 fallback_to_llm=True,  # Fall back to LLM for roles without variants
                 jd_annotations=jd_annotations,
+                progress_callback=self._emit_log,  # Forward progress to frontend
             ))
 
         # Legacy LLM-based generation
@@ -794,6 +795,14 @@ class CVGeneratorV2:
 
         for i, role in enumerate(roles):
             self._logger.info(f"  Generating bullets for: {role.title} @ {role.company}")
+            self._emit_log(
+                "role_progress",
+                f"Generating bullets for role {i+1}/{len(roles)}: {role.title}",
+                role_index=i+1,
+                total_roles=len(roles),
+                role_title=role.title,
+                company=role.company,
+            )
 
             # Build career context for this role
             career_context = CareerContext.build(

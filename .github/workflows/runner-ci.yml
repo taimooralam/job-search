@@ -215,12 +215,19 @@ jobs:
             paths: tests/runner/test_pdf_integration.py
           - name: cross-runner-events
             paths: tests/runner/test_cross_runner_events.py
-          - name: master-cv-api
-            paths: tests/runner/test_master_cv_api_comprehensive.py
+          # master-cv-api split into 3 groups for faster execution
+          - name: master-cv-api-metadata
+            paths: tests/runner/test_master_cv_api_comprehensive.py -k "TestMetadataEndpoints or TestStatsEndpoint or TestStoreInitializationErrors"
+          - name: master-cv-api-taxonomy
+            paths: tests/runner/test_master_cv_api_comprehensive.py -k "TestTaxonomyEndpoints"
+          - name: master-cv-api-roles
+            paths: tests/runner/test_master_cv_api_comprehensive.py -k "TestRoleEndpoints or TestHistoryAndRollback"
           - name: master-cv-routes
             paths: tests/runner/test_master_cv_routes.py
           - name: outreach-request
             paths: tests/runner/test_outreach_request_model.py
+          - name: job-ingest-routes
+            paths: tests/runner/test_job_ingest_routes.py
 
     steps:
       - uses: actions/checkout@v4
