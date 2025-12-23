@@ -468,7 +468,8 @@ class CVGenerationService(OperationService):
         """
         from src.layer6_v2.orchestrator import CVGeneratorV2
 
-        generator = CVGeneratorV2(model=model)
+        # Always use Claude CLI for multi-agent CV generation
+        generator = CVGeneratorV2(model=model, use_claude_cli=True)
         return generator.generate(state)
 
     def _generate_cover_letter(self, state: Dict[str, Any]) -> Optional[str]:
