@@ -2669,43 +2669,14 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // Dispatch events for each queued job so live status badges update immediately
-                    if (result.all_ops_runs && result.all_ops_runs.length > 0) {
-                        result.all_ops_runs.forEach((run, index) => {
-                            window.dispatchEvent(new CustomEvent('queue:job-status-changed', {
-                                detail: {
-                                    jobId: run.job_id,
-                                    status: 'pending',
-                                    runId: run.run_id,
-                                    operation: 'all-ops',
-                                    position: index + 1
-                                }
-                            }));
-                        });
-
-                        // Force QueuePoller to refresh immediately
-                        if (window.Alpine && Alpine.store('queue')._poller) {
-                            Alpine.store('queue')._poller.refresh();
-                        }
-                    }
-
-                    // Show warning if pipeline auto-queue failed
-                    if (result.all_ops_error) {
-                        showToast(`Jobs moved but pipeline failed: ${result.all_ops_error}`, 'error');
-                        console.error('Pipeline auto-queue failed:', result.all_ops_error);
-                    } else if (result.all_ops_queued > 0) {
-                        showToast(`${result.updated_count} jobs moved to batch, ${result.all_ops_queued} queued for processing!`, 'success');
-                    } else {
-                        showToast(`${result.updated_count} jobs moved to batch!`, 'success');
-                    }
+                    showToast(`${result.updated_count} job${result.updated_count > 1 ? 's' : ''} moved to batch!`, 'success');
 
                     // Clear selection
                     selectedJobIds.clear();
                     updateSelectionCount();
-                    // Redirect to batch processing view
-                    setTimeout(() => {
-                        window.location.href = '/batch-processing';
-                    }, 1000);
+
+                    // Refresh the table to remove moved jobs (consistent with single job behavior)
+                    htmx.trigger('#job-table-container', 'refresh');
                 } else {
                     showToast(result.error || 'Failed to move jobs to batch', 'error');
                 }
