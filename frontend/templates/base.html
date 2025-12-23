@@ -563,6 +563,18 @@
             transform: translateY(-1px);
         }
 
+        .btn-warning {
+            background: linear-gradient(135deg, var(--color-warning-500) 0%, var(--color-warning-600) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--color-warning-600) 0%, var(--color-warning-700) 100%);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
         /* Card Components - Theme-aware */
         .card {
             background-color: var(--bg-card);
@@ -1992,6 +2004,13 @@
                 batchBtn.classList.toggle('opacity-50', count === 0);
                 batchBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
+            // Discard Selected button
+            const discardBtn = document.getElementById('discard-selected-btn');
+            if (discardBtn) {
+                discardBtn.disabled = count === 0;
+                discardBtn.classList.toggle('opacity-50', count === 0);
+                discardBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
         }
 
         // Toggle individual row selection
@@ -2574,6 +2593,53 @@
                 }
             } catch (err) {
                 showToast('Update failed: ' + err.message, 'error');
+            }
+        }
+
+        // Mark multiple selected jobs as "discarded"
+        async function markSelectedAsDiscarded() {
+            if (selectedJobIds.size === 0) return;
+
+            const count = selectedJobIds.size;
+            const confirmed = confirm(
+                `Discard ${count} job${count > 1 ? 's' : ''}?\n\n` +
+                `This will remove them from the default view.\n` +
+                `You can find discarded jobs by enabling the "discarded" status filter.`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                showToast(`Discarding ${count} jobs...`, 'info');
+
+                // Call bulk status update endpoint
+                const response = await fetch('/api/jobs/status/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: Array.from(selectedJobIds),
+                        status: 'discarded'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showToast(`Discarded ${result.updated_count} job${result.updated_count !== 1 ? 's' : ''}`, 'success');
+                    // Clear selection
+                    selectedJobIds.clear();
+                    updateSelectionCount();
+                    // Uncheck all checkboxes
+                    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+                    const selectAll = document.getElementById('select-all');
+                    if (selectAll) selectAll.checked = false;
+                    // Refresh the table to show updated status
+                    htmx.trigger('#job-table-container', 'refresh');
+                } else {
+                    showToast(result.error || 'Failed to discard jobs', 'error');
+                }
+            } catch (err) {
+                showToast('Discard failed: ' + err.message, 'error');
             }
         }
 
