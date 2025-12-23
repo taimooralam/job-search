@@ -154,36 +154,31 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - Step-by-step logging of JD processing
 - Status updates for long-running operations
 
-### Claude CLI Error Handling (ENHANCED)
+### Claude CLI Text Format (FIXED)
 
 **Components:**
-- `src/common/claude_cli.py` - Enhanced `_parse_cli_output()` with errors array detection
-- Error handling in both standard and raw mode paths
+- `src/common/claude_cli.py` - Changed to `--output-format text` for reliability
+- Simplified error handling using stderr/stdout directly
+- Removed `_parse_cli_output()` JSON parsing method
 
-**Problem:** Claude CLI may return errors array without setting `is_error: true`, causing errors to be silently ignored
+**Problem:** Claude CLI bug #8126 - JSON format sometimes returns empty result field, causing silently ignored failures
 
-**Solution:**
+**Solution:** Use text format instead of JSON
 ```python
-def _parse_cli_output(output: str) -> dict:
-    """Parse CLI output with fallback error detection"""
-    try:
-        data = json.loads(output)
-        # Check both is_error flag AND errors array
-        if data.get("is_error") or (isinstance(data.get("errors"), list) and data["errors"]):
-            return {"is_error": True, "error": data.get("errors", [data.get("error", "Unknown error")])}
-        return data
-    except JSONDecodeError:
-        # Handle raw mode output with explicit error detection
-        ...
+# Before: --output-format json with complex error detection
+# After: --output-format text with direct response handling
+
+cmd = ["claude", "prompt", "--output-format text", ...]
+result = subprocess.run(cmd, capture_output=True, text=True)
+if result.returncode != 0:
+    return {"is_error": True, "error": result.stderr}
+return {"result": result.stdout}  # Raw LLM response
 ```
 
-**Purpose:** Prevent silent failures when CLI returns errors that lack explicit error flag
-
-**Test Coverage:** 9 new test cases covering:
-- Errors array with no is_error flag
-- Empty errors array handling
-- Multiple errors in array
-- Raw mode error detection
+**Tradeoffs:**
+- **Gain:** Reliable output without CLI format bugs
+- **Loss:** Cost/token metadata no longer available (acceptable for reliability)
+- **Impact:** Text format returns raw LLM response directly (no JSON wrapper)
 
 ### Bulk Job Management UI
 
