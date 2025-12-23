@@ -229,9 +229,23 @@ class ClaudeCLI:
             error_text = cli_output.get("result", "Unknown CLI error")
             raise ValueError(f"CLI returned error: {error_text}")
 
+        # Check for tool_use response (model tried to use a tool but max_turns=1 prevents completion)
+        # This happens when --allowedTools is set but the model's response is tool use
+        response_type = cli_output.get("type", "")
+        if response_type == "tool_use":
+            tool_name = cli_output.get("name", "unknown")
+            raise ValueError(
+                f"Model attempted tool use ({tool_name}) but conversation ended before completion. "
+                f"Disable tools with allow_tools=False or increase max_turns."
+            )
+
         result_text = cli_output.get("result", "")
         if not result_text:
-            raise ValueError("CLI output missing 'result' field")
+            # Include response type in error for debugging
+            raise ValueError(
+                f"CLI output missing 'result' field. "
+                f"Response type: {response_type or 'unknown'}, keys: {list(cli_output.keys())}"
+            )
 
         # Extract cost information (supports both new and legacy formats)
         input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
@@ -286,6 +300,7 @@ class ClaudeCLI:
         job_id: str,
         max_turns: int = 1,
         validate_json: bool = True,
+        allow_tools: bool = False,
     ) -> CLIResult:
         """
         Execute Claude CLI with prompt and return parsed result.
@@ -297,6 +312,9 @@ class ClaudeCLI:
             job_id: Tracking ID for this invocation
             max_turns: Maximum conversation turns (default 1 for extraction)
             validate_json: Whether to parse result as JSON (default True)
+            allow_tools: Whether to enable CLI tools (WebSearch, WebFetch, Read).
+                        Default False to prevent tool_use responses with max_turns=1.
+                        Set True for research tasks that need web search.
 
         Returns:
             CLIResult with success/failure status and parsed data
@@ -312,16 +330,20 @@ class ClaudeCLI:
 
             # Run Claude CLI in headless mode
             # --dangerously-skip-permissions skips permission prompts
-            # --allowedTools enables specific tools (WebSearch, WebFetch for research)
+            cmd = [
+                "claude", "-p", prompt,
+                "--output-format", "json",
+                "--model", self.model,
+                "--max-turns", str(max_turns),
+                "--dangerously-skip-permissions",
+            ]
+            # Only enable tools when explicitly requested
+            # With max_turns=1, tool_use responses would exit before completion
+            if allow_tools:
+                cmd.extend(["--allowedTools", "WebSearch,WebFetch,Read"])
+
             result = subprocess.run(
-                [
-                    "claude", "-p", prompt,
-                    "--output-format", "json",
-                    "--model", self.model,
-                    "--max-turns", str(max_turns),
-                    "--dangerously-skip-permissions",
-                    "--allowedTools", "WebSearch,WebFetch,Read",
-                ],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=self.timeout
