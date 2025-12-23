@@ -194,19 +194,33 @@ jobs:
       matrix:
         service-group:
           # Each large test file gets its own job for parallel execution
-          # runner-api split into 6 groups for maximum parallelization
-          - name: runner-api-auth
-            paths: tests/runner/test_runner_api.py -k "health or requires_auth or invalid_auth or valid_auth"
+          # runner-api split into 13 groups for maximum parallelization (<1 min each)
+          - name: runner-api-health
+            paths: tests/runner/test_runner_api.py -k "health_check"
+          - name: runner-api-auth-required
+            paths: tests/runner/test_runner_api.py -k "requires_auth"
+          - name: runner-api-auth-invalid
+            paths: tests/runner/test_runner_api.py -k "invalid_auth"
+          - name: runner-api-auth-valid
+            paths: tests/runner/test_runner_api.py -k "valid_auth"
           - name: runner-api-profile
             paths: tests/runner/test_runner_api.py -k "run_job_with_profile"
-          - name: runner-api-bulk
-            paths: tests/runner/test_runner_api.py -k "bulk_run"
+          - name: runner-api-bulk-auth
+            paths: tests/runner/test_runner_api.py -k "bulk_run_requires"
+          - name: runner-api-bulk-run
+            paths: tests/runner/test_runner_api.py -k "bulk_run_with"
           - name: runner-api-concurrency
             paths: tests/runner/test_runner_api.py -k "concurrency_limit"
+          - name: runner-api-status-get
+            paths: tests/runner/test_runner_api.py -k "get_status"
+          - name: runner-api-status-stream
+            paths: tests/runner/test_runner_api.py -k "stream_logs"
+          - name: runner-api-status-artifact
+            paths: tests/runner/test_runner_api.py -k "get_artifact"
           - name: runner-api-validation
             paths: tests/runner/test_runner_api.py -k "missing_job or empty_bulk"
-          - name: runner-api-status
-            paths: tests/runner/test_runner_api.py -k "get_status or stream_logs or get_artifact or firecrawl"
+          - name: runner-api-firecrawl
+            paths: tests/runner/test_runner_api.py -k "firecrawl"
           - name: executor
             paths: tests/runner/test_executor.py
           - name: pdf-service
