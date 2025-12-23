@@ -17,7 +17,7 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Optional, Tuple, Callable, Any
 from collections import Counter
 
 from pydantic import BaseModel, Field
@@ -82,6 +82,7 @@ class CVGrader:
         passing_threshold: float = 8.5,
         use_llm_grading: bool = True,
         job_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     ):
         """
         Initialize the grader.
@@ -91,14 +92,20 @@ class CVGrader:
             passing_threshold: Score threshold for passing (default: 8.5)
             use_llm_grading: Whether to use LLM for grading (default: True)
             job_id: Job ID for tracking (optional)
+            progress_callback: Optional callback for granular LLM progress events to Redis
         """
         self._logger = get_logger(__name__)
         self.passing_threshold = passing_threshold
         self.use_llm_grading = use_llm_grading
         self._job_id = job_id or "unknown"
+        self._progress_callback = progress_callback
 
         # Use UnifiedLLM with step config (low tier for grader)
-        self._llm = UnifiedLLM(step_name="grader", job_id=self._job_id)
+        self._llm = UnifiedLLM(
+            step_name="grader",
+            job_id=self._job_id,
+            progress_callback=progress_callback,
+        )
         self._logger.info(
             f"CVGrader initialized with UnifiedLLM (step=grader, tier={self._llm.config.tier})"
         )
@@ -669,6 +676,7 @@ async def grade_cv(
     master_cv_text: str,
     passing_threshold: float = 8.5,
     job_id: Optional[str] = None,
+    progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
 ) -> GradeResult:
     """
     Convenience function to grade a CV.
@@ -679,9 +687,14 @@ async def grade_cv(
         master_cv_text: Original master CV for hallucination check
         passing_threshold: Score threshold for passing
         job_id: Job ID for tracking (optional)
+        progress_callback: Optional callback for granular LLM progress events to Redis
 
     Returns:
         GradeResult with dimension scores and composite
     """
-    grader = CVGrader(passing_threshold=passing_threshold, job_id=job_id)
+    grader = CVGrader(
+        passing_threshold=passing_threshold,
+        job_id=job_id,
+        progress_callback=progress_callback,
+    )
     return await grader.grade(cv_text, extracted_jd, master_cv_text)

@@ -38,8 +38,12 @@ import logging
 import json
 import subprocess
 from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 from datetime import datetime
+
+# Type alias for progress callback that forwards to Redis
+# Signature: (event_type, message, data_dict) -> None
+ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
 
 from src.common.claude_cli import ClaudeCLI, CLIResult
 from src.common.llm_config import (
@@ -123,6 +127,7 @@ class UnifiedLLM:
         config: Optional[StepConfig] = None,
         job_id: Optional[str] = None,
         struct_logger: Optional["StructuredLogger"] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the UnifiedLLM wrapper.
@@ -135,6 +140,9 @@ class UnifiedLLM:
             struct_logger: Optional StructuredLogger for emitting LLM call events
                 to the frontend log stream. When provided, LLM calls will be
                 visible in the pipeline execution logs.
+            progress_callback: Optional callback for granular progress events to Redis.
+                Signature: (event_type: str, message: str, data: Dict) -> None
+                This forwards LLM call events directly to Redis for frontend streaming.
 
         Note:
             If step_name is provided, config is loaded from STEP_CONFIGS.
@@ -159,6 +167,7 @@ class UnifiedLLM:
         self.job_id = job_id or "unknown"
         self._cli: Optional[ClaudeCLI] = None
         self._langchain_llm = None
+        self._progress_callback = progress_callback
 
         # Auto-create struct_logger from job_id if not explicitly provided
         # This enables LLM call tracking for all components without code changes
@@ -233,10 +242,30 @@ class UnifiedLLM:
             # Log LLM call start for frontend visibility
             self._log_llm_start("claude_cli", job_id)
 
+            # Emit granular progress to Redis
+            model = TIER_TO_CLAUDE_MODEL.get(self.config.tier, "claude-sonnet-4-20250514")
+            self._emit_progress(
+                "llm_start",
+                f"Using Claude CLI ({self.config.tier}) for {self.step_name}...",
+                backend="claude_cli",
+                model=model,
+            )
+
             try:
                 result = await self._invoke_cli(combined_prompt, job_id, validate_json)
                 if result.success:
                     self._log_success("claude_cli", result, job_id)
+                    # Emit completion to Redis
+                    self._emit_progress(
+                        "llm_complete",
+                        f"Claude CLI complete: {len(result.content)} chars (cost: ${result.cost_usd or 0:.4f})",
+                        backend="claude_cli",
+                        model=result.model,
+                        duration_ms=result.duration_ms,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
+                        cost_usd=result.cost_usd,
+                    )
                     return result
                 # CLI failed, capture specific error reason
                 cli_error_reason = f"CLI returned error: {result.error}"
@@ -245,6 +274,14 @@ class UnifiedLLM:
                 )
                 # Log CLI error to StructuredLogger for frontend visibility
                 self._log_cli_error(job_id, cli_error_reason, result.duration_ms)
+                # Emit error to Redis
+                self._emit_progress(
+                    "llm_error",
+                    f"Claude CLI failed: {result.error}",
+                    backend="claude_cli",
+                    error=result.error,
+                    duration_ms=result.duration_ms,
+                )
             except subprocess.TimeoutExpired as e:
                 cli_error_reason = f"CLI timeout after {e.timeout}s"
                 logger.warning(
@@ -252,6 +289,13 @@ class UnifiedLLM:
                 )
                 # Log CLI error to StructuredLogger for frontend visibility
                 self._log_cli_error(job_id, cli_error_reason)
+                # Emit error to Redis
+                self._emit_progress(
+                    "llm_error",
+                    f"Claude CLI timeout after {e.timeout}s",
+                    backend="claude_cli",
+                    error=cli_error_reason,
+                )
             except FileNotFoundError:
                 cli_error_reason = "Claude CLI not found in PATH"
                 logger.warning(
@@ -259,6 +303,13 @@ class UnifiedLLM:
                 )
                 # Log CLI error to StructuredLogger for frontend visibility
                 self._log_cli_error(job_id, cli_error_reason)
+                # Emit error to Redis
+                self._emit_progress(
+                    "llm_error",
+                    "Claude CLI not found in PATH",
+                    backend="claude_cli",
+                    error=cli_error_reason,
+                )
             except Exception as e:
                 cli_error_reason = f"CLI exception: {type(e).__name__}: {e}"
                 logger.warning(
@@ -266,6 +317,13 @@ class UnifiedLLM:
                 )
                 # Log CLI error to StructuredLogger for frontend visibility
                 self._log_cli_error(job_id, cli_error_reason)
+                # Emit error to Redis
+                self._emit_progress(
+                    "llm_error",
+                    f"Claude CLI exception: {type(e).__name__}",
+                    backend="claude_cli",
+                    error=cli_error_reason,
+                )
         else:
             cli_error_reason = "CLI disabled via DISABLE_CLAUDE_CLI env var"
 
@@ -276,6 +334,16 @@ class UnifiedLLM:
             )
             # Log fallback event with specific reason for visibility
             self._log_fallback(job_id, cli_error_reason or "CLI unavailable")
+            # Emit fallback to Redis
+            fallback_model = self.config.get_fallback_model()
+            self._emit_progress(
+                "llm_fallback",
+                f"Falling back to LangChain ({fallback_model})...",
+                backend="langchain",
+                from_backend="claude_cli",
+                model=fallback_model,
+                reason=cli_error_reason or "CLI unavailable",
+            )
             return await self._invoke_langchain(prompt, system, job_id, validate_json)
         else:
             # Claude CLI is mandatory for this step - fail loudly
@@ -387,6 +455,14 @@ class UnifiedLLM:
         # Log LangChain call start for frontend visibility
         self._log_llm_start("langchain", job_id)
 
+        # Emit LangChain start to Redis
+        self._emit_progress(
+            "llm_start",
+            f"Using LangChain ({fallback_model}) for {self.step_name}...",
+            backend="langchain",
+            model=fallback_model,
+        )
+
         try:
             # Create LangChain LLM with tracking
             llm = create_tracked_llm_for_model(
@@ -429,6 +505,17 @@ class UnifiedLLM:
                 is_fallback=True, input_tokens=input_tokens, output_tokens=output_tokens
             )
 
+            # Emit LangChain complete to Redis
+            self._emit_progress(
+                "llm_complete",
+                f"LangChain complete: {len(content)} chars",
+                backend="langchain",
+                model=fallback_model,
+                duration_ms=duration_ms,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
+
             return LLMResult(
                 content=content,
                 parsed_json=parsed_json,
@@ -456,6 +543,16 @@ class UnifiedLLM:
                     error=error_msg,
                     duration_ms=duration_ms,
                 )
+
+            # Emit LangChain error to Redis
+            self._emit_progress(
+                "llm_error",
+                f"LangChain failed: {str(e)}",
+                backend="langchain",
+                model=fallback_model,
+                error=error_msg,
+                duration_ms=duration_ms,
+            )
 
             return LLMResult(
                 content="",
@@ -666,6 +763,34 @@ class UnifiedLLM:
                 reason=reason,
             )
 
+    def _emit_progress(self, event: str, message: str, **data: Any) -> None:
+        """
+        Emit progress event to Redis via callback (if configured).
+
+        This method is thread-safe and silently ignores errors to prevent
+        logging failures from breaking LLM calls.
+
+        Args:
+            event: Event type (e.g., "llm_start", "llm_complete", "llm_error")
+            message: Human-readable message for the frontend
+            **data: Additional data fields (backend, model, tier, cost_usd, etc.)
+        """
+        if not self._progress_callback:
+            return
+
+        try:
+            # Build event data with standard fields
+            event_data = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "step_name": self.step_name,
+                "tier": self.config.tier,
+                **data,
+            }
+            self._progress_callback(event, message, event_data)
+        except Exception as e:
+            # Don't break LLM calls on logging errors - just log to stderr
+            logger.debug(f"[UnifiedLLM] Progress callback error (ignored): {e}")
+
     def check_cli_available(self) -> bool:
         """
         Check if Claude CLI is installed and authenticated.
@@ -688,6 +813,7 @@ async def invoke_unified(
     job_id: str = "unknown",
     validate_json: bool = True,
     struct_logger: Optional["StructuredLogger"] = None,
+    progress_callback: Optional[ProgressCallback] = None,
 ) -> LLMResult:
     """
     Convenience function for single UnifiedLLM invocation.
@@ -702,6 +828,7 @@ async def invoke_unified(
         job_id: Job ID for tracking
         validate_json: Whether to parse response as JSON
         struct_logger: Optional StructuredLogger for frontend visibility
+        progress_callback: Optional callback for granular progress events to Redis
 
     Returns:
         LLMResult with response and backend attribution
@@ -714,7 +841,13 @@ async def invoke_unified(
         ...     job_id="job_123"
         ... )
     """
-    llm = UnifiedLLM(step_name=step_name, tier=tier, job_id=job_id, struct_logger=struct_logger)
+    llm = UnifiedLLM(
+        step_name=step_name,
+        tier=tier,
+        job_id=job_id,
+        struct_logger=struct_logger,
+        progress_callback=progress_callback,
+    )
     return await llm.invoke(prompt, system=system, validate_json=validate_json)
 
 
@@ -726,6 +859,7 @@ def invoke_unified_sync(
     job_id: str = "unknown",
     validate_json: bool = True,
     struct_logger: Optional["StructuredLogger"] = None,
+    progress_callback: Optional[ProgressCallback] = None,
 ) -> LLMResult:
     """
     Synchronous convenience function for UnifiedLLM invocation.
@@ -740,6 +874,7 @@ def invoke_unified_sync(
         job_id: Job ID for tracking
         validate_json: Whether to parse response as JSON
         struct_logger: Optional StructuredLogger for frontend visibility
+        progress_callback: Optional callback for granular progress events to Redis
 
     Returns:
         LLMResult with response and backend attribution
@@ -760,4 +895,5 @@ def invoke_unified_sync(
         job_id=job_id,
         validate_json=validate_json,
         struct_logger=struct_logger,
+        progress_callback=progress_callback,
     ))

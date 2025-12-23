@@ -24,7 +24,7 @@ import re
 import time
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Tuple, Any, Callable
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -115,6 +115,7 @@ class EnsembleHeaderGenerator:
         annotation_context: Optional[HeaderGenerationContext] = None,
         jd_annotations: Optional[Dict[str, Any]] = None,
         job_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     ):
         """
         Initialize the ensemble header generator.
@@ -127,12 +128,14 @@ class EnsembleHeaderGenerator:
             jd_annotations: Raw jd_annotations dict containing synthesized_persona
                            for persona-framed profile generation.
             job_id: Job ID for tracking (optional)
+            progress_callback: Optional callback for granular LLM progress events to Redis
         """
         self._logger = get_logger(__name__)
         self.tier_config = tier_config
         self._skill_whitelist = skill_whitelist or {}
         self.temperature = temperature
         self._job_id = job_id or "unknown"
+        self._progress_callback = progress_callback
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -146,7 +149,11 @@ class EnsembleHeaderGenerator:
             )
 
         # Use UnifiedLLM with step config (middle tier for ensemble_header)
-        self._llm = UnifiedLLM(step_name="ensemble_header", job_id=self._job_id)
+        self._llm = UnifiedLLM(
+            step_name="ensemble_header",
+            job_id=self._job_id,
+            progress_callback=progress_callback,
+        )
         self._logger.info(
             f"EnsembleHeaderGenerator initialized with UnifiedLLM (step=ensemble_header, tier={self._llm.config.tier})"
         )
@@ -158,6 +165,7 @@ class EnsembleHeaderGenerator:
             annotation_context=annotation_context,
             jd_annotations=jd_annotations,
             job_id=job_id,
+            progress_callback=progress_callback,
         )
 
         self._logger.info(
@@ -651,6 +659,7 @@ async def generate_ensemble_header(
     annotation_context: Optional[HeaderGenerationContext] = None,
     jd_annotations: Optional[Dict[str, Any]] = None,
     job_id: Optional[str] = None,
+    progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
 ) -> HeaderOutput:
     """
     Convenience function for ensemble header generation.
@@ -666,6 +675,7 @@ async def generate_ensemble_header(
         jd_annotations: Raw jd_annotations dict containing synthesized_persona for
                        persona-framed profile generation.
         job_id: Job ID for tracking (optional)
+        progress_callback: Optional callback for granular LLM progress events to Redis
 
     Returns:
         HeaderOutput with profile, skills, and ensemble metadata
@@ -685,6 +695,7 @@ async def generate_ensemble_header(
         annotation_context=annotation_context,
         jd_annotations=jd_annotations,
         job_id=job_id,
+        progress_callback=progress_callback,
     )
 
     return await generator.generate(stitched_cv, extracted_jd, candidate_data)

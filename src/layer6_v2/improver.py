@@ -16,7 +16,7 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Callable, Any
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -101,6 +101,7 @@ class CVImprover:
         model: Optional[str] = None,
         temperature: float = 0.3,
         job_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     ):
         """
         Initialize the improver.
@@ -109,13 +110,19 @@ class CVImprover:
             model: LLM model to use (default: from step config)
             temperature: Temperature for improvement (default: 0.3)
             job_id: Job ID for tracking (optional)
+            progress_callback: Optional callback for granular LLM progress events to Redis
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self._job_id = job_id or "unknown"
+        self._progress_callback = progress_callback
 
         # Use UnifiedLLM with step config (high tier for improver)
-        self._llm = UnifiedLLM(step_name="improver", job_id=self._job_id)
+        self._llm = UnifiedLLM(
+            step_name="improver",
+            job_id=self._job_id,
+            progress_callback=progress_callback,
+        )
         self._logger.info(
             f"CVImprover initialized with UnifiedLLM (step=improver, tier={self._llm.config.tier})"
         )
@@ -365,6 +372,7 @@ async def improve_cv(
     grade_result: GradeResult,
     extracted_jd: Dict,
     job_id: Optional[str] = None,
+    progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
 ) -> ImprovementResult:
     """
     Convenience function to improve a CV.
@@ -374,9 +382,10 @@ async def improve_cv(
         grade_result: Grading result from CVGrader
         extracted_jd: Extracted JD intelligence
         job_id: Job ID for tracking (optional)
+        progress_callback: Optional callback for granular LLM progress events to Redis
 
     Returns:
         ImprovementResult with improved CV
     """
-    improver = CVImprover(job_id=job_id)
+    improver = CVImprover(job_id=job_id, progress_callback=progress_callback)
     return await improver.improve(cv_text, grade_result, extracted_jd)

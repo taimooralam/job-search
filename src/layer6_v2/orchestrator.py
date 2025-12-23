@@ -202,6 +202,20 @@ class CVGeneratorV2:
             except Exception:
                 pass  # Don't let logging errors break the pipeline
 
+    def _create_llm_progress_callback(self) -> Callable[[str, str, Dict[str, Any]], None]:
+        """
+        Create LLM progress callback that forwards to _emit_log.
+
+        This adapts the UnifiedLLM progress_callback signature to _emit_log,
+        enabling granular LLM call logging to Redis/frontend.
+
+        Returns:
+            Callback function compatible with UnifiedLLM.progress_callback
+        """
+        def callback(event: str, message: str, data: Dict[str, Any]) -> None:
+            self._emit_log(event, message, **data)
+        return callback
+
     def generate(
         self,
         state: JobState,
@@ -329,6 +343,9 @@ class CVGeneratorV2:
             tier = get_tier_from_fit_score(fit_score)
             self._logger.info(f"  Processing tier: {tier.value} (fit_score={fit_score})")
 
+            # Create progress callback for LLM components
+            llm_callback = self._create_llm_progress_callback()
+
             # Use ensemble generator for Gold/Silver tiers, single-shot for Bronze/Skip
             if tier in [ProcessingTier.GOLD, ProcessingTier.SILVER]:
                 self._logger.info(f"  Using ensemble generation ({tier.value} tier)")
@@ -340,6 +357,7 @@ class CVGeneratorV2:
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
+                    progress_callback=llm_callback,
                 ))
                 # Log ensemble metadata
                 if header_output.ensemble_metadata:
@@ -356,6 +374,7 @@ class CVGeneratorV2:
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
+                    progress_callback=llm_callback,
                 ))
 
             # Phase 4.5: Log annotation influence
@@ -411,7 +430,7 @@ class CVGeneratorV2:
             self._emit_log("phase_start", "Grading CV...", phase=6)
             master_cv_text = self._get_master_cv_text()
             job_id = state.get("job_id")
-            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text, job_id=job_id))
+            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text, job_id=job_id, progress_callback=llm_callback))
             self._log_grade_result(grade_result)
             self._emit_log(
                 "grade_complete",
@@ -425,7 +444,7 @@ class CVGeneratorV2:
             if not grade_result.passed:
                 self._logger.info("  CV below threshold - applying single-pass improvement...")
                 self._emit_log("improve_start", "Improving CV...", phase=6)
-                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd, job_id=job_id))
+                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd, job_id=job_id, progress_callback=llm_callback))
                 if improvement_result.improved:
                     cv_text = improvement_result.cv_text
                     self._logger.info(f"  Improved {improvement_result.target_dimension}")

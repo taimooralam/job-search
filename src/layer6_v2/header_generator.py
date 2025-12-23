@@ -20,7 +20,7 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Set, Optional, Tuple, Any
+from typing import List, Dict, Set, Optional, Tuple, Any, Callable
 from collections import defaultdict
 
 from pydantic import BaseModel, Field
@@ -268,6 +268,7 @@ class HeaderGenerator:
         annotation_context: Optional[HeaderGenerationContext] = None,
         jd_annotations: Optional[Dict[str, Any]] = None,
         job_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     ):
         """
         Initialize the header generator.
@@ -284,11 +285,13 @@ class HeaderGenerator:
             jd_annotations: Raw jd_annotations dict containing synthesized_persona
                            for persona-framed profile generation.
             job_id: Job ID for tracking (optional)
+            progress_callback: Optional callback for granular LLM progress events to Redis
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self.lax_mode = lax_mode
         self._job_id = job_id or "unknown"
+        self._progress_callback = progress_callback
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -333,7 +336,11 @@ class HeaderGenerator:
                 self._taxonomy_generator = None
 
         # Use UnifiedLLM with step config (middle tier for header_generator)
-        self._llm = UnifiedLLM(step_name="header_generator", job_id=self._job_id)
+        self._llm = UnifiedLLM(
+            step_name="header_generator",
+            job_id=self._job_id,
+            progress_callback=progress_callback,
+        )
         self._logger.info(
             f"HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier={self._llm.config.tier})"
         )
@@ -1287,6 +1294,7 @@ async def generate_header(
     annotation_context: Optional[HeaderGenerationContext] = None,
     jd_annotations: Optional[Dict[str, Any]] = None,
     job_id: Optional[str] = None,
+    progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -1303,6 +1311,7 @@ async def generate_header(
         jd_annotations: Raw jd_annotations dict containing synthesized_persona for
                        persona-framed profile generation.
         job_id: Job ID for tracking (optional)
+        progress_callback: Optional callback for granular LLM progress events to Redis
 
     Returns:
         HeaderOutput with all header sections
@@ -1313,5 +1322,6 @@ async def generate_header(
         annotation_context=annotation_context,
         jd_annotations=jd_annotations,
         job_id=job_id,
+        progress_callback=progress_callback,
     )
     return await generator.generate(stitched_cv, extracted_jd, candidate_data)

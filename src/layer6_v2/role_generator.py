@@ -133,6 +133,7 @@ class RoleGenerator:
         model: Optional[str] = None,
         temperature: Optional[float] = None,
         job_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     ):
         """
         Initialize the generator with LLM.
@@ -141,14 +142,20 @@ class RoleGenerator:
             model: Model to use (defaults to step config)
             temperature: Temperature for generation (defaults to 0.3 for consistency)
             job_id: Job ID for tracking (optional)
+            progress_callback: Optional callback for granular LLM progress events to Redis
         """
         self.model = model or Config.DEFAULT_MODEL
         self.temperature = temperature if temperature is not None else 0.3  # Lower for consistency
         self._job_id = job_id or "unknown"
         self._logger = get_logger(__name__)
+        self._progress_callback = progress_callback
 
         # Use UnifiedLLM with step config (middle tier for role_generator)
-        self._llm = UnifiedLLM(step_name="role_generator", job_id=self._job_id)
+        self._llm = UnifiedLLM(
+            step_name="role_generator",
+            job_id=self._job_id,
+            progress_callback=progress_callback,
+        )
         self._logger.info(
             f"RoleGenerator initialized with UnifiedLLM (step=role_generator, tier={self._llm.config.tier})"
         )
@@ -885,7 +892,9 @@ async def generate_all_roles_from_variants(
         List of RoleBullets, one per role
     """
     logger = get_logger(__name__)
-    generator = generator or RoleGenerator()
+    # Create generator with progress callback if not provided
+    if generator is None:
+        generator = RoleGenerator(progress_callback=progress_callback)
     results = []
 
     target_role_category = extracted_jd.get("role_category", "staff_principal_engineer")
