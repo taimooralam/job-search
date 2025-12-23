@@ -903,11 +903,12 @@
                 result.runs.forEach((run, index) => {
                     BatchDebug.log('AUTO-RUN', `Job ${run.job_id} queued with run_id ${run.run_id}`);
 
-                    // Store runId in job status for cli:complete event matching
+                    // Store runId and operation in job status for cli:complete event matching
                     const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
                     if (jobStatus) {
                         jobStatus.runId = run.run_id;
                         jobStatus.status = 'queued';
+                        jobStatus.operation = 'all-ops';  // Store operation for badge updates
                     }
                     renderProgressDetails();
 
@@ -1189,11 +1190,12 @@
                 result.runs.forEach((run, index) => {
                     BatchDebug.log('PROGRESS', `Job ${run.job_id} queued with run_id ${run.run_id}`);
 
-                    // Store runId in job status so we can match cli:complete events later
+                    // Store runId and operation in job status so we can match cli:complete events later
                     const jobStatus = batchOperationState.jobStatuses.get(run.job_id);
                     if (jobStatus) {
                         jobStatus.runId = run.run_id;
                         jobStatus.status = 'queued';
+                        jobStatus.operation = operation;  // Store operation for badge updates
                     }
                     renderProgressDetails();
 
@@ -1597,6 +1599,60 @@
             }
         });
 
+        // Listen for research updates to turn RS badge orange/green immediately
+        window.addEventListener('research:updated', function(e) {
+            const { jobId, hasResearch, hasContacts } = e.detail;
+            const badge = document.querySelector(`[data-rs-badge="${jobId}"]`);
+            if (badge) {
+                // Remove all state classes
+                badge.classList.remove(
+                    'bg-gray-100', 'text-gray-400', 'dark:bg-gray-700', 'dark:text-gray-500',
+                    'bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300',
+                    'bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300',
+                    'cursor-pointer', 'hover:bg-green-200', 'dark:hover:bg-green-800',
+                    'hover:bg-orange-200', 'dark:hover:bg-orange-800'
+                );
+
+                if (hasContacts) {
+                    badge.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300', 'cursor-pointer', 'hover:bg-green-200', 'dark:hover:bg-green-800');
+                    badge.title = 'Research: Has contacts';
+                    badge.onclick = () => openBatchContactsSidebar(jobId);
+                } else if (hasResearch) {
+                    badge.classList.add('bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300', 'cursor-pointer', 'hover:bg-orange-200', 'dark:hover:bg-orange-800');
+                    badge.title = 'Research: Researched';
+                    badge.onclick = () => openBatchContactsSidebar(jobId);
+                }
+                BatchDebug.log('BADGE', `Updated RS badge for ${jobId}:`, hasContacts ? 'green' : (hasResearch ? 'orange' : 'gray'));
+            }
+        });
+
+        // Listen for CV generation to turn CV badge orange immediately
+        window.addEventListener('cv:generated', function(e) {
+            const { jobId, hasCV, isEdited } = e.detail;
+            const badge = document.querySelector(`[data-cv-badge="${jobId}"]`);
+            if (badge) {
+                // Remove all state classes
+                badge.classList.remove(
+                    'bg-gray-100', 'text-gray-400', 'dark:bg-gray-700', 'dark:text-gray-500',
+                    'bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300',
+                    'bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300',
+                    'cursor-pointer', 'hover:bg-green-200', 'dark:hover:bg-green-800',
+                    'hover:bg-orange-200', 'dark:hover:bg-orange-800'
+                );
+
+                if (isEdited) {
+                    badge.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300', 'cursor-pointer', 'hover:bg-green-200', 'dark:hover:bg-green-800');
+                    badge.title = 'CV: Edited';
+                    badge.onclick = () => openBatchCVEditor(jobId);
+                } else if (hasCV) {
+                    badge.classList.add('bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300', 'cursor-pointer', 'hover:bg-orange-200', 'dark:hover:bg-orange-800');
+                    badge.title = 'CV: Generated';
+                    badge.onclick = () => openBatchCVEditor(jobId);
+                }
+                BatchDebug.log('BADGE', `Updated CV badge for ${jobId}:`, isEdited ? 'green' : (hasCV ? 'orange' : 'gray'));
+            }
+        });
+
         // Listen for queue events to track actual extraction completion
         // Note: Events are dispatched on window, so listen on window
         window.addEventListener('queue:job-started', function(e) {
@@ -1668,6 +1724,38 @@
                         operation: 'pipeline'
                     }
                 }));
+
+                // Dispatch badge update events based on operation type
+                const jobState = batchOperationState.jobStatuses.get(matchedJobId);
+                const operation = jobState?.operation;
+
+                if (status === 'success' && operation) {
+                    // Research operations update RS badge
+                    if (operation === 'research-company' || operation === 'discover-contacts' || operation === 'all-ops') {
+                        // For research completion, assume contacts were found (green) on success
+                        // The actual state will be corrected on page refresh if different
+                        window.dispatchEvent(new CustomEvent('research:updated', {
+                            detail: {
+                                jobId: matchedJobId,
+                                hasResearch: true,
+                                hasContacts: true  // Optimistic - assume contacts found on success
+                            }
+                        }));
+                        BatchDebug.log('BADGE', `Dispatched research:updated for ${matchedJobId}`);
+                    }
+
+                    // CV generation updates CV badge
+                    if (operation === 'generate-cv' || operation === 'generate-cover-letter' || operation === 'all-ops') {
+                        window.dispatchEvent(new CustomEvent('cv:generated', {
+                            detail: {
+                                jobId: matchedJobId,
+                                hasCV: true,
+                                isEdited: false  // Newly generated, not edited yet
+                            }
+                        }));
+                        BatchDebug.log('BADGE', `Dispatched cv:generated for ${matchedJobId}`);
+                    }
+                }
             }
         });
     });
