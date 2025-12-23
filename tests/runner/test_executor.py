@@ -1,15 +1,77 @@
 """
 Unit tests for pipeline executor module.
+
+These tests mock subprocess execution to prevent spawning real Python processes
+which would be slow and require MongoDB/external services.
 """
 
 import pytest
 import asyncio
 from pathlib import Path
+from unittest.mock import patch, MagicMock, AsyncMock
 from runner_service.executor import execute_pipeline, discover_artifacts
 
 
+class MockAsyncIterator:
+    """Mock async iterator for subprocess stdout."""
+
+    def __init__(self, lines):
+        self.lines = lines
+        self.index = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if self.index >= len(self.lines):
+            raise StopAsyncIteration
+        line = self.lines[self.index]
+        self.index += 1
+        return line
+
+
+@pytest.fixture
+def mock_subprocess_failure():
+    """Mock subprocess that fails immediately."""
+    async def mock_create_subprocess(*args, **kwargs):
+        mock_process = MagicMock()
+        mock_process.returncode = 1  # Non-zero = failure
+        mock_process.stdout = MockAsyncIterator([
+            b"Starting pipeline...\n",
+            b"Error: Job not found\n",
+        ])
+        mock_process.wait = AsyncMock(return_value=1)
+        return mock_process
+
+    with patch("asyncio.create_subprocess_exec", side_effect=mock_create_subprocess):
+        yield
+
+
+@pytest.fixture
+def mock_subprocess_timeout():
+    """Mock subprocess that hangs (simulates timeout)."""
+    async def mock_create_subprocess(*args, **kwargs):
+        mock_process = MagicMock()
+        mock_process.returncode = None  # Not finished
+        mock_process.stdout = MockAsyncIterator([b"Starting...\n"])
+        # Make wait return normally (it won't be called due to wait_for mock)
+        mock_process.wait = AsyncMock(return_value=0)
+        mock_process.kill = MagicMock()
+        return mock_process
+
+    # Mock wait_for to raise TimeoutError (simulating timeout expiration)
+    async def mock_wait_for(coro, timeout):
+        # Cancel the coroutine to avoid "coroutine never awaited" warning
+        coro.close() if hasattr(coro, 'close') else None
+        raise asyncio.TimeoutError()
+
+    with patch("asyncio.create_subprocess_exec", side_effect=mock_create_subprocess):
+        with patch("runner_service.executor.asyncio.wait_for", side_effect=mock_wait_for):
+            yield
+
+
 @pytest.mark.asyncio
-async def test_execute_pipeline_with_invalid_job():
+async def test_execute_pipeline_with_invalid_job(mock_subprocess_failure):
     """Test pipeline execution with an invalid job ID."""
     logs = []
 
@@ -33,41 +95,25 @@ async def test_execute_pipeline_with_invalid_job():
 
 
 @pytest.mark.asyncio
-async def test_execute_pipeline_timeout():
-    """Test that pipeline execution respects timeout."""
-    import os
-    # Set a very short timeout for testing
-    original_timeout = os.environ.get("PIPELINE_TIMEOUT_SECONDS")
-    os.environ["PIPELINE_TIMEOUT_SECONDS"] = "1"
-
-    # Reload module to pick up new timeout
-    import importlib
-    import runner_service.executor
-    importlib.reload(runner_service.executor)
-    from runner_service.executor import execute_pipeline as exec_pipe
-
+async def test_execute_pipeline_timeout(mock_subprocess_timeout):
+    """Test that pipeline execution handles timeout correctly."""
     logs = []
 
     def log_callback(message: str):
         logs.append(message)
 
-    # This should timeout with a 1 second limit
-    # Using a job that would normally take longer
-    success, artifacts, pipeline_state = await exec_pipe(
+    # Execute with mocked subprocess that simulates timeout
+    success, artifacts, pipeline_state = await execute_pipeline(
         job_id="test-job-timeout",
         profile_ref=None,
         log_callback=log_callback
     )
 
-    # Restore original timeout
-    if original_timeout:
-        os.environ["PIPELINE_TIMEOUT_SECONDS"] = original_timeout
-    else:
-        os.environ.pop("PIPELINE_TIMEOUT_SECONDS", None)
-
-    # Should fail due to timeout or other error
+    # Should fail due to timeout
     assert success is False
     assert pipeline_state is None
+    # Should have logged the timeout message
+    assert any("timed out" in log.lower() for log in logs)
 
 
 def test_discover_artifacts_empty_directory():

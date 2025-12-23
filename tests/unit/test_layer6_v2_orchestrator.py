@@ -27,6 +27,42 @@ from src.layer6_v2.types import (
 from src.layer6_v2.cv_loader import RoleData, CandidateData
 
 
+# ===== MODULE-LEVEL MOCK =====
+# This autouse fixture prevents MongoDB connection attempts when CVGeneratorV2 is instantiated.
+# Without it, CVLoader → MasterCVStore → DatabaseClient → MongoClient causes 5-30s timeout per test.
+
+@pytest.fixture(autouse=True)
+def mock_cv_loader_for_orchestrator():
+    """
+    Mock CVLoader to prevent MongoDB connection attempts.
+
+    CVGeneratorV2.__init__() creates CVLoader which tries to connect to MongoDB.
+    This causes 5-30 second timeouts per test in CI where MongoDB isn't available.
+    """
+    with patch('src.layer6_v2.orchestrator.CVLoader') as mock_loader_class:
+        mock_loader = MagicMock()
+        mock_loader.load.return_value = CandidateData(
+            name="Test User",
+            title_base="Software Engineer",
+            email="test@example.com",
+            phone="+1-555-0123",
+            linkedin="linkedin.com/in/test",
+            location="San Francisco, CA",
+            languages=["English"],
+            education_masters=None,
+            education_bachelors="B.S. Computer Science",
+            certifications=[],
+            years_experience=10,
+            roles=[],
+        )
+        mock_loader.get_skill_whitelist.return_value = {
+            "hard_skills": ["Python", "AWS", "Kubernetes"],
+            "soft_skills": ["Leadership", "Communication"],
+        }
+        mock_loader_class.return_value = mock_loader
+        yield mock_loader_class
+
+
 # ===== FIXTURES =====
 
 @pytest.fixture

@@ -544,7 +544,7 @@ class TestCVGenerationServiceExecute:
 
         generated_state = None
 
-        def capture_generate(state, model):
+        def capture_generate(state, model, progress_callback=None):
             nonlocal generated_state
             generated_state = state
             return sample_cv_result
@@ -570,7 +570,7 @@ class TestCVGenerationServiceExecute:
 
         generated_state = None
 
-        def capture_generate(state, model):
+        def capture_generate(state, model, progress_callback=None):
             nonlocal generated_state
             generated_state = state
             return sample_cv_result
