@@ -59,6 +59,46 @@ def mock_successful_subprocess(valid_cli_output):
     return mock_result
 
 
+@pytest.fixture
+def valid_cli_output_v2():
+    """Valid CLI JSON output with new v2.0.75 format (usage + top-level cost)."""
+    return json.dumps({
+        "type": "result",
+        "subtype": "success",
+        "is_error": False,
+        "duration_ms": 5324,
+        "num_turns": 1,
+        "result": json.dumps({
+            "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
+            "strategic_needs": ["Need 1", "Need 2", "Need 3"],
+            "risks_if_unfilled": ["Risk 1", "Risk 2"],
+            "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
+        }),
+        "session_id": "test-session",
+        "total_cost_usd": 0.09884475,
+        "usage": {
+            "input_tokens": 3,
+            "cache_creation_input_tokens": 13711,
+            "cache_read_input_tokens": 15080,
+            "output_tokens": 14
+        }
+    })
+
+
+@pytest.fixture
+def error_cli_output():
+    """CLI JSON output with is_error=true."""
+    return json.dumps({
+        "type": "result",
+        "subtype": "error",
+        "is_error": True,
+        "duration_ms": 1234,
+        "num_turns": 0,
+        "result": "Credit balance is too low",
+        "session_id": "test-session"
+    })
+
+
 # ===== INITIALIZATION TESTS =====
 
 class TestClaudeCLIInitialization:
@@ -585,3 +625,109 @@ class TestLogCallback:
 
         # Should not raise
         cli._default_log("test_job", "info", {"message": "test"})
+
+
+# ===== CLI v2.0.75 FORMAT TESTS =====
+
+class TestNewCLIFormat:
+    """Test handling of Claude CLI v2.0.75+ output format."""
+
+    @patch('subprocess.run')
+    def test_parse_new_format_usage(self, mock_subprocess_run, valid_cli_output_v2):
+        """Should correctly parse new format with usage field."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output_v2
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_v2_001")
+
+        assert result.success is True
+        assert result.input_tokens == 3
+        assert result.output_tokens == 14
+        assert result.cost_usd == pytest.approx(0.09884475, rel=1e-5)
+        assert "pain_points" in result.result
+
+    @patch('subprocess.run')
+    def test_handle_is_error_flag(self, mock_subprocess_run, error_cli_output):
+        """Should handle is_error=true response properly."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0  # CLI may return 0 even with is_error=true
+        mock_result.stdout = error_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_error_001")
+
+        assert result.success is False
+        assert "Credit balance is too low" in result.error
+
+    @patch('subprocess.run')
+    def test_handle_is_error_in_raw_mode(self, mock_subprocess_run, error_cli_output):
+        """Should handle is_error=true in validate_json=False mode."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = error_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_error_002", validate_json=False)
+
+        assert result.success is False
+        assert "Credit balance is too low" in result.error
+
+    def test_parse_legacy_format_still_works(self, valid_cli_output):
+        """Should still handle legacy cost format for backwards compatibility."""
+        cli = ClaudeCLI()
+        parsed_data, input_tok, output_tok, cost = cli._parse_cli_output(valid_cli_output)
+
+        assert parsed_data["pain_points"] == ["Pain 1", "Pain 2", "Pain 3"]
+        assert input_tok == 1000
+        assert output_tok == 500
+        assert cost == 0.025
+
+    def test_extract_cost_info_new_format(self):
+        """Should extract cost from new format with usage field."""
+        cli = ClaudeCLI()
+        cli_output = {
+            "usage": {
+                "input_tokens": 100,
+                "output_tokens": 50,
+            },
+            "total_cost_usd": 0.05
+        }
+        input_tok, output_tok, cost = cli._extract_cost_info(cli_output)
+
+        assert input_tok == 100
+        assert output_tok == 50
+        assert cost == 0.05
+
+    def test_extract_cost_info_legacy_format(self):
+        """Should extract cost from legacy format with cost field."""
+        cli = ClaudeCLI()
+        cli_output = {
+            "cost": {
+                "input_tokens": 200,
+                "output_tokens": 100,
+                "total_cost_usd": 0.10
+            }
+        }
+        input_tok, output_tok, cost = cli._extract_cost_info(cli_output)
+
+        assert input_tok == 200
+        assert output_tok == 100
+        assert cost == 0.10
+
+    def test_extract_cost_info_no_cost_data(self):
+        """Should return None values when no cost data present."""
+        cli = ClaudeCLI()
+        cli_output = {"result": "some result"}
+        input_tok, output_tok, cost = cli._extract_cost_info(cli_output)
+
+        assert input_tok is None
+        assert output_tok is None
+        assert cost is None
