@@ -178,9 +178,10 @@ class CVGenerationService(OperationService):
                 }
                 await emit_progress("build_state", "success", state_msg)
 
-                # Step 4: Generate CV
-                await emit_progress("cv_generator", "processing", f"Generating CV with {model}")
-                logger.info(f"[{run_id[:16]}] Generating CV with model {model}")
+                # Step 4: Generate CV using standard 6-phase pipeline
+                # Note: UnifiedLLM uses Claude CLI as primary backend with LangChain fallback
+                await emit_progress("cv_generator", "processing", f"Generating CV (Claude CLI primary, {model} fallback)")
+                logger.info(f"[{run_id[:16]}] Generating CV via UnifiedLLM (Claude CLI primary, {model} fallback)")
                 cv_result = self._generate_cv(state, model)
 
                 if cv_result.get("errors"):
@@ -468,8 +469,8 @@ class CVGenerationService(OperationService):
         """
         from src.layer6_v2.orchestrator import CVGeneratorV2
 
-        # Always use Claude CLI for multi-agent CV generation
-        generator = CVGeneratorV2(model=model, use_claude_cli=True)
+        # Use standard 6-phase pipeline - UnifiedLLM uses Claude CLI as primary backend
+        generator = CVGeneratorV2(model=model)
         return generator.generate(state)
 
     def _generate_cover_letter(self, state: Dict[str, Any]) -> Optional[str]:
