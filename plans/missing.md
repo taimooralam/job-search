@@ -20,6 +20,22 @@
 - [ ] Pipeline validation and end-to-end testing
 - [ ] Performance optimization for bulk job processing
 - [ ] Advanced CV matching algorithm refinement
+- [ ] **GAP-DIST**: Distributed Worker Pattern for Multi-Container Execution
+  - **Status:** PLANNED
+  - **Priority:** Medium
+  - **Current State:**
+    - 3 runner containers behind Traefik load balancer
+    - Redis queue used for UI visibility only
+    - Batch requests go to single container (Traefik routes per-request)
+  - **Desired State:**
+    - Each container runs a worker loop that pulls jobs from Redis queue
+    - Jobs automatically distribute across whichever container pulls them first
+    - True horizontal scaling for batch operations
+  - **Implementation Notes:**
+    - Add `queue_manager.dequeue()` worker loop in each container
+    - Handle graceful shutdown (drain in-flight jobs)
+    - Add health check for worker status
+    - Consider using Redis BRPOP for blocking dequeue
 
 ### UI/UX
 
