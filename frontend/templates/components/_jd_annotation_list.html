@@ -105,4 +105,15 @@
             <span id="{{ id_prefix }}active-annotation-count">{{ annotations | selectattr('is_active', 'true') | list | length if annotations else 0 }} active</span>
         </div>
     </div>
+
+    {# Boost Preview #}
+    <div class="border-t {{ theme_border }} {{ theme_bg }} px-4 py-3 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-medium {{ theme_text_tertiary }} uppercase">Total Boost</span>
+            <span id="{{ id_prefix }}total-boost-value" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">1.0x</span>
+        </div>
+        <div class="mt-1 text-xs {{ theme_text_tertiary }}">
+            Combined multiplier for CV bullet prioritization
+        </div>
+    </div>
 </div>

@@ -21,6 +21,11 @@
     transition: opacity 0.2s ease-in-out;
 }
 
+/* Details chevron rotation for collapsible sections */
+details[open] .details-chevron {
+    transform: rotate(90deg);
+}
+
 /* ============================================================================
    JD Viewer Content Styles
    ============================================================================ */
@@ -591,11 +596,11 @@ section[data-section-type="about_role"] {
     background-color: var(--color-bg-selected, rgba(99, 102, 241, 0.2));
 }
 
-/* Persona panel z-index fix - ensure it renders above browser console */
+/* Persona panel z-index fix - ensure it renders above CLI panel (z-1030) */
 #batch-persona-panel-container,
 #persona-panel-container {
     position: relative;
-    z-index: 51;
+    z-index: 1035; /* Above CLI panel (1030), below modals (1040) */
 }
 
 /* ============================================================================
