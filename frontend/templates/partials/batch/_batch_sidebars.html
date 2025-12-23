@@ -55,7 +55,8 @@
     </div>
 
     <!-- Content loaded via HTMX -->
-    <div id="batch-annotation-content" class="flex-1 overflow-y-auto" style="overscroll-behavior: contain;">
+    <!-- Note: overflow-hidden here, scrolling happens inside the JD viewer area -->
+    <div id="batch-annotation-content" class="flex-1 overflow-hidden min-h-0">
         <div class="flex items-center justify-center h-full">
             <svg class="animate-spin h-8 w-8 text-accent-500" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
