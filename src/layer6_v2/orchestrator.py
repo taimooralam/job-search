@@ -215,6 +215,12 @@ class CVGeneratorV2:
         Returns:
             Dictionary with cv_text, cv_path, cv_reasoning, and grading results
         """
+        # Apply nest_asyncio early to handle all async calls in this pipeline
+        # This allows asyncio.run() to work even when called from within another event loop
+        # (e.g., when called from ThreadPoolExecutor threads in batch processing)
+        import nest_asyncio
+        nest_asyncio.apply()
+
         self._logger.info("=" * 60)
         self._logger.info("CV GENERATION V2: Starting 6-phase pipeline")
         self._logger.info("=" * 60)
@@ -487,6 +493,10 @@ class CVGeneratorV2:
         This handles the case where we're called from CVGenerationService.execute()
         which is async, but we need to run async code from this sync method.
 
+        Uses nest_asyncio to allow nested event loops, which handles all edge cases
+        including when called from ThreadPoolExecutor threads that already have
+        an event loop running.
+
         Args:
             coro: Coroutine to execute
 
@@ -494,7 +504,11 @@ class CVGeneratorV2:
             Result of the coroutine
         """
         import asyncio
-        import concurrent.futures
+        import nest_asyncio
+
+        # Apply nest_asyncio to allow nested event loops
+        # This is idempotent - safe to call multiple times
+        nest_asyncio.apply()
 
         try:
             loop = asyncio.get_running_loop()
@@ -502,13 +516,11 @@ class CVGeneratorV2:
             loop = None
 
         if loop and loop.is_running():
-            # Already in async context - use thread pool to avoid nested loop issues
-            self._logger.info("Detected running event loop - using ThreadPoolExecutor")
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(asyncio.run, coro)
-                return future.result(timeout=180)
+            # Already in async context - run in the existing loop
+            # nest_asyncio allows this to work without blocking issues
+            return loop.run_until_complete(coro)
         else:
-            # No running loop - safe to use asyncio.run directly
+            # No running loop - use asyncio.run directly
             return asyncio.run(coro)
 
     def _generate_with_claude_cli(self, state: JobState) -> Dict[str, Any]:
