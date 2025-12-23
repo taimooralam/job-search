@@ -154,6 +154,37 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - Step-by-step logging of JD processing
 - Status updates for long-running operations
 
+### Claude CLI Error Handling (ENHANCED)
+
+**Components:**
+- `src/common/claude_cli.py` - Enhanced `_parse_cli_output()` with errors array detection
+- Error handling in both standard and raw mode paths
+
+**Problem:** Claude CLI may return errors array without setting `is_error: true`, causing errors to be silently ignored
+
+**Solution:**
+```python
+def _parse_cli_output(output: str) -> dict:
+    """Parse CLI output with fallback error detection"""
+    try:
+        data = json.loads(output)
+        # Check both is_error flag AND errors array
+        if data.get("is_error") or (isinstance(data.get("errors"), list) and data["errors"]):
+            return {"is_error": True, "error": data.get("errors", [data.get("error", "Unknown error")])}
+        return data
+    except JSONDecodeError:
+        # Handle raw mode output with explicit error detection
+        ...
+```
+
+**Purpose:** Prevent silent failures when CLI returns errors that lack explicit error flag
+
+**Test Coverage:** 9 new test cases covering:
+- Errors array with no is_error flag
+- Empty errors array handling
+- Multiple errors in array
+- Raw mode error detection
+
 ### Bulk Job Management UI
 
 **Discard Selected Feature:**

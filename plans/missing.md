@@ -2,6 +2,7 @@
 
 ## Completed (2025-12-23)
 
+- [x] BUG FIX: Claude CLI errors array parsing - Added errors array detection in `_parse_cli_output()` and raw mode path to prevent silently ignoring CLI errors that lack `is_error: true` flag. Added 9 new tests for comprehensive error handling coverage ✅ **COMPLETED 2025-12-23**
 - [x] FEATURE: Job Ingestion Management UI - New `/ingestion` page for managing ingestion runs with history endpoint `GET /ingest/history/{source}` returning last 50 runs from MongoDB `system_state` collection. Added navigation link in header ✅ **COMPLETED 2025-12-23**
 - [x] BUG FIX: Batch operations run in parallel - Replaced BackgroundTasks with submit_service_task() using ThreadPoolExecutor fire-and-forget pattern (4 workers max, separate from 8-worker DB pool). Updated full-extraction, research-company, generate-cv, and all-ops batch endpoints ✅ **COMPLETED 2025-12-23**
 - [x] FEATURE: Discard Selected bulk action - Added "Discard Selected" button to job listing toolbar with confirmation dialog and status filter integration ✅ **COMPLETED 2025-12-23**
