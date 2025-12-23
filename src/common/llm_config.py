@@ -129,11 +129,13 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "fallback_signal_extraction": StepConfig(tier="middle"),
 
     # Layer 6 V2: CV Generation
-    "header_generator": StepConfig(tier="middle"),
-    "role_generator": StepConfig(tier="middle"),
-    "grader": StepConfig(tier="low"),
-    "ensemble_header": StepConfig(tier="middle"),
-    "improver": StepConfig(tier="high"),
+    # IMPORTANT: use_fallback=False ensures Claude CLI is mandatory for CV quality
+    # If Claude CLI fails, the generation will fail loudly rather than silently using gpt-4o
+    "header_generator": StepConfig(tier="middle", use_fallback=False),
+    "role_generator": StepConfig(tier="middle", use_fallback=False),
+    "grader": StepConfig(tier="low", use_fallback=False),
+    "ensemble_header": StepConfig(tier="middle", use_fallback=False),
+    "improver": StepConfig(tier="high", use_fallback=False),
 
     # Layer 2: Pain Point Miner
     "pain_point_extraction": StepConfig(tier="middle"),

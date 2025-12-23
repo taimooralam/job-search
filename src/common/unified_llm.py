@@ -278,6 +278,14 @@ class UnifiedLLM:
             self._log_fallback(job_id, cli_error_reason or "CLI unavailable")
             return await self._invoke_langchain(prompt, system, job_id, validate_json)
         else:
+            # Claude CLI is mandatory for this step - fail loudly
+            error_msg = (
+                f"Claude CLI failed for step '{self.step_name}' and fallback is DISABLED. "
+                f"Reason: {cli_error_reason or 'Unknown'}. "
+                f"This step requires Claude CLI for quality guarantees. "
+                f"Please ensure 'claude' command is available and authenticated."
+            )
+            logger.error(f"[UnifiedLLM:{self.step_name}] ❌ {error_msg}")
             return LLMResult(
                 content="",
                 backend="none",
@@ -285,7 +293,7 @@ class UnifiedLLM:
                 tier=self.config.tier,
                 duration_ms=0,
                 success=False,
-                error="Claude CLI failed and fallback is disabled",
+                error=error_msg,
             )
 
     async def _invoke_cli(
@@ -510,20 +518,22 @@ class UnifiedLLM:
             backend: Which backend is being attempted ("claude_cli" or "langchain")
             job_id: Job ID for tracking
         """
-        # Log to Python logger (for debug/file logs)
-        logger.debug(
+        # Get the model that will be used
+        if backend == "claude_cli":
+            model = TIER_TO_CLAUDE_MODEL.get(self.config.tier, "claude-sonnet-4-20250514")
+        else:
+            model = self.config.get_fallback_model()
+
+        # Log to Python logger at INFO level for visibility
+        fallback_status = "enabled" if self.config.use_fallback else "DISABLED (mandatory)"
+        logger.info(
             f"[UnifiedLLM:{self.step_name}] "
-            f"Starting LLM call via {backend}, Job={job_id}"
+            f"🚀 Starting LLM call: backend={backend}, model={model}, "
+            f"tier={self.config.tier}, fallback={fallback_status}, job={job_id[:16] if len(job_id) > 16 else job_id}"
         )
 
         # Emit to structured logger if available (for frontend logs)
         if self._struct_logger:
-            # Get the model that will be used
-            if backend == "claude_cli":
-                model = TIER_TO_CLAUDE_MODEL.get(self.config.tier, "claude-sonnet-4-20250514")
-            else:
-                model = self.config.get_fallback_model()
-
             self._struct_logger.llm_call_start(
                 step_name=self.step_name,
                 backend=backend,

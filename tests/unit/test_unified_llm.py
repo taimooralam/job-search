@@ -699,10 +699,14 @@ class TestStructuredLoggerIntegration:
 
         from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.llm_config import StepConfig
         import json
 
         struct_logger = StructuredLogger(job_id="test-123", enabled=True)
-        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+        # Use explicit config with fallback enabled for testing fallback behavior
+        # (CV generation steps like 'grader' now have use_fallback=False by default)
+        config = StepConfig(tier="low", use_fallback=True)
+        llm = UnifiedLLM(config=config, struct_logger=struct_logger)
 
         await llm.invoke(prompt="Test", job_id="test")
 
@@ -894,10 +898,13 @@ class TestStructuredLoggerIntegration:
 
         from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.llm_config import StepConfig
         import json
 
         struct_logger = StructuredLogger(job_id="test-222", enabled=True)
-        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+        # Use explicit config with fallback enabled for testing fallback behavior
+        config = StepConfig(tier="low", use_fallback=True)
+        llm = UnifiedLLM(config=config, struct_logger=struct_logger)
 
         await llm.invoke(prompt="Test", job_id="test")
 
@@ -939,10 +946,13 @@ class TestStructuredLoggerIntegration:
 
         from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.llm_config import StepConfig
         import json
 
         struct_logger = StructuredLogger(job_id="test-timeout", enabled=True)
-        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+        # Use explicit config with fallback enabled for testing fallback behavior
+        config = StepConfig(tier="low", use_fallback=True)
+        llm = UnifiedLLM(config=config, struct_logger=struct_logger)
 
         await llm.invoke(prompt="Test", job_id="test")
 
@@ -976,10 +986,13 @@ class TestStructuredLoggerIntegration:
 
         from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.llm_config import StepConfig
         import json
 
         struct_logger = StructuredLogger(job_id="test-notfound", enabled=True)
-        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+        # Use explicit config with fallback enabled for testing fallback behavior
+        config = StepConfig(tier="low", use_fallback=True)
+        llm = UnifiedLLM(config=config, struct_logger=struct_logger)
 
         await llm.invoke(prompt="Test", job_id="test")
 
@@ -1012,10 +1025,13 @@ class TestStructuredLoggerIntegration:
 
         from src.common.unified_llm import UnifiedLLM
         from src.common.structured_logger import StructuredLogger
+        from src.common.llm_config import StepConfig
         import json
 
         struct_logger = StructuredLogger(job_id="test-disabled", enabled=True)
-        llm = UnifiedLLM(step_name="grader", struct_logger=struct_logger)
+        # Use explicit config with fallback enabled for testing fallback behavior
+        config = StepConfig(tier="low", use_fallback=True)
+        llm = UnifiedLLM(config=config, struct_logger=struct_logger)
 
         await llm.invoke(prompt="Test", job_id="test")
 
