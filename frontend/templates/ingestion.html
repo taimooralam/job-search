@@ -182,7 +182,7 @@
                     <div class="pt-2 border-t theme-border">
                         <button
                             class="btn btn-ghost btn-sm w-full text-left"
-                            @click="options = { maxResults: '50', scoreThreshold: '70', incremental: true, worldwideOnly: true }">
+                            @click="options = { maxResults: '100', scoreThreshold: '70', incremental: true, worldwideOnly: true }">
                             Reset to defaults
                         </button>
                     </div>
@@ -335,7 +335,7 @@ function ingestionManager() {
         history: [],
         lastResult: null,
         options: {
-            maxResults: '50',
+            maxResults: '100',
             scoreThreshold: '70',
             incremental: true,
             worldwideOnly: true,

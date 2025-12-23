@@ -62,8 +62,18 @@ def get_default_keywords() -> List[str]:
     if himalaya_keywords:
         return [kw.strip() for kw in himalaya_keywords.split(",") if kw.strip()]
 
-    # Default fallback
-    return ["engineering manager", "staff engineer", "technical lead", "director of engineering"]
+    # Default fallback - senior/leadership engineering roles
+    return [
+        "engineering manager",
+        "staff engineer",
+        "technical lead",
+        "tech lead",
+        "team lead",
+        "director of engineering",
+        "head of engineering",
+        "head of technology",
+        "cto",
+    ]
 
 
 @router.post("/ingest/himalaya", response_model=IngestResponse, dependencies=[Depends(verify_token)])
@@ -73,7 +83,7 @@ async def ingest_himalaya_jobs(
         description="Keywords to filter jobs (defaults to INDEED_SEARCH_TERMS env var)"
     ),
     max_results: int = Query(
-        default=50,
+        default=100,
         le=100,
         description="Maximum jobs to fetch (max 100)"
     ),
