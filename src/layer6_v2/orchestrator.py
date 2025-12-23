@@ -777,13 +777,20 @@ class CVGeneratorV2:
 
             # Use batch variant-based generation (Phase 4: with annotations)
             # Wrap async call with _run_async_safely to handle nested event loops
+
+            # Wrapper to adapt progress_callback signature to _emit_log signature
+            # progress_callback expects (event, message, data_dict)
+            # _emit_log expects (event, message, **kwargs)
+            def emit_progress(event: str, message: str, data: Dict[str, Any]) -> None:
+                self._emit_log(event, message, **data)
+
             return self._run_async_safely(generate_all_roles_from_variants(
                 roles=roles,
                 extracted_jd=extracted_jd,
                 generator=self.role_generator,
                 fallback_to_llm=True,  # Fall back to LLM for roles without variants
                 jd_annotations=jd_annotations,
-                progress_callback=self._emit_log,  # Forward progress to frontend
+                progress_callback=emit_progress,  # Forward progress to frontend
             ))
 
         # Legacy LLM-based generation
