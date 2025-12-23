@@ -215,6 +215,7 @@ class IngestService:
             "status": "not processed",
             "source": source_name,
             "auto_discovered": True,
+            "score": score,  # Normalized field for templates
             "quick_score": score,
             "quick_score_rationale": rationale,
             "tier": derive_tier_from_score(score),
