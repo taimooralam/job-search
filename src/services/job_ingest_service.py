@@ -158,6 +158,26 @@ class IngestService:
         )
         logger.info(f"Updated ingest state for {source}: last_fetch_at={timestamp}")
 
+        # Store run in history (keep last 50 runs)
+        if stats:
+            run_record = {
+                "timestamp": timestamp,
+                "stats": stats,
+                "source": source,
+            }
+            self.system_state.update_one(
+                {"_id": f"ingest_{source}"},
+                {
+                    "$push": {
+                        "run_history": {
+                            "$each": [run_record],
+                            "$slice": -50,  # Keep last 50 runs
+                        }
+                    }
+                },
+            )
+            logger.info(f"Added run to history for {source}")
+
     def generate_dedupe_key(self, job: JobData, source_name: str) -> str:
         """
         Generate a deduplication key for a job.

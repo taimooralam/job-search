@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Job Ingestion - Job Search Manager{% endblock %}
+
+{% block content %}
+<div class="space-y-4" x-data="ingestionManager()">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a href="/" class="btn btn-ghost btn-sm">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back
+            </a>
+            <div>
+                <h1 class="text-xl font-bold theme-text-primary">Job Ingestion</h1>
+                <p class="text-sm theme-text-secondary">Pull jobs from external sources and add to pipeline</p>
+            </div>
+        </div>
+        <button
+            class="btn btn-secondary flex items-center gap-2"
+            @click="loadAll()"
+            :disabled="loading">
+            <svg x-show="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Refresh</span>
+        </button>
+    </div>
+
+    <!-- Error Alert -->
+    <template x-if="error">
+        <div class="panel p-4 border-l-4 border-red-500">
+            <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span class="font-medium">Error</span>
+            </div>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400" x-text="error"></p>
+        </div>
+    </template>
+
+    <!-- Himalaya Remote Jobs Card -->
+    <div class="panel p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold theme-text-primary">Himalaya Remote Jobs</h2>
+                    <p class="text-sm theme-text-tertiary">Worldwide remote positions from himalayas.app</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <template x-if="state.last_fetch_at">
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        Last run: <span x-text="formatTimeAgo(state.last_fetch_at)"></span>
+                    </span>
+                </template>
+                <template x-if="!state.last_fetch_at && !loading">
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                        Never run
+                    </span>
+                </template>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="mb-4 p-3 rounded-lg theme-bg-secondary flex flex-wrap items-center gap-4 text-sm">
+            <div class="flex items-center gap-2">
+                <span class="theme-text-tertiary">Status:</span>
+                <template x-if="ingesting">
+                    <span class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Ingesting jobs...
+                    </span>
+                </template>
+                <template x-if="!ingesting">
+                    <span class="text-green-600 dark:text-green-400">Ready</span>
+                </template>
+            </div>
+            <template x-if="state.last_run_stats">
+                <div class="flex items-center gap-4 text-xs">
+                    <div class="h-4 w-px theme-bg-tertiary"></div>
+                    <span class="theme-text-tertiary">Last run:</span>
+                    <span class="theme-text-primary">
+                        <span x-text="state.last_run_stats.fetched || 0"></span> fetched
+                    </span>
+                    <span class="text-green-600 dark:text-green-400">
+                        <span x-text="state.last_run_stats.ingested || 0"></span> ingested
+                    </span>
+                    <span class="theme-text-muted">
+                        <span x-text="state.last_run_stats.duplicates_skipped || 0"></span> duplicates
+                    </span>
+                </div>
+            </template>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+            <button
+                class="btn btn-primary flex items-center gap-2"
+                @click="pullJobs()"
+                :disabled="ingesting">
+                <template x-if="ingesting">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </template>
+                <template x-if="!ingesting">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                </template>
+                <span x-text="ingesting ? 'Ingesting...' : 'Pull Jobs Now'"></span>
+            </button>
+
+            <!-- Options Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+                <button
+                    class="btn btn-secondary flex items-center gap-2"
+                    @click="open = !open"
+                    :disabled="ingesting">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Options
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div
+                    x-show="open"
+                    @click.away="open = false"
+                    x-transition
+                    class="absolute left-0 mt-2 w-72 rounded-lg shadow-lg z-10 panel p-4 space-y-4">
+
+                    <div>
+                        <label class="block text-sm font-medium theme-text-secondary mb-1">Max Results</label>
+                        <select x-model="options.maxResults" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+                            <option value="25">25 jobs</option>
+                            <option value="50">50 jobs (default)</option>
+                            <option value="75">75 jobs</option>
+                            <option value="100">100 jobs (max)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium theme-text-secondary mb-1">Score Threshold</label>
+                        <select x-model="options.scoreThreshold" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
+                            <option value="50">50% (Tier C+)</option>
+                            <option value="60">60% (Tier B-)</option>
+                            <option value="70">70% (Tier B) - default</option>
+                            <option value="80">80% (Tier A-)</option>
+                            <option value="90">90% (Tier A+)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="incremental" x-model="options.incremental" class="rounded border-gray-300 dark:border-gray-600">
+                        <label for="incremental" class="text-sm theme-text-secondary">Incremental (only new jobs)</label>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="worldwideOnly" x-model="options.worldwideOnly" class="rounded border-gray-300 dark:border-gray-600">
+                        <label for="worldwideOnly" class="text-sm theme-text-secondary">Worldwide only</label>
+                    </div>
+
+                    <div class="pt-2 border-t theme-border">
+                        <button
+                            class="btn btn-ghost btn-sm w-full text-left"
+                            @click="options = { maxResults: '50', scoreThreshold: '70', incremental: true, worldwideOnly: true }">
+                            Reset to defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button
+                class="btn btn-ghost text-red-600 dark:text-red-400 flex items-center gap-2"
+                @click="resetState()"
+                :disabled="ingesting">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Reset State
+            </button>
+        </div>
+
+        <!-- Ingestion Result -->
+        <template x-if="lastResult">
+            <div class="p-4 rounded-lg border-l-4"
+                 :class="lastResult.success ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-red-500 bg-red-50 dark:bg-red-900/20'">
+                <div class="flex items-center gap-2 mb-2">
+                    <template x-if="lastResult.success">
+                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </template>
+                    <template x-if="!lastResult.success">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </template>
+                    <span class="font-medium" :class="lastResult.success ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'"
+                          x-text="lastResult.success ? 'Ingestion Complete' : 'Ingestion Failed'"></span>
+                </div>
+
+                <template x-if="lastResult.success && lastResult.stats">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
+                        <div class="text-center p-2 rounded theme-bg-secondary">
+                            <div class="text-2xl font-bold theme-text-primary" x-text="lastResult.stats.fetched || 0"></div>
+                            <div class="text-xs theme-text-tertiary">Fetched</div>
+                        </div>
+                        <div class="text-center p-2 rounded theme-bg-secondary">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400" x-text="lastResult.stats.ingested || 0"></div>
+                            <div class="text-xs theme-text-tertiary">Ingested</div>
+                        </div>
+                        <div class="text-center p-2 rounded theme-bg-secondary">
+                            <div class="text-2xl font-bold theme-text-muted" x-text="lastResult.stats.duplicates_skipped || 0"></div>
+                            <div class="text-xs theme-text-tertiary">Duplicates</div>
+                        </div>
+                        <div class="text-center p-2 rounded theme-bg-secondary">
+                            <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400" x-text="lastResult.stats.below_threshold || 0"></div>
+                            <div class="text-xs theme-text-tertiary">Below Threshold</div>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="!lastResult.success && lastResult.error">
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-2" x-text="lastResult.error"></p>
+                </template>
+            </div>
+        </template>
+    </div>
+
+    <!-- Run History -->
+    <div class="panel p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold theme-text-primary">Run History</h2>
+            <span class="text-sm theme-text-tertiary">
+                Last <span x-text="history.length"></span> runs
+            </span>
+        </div>
+
+        <template x-if="history.length === 0 && !loading">
+            <div class="text-center py-8">
+                <svg class="w-12 h-12 mx-auto theme-text-muted mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="theme-text-tertiary">No ingestion history yet</p>
+                <p class="text-sm theme-text-muted">Pull jobs to start building history</p>
+            </div>
+        </template>
+
+        <template x-if="history.length > 0">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y theme-divide">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium theme-text-tertiary uppercase tracking-wider">Time</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium theme-text-tertiary uppercase tracking-wider">Fetched</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium theme-text-tertiary uppercase tracking-wider">Ingested</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium theme-text-tertiary uppercase tracking-wider">Duplicates</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium theme-text-tertiary uppercase tracking-wider">Below Threshold</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium theme-text-tertiary uppercase tracking-wider">Duration</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium theme-text-tertiary uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y theme-divide">
+                        <template x-for="(run, index) in history" :key="index">
+                            <tr class="hover:theme-bg-secondary transition-colors">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm theme-text-primary" x-text="formatTimeAgo(run.timestamp)"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right theme-text-primary" x-text="run.stats?.fetched || 0"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400" x-text="run.stats?.ingested || 0"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right theme-text-muted" x-text="run.stats?.duplicates_skipped || 0"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-yellow-600 dark:text-yellow-400" x-text="run.stats?.below_threshold || 0"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right theme-text-tertiary" x-text="formatDuration(run.stats?.duration_ms)"></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <template x-if="!run.stats?.errors">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Success
+                                        </span>
+                                    </template>
+                                    <template x-if="run.stats?.errors">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                            </svg>
+                                            <span x-text="run.stats.errors"></span> errors
+                                        </span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+
+        <!-- Loading skeleton for history -->
+        <template x-if="loading && history.length === 0">
+            <div class="space-y-2">
+                <template x-for="i in 5" :key="i">
+                    <div class="h-12 skeleton rounded"></div>
+                </template>
+            </div>
+        </template>
+    </div>
+</div>
+
+<script>
+function ingestionManager() {
+    return {
+        loading: false,
+        ingesting: false,
+        error: null,
+        state: {},
+        history: [],
+        lastResult: null,
+        options: {
+            maxResults: '50',
+            scoreThreshold: '70',
+            incremental: true,
+            worldwideOnly: true,
+        },
+
+        init() {
+            this.loadAll();
+        },
+
+        async loadAll() {
+            this.loading = true;
+            this.error = null;
+
+            try {
+                await Promise.all([
+                    this.loadState(),
+                    this.loadHistory(),
+                ]);
+            } catch (err) {
+                this.error = err.message || 'Failed to load data';
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadState() {
+            try {
+                const response = await fetch('/api/runner/jobs/ingest/state/himalayas_auto');
+                if (!response.ok) throw new Error('Failed to load state');
+                this.state = await response.json();
+            } catch (err) {
+                console.error('Failed to load state:', err);
+                // Don't throw, allow history to still load
+            }
+        },
+
+        async loadHistory() {
+            try {
+                const response = await fetch('/api/runner/jobs/ingest/history/himalayas_auto?limit=20');
+                if (!response.ok) throw new Error('Failed to load history');
+                const data = await response.json();
+                this.history = data.runs || [];
+            } catch (err) {
+                console.error('Failed to load history:', err);
+                // Don't throw, allow state to still be shown
+            }
+        },
+
+        async pullJobs() {
+            this.ingesting = true;
+            this.error = null;
+            this.lastResult = null;
+
+            try {
+                const params = new URLSearchParams();
+                params.set('max_results', this.options.maxResults);
+                params.set('score_threshold', this.options.scoreThreshold);
+                params.set('incremental', this.options.incremental);
+                params.set('worldwide_only', this.options.worldwideOnly);
+
+                const response = await fetch(`/api/runner/jobs/ingest/himalaya?${params}`, {
+                    method: 'POST',
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    this.lastResult = { success: false, error: data.error || 'Ingestion failed' };
+                } else {
+                    this.lastResult = data;
+                    // Reload state and history after successful ingestion
+                    await this.loadAll();
+                }
+            } catch (err) {
+                this.lastResult = { success: false, error: err.message || 'Network error' };
+            } finally {
+                this.ingesting = false;
+            }
+        },
+
+        async resetState() {
+            if (!confirm('Reset ingestion state? This will force a full (non-incremental) fetch on next run.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/runner/jobs/ingest/state/himalayas_auto', {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) throw new Error('Failed to reset state');
+
+                const data = await response.json();
+                alert(data.message || 'State reset successfully');
+
+                // Reload state
+                await this.loadState();
+            } catch (err) {
+                this.error = err.message || 'Failed to reset state';
+            }
+        },
+
+        formatTimeAgo(timestamp) {
+            if (!timestamp) return 'Never';
+
+            const date = new Date(timestamp);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+
+            return date.toLocaleDateString();
+        },
+
+        formatDuration(ms) {
+            if (!ms) return '-';
+            if (ms < 1000) return `${ms}ms`;
+            if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+            return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+        },
+    };
+}
+</script>
+{% endblock %}

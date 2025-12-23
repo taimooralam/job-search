@@ -1,0 +1,638 @@
+"""
+Unit tests for runner_service/routes/job_ingest.py
+
+Tests the runner service ingestion endpoints:
+- POST /jobs/ingest/himalaya
+- GET /jobs/ingest/state/{source}
+- DELETE /jobs/ingest/state/{source}
+- GET /jobs/ingest/history/{source}
+"""
+
+import pytest
+from datetime import datetime
+from unittest.mock import MagicMock, AsyncMock, patch
+from bson import ObjectId
+
+
+# =============================================================================
+# FIXTURES
+# =============================================================================
+
+
+@pytest.fixture
+def mock_db(mocker):
+    """Mock MongoDB database and collections."""
+    mock_collection = MagicMock()
+    mock_system_state = MagicMock()
+
+    mock_db_instance = MagicMock()
+    mock_db_instance.__getitem__.side_effect = lambda name: {
+        "level-2": mock_collection,
+        "system_state": mock_system_state,
+    }[name]
+
+    # Mock MongoClient
+    mocker.patch("runner_service.routes.job_ingest.get_db", return_value=mock_db_instance)
+
+    return {
+        "db": mock_db_instance,
+        "level2": mock_collection,
+        "system_state": mock_system_state,
+    }
+
+
+@pytest.fixture
+def mock_himalaya_source(mocker):
+    """Mock HimalayasSource for job fetching."""
+    mock_source = MagicMock()
+    mock_source.fetch_jobs.return_value = [
+        MagicMock(
+            company="TestCorp",
+            title="Software Engineer",
+            location="Remote",
+            url="https://example.com/job1",
+            description="Great job",
+            salary="$120k-150k",
+            job_type="Full-time",
+            posted_date=datetime.utcnow(),
+            source_id="test_001",
+        ),
+        MagicMock(
+            company="StartupCo",
+            title="Senior Engineer",
+            location="Worldwide",
+            url="https://example.com/job2",
+            description="Amazing opportunity",
+            salary="$150k-180k",
+            job_type="Full-time",
+            posted_date=datetime.utcnow(),
+            source_id="test_002",
+        ),
+    ]
+
+    # Patch at the source module level since it's imported inside the function
+    mocker.patch(
+        "src.services.job_sources.HimalayasSource",
+        return_value=mock_source,
+    )
+
+    return mock_source
+
+
+@pytest.fixture
+def mock_ingest_service(mocker):
+    """Mock IngestService."""
+    mock_service = MagicMock()
+
+    # Mock the ingest_jobs method to return a successful result
+    mock_result = MagicMock()
+    mock_result.to_dict.return_value = {
+        "success": True,
+        "source": "himalayas_auto",
+        "incremental": True,
+        "stats": {
+            "fetched": 2,
+            "ingested": 2,
+            "duplicates_skipped": 0,
+            "below_threshold": 0,
+            "errors": 0,
+            "duration_ms": 1500,
+        },
+        "last_fetch_at": datetime.utcnow().isoformat(),
+        "jobs": [
+            {
+                "job_id": str(ObjectId()),
+                "title": "Software Engineer",
+                "company": "TestCorp",
+                "score": 85,
+                "tier": "A",
+            },
+        ],
+        "error": None,
+    }
+    mock_service.ingest_jobs = AsyncMock(return_value=mock_result)
+
+    # Patch at the source module level since it's imported inside the function
+    mocker.patch(
+        "src.services.job_ingest_service.IngestService",
+        return_value=mock_service,
+    )
+
+    return mock_service
+
+
+# =============================================================================
+# HAPPY PATH TESTS - POST /jobs/ingest/himalaya
+# =============================================================================
+
+
+class TestIngestHimalayaJobs:
+    """Tests for the Himalaya job ingestion endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_with_defaults(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should ingest Himalaya jobs with default parameters."""
+        # Act
+        response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["source"] == "himalayas_auto"
+        assert data["stats"]["fetched"] > 0
+        mock_himalaya_source.fetch_jobs.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_with_custom_keywords(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should accept custom keywords parameter."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?keywords=python&keywords=engineer",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+
+        # Verify keywords were passed to source
+        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
+        assert "keywords" in call_args
+        assert len(call_args["keywords"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_with_max_results(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should respect max_results parameter."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?max_results=10",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
+        assert call_args["max_results"] == 10
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_skip_scoring(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should skip LLM scoring when skip_scoring=true."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?skip_scoring=true",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+
+        # Verify skip_scoring was passed to ingest service
+        call_args = mock_ingest_service.ingest_jobs.call_args
+        assert call_args[1]["skip_scoring"] is True
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_non_incremental(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should perform full fetch when incremental=false."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?incremental=false",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        call_args = mock_ingest_service.ingest_jobs.call_args
+        assert call_args[1]["incremental"] is False
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_custom_threshold(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should accept custom score threshold."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?score_threshold=80",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        call_args = mock_ingest_service.ingest_jobs.call_args
+        assert call_args[1]["score_threshold"] == 80
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_worldwide_only_false(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should fetch non-worldwide jobs when worldwide_only=false."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?worldwide_only=false",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
+        assert call_args["worldwide_only"] is False
+
+
+# =============================================================================
+# EDGE CASE TESTS - POST /jobs/ingest/himalaya
+# =============================================================================
+
+
+class TestIngestHimalayaEdgeCases:
+    """Tests for edge cases in Himalaya ingestion."""
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_no_jobs_found(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should handle case where no jobs are fetched."""
+        # Arrange
+        mock_himalaya_source.fetch_jobs.return_value = []
+
+        # Act
+        response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["stats"]["fetched"] == 0
+        assert data["stats"]["ingested"] == 0
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_max_results_exceeds_limit(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should reject max_results > 100."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?max_results=150",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 422  # Validation error
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_invalid_score_threshold(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should reject score_threshold outside 0-100 range."""
+        # Act
+        response = client.post(
+            "/jobs/ingest/himalaya?score_threshold=150",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 422  # Validation error
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_mongodb_error(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should return 500 when MongoDB connection fails."""
+        # Arrange
+        with patch("runner_service.routes.job_ingest.get_db") as mock_get_db:
+            mock_get_db.side_effect = Exception("MongoDB connection failed")
+
+            # Act
+            response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+
+            # Assert
+            assert response.status_code == 500
+            assert "failed" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_ingest_himalaya_source_fetch_error(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    ):
+        """Should return 500 when job source fetch fails."""
+        # Arrange
+        mock_himalaya_source.fetch_jobs.side_effect = Exception("API timeout")
+
+        # Act
+        response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+
+        # Assert
+        assert response.status_code == 500
+
+
+# =============================================================================
+# HAPPY PATH TESTS - GET /jobs/ingest/state/{source}
+# =============================================================================
+
+
+class TestGetIngestState:
+    """Tests for getting ingestion state."""
+
+    def test_get_ingest_state_success(self, client, auth_headers, mock_db):
+        """Should return ingestion state for a source."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = {
+            "_id": "ingest_himalayas_auto",
+            "last_fetch_at": datetime(2025, 1, 15, 10, 0, 0),
+            "updated_at": datetime(2025, 1, 15, 10, 5, 0),
+            "last_run_stats": {
+                "fetched": 50,
+                "ingested": 25,
+                "duplicates_skipped": 15,
+                "below_threshold": 10,
+            },
+        }
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/state/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "himalayas_auto"
+        assert data["last_fetch_at"] is not None
+        assert data["last_run_stats"]["ingested"] == 25
+        mock_db["system_state"].find_one.assert_called_once_with(
+            {"_id": "ingest_himalayas_auto"}
+        )
+
+    def test_get_ingest_state_no_history(self, client, auth_headers, mock_db):
+        """Should return message when no history exists."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = None
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/state/new_source",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "new_source"
+        assert data["last_fetch_at"] is None
+        assert "No ingestion history" in data["message"]
+
+    def test_get_ingest_state_mongodb_error(self, client, auth_headers, mock_db):
+        """Should return 500 on database error."""
+        # Arrange
+        mock_db["system_state"].find_one.side_effect = Exception("DB error")
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/state/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 500
+
+
+# =============================================================================
+# HAPPY PATH TESTS - DELETE /jobs/ingest/state/{source}
+# =============================================================================
+
+
+class TestResetIngestState:
+    """Tests for resetting ingestion state."""
+
+    def test_reset_ingest_state_success(self, client, auth_headers, mock_db):
+        """Should delete ingestion state successfully."""
+        # Arrange
+        mock_result = MagicMock()
+        mock_result.deleted_count = 1
+        mock_db["system_state"].delete_one.return_value = mock_result
+
+        # Act
+        response = client.delete(
+            "/jobs/ingest/state/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "Reset" in data["message"]
+        mock_db["system_state"].delete_one.assert_called_once_with(
+            {"_id": "ingest_himalayas_auto"}
+        )
+
+    def test_reset_ingest_state_no_state_found(self, client, auth_headers, mock_db):
+        """Should return success even if no state exists."""
+        # Arrange
+        mock_result = MagicMock()
+        mock_result.deleted_count = 0
+        mock_db["system_state"].delete_one.return_value = mock_result
+
+        # Act
+        response = client.delete(
+            "/jobs/ingest/state/nonexistent",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "No state found" in data["message"]
+
+    def test_reset_ingest_state_mongodb_error(self, client, auth_headers, mock_db):
+        """Should return 500 on database error."""
+        # Arrange
+        mock_db["system_state"].delete_one.side_effect = Exception("DB error")
+
+        # Act
+        response = client.delete(
+            "/jobs/ingest/state/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 500
+
+
+# =============================================================================
+# HAPPY PATH TESTS - GET /jobs/ingest/history/{source}
+# =============================================================================
+
+
+class TestGetIngestHistory:
+    """Tests for getting ingestion run history."""
+
+    def test_get_ingest_history_success(self, client, auth_headers, mock_db):
+        """Should return ingestion history with default limit."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = {
+            "_id": "ingest_himalayas_auto",
+            "run_history": [
+                {
+                    "timestamp": datetime(2025, 1, 15, 10, 0, 0),
+                    "stats": {"fetched": 50, "ingested": 25},
+                },
+                {
+                    "timestamp": datetime(2025, 1, 14, 10, 0, 0),
+                    "stats": {"fetched": 40, "ingested": 20},
+                },
+                {
+                    "timestamp": datetime(2025, 1, 13, 10, 0, 0),
+                    "stats": {"fetched": 30, "ingested": 15},
+                },
+            ],
+        }
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/history/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "himalayas_auto"
+        assert len(data["runs"]) == 3
+        assert data["total_runs"] == 3
+        # Verify sorted by timestamp descending
+        assert data["runs"][0]["timestamp"] > data["runs"][1]["timestamp"]
+
+    def test_get_ingest_history_with_limit(self, client, auth_headers, mock_db):
+        """Should respect limit parameter."""
+        # Arrange
+        runs = [
+            {
+                "timestamp": datetime(2025, 1, i, 10, 0, 0),
+                "stats": {"fetched": i * 10, "ingested": i * 5},
+            }
+            for i in range(1, 26)  # 25 runs
+        ]
+        mock_db["system_state"].find_one.return_value = {
+            "_id": "ingest_himalayas_auto",
+            "run_history": runs,
+        }
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/history/himalayas_auto?limit=10",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["runs"]) == 10
+        assert data["total_runs"] == 25
+
+    def test_get_ingest_history_limit_max(self, client, auth_headers, mock_db):
+        """Should enforce maximum limit of 50."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = {
+            "_id": "ingest_himalayas_auto",
+            "run_history": [],
+        }
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/history/himalayas_auto?limit=100",
+            headers=auth_headers,
+        )
+
+        # Assert - Should reject limit > 50
+        assert response.status_code == 422
+
+    def test_get_ingest_history_no_history(self, client, auth_headers, mock_db):
+        """Should return empty list when no history exists."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = None
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/history/new_source",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["source"] == "new_source"
+        assert data["runs"] == []
+        assert "No ingestion history" in data["message"]
+
+    def test_get_ingest_history_empty_run_history(self, client, auth_headers, mock_db):
+        """Should handle state with empty run_history array."""
+        # Arrange
+        mock_db["system_state"].find_one.return_value = {
+            "_id": "ingest_himalayas_auto",
+            "run_history": [],
+        }
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/history/himalayas_auto",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["runs"] == []
+        assert data["total_runs"] == 0
+
+
+# =============================================================================
+# AUTHENTICATION TESTS
+# =============================================================================
+
+
+class TestIngestAuthenticationRequired:
+    """Tests that all endpoints require authentication."""
+
+    def test_ingest_himalaya_requires_auth(self, client):
+        """Should reject request without valid token."""
+        # Act
+        response = client.post("/jobs/ingest/himalaya")
+
+        # Assert
+        assert response.status_code == 401
+
+    def test_get_state_requires_auth(self, client):
+        """Should reject request without valid token."""
+        # Act
+        response = client.get("/jobs/ingest/state/himalayas_auto")
+
+        # Assert
+        assert response.status_code == 401
+
+    def test_reset_state_requires_auth(self, client):
+        """Should reject request without valid token."""
+        # Act
+        response = client.delete("/jobs/ingest/state/himalayas_auto")
+
+        # Assert
+        assert response.status_code == 401
+
+    def test_get_history_requires_auth(self, client):
+        """Should reject request without valid token."""
+        # Act
+        response = client.get("/jobs/ingest/history/himalayas_auto")
+
+        # Assert
+        assert response.status_code == 401

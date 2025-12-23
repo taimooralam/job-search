@@ -2461,6 +2461,25 @@ def batch_cv_partial(job_id: str):
 
 
 # =============================================================================
+# Job Ingestion Page
+# =============================================================================
+
+
+@app.route("/ingestion")
+@login_required
+def ingestion_page():
+    """
+    Job Ingestion page for pulling jobs from external sources.
+
+    Provides:
+    - On-demand job ingestion from Himalaya
+    - Run history with stats
+    - Ingestion configuration options
+    """
+    return render_template("ingestion.html")
+
+
+# =============================================================================
 # Diagnostics Page (Production Debugging)
 # =============================================================================
 

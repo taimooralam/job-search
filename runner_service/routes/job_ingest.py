@@ -10,6 +10,7 @@ scoring (free with Max subscription).
 
 import logging
 import os
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -222,4 +223,55 @@ async def reset_ingest_state(source: str) -> dict:
 
     except Exception as e:
         logger.error(f"Error resetting ingest state: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ingest/history/{source}", dependencies=[Depends(verify_token)])
+async def get_ingest_history(
+    source: str,
+    limit: int = Query(default=20, le=50, description="Number of runs to return")
+) -> dict:
+    """
+    Get the ingestion run history for a source.
+
+    Returns the last N runs with timestamps and stats.
+    """
+    try:
+        db = get_db()
+        state = db["system_state"].find_one({"_id": f"ingest_{source}"})
+
+        if not state:
+            return {
+                "source": source,
+                "runs": [],
+                "message": "No ingestion history found",
+            }
+
+        # Get run history, sorted by timestamp descending
+        run_history = state.get("run_history", [])
+
+        # Sort by timestamp descending and limit
+        sorted_runs = sorted(
+            run_history,
+            key=lambda x: x.get("timestamp", datetime.min),
+            reverse=True
+        )[:limit]
+
+        # Format timestamps for JSON
+        formatted_runs = []
+        for run in sorted_runs:
+            formatted_run = {
+                "timestamp": run.get("timestamp").isoformat() if run.get("timestamp") else None,
+                "stats": run.get("stats", {}),
+            }
+            formatted_runs.append(formatted_run)
+
+        return {
+            "source": source,
+            "runs": formatted_runs,
+            "total_runs": len(run_history),
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting ingest history: {e}")
         raise HTTPException(status_code=500, detail=str(e))

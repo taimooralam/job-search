@@ -1028,3 +1028,137 @@ def all_ops_batch():
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# Job Ingestion Routes
+# =============================================================================
+
+
+@runner_bp.route("/jobs/ingest/himalaya", methods=["POST"])
+def ingest_himalaya_jobs():
+    """
+    Trigger Himalaya job ingestion on-demand.
+
+    Query Parameters:
+        keywords: List of keywords to filter jobs
+        max_results: Maximum jobs to fetch (default 50, max 100)
+        worldwide_only: Only fetch worldwide remote jobs (default true)
+        skip_scoring: Skip LLM scoring for faster testing
+        incremental: Only fetch jobs newer than last run (default true)
+        score_threshold: Minimum score for ingestion (default 70)
+
+    Returns:
+        JSON with ingestion stats and list of ingested jobs
+    """
+    try:
+        # Build query params from request args
+        params = {}
+        if request.args.get("keywords"):
+            params["keywords"] = request.args.getlist("keywords")
+        if request.args.get("max_results"):
+            params["max_results"] = request.args.get("max_results")
+        if request.args.get("worldwide_only"):
+            params["worldwide_only"] = request.args.get("worldwide_only")
+        if request.args.get("skip_scoring"):
+            params["skip_scoring"] = request.args.get("skip_scoring")
+        if request.args.get("incremental"):
+            params["incremental"] = request.args.get("incremental")
+        if request.args.get("score_threshold"):
+            params["score_threshold"] = request.args.get("score_threshold")
+
+        response = requests.post(
+            f"{RUNNER_URL}/jobs/ingest/himalaya",
+            headers=get_headers(),
+            params=params,
+            timeout=120,  # Longer timeout for ingestion
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Ingestion timeout - operation may still be running"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/ingest/state/<source>", methods=["GET"])
+def get_ingest_state(source: str):
+    """
+    Get the current ingestion state for a source.
+
+    Returns last fetch timestamp and stats from previous run.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/jobs/ingest/state/{source}",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/ingest/state/<source>", methods=["DELETE"])
+def reset_ingest_state(source: str):
+    """
+    Reset the ingestion state for a source.
+
+    Use this to force a full (non-incremental) fetch on next run.
+    """
+    try:
+        response = requests.delete(
+            f"{RUNNER_URL}/jobs/ingest/state/{source}",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/ingest/history/<source>", methods=["GET"])
+def get_ingest_history(source: str):
+    """
+    Get the ingestion run history for a source.
+
+    Query Parameters:
+        limit: Number of runs to return (default 20, max 50)
+
+    Returns the last N runs with timestamps and stats.
+    """
+    try:
+        params = {}
+        if request.args.get("limit"):
+            params["limit"] = request.args.get("limit")
+
+        response = requests.get(
+            f"{RUNNER_URL}/jobs/ingest/history/{source}",
+            headers=get_headers(),
+            params=params,
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

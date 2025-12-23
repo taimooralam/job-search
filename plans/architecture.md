@@ -169,6 +169,31 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - `frontend/templates/base.html` - `.btn-warning` styling and `markSelectedAsDiscarded()` function
 - Leverages existing checkbox selection system and `/api/jobs/status/bulk` API
 
+### Job Ingestion Management Page
+
+**New `/ingestion` Page:**
+- Dedicated UI for managing job ingestion runs and viewing ingestion history
+- Displays run history with status, timestamps, and source information
+- Accessible via header navigation link in `base.html`
+
+**Backend Endpoints:**
+- `GET /ingest/history/{source}` - Returns last 50 ingestion runs for a given source
+  - Response: List of run records with metadata (timestamp, status, job count, errors)
+  - Storage: MongoDB `system_state` collection with TTL-based retention
+  - Performance: Indexed queries on source and timestamp for fast retrieval
+
+**Data Model:**
+- MongoDB `system_state` collection stores ingestion run history
+- Each run record includes: source, timestamp, status, job_count, errors, run_duration
+- Last 50 runs per source retained for audit and debugging
+
+**Components:**
+- `frontend/templates/ingestion.html` - Ingestion management UI
+- `frontend/app.py` - Route handler for `/ingestion` page
+- `frontend/runner.py` - Proxy routes for history endpoint
+- `runner_service/routes/job_ingest.py` - History endpoint implementation
+- `src/services/job_ingest_service.py` - Run history storage and retrieval logic
+
 ## Backend Architecture
 
 ### Pipeline Orchestration
