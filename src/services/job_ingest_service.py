@@ -1,0 +1,366 @@
+"""
+Job Ingest Service
+
+Shared logic for job ingestion from external sources (Himalaya, Indeed, etc.).
+Handles deduplication, scoring, state management for incremental fetching,
+and insertion into MongoDB level-2 collection.
+
+Used by both:
+- Runner endpoint (on-demand ingestion)
+- Cron script (scheduled ingestion)
+
+Usage:
+    from src.services.job_ingest_service import IngestService, IngestResult
+
+    db = get_mongodb()
+    service = IngestService(db, use_claude_scorer=True)
+
+    # Fetch and ingest
+    jobs = himalayas_source.fetch_jobs(config)
+    result = await service.ingest_jobs(
+        jobs=jobs,
+        source_name="himalayas_auto",
+        incremental=True,
+    )
+"""
+
+import asyncio
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+from pymongo.database import Database
+
+from src.services.job_sources import JobData
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class IngestResult:
+    """Result of a job ingestion run."""
+
+    success: bool
+    source: str
+    fetched: int = 0
+    ingested: int = 0
+    duplicates_skipped: int = 0
+    below_threshold: int = 0
+    errors: int = 0
+    duration_ms: int = 0
+    incremental: bool = False
+    last_fetch_at: Optional[datetime] = None
+    ingested_jobs: List[Dict[str, Any]] = field(default_factory=list)
+    error_message: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for API response."""
+        return {
+            "success": self.success,
+            "source": self.source,
+            "incremental": self.incremental,
+            "stats": {
+                "fetched": self.fetched,
+                "ingested": self.ingested,
+                "duplicates_skipped": self.duplicates_skipped,
+                "below_threshold": self.below_threshold,
+                "errors": self.errors,
+                "duration_ms": self.duration_ms,
+            },
+            "last_fetch_at": self.last_fetch_at.isoformat() if self.last_fetch_at else None,
+            "jobs": self.ingested_jobs,
+            "error": self.error_message,
+        }
+
+
+class IngestService:
+    """
+    Shared job ingestion logic for cron and on-demand.
+
+    Features:
+    - Deduplication via dedupeKey
+    - Quick scoring (Claude CLI or OpenRouter)
+    - Incremental fetching via last_fetch_at state
+    - Tier derivation and auto_discovered flag
+    """
+
+    def __init__(self, db: Database, use_claude_scorer: bool = True):
+        """
+        Initialize the ingest service.
+
+        Args:
+            db: MongoDB database instance
+            use_claude_scorer: If True, use Claude CLI for scoring (free).
+                               If False, use OpenRouter (paid per token).
+        """
+        self.db = db
+        self.level2 = db["level-2"]
+        self.system_state = db["system_state"]
+        self.use_claude_scorer = use_claude_scorer
+        self._scorer = None  # Lazy init
+
+    def _get_scorer(self):
+        """Get the appropriate scorer (lazy initialization)."""
+        if self._scorer is None:
+            if self.use_claude_scorer:
+                try:
+                    from src.services.claude_quick_scorer import ClaudeQuickScorer
+                    self._scorer = ClaudeQuickScorer()
+                    logger.info("Using ClaudeQuickScorer (Claude CLI)")
+                except Exception as e:
+                    logger.warning(f"Claude scorer unavailable, falling back to OpenRouter: {e}")
+                    self._scorer = "openrouter"
+            else:
+                self._scorer = "openrouter"
+        return self._scorer
+
+    def get_last_fetch_timestamp(self, source: str) -> Optional[datetime]:
+        """
+        Get last successful fetch time for incremental fetching.
+
+        Args:
+            source: Source identifier (e.g., "himalayas_auto")
+
+        Returns:
+            Datetime of last fetch, or None if never fetched
+        """
+        state = self.system_state.find_one({"_id": f"ingest_{source}"})
+        if state:
+            return state.get("last_fetch_at")
+        return None
+
+    def update_last_fetch_timestamp(
+        self,
+        source: str,
+        timestamp: datetime,
+        stats: Optional[Dict[str, int]] = None,
+    ):
+        """
+        Update last fetch time after successful ingestion.
+
+        Args:
+            source: Source identifier
+            timestamp: Timestamp to record
+            stats: Optional stats to store
+        """
+        update_doc = {
+            "last_fetch_at": timestamp,
+            "updated_at": datetime.utcnow(),
+        }
+        if stats:
+            update_doc["last_run_stats"] = stats
+
+        self.system_state.update_one(
+            {"_id": f"ingest_{source}"},
+            {"$set": update_doc},
+            upsert=True,
+        )
+        logger.info(f"Updated ingest state for {source}: last_fetch_at={timestamp}")
+
+    def generate_dedupe_key(self, job: JobData, source_name: str) -> str:
+        """
+        Generate a deduplication key for a job.
+
+        Format: company|title|location|source (lowercase, normalized)
+        """
+        company = (job.company or "").lower().strip()
+        title = (job.title or "").lower().strip()
+        location = (job.location or "").lower().strip()
+
+        return f"{company}|{title}|{location}|{source_name}"
+
+    def create_job_document(
+        self,
+        job: JobData,
+        source_name: str,
+        score: Optional[int],
+        rationale: Optional[str],
+    ) -> Dict[str, Any]:
+        """
+        Create a MongoDB document for a job.
+
+        Follows the level-2 schema expected by Layer 1.4.
+        """
+        from src.services.claude_quick_scorer import derive_tier_from_score
+
+        return {
+            "company": job.company,
+            "title": job.title,
+            "location": job.location,
+            "jobUrl": job.url,
+            "description": job.description,
+            "dedupeKey": self.generate_dedupe_key(job, source_name),
+            "createdAt": datetime.utcnow(),
+            "status": "not processed",
+            "source": source_name,
+            "auto_discovered": True,
+            "quick_score": score,
+            "quick_score_rationale": rationale,
+            "tier": derive_tier_from_score(score),
+            # Optional fields
+            "salary": job.salary,
+            "jobType": job.job_type,
+            "postedDate": job.posted_date,
+            "sourceId": job.source_id,
+        }
+
+    async def _score_job(
+        self,
+        job: JobData,
+        candidate_profile: Optional[str] = None,
+    ) -> Tuple[Optional[int], Optional[str]]:
+        """
+        Score a job using the appropriate scorer.
+
+        Returns:
+            Tuple of (score, rationale)
+        """
+        scorer = self._get_scorer()
+
+        if scorer == "openrouter":
+            # Use existing quick_scorer (sync)
+            from src.services.quick_scorer import quick_score_job
+            return quick_score_job(
+                title=job.title,
+                company=job.company,
+                location=job.location,
+                description=job.description or "",
+                candidate_profile=candidate_profile,
+            )
+        else:
+            # Use ClaudeQuickScorer (async)
+            return await scorer.score_job(
+                title=job.title,
+                company=job.company,
+                location=job.location,
+                description=job.description or "",
+                candidate_profile=candidate_profile,
+            )
+
+    async def ingest_jobs(
+        self,
+        jobs: List[JobData],
+        source_name: str,
+        score_threshold: int = 70,
+        skip_scoring: bool = False,
+        incremental: bool = True,
+        candidate_profile: Optional[str] = None,
+    ) -> IngestResult:
+        """
+        Ingest jobs with deduplication, scoring, and state tracking.
+
+        Args:
+            jobs: List of JobData from source
+            source_name: Source identifier (e.g., "himalayas_auto")
+            score_threshold: Minimum score for ingestion (default 70 = Tier B+)
+            skip_scoring: Skip LLM scoring (for testing)
+            incremental: If True, filter by last_fetch_at timestamp
+            candidate_profile: Optional profile override for scoring
+
+        Returns:
+            IngestResult with stats
+        """
+        start_time = datetime.utcnow()
+        result = IngestResult(
+            success=True,
+            source=source_name,
+            incremental=incremental,
+        )
+
+        try:
+            # Get last fetch for incremental filtering
+            last_fetch = None
+            if incremental:
+                last_fetch = self.get_last_fetch_timestamp(source_name)
+                result.last_fetch_at = last_fetch
+                if last_fetch:
+                    logger.info(f"Incremental mode: filtering jobs newer than {last_fetch}")
+
+            # Filter by timestamp if incremental
+            filtered_jobs = jobs
+            if last_fetch:
+                filtered_jobs = [
+                    j for j in jobs
+                    if j.posted_date and j.posted_date > last_fetch
+                ]
+                logger.info(f"Filtered {len(jobs)} jobs to {len(filtered_jobs)} new jobs")
+
+            result.fetched = len(filtered_jobs)
+
+            # Process each job
+            for job in filtered_jobs:
+                try:
+                    # Check for duplicates
+                    dedupe_key = self.generate_dedupe_key(job, source_name)
+                    if self.level2.find_one({"dedupeKey": dedupe_key}):
+                        result.duplicates_skipped += 1
+                        continue
+
+                    # Score the job
+                    if skip_scoring:
+                        score, rationale = 75, "Scoring skipped (test mode)"
+                    else:
+                        score, rationale = await self._score_job(job, candidate_profile)
+
+                    # Check threshold
+                    if score is None or score < score_threshold:
+                        result.below_threshold += 1
+                        logger.debug(
+                            f"Below threshold: {job.company} - {job.title} "
+                            f"(score: {score}, threshold: {score_threshold})"
+                        )
+                        continue
+
+                    # Create and insert document
+                    doc = self.create_job_document(job, source_name, score, rationale or "")
+                    insert_result = self.level2.insert_one(doc)
+
+                    logger.info(
+                        f"Ingested: {job.company} - {job.title} "
+                        f"(score: {score}, tier: {doc['tier']})"
+                    )
+
+                    result.ingested += 1
+                    result.ingested_jobs.append({
+                        "job_id": str(insert_result.inserted_id),
+                        "title": job.title,
+                        "company": job.company,
+                        "score": score,
+                        "tier": doc["tier"],
+                    })
+
+                except Exception as e:
+                    logger.error(f"Error processing job {job.company} - {job.title}: {e}")
+                    result.errors += 1
+
+            # Update state after successful run
+            if result.ingested > 0 or result.duplicates_skipped > 0:
+                self.update_last_fetch_timestamp(
+                    source=source_name,
+                    timestamp=datetime.utcnow(),
+                    stats={
+                        "fetched": result.fetched,
+                        "ingested": result.ingested,
+                        "duplicates_skipped": result.duplicates_skipped,
+                        "below_threshold": result.below_threshold,
+                    },
+                )
+
+        except Exception as e:
+            logger.exception(f"Ingestion failed for {source_name}: {e}")
+            result.success = False
+            result.error_message = str(e)
+
+        # Calculate duration
+        end_time = datetime.utcnow()
+        result.duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        logger.info(
+            f"Ingestion complete for {source_name}: "
+            f"fetched={result.fetched}, ingested={result.ingested}, "
+            f"duplicates={result.duplicates_skipped}, below_threshold={result.below_threshold}, "
+            f"errors={result.errors}, duration={result.duration_ms}ms"
+        )
+
+        return result
