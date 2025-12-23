@@ -3,6 +3,7 @@ Pytest fixtures for runner service tests.
 """
 
 import os
+from unittest.mock import patch, AsyncMock
 
 # IMPORTANT: Set environment variables BEFORE any imports from runner_service
 # to ensure RunnerSettings is configured correctly when first loaded.
@@ -17,6 +18,27 @@ os.environ["PIPELINE_TIMEOUT_SECONDS"] = "60"  # Min 60 seconds
 
 import pytest
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture(autouse=True)
+def mock_execute_pipeline():
+    """
+    Mock execute_pipeline to prevent actual subprocess execution.
+
+    This dramatically speeds up tests by avoiding:
+    1. Subprocess spawning overhead
+    2. Heavy module imports in subprocess
+    3. MongoDB connection attempts
+    4. 60-second timeout waits
+
+    The mock returns success with empty artifacts immediately.
+    """
+    async def mock_pipeline(*args, **kwargs):
+        # Simulate immediate success
+        return (True, {"CV.md": "/fake/path/CV.md"}, {"status": "completed"})
+
+    with patch("runner_service.app.execute_pipeline", new=mock_pipeline):
+        yield
 
 
 @pytest.fixture
