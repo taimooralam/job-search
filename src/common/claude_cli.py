@@ -170,30 +170,71 @@ class ClaudeCLI:
             **kwargs
         })
 
+    def _extract_cost_info(
+        self, cli_output: Dict[str, Any]
+    ) -> tuple[Optional[int], Optional[int], Optional[float]]:
+        """
+        Extract cost/usage information from CLI output.
+
+        Supports both new format (v2.0.75+) and legacy format for backwards compatibility.
+
+        New format (v2.0.75+):
+            - usage.input_tokens, usage.output_tokens, etc.
+            - total_cost_usd at top level
+
+        Legacy format:
+            - cost.input_tokens, cost.output_tokens, cost.total_cost_usd
+
+        Returns:
+            Tuple of (input_tokens, output_tokens, cost_usd)
+        """
+        # Try new format first (v2.0.75+)
+        usage_info = cli_output.get("usage", {})
+        if usage_info:
+            input_tokens = usage_info.get("input_tokens")
+            output_tokens = usage_info.get("output_tokens")
+            # New format has top-level total_cost_usd
+            cost_usd = cli_output.get("total_cost_usd")
+            return input_tokens, output_tokens, cost_usd
+
+        # Fall back to legacy format (cost field)
+        cost_info = cli_output.get("cost", {})
+        input_tokens = cost_info.get("input_tokens")
+        output_tokens = cost_info.get("output_tokens")
+        cost_usd = cost_info.get("total_cost_usd")
+        return input_tokens, output_tokens, cost_usd
+
     def _parse_cli_output(self, stdout: str) -> tuple[Dict[str, Any], Optional[int], Optional[int], Optional[float]]:
         """
         Parse Claude CLI JSON output.
 
-        CLI returns: {"result": "...", "cost": {...}, "model": "...", ...}
+        CLI returns (v2.0.75+): {"result": "...", "is_error": false, "usage": {...}, "total_cost_usd": N, ...}
+        Or legacy:             {"result": "...", "cost": {...}, "model": "...", ...}
         Extracts the "result" field and parses cost information.
 
         Returns:
             Tuple of (parsed_data, input_tokens, output_tokens, cost_usd)
+
+        Raises:
+            ValueError: If CLI returned an error or result cannot be parsed
         """
         try:
             cli_output = json.loads(stdout)
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse CLI output as JSON: {e}")
 
+        # Check for error response first (v2.0.75+)
+        # CLI may return is_error=true even with returncode=0
+        if cli_output.get("is_error"):
+            error_text = cli_output.get("result", "Unknown CLI error")
+            raise ValueError(f"CLI returned error: {error_text}")
+
         result_text = cli_output.get("result", "")
         if not result_text:
             raise ValueError("CLI output missing 'result' field")
 
-        # Extract cost information if available
-        cost_info = cli_output.get("cost", {})
-        input_tokens = cost_info.get("input_tokens")
-        output_tokens = cost_info.get("output_tokens")
-        cost_usd = cost_info.get("total_cost_usd")
+        # Extract cost information (supports both new and legacy formats)
+        input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
 
         # Parse the actual result
         try:
@@ -311,11 +352,26 @@ class ClaudeCLI:
                 # Return raw result without JSON parsing
                 try:
                     cli_output = json.loads(result.stdout)
+
+                    # Check for error response first (v2.0.75+)
+                    # CLI may return is_error=true even with returncode=0
+                    if cli_output.get("is_error"):
+                        error_text = cli_output.get("result", "Unknown CLI error")
+                        self._emit_log(job_id, "error", message=f"CLI error: {error_text}")
+                        return CLIResult(
+                            job_id=job_id,
+                            success=False,
+                            result=None,
+                            raw_result=None,
+                            error=error_text,
+                            model=self.model,
+                            tier=self.tier,
+                            duration_ms=duration_ms,
+                            invoked_at=start_time.isoformat()
+                        )
+
                     raw_result = cli_output.get("result", result.stdout)
-                    cost_info = cli_output.get("cost", {})
-                    input_tokens = cost_info.get("input_tokens")
-                    output_tokens = cost_info.get("output_tokens")
-                    cost_usd = cost_info.get("total_cost_usd")
+                    input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
                 except json.JSONDecodeError:
                     raw_result = result.stdout
                     input_tokens, output_tokens, cost_usd = None, None, None
