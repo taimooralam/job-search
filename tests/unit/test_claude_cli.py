@@ -24,29 +24,22 @@ from src.common.claude_cli import (
 
 @pytest.fixture
 def valid_cli_output():
-    """Valid CLI JSON output with result and cost info."""
+    """Valid CLI text output - raw LLM JSON response (not wrapper).
+
+    With --output-format text, CLI returns the raw LLM response directly.
+    """
     return json.dumps({
-        "result": json.dumps({
-            "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
-            "strategic_needs": ["Need 1", "Need 2", "Need 3"],
-            "risks_if_unfilled": ["Risk 1", "Risk 2"],
-            "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
-        }),
-        "cost": {
-            "input_tokens": 1000,
-            "output_tokens": 500,
-            "total_cost_usd": 0.025
-        },
-        "model": "claude-sonnet-4-5-20250929"
+        "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
+        "strategic_needs": ["Need 1", "Need 2", "Need 3"],
+        "risks_if_unfilled": ["Risk 1", "Risk 2"],
+        "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
     })
 
 
 @pytest.fixture
 def valid_cli_output_without_cost():
-    """Valid CLI output without cost information."""
-    return json.dumps({
-        "result": json.dumps({"status": "success", "data": "test"})
-    })
+    """Valid CLI text output (no cost info with text format)."""
+    return json.dumps({"status": "success", "data": "test"})
 
 
 @pytest.fixture
@@ -61,42 +54,23 @@ def mock_successful_subprocess(valid_cli_output):
 
 @pytest.fixture
 def valid_cli_output_v2():
-    """Valid CLI JSON output with new v2.0.75 format (usage + top-level cost)."""
+    """Valid CLI text output - same as valid_cli_output with text format.
+
+    Note: With --output-format text, we don't get the wrapper metadata.
+    This fixture now just returns the raw LLM JSON response.
+    """
     return json.dumps({
-        "type": "result",
-        "subtype": "success",
-        "is_error": False,
-        "duration_ms": 5324,
-        "num_turns": 1,
-        "result": json.dumps({
-            "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
-            "strategic_needs": ["Need 1", "Need 2", "Need 3"],
-            "risks_if_unfilled": ["Risk 1", "Risk 2"],
-            "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
-        }),
-        "session_id": "test-session",
-        "total_cost_usd": 0.09884475,
-        "usage": {
-            "input_tokens": 3,
-            "cache_creation_input_tokens": 13711,
-            "cache_read_input_tokens": 15080,
-            "output_tokens": 14
-        }
+        "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
+        "strategic_needs": ["Need 1", "Need 2", "Need 3"],
+        "risks_if_unfilled": ["Risk 1", "Risk 2"],
+        "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
     })
 
 
 @pytest.fixture
-def error_cli_output():
-    """CLI JSON output with is_error=true."""
-    return json.dumps({
-        "type": "result",
-        "subtype": "error",
-        "is_error": True,
-        "duration_ms": 1234,
-        "num_turns": 0,
-        "result": "Credit balance is too low",
-        "session_id": "test-session"
-    })
+def plain_text_output():
+    """Plain text CLI output (non-JSON LLM response)."""
+    return "This is a plain text response from Claude, not JSON."
 
 
 # ===== INITIALIZATION TESTS =====
@@ -169,7 +143,7 @@ class TestClaudeCLIInvoke:
         assert call_args[0] == "claude"
         assert "-p" in call_args
         assert "--output-format" in call_args
-        assert "json" in call_args
+        assert "text" in call_args  # Changed from json to text format
         assert "--model" in call_args
         assert CLAUDE_MODEL_TIERS["middle"] in call_args
 
@@ -182,16 +156,18 @@ class TestClaudeCLIInvoke:
         assert "pain_points" in result.result
 
     @patch('subprocess.run')
-    def test_invocation_with_cost_tracking(self, mock_subprocess_run, mock_successful_subprocess):
-        """Should extract cost information from CLI output."""
+    def test_invocation_with_text_format(self, mock_subprocess_run, mock_successful_subprocess):
+        """With text format, cost info is not available."""
         mock_subprocess_run.return_value = mock_successful_subprocess
 
         cli = ClaudeCLI()
         result = cli.invoke(prompt="test", job_id="test_002")
 
-        assert result.input_tokens == 1000
-        assert result.output_tokens == 500
-        assert result.cost_usd == 0.025
+        # Text format doesn't include cost metadata
+        assert result.input_tokens is None
+        assert result.output_tokens is None
+        assert result.cost_usd is None
+        assert result.success is True
 
     @patch('subprocess.run')
     def test_invocation_handles_cli_error(self, mock_subprocess_run):
@@ -238,18 +214,18 @@ class TestClaudeCLIInvoke:
         assert "JSON" in result.error
 
     @patch('subprocess.run')
-    def test_invocation_handles_missing_result_field(self, mock_subprocess_run):
-        """Should handle CLI output missing 'result' field."""
+    def test_invocation_handles_empty_response(self, mock_subprocess_run):
+        """Should handle empty CLI response."""
         mock_result = MagicMock()
         mock_result.returncode = 0
-        mock_result.stdout = json.dumps({"other_field": "value"})
+        mock_result.stdout = ""  # Empty response
         mock_subprocess_run.return_value = mock_result
 
         cli = ClaudeCLI()
         result = cli.invoke(prompt="test", job_id="test_006")
 
         assert result.success is False
-        assert "missing 'result' field" in result.error.lower()
+        assert "empty" in result.error.lower()
 
     @patch('subprocess.run')
     def test_invocation_with_max_turns(self, mock_subprocess_run, mock_successful_subprocess):
@@ -264,14 +240,11 @@ class TestClaudeCLIInvoke:
         assert "3" in call_args
 
     @patch('subprocess.run')
-    def test_invocation_without_json_validation(self, mock_subprocess_run):
+    def test_invocation_without_json_validation(self, mock_subprocess_run, plain_text_output):
         """Should skip JSON parsing when validate_json=False."""
         mock_result = MagicMock()
         mock_result.returncode = 0
-        mock_result.stdout = json.dumps({
-            "result": "Plain text result, not JSON",
-            "cost": {"input_tokens": 100, "output_tokens": 50}
-        })
+        mock_result.stdout = plain_text_output
         mock_subprocess_run.return_value = mock_result
 
         cli = ClaudeCLI()
@@ -282,7 +255,7 @@ class TestClaudeCLIInvoke:
         )
 
         assert result.success is True
-        assert result.raw_result == "Plain text result, not JSON"
+        assert result.raw_result == plain_text_output.strip()
         assert result.result is None
 
     @patch('subprocess.run')
@@ -297,56 +270,8 @@ class TestClaudeCLIInvoke:
         assert "Unexpected error" in result.error
 
 
-# ===== JSON PARSING TESTS =====
-
-class TestCLIJSONParsing:
-    """Test JSON parsing logic."""
-
-    def test_parse_clean_json(self):
-        """Should parse clean JSON output."""
-        cli = ClaudeCLI()
-        stdout = json.dumps({
-            "result": json.dumps({"status": "success"}),
-            "cost": {"input_tokens": 100, "output_tokens": 50}
-        })
-
-        parsed_data, input_tok, output_tok, cost = cli._parse_cli_output(stdout)
-
-        assert parsed_data["status"] == "success"
-        assert input_tok == 100
-        assert output_tok == 50
-
-    def test_parse_json_with_missing_cost(self):
-        """Should handle missing cost information."""
-        cli = ClaudeCLI()
-        stdout = json.dumps({
-            "result": json.dumps({"status": "success"})
-        })
-
-        parsed_data, input_tok, output_tok, cost = cli._parse_cli_output(stdout)
-
-        assert parsed_data["status"] == "success"
-        assert input_tok is None
-        assert output_tok is None
-        assert cost is None
-
-    def test_parse_invalid_result_json(self):
-        """Should raise error when result field contains invalid JSON."""
-        cli = ClaudeCLI()
-        stdout = json.dumps({
-            "result": "Not valid JSON",
-            "cost": {}
-        })
-
-        with pytest.raises(ValueError, match="Failed to parse result JSON"):
-            cli._parse_cli_output(stdout)
-
-    def test_parse_malformed_cli_output(self):
-        """Should raise error for malformed CLI output."""
-        cli = ClaudeCLI()
-
-        with pytest.raises(ValueError, match="Failed to parse CLI output"):
-            cli._parse_cli_output("Not JSON at all")
+# NOTE: TestCLIJSONParsing class removed - we now use --output-format text
+# which doesn't have the JSON wrapper format. The _parse_cli_output method was removed.
 
 
 # ===== BATCH INVOCATION TESTS =====
@@ -629,34 +554,40 @@ class TestLogCallback:
 
 # ===== CLI v2.0.75 FORMAT TESTS =====
 
-class TestNewCLIFormat:
-    """Test handling of Claude CLI v2.0.75+ output format."""
+class TestTextFormat:
+    """Test handling of --output-format text (the default format now).
+
+    Note: With text format, we don't get metadata like cost/tokens.
+    Error detection happens via returncode != 0 or empty response.
+    """
 
     @patch('subprocess.run')
-    def test_parse_new_format_usage(self, mock_subprocess_run, valid_cli_output_v2):
-        """Should correctly parse new format with usage field."""
+    def test_text_format_success(self, mock_subprocess_run, valid_cli_output):
+        """Should correctly parse text format response as JSON."""
         mock_result = MagicMock()
         mock_result.returncode = 0
-        mock_result.stdout = valid_cli_output_v2
+        mock_result.stdout = valid_cli_output
         mock_result.stderr = ""
         mock_subprocess_run.return_value = mock_result
 
         cli = ClaudeCLI()
-        result = cli.invoke(prompt="test", job_id="test_v2_001")
+        result = cli.invoke(prompt="test", job_id="test_text_001")
 
         assert result.success is True
-        assert result.input_tokens == 3
-        assert result.output_tokens == 14
-        assert result.cost_usd == pytest.approx(0.09884475, rel=1e-5)
+        # No cost metadata with text format
+        assert result.input_tokens is None
+        assert result.output_tokens is None
+        assert result.cost_usd is None
+        # But we get the parsed data
         assert "pain_points" in result.result
 
     @patch('subprocess.run')
-    def test_handle_is_error_flag(self, mock_subprocess_run, error_cli_output):
-        """Should handle is_error=true response properly."""
+    def test_text_format_cli_error_returncode(self, mock_subprocess_run):
+        """Should detect CLI errors via returncode."""
         mock_result = MagicMock()
-        mock_result.returncode = 0  # CLI may return 0 even with is_error=true
-        mock_result.stdout = error_cli_output
-        mock_result.stderr = ""
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        mock_result.stderr = "Credit balance is too low"
         mock_subprocess_run.return_value = mock_result
 
         cli = ClaudeCLI()
@@ -666,48 +597,38 @@ class TestNewCLIFormat:
         assert "Credit balance is too low" in result.error
 
     @patch('subprocess.run')
-    def test_handle_is_error_in_raw_mode(self, mock_subprocess_run, error_cli_output):
-        """Should handle is_error=true in validate_json=False mode."""
+    def test_text_format_empty_response(self, mock_subprocess_run):
+        """Should fail on empty CLI response."""
         mock_result = MagicMock()
         mock_result.returncode = 0
-        mock_result.stdout = error_cli_output
+        mock_result.stdout = ""
         mock_result.stderr = ""
         mock_subprocess_run.return_value = mock_result
 
         cli = ClaudeCLI()
-        result = cli.invoke(prompt="test", job_id="test_error_002", validate_json=False)
+        result = cli.invoke(prompt="test", job_id="test_empty_001")
 
         assert result.success is False
-        assert "Credit balance is too low" in result.error
+        assert "empty" in result.error.lower()
 
-    def test_parse_legacy_format_still_works(self, valid_cli_output):
-        """Should still handle legacy cost format for backwards compatibility."""
+    @patch('subprocess.run')
+    def test_text_format_raw_mode(self, mock_subprocess_run, plain_text_output):
+        """Should return raw text when validate_json=False."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = plain_text_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
         cli = ClaudeCLI()
-        parsed_data, input_tok, output_tok, cost = cli._parse_cli_output(valid_cli_output)
+        result = cli.invoke(prompt="test", job_id="test_raw_001", validate_json=False)
 
-        assert parsed_data["pain_points"] == ["Pain 1", "Pain 2", "Pain 3"]
-        assert input_tok == 1000
-        assert output_tok == 500
-        assert cost == 0.025
-
-    def test_extract_cost_info_new_format(self):
-        """Should extract cost from new format with usage field."""
-        cli = ClaudeCLI()
-        cli_output = {
-            "usage": {
-                "input_tokens": 100,
-                "output_tokens": 50,
-            },
-            "total_cost_usd": 0.05
-        }
-        input_tok, output_tok, cost = cli._extract_cost_info(cli_output)
-
-        assert input_tok == 100
-        assert output_tok == 50
-        assert cost == 0.05
+        assert result.success is True
+        assert result.raw_result == plain_text_output.strip()
+        assert result.result is None
 
     def test_extract_cost_info_legacy_format(self):
-        """Should extract cost from legacy format with cost field."""
+        """Should extract cost from legacy format (backward compat helper)."""
         cli = ClaudeCLI()
         cli_output = {
             "cost": {
@@ -731,3 +652,7 @@ class TestNewCLIFormat:
         assert input_tok is None
         assert output_tok is None
         assert cost is None
+
+
+# NOTE: Tests for errors array handling removed since we now use --output-format text
+# which doesn't include JSON wrapper metadata. Error detection is now via returncode or empty response.

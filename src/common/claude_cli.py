@@ -204,92 +204,32 @@ class ClaudeCLI:
         cost_usd = cost_info.get("total_cost_usd")
         return input_tokens, output_tokens, cost_usd
 
-    def _parse_cli_output(self, stdout: str) -> tuple[Dict[str, Any], Optional[int], Optional[int], Optional[float]]:
-        """
-        Parse Claude CLI JSON output.
-
-        CLI returns (v2.0.75+): {"result": "...", "is_error": false, "usage": {...}, "total_cost_usd": N, ...}
-        Or legacy:             {"result": "...", "cost": {...}, "model": "...", ...}
-        Extracts the "result" field and parses cost information.
-
-        Returns:
-            Tuple of (parsed_data, input_tokens, output_tokens, cost_usd)
-
-        Raises:
-            ValueError: If CLI returned an error or result cannot be parsed
-        """
-        try:
-            cli_output = json.loads(stdout)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse CLI output as JSON: {e}")
-
-        # Check for error response first (v2.0.75+)
-        # CLI may return is_error=true even with returncode=0
-        if cli_output.get("is_error"):
-            error_text = cli_output.get("result", "Unknown CLI error")
-            raise ValueError(f"CLI returned error: {error_text}")
-
-        # Check for tool_use response (model tried to use a tool but max_turns=1 prevents completion)
-        # This happens when --allowedTools is set but the model's response is tool use
-        response_type = cli_output.get("type", "")
-        if response_type == "tool_use":
-            tool_name = cli_output.get("name", "unknown")
-            raise ValueError(
-                f"Model attempted tool use ({tool_name}) but conversation ended before completion. "
-                f"Disable tools with allow_tools=False or increase max_turns."
-            )
-
-        result_text = cli_output.get("result", "")
-        if not result_text:
-            # Include response type in error for debugging
-            raise ValueError(
-                f"CLI output missing 'result' field. "
-                f"Response type: {response_type or 'unknown'}, keys: {list(cli_output.keys())}"
-            )
-
-        # Extract cost information (supports both new and legacy formats)
-        input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
-
-        # Parse the actual result
-        try:
-            parsed_data = parse_llm_json(result_text)
-        except ValueError as e:
-            raise ValueError(f"Failed to parse result JSON: {e}")
-
-        return parsed_data, input_tokens, output_tokens, cost_usd
+    # NOTE: _parse_cli_output method removed - we now use --output-format text
+    # which returns the raw LLM response directly, avoiding the known bug (#8126)
+    # where --output-format json sometimes returns empty result field.
 
     def _extract_cli_error(self, stdout: str, stderr: str, returncode: int) -> str:
         """
         Extract meaningful error message from CLI failure.
 
-        Claude CLI writes errors to stdout in JSON format when using --output-format json.
-        The JSON contains `is_error: true` and the actual error in `result` field.
-        Example: {"is_error": true, "result": "Credit balance is too low", ...}
+        With --output-format text, errors are typically in stderr.
+        Falls back to stdout if stderr is empty.
 
         Args:
-            stdout: CLI stdout (may contain JSON with error details)
+            stdout: CLI stdout (plain text with text format)
             stderr: CLI stderr (traditional error output)
             returncode: CLI exit code
 
         Returns:
             Human-readable error message
         """
-        # Try to parse JSON error from stdout first (preferred for --output-format json)
-        if stdout:
-            try:
-                cli_output = json.loads(stdout)
-                if cli_output.get("is_error"):
-                    error_result = cli_output.get("result", "")
-                    if error_result:
-                        return error_result
-            except json.JSONDecodeError:
-                # stdout is plain text, not JSON - use it as error message
-                if stdout.strip():
-                    return stdout.strip()
-
-        # Fall back to stderr
+        # Prefer stderr for error messages
         if stderr and stderr.strip():
             return stderr.strip()
+
+        # Fall back to stdout
+        if stdout and stdout.strip():
+            return stdout.strip()
 
         # Generic fallback
         return f"CLI exited with code {returncode}"
@@ -330,9 +270,11 @@ class ClaudeCLI:
 
             # Run Claude CLI in headless mode
             # --dangerously-skip-permissions skips permission prompts
+            # Using --output-format text to avoid known CLI bug (#8126) where
+            # --output-format json returns empty result field ~40% of the time
             cmd = [
                 "claude", "-p", prompt,
-                "--output-format", "json",
+                "--output-format", "text",
                 "--model", self.model,
                 "--max-turns", str(max_turns),
                 "--dangerously-skip-permissions",
@@ -367,50 +309,37 @@ class ClaudeCLI:
                     invoked_at=start_time.isoformat()
                 )
 
-            # Parse output
+            # Parse output - with text format, stdout IS the LLM response directly
+            # (no JSON wrapper, no metadata - but reliable response)
+            raw_output = result.stdout.strip()
+
+            if not raw_output:
+                raise ValueError("CLI returned empty response")
+
             if validate_json:
-                parsed_data, input_tokens, output_tokens, cost_usd = self._parse_cli_output(result.stdout)
-            else:
-                # Return raw result without JSON parsing
+                # Parse the LLM response as JSON
                 try:
-                    cli_output = json.loads(result.stdout)
+                    parsed_data = parse_llm_json(raw_output)
+                except ValueError as e:
+                    raise ValueError(f"Failed to parse LLM response as JSON: {e}")
 
-                    # Check for error response first (v2.0.75+)
-                    # CLI may return is_error=true even with returncode=0
-                    if cli_output.get("is_error"):
-                        error_text = cli_output.get("result", "Unknown CLI error")
-                        self._emit_log(job_id, "error", message=f"CLI error: {error_text}")
-                        return CLIResult(
-                            job_id=job_id,
-                            success=False,
-                            result=None,
-                            raw_result=None,
-                            error=error_text,
-                            model=self.model,
-                            tier=self.tier,
-                            duration_ms=duration_ms,
-                            invoked_at=start_time.isoformat()
-                        )
-
-                    raw_result = cli_output.get("result", result.stdout)
-                    input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
-                except json.JSONDecodeError:
-                    raw_result = result.stdout
-                    input_tokens, output_tokens, cost_usd = None, None, None
-
+                # No cost metadata with text format
+                input_tokens, output_tokens, cost_usd = None, None, None
+            else:
+                # Return raw text result
                 return CLIResult(
                     job_id=job_id,
                     success=True,
                     result=None,
-                    raw_result=raw_result,
+                    raw_result=raw_output,
                     error=None,
                     model=self.model,
                     tier=self.tier,
                     duration_ms=duration_ms,
                     invoked_at=start_time.isoformat(),
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    cost_usd=cost_usd
+                    input_tokens=None,
+                    output_tokens=None,
+                    cost_usd=None
                 )
 
             self._emit_log(
