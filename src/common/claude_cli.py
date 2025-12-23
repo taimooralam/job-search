@@ -229,6 +229,19 @@ class ClaudeCLI:
             error_text = cli_output.get("result", "Unknown CLI error")
             raise ValueError(f"CLI returned error: {error_text}")
 
+        # Check for errors array (can occur even when is_error is absent/false)
+        # CLI v2.0.75+ may return errors array without setting is_error=true
+        errors = cli_output.get("errors", [])
+        if errors:
+            error_messages = []
+            for e in errors:
+                if isinstance(e, dict):
+                    error_messages.append(e.get("message", e.get("type", str(e))))
+                else:
+                    error_messages.append(str(e))
+            if error_messages:
+                raise ValueError(f"CLI returned errors: {'; '.join(error_messages)}")
+
         # Check for tool_use response (model tried to use a tool but max_turns=1 prevents completion)
         # This happens when --allowedTools is set but the model's response is tool use
         response_type = cli_output.get("type", "")
@@ -391,6 +404,30 @@ class ClaudeCLI:
                             duration_ms=duration_ms,
                             invoked_at=start_time.isoformat()
                         )
+
+                    # Check for errors array (can occur even when is_error is absent/false)
+                    errors = cli_output.get("errors", [])
+                    if errors:
+                        error_messages = []
+                        for e in errors:
+                            if isinstance(e, dict):
+                                error_messages.append(e.get("message", e.get("type", str(e))))
+                            else:
+                                error_messages.append(str(e))
+                        if error_messages:
+                            error_text = f"CLI returned errors: {'; '.join(error_messages)}"
+                            self._emit_log(job_id, "error", message=error_text)
+                            return CLIResult(
+                                job_id=job_id,
+                                success=False,
+                                result=None,
+                                raw_result=None,
+                                error=error_text,
+                                model=self.model,
+                                tier=self.tier,
+                                duration_ms=duration_ms,
+                                invoked_at=start_time.isoformat()
+                            )
 
                     raw_result = cli_output.get("result", result.stdout)
                     input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
