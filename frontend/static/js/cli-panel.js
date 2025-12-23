@@ -250,6 +250,15 @@ document.addEventListener('alpine:init', () => {
             // Initialize RxJS integration
             this._initRxJS();
 
+            // Re-subscribe running operations that lost their poller on page reload
+            // This handles the case where user navigates away and returns while ops are running
+            for (const [runId, run] of Object.entries(this.runs)) {
+                if (run?.status === 'running' && !run._logPoller) {
+                    cliDebug('Re-subscribing after page reload:', runId);
+                    this.subscribeToLogs(runId);
+                }
+            }
+
             console.log('[CLI] Initialized', this._rxjsAvailable ? '(with RxJS)' : '(legacy mode)');
         },
 
