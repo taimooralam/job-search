@@ -18,12 +18,11 @@ import traceback
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, ValidationError
 from firecrawl import FirecrawlApp
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState, RoleResearch
+from src.common.state import JobState, RoleResearch, ProgressCallback
+from src.common.unified_llm import invoke_unified_sync
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.claude_web_research import ClaudeWebResearcher, TierType, CLAUDE_MODEL_TIERS
@@ -208,6 +207,7 @@ class RoleResearcher:
         self,
         tier: TierType = "balanced",
         use_claude_api: bool = True,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize Role Researcher with dual backend support.
@@ -216,27 +216,23 @@ class RoleResearcher:
             tier: Claude model tier - "fast" (Haiku), "balanced" (Sonnet), "quality" (Opus).
                   Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
             use_claude_api: If True (default), use Claude API with WebSearch.
-                           If False, use FireCrawl + OpenRouter (legacy mode).
+                           If False, use FireCrawl + UnifiedLLM (legacy mode).
+            progress_callback: Optional callback for granular LLM progress events.
+                Signature: (event, message, data) -> None
         """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
         self.tier = tier
         self.use_claude_api = use_claude_api
+        self._progress_callback = progress_callback
 
         if use_claude_api:
             # Claude API with WebSearch for research (new default)
             self.claude_researcher = ClaudeWebResearcher(tier=tier)
-            self.llm = None
             self.firecrawl = None
         else:
-            # Legacy mode: FireCrawl + OpenRouter
+            # Legacy mode: FireCrawl + UnifiedLLM (via invoke_unified_sync)
             self.claude_researcher = None
-            # GAP-066: Token tracking enabled
-            self.llm = create_tracked_llm(
-                model=Config.DEFAULT_MODEL,
-                temperature=Config.ANALYTICAL_TEMPERATURE,  # 0.3 for factual analysis
-                layer="layer3_role",
-            )
             # FireCrawl for role-specific context (Phase 5.2)
             self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
 
@@ -478,7 +474,8 @@ class RoleResearcher:
         company_signals: Optional[List[Dict[str, str]]] = None,
         role_context: Optional[str] = None,
         star_domains: Optional[str] = None,
-        star_outcomes: Optional[str] = None
+        star_outcomes: Optional[str] = None,
+        job_id: Optional[str] = None,
     ) -> RoleResearchOutput:
         """
         Extract role research from job description and company signals.
@@ -524,22 +521,30 @@ class RoleResearcher:
         else:
             system_prompt = SYSTEM_PROMPT_ROLE_RESEARCH
 
-        # Call LLM for role analysis
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(
-                content=USER_PROMPT_ROLE_RESEARCH_TEMPLATE.format(
-                    title=title,
-                    company=company,
-                    job_description=job_description[:3000],  # Limit to avoid huge prompts
-                    role_context=context_text,
-                    company_signals=signals_text
-                )
-            )
-        ]
+        # Build user prompt for role analysis
+        user_prompt = USER_PROMPT_ROLE_RESEARCH_TEMPLATE.format(
+            title=title,
+            company=company,
+            job_description=job_description[:3000],  # Limit to avoid huge prompts
+            role_context=context_text,
+            company_signals=signals_text
+        )
 
-        response = self.llm.invoke(messages)
-        llm_output = response.content.strip()
+        # Map tier from legacy format ("balanced") to UnifiedLLM format ("middle")
+        tier_mapping = {"fast": "low", "balanced": "middle", "quality": "high"}
+        unified_tier = tier_mapping.get(self.tier, "middle")
+
+        # Call LLM via UnifiedLLM with progress callback
+        llm_result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="role_analysis",
+            system=system_prompt,
+            tier=unified_tier,
+            job_id=job_id,
+            validate_json=False,  # Keep manual JSON handling for Pydantic validation
+            progress_callback=self._progress_callback,
+        )
+        llm_output = llm_result.content.strip() if llm_result.content else ""
 
         # Extract JSON from response (in case LLM adds extra text)
         json_match = re.search(r'\{.*\}', llm_output, re.DOTALL)
@@ -640,7 +645,8 @@ class RoleResearcher:
                 company_signals=company_signals,
                 role_context=role_context,
                 star_domains=star_domains,
-                star_outcomes=star_outcomes
+                star_outcomes=star_outcomes,
+                job_id=state.get("job_id"),
             )
 
             self.logger.info(f"Extracted {len(role_research_output.business_impact)} business impact points")
@@ -717,11 +723,14 @@ def role_researcher_node(
 
     logger.info(f"Analyzing role: {state['title']} at {state['company']}")
 
+    # Extract progress callback from state for granular LLM logging
+    progress_callback = state.get("progress_callback")
+
     # Use layer number 3.5 rounded to 4 for structured events (layer_start uses int)
     struct_logger.layer_start(4, "role_researcher")  # 3.5 -> use 4 slot for sub-layer
 
     try:
-        researcher = RoleResearcher(tier=tier, use_claude_api=use_claude_api)
+        researcher = RoleResearcher(tier=tier, use_claude_api=use_claude_api, progress_callback=progress_callback)
         updates = researcher.research_role(state)
 
         # Log results

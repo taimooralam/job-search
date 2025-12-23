@@ -22,7 +22,7 @@ from enum import Enum
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState
+from src.common.state import JobState, ProgressCallback
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.annotation_types import JDAnnotation, JDAnnotations
@@ -831,6 +831,7 @@ class PainPointMiner:
         tier: TierType = "middle",
         struct_logger: Optional["StructuredLogger"] = None,
         log_callback: Optional[LogCallback] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the miner.
@@ -845,11 +846,13 @@ class PainPointMiner:
                 to the frontend log stream.
             log_callback: Optional callback for log streaming (Redis live-tail).
                 Signature: (json_string: str) -> None
+            progress_callback: Optional callback for granular LLM progress events.
         """
         self.use_enhanced_format = use_enhanced_format
         self.tier = tier
         self._struct_logger = struct_logger
         self._log_callback = log_callback
+        self._progress_callback = progress_callback
         # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
         self._unified_llm: Optional[UnifiedLLM] = None
 
@@ -869,6 +872,7 @@ class PainPointMiner:
             tier=self.tier,
             job_id=job_id,
             struct_logger=self._struct_logger,
+            progress_callback=self._progress_callback,
         )
 
     def _get_domain_example(self, domain: JobDomain) -> tuple[str, str]:
@@ -1364,12 +1368,16 @@ def pain_point_miner_node(
     logger.info(f"Description length: {len(state['job_description'])} chars")
     logger.info(f"Backend: UnifiedLLM (tier={tier}, model={TIER_TO_CLAUDE_MODEL.get(tier, 'middle')})")
 
+    # Get progress callback from state
+    progress_callback = state.get("progress_callback")
+
     with LayerContext(struct_logger, 2, "pain_point_miner") as ctx:
         # Use legacy format for backward compatibility with downstream layers
         miner = PainPointMiner(
             use_enhanced_format=False,
             tier=tier,
             struct_logger=struct_logger,
+            progress_callback=progress_callback,
         )
         updates = miner.extract_pain_points(state)
 

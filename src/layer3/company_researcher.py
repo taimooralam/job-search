@@ -25,7 +25,7 @@ from pymongo import MongoClient
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState, CompanySignal, CompanyResearch
+from src.common.state import JobState, CompanySignal, CompanyResearch, ProgressCallback
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.utils import run_async
@@ -431,6 +431,7 @@ class CompanyResearcher:
         tier: TierType = "balanced",
         use_claude_api: bool = True,
         log_callback: Optional[LogCallback] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the company researcher.
@@ -442,12 +443,14 @@ class CompanyResearcher:
                            If False, use FireCrawl + OpenRouter (legacy mode).
             log_callback: Optional callback for log streaming (Redis live-tail).
                 Signature: (json_string: str) -> None
+            progress_callback: Optional callback for granular LLM progress events.
         """
         # Logger for internal operations (no run_id context yet)
         self.logger = logging.getLogger(__name__)
         self.tier = tier
         self.use_claude_api = use_claude_api
         self._log_callback = log_callback
+        self._progress_callback = progress_callback
 
         if use_claude_api:
             # Claude API with WebSearch for research
@@ -530,6 +533,7 @@ class CompanyResearcher:
                 system=SYSTEM_PROMPT_COMPANY_TYPE,
                 job_id=job_id,
                 validate_json=True,
+                progress_callback=self._progress_callback,
             )
 
             if not result.success:
@@ -1415,6 +1419,7 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
             system=system_prompt,
             job_id=job_id,
             validate_json=False,  # Summary is plain text, not JSON
+            progress_callback=self._progress_callback,
         )
 
         if not result.success:
@@ -1643,6 +1648,7 @@ Be honest about uncertainty. Prefix summary with '[Based on training knowledge]'
             system=system_prompt,
             job_id=job_id,
             validate_json=True,
+            progress_callback=self._progress_callback,
         )
 
         if not result.success:
@@ -1749,6 +1755,7 @@ Output JSON only:
             system=system_prompt,
             job_id=job_id,
             validate_json=True,
+            progress_callback=self._progress_callback,
         )
 
         if not result.success:
@@ -2067,8 +2074,11 @@ def company_researcher_node(
     logger.info("="*60)
     logger.info(f"Researching: {state['company']}")
 
+    # Get progress callback from state
+    progress_callback = state.get("progress_callback")
+
     with LayerContext(struct_logger, 3, "company_researcher") as ctx:
-        researcher = CompanyResearcher(tier=tier, use_claude_api=use_claude_api)
+        researcher = CompanyResearcher(tier=tier, use_claude_api=use_claude_api, progress_callback=progress_callback)
         updates = researcher.research_company(state)
 
         # Log results and add metadata (Phase 5.1 format)

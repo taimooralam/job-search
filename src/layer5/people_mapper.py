@@ -23,13 +23,12 @@ import logging
 import re
 from typing import Dict, Any, List, Optional, Tuple
 from pydantic import BaseModel, Field, field_validator
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 from firecrawl import FirecrawlApp
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState
+from src.common.state import JobState, ProgressCallback
+from src.common.unified_llm import invoke_unified_sync
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.rate_limiter import get_rate_limiter, RateLimitExceededError
@@ -515,6 +514,7 @@ class PeopleMapper:
         self,
         tier: TierType = "balanced",
         use_claude_api: bool = True,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the People Mapper.
@@ -524,22 +524,16 @@ class PeopleMapper:
                   Only used when use_claude_api=True. Default is "balanced" (Sonnet 4.5).
             use_claude_api: If True (default), use Claude API with WebSearch for contact discovery.
                            If False, use FireCrawl (legacy mode).
-                           Note: Classification and outreach always use OpenRouter LLM regardless
+                           Note: Classification and outreach always use UnifiedLLM regardless
                            of this setting (Phase 1 only migrates discovery).
+            progress_callback: Optional callback for granular LLM progress events.
+                Signature: (event, message, data) -> None
         """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
         self.tier = tier
         self.use_claude_api = use_claude_api
-
-        # GAP-066: Token tracking enabled
-        # LLM is always needed for classification and outreach generation
-        # (even when using Claude API for discovery)
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=0.4,  # Slightly creative for outreach
-            layer="layer5",
-        )
+        self._progress_callback = progress_callback
 
         # Claude API for contact discovery (new backend)
         self.claude_researcher = None
@@ -1606,9 +1600,9 @@ Metrics: {star.get('metrics', 'N/A')}""".strip()
         company_research = self._format_company_research_summary(state.get("company_research"))
         role_research = self._format_role_research_summary(state.get("role_research"))
 
-        messages = [
-            SystemMessage(content="You are drafting concise fallback cover letters for cold outreach."),
-            HumanMessage(content=f"""FireCrawl could not find individual contacts.
+        # Build prompts for fallback cover letter generation
+        system_prompt = "You are drafting concise fallback cover letters for cold outreach."
+        user_prompt = f"""{reason}
 
 Draft THREE distinct cover letter options (120-180 words each) for the role {state.get('title', '')} at {state.get('company', '')}.
 Ground every statement in the provided pain points, research, and master CV. Avoid inventing facts.
@@ -1631,12 +1625,23 @@ Each option must:
 - End with: taimooralam@example.com | https://calendly.com/taimooralam/15min
 
 Return the three letters separated by \"---\" lines.
-""".replace("FireCrawl could not find individual contacts.", reason))
-        ]
+"""
+
+        # Map tier from legacy format to UnifiedLLM format
+        tier_mapping = {"fast": "low", "balanced": "middle", "quality": "high"}
+        unified_tier = tier_mapping.get(self.tier, "middle")
 
         try:
-            response = self.llm.invoke(messages)
-            response_text = response.content.strip()
+            llm_result = invoke_unified_sync(
+                prompt=user_prompt,
+                step_name="fallback_cover_letters",
+                system=system_prompt,
+                tier=unified_tier,
+                job_id=state.get("job_id", "unknown"),
+                validate_json=False,
+                progress_callback=self._progress_callback,
+            )
+            response_text = llm_result.content.strip() if llm_result.content else ""
             letters = [letter.strip() for letter in re.split(r'\n-{3,}\n', response_text) if letter.strip()]
 
             if len(letters) < 3 and response_text:
@@ -1675,23 +1680,32 @@ Return the three letters separated by \"---\" lines.
         Raises:
             ValueError: If validation fails (triggers retry)
         """
-        # Build prompt
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT_CLASSIFICATION),
-            HumanMessage(content=USER_PROMPT_CLASSIFICATION_TEMPLATE.format(
-                title=state.get("title", ""),
-                company=state.get("company", ""),
-                job_description=state.get("job_description", "")[:1500],
-                company_research_summary=self._format_company_research_summary(state.get("company_research")),
-                role_research_summary=self._format_role_research_summary(state.get("role_research")),
-                pain_points=self._format_pain_points(state.get("pain_points", [])),
-                raw_contacts=raw_contacts[:3000]
-            ))
-        ]
+        # Build prompt for contact classification
+        user_prompt = USER_PROMPT_CLASSIFICATION_TEMPLATE.format(
+            title=state.get("title", ""),
+            company=state.get("company", ""),
+            job_description=state.get("job_description", "")[:1500],
+            company_research_summary=self._format_company_research_summary(state.get("company_research")),
+            role_research_summary=self._format_role_research_summary(state.get("role_research")),
+            pain_points=self._format_pain_points(state.get("pain_points", [])),
+            raw_contacts=raw_contacts[:3000]
+        )
 
-        # Get LLM response
-        response = self.llm.invoke(messages)
-        response_text = response.content.strip()
+        # Map tier from legacy format to UnifiedLLM format
+        tier_mapping = {"fast": "low", "balanced": "middle", "quality": "high"}
+        unified_tier = tier_mapping.get(self.tier, "middle")
+
+        # Get LLM response via UnifiedLLM
+        llm_result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="contact_classification",
+            system=SYSTEM_PROMPT_CLASSIFICATION,
+            tier=unified_tier,
+            job_id=state.get("job_id", "unknown"),
+            validate_json=False,  # Manual JSON handling with Pydantic
+            progress_callback=self._progress_callback,
+        )
+        response_text = llm_result.content.strip() if llm_result.content else ""
 
         # Parse JSON
         try:
@@ -2011,29 +2025,38 @@ Return the three letters separated by \"---\" lines.
         )
 
         # Build prompt with contact_type and annotation context
-        messages = [
-            SystemMessage(content=SYSTEM_PROMPT_OUTREACH),
-            HumanMessage(content=USER_PROMPT_OUTREACH_TEMPLATE.format(
-                contact_name=contact["name"],
-                contact_role=contact["role"],
-                contact_type=contact_type,
-                contact_why=contact["why_relevant"],
-                contact_signals=signals_text,
-                job_title=state.get("title", ""),
-                company=state.get("company", ""),
-                pain_points=self._format_pain_points(state.get("pain_points", [])),
-                company_research_summary=self._format_company_research_summary(state.get("company_research")),
-                selected_stars_summary=self._format_stars_summary(
-                    state.get("selected_stars", []),
-                    state.get("candidate_profile", "")
-                ),
-                annotation_context=annotation_context,
-            ))
-        ]
+        user_prompt = USER_PROMPT_OUTREACH_TEMPLATE.format(
+            contact_name=contact["name"],
+            contact_role=contact["role"],
+            contact_type=contact_type,
+            contact_why=contact["why_relevant"],
+            contact_signals=signals_text,
+            job_title=state.get("title", ""),
+            company=state.get("company", ""),
+            pain_points=self._format_pain_points(state.get("pain_points", [])),
+            company_research_summary=self._format_company_research_summary(state.get("company_research")),
+            selected_stars_summary=self._format_stars_summary(
+                state.get("selected_stars", []),
+                state.get("candidate_profile", "")
+            ),
+            annotation_context=annotation_context,
+        )
 
-        # Get LLM response
-        response = self.llm.invoke(messages)
-        response_text = response.content.strip()
+        # Map tier from legacy format to UnifiedLLM format
+        tier_mapping = {"fast": "low", "balanced": "middle", "quality": "high"}
+        unified_tier = tier_mapping.get(self.tier, "middle")
+
+        # Get LLM response via UnifiedLLM
+        llm_result = invoke_unified_sync(
+            prompt=user_prompt,
+            step_name="outreach_generation",
+            system=SYSTEM_PROMPT_OUTREACH,
+            tier=unified_tier,
+            job_id=state.get("job_id", "unknown"),
+            validate_json=False,  # Manual JSON handling
+            progress_callback=self._progress_callback,
+        )
+        response_text = llm_result.content.strip() if llm_result.content else ""
 
         # Parse JSON
         try:
@@ -2468,13 +2491,16 @@ def people_mapper_node(
     logger = get_logger(__name__, run_id=state.get("run_id"), layer="layer5")
     struct_logger = get_structured_logger(state.get("job_id", ""))
 
+    # Extract progress callback from state for granular LLM logging
+    progress_callback = state.get("progress_callback")
+
     with LayerContext(struct_logger, 5, "people_mapper") as ctx:
         # Log which backend is being used
         ctx.add_metadata("discovery_backend", "claude_api" if use_claude_api else "firecrawl")
         if use_claude_api:
             ctx.add_metadata("claude_tier", tier)
 
-        mapper = PeopleMapper(tier=tier, use_claude_api=use_claude_api)
+        mapper = PeopleMapper(tier=tier, use_claude_api=use_claude_api, progress_callback=progress_callback)
         result = mapper.map_people(state)
 
         # Add metadata

@@ -365,8 +365,8 @@ class TestFireCrawlContactDiscovery:
 class TestLLMContactClassification:
     """Test LLM-based contact classification into primary/secondary."""
 
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_classifies_into_primary_and_secondary(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_classifies_into_primary_and_secondary(self, mock_invoke, sample_job_state):
         """LLM classifies contacts into primary vs secondary buckets."""
         mock_llm = MagicMock()
         mock_response = MagicMock()
@@ -432,8 +432,7 @@ class TestLLMContactClassification:
                 }
             ]
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         mapper = PeopleMapper()
         result = mapper._classify_contacts(
@@ -449,8 +448,8 @@ class TestLLMContactClassification:
         primary_roles = [c["role"] for c in result["primary_contacts"]]
         assert any("VP" in role or "Director" in role or "Manager" in role or "Talent" in role for role in primary_roles)
 
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_falls_back_to_role_based_contacts(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_falls_back_to_role_based_contacts(self, mock_invoke, sample_job_state):
         """Generates role-based contacts when no names found."""
         mock_llm = MagicMock()
         mock_response = MagicMock()
@@ -516,8 +515,7 @@ class TestLLMContactClassification:
                 }
             ]
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         mapper = PeopleMapper()
         result = mapper._classify_contacts(raw_contacts=[], state=sample_job_state)
@@ -527,8 +525,8 @@ class TestLLMContactClassification:
         assert len(result["primary_contacts"]) >= 4
         assert len(result["secondary_contacts"]) >= 4
 
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_enriches_contacts_with_recent_signals(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_enriches_contacts_with_recent_signals(self, mock_invoke, sample_job_state):
         """Enriches contacts with recent_signals from company research."""
         # Add company signals to state
         sample_job_state["company_research"]["signals"].append({
@@ -560,8 +558,7 @@ class TestLLMContactClassification:
                 {"name": "Rachel G", "role": "DevOps", "linkedin_url": "https://linkedin.com/in/rachel", "why_relevant": "Operations lead for DevOps and infrastructure", "recent_signals": []}
             ]
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         mapper = PeopleMapper()
         result = mapper._classify_contacts(raw_contacts=[], state=sample_job_state)
@@ -577,8 +574,8 @@ class TestLLMContactClassification:
 class TestOutreachPackageGeneration:
     """Test OutreachPackage generation with length constraints."""
 
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_generates_outreach_packages_for_contacts(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_generates_outreach_packages_for_contacts(self, mock_invoke, sample_job_state):
         """Generates OutreachPackage for each primary contact."""
         # Mock outreach generation
         mock_llm = MagicMock()
@@ -588,8 +585,7 @@ class TestOutreachPackageGeneration:
             "subject": "Platform Engineer with 75% Incident Reduction Experience",
             "email_body": "Hi Sarah,\n\nI saw TechCorp recently raised $50M and is scaling infrastructure...\n\nBest,\nCandidate"
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         mapper = PeopleMapper()
         contact = {
@@ -627,8 +623,8 @@ class TestOutreachPackageGeneration:
         trimmed = mapper._validate_email_subject(long_subject)
         assert len(trimmed) <= 100
 
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_outreach_cites_star_metrics(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_outreach_cites_star_metrics(self, mock_invoke, sample_job_state):
         """Outreach messages cite specific STAR metrics."""
         mock_llm = MagicMock()
         mock_response = MagicMock()
@@ -653,8 +649,7 @@ class TestOutreachPackageGeneration:
             "email_subject": "Solving legacy monolith incidents with proven results",  # 7 words, mentions "legacy monolith incidents"
             "email_body": email_body_150_words
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         mapper = PeopleMapper()
         contact = {"name": "Sarah", "role": "VP", "linkedin_url": "https://li.com/sarah", "why_relevant": "Manager", "recent_signals": []}
@@ -757,8 +752,8 @@ class TestOutreachPackageGeneration:
 @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
 @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
 @patch('src.layer5.people_mapper.FirecrawlApp')
-@patch('src.layer5.people_mapper.create_tracked_llm')
-def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sample_job_state):
+@patch('src.layer5.people_mapper.invoke_unified_sync')
+def test_people_mapper_node_integration(mock_invoke, mock_firecrawl_class, sample_job_state):
     """Integration test for people_mapper_node."""
     # Mock FireCrawl with valid search results to trigger LLM classification path
     mock_firecrawl = MagicMock()
@@ -813,8 +808,8 @@ def test_people_mapper_node_integration(mock_llm_class, mock_firecrawl_class, sa
         "email_body": email_body
     })
 
-    mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8  # 1 classification + 8 outreach calls
-    mock_llm_class.return_value = mock_llm
+    mock_invoke.side_effect = [classification_response] + [outreach_response] * 8  # 1 classification + 8 outreach calls
+    # mock_invoke is patched at function level
 
     # Run node with FireCrawl backend (use_claude_api=False)
     updates = people_mapper_node(sample_job_state, use_claude_api=False)
@@ -841,8 +836,8 @@ class TestPeopleMapperQualityGates:
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False)
     @patch.object(Config, 'FIRECRAWL_API_KEY', 'test-api-key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_quality_gate_minimum_primary_contacts(self, mock_llm_class, mock_firecrawl_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_quality_gate_minimum_primary_contacts(self, mock_invoke, mock_firecrawl_class, sample_job_state):
         """Quality gate: verifies GAP-060 contact limits (3 primary + 2 secondary)."""
         # Setup mocks with valid search results to trigger LLM classification path
         mock_firecrawl = MagicMock()
@@ -888,8 +883,8 @@ class TestPeopleMapperQualityGates:
             "subject": "Solving Legacy Monolith Issues with Engineering Excellence",  # 7 words, pain-focused
             "email_body": email_body
         })
-        mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.side_effect = [classification_response] + [outreach_response] * 8
+        # mock_invoke is patched at function level
 
         # Use FireCrawl backend (use_claude_api=False)
         mapper = PeopleMapper(use_claude_api=False)
@@ -900,8 +895,8 @@ class TestPeopleMapperQualityGates:
         assert len(result["primary_contacts"]) == 3  # GAP-060 limit: max 3 primary
 
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_quality_gate_specific_why_relevant(self, mock_llm_class, mock_firecrawl_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_quality_gate_specific_why_relevant(self, mock_invoke, mock_firecrawl_class, sample_job_state):
         """Quality gate: why_relevant is specific and grounded."""
         # Setup mocks
         mock_firecrawl = MagicMock()
@@ -928,8 +923,8 @@ class TestPeopleMapperQualityGates:
         outreach_response = MagicMock()
         # GAP-011: LinkedIn message must include signature
         outreach_response.content = json.dumps({"linkedin_message": "Interested in the role.\nBest. Taimoor Alam", "subject": "subj", "email_body": "body"})
-        mock_llm.invoke.side_effect = [classification_response] + [outreach_response] * 8
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.side_effect = [classification_response] + [outreach_response] * 8
+        # mock_invoke is patched at function level
 
         # Use FireCrawl backend (use_claude_api=False)
         mapper = PeopleMapper(use_claude_api=False)
@@ -951,15 +946,15 @@ class TestSkipOutreachParameter:
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)  # FireCrawl disabled = synthetic contacts
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_returns_contacts_without_messages(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_skip_outreach_returns_contacts_without_messages(self, mock_invoke, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=True returns contacts without generating outreach messages."""
         # Mock ClaudeWebResearcher to prevent real API calls
         mock_researcher = MagicMock()
         mock_claude_researcher_class.return_value = mock_researcher
 
         mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=True)
@@ -970,7 +965,7 @@ class TestSkipOutreachParameter:
 
         # Should NOT have generated outreach messages (LLM invoke not called for outreach)
         # LLM should not have been invoked at all for synthetic contacts with skip_outreach
-        assert not mock_llm.invoke.called
+        assert not mock_invoke.called
 
         # Contacts should have basic info but no outreach fields
         for contact in result["primary_contacts"]:
@@ -983,8 +978,8 @@ class TestSkipOutreachParameter:
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_false_generates_messages(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_skip_outreach_false_generates_messages(self, mock_invoke, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=False (default) generates outreach messages."""
         # Mock ClaudeWebResearcher to prevent real API calls
         mock_researcher = MagicMock()
@@ -1001,28 +996,28 @@ class TestSkipOutreachParameter:
             "email_body": " ".join(["test word"] * 100),  # 100 words (valid: 95-205)
             "already_applied_frame": "adding_context"
         })
-        mock_llm.invoke.return_value = outreach_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = outreach_response
+        # mock_invoke is patched at function level
 
         # Create mapper AFTER mocks are set up
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=False)
 
         # Should have generated outreach (LLM invoked)
-        assert mock_llm.invoke.called
+        assert mock_invoke.called
 
         # At least some contacts should have outreach
         assert len(result["primary_contacts"]) > 0
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_agency_contacts(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_skip_outreach_agency_contacts(self, mock_invoke, sample_job_state):
         """skip_outreach=True works for recruitment agency contacts."""
         # Set up agency detection
         sample_job_state["company_research"]["company_type"] = "recruitment_agency"
 
         mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=True)
@@ -1033,14 +1028,14 @@ class TestSkipOutreachParameter:
         assert len(result["secondary_contacts"]) == 0
 
         # LLM should not have been invoked (no outreach generation)
-        assert not mock_llm.invoke.called
+        assert not mock_invoke.called
 
     @patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', True)
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_applies_contact_limits(self, mock_llm_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_skip_outreach_applies_contact_limits(self, mock_invoke, sample_job_state):
         """skip_outreach=True still applies GAP-060 contact limits."""
         mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         # Use FireCrawl backend (use_claude_api=False) - FireCrawl disabled, will use synthetic
         mapper = PeopleMapper(use_claude_api=False)
@@ -1057,8 +1052,8 @@ class TestClaudeAPIDiscoveryBackend:
     """Test Claude API backend for contact discovery (Phase 1 migration)."""
 
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_claude_api_discovery_success(self, mock_llm_class, mock_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_claude_api_discovery_success(self, mock_invoke, mock_researcher_class, sample_job_state):
         """Claude API backend successfully discovers contacts."""
         # Mock ClaudeWebResearcher
         mock_researcher = MagicMock()
@@ -1114,8 +1109,8 @@ class TestClaudeAPIDiscoveryBackend:
                  "why_relevant": "Infrastructure collaboration partner", "recent_signals": []},
             ]
         })
-        mock_llm.invoke.return_value = classification_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = classification_response
+        # mock_invoke is patched at function level
 
         # Create mapper with Claude API backend
         mapper = PeopleMapper(tier="balanced", use_claude_api=True)
@@ -1130,8 +1125,8 @@ class TestClaudeAPIDiscoveryBackend:
         assert result["primary_contacts"][0]["name"] == "Sarah Chen"
 
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_claude_api_discovery_fallback_on_failure(self, mock_llm_class, mock_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_claude_api_discovery_fallback_on_failure(self, mock_invoke, mock_researcher_class, sample_job_state):
         """Claude API backend falls back to synthetic contacts on failure."""
         # Mock ClaudeWebResearcher to fail
         mock_researcher = MagicMock()
@@ -1148,7 +1143,7 @@ class TestClaudeAPIDiscoveryBackend:
 
         # Mock LLM (not called when Claude API fails - synthetic contacts used)
         mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         # Create mapper with Claude API backend
         mapper = PeopleMapper(tier="balanced", use_claude_api=True)
@@ -1159,8 +1154,8 @@ class TestClaudeAPIDiscoveryBackend:
         assert result["primary_contacts"][0].get("is_synthetic", False)
 
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_claude_api_discovery_empty_results_fallback(self, mock_llm_class, mock_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_claude_api_discovery_empty_results_fallback(self, mock_invoke, mock_researcher_class, sample_job_state):
         """Claude API backend falls back when no contacts found."""
         # Mock ClaudeWebResearcher to return empty results
         mock_researcher = MagicMock()
@@ -1180,7 +1175,7 @@ class TestClaudeAPIDiscoveryBackend:
 
         # Mock LLM
         mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         # Create mapper with Claude API backend
         mapper = PeopleMapper(tier="balanced", use_claude_api=True)
@@ -1193,7 +1188,7 @@ class TestClaudeAPIDiscoveryBackend:
     def test_mapper_initializes_with_claude_api_tier(self):
         """PeopleMapper initializes with correct Claude API tier."""
         with patch('src.layer5.people_mapper.ClaudeWebResearcher') as mock_researcher_class:
-            with patch('src.layer5.people_mapper.create_tracked_llm'):
+            with patch('src.layer5.people_mapper.invoke_unified_sync'):
                 mapper = PeopleMapper(tier="fast", use_claude_api=True)
                 assert mapper.tier == "fast"
                 assert mapper.use_claude_api is True
@@ -1201,7 +1196,7 @@ class TestClaudeAPIDiscoveryBackend:
 
     def test_mapper_initializes_with_firecrawl_backend(self):
         """PeopleMapper initializes with FireCrawl backend when use_claude_api=False."""
-        with patch('src.layer5.people_mapper.create_tracked_llm'):
+        with patch('src.layer5.people_mapper.invoke_unified_sync'):
             with patch.object(Config, 'FIRECRAWL_API_KEY', 'test-key'):
                 with patch.object(Config, 'DISABLE_FIRECRAWL_OUTREACH', False):
                     with patch('src.layer5.people_mapper.FirecrawlApp') as mock_firecrawl:

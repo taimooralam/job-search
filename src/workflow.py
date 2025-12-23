@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
 from src.common.config import Config
-from src.common.state import JobState
+from src.common.state import JobState, ProgressCallback
 from src.common.logger import setup_logging, get_logger
 from src.common.structured_logger import get_structured_logger, StructuredLogger
 from src.common.tracing import TracingContext, log_trace_info, is_tracing_enabled
@@ -194,7 +194,8 @@ def run_pipeline(
     job_data: Dict[str, Any],
     candidate_profile: str,
     tier_config: Any = None,
-    debug: bool = False
+    debug: bool = False,
+    progress_callback: ProgressCallback = None,
 ) -> JobState:
     """
     Run the complete job intelligence pipeline.
@@ -204,6 +205,9 @@ def run_pipeline(
         candidate_profile: String with candidate profile/CV text
         tier_config: Optional TierConfig for tiered processing (GAP-045)
         debug: Enable verbose DEBUG level logging throughout the pipeline
+        progress_callback: Optional callback for granular LLM progress events.
+            Signature: (event: str, message: str, data: Dict[str, Any]) -> None
+            If not provided, a default callback using StructuredLogger is created.
 
     Returns:
         Final JobState with all outputs populated
@@ -224,6 +228,29 @@ def run_pipeline(
     # Create structured logger for JSON events
     job_id = job_data.get("job_id", "")
     struct_logger = get_structured_logger(job_id)
+
+    # Create default progress callback if not provided
+    # This wraps StructuredLogger to emit granular LLM events
+    if progress_callback is None:
+        def default_progress_callback(event: str, message: str, data: Dict[str, Any]) -> None:
+            """Default callback that emits to StructuredLogger."""
+            try:
+                struct_logger.emit_llm_call(
+                    step_name=data.get("step_name", "unknown"),
+                    backend=data.get("backend", "unknown"),
+                    model=data.get("model", "unknown"),
+                    tier=data.get("tier", "unknown"),
+                    status=event,  # llm_start, llm_complete, llm_error, llm_fallback
+                    duration_ms=data.get("duration_ms"),
+                    tokens=data.get("tokens"),
+                    cost_usd=data.get("cost_usd"),
+                    metadata={"message": message, **{k: v for k, v in data.items()
+                              if k not in ("step_name", "backend", "model", "tier", "duration_ms", "tokens", "cost_usd")}},
+                )
+            except Exception as e:
+                run_logger.debug(f"[ProgressCallback] Failed to emit event: {e}")
+        progress_callback = default_progress_callback
+        run_logger.info("[ProgressCallback] Using default StructuredLogger callback")
 
     # GAP-066: Set run context for automatic token tracking
     set_run_context(run_id=run_id, job_id=job_id)
@@ -299,6 +326,7 @@ def run_pipeline(
         # GAP-045: Tiered processing
         "processing_tier": tier_config.tier.value if tier_config else None,
         "debug_mode": debug,  # Propagate debug flag to all layers
+        "progress_callback": progress_callback,  # Granular LLM progress callback
         "tier_config": {
             "cv_model": tier_config.cv_model,
             "role_model": tier_config.role_model,

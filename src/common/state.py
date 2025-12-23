@@ -5,7 +5,11 @@ This defines the data contract for the 7-layer LangGraph pipeline.
 Each layer reads from and writes to this shared state.
 """
 
-from typing import TypedDict, List, Optional, Dict, Any, Literal
+from typing import TypedDict, List, Optional, Dict, Any, Literal, Callable
+
+# Progress callback type for granular LLM event streaming
+# Signature: (event: str, message: str, data: Dict[str, Any]) -> None
+ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
 
 # Contact type classification for outreach tailoring
 # Based on linkedin/outreach.md guide principles
@@ -303,3 +307,9 @@ class JobState(TypedDict):
     # ===== DEBUG MODE (API debug=true) =====
     # When enabled, verbose logging throughout the pipeline
     debug_mode: Optional[bool]  # True enables DEBUG level logging across all layers
+
+    # ===== PROGRESS CALLBACK (Granular LLM Logging) =====
+    # Callback for streaming granular LLM events to frontend/Redis
+    # Signature: (event: str, message: str, data: Dict[str, Any]) -> None
+    # Events: llm_start, llm_complete, llm_error, llm_fallback, layer_* events
+    progress_callback: Optional[ProgressCallback]

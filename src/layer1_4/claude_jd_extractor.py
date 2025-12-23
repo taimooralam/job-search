@@ -28,7 +28,7 @@ from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
-from src.common.state import ExtractedJD
+from src.common.state import ExtractedJD, ProgressCallback
 from src.common.json_utils import parse_llm_json
 from src.common.unified_llm import invoke_unified_sync, LLMResult
 from src.common.llm_config import TierType
@@ -248,6 +248,7 @@ class JDExtractor:
         timeout: int = 120,
         log_callback: Optional[LogCallback] = None,
         tier: TierType = "middle",
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the JD extractor.
@@ -257,11 +258,13 @@ class JDExtractor:
             timeout: CLI timeout in seconds (default 120s).
             log_callback: Optional callback for log events (for Redis live-tail).
             tier: LLM tier for UnifiedLLM ("low", "middle", "high"). Default "middle".
+            progress_callback: Optional callback for granular LLM progress events.
         """
         self.model = model or os.getenv("CLAUDE_CODE_MODEL", self.DEFAULT_MODEL)
         self.timeout = timeout
         self._log_callback = log_callback or self._default_log
         self.tier: TierType = tier
+        self._progress_callback = progress_callback
 
     def _default_log(self, job_id: str, level: str, data: Dict[str, Any]) -> None:
         """Default logging - replace with Redis publisher later."""
@@ -421,6 +424,7 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
                 tier=self.tier,
                 job_id=job_id,
                 validate_json=True,
+                progress_callback=self._progress_callback,
             )
 
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -639,9 +643,12 @@ def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = 
             tier = tier_config.get("tier")
             logger.debug(f"[JDExtractor] Using tier: {tier}")
 
-    # 4. Process with error handling
+    # 4. Get progress callback from state
+    progress_callback = state.get("progress_callback")
+
+    # 5. Process with error handling
     try:
-        extractor = JDExtractor(model=model, tier=tier)
+        extractor = JDExtractor(model=model, tier=tier, progress_callback=progress_callback)
 
         # Note: No CLI availability check needed - UnifiedLLM handles fallback
         # Run extraction (synchronous - uses UnifiedLLM with fallback)
@@ -652,7 +659,7 @@ def jd_extractor_node(state: Dict[str, Any], config: Optional[Dict[str, Any]] = 
             job_description=job_description,
         )
 
-        # 5. Handle result
+        # 6. Handle result
         if result.success and result.extracted_jd:
             logger.info(
                 f"[JDExtractor] Extraction complete: "

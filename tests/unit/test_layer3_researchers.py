@@ -247,7 +247,7 @@ class TestCompanyResearcherWithMockedDependencies:
         self,
         mock_firecrawl_class,
         mock_mongo_class,
-        mock_llm_class,
+        mock_invoke,
         sample_job_state,
         valid_company_research_json
     ):
@@ -270,7 +270,7 @@ class TestCompanyResearcherWithMockedDependencies:
         mock_firecrawl.scrape.return_value = mock_scrape_result
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        mock_llm_class.return_value = MagicMock()
+        # mock_invoke is patched at function level
 
         # Run Company Researcher (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -709,10 +709,10 @@ class TestRoleResearcherWithMockedLLM:
     """Test Role Researcher with mocked LLM."""
 
     @patch('src.layer3.role_researcher.FirecrawlApp')
-    @patch('src.layer3.role_researcher.create_tracked_llm')
+    @patch('src.layer3.role_researcher.invoke_unified_sync')
     def test_role_analysis_with_company_signals(
         self,
-        mock_llm_class,
+        mock_invoke,
         mock_firecrawl_class,
         sample_job_state,
         valid_role_research_json
@@ -736,8 +736,7 @@ class TestRoleResearcherWithMockedLLM:
         mock_llm = MagicMock()
         mock_response = MagicMock()
         mock_response.content = json.dumps(valid_role_research_json)
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         # Run Role Researcher (use_claude_api=False for legacy FireCrawl mode)
         researcher = RoleResearcher(use_claude_api=False)
@@ -750,8 +749,8 @@ class TestRoleResearcherWithMockedLLM:
         # Verify "why_now" mentions signal context
         assert "funding" in result["role_research"]["why_now"].lower() or "$50m" in result["role_research"]["why_now"].lower()
 
-    @patch('src.layer3.role_researcher.create_tracked_llm')
-    def test_hallucination_controls_in_role_prompt(self, mock_llm_class):
+    @patch('src.layer3.role_researcher.invoke_unified_sync')
+    def test_hallucination_controls_in_role_prompt(self, mock_invoke):
         """Role Researcher prompt includes hallucination prevention."""
         from src.layer3.role_researcher import SYSTEM_PROMPT_ROLE_RESEARCH
 
@@ -761,18 +760,16 @@ class TestRoleResearcherWithMockedLLM:
         assert "explicitly reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower() or "reference" in SYSTEM_PROMPT_ROLE_RESEARCH.lower()
 
     @patch('src.layer3.role_researcher.FirecrawlApp')
-    @patch('src.layer3.role_researcher.create_tracked_llm')
+    @patch('src.layer3.role_researcher.invoke_unified_sync')
     def test_role_research_handles_llm_failure_gracefully(
         self,
-        mock_llm_class,
+        mock_invoke,
         mock_firecrawl_class,
         sample_job_state
     ):
         """Role research handles LLM failures without blocking pipeline."""
-        # Mock LLM to raise exception
-        mock_llm = MagicMock()
-        mock_llm.invoke.side_effect = Exception("LLM API error")
-        mock_llm_class.return_value = mock_llm
+        # Mock invoke_unified_sync to raise exception
+        mock_invoke.side_effect = Exception("LLM API error")
 
         # Run Role Researcher (use_claude_api=False for legacy FireCrawl mode)
         researcher = RoleResearcher(use_claude_api=False)
@@ -828,20 +825,18 @@ def test_company_researcher_node_integration(
 
 @pytest.mark.integration
 @patch('src.layer3.role_researcher.FirecrawlApp')
-@patch('src.layer3.role_researcher.create_tracked_llm')
+@patch('src.layer3.role_researcher.invoke_unified_sync')
 def test_role_researcher_node_integration(
-    mock_llm_class,
+    mock_invoke,
     mock_firecrawl_class,
     sample_job_state,
     valid_role_research_json
 ):
     """Integration test for role_researcher_node."""
-    # Mock LLM
-    mock_llm = MagicMock()
+    # Mock invoke_unified_sync to return valid role research
     mock_response = MagicMock()
     mock_response.content = json.dumps(valid_role_research_json)
-    mock_llm.invoke.return_value = mock_response
-    mock_llm_class.return_value = mock_llm
+    mock_invoke.return_value = mock_response
 
     # Role researcher requires company_research to be present (not None)
     # otherwise it skips role research (by design)
@@ -1086,6 +1081,7 @@ class TestCompanyResearcherFallback:
         researcher = CompanyResearcher.__new__(CompanyResearcher)
         researcher.llm = Mock()
         researcher.logger = Mock()  # Added for logging migration
+        researcher._progress_callback = None  # Added for granular logging migration
 
         # Mock LLM response with valid JSON
         mock_response = Mock()
@@ -1113,6 +1109,7 @@ class TestCompanyResearcherFallback:
         researcher = CompanyResearcher.__new__(CompanyResearcher)
         researcher.llm = Mock()
         researcher.logger = Mock()  # Added for logging migration
+        researcher._progress_callback = None  # Added for granular logging migration
 
         # Mock LLM response with invalid JSON
         mock_response = Mock()
@@ -1317,12 +1314,12 @@ class TestPhase5Integration:
             assert "description" in signal
             assert "source" in signal
 
-    @patch('src.layer3.role_researcher.create_tracked_llm')
+    @patch('src.layer3.role_researcher.invoke_unified_sync')
     @patch('src.layer3.role_researcher.FirecrawlApp')
     def test_role_researcher_produces_valid_output(
         self,
         mock_firecrawl_class,
-        mock_llm_class,
+        mock_invoke,
         sample_job_state
     ):
         """Role researcher produces valid schema output with business impact."""
@@ -1345,8 +1342,7 @@ class TestPhase5Integration:
             ],
             "why_now": "Recent funding requires scaling infrastructure."
         })
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = mock_response
 
         # Mock FireCrawl (to skip role context scraping)
         mock_firecrawl = Mock()

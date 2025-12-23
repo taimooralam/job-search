@@ -25,7 +25,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
-from src.common.state import JobState
+from src.common.state import JobState, ProgressCallback
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
 from src.common.unified_llm import UnifiedLLM, LLMResult
@@ -147,6 +147,7 @@ class OpportunityMapper:
         self,
         tier: TierType = "middle",
         struct_logger: Optional["StructuredLogger"] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the mapper.
@@ -156,11 +157,14 @@ class OpportunityMapper:
                   Default is "middle" (Sonnet 4.5).
             struct_logger: Optional StructuredLogger for emitting LLM call events
                 to the frontend log stream.
+            progress_callback: Optional callback for granular LLM progress events.
+                Signature: (event, message, data) -> None
         """
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
         self.tier = tier
         self._struct_logger = struct_logger
+        self._progress_callback = progress_callback
         # UnifiedLLM handles Claude CLI primary with LangChain fallback automatically
         self._unified_llm: Optional[UnifiedLLM] = None
 
@@ -172,6 +176,7 @@ class OpportunityMapper:
             tier=self.tier,
             job_id=job_id,
             struct_logger=self._struct_logger,
+            progress_callback=self._progress_callback,
         )
 
     def _derive_fit_category(self, fit_score: int) -> str:
@@ -731,8 +736,11 @@ def opportunity_mapper_node(
     logger.info("="*60)
     logger.info(f"Backend: UnifiedLLM (tier={tier}, model={TIER_TO_CLAUDE_MODEL.get(tier, 'middle')})")
 
+    # Extract progress callback from state for granular LLM logging
+    progress_callback = state.get("progress_callback")
+
     with LayerContext(struct_logger, 4, "opportunity_mapper") as ctx:
-        mapper = OpportunityMapper(tier=tier, struct_logger=struct_logger)
+        mapper = OpportunityMapper(tier=tier, struct_logger=struct_logger, progress_callback=progress_callback)
         updates = mapper.map_opportunity(state)
 
         # Add metadata for structured logging

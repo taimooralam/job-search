@@ -169,9 +169,9 @@ class TestRealContactsIsSynthetic:
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', False)
     @patch('src.layer5.people_mapper.Config.FIRECRAWL_API_KEY', 'test_key')
     @patch('src.layer5.people_mapper.FirecrawlApp')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_firecrawl_contacts_default_is_synthetic_false(
-        self, mock_llm_class, mock_firecrawl_class, sample_job_state
+        self, mock_invoke, mock_firecrawl_class, sample_job_state
     ):
         """Contacts discovered via FireCrawl should have is_synthetic=False (or missing, defaults to False)."""
         # Mock FireCrawl discovery
@@ -252,8 +252,7 @@ class TestRealContactsIsSynthetic:
                 }
             ]
         })
-        mock_llm.invoke.return_value = classification_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = classification_response
 
         mapper = PeopleMapper()
         result = mapper._classify_contacts(raw_contacts=[], state=sample_job_state)
@@ -397,9 +396,9 @@ class TestSyntheticContactEndToEnd:
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
     def test_map_people_with_synthetic_contacts_sets_flag(
-        self, mock_llm_class, mock_claude_researcher_class, sample_job_state
+        self, mock_invoke, mock_claude_researcher_class, sample_job_state
     ):
         """map_people() with FireCrawl disabled should generate synthetic contacts with is_synthetic=True."""
         # Mock ClaudeWebResearcher to prevent real API calls
@@ -422,8 +421,7 @@ class TestSyntheticContactEndToEnd:
             "email_body": " ".join(["test word"] * 100),
             "already_applied_frame": "adding_context"
         })
-        mock_llm.invoke.return_value = outreach_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = outreach_response
 
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=False)
@@ -441,8 +439,8 @@ class TestSyntheticContactEndToEnd:
 
     @patch('src.layer5.people_mapper.Config.DISABLE_FIRECRAWL_OUTREACH', True)
     @patch('src.layer5.people_mapper.ClaudeWebResearcher')
-    @patch('src.layer5.people_mapper.create_tracked_llm')
-    def test_skip_outreach_synthetic_contacts_have_flag(self, mock_llm_class, mock_claude_researcher_class, sample_job_state):
+    @patch('src.layer5.people_mapper.invoke_unified_sync')
+    def test_skip_outreach_synthetic_contacts_have_flag(self, mock_invoke, mock_claude_researcher_class, sample_job_state):
         """skip_outreach=True with synthetic contacts should still set is_synthetic=True."""
         # Mock ClaudeWebResearcher to prevent real API calls
         mock_researcher = MagicMock()
@@ -454,8 +452,7 @@ class TestSyntheticContactEndToEnd:
         mock_claude_researcher_class.return_value = mock_researcher
 
         # Mock LLM
-        mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
+        # mock_invoke is patched at function level
 
         mapper = PeopleMapper()
         result = mapper.map_people(sample_job_state, skip_outreach=True)
