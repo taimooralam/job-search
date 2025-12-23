@@ -656,3 +656,145 @@ class TestTextFormat:
 
 # NOTE: Tests for errors array handling removed since we now use --output-format text
 # which doesn't include JSON wrapper metadata. Error detection is now via returncode or empty response.
+# ===== ERRORS ARRAY HANDLING TESTS =====
+
+class TestErrorsArrayHandling:
+    """Test handling of errors array in CLI output (v2.0.75+ behavior)."""
+
+    @pytest.fixture
+    def errors_array_cli_output(self):
+        """CLI output with errors array but no is_error flag."""
+        return json.dumps({
+            "type": "result",
+            "subtype": "success",
+            "duration_ms": 5324,
+            "duration_api_ms": 4823,
+            "is_error": False,
+            "num_turns": 1,
+            "session_id": "test-session",
+            "total_cost_usd": 0.05,
+            "usage": {"input_tokens": 100, "output_tokens": 50},
+            "modelUsage": {},
+            "permission_denials": [],
+            "uuid": "test-uuid",
+            "errors": [
+                {"message": "Context window exceeded", "type": "context_length_error"},
+                {"message": "Rate limit reached", "type": "rate_limit_error"}
+            ]
+        })
+
+    @pytest.fixture
+    def errors_array_string_cli_output(self):
+        """CLI output with errors array containing string errors."""
+        return json.dumps({
+            "type": "result",
+            "is_error": False,
+            "errors": ["Simple error message", "Another error"]
+        })
+
+    @pytest.fixture
+    def errors_array_empty_cli_output(self):
+        """CLI output with empty errors array (should succeed)."""
+        return json.dumps({
+            "type": "result",
+            "is_error": False,
+            "result": json.dumps({"status": "success"}),
+            "errors": []
+        })
+
+    def test_parse_errors_array_with_dict_errors(self, errors_array_cli_output):
+        """Should detect errors array with dict error objects."""
+        cli = ClaudeCLI()
+
+        with pytest.raises(ValueError, match="CLI returned errors:"):
+            cli._parse_cli_output(errors_array_cli_output)
+
+    def test_parse_errors_array_extracts_messages(self, errors_array_cli_output):
+        """Should extract error messages from dict error objects."""
+        cli = ClaudeCLI()
+
+        try:
+            cli._parse_cli_output(errors_array_cli_output)
+            pytest.fail("Expected ValueError")
+        except ValueError as e:
+            assert "Context window exceeded" in str(e)
+            assert "Rate limit reached" in str(e)
+
+    def test_parse_errors_array_with_string_errors(self, errors_array_string_cli_output):
+        """Should handle errors array with string errors."""
+        cli = ClaudeCLI()
+
+        with pytest.raises(ValueError, match="CLI returned errors:.*Simple error message"):
+            cli._parse_cli_output(errors_array_string_cli_output)
+
+    def test_parse_empty_errors_array_succeeds(self, errors_array_empty_cli_output):
+        """Should succeed when errors array is empty."""
+        cli = ClaudeCLI()
+
+        parsed_data, _, _, _ = cli._parse_cli_output(errors_array_empty_cli_output)
+        assert parsed_data["status"] == "success"
+
+    @patch('subprocess.run')
+    def test_invoke_handles_errors_array(self, mock_subprocess_run, errors_array_cli_output):
+        """Should fail invocation when errors array present."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = errors_array_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_errors_001")
+
+        assert result.success is False
+        assert "Context window exceeded" in result.error
+        assert "Rate limit reached" in result.error
+
+    @patch('subprocess.run')
+    def test_invoke_raw_mode_handles_errors_array(self, mock_subprocess_run, errors_array_cli_output):
+        """Should fail invocation in raw mode when errors array present."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = errors_array_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_errors_002", validate_json=False)
+
+        assert result.success is False
+        assert "CLI returned errors:" in result.error
+
+    @patch('subprocess.run')
+    def test_is_error_takes_precedence_over_errors_array(self, mock_subprocess_run):
+        """When both is_error and errors array present, is_error is checked first."""
+        cli_output = json.dumps({
+            "type": "result",
+            "is_error": True,
+            "result": "Primary error message",
+            "errors": [{"message": "Secondary error"}]
+        })
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_precedence")
+
+        assert result.success is False
+        # Should use is_error result, not errors array
+        assert "Primary error message" in result.error
+
+    def test_parse_errors_array_with_type_fallback(self):
+        """Should use type field if message is missing."""
+        cli = ClaudeCLI()
+        cli_output = json.dumps({
+            "type": "result",
+            "is_error": False,
+            "errors": [{"type": "unknown_error_type"}]
+        })
+
+        with pytest.raises(ValueError, match="unknown_error_type"):
+            cli._parse_cli_output(cli_output)

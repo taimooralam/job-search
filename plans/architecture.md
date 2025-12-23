@@ -51,6 +51,7 @@ class JobState(TypedDict):
 ### Section Coverage Tracking (BUG 4)
 
 **Components:**
+
 - `_annotation_list.html` - Data section attributes on annotation elements
 - `jd-annotation.js` - updateCoverage() method updates DOM for section tracking
 - Data flow: JD annotations → section attributes → frontend coverage display
@@ -60,6 +61,7 @@ class JobState(TypedDict):
 ### Verbose Logging Pipeline (BUG 1)
 
 **Components:**
+
 - `StructureJDService.execute()` - Accepts progress_callback and log_callback parameters
 - `routes/operations.py` - Passes logging callbacks to service layer
 - Data flow: Service layer → callbacks → web UI progress display
@@ -69,13 +71,15 @@ class JobState(TypedDict):
 ### Async-Safe Coroutine Handling (BUG 3/5)
 
 **Components:**
-- `orchestrator.py` - New _run_async_safely() method
+
+- `orchestrator.py` - New \_run_async_safely() method
 - Uses ThreadPoolExecutor to handle nested event loops
 - Wraps async CV generation in thread-safe executor
 
 **Purpose:** Prevent "RuntimeError: running event loop" when calling async code from sync context
 
 **Architecture:**
+
 ```python
 def _run_async_safely(self, coro):
     """Handle nested event loops with ThreadPoolExecutor"""
@@ -86,6 +90,7 @@ def _run_async_safely(self, coro):
 ### Smart Cache Logic (BUG 2)
 
 **Components:**
+
 - `company_research_service.py` - Modified cache check logic
 - Partial cache hit detection triggers people_mapper
 - Data flow: Check existing contacts → if partial → call people_mapper → merge results
@@ -93,6 +98,7 @@ def _run_async_safely(self, coro):
 **Purpose:** Improve contact discovery by combining cached company data with fresh contact mapping
 
 **Logic:**
+
 ```
 If cached_company_data exists:
   If contacts_from_cache are complete:
@@ -107,6 +113,7 @@ If cached_company_data exists:
 **Problem:** FastAPI's `BackgroundTasks` runs async tasks sequentially (awaiting each before starting next)
 
 **Components:**
+
 - `routes/operations.py` - New `submit_service_task()` helper function
 - Two ThreadPool executors: `_db_executor` (8 workers) and `_service_executor` (4 workers)
 - Fire-and-forget pattern: `submit_service_task(coro)` submits without awaiting
@@ -114,6 +121,7 @@ If cached_company_data exists:
 **Purpose:** Enable true parallel execution of batch operations (full-extraction, research-company, generate-cv, all-ops)
 
 **Architecture:**
+
 ```python
 def submit_service_task(coro) -> None:
     """Submit task to executor thread pool (fire-and-forget)"""
@@ -124,11 +132,13 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 ```
 
 **Impact:**
+
 - Previously: 4 batch jobs queued sequentially (10 min each = 40 min total)
 - Now: 4 batch jobs execute in parallel (10 min each = 10 min total)
 - Up to 4 concurrent batch operations (max_workers=4 limit)
 
 **Design Rationale:**
+
 - Separate ThreadPoolExecutor for service tasks prevents starving DB operations
 - Fire-and-forget doesn't block route handler - returns immediately
 - Worker threads handle blocking operations (ThreadPoolExecutor.run_async internally blocks)
@@ -157,6 +167,7 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 ### Claude CLI Text Format (FIXED)
 
 **Components:**
+
 - `src/common/claude_cli.py` - Changed to `--output-format text` for reliability
 - Simplified error handling using stderr/stdout directly
 - Removed `_parse_cli_output()` JSON parsing method
@@ -164,6 +175,7 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 **Problem:** Claude CLI bug #8126 - JSON format sometimes returns empty result field, causing silently ignored failures
 
 **Solution:** Use text format instead of JSON
+
 ```python
 # Before: --output-format json with complex error detection
 # After: --output-format text with direct response handling
@@ -176,6 +188,7 @@ return {"result": result.stdout}  # Raw LLM response
 ```
 
 **Tradeoffs:**
+
 - **Gain:** Reliable output without CLI format bugs
 - **Loss:** Cost/token metadata no longer available (acceptable for reliability)
 - **Impact:** Text format returns raw LLM response directly (no JSON wrapper)
@@ -183,6 +196,7 @@ return {"result": result.stdout}  # Raw LLM response
 ### Bulk Job Management UI
 
 **Discard Selected Feature:**
+
 - Toolbar button for bulk discarding selected jobs
 - Confirmation dialog to prevent accidental actions
 - Uses existing `/api/jobs/status/bulk` endpoint with `status: 'discarded'`
@@ -191,6 +205,7 @@ return {"result": result.stdout}  # Raw LLM response
 - Selection state management via `selectedJobIds` Set, updateSelectionCount() tracks button enabled state
 
 **Components:**
+
 - `frontend/templates/index.html` - "Discard Selected" button and toolbar integration
 - `frontend/templates/base.html` - `.btn-warning` styling and `markSelectedAsDiscarded()` function
 - Leverages existing checkbox selection system and `/api/jobs/status/bulk` API
@@ -198,22 +213,26 @@ return {"result": result.stdout}  # Raw LLM response
 ### Job Ingestion Management Page
 
 **New `/ingestion` Page:**
+
 - Dedicated UI for managing job ingestion runs and viewing ingestion history
 - Displays run history with status, timestamps, and source information
 - Accessible via header navigation link in `base.html`
 
 **Backend Endpoints:**
+
 - `GET /ingest/history/{source}` - Returns last 50 ingestion runs for a given source
   - Response: List of run records with metadata (timestamp, status, job count, errors)
   - Storage: MongoDB `system_state` collection with TTL-based retention
   - Performance: Indexed queries on source and timestamp for fast retrieval
 
 **Data Model:**
+
 - MongoDB `system_state` collection stores ingestion run history
 - Each run record includes: source, timestamp, status, job_count, errors, run_duration
 - Last 50 runs per source retained for audit and debugging
 
 **Components:**
+
 - `frontend/templates/ingestion.html` - Ingestion management UI
 - `frontend/app.py` - Route handler for `/ingestion` page
 - `frontend/runner.py` - Proxy routes for history endpoint
