@@ -270,14 +270,16 @@ class ClaudeCLI:
             self._emit_log(job_id, "debug", message="Invoking Claude CLI...")
 
             # Run Claude CLI in headless mode
-            # --dangerously-skip-permissions enables WebSearch and other tools
+            # --dangerously-skip-permissions skips permission prompts
+            # --allowedTools enables specific tools (WebSearch, WebFetch for research)
             result = subprocess.run(
                 [
                     "claude", "-p", prompt,
                     "--output-format", "json",
                     "--model", self.model,
                     "--max-turns", str(max_turns),
-                    "--dangerously-skip-permissions"
+                    "--dangerously-skip-permissions",
+                    "--allowedTools", "WebSearch,WebFetch,Read",
                 ],
                 capture_output=True,
                 text=True,
