@@ -5,14 +5,21 @@ Automated Job Ingestion Cron Script
 Fetches jobs from multiple sources, scores them, and ingests high-scoring
 jobs into the MongoDB level-2 collection.
 
-Run via cron every 6 hours:
+Supports incremental fetching (only new jobs since last run) via --incremental flag.
+
+Run via cron every hour (recommended with incremental):
+    0 * * * * cd /path/to/job-search && .venv/bin/python scripts/ingest_jobs_cron.py --incremental
+
+Run via cron every 6 hours (legacy full fetch):
     0 */6 * * * cd /path/to/job-search && .venv/bin/python scripts/ingest_jobs_cron.py
 
 Or manually for testing:
     python scripts/ingest_jobs_cron.py --dry-run
+    python scripts/ingest_jobs_cron.py --source himalaya --incremental
 """
 
 import argparse
+import asyncio
 import json
 import logging
 import sys
@@ -266,6 +273,97 @@ def save_run_stats(stats: Dict[str, Any], output_dir: Optional[Path] = None):
     logger.info(f"Stats saved to {latest_file}")
 
 
+async def run_incremental_ingestion(
+    source_name: str,
+    config: IngestConfig,
+    dry_run: bool = False,
+    skip_scoring: bool = False,
+    use_claude_scorer: bool = False,
+) -> Dict[str, Any]:
+    """
+    Run incremental ingestion using IngestService.
+
+    This mode uses the system_state collection to track last fetch time
+    and only processes new jobs since then.
+
+    Args:
+        source_name: Source to fetch from ("himalaya" or "indeed")
+        config: Ingestion configuration
+        dry_run: If True, don't actually insert jobs
+        skip_scoring: If True, skip LLM scoring
+        use_claude_scorer: If True, use Claude CLI for scoring
+
+    Returns:
+        Statistics dictionary
+    """
+    from src.services.job_ingest_service import IngestService
+
+    db = get_db()
+    ingest_service = IngestService(db, use_claude_scorer=use_claude_scorer)
+
+    # Determine source and fetch jobs
+    if source_name == "himalaya":
+        source = HimalayasSource()
+        # Use Indeed search terms as keywords (user preference)
+        keywords = config.indeed_search_terms or config.himalayas_keywords
+        search_config = {
+            "keywords": keywords,
+            "max_results": config.himalayas_max_results,
+            "worldwide_only": config.himalayas_worldwide_only,
+        }
+        source_key = "himalayas_auto"
+    else:
+        # Indeed not yet supported for incremental (would need to track per-search-config)
+        logger.warning("Incremental mode not yet supported for Indeed, falling back to full fetch")
+        return run_ingestion(config, dry_run, skip_scoring)
+
+    logger.info(f"Running incremental ingestion for {source_key}")
+
+    # Fetch jobs
+    jobs = source.fetch_jobs(search_config)
+    logger.info(f"Fetched {len(jobs)} jobs from {source_key}")
+
+    if not jobs:
+        return {
+            "status": "completed",
+            "source": source_key,
+            "fetched": 0,
+            "ingested": 0,
+            "mode": "incremental",
+        }
+
+    # Use IngestService for processing
+    if dry_run:
+        # Dry run - just count without inserting
+        last_fetch = ingest_service.get_last_fetch_timestamp(source_key)
+        new_jobs = [j for j in jobs if not last_fetch or (j.posted_date and j.posted_date > last_fetch)]
+        return {
+            "status": "dry_run",
+            "source": source_key,
+            "fetched": len(jobs),
+            "new_since_last_fetch": len(new_jobs),
+            "last_fetch_at": last_fetch.isoformat() if last_fetch else None,
+            "mode": "incremental",
+        }
+
+    # Run actual ingestion
+    result = await ingest_service.ingest_jobs(
+        jobs=jobs,
+        source_name=source_key,
+        score_threshold=config.score_threshold,
+        skip_scoring=skip_scoring,
+        incremental=True,
+    )
+
+    return {
+        "status": "completed",
+        "source": source_key,
+        "mode": "incremental",
+        **result.to_dict()["stats"],
+        "last_fetch_at": result.last_fetch_at.isoformat() if result.last_fetch_at else None,
+    }
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -291,6 +389,22 @@ def main():
         action="store_true",
         help="Enable verbose (debug) logging",
     )
+    parser.add_argument(
+        "--source",
+        choices=["himalaya", "indeed", "all"],
+        default="all",
+        help="Source to fetch from (default: all)",
+    )
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Only fetch jobs newer than last run (uses system_state collection)",
+    )
+    parser.add_argument(
+        "--use-claude",
+        action="store_true",
+        help="Use Claude CLI for scoring (free with Max subscription)",
+    )
 
     args = parser.parse_args()
 
@@ -307,12 +421,33 @@ def main():
         f"himalayas_keywords={config.himalayas_keywords}"
     )
 
-    # Run ingestion
-    stats = run_ingestion(
-        config=config,
-        dry_run=args.dry_run,
-        skip_scoring=args.skip_scoring,
-    )
+    # Run appropriate ingestion mode
+    if args.incremental and args.source in ["himalaya", "all"]:
+        # Use new incremental mode with IngestService
+        logger.info("Running in incremental mode")
+        try:
+            stats = asyncio.run(run_incremental_ingestion(
+                source_name="himalaya",
+                config=config,
+                dry_run=args.dry_run,
+                skip_scoring=args.skip_scoring,
+                use_claude_scorer=args.use_claude,
+            ))
+        except Exception as e:
+            # SAFETY: Fall back to legacy mode if incremental fails
+            logger.error(f"Incremental mode failed: {e}. Falling back to legacy mode.")
+            stats = run_ingestion(
+                config=config,
+                dry_run=args.dry_run,
+                skip_scoring=args.skip_scoring,
+            )
+    else:
+        # Use legacy full fetch mode
+        stats = run_ingestion(
+            config=config,
+            dry_run=args.dry_run,
+            skip_scoring=args.skip_scoring,
+        )
 
     # Save stats
     if not args.no_stats:
