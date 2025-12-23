@@ -314,13 +314,20 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
         """
         Parse Claude CLI JSON output.
 
-        CLI returns: {"result": "...", "cost": {...}, "model": "...", ...}
+        CLI returns (v2.0.75+): {"result": "...", "is_error": false, "usage": {...}, ...}
+        Or legacy:             {"result": "...", "cost": {...}, "model": "...", ...}
         We need to extract and parse the "result" field which contains the JD JSON.
         """
         try:
             cli_output = json.loads(stdout)
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse CLI output as JSON: {e}")
+
+        # Check for error response first (v2.0.75+)
+        # CLI may return is_error=true even with returncode=0
+        if cli_output.get("is_error"):
+            error_text = cli_output.get("result", "Unknown CLI error")
+            raise ValueError(f"CLI returned error: {error_text}")
 
         result_text = cli_output.get("result", "")
         if not result_text:
