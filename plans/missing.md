@@ -1,7 +1,9 @@
 # Implementation Gaps
 
-## Completed (2025-12-22)
+## Completed (2025-12-23)
 
+- [x] BUG FIX: Batch operations run in parallel - Replaced BackgroundTasks with submit_service_task() using ThreadPoolExecutor fire-and-forget pattern (4 workers max, separate from 8-worker DB pool). Updated full-extraction, research-company, generate-cv, and all-ops batch endpoints ✅ **COMPLETED 2025-12-23**
+- [x] FEATURE: Discard Selected bulk action - Added "Discard Selected" button to job listing toolbar with confirmation dialog and status filter integration ✅ **COMPLETED 2025-12-23**
 - [x] BUG 4: Section coverage indicators - Added data-section attributes to `_annotation_list.html` and DOM update code to `jd-annotation.js` updateCoverage() method ✅ **COMPLETED 2025-12-22**
 - [x] BUG 1: Verbose logging for prepare-annotations - Added progress_callback and log_callback parameters to StructureJDService.execute() and updated routes/operations.py to pass callbacks ✅ **COMPLETED 2025-12-22**
 - [x] BUG 3/5: CV generation coroutine error - Added _run_async_safely() method to orchestrator.py using ThreadPoolExecutor to handle nested event loops ✅ **COMPLETED 2025-12-22**
