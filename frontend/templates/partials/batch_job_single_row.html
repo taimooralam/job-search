@@ -195,8 +195,9 @@
                       onclick="openBatchAnnotationPanel('{{ job._id }}')">
                     JD
                 </span>
-                <!-- RS Badge -->
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                <!-- RS Badge - updates via research:updated event -->
+                <span data-rs-badge="{{ job._id }}"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
                              {% if rs_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800
                              {% elif rs_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-800
                              {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
@@ -204,8 +205,9 @@
                       {% if rs_state in ['green', 'orange'] %}onclick="openBatchContactsSidebar('{{ job._id }}')"{% endif %}>
                     RS
                 </span>
-                <!-- CV Badge -->
-                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                <!-- CV Badge - updates via cv:generated event -->
+                <span data-cv-badge="{{ job._id }}"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
                              {% if cv_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800
                              {% elif cv_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-800
                              {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
