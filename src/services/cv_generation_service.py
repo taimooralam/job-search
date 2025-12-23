@@ -182,7 +182,8 @@ class CVGenerationService(OperationService):
                 # Note: UnifiedLLM uses Claude CLI as primary backend with LangChain fallback
                 await emit_progress("cv_generator", "processing", f"Generating CV (Claude CLI primary, {model} fallback)")
                 logger.info(f"[{run_id[:16]}] Generating CV via UnifiedLLM (Claude CLI primary, {model} fallback)")
-                cv_result = self._generate_cv(state, model)
+                # Pass progress_callback to _generate_cv so orchestrator logs are forwarded to frontend
+                cv_result = self._generate_cv(state, model, progress_callback=progress_callback)
 
                 if cv_result.get("errors"):
                     # Include traceback if available for debugging
@@ -456,6 +457,7 @@ class CVGenerationService(OperationService):
         self,
         state: Dict[str, Any],
         model: str,
+        progress_callback: callable = None,
     ) -> Dict[str, Any]:
         """
         Run the CV generation pipeline.
@@ -463,14 +465,58 @@ class CVGenerationService(OperationService):
         Args:
             state: JobState dictionary
             model: Model name to use
+            progress_callback: Optional callback for progress updates.
+                              Signature: callback(layer_key: str, status: str, message: str)
 
         Returns:
             Dictionary with cv_text, cv_path, cv_reasoning, etc.
         """
         from src.layer6_v2.orchestrator import CVGeneratorV2
+        import json
+
+        # Create adapter to convert orchestrator's JSON logs to progress_callback format
+        def log_callback_adapter(json_str: str) -> None:
+            """Convert orchestrator JSON logs to layer progress callback format."""
+            if not progress_callback:
+                return
+            try:
+                data = json.loads(json_str)
+                event = data.get("event", "")
+                message = data.get("message", "")
+                phase = data.get("phase")
+
+                # Map orchestrator events to layer status updates
+                if event == "pipeline_start":
+                    progress_callback("cv_orchestrator", "processing", message)
+                elif event == "phase_start":
+                    layer_key = f"cv_phase_{phase}" if phase else "cv_orchestrator"
+                    progress_callback(layer_key, "processing", message)
+                elif event == "phase_complete":
+                    layer_key = f"cv_phase_{phase}" if phase else "cv_orchestrator"
+                    progress_callback(layer_key, "success", message)
+                elif event == "grade_complete":
+                    progress_callback("cv_grader", "success", message)
+                elif event == "improvement_applied":
+                    progress_callback("cv_improver", "success", message)
+                elif event in ("llm_start", "llm_complete"):
+                    # Forward LLM progress with backend info
+                    backend = data.get("backend", "llm")
+                    progress_callback(f"cv_{backend}", "processing" if "start" in event else "success", message)
+                else:
+                    # Generic log - forward as-is
+                    progress_callback("cv_orchestrator", "processing", message)
+            except Exception:
+                pass  # Don't let logging errors break the pipeline
+
+        # Get job_id from state for tracking
+        job_id = state.get("job_id")
 
         # Use standard 6-phase pipeline - UnifiedLLM uses Claude CLI as primary backend
-        generator = CVGeneratorV2(model=model)
+        generator = CVGeneratorV2(
+            model=model,
+            log_callback=log_callback_adapter,
+            job_id=job_id,
+        )
         return generator.generate(state)
 
     def _generate_cover_letter(self, state: Dict[str, Any]) -> Optional[str]:
