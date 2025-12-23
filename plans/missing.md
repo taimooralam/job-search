@@ -7,6 +7,7 @@
 - [x] BUG 4: Section coverage indicators - Added data-section attributes to `_annotation_list.html` and DOM update code to `jd-annotation.js` updateCoverage() method ✅ **COMPLETED 2025-12-22**
 - [x] BUG 1: Verbose logging for prepare-annotations - Added progress_callback and log_callback parameters to StructureJDService.execute() and updated routes/operations.py to pass callbacks ✅ **COMPLETED 2025-12-22**
 - [x] BUG 3/5: CV generation coroutine error - Added _run_async_safely() method to orchestrator.py using ThreadPoolExecutor to handle nested event loops ✅ **COMPLETED 2025-12-22**
+- [x] BUG 3/5 (second occurrence): CV generation coroutine error in _generate_all_role_bullets() - Wrapped generate_all_roles_from_variants() async call with _run_async_safely() at line 767 ✅ **COMPLETED 2025-12-23**
 - [x] BUG 2: Discover contacts cache logic - Modified company_research_service.py to check for existing contacts before returning cached data (partial cache hit triggers people_mapper) ✅ **COMPLETED 2025-12-22**
 
 ## Current Blockers

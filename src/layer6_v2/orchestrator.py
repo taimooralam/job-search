@@ -764,13 +764,14 @@ class CVGeneratorV2:
             self._logger.info(f"  Roles with variants: {roles_with_variants}/{len(roles)}")
 
             # Use batch variant-based generation (Phase 4: with annotations)
-            return generate_all_roles_from_variants(
+            # Wrap async call with _run_async_safely to handle nested event loops
+            return self._run_async_safely(generate_all_roles_from_variants(
                 roles=roles,
                 extracted_jd=extracted_jd,
                 generator=self.role_generator,
                 fallback_to_llm=True,  # Fall back to LLM for roles without variants
                 jd_annotations=jd_annotations,
-            )
+            ))
 
         # Legacy LLM-based generation
         role_bullets_list = []
