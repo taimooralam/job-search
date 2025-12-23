@@ -252,9 +252,23 @@ document.addEventListener('alpine:init', () => {
 
             // Re-subscribe running operations that lost their poller on page reload
             // This handles the case where user navigates away and returns while ops are running
+            const runStatuses = Object.entries(this.runs).map(([id, run]) => ({
+                id: id.slice(-8),
+                status: run?.status,
+                hasPoller: !!run?._logPoller
+            }));
+            cliDebug('Run statuses on init:', runStatuses);
+
             for (const [runId, run] of Object.entries(this.runs)) {
-                if (run?.status === 'running' && !run._logPoller) {
-                    cliDebug('Re-subscribing after page reload:', runId);
+                // Re-subscribe if running OR if status is unknown/queued (might still be in progress)
+                const needsResubscribe = (
+                    run?.status === 'running' ||
+                    run?.status === 'queued' ||
+                    run?.status === 'pending'
+                ) && !run._logPoller;
+
+                if (needsResubscribe) {
+                    cliDebug('Re-subscribing after page reload:', runId, 'status:', run?.status);
                     this.subscribeToLogs(runId);
                 }
             }
