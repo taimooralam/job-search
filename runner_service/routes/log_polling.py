@@ -125,6 +125,12 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             if parsed.get("duration_ms"):
                 log_obj["duration_ms"] = parsed["duration_ms"]
 
+            # Extract raw CLI output for debugging (shows what Claude actually returned)
+            if parsed.get("raw_output"):
+                log_obj["raw_output"] = parsed["raw_output"]
+            if parsed.get("stderr"):
+                log_obj["stderr"] = parsed["stderr"]
+
         except json.JSONDecodeError:
             # Not valid JSON despite starting with {, treat as plain text
             log_obj["source"] = "python"

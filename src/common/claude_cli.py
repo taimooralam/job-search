@@ -373,6 +373,16 @@ class ClaudeCLI:
             # (no JSON wrapper, no metadata - but reliable response)
             raw_output = result.stdout.strip()
 
+            # Log full raw output for debugging - this shows what Claude CLI actually returned
+            # Truncate to 2000 chars to avoid overwhelming logs but show enough context
+            raw_preview = raw_output[:2000] + "..." if len(raw_output) > 2000 else raw_output
+            self._emit_log(
+                job_id, "debug",
+                message=f"CLI raw output ({len(raw_output)} chars)",
+                raw_output=raw_preview,
+                stderr=result.stderr[:500] if result.stderr else None,
+            )
+
             if not raw_output:
                 raise ValueError("CLI returned empty response")
 
