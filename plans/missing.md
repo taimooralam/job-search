@@ -1,7 +1,8 @@
 # Implementation Gaps
 
-## Completed (2025-12-23)
+## Completed (2025-12-24)
 
+- [x] BUG FIX: Claude CLI error detection and max_turns parameter - Added `_detect_cli_error_in_stdout()` method to detect "Error: Reached max turns" messages before JSON parsing. Integrated error detection with verbose logging. Added `max_turns` parameter to `UnifiedLLM.invoke()` for configurable turn limits. Updated header generation (header_generator.py, ensemble_header_generator.py) to use `max_turns=3`. Removed dead code residue from merge conflict. 13 new tests added to test_claude_cli.py ✅ **COMPLETED 2025-12-24**
 - [x] BUG FIX: Claude CLI output format - Changed from JSON to text format to avoid CLI bug #8126 where json format sometimes returns empty result field. Simplified error handling to use stderr/stdout directly. Text format returns raw LLM response (no JSON wrapper, no cost/token metadata) ✅ **COMPLETED 2025-12-24**
 - [x] FEATURE: Job Ingestion Management UI - New `/ingestion` page for managing ingestion runs with history endpoint `GET /ingest/history/{source}` returning last 50 runs from MongoDB `system_state` collection. Added navigation link in header ✅ **COMPLETED 2025-12-23**
 - [x] BUG FIX: Batch operations run in parallel - Replaced BackgroundTasks with submit_service_task() using ThreadPoolExecutor fire-and-forget pattern (4 workers max, separate from 8-worker DB pool). Updated full-extraction, research-company, generate-cv, and all-ops batch endpoints ✅ **COMPLETED 2025-12-23**

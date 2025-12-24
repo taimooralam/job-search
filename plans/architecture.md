@@ -164,34 +164,61 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - Step-by-step logging of JD processing
 - Status updates for long-running operations
 
-### Claude CLI Text Format (FIXED)
+### Claude CLI Text Format with Error Detection (FIXED)
 
 **Components:**
 
 - `src/common/claude_cli.py` - Changed to `--output-format text` for reliability
-- Simplified error handling using stderr/stdout directly
-- Removed `_parse_cli_output()` JSON parsing method
+- `_detect_cli_error_in_stdout()` - Detects CLI error messages in stdout before JSON parsing
+- `src/common/unified_llm.py` - `max_turns` parameter for configurable turn limits
+- `src/layer6_v2/header_generator.py` - Uses `max_turns=3`
+- `src/layer6_v2/ensemble_header_generator.py` - Uses `max_turns=3`
+- `tests/unit/test_claude_cli.py` - 13 new tests for error detection
 
-**Problem:** Claude CLI bug #8126 - JSON format sometimes returns empty result field, causing silently ignored failures
+**Problem:** Claude CLI bug #8126 - JSON format sometimes returns empty result field. Additionally, text format responses can include error messages like "Error: Reached max turns (1)" to stdout, which code was trying to parse as JSON.
 
-**Solution:** Use text format instead of JSON
+**Solution:** Use text format with pre-parsing error detection
 
 ```python
-# Before: --output-format json with complex error detection
-# After: --output-format text with direct response handling
+# Error detection before JSON parsing
+def _detect_cli_error_in_stdout(stdout: str) -> dict:
+    """Detect CLI error messages in stdout (e.g., 'Error: Reached max turns')"""
+    if "Error:" in stdout:
+        logger.error(f"CLI error detected in stdout: {stdout[:200]}")
+        return {"is_error": True, "error": stdout}
+    return None
 
-cmd = ["claude", "prompt", "--output-format text", ...]
+# In invoke():
 result = subprocess.run(cmd, capture_output=True, text=True)
 if result.returncode != 0:
     return {"is_error": True, "error": result.stderr}
+
+# Check for errors in stdout before parsing
+error = _detect_cli_error_in_stdout(result.stdout)
+if error:
+    return error
+
 return {"result": result.stdout}  # Raw LLM response
+```
+
+**Configurable Turn Limits:**
+
+```python
+# unified_llm.py
+def invoke(self, prompt: str, max_turns: int = 1) -> str:
+    """Invoke Claude with configurable turn limit"""
+    cmd = ["claude", "prompt", f"--max-turns {max_turns}", ...]
+    # ... rest of implementation
+
+# Usage in header generation (prevents "max turns" errors)
+self.unified_llm.invoke(prompt, max_turns=3)
 ```
 
 **Tradeoffs:**
 
-- **Gain:** Reliable output without CLI format bugs
+- **Gain:** Reliable output without CLI format bugs; proper error detection
 - **Loss:** Cost/token metadata no longer available (acceptable for reliability)
-- **Impact:** Text format returns raw LLM response directly (no JSON wrapper)
+- **Impact:** Text format returns raw LLM response directly (no JSON wrapper); turn limits prevent truncation errors
 
 ### Bulk Job Management UI
 
