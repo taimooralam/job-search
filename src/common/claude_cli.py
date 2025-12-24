@@ -151,10 +151,25 @@ class ClaudeCLI:
         return CLAUDE_MODEL_TIERS.get(tier, CLAUDE_MODEL_TIERS["middle"])
 
     def _default_log(self, job_id: str, level: str, data: Dict[str, Any]) -> None:
-        """Default logging - replace with Redis publisher if needed."""
+        """Default logging with verbose context for debugging CLI errors."""
         log_level = getattr(logging, level.upper(), logging.INFO)
         message = data.get("message", str(data))
-        logger.log(log_level, f"[ClaudeCLI:{job_id}] {message}")
+
+        # Format verbose context for error debugging
+        context_parts = []
+        if "cli_error" in data:
+            context_parts.append(f"error={data['cli_error']}")
+        if "prompt_length" in data:
+            context_parts.append(f"prompt_len={data['prompt_length']}")
+        if "max_turns" in data:
+            context_parts.append(f"max_turns={data['max_turns']}")
+
+        context_str = f" [{', '.join(context_parts)}]" if context_parts else ""
+        logger.log(log_level, f"[ClaudeCLI:{job_id}] {message}{context_str}")
+
+        # Log prompt preview on separate line for errors (helps debugging prompts)
+        if log_level >= logging.ERROR and "prompt_preview" in data:
+            logger.log(log_level, f"[ClaudeCLI:{job_id}] Prompt preview: {data['prompt_preview']}")
 
     def _emit_log(self, job_id: str, level: str, **kwargs) -> None:
         """
