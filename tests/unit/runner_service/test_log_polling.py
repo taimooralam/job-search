@@ -270,3 +270,31 @@ class TestParseLogEntry:
 
         assert result["source"] == "python"
         assert result["message"] == "{incomplete json"
+
+    def test_error_fields_extracted_for_browser_visibility(self):
+        """Error fields (error, cli_error, duration_ms) are extracted for browser console visibility.
+
+        These fields were previously dropped by whitelist-based extraction,
+        preventing the browser from seeing CLI error details.
+        """
+        log = json.dumps({
+            "event": "llm_error",
+            "message": "Claude CLI failed: Error: Reached max turns (3)",
+            "backend": "claude_cli",
+            "error": "Error: Reached max turns (3)",
+            "cli_error": "Reached max turns (3)",
+            "duration_ms": 2500,
+            "prompt_length": 5000,
+            "prompt_preview": "You are a professional CV writer...",
+            "max_turns": 3,
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        # Verify error fields are now extracted (the fix for log bubbling)
+        assert result["error"] == "Error: Reached max turns (3)"
+        assert result["cli_error"] == "Reached max turns (3)"
+        assert result["duration_ms"] == 2500
+        # Also verify other context fields still work
+        assert result["prompt_length"] == 5000
+        assert result["max_turns"] == 3

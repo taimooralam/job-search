@@ -116,6 +116,15 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             if parsed.get("max_turns"):
                 log_obj["max_turns"] = parsed["max_turns"]
 
+            # Extract error fields (critical for CLI error visibility in browser)
+            # These were previously dropped by whitelist-based extraction
+            if parsed.get("error"):
+                log_obj["error"] = parsed["error"]
+            if parsed.get("cli_error"):
+                log_obj["cli_error"] = parsed["cli_error"]
+            if parsed.get("duration_ms"):
+                log_obj["duration_ms"] = parsed["duration_ms"]
+
         except json.JSONDecodeError:
             # Not valid JSON despite starting with {, treat as plain text
             log_obj["source"] = "python"

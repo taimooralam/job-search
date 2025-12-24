@@ -335,10 +335,14 @@ class ClaudeCLI:
                 "--max-turns", str(max_turns),
                 "--dangerously-skip-permissions",
             ]
-            # Only enable tools when explicitly requested
-            # With max_turns=1, tool_use responses would exit before completion
+            # Tool control: Claude CLI has all tools enabled by default
+            # We must explicitly disable them when not needed to prevent
+            # the model from consuming turns trying to use tools
             if allow_tools:
                 cmd.extend(["--allowedTools", "WebSearch,WebFetch,Read"])
+            else:
+                # Explicitly disable ALL tools to ensure single-turn text generation
+                cmd.extend(["--allowedTools", ""])
 
             result = subprocess.run(
                 cmd,
