@@ -269,20 +269,33 @@ class UnifiedLLM:
                         cost_usd=result.cost_usd,
                     )
                     return result
-                # CLI failed, capture specific error reason
+                # CLI failed, capture specific error reason with verbose context
                 cli_error_reason = f"CLI returned error: {result.error}"
+                prompt_len = len(combined_prompt)
+                prompt_preview = combined_prompt[:500] + "..." if len(combined_prompt) > 500 else combined_prompt
+
+                # Log with full verbose context for debugging
                 logger.warning(
-                    f"[UnifiedLLM:{self.step_name}] Claude CLI failed: {result.error}"
+                    f"[UnifiedLLM:{self.step_name}] Claude CLI failed: {result.error} "
+                    f"[prompt_len={prompt_len}, max_turns={max_turns}]"
                 )
+                logger.warning(
+                    f"[UnifiedLLM:{self.step_name}] Prompt preview: {prompt_preview}"
+                )
+
                 # Log CLI error to StructuredLogger for frontend visibility
                 self._log_cli_error(job_id, cli_error_reason, result.duration_ms)
-                # Emit error to Redis
+
+                # Emit error to Redis WITH VERBOSE CONTEXT
                 self._emit_progress(
                     "llm_error",
-                    f"Claude CLI failed: {result.error}",
+                    f"Claude CLI failed: {result.error} [prompt_len={prompt_len}, max_turns={max_turns}]",
                     backend="claude_cli",
                     error=result.error,
                     duration_ms=result.duration_ms,
+                    prompt_length=prompt_len,
+                    prompt_preview=prompt_preview,
+                    max_turns=max_turns,
                 )
             except subprocess.TimeoutExpired as e:
                 cli_error_reason = f"CLI timeout after {e.timeout}s"
