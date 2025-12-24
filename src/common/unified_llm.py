@@ -207,6 +207,7 @@ class UnifiedLLM:
         system: Optional[str] = None,
         job_id: Optional[str] = None,
         validate_json: bool = True,
+        max_turns: int = 1,
     ) -> LLMResult:
         """
         Invoke LLM with Claude CLI primary, LangChain fallback.
@@ -222,6 +223,7 @@ class UnifiedLLM:
             system: Optional system prompt (combined with user prompt for CLI)
             job_id: Job ID for tracking (overrides default)
             validate_json: Whether to parse response as JSON (default True)
+            max_turns: Maximum conversation turns for Claude CLI (default 1)
 
         Returns:
             LLMResult with response and backend attribution
@@ -252,7 +254,7 @@ class UnifiedLLM:
             )
 
             try:
-                result = await self._invoke_cli(combined_prompt, job_id, validate_json)
+                result = await self._invoke_cli(combined_prompt, job_id, validate_json, max_turns)
                 if result.success:
                     self._log_success("claude_cli", result, job_id)
                     # Emit completion to Redis
@@ -369,6 +371,7 @@ class UnifiedLLM:
         prompt: str,
         job_id: str,
         validate_json: bool,
+        max_turns: int = 1,
     ) -> LLMResult:
         """
         Invoke Claude CLI backend.
@@ -379,6 +382,7 @@ class UnifiedLLM:
             prompt: Combined system + user prompt
             job_id: Job ID for tracking
             validate_json: Whether to parse response as JSON
+            max_turns: Maximum conversation turns for Claude CLI (default 1)
 
         Returns:
             LLMResult from CLI invocation
@@ -389,7 +393,7 @@ class UnifiedLLM:
         loop = asyncio.get_event_loop()
         cli_result: CLIResult = await loop.run_in_executor(
             None,
-            lambda: self.cli.invoke(prompt, job_id, validate_json=validate_json),
+            lambda: self.cli.invoke(prompt, job_id, max_turns=max_turns, validate_json=validate_json),
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)

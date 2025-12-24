@@ -29,6 +29,7 @@ import json
 import logging
 import asyncio
 import os
+import re
 from typing import Optional, Dict, Any, Callable, List, Literal
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -234,6 +235,40 @@ class ClaudeCLI:
         # Generic fallback
         return f"CLI exited with code {returncode}"
 
+    def _detect_cli_error_in_stdout(self, stdout: str) -> Optional[str]:
+        """
+        Detect CLI error messages in stdout that occur with returncode=0.
+
+        With --output-format text, some CLI errors are written to stdout
+        instead of stderr and don't set a non-zero return code. This method
+        detects known error patterns before attempting JSON parsing.
+
+        Known patterns:
+        - "Error: Reached max turns (N)" - max turns limit hit
+        - "Error: " prefix - general CLI errors
+
+        Args:
+            stdout: CLI stdout text
+
+        Returns:
+            Error message if detected, None otherwise
+        """
+        if not stdout:
+            return None
+
+        stdout_stripped = stdout.strip()
+
+        # Pattern 1: "Error: Reached max turns (N)"
+        if re.match(r'^Error: Reached max turns \(\d+\)$', stdout_stripped):
+            return stdout_stripped
+
+        # Pattern 2: General "Error: " prefix (but not inside JSON)
+        # Only match if the entire output starts with "Error: "
+        if stdout_stripped.startswith("Error: ") and not stdout_stripped.startswith("{"):
+            return stdout_stripped
+
+        return None
+
     def invoke(
         self,
         prompt: str,
@@ -316,60 +351,48 @@ class ClaudeCLI:
             if not raw_output:
                 raise ValueError("CLI returned empty response")
 
+            # Check for CLI error messages in stdout (e.g., "Error: Reached max turns (1)")
+            # These occur with returncode=0 but should be treated as failures
+            cli_error = self._detect_cli_error_in_stdout(raw_output)
+            if cli_error:
+                # Verbose error logging for debugging prompts
+                prompt_preview = prompt[:500] + "..." if len(prompt) > 500 else prompt
+                self._emit_log(
+                    job_id, "error",
+                    message=f"CLI error in stdout: {cli_error}",
+                    cli_error=cli_error,
+                    prompt_length=len(prompt),
+                    prompt_preview=prompt_preview,
+                    model=self.model,
+                    max_turns=max_turns,
+                )
+                return CLIResult(
+                    job_id=job_id,
+                    success=False,
+                    result=None,
+                    raw_result=raw_output,  # Include raw output for debugging
+                    error=cli_error,
+                    model=self.model,
+                    tier=self.tier,
+                    duration_ms=duration_ms,
+                    invoked_at=start_time.isoformat()
+                )
+
             if validate_json:
                 # Parse the LLM response as JSON
                 try:
                     parsed_data = parse_llm_json(raw_output)
                 except ValueError as e:
+                    # Verbose error logging for JSON parse failures
+                    response_preview = raw_output[:500] + "..." if len(raw_output) > 500 else raw_output
+                    self._emit_log(
+                        job_id, "error",
+                        message=f"Failed to parse LLM response as JSON: {e}",
+                        response_preview=response_preview,
+                        prompt_length=len(prompt),
+                        model=self.model,
+                    )
                     raise ValueError(f"Failed to parse LLM response as JSON: {e}")
-                    cli_output = json.loads(result.stdout)
-
-                    # Check for error response first (v2.0.75+)
-                    # CLI may return is_error=true even with returncode=0
-                    if cli_output.get("is_error"):
-                        error_text = cli_output.get("result", "Unknown CLI error")
-                        self._emit_log(job_id, "error", message=f"CLI error: {error_text}")
-                        return CLIResult(
-                            job_id=job_id,
-                            success=False,
-                            result=None,
-                            raw_result=None,
-                            error=error_text,
-                            model=self.model,
-                            tier=self.tier,
-                            duration_ms=duration_ms,
-                            invoked_at=start_time.isoformat()
-                        )
-
-                    # Check for errors array (can occur even when is_error is absent/false)
-                    errors = cli_output.get("errors", [])
-                    if errors:
-                        error_messages = []
-                        for e in errors:
-                            if isinstance(e, dict):
-                                error_messages.append(e.get("message", e.get("type", str(e))))
-                            else:
-                                error_messages.append(str(e))
-                        if error_messages:
-                            error_text = f"CLI returned errors: {'; '.join(error_messages)}"
-                            self._emit_log(job_id, "error", message=error_text)
-                            return CLIResult(
-                                job_id=job_id,
-                                success=False,
-                                result=None,
-                                raw_result=None,
-                                error=error_text,
-                                model=self.model,
-                                tier=self.tier,
-                                duration_ms=duration_ms,
-                                invoked_at=start_time.isoformat()
-                            )
-
-                    raw_result = cli_output.get("result", result.stdout)
-                    input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
-                except json.JSONDecodeError:
-                    raw_result = result.stdout
-                    input_tokens, output_tokens, cost_usd = None, None, None
 
                 # No cost metadata with text format
                 input_tokens, output_tokens, cost_usd = None, None, None

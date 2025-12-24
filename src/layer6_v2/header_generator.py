@@ -800,10 +800,12 @@ Return JSON matching this ProfileResponse schema:
         full_system_prompt = system_prompt + "\n\n" + schema_guidance
 
         # Use UnifiedLLM with JSON validation
+        # max_turns=3 to allow complex header generation without hitting turn limits
         result = await self._llm.invoke(
             prompt=user_prompt,
             system=full_system_prompt,
             validate_json=True,
+            max_turns=3,
         )
 
         if not result.success:
