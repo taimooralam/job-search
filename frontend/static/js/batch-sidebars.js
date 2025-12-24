@@ -240,7 +240,7 @@ function waitForTipTap(timeoutMs = 5000) {
 }
 
 async function initBatchCVEditor(jobId) {
-    const container = document.getElementById('batch-cv-editor-container');
+    const container = document.getElementById('batch-cv-editor-content');
     if (!container) {
         console.log('CV editor container not found, editor will be read-only');
         return;
