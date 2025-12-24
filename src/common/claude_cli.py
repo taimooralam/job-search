@@ -30,6 +30,7 @@ import logging
 import asyncio
 import os
 import re
+import sys
 from typing import Optional, Dict, Any, Callable, List, Literal
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -165,11 +166,16 @@ class ClaudeCLI:
             context_parts.append(f"max_turns={data['max_turns']}")
 
         context_str = f" [{', '.join(context_parts)}]" if context_parts else ""
-        logger.log(log_level, f"[ClaudeCLI:{job_id}] {message}{context_str}")
+        full_message = f"[ClaudeCLI:{job_id}] {message}{context_str}"
 
-        # Log prompt preview on separate line for errors (helps debugging prompts)
-        if log_level >= logging.ERROR and "prompt_preview" in data:
-            logger.log(log_level, f"[ClaudeCLI:{job_id}] Prompt preview: {data['prompt_preview']}")
+        # For errors, print directly to stderr to guarantee console visibility
+        # (Python logger may be filtered or redirected elsewhere)
+        if log_level >= logging.ERROR:
+            print(f"[ERROR] {full_message}", file=sys.stderr)
+            if "prompt_preview" in data:
+                print(f"[ERROR] [ClaudeCLI:{job_id}] Prompt preview: {data['prompt_preview']}", file=sys.stderr)
+        else:
+            logger.log(log_level, full_message)
 
     def _emit_log(self, job_id: str, level: str, **kwargs) -> None:
         """
