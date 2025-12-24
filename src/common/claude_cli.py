@@ -377,8 +377,8 @@ class ClaudeCLI:
             # Truncate to 2000 chars to avoid overwhelming logs but show enough context
             raw_preview = raw_output[:2000] + "..." if len(raw_output) > 2000 else raw_output
             self._emit_log(
-                job_id, "debug",
-                message=f"CLI raw output ({len(raw_output)} chars)",
+                job_id, "info",
+                message=f"CLI raw output ({len(raw_output)} chars): {raw_preview[:200]}",
                 raw_output=raw_preview,
                 stderr=result.stderr[:500] if result.stderr else None,
             )

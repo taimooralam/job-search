@@ -179,6 +179,17 @@ class UnifiedLLM:
         else:
             self._struct_logger = None
 
+    def _cli_log_callback(self, job_id: str, level: str, data: Dict[str, Any]) -> None:
+        """
+        Adapter callback for ClaudeCLI logs -> structured logger.
+
+        Routes ClaudeCLI logs through _emit_progress so they reach
+        the browser console via Redis.
+        """
+        message = data.pop("message", "CLI event")
+        event = f"cli_{level}"  # e.g., cli_info, cli_error, cli_debug
+        self._emit_progress(event, message, **data)
+
     @property
     def cli(self) -> ClaudeCLI:
         """Lazy-initialize Claude CLI client."""
@@ -186,6 +197,7 @@ class UnifiedLLM:
             self._cli = ClaudeCLI(
                 tier=self.config.tier,
                 timeout=self.config.timeout_seconds,
+                log_callback=self._cli_log_callback,
             )
         return self._cli
 
