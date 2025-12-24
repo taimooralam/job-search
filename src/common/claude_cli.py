@@ -333,15 +333,8 @@ class ClaudeCLI:
                 "--output-format", "text",
                 "--model", self.model,
                 "--dangerously-skip-permissions",
+                "--tools", "",  # Disable all tools (proper syntax for --print mode)
             ]
-            # Tool control: Claude CLI has all tools enabled by default
-            # We must explicitly disable them when not needed to prevent
-            # the model from consuming turns trying to use tools
-            if allow_tools:
-                cmd.extend(["--allowedTools", "WebSearch,WebFetch,Read"])
-            else:
-                # Explicitly disable ALL tools to ensure single-turn text generation
-                cmd.extend(["--allowedTools", ""])
 
             result = subprocess.run(
                 cmd,
