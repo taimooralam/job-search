@@ -252,3 +252,13 @@ Claude: *immediately reads code files*  ← WRONG! Delegate first!
 - Ground outputs only in provided context
 - Encourage "unknown" over guessing
 - Make sources explicit in state
+
+## Debugging Principle
+
+**When user expresses frustration → SLOW DOWN, not speed up.**
+
+- Do deep analysis and trace the complete data flow
+- Never take shortcuts or quick hacks
+- Understand the user's actual goal (e.g., "frontend console" = StructuredLogger, not stderr)
+- Fix the root cause correctly the first time, even if it takes longer
+- Frustration signals "you're not solving my actual problem" - not "go faster with any solution"
