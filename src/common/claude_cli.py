@@ -332,7 +332,6 @@ class ClaudeCLI:
                 "claude", "-p", prompt,
                 "--output-format", "text",
                 "--model", self.model,
-                "--max-turns", str(max_turns),
                 "--dangerously-skip-permissions",
             ]
             # Tool control: Claude CLI has all tools enabled by default
