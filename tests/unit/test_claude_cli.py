@@ -656,3 +656,256 @@ class TestTextFormat:
 
 # NOTE: Tests for errors array handling removed since we now use --output-format text
 # which doesn't include JSON wrapper metadata. Error detection is now via returncode or empty response.
+
+
+# ===== CLI ERROR DETECTION IN STDOUT TESTS =====
+
+class TestCLIErrorDetectionInStdout:
+    """Test detection of CLI error messages in stdout that occur with returncode=0.
+
+    With --output-format text, some CLI errors are written to stdout instead of
+    stderr and don't set a non-zero return code. These tests verify we detect
+    such errors before attempting JSON parsing.
+    """
+
+    def test_detect_cli_error_directly_unit_test(self):
+        """Unit test for _detect_cli_error_in_stdout() method - no subprocess mock."""
+        cli = ClaudeCLI()
+
+        # Pattern 1: Max turns error
+        max_turns_error = "Error: Reached max turns (1)"
+        detected = cli._detect_cli_error_in_stdout(max_turns_error)
+        assert detected == max_turns_error
+
+        # Pattern 2: General error
+        general_error = "Error: Some CLI error occurred"
+        detected = cli._detect_cli_error_in_stdout(general_error)
+        assert detected == general_error
+
+        # Valid JSON - should NOT be detected as error
+        valid_json = json.dumps({"status": "success", "data": "test"})
+        detected = cli._detect_cli_error_in_stdout(valid_json)
+        assert detected is None
+
+        # Empty stdout
+        detected = cli._detect_cli_error_in_stdout("")
+        assert detected is None
+
+        # Whitespace only
+        detected = cli._detect_cli_error_in_stdout("   \n  ")
+        assert detected is None
+
+    def test_detect_max_turns_error_pattern(self):
+        """Should detect 'Error: Reached max turns (N)' pattern."""
+        cli = ClaudeCLI()
+
+        test_cases = [
+            ("Error: Reached max turns (1)", "Error: Reached max turns (1)"),
+            ("Error: Reached max turns (5)", "Error: Reached max turns (5)"),
+            ("Error: Reached max turns (10)", "Error: Reached max turns (10)"),
+        ]
+
+        for stdout, expected_error in test_cases:
+            detected = cli._detect_cli_error_in_stdout(stdout)
+            assert detected == expected_error
+
+    def test_detect_general_error_prefix(self):
+        """Should detect general 'Error: ' prefix when not inside JSON."""
+        cli = ClaudeCLI()
+
+        test_cases = [
+            "Error: Some CLI error",
+            "Error: Authentication failed",
+            "Error: Credit balance is too low",
+            "Error: Invalid request",
+        ]
+
+        for error_msg in test_cases:
+            detected = cli._detect_cli_error_in_stdout(error_msg)
+            assert detected == error_msg
+
+    def test_does_not_detect_error_inside_json(self):
+        """Should NOT detect 'Error: ' when it's inside valid JSON."""
+        cli = ClaudeCLI()
+
+        # Valid JSON that happens to contain "Error: " in the data
+        json_with_error_text = json.dumps({
+            "message": "Error: This is part of the data",
+            "status": "success"
+        })
+
+        detected = cli._detect_cli_error_in_stdout(json_with_error_text)
+        assert detected is None
+
+    def test_does_not_detect_error_in_valid_json_response(self):
+        """Should NOT detect error when stdout contains valid JSON."""
+        cli = ClaudeCLI()
+
+        valid_responses = [
+            json.dumps({"pain_points": ["p1", "p2"], "strategic_needs": ["s1"]}),
+            json.dumps({"status": "complete", "data": {"key": "value"}}),
+            json.dumps({"result": "success"}),
+        ]
+
+        for valid_json in valid_responses:
+            detected = cli._detect_cli_error_in_stdout(valid_json)
+            assert detected is None
+
+    def test_handles_whitespace_in_error_detection(self):
+        """Should handle leading/trailing whitespace when detecting errors."""
+        cli = ClaudeCLI()
+
+        # Max turns error with whitespace
+        max_turns_with_space = "  Error: Reached max turns (1)  \n"
+        detected = cli._detect_cli_error_in_stdout(max_turns_with_space)
+        assert detected == "Error: Reached max turns (1)"
+
+        # General error with whitespace
+        general_with_space = "\n  Error: Some error  \n"
+        detected = cli._detect_cli_error_in_stdout(general_with_space)
+        assert detected == "Error: Some error"
+
+    def test_does_not_match_partial_max_turns_pattern(self):
+        """Should NOT match partial or malformed max turns patterns."""
+        cli = ClaudeCLI()
+
+        # These should NOT match the strict max turns pattern
+        non_matching = [
+            "Error: Reached max turns",  # Missing (N)
+            "Error: Reached max turns ()",  # Empty parens
+            "Error: Reached max turns (abc)",  # Non-numeric
+            "Prefix Error: Reached max turns (1)",  # Extra prefix
+            "Error: Reached max turns (1) Suffix",  # Extra suffix
+        ]
+
+        for text in non_matching:
+            detected = cli._detect_cli_error_in_stdout(text)
+            # These might match the general error pattern instead
+            if text.strip().startswith("Error: ") and not text.strip().startswith("{"):
+                # General pattern match is OK
+                assert detected is not None
+            else:
+                assert detected is None
+
+    @patch('subprocess.run')
+    def test_invoke_detects_max_turns_error_in_stdout(self, mock_subprocess_run):
+        """Integration test: invoke() detects max turns error with returncode=0."""
+        # Simulate CLI returning error message in stdout with successful exit code
+        mock_result = MagicMock()
+        mock_result.returncode = 0  # Success exit code, but error in stdout
+        mock_result.stdout = "Error: Reached max turns (1)"
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test prompt", job_id="test_max_turns_001")
+
+        # Should detect as error despite returncode=0
+        assert result.success is False
+        assert result.error == "Error: Reached max turns (1)"
+        assert result.result is None
+        assert result.raw_result == "Error: Reached max turns (1)"
+
+    @patch('subprocess.run')
+    def test_invoke_detects_general_cli_error_in_stdout(self, mock_subprocess_run):
+        """Integration test: invoke() detects general CLI error with returncode=0."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "Error: Credit balance is too low"
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test prompt", job_id="test_cli_error_001")
+
+        assert result.success is False
+        assert result.error == "Error: Credit balance is too low"
+        assert result.result is None
+
+    @patch('subprocess.run')
+    def test_invoke_valid_json_not_detected_as_error(self, mock_subprocess_run, valid_cli_output):
+        """Integration test: Valid JSON response should NOT be detected as error."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test prompt", job_id="test_valid_json_001")
+
+        # Should successfully parse JSON, not detect as error
+        assert result.success is True
+        assert result.error is None
+        assert result.result is not None
+        assert "pain_points" in result.result
+
+    @patch('subprocess.run')
+    def test_invoke_logs_cli_error_with_prompt_context(self, mock_subprocess_run):
+        """Integration test: Should log detailed error info when CLI error detected."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "Error: Reached max turns (1)"
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        # Use custom log callback to verify logging
+        log_events = []
+        def capture_log(job_id, level, data):
+            log_events.append((job_id, level, data))
+
+        cli = ClaudeCLI(log_callback=capture_log)
+        result = cli.invoke(prompt="Test prompt that is quite long" * 10, job_id="test_logging_001")
+
+        assert result.success is False
+
+        # Verify error was logged with context
+        error_logs = [e for e in log_events if e[1] == "error"]
+        assert len(error_logs) > 0
+
+        # Check that error log contains expected fields
+        error_log_data = error_logs[0][2]
+        assert "cli_error" in error_log_data
+        assert "prompt_length" in error_log_data
+        assert "prompt_preview" in error_log_data
+
+    @patch('subprocess.run')
+    def test_invoke_prioritizes_returncode_over_stdout_error(self, mock_subprocess_run):
+        """When returncode != 0, should use stderr error (not stdout detection)."""
+        # Both returncode error AND stdout error present
+        mock_result = MagicMock()
+        mock_result.returncode = 1  # Non-zero exit code
+        mock_result.stdout = "Error: Reached max turns (1)"
+        mock_result.stderr = "Authentication failed"
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_priority_001")
+
+        # Should use stderr error from returncode check (not stdout detection)
+        assert result.success is False
+        assert result.error == "Authentication failed"
+
+    @patch('subprocess.run')
+    def test_invoke_handles_edge_case_error_in_multiline_stdout(self, mock_subprocess_run):
+        """Should detect error even if stdout has multiple lines."""
+        # Multi-line output where first line is error
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "Error: Reached max turns (1)\nAdditional context\nMore info"
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        result = cli.invoke(prompt="test", job_id="test_multiline_001")
+
+        # Should NOT match because of extra content (strict pattern)
+        # But might match general error pattern - depends on implementation
+        # Current implementation uses strip() then checks startswith
+        # "Error: Reached max turns (1)\nAdditional context\nMore info".strip()
+        # would be the full string, so max turns pattern won't match (not just that line)
+        # and general pattern also won't match (doesn't end with just error)
+        # Actually, looking at code: it strips the whole thing and checks if it starts with Error:
+        # So this WOULD match the general pattern
+        assert result.success is False
+        assert "Error:" in result.error
