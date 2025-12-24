@@ -207,72 +207,6 @@ class ClaudeCLI:
     # NOTE: _parse_cli_output method removed - we now use --output-format text
     # which returns the raw LLM response directly, avoiding the known bug (#8126)
     # where --output-format json sometimes returns empty result field.
-    def _parse_cli_output(self, stdout: str) -> tuple[Dict[str, Any], Optional[int], Optional[int], Optional[float]]:
-        """
-        Parse Claude CLI JSON output.
-
-        CLI returns (v2.0.75+): {"result": "...", "is_error": false, "usage": {...}, "total_cost_usd": N, ...}
-        Or legacy:             {"result": "...", "cost": {...}, "model": "...", ...}
-        Extracts the "result" field and parses cost information.
-
-        Returns:
-            Tuple of (parsed_data, input_tokens, output_tokens, cost_usd)
-
-        Raises:
-            ValueError: If CLI returned an error or result cannot be parsed
-        """
-        try:
-            cli_output = json.loads(stdout)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse CLI output as JSON: {e}")
-
-        # Check for error response first (v2.0.75+)
-        # CLI may return is_error=true even with returncode=0
-        if cli_output.get("is_error"):
-            error_text = cli_output.get("result", "Unknown CLI error")
-            raise ValueError(f"CLI returned error: {error_text}")
-
-        # Check for errors array (can occur even when is_error is absent/false)
-        # CLI v2.0.75+ may return errors array without setting is_error=true
-        errors = cli_output.get("errors", [])
-        if errors:
-            error_messages = []
-            for e in errors:
-                if isinstance(e, dict):
-                    error_messages.append(e.get("message", e.get("type", str(e))))
-                else:
-                    error_messages.append(str(e))
-            if error_messages:
-                raise ValueError(f"CLI returned errors: {'; '.join(error_messages)}")
-
-        # Check for tool_use response (model tried to use a tool but max_turns=1 prevents completion)
-        # This happens when --allowedTools is set but the model's response is tool use
-        response_type = cli_output.get("type", "")
-        if response_type == "tool_use":
-            tool_name = cli_output.get("name", "unknown")
-            raise ValueError(
-                f"Model attempted tool use ({tool_name}) but conversation ended before completion. "
-                f"Disable tools with allow_tools=False or increase max_turns."
-            )
-
-        result_text = cli_output.get("result", "")
-        if not result_text:
-            # Include response type in error for debugging
-            raise ValueError(
-                f"CLI output missing 'result' field. "
-                f"Response type: {response_type or 'unknown'}, keys: {list(cli_output.keys())}"
-            )
-
-        # Extract cost information (supports both new and legacy formats)
-        input_tokens, output_tokens, cost_usd = self._extract_cost_info(cli_output)
-
-        # Parse the actual result
-        try:
-            parsed_data = parse_llm_json(result_text)
-        except ValueError as e:
-            raise ValueError(f"Failed to parse result JSON: {e}")
-
-        return parsed_data, input_tokens, output_tokens, cost_usd
 
     def _extract_cli_error(self, stdout: str, stderr: str, returncode: int) -> str:
         """
@@ -311,7 +245,7 @@ class ClaudeCLI:
         """
         Execute Claude CLI with prompt and return parsed result.
 
-        Runs: claude -p {prompt} --output-format json --model {model} --max-turns {max_turns}
+        Runs: claude -p {prompt} --output-format text --model {model} --max-turns {max_turns}
 
         Args:
             prompt: Full prompt text (system + user combined)
