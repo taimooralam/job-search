@@ -12,12 +12,29 @@ This replaces SSE streaming for better reliability during long operations.
 
 import json
 import logging
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
+
+# Regex patterns for parsing Python logger output
+# Matches: "2025-01-15 10:22:33 [INFO] module.name: message"
+# Or: "[INFO] module.name: message"
+# Or: "[UnifiedLLM:step_name] message"
+PYTHON_LOG_PATTERN = re.compile(
+    r'^(?:\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+)?'  # Optional timestamp
+    r'\[([A-Z]+)\]\s*'  # Log level [INFO], [ERROR], etc.
+    r'(?:[\w.]+:\s*)?'  # Optional module name
+    r'(.*)$'  # Message
+)
+
+# Matches: "[ClaudeCLI:job_id] message" or "[UnifiedLLM:step] message"
+COMPONENT_LOG_PATTERN = re.compile(
+    r'^\[(\w+):([^\]]+)\]\s*(.*)$'  # [Component:context] message
+)
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
 
@@ -26,28 +43,32 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
     """
     Parse a log entry string into a structured log object.
 
-    Logs from StructuredLogger are JSON-formatted with fields like:
-    - message: Human-readable log text
-    - backend: LLM backend ("claude_cli" or "langchain")
-    - tier: Tier level ("low", "middle", "high")
-    - cost_usd: Estimated cost in USD
-    - event: Event type (layer_start, llm_call_complete, etc.)
-
-    For non-JSON logs (plain text), returns just the message.
+    Handles two log formats:
+    1. StructuredLogger (JSON): Parsed with full metadata extraction
+    2. Python logger (plain text): Parsed with level/component extraction
 
     Args:
         log: Raw log string (may be JSON or plain text)
         index: Log index for ordering
 
     Returns:
-        Dict with index, message, and optional backend/tier/cost_usd fields
+        Dict with index, message, source, and optional metadata fields
     """
     log_obj: Dict[str, Any] = {"index": index}
 
+    # Safety: handle None or empty logs
+    if not log:
+        log_obj["message"] = ""
+        log_obj["source"] = "unknown"
+        return log_obj
+
+    log_stripped = log.strip()
+
     # Try to parse as JSON (structured log from StructuredLogger)
-    if log.strip().startswith("{"):
+    if log_stripped.startswith("{"):
         try:
-            parsed = json.loads(log)
+            parsed = json.loads(log_stripped)
+            log_obj["source"] = "structured"
 
             # Build human-readable message from structured log
             # Priority: explicit message > layer event > event type
@@ -87,12 +108,44 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             if parsed.get("model"):
                 log_obj["model"] = parsed["model"]
 
+            # Include verbose context fields if present (for debugging)
+            if parsed.get("prompt_length"):
+                log_obj["prompt_length"] = parsed["prompt_length"]
+            if parsed.get("prompt_preview"):
+                log_obj["prompt_preview"] = parsed["prompt_preview"]
+            if parsed.get("max_turns"):
+                log_obj["max_turns"] = parsed["max_turns"]
+
         except json.JSONDecodeError:
-            # Not valid JSON, treat as plain text
-            log_obj["message"] = log
+            # Not valid JSON despite starting with {, treat as plain text
+            log_obj["source"] = "python"
+            log_obj["message"] = log_stripped
+
     else:
-        # Plain text log
-        log_obj["message"] = log
+        # Plain text log - try to parse Python logger format
+        log_obj["source"] = "python"
+
+        # Try to extract log level from Python logger format
+        # e.g., "2025-01-15 10:22:33 [INFO] module: message" or "[ERROR] message"
+        python_match = PYTHON_LOG_PATTERN.match(log_stripped)
+        if python_match:
+            level = python_match.group(1)
+            message = python_match.group(2).strip()
+            log_obj["level"] = level.lower()
+            log_obj["message"] = message
+        else:
+            # Try component format: [ClaudeCLI:job_id] message
+            component_match = COMPONENT_LOG_PATTERN.match(log_stripped)
+            if component_match:
+                component = component_match.group(1)
+                context = component_match.group(2)
+                message = component_match.group(3).strip()
+                log_obj["component"] = component
+                log_obj["context"] = context
+                log_obj["message"] = message
+            else:
+                # Plain unformatted text - use as-is
+                log_obj["message"] = log_stripped
 
     return log_obj
 

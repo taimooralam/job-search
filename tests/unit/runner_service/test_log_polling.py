@@ -15,12 +15,13 @@ class TestParseLogEntry:
     """Tests for _parse_log_entry function."""
 
     def test_plain_text_log(self):
-        """Plain text logs are returned as-is."""
+        """Plain text logs are returned with source='python'."""
         result = _parse_log_entry("Starting pipeline...", 0)
 
         assert result == {
             "index": 0,
             "message": "Starting pipeline...",
+            "source": "python",
         }
 
     def test_plain_text_with_special_chars(self):
@@ -196,3 +197,76 @@ class TestParseLogEntry:
         assert result["event"] == "llm_call_error"
         assert "fit_scorer" in result["message"]
         assert "error" in result["message"]
+
+    def test_none_log_handled_gracefully(self):
+        """None log value is handled gracefully."""
+        result = _parse_log_entry(None, 0)
+
+        assert result["index"] == 0
+        assert result["message"] == ""
+        assert result["source"] == "unknown"
+
+    def test_python_logger_format_with_timestamp(self):
+        """Python logger format with timestamp is parsed correctly."""
+        log = "2025-01-15 10:22:33 [INFO] module.name: Starting CV generation"
+        result = _parse_log_entry(log, 0)
+
+        assert result["source"] == "python"
+        assert result["level"] == "info"
+        assert result["message"] == "Starting CV generation"
+
+    def test_python_logger_format_without_timestamp(self):
+        """Python logger format without timestamp is parsed."""
+        log = "[ERROR] pipeline.runner: Something went wrong"
+        result = _parse_log_entry(log, 5)
+
+        assert result["source"] == "python"
+        assert result["level"] == "error"
+        assert result["message"] == "Something went wrong"
+
+    def test_component_log_format(self):
+        """Component log format [Component:context] is parsed."""
+        log = "[ClaudeCLI:job123] Invoking Claude CLI with max_turns=3"
+        result = _parse_log_entry(log, 2)
+
+        assert result["source"] == "python"
+        assert result["component"] == "ClaudeCLI"
+        assert result["context"] == "job123"
+        assert result["message"] == "Invoking Claude CLI with max_turns=3"
+
+    def test_verbose_context_fields_extracted(self):
+        """Verbose context fields (prompt_length, prompt_preview, max_turns) are extracted."""
+        log = json.dumps({
+            "event": "llm_call_error",
+            "step_name": "header_generator",
+            "backend": "claude_cli",
+            "error": "CLI error",
+            "prompt_length": 4523,
+            "prompt_preview": "You are a professional CV writer...",
+            "max_turns": 3,
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert result["source"] == "structured"
+        assert result["prompt_length"] == 4523
+        assert result["prompt_preview"] == "You are a professional CV writer..."
+        assert result["max_turns"] == 3
+
+    def test_structured_log_has_source_structured(self):
+        """JSON structured logs have source='structured'."""
+        log = json.dumps({
+            "event": "layer_start",
+            "layer_name": "fetch_job",
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert result["source"] == "structured"
+
+    def test_invalid_json_has_source_python(self):
+        """Invalid JSON starting with { has source='python'."""
+        result = _parse_log_entry("{incomplete json", 0)
+
+        assert result["source"] == "python"
+        assert result["message"] == "{incomplete json"
