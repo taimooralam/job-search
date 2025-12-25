@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-21 (UnifiedLLM Migration Documentation)
+**Last Updated**: 2025-12-24 (GAP-099 to GAP-107 + verified GAP-024, GAP-027, GAP-032 implemented)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -10,11 +10,11 @@
 
 | Priority | Count | Description |
 |----------|-------|-------------|
-| **P0 (CRITICAL)** | 3 (3 documented/fixed) | Must fix immediately - system broken or data integrity at risk |
-| **P1 (HIGH)** | 19 (17 fixed, 0 open) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 38 (32 fixed, 0 open) | Fix this sprint - enhancements and incomplete features |
-| **P3 (LOW)** | 23 (17 fixed, 0 open) | Backlog - nice-to-have improvements |
-| **Total** | **83** (69 fixed/documented, 10 open → 6 open after E2E annotation) | All identified gaps |
+| **P0 (CRITICAL)** | 4 (3 documented/fixed, 1 open) | Must fix immediately - system broken or data integrity at risk |
+| **P1 (HIGH)** | 23 (17 fixed, 4 open) | Fix this week - user-facing bugs or important features |
+| **P2 (MEDIUM)** | 40 (33 fixed, 2 open) | Fix this sprint - enhancements and incomplete features |
+| **P3 (LOW)** | 25 (19 fixed, 2 open) | Backlog - nice-to-have improvements |
+| **Total** | **92** (72 fixed/documented, 16 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
 
@@ -784,6 +784,313 @@ truncated_profile = candidate_profile[:1500]
 - Layer 4: `src/layer4/opportunity_mapper.py:172-177` (`_truncate_text()`)
 - Layer 5: `src/layer5/people_mapper.py:1248-1251` (`_candidate_profile_snippet()`)
 - Layer 7: `src/layer7/interview_predictor.py:509-526` (`_format_stars_for_prompt()`)
+
+---
+
+### GAP-106: Pain Point Extraction Returns 0 Results Despite Valid JD
+**Status**: ✅ COMPLETED 2025-12-25
+
+**Summary**: Silent failures in pain point extraction have been addressed by adding permanent verbose logging to `src/layer2/pain_point_miner.py`. Three critical logging points were added:
+1. Before LLM call - logs job context and input
+2. After parsing - logs `<final>` tag detection and JSON extraction status
+3. On exception - logs full traceback with context
+
+**Fix Details**:
+- Modified: `src/layer2/pain_point_miner.py`
+- Added verbose logging at extraction points to enable production debugging
+- Logging captures: input data, LLM responses, parsing results, error details
+- This provides visibility into why extraction may return 0 results in production
+
+---
+
+### GAP-104: All-Ops Pipeline Logs Not Streaming (Stuck on "Queued")
+**Priority**: P0 CRITICAL | **Status**: 🔴 PENDING | **Effort**: 2-4 hours
+**Impact**: When running full analysis (all-ops), no logs appear after "Queued as..." message - users cannot see pipeline progress
+
+**Problem**:
+- User starts "all-ops" (full analysis) pipeline for a job
+- Status shows "RUNNING" in the diagnostics panel
+- Initial logs show: "Tier: quality, Use LLM: True, Force refresh: False"
+- Then: "Starting all-ops for job [id]"
+- Then: "Queued as q_[id]"
+- **NO FURTHER LOGS APPEAR** - pipeline appears stuck
+- Users have no visibility into what layers are executing or if there are errors
+
+**Expected Behavior**:
+- Logs should stream in real-time as each layer executes
+- Should see: Layer 1.4 (JD Processing) → Layer 2 (Pain Points) → Layer 3 → etc.
+- Progress indicators should update
+- Any errors should be visible in the log stream
+
+**Root Cause Investigation**:
+1. Check if backend is emitting logs (add debug logging to pipeline runner)
+2. Check SSE/WebSocket connection for log streaming
+3. Check if "queued" mode has different log handling than direct execution
+4. Check `StructuredLogger` event emission for all-ops vs individual operations
+5. May be an async/queue worker issue where logs go to worker stdout instead of SSE stream
+
+**Files to Investigate**:
+- `src/services/pipeline_runner.py` - All-ops execution path
+- `src/common/structured_logger.py` - Log event emission
+- `frontend/static/js/cli-panel.js` - Log display/SSE handling
+- `frontend/app.py` - SSE endpoint for log streaming
+- Queue worker if using background job processing (Celery/RQ)
+
+**Symptoms from Screenshot**:
+- Run ID: `op_all-ops_fcc4dcf76885`
+- Job ID: `694bc63b056b4548bf9793e8`
+- Status: RUNNING (but no log output)
+- Last log: "Queued as q_78ea32e00034"
+
+**Additional Diagnostic Info**:
+- **SSE ping/heartbeat messages ARE working** - connection is alive
+- This confirms the SSE connection is established and maintained
+- Issue is specifically that **pipeline execution logs aren't being emitted to the SSE stream**
+- Likely cause: Queue worker executes in separate process/context without access to the SSE response object
+
+---
+
+### GAP-103: Pipeline Queue Shows Pending After Pipeline Success
+**Priority**: P1 HIGH | **Status**: 🔴 PENDING | **Effort**: 2-4 hours
+**Impact**: Queue UI shows jobs as "PENDING" even after pipeline completes successfully, confusing users about actual status
+
+**Problem**:
+- User adds jobs to the pipeline queue
+- Pipeline runs and completes successfully
+- Queue dropdown still shows jobs as "PENDING (10)" instead of clearing or marking complete
+- Users cannot tell which jobs have actually been processed
+
+**Expected Behavior**:
+- When pipeline completes successfully for a job, it should be removed from PENDING queue
+- Queue should show accurate count of remaining unprocessed jobs
+- Completed jobs should either be removed or moved to a "COMPLETED" section
+
+**Root Cause Investigation**:
+1. Check how queue state is managed (frontend state vs backend/MongoDB)
+2. Check if pipeline completion triggers queue state update
+3. Check WebSocket or polling mechanism for queue status updates
+4. May be missing event emission on pipeline success
+
+**Files to Investigate**:
+- `frontend/static/js/pipeline-queue.js` or similar - Queue UI logic
+- `frontend/static/js/execution-store.js` - Execution state management
+- `src/services/pipeline_runner.py` - Pipeline completion handling
+- `frontend/app.py` - Queue status endpoints
+- WebSocket handlers if used for real-time updates
+
+**Related Issues**:
+- GAP-049: Job Status Not Updating After Pipeline Completion ✅ COMPLETE (may be related/regressed)
+- GAP-050: Pipeline State Not Persisting to MongoDB ✅ COMPLETE
+
+---
+
+### GAP-107: Annotation Panel Dimension Toggle + Auto-Delete on Empty
+**Priority**: P2 MEDIUM | **Status**: 🔴 PENDING | **Effort**: 2-3 hours
+**Impact**: Annotation UX is clunky - cannot unselect dimensions, and empty annotations persist unnecessarily
+
+**Problem**:
+1. **No toggle behavior**: Once a dimension (must-have, nice-to-have, etc.) is selected, clicking it again does NOT unselect it
+2. **Cannot remove individual dimensions**: User must use a separate "clear" or "delete" action
+3. **Empty annotations persist**: If all dimensions are unselected, the annotation should be auto-deleted but currently remains
+
+**Current Behavior**:
+- Click dimension → selects it ✓
+- Click same dimension again → nothing happens ✗
+- All dimensions unselected → annotation still exists with empty state ✗
+
+**Expected Behavior**:
+- Click dimension → selects it (adds to annotation)
+- Click same dimension again → **unselects it** (removes from annotation)
+- All dimensions unselected → **annotation is auto-deleted** from the JD
+- Visual feedback: Selected dimensions should have clear "active" styling (filled vs outline)
+
+**Implementation**:
+1. Add toggle logic to dimension click handlers
+2. After each toggle, check if all dimensions are unselected
+3. If empty, call delete annotation API and remove highlight from JD text
+4. Update UI state to reflect toggle (CSS class toggle)
+
+**Files to Modify**:
+- `frontend/static/js/jd-annotation.js` - Dimension click handlers
+- `frontend/templates/partials/_annotation_panel.html` - Panel UI (if exists)
+- `frontend/app.py` - Ensure delete endpoint handles empty annotation cleanup
+
+**UX Pattern**:
+- Similar to tag/label selectors in Gmail, Notion, or Linear
+- Multi-select with toggle behavior
+- Visual: filled chip = selected, outline chip = unselected
+
+---
+
+### GAP-105: Remove Confirmation Popups for Discard/Move-to-Batch Actions
+**Priority**: P3 LOW | **Status**: 🔴 PENDING | **Effort**: 1-2 hours
+**Impact**: Extra confirmation dialogs slow down workflow when discarding jobs or moving them to batch
+
+**Problem**:
+- When user clicks "Discard" on a job, a confirmation popup appears
+- When user clicks "Move to Batch" on a job, a confirmation popup appears
+- These popups add friction to common workflow actions
+- Affects both detail page and batch page
+
+**Expected Behavior**:
+- "Discard" action should execute immediately without confirmation
+- "Move to Batch" action should execute immediately without confirmation
+- Consider showing a brief toast/undo option instead of blocking confirmation
+- Actions should feel snappy and responsive
+
+**Implementation Options**:
+1. **Remove popups entirely**: Direct action on click (simplest)
+2. **Undo pattern**: Execute immediately, show toast with "Undo" button for 5 seconds
+3. **Soft delete**: Mark as discarded but keep in DB, allow recovery from a "Discarded" view
+
+**Files to Modify**:
+- `frontend/templates/job_detail.html` - Detail page discard/batch buttons
+- `frontend/templates/batch.html` - Batch page action buttons
+- `frontend/static/js/job-actions.js` or similar - Action handlers
+- Remove `confirm()` or modal trigger calls
+
+**UX Best Practice**:
+- For reversible actions (move to batch), no confirmation needed
+- For destructive actions (discard), prefer undo over confirm (Gmail pattern)
+
+---
+
+### GAP-102: Add Application URL to Job Detail Page Header
+**Priority**: P3 LOW | **Status**: 🔴 PENDING | **Effort**: 1 hour
+**Impact**: Users cannot quickly access the original job posting URL from the detail page header
+
+**Problem**:
+- Job detail page header shows job title, company, location, etc.
+- The application URL (link to original job posting) is not visible in the header
+- Users need to scroll or navigate elsewhere to find the link to apply
+
+**Expected Behavior**:
+- Job application URL should be displayed in the detail page header
+- Should be a clickable link that opens in a new tab
+- Consider an "Apply" button or icon link for quick access
+
+**Implementation**:
+1. Add application URL field to header section in `job_detail.html`
+2. Style as button or icon link (external link icon)
+3. Handle missing URLs gracefully (hide if not available)
+
+**Files to Modify**:
+- `frontend/templates/job_detail.html` - Header section
+- Possibly `frontend/static/css/` - Styling for apply button
+
+**Data Source**:
+- `job.url` or `job.application_url` field from MongoDB job document
+
+---
+
+### GAP-101: CV Preview Not Syncing After Editor Save
+**Priority**: P1 HIGH | **Status**: 🔴 PENDING | **Effort**: 2-3 hours
+**Impact**: CV preview on detail page shows stale content after saving changes in the CV editor (batch or detail page)
+
+**Problem**:
+- User edits CV in the editor (either from batch page sidebar or detail page panel)
+- User saves changes (auto-save or manual save)
+- The CV preview displayed on the detail page does NOT update to reflect saved changes
+- User sees outdated CV content until they manually refresh the page
+
+**Expected Behavior**:
+- After CV editor saves successfully, the detail page CV preview should automatically refresh
+- Preview should show the same content that was just saved
+- No manual page refresh should be required
+
+**Root Cause Investigation**:
+1. Check if `save()` in CVEditor triggers any event/callback on success
+2. Check if detail page listens for CV update events
+3. May need to emit custom event after successful save and have preview component listen for it
+4. Consider HTMX `hx-trigger` pattern for reactive updates
+
+**Files to Investigate**:
+- `frontend/static/js/cv-editor.js` - `save()` method success handler
+- `frontend/templates/job_detail.html` - CV preview component
+- `frontend/templates/partials/_cv_preview.html` - Preview partial (if exists)
+- `frontend/app.py` - CV preview endpoint
+
+**Related Gaps**:
+- GAP-077: CV Save Display Refresh ✅ COMPLETE (may be incomplete or regressed)
+- GAP-100: CV Editor Component Unification
+
+---
+
+### GAP-100: CV Editor Debounce + Component Unification (Batch vs Detail)
+**Priority**: P2 MEDIUM | **Status**: 🔴 PENDING | **Effort**: 4-6 hours
+**Impact**: Batch page CV editor may have missing debounce, duplicate code, and inconsistent defaults compared to detail page
+
+**Problem**:
+1. **Debounce Issue**: The batch CV editor may not have proper debounce on save operations
+2. **Code Duplication**: CV editor is implemented differently between batch and detail pages:
+   - Detail page: Uses `cv-margin-top`, `cv-page-size` element IDs
+   - Batch page: Uses `batch-cv-margin-top`, `batch-cv-page-size` element IDs
+   - Different event handlers: `applyDocumentStyle()` vs `applyBatchDocumentStyle()`
+   - Different preset handlers: `updateMarginPreset()` vs `updateBatchMarginPreset()`
+3. **Default Inconsistency**: Both views should default to narrow margins and A4 size
+
+**Current Architecture**:
+- `frontend/static/js/cv-editor.js` - `CVEditor` class with 1.5s auto-save debounce
+- `frontend/static/js/batch-sidebars.js` - Wraps `CVEditor` but uses different element IDs
+- `frontend/templates/components/cv_editor.html` - Template with `id_prefix` and conditional handlers
+- `frontend/templates/partials/batch/_cv_sidebar_content.html` - Duplicate margin/preset logic
+
+**Expected Behavior**:
+- Single `CVEditor` component works identically on both batch and detail pages
+- Debounce (1.5s delay) on all content changes before auto-save
+- Default settings: **Narrow margins** + **A4 page size** on both views
+
+**Fix Required**:
+1. **Analyze**: Map all duplicated code between batch and detail CV editor implementations
+2. **Refactor**: Create unified CV editor component that:
+   - Accepts configuration for container ID and API endpoints
+   - Uses consistent element IDs (or accepts ID prefix as config)
+   - Shares margin/preset logic
+   - Has consistent debounce behavior
+3. **Defaults**: Set narrow margins (0.25" or 0.3") and A4 as defaults in unified component
+
+**Files to Analyze/Modify**:
+- `frontend/static/js/cv-editor.js` - Core CVEditor class
+- `frontend/static/js/batch-sidebars.js` - Batch wrapper (should be simplified)
+- `frontend/templates/components/cv_editor.html` - Template component
+- `frontend/templates/partials/batch/_cv_sidebar_content.html` - Batch-specific content (has duplicate JS)
+- `frontend/templates/partials/_cv_editor_panel.html` - Detail page panel
+
+**Related Gaps**:
+- GAP-057: CV Editor Margin Presets
+- GAP-054: CV Editor WYSIWYG Consistency ✅ COMPLETE
+
+---
+
+### GAP-099: Contact Discovery Skipped on Company Cache Hit
+**Priority**: P1 HIGH | **Status**: 🔴 PENDING | **Effort**: 2-4 hours
+**Impact**: When company research cache is hit, contact discovery is skipped - but contacts should still be discovered because each role requires different contacts
+
+**Problem**:
+- Company research has a caching mechanism to avoid redundant FireCrawl API calls
+- When a company cache is hit (same company researched previously), the contact discovery step is currently skipped
+- This is incorrect behavior: while company information may be reusable, **contacts are role-specific**
+- Different roles at the same company require discovering different hiring managers/recruiters
+- Example: A "Frontend Developer" role needs frontend team leads, while a "Data Engineer" role needs data team managers
+
+**Expected Behavior**:
+- Company research cache hit → Reuse cached company data (correct, saves API calls)
+- Contact discovery → Should ALWAYS run for each role, even on cache hit (currently skipped)
+
+**Root Cause Investigation Needed**:
+1. Identify where cache hit triggers skip of contact discovery
+2. Likely in `src/layer3/company_researcher.py` or `src/layer5/people_mapper.py`
+3. May be tied to `DISABLE_FIRECRAWL_OUTREACH` flag or similar skip logic
+
+**Fix Required**:
+1. Decouple company cache hit from contact discovery skip
+2. Contact discovery should check its own cache (role-specific) or always run
+3. Add role context to contact cache key if caching contacts
+
+**References**:
+- Company caching: `src/layer3/company_researcher.py`
+- Contact discovery: `src/layer5/people_mapper.py`
+- Related: GAP-069 (FireCrawl SEO Query Result Caching)
 
 ---
 
@@ -1936,11 +2243,19 @@ All 6 role files in `data/master-cv/roles/` converted to enhanced format:
 
 ---
 
-### GAP-024: V2 Parser/Tailoring Not Implemented
-**Priority**: P2 MEDIUM | **Status**: PENDING | **Effort**: 4-6 hours
-**Impact**: 18+ unit tests skipped with reason "Will fail until V2 parser/tailoring implemented"
+### GAP-024: V2 Parser/Tailoring Not Implemented ✅ COMPLETE
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-24 - verified implemented) | **Effort**: N/A
+**Impact**: V2 CV generation system fully implemented and integrated
 
-**Evidence**: `tests/unit/test_layer6_cv_generator_v2.py` - multiple skipped tests
+**Verification** (2025-12-24): Full layer6_v2 implementation found:
+- `src/layer6_v2/orchestrator.py` - `CVGeneratorV2` class
+- `src/layer6_v2/grader.py` - CV grading
+- `src/layer6_v2/improver.py` - CV improvement
+- `src/layer6_v2/role_generator.py` - Role-specific generation
+- `src/layer6_v2/header_generator.py` - Header generation
+- `src/layer6_v2/variant_selector.py` - Variant selection
+- Integration in `src/services/cv_generation_service.py:474`
+- Tests in `tests/layer6_v2/`
 
 ---
 
@@ -3342,8 +3657,15 @@ Reduced margins/spacing across all CV elements by ~20%:
 
 ---
 
-### GAP-027: .docx CV Export
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4-6 hours
+### GAP-027: .docx CV Export ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-24 - verified implemented) | **Effort**: N/A
+
+**Verification** (2025-12-24): Full .docx export implementation found:
+- `src/layer6/cv_generator.py:26-28` - python-docx imports
+- `src/layer6/cv_generator.py:872` - `_build_cv_document()` method
+- `src/layer6/cv_generator.py:970` - `_save_cv_document()` method
+- Output: `CV_{company}.docx` files
+- Also used by `src/layer7/output_publisher.py:676` for Drive upload
 **Impact**: Currently PDF only; some recruiters prefer Word format
 
 ---
@@ -3443,8 +3765,16 @@ FireCrawl Search → [Success?] → Yes → Return Contacts
 
 ---
 
-### GAP-032: Job Iframe Viewer
-**Priority**: P3 LOW | **Status**: PENDING | **Effort**: 4-6 hours
+### GAP-032: Job Iframe Viewer ✅ COMPLETE
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-24 - verified implemented) | **Effort**: N/A
+
+**Verification** (2025-12-24): Full iframe viewer implementation found in `frontend/templates/job_detail.html`:
+- `#job-iframe` - Main iframe element (line 1881-1889)
+- `#iframe-loading` - Loading spinner state (line 1857)
+- `#iframe-error` - Error handling with fallback link (line 1864-1877)
+- Sandbox attributes for security: `allow-scripts allow-same-origin allow-popups allow-forms`
+- Graceful fallback: "Open in new tab instead" link when sites block embedding
+- JavaScript handlers in `frontend/static/js/job-detail.js`
 **Impact**: View original job posting in iframe
 
 **Plan**: `plans/job-iframe-viewer-implementation.md`
