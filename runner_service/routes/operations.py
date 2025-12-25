@@ -1375,6 +1375,7 @@ async def all_ops_start(
                     use_llm=request.use_llm,
                     force_refresh=request.force_refresh,
                     progress_callback=layer_cb,
+                    log_callback=log_cb,
                 )
 
                 # Determine final status based on result
@@ -2377,6 +2378,7 @@ async def _execute_queued_operation(
                     force_refresh=force_refresh,
                     use_llm=use_llm,
                     progress_callback=layer_cb,
+                    log_callback=log_cb,
                 )
             finally:
                 service.close()
@@ -3223,6 +3225,7 @@ async def _execute_all_ops_bulk_task(
                 use_llm=use_llm,
                 force_refresh=force_refresh,
                 progress_callback=layer_cb,
+                log_callback=log_cb,
             )
 
             # Determine final status

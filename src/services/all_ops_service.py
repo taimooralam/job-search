@@ -128,6 +128,7 @@ class AllOpsService(OperationService):
         force_refresh: bool = False,
         use_llm: bool = True,
         progress_callback: Optional[Callable] = None,
+        log_callback: Optional[Callable] = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -141,7 +142,8 @@ class AllOpsService(OperationService):
             tier: Model tier for quality/cost selection
             force_refresh: Force refresh for company research (ignore cache)
             use_llm: Whether to use LLM for extraction (default True)
-            progress_callback: Optional callback(layer_key, status, message)
+            progress_callback: Optional callback(layer_key, status, message) for structured updates
+            log_callback: Optional callback(message: str) for log streaming to SSE frontend
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -183,6 +185,7 @@ class AllOpsService(OperationService):
                         tier=tier,
                         use_llm=use_llm,
                         progress_callback=extraction_progress,
+                        log_callback=log_callback,
                     )
 
                 async def run_research():
@@ -198,6 +201,7 @@ class AllOpsService(OperationService):
                         tier=tier,
                         force_refresh=force_refresh,
                         progress_callback=research_progress,
+                        log_callback=log_callback,
                     )
 
                 # Run both operations in parallel with retry logic

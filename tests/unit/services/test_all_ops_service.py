@@ -375,6 +375,148 @@ class TestAllOpsServiceExecute:
         assert any("all_ops" in call[0] or "parallel" in call[0] for call in progress_calls)
 
 
+class TestAllOpsServiceLogCallback:
+    """Tests for log_callback propagation to sub-services (GAP-104 fix)."""
+
+    @pytest.mark.asyncio
+    async def test_execute_passes_log_callback_to_extraction_service(self):
+        """log_callback should be passed to extraction service."""
+        service = AllOpsService()
+
+        extraction_result = OperationResult(
+            success=True,
+            run_id="extract_run",
+            operation="full-extraction",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        research_result = OperationResult(
+            success=True,
+            run_id="research_run",
+            operation="research-company",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        # Create mock services
+        mock_extraction = MagicMock()
+        mock_extraction.execute = AsyncMock(return_value=extraction_result)
+        mock_research = MagicMock()
+        mock_research.execute = AsyncMock(return_value=research_result)
+
+        service._extraction_service = mock_extraction
+        service._research_service = mock_research
+
+        log_messages = []
+        def mock_log_callback(message):
+            log_messages.append(message)
+
+        await service.execute(
+            job_id="test_job_id",
+            tier=ModelTier.BALANCED,
+            log_callback=mock_log_callback,
+        )
+
+        # Verify log_callback was passed to extraction service
+        mock_extraction.execute.assert_called_once()
+        call_kwargs = mock_extraction.execute.call_args[1]
+        assert "log_callback" in call_kwargs
+        assert call_kwargs["log_callback"] == mock_log_callback
+
+    @pytest.mark.asyncio
+    async def test_execute_passes_log_callback_to_research_service(self):
+        """log_callback should be passed to research service."""
+        service = AllOpsService()
+
+        extraction_result = OperationResult(
+            success=True,
+            run_id="extract_run",
+            operation="full-extraction",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        research_result = OperationResult(
+            success=True,
+            run_id="research_run",
+            operation="research-company",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        # Create mock services
+        mock_extraction = MagicMock()
+        mock_extraction.execute = AsyncMock(return_value=extraction_result)
+        mock_research = MagicMock()
+        mock_research.execute = AsyncMock(return_value=research_result)
+
+        service._extraction_service = mock_extraction
+        service._research_service = mock_research
+
+        log_messages = []
+        def mock_log_callback(message):
+            log_messages.append(message)
+
+        await service.execute(
+            job_id="test_job_id",
+            tier=ModelTier.BALANCED,
+            log_callback=mock_log_callback,
+        )
+
+        # Verify log_callback was passed to research service
+        mock_research.execute.assert_called_once()
+        call_kwargs = mock_research.execute.call_args[1]
+        assert "log_callback" in call_kwargs
+        assert call_kwargs["log_callback"] == mock_log_callback
+
+    @pytest.mark.asyncio
+    async def test_execute_without_log_callback_still_works(self):
+        """Service should work when log_callback is not provided."""
+        service = AllOpsService()
+
+        extraction_result = OperationResult(
+            success=True,
+            run_id="extract_run",
+            operation="full-extraction",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        research_result = OperationResult(
+            success=True,
+            run_id="research_run",
+            operation="research-company",
+            data={"layer_status": {}},
+            cost_usd=0.01,
+            duration_ms=1000,
+        )
+
+        # Create mock services
+        mock_extraction = MagicMock()
+        mock_extraction.execute = AsyncMock(return_value=extraction_result)
+        mock_research = MagicMock()
+        mock_research.execute = AsyncMock(return_value=research_result)
+
+        service._extraction_service = mock_extraction
+        service._research_service = mock_research
+
+        # Execute without log_callback
+        result = await service.execute(
+            job_id="test_job_id",
+            tier=ModelTier.BALANCED,
+        )
+
+        # Should still succeed
+        assert result.success
+        assert result.data["phase1_complete"]
+
+
 class TestAllOpsServiceClose:
     """Tests for resource cleanup."""
 
