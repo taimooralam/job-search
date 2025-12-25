@@ -984,31 +984,25 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-101: CV Preview Not Syncing After Editor Save
-**Priority**: P1 HIGH | **Status**: 🔴 PENDING | **Effort**: 2-3 hours
+**Priority**: P1 HIGH | **Status**: ✅ COMPLETE | **Effort**: 2-3 hours
+**Completed**: 2025-12-25
 **Impact**: CV preview on detail page shows stale content after saving changes in the CV editor (batch or detail page)
 
-**Problem**:
+**Problem** (FIXED):
 - User edits CV in the editor (either from batch page sidebar or detail page panel)
 - User saves changes (auto-save or manual save)
 - The CV preview displayed on the detail page does NOT update to reflect saved changes
 - User sees outdated CV content until they manually refresh the page
 
-**Expected Behavior**:
-- After CV editor saves successfully, the detail page CV preview should automatically refresh
-- Preview should show the same content that was just saved
-- No manual page refresh should be required
+**Solution Implemented**:
+1. Added `cvContentUpdated` event dispatch in `cv-editor.js` after successful save operation
+2. Exposed `renderCVPreview()` globally via `window.renderCVPreview` in `job_detail.html`
+3. Added event listener to refresh preview when `cvContentUpdated` event is received
+4. Preview now automatically re-renders with updated content without requiring page refresh
 
-**Root Cause Investigation**:
-1. Check if `save()` in CVEditor triggers any event/callback on success
-2. Check if detail page listens for CV update events
-3. May need to emit custom event after successful save and have preview component listen for it
-4. Consider HTMX `hx-trigger` pattern for reactive updates
-
-**Files to Investigate**:
-- `frontend/static/js/cv-editor.js` - `save()` method success handler
-- `frontend/templates/job_detail.html` - CV preview component
-- `frontend/templates/partials/_cv_preview.html` - Preview partial (if exists)
-- `frontend/app.py` - CV preview endpoint
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Added event dispatch after save
+- `frontend/templates/job_detail.html` - Exposed global function and added event listener
 
 **Related Gaps**:
 - GAP-077: CV Save Display Refresh ✅ COMPLETE (may be incomplete or regressed)

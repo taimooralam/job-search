@@ -348,7 +348,7 @@ class AnnotationManager {
                 <input type="checkbox"
                        class="star-checkbox mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                        value="${star.id}"
-                       onchange="annotationManager.updatePopoverStars()">
+                       onchange="getActiveAnnotationManager()?.updatePopoverStars()">
                 <span class="text-xs text-gray-700">${star.title || star.id}</span>
             </label>
         `).join('');
@@ -1372,7 +1372,7 @@ class AnnotationManager {
         return `
             <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''}"
                  data-annotation-id="${annotation.id}"
-                 onclick="annotationManager.selectAnnotation('${annotation.id}')">
+                 onclick="getActiveAnnotationManager()?.selectAnnotation('${annotation.id}')">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center flex-wrap gap-1 mb-1">
@@ -1387,14 +1387,14 @@ class AnnotationManager {
                         ${annotation.reframe_note ? `<p class="text-xs text-gray-500 mt-1 italic line-clamp-1">${annotation.reframe_note}</p>` : ''}
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="event.stopPropagation(); annotationManager.toggleActive('${annotation.id}')"
+                        <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.toggleActive('${annotation.id}')"
                                 class="p-1 rounded hover:bg-gray-200"
                                 title="${annotation.is_active ? 'Deactivate' : 'Activate'}">
                             <svg class="w-4 h-4 ${annotation.is_active ? 'text-green-500' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
                         </button>
-                        <button onclick="event.stopPropagation(); annotationManager.deleteAnnotation('${annotation.id}')"
+                        <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.deleteAnnotation('${annotation.id}')"
                                 class="p-1 rounded hover:bg-red-100"
                                 title="Delete">
                             <svg class="w-4 h-4 text-gray-400 hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
