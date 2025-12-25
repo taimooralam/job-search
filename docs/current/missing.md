@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-24 (GAP-099 to GAP-107 + verified GAP-024, GAP-027, GAP-032 implemented)
+**Last Updated**: 2025-12-25 (GAP-099 COMPLETE - contact discovery decoupled from company cache)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -1063,29 +1063,20 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-099: Contact Discovery Skipped on Company Cache Hit
-**Priority**: P1 HIGH | **Status**: 🔴 PENDING | **Effort**: 2-4 hours
+**Priority**: P1 HIGH | **Status**: ✅ COMPLETE (2025-12-25) | **Effort**: 2-4 hours
 **Impact**: When company research cache is hit, contact discovery is skipped - but contacts should still be discovered because each role requires different contacts
 
-**Problem**:
-- Company research has a caching mechanism to avoid redundant FireCrawl API calls
-- When a company cache is hit (same company researched previously), the contact discovery step is currently skipped
-- This is incorrect behavior: while company information may be reusable, **contacts are role-specific**
-- Different roles at the same company require discovering different hiring managers/recruiters
-- Example: A "Frontend Developer" role needs frontend team leads, while a "Data Engineer" role needs data team managers
+**Fix Applied**:
+- Removed early return logic in `src/layer5/people_mapper.py` that skipped contact discovery when contacts existed in the job document
+- Contact discovery now ALWAYS runs fresh for each job, ensuring role-specific contacts are discovered
+- Company research is still cached (7-day TTL, role-agnostic) to avoid redundant FireCrawl API calls
+- Contacts are no longer cached at the company level since they are role-specific
 
-**Expected Behavior**:
-- Company research cache hit → Reuse cached company data (correct, saves API calls)
-- Contact discovery → Should ALWAYS run for each role, even on cache hit (currently skipped)
-
-**Root Cause Investigation Needed**:
-1. Identify where cache hit triggers skip of contact discovery
-2. Likely in `src/layer3/company_researcher.py` or `src/layer5/people_mapper.py`
-3. May be tied to `DISABLE_FIRECRAWL_OUTREACH` flag or similar skip logic
-
-**Fix Required**:
-1. Decouple company cache hit from contact discovery skip
-2. Contact discovery should check its own cache (role-specific) or always run
-3. Add role context to contact cache key if caching contacts
+**Implementation Details**:
+- Modified `src/layer5/people_mapper.py` to decouple company cache hits from contact discovery execution
+- Company research cache hit → Reuse cached company data (saves API calls)
+- Contact discovery → Always runs fresh for each role, never skipped on cache hit
+- Verified that different roles at the same company now correctly discover different hiring managers/recruiters
 
 **References**:
 - Company caching: `src/layer3/company_researcher.py`
