@@ -247,19 +247,42 @@ class TestCompanyResearchServiceExecute:
         assert "no company name" in result.error.lower()
 
     @pytest.mark.asyncio
+    @patch('src.services.company_research_service.PeopleMapper')
     @patch.object(CompanyResearchService, "_fetch_job")
     @patch.object(CompanyResearchService, "_check_cache")
-    async def test_execute_returns_cached_data_on_cache_hit(
-        self, mock_cache, mock_fetch, sample_job_doc, sample_company_research
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    async def test_execute_always_runs_contact_discovery_even_with_cached_contacts(
+        self,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        mock_people_mapper_class,
+        sample_job_doc,
+        sample_company_research,
     ):
-        """Execute returns cached data when full cache hit (company + contacts)."""
-        # Add contacts to job doc for FULL cache hit
+        """Contact discovery ALWAYS runs, even when contacts exist in job doc.
+
+        Contacts are role-specific, so we must discover fresh contacts for each job
+        application even if the company research is cached and contacts existed before.
+        """
+        # Add OLD contacts to job doc - these should be REPLACED by fresh discovery
         sample_job_doc["primary_contacts"] = [
-            {"name": "Test Manager", "role": "Hiring Manager"}
+            {"name": "Old Cached Contact", "role": "Old Manager"}
         ]
         sample_job_doc["secondary_contacts"] = []
         mock_fetch.return_value = sample_job_doc
         mock_cache.return_value = {"company_research": sample_company_research}
+        mock_persist_research.return_value = True
+
+        # Mock PeopleMapper to return NEW contacts
+        mock_people_mapper = MagicMock()
+        mock_people_mapper.map_people.return_value = {
+            "primary_contacts": [{"name": "Fresh Contact", "role": "New Hiring Manager"}],
+            "secondary_contacts": [{"name": "Secondary", "role": "Recruiter"}],
+        }
+        mock_people_mapper_class.return_value = mock_people_mapper
 
         service = CompanyResearchService()
         result = await service.execute(
@@ -269,11 +292,15 @@ class TestCompanyResearchServiceExecute:
         )
 
         assert result.success is True
-        assert result.data["from_cache"] is True
-        assert result.data["company_research"] == sample_company_research
-        assert result.cost_usd == 0.0  # No cost for cached data
-        # Verify contacts are included from job doc
-        assert result.data["primary_contacts"] == sample_job_doc["primary_contacts"]
+        # PeopleMapper MUST be called even though contacts existed
+        mock_people_mapper.map_people.assert_called_once()
+        # Result should contain FRESH contacts, not the old cached ones
+        assert result.data["primary_contacts"] == [{"name": "Fresh Contact", "role": "New Hiring Manager"}]
+        assert result.data["secondary_contacts"] == [{"name": "Secondary", "role": "Recruiter"}]
+        # from_cache should be False because contact discovery ran
+        assert result.data["from_cache"] is False
+        # Company research should still be from cache
+        assert result.data["layer_status"]["company_research"]["from_cache"] is True
 
     @pytest.mark.asyncio
     @patch('src.services.company_research_service.PeopleMapper')
@@ -1007,3 +1034,267 @@ class TestCompanyResearchServicePeopleResearch:
         # Message could be "company research failed" or "no contacts discovered"
         message = layer_status["people_research"]["message"].lower()
         assert "company research" in message or "no contacts" in message or "skipped" in message
+
+
+# ===== CONTACT DISCOVERY CACHE BEHAVIOR TESTS (GAP-099) =====
+
+
+class TestContactDiscoveryCacheBehavior:
+    """Tests for GAP-099: Contact discovery cache fix.
+
+    Contact discovery should ALWAYS run for each job, even when:
+    - Company research is cached
+    - Contacts exist in the job document
+    - force_refresh=True is used
+
+    This is because contacts are role-specific and must be discovered fresh
+    for each job application.
+    """
+
+    @pytest.mark.asyncio
+    @patch('src.services.company_research_service.PeopleMapper')
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    async def test_different_roles_get_fresh_contact_discovery(
+        self,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        mock_people_mapper_class,
+        sample_job_doc,
+        sample_company_research,
+    ):
+        """Contact discovery runs for each role, even at the same company.
+
+        When processing two different jobs at the same company (different roles),
+        PeopleMapper should be called TWICE - once per job. The second job should
+        NOT use contacts from the first job because contacts are role-specific.
+        """
+        # Create two jobs at the same company with different roles
+        job1 = sample_job_doc.copy()
+        job1["_id"] = ObjectId("507f1f77bcf86cd799439011")
+        job1["title"] = "Senior Software Engineer"
+        job1["company"] = "TechCorp"
+
+        job2 = sample_job_doc.copy()
+        job2["_id"] = ObjectId("507f1f77bcf86cd799439022")
+        job2["title"] = "Engineering Manager"
+        job2["company"] = "TechCorp"  # Same company
+
+        # Mock cache to return company research (should be cached after first job)
+        mock_cache.return_value = {"company_research": sample_company_research}
+
+        # Mock PeopleMapper to return different contacts for each role
+        mock_people_mapper = MagicMock()
+        # First call: contacts for Senior Software Engineer
+        contacts_job1 = {
+            "primary_contacts": [{"name": "Tech Lead", "role": "Senior Engineering Manager"}],
+            "secondary_contacts": [],
+        }
+        # Second call: contacts for Engineering Manager
+        contacts_job2 = {
+            "primary_contacts": [{"name": "VP Engineering", "role": "VP of Engineering"}],
+            "secondary_contacts": [],
+        }
+        mock_people_mapper.map_people.side_effect = [contacts_job1, contacts_job2]
+        mock_people_mapper_class.return_value = mock_people_mapper
+
+        service = CompanyResearchService()
+
+        # Process first job (Senior Software Engineer)
+        mock_fetch.return_value = job1
+        result1 = await service.execute(
+            job_id=str(job1["_id"]),
+            tier=ModelTier.BALANCED,
+            force_refresh=False,
+        )
+
+        # Process second job (Engineering Manager) at SAME company
+        mock_fetch.return_value = job2
+        result2 = await service.execute(
+            job_id=str(job2["_id"]),
+            tier=ModelTier.BALANCED,
+            force_refresh=False,
+        )
+
+        # Both jobs should succeed
+        assert result1.success is True
+        assert result2.success is True
+
+        # PeopleMapper MUST be called TWICE (once per job, not cached)
+        assert mock_people_mapper.map_people.call_count == 2
+
+        # Each job should have different contacts (role-specific)
+        assert result1.data["primary_contacts"][0]["name"] == "Tech Lead"
+        assert result2.data["primary_contacts"][0]["name"] == "VP Engineering"
+
+        # Company research should be from cache for both (same company)
+        assert result1.data["layer_status"]["company_research"]["from_cache"] is True
+        assert result2.data["layer_status"]["company_research"]["from_cache"] is True
+
+    @pytest.mark.asyncio
+    @patch('src.services.company_research_service.CompanyResearcher')
+    @patch('src.services.company_research_service.RoleResearcher')
+    @patch('src.services.company_research_service.PeopleMapper')
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    async def test_contact_discovery_runs_on_force_refresh(
+        self,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        mock_people_mapper_class,
+        mock_role_researcher_class,
+        mock_company_researcher_class,
+        sample_job_doc,
+        sample_company_research,
+    ):
+        """Contact discovery runs when force_refresh=True even if contacts exist.
+
+        When force_refresh=True, both company research AND contact discovery
+        should run fresh, ignoring any cached data or existing contacts.
+        """
+        # Job has OLD contacts from previous run
+        sample_job_doc["primary_contacts"] = [
+            {"name": "Old Contact", "role": "Former Manager"}
+        ]
+        sample_job_doc["secondary_contacts"] = [
+            {"name": "Old Recruiter", "role": "Former Recruiter"}
+        ]
+        mock_fetch.return_value = sample_job_doc
+
+        # Cache has company research (should be IGNORED due to force_refresh)
+        mock_cache.return_value = {"company_research": sample_company_research}
+
+        # Mock CompanyResearcher for fresh research (force_refresh bypasses cache)
+        mock_company_researcher = MagicMock()
+        mock_company_researcher.research_company.return_value = {
+            "company_research": sample_company_research,  # Fresh research result
+            "scraped_job_posting": "Fresh job posting",
+        }
+        mock_company_researcher_class.return_value = mock_company_researcher
+
+        # Mock RoleResearcher for fresh role research
+        mock_role_researcher = MagicMock()
+        mock_role_researcher.research_role.return_value = {
+            "role_research": {"summary": "Fresh role research"}
+        }
+        mock_role_researcher_class.return_value = mock_role_researcher
+
+        # Mock PeopleMapper to return FRESH contacts
+        mock_people_mapper = MagicMock()
+        fresh_contacts = {
+            "primary_contacts": [{"name": "Fresh Contact", "role": "Current Hiring Manager"}],
+            "secondary_contacts": [{"name": "Fresh Recruiter", "role": "Current Recruiter"}],
+        }
+        mock_people_mapper.map_people.return_value = fresh_contacts
+        mock_people_mapper_class.return_value = mock_people_mapper
+
+        service = CompanyResearchService()
+
+        # Execute with force_refresh=True
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+            force_refresh=True,  # KEY: Force fresh research
+        )
+
+        assert result.success is True
+
+        # Cache check should return None due to force_refresh
+        mock_cache.assert_called_once_with(sample_job_doc["company"], True)
+
+        # Company researcher MUST be called (no cache used)
+        mock_company_researcher.research_company.assert_called_once()
+
+        # PeopleMapper MUST be called for fresh contact discovery
+        mock_people_mapper.map_people.assert_called_once()
+
+        # Result should contain FRESH contacts, not old ones
+        assert result.data["primary_contacts"][0]["name"] == "Fresh Contact"
+        assert result.data["secondary_contacts"][0]["name"] == "Fresh Recruiter"
+
+        # from_cache should be False (everything fresh)
+        assert result.data["from_cache"] is False
+
+    @pytest.mark.asyncio
+    @patch('src.services.company_research_service.PeopleMapper')
+    @patch.object(CompanyResearchService, "_fetch_job")
+    @patch.object(CompanyResearchService, "_check_cache")
+    @patch.object(CompanyResearchService, "_persist_research")
+    @patch.object(CompanyResearchService, "persist_run")
+    async def test_company_research_cached_but_contacts_refreshed(
+        self,
+        mock_persist_run,
+        mock_persist_research,
+        mock_cache,
+        mock_fetch,
+        mock_people_mapper_class,
+        sample_job_doc,
+        sample_company_research,
+    ):
+        """Company research comes from cache BUT contacts are always discovered fresh.
+
+        This is the core behavior of GAP-099 fix: when company research is cached
+        (7-day TTL), we still run fresh contact discovery for each job because
+        contacts are role-specific.
+        """
+        # Job has NO existing contacts (or we ignore them)
+        sample_job_doc.pop("primary_contacts", None)
+        sample_job_doc.pop("secondary_contacts", None)
+        mock_fetch.return_value = sample_job_doc
+
+        # Cache HIT for company research
+        mock_cache.return_value = {"company_research": sample_company_research}
+
+        # Mock PeopleMapper to return fresh contacts
+        mock_people_mapper = MagicMock()
+        fresh_contacts = {
+            "primary_contacts": [
+                {"name": "Fresh Hiring Manager", "role": "Engineering Lead"},
+                {"name": "Fresh Recruiter", "role": "Technical Recruiter"},
+            ],
+            "secondary_contacts": [
+                {"name": "Team Member", "role": "Senior Engineer"},
+            ],
+        }
+        mock_people_mapper.map_people.return_value = fresh_contacts
+        mock_people_mapper_class.return_value = mock_people_mapper
+
+        service = CompanyResearchService()
+
+        result = await service.execute(
+            job_id="507f1f77bcf86cd799439011",
+            tier=ModelTier.BALANCED,
+            force_refresh=False,
+        )
+
+        assert result.success is True
+
+        # Company research should be from cache
+        assert result.data["layer_status"]["company_research"]["from_cache"] is True
+        assert result.data["layer_status"]["company_research"]["status"] == "success"
+
+        # Role research should be SKIPPED (cached company research path)
+        assert result.data["layer_status"]["role_research"]["status"] == "skipped"
+        assert "cached data" in result.data["layer_status"]["role_research"]["message"].lower()
+
+        # People research MUST still run (not cached)
+        mock_people_mapper.map_people.assert_called_once()
+        assert result.data["layer_status"]["people_research"]["status"] == "success"
+        assert result.data["layer_status"]["people_research"]["primary_contacts"] == 2
+        assert result.data["layer_status"]["people_research"]["secondary_contacts"] == 1
+
+        # Contacts should be fresh, not from cache
+        assert result.data["primary_contacts"] == fresh_contacts["primary_contacts"]
+        assert result.data["secondary_contacts"] == fresh_contacts["secondary_contacts"]
+
+        # Overall from_cache should be False (because contacts were discovered fresh)
+        # even though company research was cached
+        assert result.data["from_cache"] is False

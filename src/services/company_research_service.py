@@ -385,46 +385,18 @@ class CompanyResearchService(OperationService):
                 if cached and not force_refresh:
                     cached_research = cached.get("company_research", {})
 
-                    # Check if contacts already exist in job document
-                    has_contacts = (
-                        job.get("primary_contacts") or
-                        job.get("secondary_contacts")
-                    )
-
-                    if has_contacts:
-                        # Full cache hit - company AND contacts exist
-                        logger.info(f"[{run_id[:16]}] Full cache hit - returning cached research + contacts for {company_name}")
-                        layer_status["cache_check"] = {
-                            "status": "success",
-                            "message": f"Cache hit for {company_name} (company + contacts)"
-                        }
-                        await emit_progress("cache_check", "success", f"Cache hit for {company_name}")
-
-                        return self.create_success_result(
-                            run_id=run_id,
-                            data={
-                                "company_research": cached_research,
-                                "role_research": None,  # Role research not cached separately
-                                "primary_contacts": job.get("primary_contacts", []),
-                                "secondary_contacts": job.get("secondary_contacts", []),
-                                "from_cache": True,
-                                "company": company_name,
-                                "layer_status": layer_status,
-                            },
-                            cost_usd=0.0,  # No cost for cached data
-                            duration_ms=timer.duration_ms,
-                            model_used=model,
-                        )
-                    else:
-                        # Partial cache hit - company exists but contacts missing
-                        logger.info(f"[{run_id[:16]}] Partial cache hit - using cached company research, running contact discovery for {company_name}")
-                        layer_status["cache_check"] = {
-                            "status": "success",
-                            "message": f"Cache hit for {company_name} (contacts pending)"
-                        }
-                        await emit_progress("cache_check", "success", f"Cache hit for {company_name} (contacts pending)")
-                        use_cached_company_research = True
-                        # Continue to contact discovery below
+                    # Cache hit for company research only
+                    # NOTE: Contacts are ROLE-SPECIFIC and should NEVER be cached.
+                    # Each job application targets different roles, so contact discovery
+                    # must always run fresh to find relevant hiring managers/team leads.
+                    logger.info(f"[{run_id[:16]}] Cache hit - using cached company research, running fresh contact discovery for {company_name}")
+                    layer_status["cache_check"] = {
+                        "status": "success",
+                        "message": f"Cache hit for {company_name} (running fresh contact discovery)"
+                    }
+                    await emit_progress("cache_check", "success", f"Cache hit for {company_name} (contacts always fresh)")
+                    use_cached_company_research = True
+                    # Continue to contact discovery below
 
                 if not use_cached_company_research:
                     layer_status["cache_check"] = {
