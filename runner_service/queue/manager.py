@@ -295,6 +295,11 @@ class QueueManager:
         # Remove from running set
         await self._redis.srem(self.RUNNING_KEY, queue_id)
 
+        # Failsafe: Also remove from pending in case start_item failed
+        # This handles the edge case where the item was never properly moved to running
+        # (e.g., due to thread-safe wrapper failure, Redis timeout, etc.)
+        await self._redis.lrem(self.PENDING_KEY, 1, queue_id)
+
         item.completed_at = datetime.utcnow()
 
         if success:

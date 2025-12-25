@@ -619,6 +619,40 @@ class TestQueueManagerComplete:
         with pytest.raises(RuntimeError, match="not connected"):
             await manager.complete("q_12345", success=True)
 
+    @pytest.mark.asyncio
+    async def test_complete_removes_from_pending_as_failsafe(self, manager):
+        """Should remove item from pending even if start_item failed (GAP-103 fix).
+
+        This tests the edge case where:
+        1. Item is enqueued (added to pending)
+        2. Worker starts but _start_queue_item fails silently
+        3. Item stays in pending but job still executes
+        4. On complete(), item should be removed from pending
+
+        Without this fix, items would remain in pending after completion.
+        """
+        with patch.object(manager, '_publish_event', new_callable=AsyncMock):
+            # Enqueue item (adds to pending)
+            item = await manager.enqueue("job_12345", "Test", "Company")
+
+            # Simulate start_item failure by NOT calling dequeue
+            # Item is still in pending, not moved to running
+
+            # Verify item is in pending
+            pending = await manager._redis.lrange(manager.PENDING_KEY, 0, -1)
+            assert item.queue_id in pending
+
+            # Complete the item (should remove from both running AND pending)
+            completed = await manager.complete(item.queue_id, success=True)
+
+            # Verify item is removed from pending (the failsafe fix)
+            pending_after = await manager._redis.lrange(manager.PENDING_KEY, 0, -1)
+            assert item.queue_id not in pending_after
+
+            # Verify item is in history
+            history = await manager._redis.lrange(manager.HISTORY_KEY, 0, -1)
+            assert item.queue_id in history
+
 
 class TestQueueManagerRetry:
     """Tests for retry() method."""
