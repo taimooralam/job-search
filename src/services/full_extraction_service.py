@@ -93,10 +93,15 @@ class FullExtractionService(OperationService):
 
     def _load_candidate_profile(self) -> Optional[str]:
         """
-        Load candidate profile from file for fit scoring.
+        Load candidate profile for fit scoring.
 
-        Uses Config.CANDIDATE_PROFILE_PATH with fallback to data/master-cv/master-cv.md.
-        This ensures fit analysis has candidate context even when not stored in MongoDB.
+        Priority order:
+        1. MongoDB via MasterCVStore (when USE_MASTER_CV_MONGODB=true)
+        2. Config.CANDIDATE_PROFILE_PATH file
+        3. data/master-cv/master-cv.md fallback
+
+        This ensures fit analysis has candidate context from the CV Editor
+        data stored in MongoDB, with file fallback for backward compatibility.
 
         Returns:
             Candidate profile text, or None if not available
@@ -104,19 +109,42 @@ class FullExtractionService(OperationService):
         from pathlib import Path
         from src.common.config import Config
 
-        # Try the configured path first
+        # Priority 1: Try MongoDB first (when enabled)
+        if Config.USE_MASTER_CV_MONGODB:
+            try:
+                from src.common.master_cv_store import get_candidate_profile_text
+                profile_text = get_candidate_profile_text()
+                if profile_text:
+                    logger.info(
+                        f"Loaded candidate profile from MongoDB ({len(profile_text)} chars)"
+                    )
+                    return profile_text
+                else:
+                    logger.debug("No candidate profile in MongoDB, falling back to files")
+            except Exception as e:
+                logger.warning(f"MongoDB candidate profile load failed: {e}")
+
+        # Priority 2: Try the configured file path
         profile_path = Path(Config.CANDIDATE_PROFILE_PATH)
         if profile_path.exists():
             try:
-                return profile_path.read_text(encoding="utf-8")
+                profile_text = profile_path.read_text(encoding="utf-8")
+                logger.info(
+                    f"Loaded candidate profile from file: {profile_path} ({len(profile_text)} chars)"
+                )
+                return profile_text
             except Exception as e:
                 logger.warning(f"Error reading candidate profile from {profile_path}: {e}")
 
-        # Try data/master-cv/master-cv.md as fallback
+        # Priority 3: Try data/master-cv/master-cv.md as final fallback
         fallback_path = Path("data/master-cv/master-cv.md")
         if fallback_path.exists():
             try:
-                return fallback_path.read_text(encoding="utf-8")
+                profile_text = fallback_path.read_text(encoding="utf-8")
+                logger.info(
+                    f"Loaded candidate profile from fallback: {fallback_path} ({len(profile_text)} chars)"
+                )
+                return profile_text
             except Exception as e:
                 logger.warning(f"Error reading candidate profile from {fallback_path}: {e}")
 

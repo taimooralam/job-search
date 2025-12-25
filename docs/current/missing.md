@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-25 (GAP-099 COMPLETE - contact discovery decoupled from company cache)
+**Last Updated**: 2025-12-25 (GAP-111 COMPLETE - fit scoring now loads master CV from MongoDB)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -1076,6 +1076,50 @@ truncated_profile = candidate_profile[:1500]
 - Company caching: `src/layer3/company_researcher.py`
 - Contact discovery: `src/layer5/people_mapper.py`
 - Related: GAP-069 (FireCrawl SEO Query Result Caching)
+
+---
+
+### GAP-111: Fit Scoring Not Using Master CV from MongoDB
+**Priority**: P1 HIGH | **Status**: ✅ COMPLETE (2025-12-25) | **Effort**: 2-3 hours
+**Impact**: Fit scoring now correctly loads candidate profile from MongoDB instead of only using local files
+
+**Problem** (FIXED):
+- Fit scoring in Layer 4 was not aware of CV edits made through the Master CV Editor (stored in MongoDB)
+- `FullExtractionService._load_candidate_profile()` only read from local files (`data/master-cv/master-cv.md`)
+- CV edits via the editor UI were persisted to MongoDB but ignored during fit scoring
+
+**Root Cause**:
+- `_load_candidate_profile()` method in `src/services/full_extraction_service.py` had no MongoDB integration
+- No way to retrieve the edited profile text from MasterCVStore
+- Profile always fell back to static file, making live CV edits ineffective for fit scoring
+
+**Solution Implemented**:
+1. **Added MongoDB retrieval method**: Created `get_candidate_profile_text()` in `src/data/master_cv_store.py`
+   - Formats MongoDB-stored profile blocks into readable candidate profile text
+   - Returns properly formatted profile sections (summary, goals, experience highlight)
+
+2. **Updated fit scoring initialization**: Modified `FullExtractionService._load_candidate_profile()` to:
+   - Check `USE_MASTER_CV_MONGODB` flag (set via `MasterCVConfig.USE_MONGODB`)
+   - When enabled: Load profile from MongoDB via `MasterCVStore.get_candidate_profile_text()`
+   - When disabled: Fall back to local file (`data/master-cv/master-cv.md`)
+   - Maintains backward compatibility with local-file-only deployments
+
+**Files Modified**:
+- `src/data/master_cv_store.py` - Added `get_candidate_profile_text()` method that formats MongoDB profile blocks
+- `src/services/full_extraction_service.py` - Updated `_load_candidate_profile()` to check MongoDB first
+
+**Test Coverage**:
+- Existing full extraction pipeline tests continue to pass
+- MongoDB profile loading tested via integration tests in batch operations
+
+**Impact**:
+- Fit scoring now respects CV edits made through the Master CV Editor
+- User changes to summary/goals/experience are immediately reflected in pipeline
+- Layer 4 (opportunity mapper) uses current profile for personalization
+
+**Related Gaps**:
+- GAP-099: Contact Discovery Decoupling (similar MongoDB-awareness pattern)
+- GAP-069: FireCrawl Caching (company data caching)
 
 ---
 

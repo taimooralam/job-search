@@ -742,6 +742,163 @@ class MasterCVStore:
 
         return profile
 
+    def get_candidate_profile_text(self) -> Optional[str]:
+        """
+        Get candidate profile as formatted text for fit scoring.
+
+        Combines metadata and role content into a text representation
+        suitable for LLM fit analysis. This provides the same context
+        as the legacy master-cv.md file but sourced from MongoDB.
+
+        Returns:
+            Formatted candidate profile text, or None if not available
+        """
+        metadata = self.get_metadata()
+        if not metadata:
+            logger.warning("No metadata found in MongoDB for candidate profile")
+            return None
+
+        candidate = metadata.get("candidate", {})
+        if not candidate:
+            logger.warning("No candidate data in metadata")
+            return None
+
+        # Build profile text
+        lines = []
+
+        # Header
+        name = candidate.get("name", "Unknown")
+        title = candidate.get("title_base", "")
+        lines.append(f"# {name}")
+        if title:
+            lines.append(f"**{title}**")
+        lines.append("")
+
+        # Contact info
+        contact = candidate.get("contact", {})
+        if contact:
+            contact_parts = []
+            if contact.get("email"):
+                contact_parts.append(contact["email"])
+            if contact.get("phone"):
+                contact_parts.append(contact["phone"])
+            if contact.get("location"):
+                contact_parts.append(contact["location"])
+            if contact.get("linkedin"):
+                contact_parts.append(contact["linkedin"])
+            if contact_parts:
+                lines.append(" | ".join(contact_parts))
+                lines.append("")
+
+        # Summary
+        summary = candidate.get("summary", "")
+        if summary:
+            lines.append("## Summary")
+            lines.append(summary)
+            lines.append("")
+
+        # Years experience
+        years_exp = candidate.get("years_experience", 0)
+        if years_exp:
+            lines.append(f"**Years of Experience:** {years_exp}+")
+            lines.append("")
+
+        # Languages
+        languages = candidate.get("languages", [])
+        if languages:
+            lines.append(f"**Languages:** {', '.join(languages)}")
+            lines.append("")
+
+        # Education
+        education = candidate.get("education", {})
+        if education:
+            lines.append("## Education")
+            if education.get("masters"):
+                lines.append(f"- {education['masters']}")
+            if education.get("bachelors"):
+                lines.append(f"- {education['bachelors']}")
+            lines.append("")
+
+        # Certifications
+        certs = candidate.get("certifications", [])
+        if certs:
+            lines.append("## Certifications")
+            for cert in certs:
+                lines.append(f"- {cert}")
+            lines.append("")
+
+        # Roles from metadata
+        roles = metadata.get("roles", [])
+        if roles:
+            lines.append("## Professional Experience")
+            lines.append("")
+
+            for role in roles:
+                # Role header
+                company = role.get("company", "Unknown Company")
+                title = role.get("title", "Unknown Title")
+                period = role.get("period", "")
+                location = role.get("location", "")
+
+                lines.append(f"### {title} at {company}")
+                if period:
+                    lines.append(f"*{period}*")
+                if location:
+                    lines.append(f"*{location}*")
+                lines.append("")
+
+                # Role details
+                industry = role.get("industry", "")
+                team_size = role.get("team_size", "")
+                if industry or team_size:
+                    details = []
+                    if industry:
+                        details.append(f"Industry: {industry}")
+                    if team_size:
+                        details.append(f"Team: {team_size}")
+                    lines.append(f"*{' | '.join(details)}*")
+                    lines.append("")
+
+                # Keywords/competencies
+                keywords = role.get("keywords", [])
+                competencies = role.get("primary_competencies", [])
+                if keywords or competencies:
+                    all_tags = keywords + competencies
+                    lines.append(f"**Key Areas:** {', '.join(all_tags[:10])}")
+                    lines.append("")
+
+                # Try to get role content from MongoDB
+                role_id = role.get("id", "")
+                if role_id:
+                    role_doc = self.get_role(role_id)
+                    if role_doc and role_doc.get("markdown_content"):
+                        # Extract achievements from role markdown
+                        content = role_doc["markdown_content"]
+                        # Look for achievements section
+                        if "## Achievements" in content:
+                            achievements_start = content.find("## Achievements")
+                            achievements_section = content[achievements_start:]
+                            # Find next section
+                            next_section = achievements_section.find("\n## ", 1)
+                            if next_section > 0:
+                                achievements_section = achievements_section[:next_section]
+                            lines.append(achievements_section.strip())
+                            lines.append("")
+
+                # Skills from role metadata
+                hard_skills = role.get("hard_skills", [])
+                soft_skills = role.get("soft_skills", [])
+                if hard_skills:
+                    lines.append(f"**Technical Skills:** {', '.join(hard_skills[:8])}")
+                if soft_skills:
+                    lines.append(f"**Soft Skills:** {', '.join(soft_skills[:5])}")
+                if hard_skills or soft_skills:
+                    lines.append("")
+
+        profile_text = "\n".join(lines)
+        logger.info(f"Generated candidate profile text from MongoDB ({len(profile_text)} chars)")
+        return profile_text
+
 
 # ==========================================================================
 # MODULE-LEVEL CONVENIENCE FUNCTIONS
@@ -785,3 +942,13 @@ def get_role(role_id: str) -> Optional[Dict[str, Any]]:
 def get_all_roles() -> List[Dict[str, Any]]:
     """Convenience function to get all roles."""
     return get_store().get_all_roles()
+
+
+def get_candidate_profile_text() -> Optional[str]:
+    """
+    Convenience function to get candidate profile as text.
+
+    Returns formatted profile text suitable for fit scoring,
+    or None if MongoDB data is not available.
+    """
+    return get_store().get_candidate_profile_text()
