@@ -16,6 +16,7 @@ from src.layer2.pain_point_miner import (
 )
 from src.common.state import JobState
 from src.common.unified_llm import LLMResult
+from src.common.logger import get_logger
 
 
 # ===== FIXTURES =====
@@ -764,3 +765,341 @@ class TestAnnotationAwareExtraction:
         # The prompt should contain reference to annotation priorities
         # Note: This checks the prompt structure, actual implementation may vary
         assert len(result["pain_points"]) > 0
+
+
+# ===== LOGGING TESTS FOR GAP-106 =====
+
+class TestParseResponseLogging:
+    """Tests for logging behavior in _parse_response() method."""
+
+    @pytest.fixture
+    def enhanced_json_response(self):
+        """Valid enhanced format JSON response."""
+        return {
+            "pain_points": [
+                {"text": "Legacy API platform blocking feature velocity", "evidence": "explicit in JD", "confidence": "high"},
+                {"text": "Database performance issues", "evidence": "inferred from context", "confidence": "medium"},
+            ],
+            "strategic_needs": [
+                {"text": "Enable rapid scaling", "evidence": "business goal", "confidence": "high"},
+                {"text": "Improve customer satisfaction", "evidence": "inferred", "confidence": "medium"},
+            ],
+            "risks_if_unfilled": [
+                {"text": "System outages during growth", "evidence": "scaling requirements", "confidence": "high"},
+                {"text": "Customer churn", "evidence": "inferred", "confidence": "low"},
+            ],
+            "success_metrics": [
+                {"text": "API latency reduced to <100ms p99", "evidence": "performance requirement", "confidence": "medium"},
+                {"text": "Zero downtime deployments", "evidence": "operational goal", "confidence": "high"},
+            ],
+        }
+
+    def test_parse_response_logs_raw_response_preview(self, enhanced_json_response, caplog):
+        """_parse_response should log raw response length and preview."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Create response with <final> tags
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify logging of raw response
+        assert "[PARSE] Raw LLM response length:" in caplog.text
+        assert "[PARSE] Raw LLM response preview:" in caplog.text
+        assert f"{len(llm_response)} chars" in caplog.text
+
+    def test_parse_response_logs_final_tag_detection_present(self, enhanced_json_response, caplog):
+        """_parse_response should log when <final> tags are found."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify logging of final tag detection
+        assert "[PARSE] Response contains <final> tags: True" in caplog.text
+        assert "[PARSE] Extracted JSON from <final> tags" in caplog.text
+
+    def test_parse_response_logs_final_tag_detection_absent(self, enhanced_json_response, caplog):
+        """_parse_response should log when <final> tags are NOT found."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Response without <final> tags
+        llm_response = json.dumps(enhanced_json_response)
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify logging of missing final tags
+        assert "[PARSE] Response contains <final> tags: False" in caplog.text
+        assert "[PARSE] No <final> tags found, falling back to raw JSON extraction" in caplog.text
+
+    def test_parse_response_logs_json_extraction_success(self, enhanced_json_response, caplog):
+        """_parse_response should log successful JSON parsing."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify logging of JSON parsing success
+        assert "[PARSE] JSON parsed successfully" in caplog.text
+        # Keys may be escaped in log output, so check for both forms
+        assert ("[PARSE] Keys:" in caplog.text or "JSON parsed successfully. Keys:" in caplog.text)
+        assert "pain_points" in caplog.text
+        assert "[PARSE] pain_points: 2 items" in caplog.text
+        assert "[PARSE] strategic_needs: 2 items" in caplog.text
+
+    def test_parse_response_logs_json_extraction_failure(self, caplog):
+        """_parse_response should log JSON parsing failures."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Invalid JSON
+        llm_response = "<final>Not valid JSON at all!</final>"
+
+        with caplog.at_level(logging.ERROR):
+            with pytest.raises(ValueError, match="Failed to parse JSON"):
+                miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify error logging
+        assert "[PARSE] JSON decode failed:" in caplog.text
+        assert "[PARSE] JSON string preview:" in caplog.text
+
+    def test_parse_response_logs_pydantic_validation_success(self, enhanced_json_response, caplog):
+        """_parse_response should log successful Pydantic validation."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify validation success logging
+        assert "[PARSE] Pydantic validation passed" in caplog.text
+        assert "Pain points: 2" in caplog.text
+
+    def test_parse_response_logs_pydantic_validation_errors(self, caplog):
+        """_parse_response should log Pydantic validation errors before failing."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Missing required fields
+        incomplete_json = {
+            "pain_points": [
+                {"text": "Pain 1", "evidence": "test", "confidence": "high"}
+            ],
+            # Missing strategic_needs, risks_if_unfilled, success_metrics
+        }
+        llm_response = f"<final>{json.dumps(incomplete_json)}</final>"
+
+        with caplog.at_level(logging.ERROR):
+            with pytest.raises(ValueError, match="Schema validation failed"):
+                miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify validation error logging
+        assert "[PARSE] Pydantic validation failed:" in caplog.text
+
+    def test_parse_response_logs_legacy_format_conversion(self, caplog):
+        """_parse_response should log when converting legacy format."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Legacy format (string arrays) with strings long enough (>= 10 chars)
+        legacy_json = {
+            "pain_points": ["Legacy system modernization needed", "Database performance optimization required", "Infrastructure scaling challenges"],
+            "strategic_needs": ["Enable business growth initiatives", "Support international expansion", "Attract top technical talent"],
+            "risks_if_unfilled": ["Customer facing incidents continue", "Unable to meet Q2 scalability targets"],
+            "success_metrics": ["95% reduction in production incidents", "Deploy new features 3x faster", "Zero downtime during traffic spikes"]
+        }
+        llm_response = f"<final>{json.dumps(legacy_json)}</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify legacy conversion logging
+        assert "[PARSE] Converting legacy format (string arrays) to enhanced format" in caplog.text
+
+    def test_parse_response_logs_json_cleanup_steps(self, enhanced_json_response, caplog):
+        """_parse_response should log JSON cleanup steps."""
+        import logging
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        # Response with ```json markers
+        llm_response = f"<final>```json\n{json.dumps(enhanced_json_response)}\n```</final>"
+
+        with caplog.at_level(logging.INFO):
+            result = miner._parse_response(llm_response, logger=get_logger(__name__))
+
+        # Verify cleanup logging
+        assert "[PARSE] Stripped ```json prefix" in caplog.text or "[PARSE] Stripped ``` suffix" in caplog.text
+
+
+class TestExtractPainPointsLogging:
+    """Tests for logging behavior in extract_pain_points() method."""
+
+    @pytest.fixture
+    def valid_enhanced_response(self):
+        """Valid enhanced format response wrapped in <final> tags."""
+        return "<final>" + json.dumps({
+            "pain_points": [
+                {"text": "API platform performance issues", "evidence": "explicit requirement", "confidence": "high"},
+                {"text": "Database scaling problems", "evidence": "inferred from context", "confidence": "medium"},
+            ],
+            "strategic_needs": [
+                {"text": "Enable rapid growth", "evidence": "business context", "confidence": "high"},
+                {"text": "Improve customer retention", "evidence": "inferred", "confidence": "medium"},
+            ],
+            "risks_if_unfilled": [
+                {"text": "System outages", "evidence": "performance requirements", "confidence": "high"},
+                {"text": "Customer churn", "evidence": "inferred", "confidence": "low"},
+            ],
+            "success_metrics": [
+                {"text": "API latency <100ms", "evidence": "performance goal", "confidence": "medium"},
+                {"text": "Zero downtime", "evidence": "operational requirement", "confidence": "high"},
+            ],
+        }) + "</final>"
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_logs_job_context_before_llm_call(
+        self, mock_unified_llm_class, sample_job_state, valid_enhanced_response, caplog
+    ):
+        """extract_pain_points should log job title/company before LLM call."""
+        import logging
+
+        mock_llm_instance = MagicMock()
+        mock_result = _create_mock_llm_result(valid_enhanced_response)
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+
+        with caplog.at_level(logging.INFO):
+            result = miner.extract_pain_points(sample_job_state)
+
+        # Verify logging of job context before LLM call
+        assert "[LLM] Calling LLM for job:" in caplog.text
+        assert sample_job_state["title"] in caplog.text or "Senior Software Engineer" in caplog.text
+        assert sample_job_state["company"] in caplog.text or "Test Corp" in caplog.text
+        assert "[LLM] JD length:" in caplog.text
+        assert "chars" in caplog.text
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_logs_llm_response_details(
+        self, mock_unified_llm_class, sample_job_state, valid_enhanced_response, caplog
+    ):
+        """extract_pain_points should log LLM response details after call."""
+        import logging
+
+        mock_llm_instance = MagicMock()
+        mock_result = _create_mock_llm_result(valid_enhanced_response)
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+
+        with caplog.at_level(logging.INFO):
+            result = miner.extract_pain_points(sample_job_state)
+
+        # Verify logging of LLM response details
+        assert "[LLM] Response received - success: True" in caplog.text
+        assert "[LLM] Backend:" in caplog.text
+        assert "[LLM] Response content length:" in caplog.text
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_logs_llm_error_if_present(
+        self, mock_unified_llm_class, sample_job_state, caplog
+    ):
+        """extract_pain_points should log LLM errors."""
+        import logging
+
+        mock_llm_instance = MagicMock()
+        # Simulate failed LLM call
+        mock_result = _create_mock_llm_result("", success=False)
+        mock_result.error = "API timeout"
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+
+        with caplog.at_level(logging.ERROR):
+            result = miner.extract_pain_points(sample_job_state)
+
+        # Verify error logging (should be in exception handling)
+        # Note: This will fail gracefully and return empty structure
+        assert result["pain_points"] == []
+        assert len(result["errors"]) > 0
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_logs_exception_traceback(
+        self, mock_unified_llm_class, sample_job_state, caplog
+    ):
+        """extract_pain_points should log full traceback on exception."""
+        import logging
+
+        mock_llm_instance = MagicMock()
+        # Simulate exception during LLM call
+        mock_llm_instance.invoke = AsyncMock(side_effect=Exception("Unexpected error"))
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+
+        with caplog.at_level(logging.ERROR):
+            result = miner.extract_pain_points(sample_job_state)
+
+        # Verify exception logging
+        assert "[EXCEPTION] Full traceback:" in caplog.text
+        assert "[EXCEPTION] Exception type:" in caplog.text
+        assert "[EXCEPTION] Job ID:" in caplog.text
+        assert "[EXCEPTION] Title:" in caplog.text
+        assert "[EXCEPTION] JD length:" in caplog.text
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_logs_exception_job_context(
+        self, mock_unified_llm_class, sample_job_state, caplog
+    ):
+        """extract_pain_points should log job context when exception occurs."""
+        import logging
+
+        mock_llm_instance = MagicMock()
+        mock_llm_instance.invoke = AsyncMock(side_effect=ValueError("Test error"))
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+
+        with caplog.at_level(logging.ERROR):
+            result = miner.extract_pain_points(sample_job_state)
+
+        # Verify job context in error logs
+        log_text = caplog.text
+        assert sample_job_state.get("job_id", "unknown") in log_text or "[EXCEPTION] Job ID:" in log_text
+        assert sample_job_state["title"] in log_text or "[EXCEPTION] Title:" in log_text
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_extract_pain_points_returns_empty_structure_on_failure(
+        self, mock_unified_llm_class, sample_job_state
+    ):
+        """extract_pain_points should return empty structure on failure, not crash."""
+        mock_llm_instance = MagicMock()
+        mock_llm_instance.invoke = AsyncMock(side_effect=Exception("Fatal error"))
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner()
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Verify graceful degradation
+        assert result["pain_points"] == []
+        assert result["strategic_needs"] == []
+        assert result["risks_if_unfilled"] == []
+        assert result["success_metrics"] == []
+        assert "errors" in result
+        assert len(result["errors"]) > 0
+        assert "Layer 2 (Pain-Point Miner) failed" in result["errors"][0]

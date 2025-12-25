@@ -1005,47 +1005,93 @@ class PainPointMiner:
         match = re.search(r'<reasoning>(.*?)</reasoning>', response, re.DOTALL)
         return match.group(1).strip() if match else ""
 
-    def _parse_response(self, llm_response: str) -> EnhancedPainPointAnalysis:
+    def _parse_response(self, llm_response: str, logger=None) -> EnhancedPainPointAnalysis:
         """
         Parse LLM response into structured analysis.
 
         Handles both <final> tagged format and raw JSON.
+
+        Args:
+            llm_response: Raw LLM response text
+            logger: Optional logger for diagnostic output
         """
+        # Log raw response for debugging (first 500 chars to avoid spam)
+        if logger:
+            logger.info(f"[PARSE] Raw LLM response length: {len(llm_response)} chars")
+            logger.info(f"[PARSE] Raw LLM response preview: {llm_response[:500]}")
+
+        # Check for <final> tags presence
+        has_final_tags = '<final>' in llm_response and '</final>' in llm_response
+        if logger:
+            logger.info(f"[PARSE] Response contains <final> tags: {has_final_tags}")
+
         # Extract from <final> tags first
         final_match = re.search(r'<final>(.*?)</final>', llm_response, re.DOTALL)
         if final_match:
             json_str = final_match.group(1).strip()
+            if logger:
+                logger.info(f"[PARSE] Extracted JSON from <final> tags, length: {len(json_str)}")
         else:
             # Fallback to finding JSON object
+            if logger:
+                logger.info("[PARSE] No <final> tags found, falling back to raw JSON extraction")
             json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(0)
+                if logger:
+                    logger.info(f"[PARSE] Extracted raw JSON, length: {len(json_str)}")
             else:
+                if logger:
+                    logger.error(f"[PARSE] No JSON found in response: {llm_response[:500]}")
                 raise ValueError(f"No JSON found in response: {llm_response[:500]}")
 
         # Clean up common JSON issues
         json_str = json_str.strip()
         if json_str.startswith("```json"):
             json_str = json_str[7:]
+            if logger:
+                logger.info("[PARSE] Stripped ```json prefix")
         if json_str.startswith("```"):
             json_str = json_str[3:]
+            if logger:
+                logger.info("[PARSE] Stripped ``` prefix")
         if json_str.endswith("```"):
             json_str = json_str[:-3]
+            if logger:
+                logger.info("[PARSE] Stripped ``` suffix")
 
         try:
             data = json.loads(json_str)
+            if logger:
+                logger.info(f"[PARSE] JSON parsed successfully. Keys: {list(data.keys())}")
+                # Log counts of each array
+                for key in ["pain_points", "strategic_needs", "risks_if_unfilled", "success_metrics"]:
+                    arr = data.get(key, [])
+                    logger.info(f"[PARSE] {key}: {len(arr)} items")
         except json.JSONDecodeError as e:
+            if logger:
+                logger.error(f"[PARSE] JSON decode failed: {e}")
+                logger.error(f"[PARSE] JSON string preview: {json_str[:500]}")
             raise ValueError(f"Failed to parse JSON: {e}\nResponse: {json_str[:500]}")
 
         # Handle legacy format (string arrays) and convert to enhanced
         if data.get("pain_points") and isinstance(data["pain_points"][0], str):
+            if logger:
+                logger.info("[PARSE] Converting legacy format (string arrays) to enhanced format")
             data = self._convert_legacy_to_enhanced(data)
 
         try:
-            return EnhancedPainPointAnalysis(**data)
+            result = EnhancedPainPointAnalysis(**data)
+            if logger:
+                logger.info(f"[PARSE] Pydantic validation passed. Pain points: {len(result.pain_points)}")
+            return result
         except ValidationError as e:
             error_msgs = [f"{' -> '.join(str(x) for x in err['loc'])}: {err['msg']}"
                         for err in e.errors()]
+            if logger:
+                logger.error(f"[PARSE] Pydantic validation failed:")
+                for msg in error_msgs:
+                    logger.error(f"[PARSE]   - {msg}")
             raise ValueError(
                 f"Schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_msgs)
@@ -1206,6 +1252,8 @@ class PainPointMiner:
             self._emit_log({"message": "Extracting pain points via LLM..."})
 
             # Call LLM with enhanced prompts (including annotation context)
+            logger.info(f"[LLM] Calling LLM for job: {state.get('title', 'unknown')} at {state.get('company', 'unknown')}")
+            logger.info(f"[LLM] JD length: {len(state.get('job_description', ''))} chars")
             llm_result = self._call_llm(
                 title=state["title"],
                 company=state["company"],
@@ -1214,6 +1262,13 @@ class PainPointMiner:
                 annotation_context=annotation_context if any(annotation_context.values()) else None,
                 job_id=state.get("job_id"),  # Pass job_id for Claude CLI tracking
             )
+
+            # Log LLM response details for diagnosis
+            logger.info(f"[LLM] Response received - success: {llm_result.success}")
+            logger.info(f"[LLM] Backend: {llm_result.backend}, Model: {llm_result.model}")
+            logger.info(f"[LLM] Response content length: {len(llm_result.content)} chars")
+            if llm_result.error:
+                logger.error(f"[LLM] Error in response: {llm_result.error}")
 
             # Log after LLM call with backend attribution (human-readable for console)
             self._emit_log({
@@ -1229,8 +1284,8 @@ class PainPointMiner:
                 for line in reasoning.split('\n')[:5]:  # Log first 5 lines
                     logger.info(f"  {line.strip()}")
 
-            # Parse and validate
-            analysis = self._parse_response(llm_result.content)
+            # Parse and validate (with logger for diagnostic output)
+            analysis = self._parse_response(llm_result.content, logger=logger)
 
             # Log confidence distribution
             all_items = (
@@ -1314,8 +1369,16 @@ class PainPointMiner:
             return result
 
         except Exception as e:
+            import traceback
             error_msg = f"Layer 2 (Pain-Point Miner) failed: {str(e)}"
             logger.error(error_msg)
+            # Log full traceback for diagnosis
+            logger.error(f"[EXCEPTION] Full traceback:\n{traceback.format_exc()}")
+            logger.error(f"[EXCEPTION] Exception type: {type(e).__name__}")
+            # Log state context for debugging
+            logger.error(f"[EXCEPTION] Job ID: {state.get('job_id', 'unknown')}")
+            logger.error(f"[EXCEPTION] Title: {state.get('title', 'unknown')}")
+            logger.error(f"[EXCEPTION] JD length: {len(state.get('job_description', ''))}")
 
             # Return empty structure (don't block pipeline)
             if self.use_enhanced_format:
