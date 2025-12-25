@@ -514,9 +514,21 @@ class CVEditor {
 
             console.log('CV saved successfully at', result.savedAt);
 
-            // Refresh the CV preview in the job detail page if it exists
-            if (typeof renderCVPreview === 'function') {
-                renderCVPreview();
+            // GAP-101: Dispatch cvContentUpdated event to notify preview components
+            // This event is listened to in job_detail.html to refresh the CV preview
+            const event = new CustomEvent('cvContentUpdated', {
+                detail: {
+                    jobId: this.jobId,
+                    content: this.editor.getJSON(),
+                    savedAt: result.savedAt
+                }
+            });
+            window.dispatchEvent(event);
+            console.log('Dispatched cvContentUpdated event for job:', this.jobId);
+
+            // Fallback: Also try direct function call for backward compatibility
+            if (typeof window.renderCVPreview === 'function') {
+                window.renderCVPreview();
             }
 
         } catch (error) {

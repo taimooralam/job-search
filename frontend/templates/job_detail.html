@@ -1925,6 +1925,11 @@
                     <!-- Rendered by TipTap from editor state -->
                 </div>
                 <script>
+                    /**
+                     * GAP-101: CV Preview Sync
+                     * Renders the CV preview from the saved editor state in MongoDB.
+                     * Called on page load and when cvContentUpdated event is dispatched.
+                     */
                     async function renderCVPreview() {
                         try {
                             const response = await fetch('/api/jobs/{{ job._id }}/cv-editor');
@@ -1941,10 +1946,14 @@
                                 displayArea.style.lineHeight = styles.lineHeight || 1.5;
                                 displayArea.style.color = styles.colorText || '#1f2a38';
                             }
+                            console.log('CV preview updated from saved state');
                         } catch (error) {
                             console.error('Error rendering CV preview:', error);
                         }
                     }
+
+                    // GAP-101: Expose renderCVPreview globally for cv-editor.js fallback
+                    window.renderCVPreview = renderCVPreview;
 
                     function tiptapJsonToHtml(content) {
                         if (!content || content.type !== 'doc') return '';
@@ -1975,8 +1984,13 @@
                     }
 
                     document.addEventListener('DOMContentLoaded', renderCVPreview);
+
+                    // GAP-101: Listen for cvContentUpdated event from cv-editor.js after save
                     window.addEventListener('cvContentUpdated', (event) => {
-                        if (event.detail.jobId === '{{ job._id }}') renderCVPreview();
+                        if (event.detail && event.detail.jobId === '{{ job._id }}') {
+                            console.log('Received cvContentUpdated event, refreshing preview');
+                            renderCVPreview();
+                        }
                     });
                 </script>
             </div>
