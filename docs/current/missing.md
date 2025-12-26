@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-25 (GAP-111 COMPLETE - fit scoring now loads master CV from MongoDB)
+**Last Updated**: 2025-12-26 (GAP-109 COMPLETE - core skill color timing fixed with requestAnimationFrame)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,9 +12,9 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 4 (3 documented/fixed, 1 open) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 23 (17 fixed, 4 open) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 40 (33 fixed, 2 open) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 40 (34 fixed, 1 open) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 25 (19 fixed, 2 open) | Backlog - nice-to-have improvements |
-| **Total** | **92** (72 fixed/documented, 16 open) | All identified gaps |
+| **Total** | **92** (73 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
 
@@ -1076,6 +1076,39 @@ truncated_profile = candidate_profile[:1500]
 - Company caching: `src/layer3/company_researcher.py`
 - Contact discovery: `src/layer5/people_mapper.py`
 - Related: GAP-069 (FireCrawl SEO Query Result Caching)
+
+---
+
+### GAP-109: Core Skill Color Not Reflecting When Marked as Medium
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-26) | **Effort**: 1 hour
+**Impact**: Core skill colors now correctly update when relevance is changed to medium
+
+**Problem** (FIXED):
+- When marking a core skill as "medium" relevance, the highlight color was not visually updating on the UI
+- The underlying data was being updated correctly, but the DOM color change wasn't being applied
+- Issue was intermittent due to timing problems with how the highlight color was being applied after DOM re-renders
+
+**Root Cause**:
+- `applyHighlights()` function was being called synchronously immediately after list re-renders
+- The DOM re-render wasn't yet stable when the color application logic executed
+- This caused a race condition where the function ran before the new list items were fully rendered
+
+**Solution Implemented**:
+- Wrapped `applyHighlights()` calls in `requestAnimationFrame()` to defer execution until the DOM was stable
+- `requestAnimationFrame()` ensures the browser has completed rendering before applying highlight colors
+- Applied to all relevant skill editor components that update relevance
+
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Wrapped highlight color application in `requestAnimationFrame()` callbacks
+
+**Test Coverage**:
+- Existing CV editor tests continue to pass
+- Manual testing confirms color updates immediately when changing skill relevance to medium
+
+**Impact**:
+- Core skill highlight colors now update reliably when relevance changes
+- Users see immediate visual feedback when marking skills as medium priority
+- Eliminated timing-related race conditions in DOM manipulation
 
 ---
 
