@@ -1229,10 +1229,15 @@ class AnnotationManager {
             console.log('Created annotation:', annotation);
         }
 
-        // Re-render
+        // Re-render list and stats immediately
         this.renderAnnotations();
-        this.applyHighlights();
         this.updateStats();
+
+        // Apply highlights with slight delay to ensure DOM is stable after list re-render
+        // This fixes color not updating when changing relevance (e.g., core -> medium)
+        requestAnimationFrame(() => {
+            this.applyHighlights();
+        });
 
         // Schedule save
         this.scheduleSave();
@@ -1469,8 +1474,11 @@ class AnnotationManager {
             annotation.is_active = !annotation.is_active;
             annotation.updated_at = new Date().toISOString();
             this.renderAnnotations();
-            this.applyHighlights();
             this.updateStats();
+            // Apply highlights with slight delay to ensure DOM is stable
+            requestAnimationFrame(() => {
+                this.applyHighlights();
+            });
             this.scheduleSave();
         }
     }
@@ -1483,8 +1491,11 @@ class AnnotationManager {
         if (index !== -1) {
             this.annotations.splice(index, 1);
             this.renderAnnotations();
-            this.applyHighlights();
             this.updateStats();
+            // Apply highlights with slight delay to ensure DOM is stable
+            requestAnimationFrame(() => {
+                this.applyHighlights();
+            });
             this.scheduleSave();
         }
     }
@@ -1547,6 +1558,9 @@ class AnnotationManager {
             // Use original_text for highlighting (matches JD), fallback to text
             const targetText = annotation.target?.original_text || annotation.target?.text;
             const relevance = annotation.relevance || 'relevant';
+
+            // Debug: Log the relevance being applied for each annotation
+            console.log(`applyHighlights: annotation ${annotation.id?.slice(-6)} relevance=${relevance}`);
 
             if (targetText && targetText.length > 0) {
                 const found = this.highlightTextInElement(contentEl, targetText, relevance, annotation.id);
