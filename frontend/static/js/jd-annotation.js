@@ -1031,15 +1031,22 @@ class AnnotationManager {
     }
 
     /**
-     * Set relevance in popover
+     * Set relevance in popover (with toggle support)
+     * Clicking the same value toggles it off
      */
     setPopoverRelevance(relevance) {
-        this.popoverState.relevance = relevance;
-        this.popoverState.hasExplicitRelevance = true;
+        // Toggle off if clicking the same value
+        if (this.popoverState.relevance === relevance && this.popoverState.hasExplicitRelevance) {
+            this.popoverState.relevance = null;
+            this.popoverState.hasExplicitRelevance = false;
+        } else {
+            this.popoverState.relevance = relevance;
+            this.popoverState.hasExplicitRelevance = true;
+        }
 
         // Update button states
         document.querySelectorAll('.relevance-btn').forEach(btn => {
-            if (btn.dataset.relevance === relevance) {
+            if (btn.dataset.relevance === this.popoverState.relevance) {
                 btn.classList.add('ring-2', 'ring-indigo-500');
             } else {
                 btn.classList.remove('ring-2', 'ring-indigo-500');
@@ -1047,18 +1054,26 @@ class AnnotationManager {
         });
 
         this.updatePopoverSaveButton();
+        this.checkAutoDeleteAnnotation();
     }
 
     /**
-     * Set requirement type in popover
+     * Set requirement type in popover (with toggle support)
+     * Clicking the same value toggles it off
      */
     setPopoverRequirement(requirement) {
-        this.popoverState.requirement = requirement;
-        this.popoverState.hasExplicitRequirement = true;
+        // Toggle off if clicking the same value
+        if (this.popoverState.requirement === requirement && this.popoverState.hasExplicitRequirement) {
+            this.popoverState.requirement = null;
+            this.popoverState.hasExplicitRequirement = false;
+        } else {
+            this.popoverState.requirement = requirement;
+            this.popoverState.hasExplicitRequirement = true;
+        }
 
         // Update button states
         document.querySelectorAll('.requirement-btn').forEach(btn => {
-            if (btn.dataset.requirement === requirement) {
+            if (btn.dataset.requirement === this.popoverState.requirement) {
                 btn.classList.add('ring-2', 'ring-indigo-500');
             } else {
                 btn.classList.remove('ring-2', 'ring-indigo-500');
@@ -1066,18 +1081,26 @@ class AnnotationManager {
         });
 
         this.updatePopoverSaveButton();
+        this.checkAutoDeleteAnnotation();
     }
 
     /**
-     * Set passion level in popover
+     * Set passion level in popover (with toggle support)
+     * Clicking the same value toggles it off
      */
     setPopoverPassion(passion) {
-        this.popoverState.passion = passion;
-        this.popoverState.hasExplicitPassion = true;
+        // Toggle off if clicking the same value
+        if (this.popoverState.passion === passion && this.popoverState.hasExplicitPassion) {
+            this.popoverState.passion = null;
+            this.popoverState.hasExplicitPassion = false;
+        } else {
+            this.popoverState.passion = passion;
+            this.popoverState.hasExplicitPassion = true;
+        }
 
         // Update button states
         document.querySelectorAll('.passion-btn').forEach(btn => {
-            if (btn.dataset.passion === passion) {
+            if (btn.dataset.passion === this.popoverState.passion) {
                 btn.classList.add('ring-2', 'ring-indigo-500');
             } else {
                 btn.classList.remove('ring-2', 'ring-indigo-500');
@@ -1085,18 +1108,26 @@ class AnnotationManager {
         });
 
         this.updatePopoverSaveButton();
+        this.checkAutoDeleteAnnotation();
     }
 
     /**
-     * Set identity level in popover
+     * Set identity level in popover (with toggle support)
+     * Clicking the same value toggles it off
      */
     setPopoverIdentity(identity) {
-        this.popoverState.identity = identity;
-        this.popoverState.hasExplicitIdentity = true;
+        // Toggle off if clicking the same value
+        if (this.popoverState.identity === identity && this.popoverState.hasExplicitIdentity) {
+            this.popoverState.identity = null;
+            this.popoverState.hasExplicitIdentity = false;
+        } else {
+            this.popoverState.identity = identity;
+            this.popoverState.hasExplicitIdentity = true;
+        }
 
         // Update button states
         document.querySelectorAll('.identity-btn').forEach(btn => {
-            if (btn.dataset.identity === identity) {
+            if (btn.dataset.identity === this.popoverState.identity) {
                 btn.classList.add('ring-2', 'ring-indigo-500');
             } else {
                 btn.classList.remove('ring-2', 'ring-indigo-500');
@@ -1104,6 +1135,33 @@ class AnnotationManager {
         });
 
         this.updatePopoverSaveButton();
+        this.checkAutoDeleteAnnotation();
+    }
+
+    /**
+     * Check if all dimensions are unselected and auto-delete the annotation if editing
+     * Called after each dimension toggle to clean up annotations with no dimensions
+     */
+    checkAutoDeleteAnnotation() {
+        // Only auto-delete when editing an existing annotation
+        if (!this.editingAnnotationId) {
+            return;
+        }
+
+        // Check if all dimensions are now unselected
+        const hasAnySelection =
+            this.popoverState.hasExplicitRelevance ||
+            this.popoverState.hasExplicitRequirement ||
+            this.popoverState.hasExplicitPassion ||
+            this.popoverState.hasExplicitIdentity;
+
+        if (!hasAnySelection) {
+            // Auto-delete the annotation (no confirmation dialog per GAP-105)
+            this.deleteAnnotation(this.editingAnnotationId);
+
+            // Hide the popover without saving
+            hideAnnotationPopover({ save: false });
+        }
     }
 
     /**
