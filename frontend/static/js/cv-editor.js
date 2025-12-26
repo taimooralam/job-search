@@ -11,7 +11,14 @@
  */
 
 class CVEditor {
-    constructor(jobId, container) {
+    /**
+     * Create a CV Editor instance
+     * @param {string} jobId - The job ID to load/save CV for
+     * @param {HTMLElement} container - The container element for the editor
+     * @param {Object} options - Configuration options
+     * @param {string} options.idPrefix - Element ID prefix (default: 'cv', use 'batch-cv' for batch page)
+     */
+    constructor(jobId, container, options = {}) {
         this.jobId = jobId;
         this.container = container;
         this.editor = null;
@@ -19,6 +26,19 @@ class CVEditor {
         this.saveTimeout = null;
         this.AUTOSAVE_DELAY = 1500; // 1.5 seconds
         this.lastSavedContent = null;
+
+        // GAP-100: Configurable ID prefix for unified component usage
+        // Default 'cv' for job detail page, 'batch-cv' for batch page
+        this.idPrefix = options.idPrefix || 'cv';
+    }
+
+    /**
+     * Get element by ID with the configured prefix
+     * @param {string} suffix - The element ID suffix (e.g., 'margin-top')
+     * @returns {HTMLElement|null} The element or null if not found
+     */
+    getElement(suffix) {
+        return document.getElementById(`${this.idPrefix}-${suffix}`);
     }
 
     /**
@@ -125,6 +145,7 @@ class CVEditor {
 
     /**
      * Restore document-level styles from saved state (Phase 3)
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     restoreDocumentStyles(editorState) {
         if (!editorState.documentStyles) return;
@@ -132,17 +153,17 @@ class CVEditor {
         const styles = editorState.documentStyles;
 
         // Restore line height
-        const lineHeightSelect = document.getElementById('cv-line-height');
+        const lineHeightSelect = this.getElement('line-height');
         if (lineHeightSelect && styles.lineHeight) {
             lineHeightSelect.value = styles.lineHeight;
         }
 
         // Restore margins
         if (styles.margins) {
-            const marginTop = document.getElementById('cv-margin-top');
-            const marginRight = document.getElementById('cv-margin-right');
-            const marginBottom = document.getElementById('cv-margin-bottom');
-            const marginLeft = document.getElementById('cv-margin-left');
+            const marginTop = this.getElement('margin-top');
+            const marginRight = this.getElement('margin-right');
+            const marginBottom = this.getElement('margin-bottom');
+            const marginLeft = this.getElement('margin-left');
 
             if (marginTop) marginTop.value = styles.margins.top || 0.5;
             if (marginRight) marginRight.value = styles.margins.right || 0.5;
@@ -150,25 +171,28 @@ class CVEditor {
             if (marginLeft) marginLeft.value = styles.margins.left || 0.5;
 
             // GAP-057: Update margin preset dropdown to match restored margins
-            if (typeof updateMarginPreset === 'function') {
+            // Call the appropriate function based on context
+            if (this.idPrefix === 'batch-cv' && typeof updateBatchMarginPreset === 'function') {
+                updateBatchMarginPreset();
+            } else if (typeof updateMarginPreset === 'function') {
                 updateMarginPreset();
             }
         }
 
         // Restore page size
-        const pageSizeSelect = document.getElementById('cv-page-size');
+        const pageSizeSelect = this.getElement('page-size');
         if (pageSizeSelect && styles.pageSize) {
             pageSizeSelect.value = styles.pageSize;
         }
 
         // Restore header and footer
         if (editorState.header) {
-            const headerInput = document.getElementById('cv-header-text');
+            const headerInput = this.getElement('header-text');
             if (headerInput) headerInput.value = editorState.header;
         }
 
         if (editorState.footer) {
-            const footerInput = document.getElementById('cv-footer-text');
+            const footerInput = this.getElement('footer-text');
             if (footerInput) footerInput.value = editorState.footer;
         }
     }
@@ -558,9 +582,10 @@ class CVEditor {
 
     /**
      * Get current line height from UI control
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     getCurrentLineHeight() {
-        const lineHeightSelect = document.getElementById('cv-line-height');
+        const lineHeightSelect = this.getElement('line-height');
         if (lineHeightSelect) {
             return parseFloat(lineHeightSelect.value);
         }
@@ -569,12 +594,13 @@ class CVEditor {
 
     /**
      * Get current margins from UI controls
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     getCurrentMargins() {
-        const topMargin = document.getElementById('cv-margin-top');
-        const rightMargin = document.getElementById('cv-margin-right');
-        const bottomMargin = document.getElementById('cv-margin-bottom');
-        const leftMargin = document.getElementById('cv-margin-left');
+        const topMargin = this.getElement('margin-top');
+        const rightMargin = this.getElement('margin-right');
+        const bottomMargin = this.getElement('margin-bottom');
+        const leftMargin = this.getElement('margin-left');
 
         // Helper to safely parse float with fallback for empty/invalid values
         const safeParseFloat = (element, defaultValue) => {
@@ -593,9 +619,10 @@ class CVEditor {
 
     /**
      * Get current page size from UI control
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     getCurrentPageSize() {
-        const pageSizeSelect = document.getElementById('cv-page-size');
+        const pageSizeSelect = this.getElement('page-size');
         if (pageSizeSelect) {
             return pageSizeSelect.value;
         }
@@ -604,17 +631,19 @@ class CVEditor {
 
     /**
      * Get header text (Phase 3)
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     getHeaderText() {
-        const headerInput = document.getElementById('cv-header-text');
+        const headerInput = this.getElement('header-text');
         return headerInput ? headerInput.value : '';
     }
 
     /**
      * Get footer text (Phase 3)
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     getFooterText() {
-        const footerInput = document.getElementById('cv-footer-text');
+        const footerInput = this.getElement('footer-text');
         return footerInput ? footerInput.value : '';
     }
 
@@ -653,9 +682,10 @@ class CVEditor {
 
     /**
      * Update save indicator UI (Phase 5: Enhanced with ARIA live region)
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     updateSaveIndicator(status) {
-        const indicator = document.getElementById('cv-save-indicator');
+        const indicator = this.getElement('save-indicator');
         if (!indicator) return;
 
         const states = {
@@ -919,12 +949,13 @@ class CVEditor {
 
     /**
      * Update undo/redo button states based on editor history (Phase 5.2)
+     * GAP-100: Uses getElement() for configurable ID prefix support
      */
     updateUndoRedoButtons() {
         if (!this.editor) return;
 
-        const undoBtn = document.getElementById('cv-undo-btn');
-        const redoBtn = document.getElementById('cv-redo-btn');
+        const undoBtn = this.getElement('undo-btn');
+        const redoBtn = this.getElement('redo-btn');
 
         if (undoBtn) {
             const canUndo = this.editor.can().undo();

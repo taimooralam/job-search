@@ -262,8 +262,8 @@ async function initBatchCVEditor(jobId) {
     }
 
     try {
-        // Create editor instance
-        batchCVEditorInstance = new CVEditor(jobId, container);
+        // Create editor instance with batch-specific ID prefix (GAP-100)
+        batchCVEditorInstance = new CVEditor(jobId, container, { idPrefix: 'batch-cv' });
 
         // Override updateSaveIndicator to use batch-specific indicator
         const originalUpdateSaveIndicator = batchCVEditorInstance.updateSaveIndicator.bind(batchCVEditorInstance);
