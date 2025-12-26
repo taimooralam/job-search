@@ -102,17 +102,6 @@
 <script>
     // Scrape & Fill job application form
     async function scrapeAndFillJob(jobId, jobTitle) {
-        const confirmed = confirm(
-            `Scrape & Fill application form?\n\n` +
-            `Job: ${jobTitle}\n\n` +
-            `This will:\n` +
-            `1. Scrape the application form questions\n` +
-            `2. Generate AI-powered answers\n` +
-            `3. Save planned answers to the job`
-        );
-
-        if (!confirmed) return;
-
         try {
             showToast('Starting Scrape & Fill...', 'info');
 
@@ -189,13 +178,6 @@
     // Process single job from batch view
     async function processSingleBatchJob(jobId) {
         const tier = document.getElementById('batch-tier')?.value || 'auto';
-        const tierLabels = { 'auto': 'Auto', 'A': 'Gold (A)', 'B': 'Silver (B)', 'C': 'Bronze (C)' };
-
-        const confirmed = confirm(
-            `Process this job through the full pipeline?\n\nTier: ${tierLabels[tier] || tier}`
-        );
-
-        if (!confirmed) return;
 
         try {
             showToast('Starting pipeline...', 'info');

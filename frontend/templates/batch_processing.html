@@ -1140,17 +1140,6 @@
             'structure-jd': '/api/runner/jobs/full-extraction/batch'
         };
 
-        const confirmed = confirm(
-            `Run ${operationNames[operation] || operation} on ${count} job${count > 1 ? 's' : ''}?\n\n` +
-            `Tier: ${tierDisplay}\n` +
-            `Jobs will be queued and processed. Check Pipeline Queue for progress.`
-        );
-
-        if (!confirmed) {
-            BatchDebug.log('BATCH', 'Operation cancelled by user');
-            return;
-        }
-
         // Initialize progress tracking
         initBatchProgress(jobIds, operationNames[operation] || operation);
 
@@ -1443,8 +1432,6 @@
         if (batchSelectedJobs.size === 0) return;
 
         const count = batchSelectedJobs.size;
-        const confirmed = confirm(`Update ${count} job${count > 1 ? 's' : ''} to "${newStatus}"?`);
-        if (!confirmed) return;
 
         try {
             const response = await fetch('/api/jobs/status/bulk', {
