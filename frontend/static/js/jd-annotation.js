@@ -2677,12 +2677,7 @@ function deleteAnnotationFromPopover() {
         return;
     }
 
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this annotation?')) {
-        return;
-    }
-
-    // Delete the annotation
+    // Delete the annotation immediately (Gmail undo pattern - no confirmation needed)
     manager.deleteAnnotation(annotationId);
 
     // Hide the popover - no save needed since we just deleted

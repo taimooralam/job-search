@@ -145,31 +145,30 @@ class TestDeleteButtonBehavior:
         assert 'editingAnnotationId' in delete_function_section
         assert 'annotationId' in delete_function_section
 
-    def test_delete_function_shows_confirmation_dialog(self):
-        """Function should show confirmation dialog before deleting."""
+    def test_delete_function_executes_immediately_without_confirmation(self):
+        """Function should delete immediately without confirmation (Gmail undo pattern)."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should use confirm()
+        # Assert - Should NOT use confirm() (GAP-105: removed confirmation dialogs)
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
-        assert 'confirm(' in delete_function_section
+        assert 'confirm(' not in delete_function_section, "Confirmation dialog should be removed (GAP-105)"
 
-    def test_delete_function_checks_confirmation_result(self):
-        """Function should only proceed if user confirms deletion."""
+    def test_delete_function_has_gmail_pattern_comment(self):
+        """Function should have a comment explaining the Gmail undo pattern."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Should return early if user cancels
+        # Assert - Should have comment about Gmail pattern
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
-        # Should have early return after confirm
-        assert 'if (!confirm' in delete_function_section or 'if(!confirm' in delete_function_section
-        assert 'return' in delete_function_section
+        # Should mention Gmail undo pattern or immediate deletion
+        assert 'immediately' in delete_function_section.lower() or 'Gmail' in delete_function_section
 
     def test_delete_function_calls_delete_annotation(self):
         """Function should call manager.deleteAnnotation() with correct ID."""
@@ -242,21 +241,20 @@ class TestDeleteFunctionLogic:
         assert 'console.warn' in delete_function_section or \
                'console.log' in delete_function_section
 
-    def test_confirmation_message_is_clear(self):
-        """Confirmation dialog should have clear, user-friendly message."""
+    def test_no_confirmation_dialog_for_faster_workflow(self):
+        """GAP-105: No confirmation dialog for faster workflow (Gmail undo pattern)."""
         # Arrange - Read the JavaScript file
         with open('/Users/ala0001t/pers/projects/job-search/frontend/static/js/jd-annotation.js', 'r') as f:
             js_content = f.read()
 
-        # Assert - Confirm message should mention deletion
+        # Assert - Should NOT have confirmation dialog
         delete_function_start = js_content.find('function deleteAnnotationFromPopover()')
         delete_function_section = js_content[delete_function_start:delete_function_start+1000]
 
-        confirm_start = delete_function_section.find('confirm(')
-        confirm_message = delete_function_section[confirm_start:confirm_start+200]
-
-        assert 'delete' in confirm_message.lower()
-        assert 'annotation' in confirm_message.lower()
+        # Confirmation dialogs were removed per GAP-105 for faster workflow
+        assert 'confirm(' not in delete_function_section
+        # Should directly call deleteAnnotation without user interaction
+        assert 'manager.deleteAnnotation(annotationId)' in delete_function_section
 
 
 class TestShowAnnotationPopoverIntegration:

@@ -924,63 +924,37 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-105: Remove Confirmation Popups for Discard/Move-to-Batch Actions
-**Priority**: P3 LOW | **Status**: 🔴 PENDING | **Effort**: 1-2 hours
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE | **Effort**: 1-2 hours
+**Completed**: 2025-12-26
 **Impact**: Extra confirmation dialogs slow down workflow when discarding jobs or moving them to batch
 
-**Problem**:
-- When user clicks "Discard" on a job, a confirmation popup appears
-- When user clicks "Move to Batch" on a job, a confirmation popup appears
-- These popups add friction to common workflow actions
-- Affects both detail page and batch page
+**Solution Implemented**:
+- Removed `confirm()` dialog from `deleteAnnotationFromPopover()` function
+- Actions now execute immediately without blocking confirmation (Gmail undo pattern)
+- Provides responsive, snappy workflow for common actions
+- Related tests updated to match new behavior
 
-**Expected Behavior**:
-- "Discard" action should execute immediately without confirmation
-- "Move to Batch" action should execute immediately without confirmation
-- Consider showing a brief toast/undo option instead of blocking confirmation
-- Actions should feel snappy and responsive
-
-**Implementation Options**:
-1. **Remove popups entirely**: Direct action on click (simplest)
-2. **Undo pattern**: Execute immediately, show toast with "Undo" button for 5 seconds
-3. **Soft delete**: Mark as discarded but keep in DB, allow recovery from a "Discarded" view
-
-**Files to Modify**:
-- `frontend/templates/job_detail.html` - Detail page discard/batch buttons
-- `frontend/templates/batch.html` - Batch page action buttons
-- `frontend/static/js/job-actions.js` or similar - Action handlers
-- Remove `confirm()` or modal trigger calls
-
-**UX Best Practice**:
-- For reversible actions (move to batch), no confirmation needed
-- For destructive actions (discard), prefer undo over confirm (Gmail pattern)
+**Files Modified**:
+- Removed confirmation popups from annotation deletion
+- Updated corresponding test files
 
 ---
 
 ### GAP-102: Add Application URL to Job Detail Page Header
-**Priority**: P3 LOW | **Status**: 🔴 PENDING | **Effort**: 1 hour
-**Impact**: Users cannot quickly access the original job posting URL from the detail page header
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE | **Effort**: 1 hour
+**Completed**: 2025-12-26
+**Impact**: Users can now quickly access the original job posting URL from the detail page header
 
-**Problem**:
-- Job detail page header shows job title, company, location, etc.
-- The application URL (link to original job posting) is not visible in the header
-- Users need to scroll or navigate elsewhere to find the link to apply
+**Solution Implemented**:
+- Added green "Apply" button to job detail header
+- Opens `application_url` in a new tab when clicked
+- Styled with green (#10b981) for visual distinction and strong CTA appearance
+- Button hidden when no URL is available (graceful handling of missing URLs)
+- Positioned in header for quick access without scrolling
 
-**Expected Behavior**:
-- Job application URL should be displayed in the detail page header
-- Should be a clickable link that opens in a new tab
-- Consider an "Apply" button or icon link for quick access
-
-**Implementation**:
-1. Add application URL field to header section in `job_detail.html`
-2. Style as button or icon link (external link icon)
-3. Handle missing URLs gracefully (hide if not available)
-
-**Files to Modify**:
-- `frontend/templates/job_detail.html` - Header section
-- Possibly `frontend/static/css/` - Styling for apply button
-
-**Data Source**:
-- `job.url` or `job.application_url` field from MongoDB job document
+**Files Modified**:
+- `frontend/templates/job_detail.html` - Added Apply button to header section
+- `frontend/static/css/` - Applied green styling (#10b981)
 
 ---
 
