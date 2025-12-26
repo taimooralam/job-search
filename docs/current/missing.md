@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-26 (GAP-109 COMPLETE - core skill color timing fixed with requestAnimationFrame)
+**Last Updated**: 2025-12-26 (GAP-110 COMPLETE - annotation editor colors semantically differentiated with improved readability)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -1109,6 +1109,47 @@ truncated_profile = candidate_profile[:1500]
 - Core skill highlight colors now update reliably when relevance changes
 - Users see immediate visual feedback when marking skills as medium priority
 - Eliminated timing-related race conditions in DOM manipulation
+
+---
+
+### GAP-110: Annotation Editor Colors Not Semantically Differentiated
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-26) | **Effort**: 1.5 hours
+**Impact**: Annotation editor now has visually distinct colors with better semantic differentiation and improved text readability
+
+**Problem** (FIXED):
+- Annotation editor colors were not sufficiently visually distinct, making it difficult to quickly differentiate between relevance levels
+- Color palette lacked semantic meaning (e.g., warm colors for warnings, cool colors for neutral)
+- Text readability issues with existing opacity settings (35%) made text hard to read over colored backgrounds
+
+**Root Cause**:
+- Original color palette used similar hues with insufficient contrast
+- Opacity settings (35%) were too high, obscuring underlying text
+- No semantic alignment between color choice and relevance meaning
+
+**Solution Implemented**:
+- Created new semantic color palette with distinct hues and meanings:
+  - Core (Teal #14b8a6) - professional, distinct from strong
+  - Strong (Green #22c55e) - classic success, positive association
+  - Medium (Amber #f59e0b) - warm, more visible than previous
+  - Weak (Orange #f97316) - warning tone for lower relevance
+  - Gap (Rose #f43f5e) - softer danger signal for missing skills
+- Reduced opacity from 35% to 25% for better text readability
+- Enhanced hover states with glow effects (shadow-lg + brightness increase) for better interactivity feedback
+
+**Files Modified**:
+- `frontend/static/css/annotation-colors.css` - New color palette with semantic differentiation and hover states
+- `frontend/templates/components/jd_annotation_editor.html` - Updated annotation highlighting classes
+
+**Test Coverage**:
+- Existing annotation editor tests continue to pass
+- Manual testing confirms colors are visually distinct and semantically meaningful
+- Text readability verified across different backgrounds and opacity levels
+
+**Impact**:
+- Users can instantly identify relevance levels through color at a glance
+- Improved text readability with lower opacity
+- Enhanced visual feedback with glow hover effects
+- Better accessibility through semantic color choices
 
 ---
 
