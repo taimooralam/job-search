@@ -885,8 +885,9 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-107: Annotation Panel Dimension Toggle + Auto-Delete on Empty
-**Priority**: P2 MEDIUM | **Status**: 🔴 PENDING | **Effort**: 2-3 hours
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-26) | **Effort**: 2-3 hours
 **Impact**: Annotation UX is clunky - cannot unselect dimensions, and empty annotations persist unnecessarily
+**Resolution**: Dimension toggle + auto-delete when all unselected
 
 **Problem**:
 1. **No toggle behavior**: Once a dimension (must-have, nice-to-have, etc.) is selected, clicking it again does NOT unselect it
