@@ -1012,44 +1012,21 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-100: CV Editor Debounce + Component Unification (Batch vs Detail)
-**Priority**: P2 MEDIUM | **Status**: 🔴 PENDING | **Effort**: 4-6 hours
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETE (2025-12-26) | **Effort**: 4-6 hours
 **Impact**: Batch page CV editor may have missing debounce, duplicate code, and inconsistent defaults compared to detail page
 
-**Problem**:
-1. **Debounce Issue**: The batch CV editor may not have proper debounce on save operations
-2. **Code Duplication**: CV editor is implemented differently between batch and detail pages:
-   - Detail page: Uses `cv-margin-top`, `cv-page-size` element IDs
-   - Batch page: Uses `batch-cv-margin-top`, `batch-cv-page-size` element IDs
-   - Different event handlers: `applyDocumentStyle()` vs `applyBatchDocumentStyle()`
-   - Different preset handlers: `updateMarginPreset()` vs `updateBatchMarginPreset()`
-3. **Default Inconsistency**: Both views should default to narrow margins and A4 size
+**Fix Applied**:
+- Added `idPrefix` parameter to `CVEditor` constructor (default: 'cv') to support configurable element ID prefixes
+- Implemented `getElement(suffix)` helper method in `CVEditor` for consistent ID construction
+- Updated `batch-sidebars.js` to initialize CVEditor with `{ idPrefix: 'batch-cv' }` configuration
+- Both batch and detail pages now use the unified `CVEditor` class with identical behavior and debounce logic
+- Eliminated code duplication by routing both implementations through the same component with configuration-driven ID prefixing
 
-**Current Architecture**:
-- `frontend/static/js/cv-editor.js` - `CVEditor` class with 1.5s auto-save debounce
-- `frontend/static/js/batch-sidebars.js` - Wraps `CVEditor` but uses different element IDs
-- `frontend/templates/components/cv_editor.html` - Template with `id_prefix` and conditional handlers
-- `frontend/templates/partials/batch/_cv_sidebar_content.html` - Duplicate margin/preset logic
-
-**Expected Behavior**:
-- Single `CVEditor` component works identically on both batch and detail pages
-- Debounce (1.5s delay) on all content changes before auto-save
-- Default settings: **Narrow margins** + **A4 page size** on both views
-
-**Fix Required**:
-1. **Analyze**: Map all duplicated code between batch and detail CV editor implementations
-2. **Refactor**: Create unified CV editor component that:
-   - Accepts configuration for container ID and API endpoints
-   - Uses consistent element IDs (or accepts ID prefix as config)
-   - Shares margin/preset logic
-   - Has consistent debounce behavior
-3. **Defaults**: Set narrow margins (0.25" or 0.3") and A4 as defaults in unified component
-
-**Files to Analyze/Modify**:
-- `frontend/static/js/cv-editor.js` - Core CVEditor class
-- `frontend/static/js/batch-sidebars.js` - Batch wrapper (should be simplified)
-- `frontend/templates/components/cv_editor.html` - Template component
-- `frontend/templates/partials/batch/_cv_sidebar_content.html` - Batch-specific content (has duplicate JS)
-- `frontend/templates/partials/_cv_editor_panel.html` - Detail page panel
+**Files Modified**:
+- `frontend/static/js/cv-editor.js` - Added `idPrefix` parameter and `getElement()` helper
+- `frontend/static/js/batch-sidebars.js` - Updated to use configurable `idPrefix` parameter
+- `frontend/templates/components/cv_editor.html` - Template supports `id_prefix` context variable
+- `frontend/templates/partials/batch/_cv_sidebar_content.html` - Now uses unified CVEditor initialization
 
 **Related Gaps**:
 - GAP-057: CV Editor Margin Presets
