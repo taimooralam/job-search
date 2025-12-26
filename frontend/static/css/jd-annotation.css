@@ -1,12 +1,19 @@
 /**
  * JD Annotation System - Styles
  *
- * Color scheme follows calibration rubric:
- * - Core Strength (green): 3.0x boost
- * - Extremely Relevant (emerald): 2.0x boost
- * - Relevant (yellow): 1.5x boost
- * - Tangential (orange): 1.0x boost
- * - Gap (red): 0.3x penalty
+ * Color scheme follows calibration rubric with distinct, accessible colors:
+ * - Core Strength (teal #14b8a6): 3.0x boost - distinctive blue-green for top skills
+ * - Extremely Relevant (green #22c55e): 2.0x boost - strong match
+ * - Relevant (amber #f59e0b): 1.5x boost - moderate match
+ * - Tangential (orange #f97316): 1.0x boost - weak match
+ * - Gap (rose #f43f5e): 0.3x penalty - missing skill
+ *
+ * Design principles:
+ * - Colors are visually distinct from each other
+ * - Subtle 25% opacity backgrounds with solid 2px bottom borders
+ * - Hover states use 40% opacity for better visibility
+ * - Good contrast for text readability
+ * - Consistent between detail and batch pages
  */
 
 /* ============================================================================
@@ -211,64 +218,64 @@ section[data-section-type="about_role"] {
     }
 }
 
-/* Core Strength - Green (3.0x boost) */
+/* Core Strength - Teal/Cyan (3.0x boost) - Distinctive blue-green for top skills */
 .annotation-highlight-core_strength {
-    background-color: rgba(34, 197, 94, 0.35);
-    border-bottom: 2px solid #22c55e;
-    box-shadow: inset 0 -1px 0 rgba(34, 197, 94, 0.3);
+    background-color: rgba(20, 184, 166, 0.25);
+    border-bottom: 2px solid #14b8a6;
+    box-shadow: inset 0 -1px 0 rgba(20, 184, 166, 0.2);
 }
 
 .annotation-highlight-core_strength:hover {
-    background-color: rgba(34, 197, 94, 0.5);
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    background-color: rgba(20, 184, 166, 0.40);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
 }
 
-/* Extremely Relevant - Emerald (2.0x boost) */
+/* Extremely Relevant - Green (2.0x boost) - Strong match color */
 .annotation-highlight-extremely_relevant {
-    background-color: rgba(16, 185, 129, 0.35);
-    border-bottom: 2px solid #10b981;
-    box-shadow: inset 0 -1px 0 rgba(16, 185, 129, 0.3);
+    background-color: rgba(34, 197, 94, 0.25);
+    border-bottom: 2px solid #22c55e;
+    box-shadow: inset 0 -1px 0 rgba(34, 197, 94, 0.2);
 }
 
 .annotation-highlight-extremely_relevant:hover {
-    background-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    background-color: rgba(34, 197, 94, 0.40);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
-/* Relevant - Yellow (1.5x boost) */
+/* Relevant - Amber (1.5x boost) - Moderate match with warm tone */
 .annotation-highlight-relevant {
-    background-color: rgba(234, 179, 8, 0.35);
-    border-bottom: 2px solid #eab308;
-    box-shadow: inset 0 -1px 0 rgba(234, 179, 8, 0.3);
+    background-color: rgba(245, 158, 11, 0.25);
+    border-bottom: 2px solid #f59e0b;
+    box-shadow: inset 0 -1px 0 rgba(245, 158, 11, 0.2);
 }
 
 .annotation-highlight-relevant:hover {
-    background-color: rgba(234, 179, 8, 0.5);
-    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+    background-color: rgba(245, 158, 11, 0.40);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
 }
 
-/* Tangential - Orange (1.0x boost) */
+/* Tangential - Orange (1.0x boost) - Weak match with caution tone */
 .annotation-highlight-tangential {
-    background-color: rgba(249, 115, 22, 0.35);
+    background-color: rgba(249, 115, 22, 0.25);
     border-bottom: 2px solid #f97316;
-    box-shadow: inset 0 -1px 0 rgba(249, 115, 22, 0.3);
+    box-shadow: inset 0 -1px 0 rgba(249, 115, 22, 0.2);
 }
 
 .annotation-highlight-tangential:hover {
-    background-color: rgba(249, 115, 22, 0.5);
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+    background-color: rgba(249, 115, 22, 0.40);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
 }
 
-/* Gap - Red (0.3x penalty) */
+/* Gap - Rose (0.3x penalty) - Missing skill with danger tone */
 .annotation-highlight-gap {
-    background-color: rgba(239, 68, 68, 0.35);
-    border-bottom: 2px solid #ef4444;
-    box-shadow: inset 0 -1px 0 rgba(239, 68, 68, 0.3);
+    background-color: rgba(244, 63, 94, 0.25);
+    border-bottom: 2px solid #f43f5e;
+    box-shadow: inset 0 -1px 0 rgba(244, 63, 94, 0.2);
 }
 
 .annotation-highlight-gap:hover {
-    background-color: rgba(239, 68, 68, 0.5);
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+    background-color: rgba(244, 63, 94, 0.40);
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.15);
 }
 
 /* Inactive annotations */
@@ -525,28 +532,28 @@ section[data-section-type="about_role"] {
 }
 
 #batch-jd-processed-content .annotation-highlight-core_strength {
-    background-color: rgba(34, 197, 94, 0.3);
-    border-bottom: 2px solid rgb(34, 197, 94);
+    background-color: rgba(20, 184, 166, 0.25);
+    border-bottom: 2px solid rgb(20, 184, 166);
 }
 
 #batch-jd-processed-content .annotation-highlight-extremely_relevant {
-    background-color: rgba(16, 185, 129, 0.3);
-    border-bottom: 2px solid rgb(16, 185, 129);
+    background-color: rgba(34, 197, 94, 0.25);
+    border-bottom: 2px solid rgb(34, 197, 94);
 }
 
 #batch-jd-processed-content .annotation-highlight-relevant {
-    background-color: rgba(234, 179, 8, 0.3);
-    border-bottom: 2px solid rgb(234, 179, 8);
+    background-color: rgba(245, 158, 11, 0.25);
+    border-bottom: 2px solid rgb(245, 158, 11);
 }
 
 #batch-jd-processed-content .annotation-highlight-tangential {
-    background-color: rgba(249, 115, 22, 0.3);
+    background-color: rgba(249, 115, 22, 0.25);
     border-bottom: 2px solid rgb(249, 115, 22);
 }
 
 #batch-jd-processed-content .annotation-highlight-gap {
-    background-color: rgba(239, 68, 68, 0.3);
-    border-bottom: 2px solid rgb(239, 68, 68);
+    background-color: rgba(244, 63, 94, 0.25);
+    border-bottom: 2px solid rgb(244, 63, 94);
 }
 
 #batch-jd-processed-content .annotation-highlight:hover {

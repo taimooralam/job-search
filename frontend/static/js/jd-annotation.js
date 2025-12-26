@@ -19,11 +19,11 @@
 // ============================================================================
 
 const RELEVANCE_COLORS = {
-    core_strength: { bg: 'bg-green-200', border: 'border-green-400', text: 'text-green-800' },
-    extremely_relevant: { bg: 'bg-emerald-200', border: 'border-emerald-400', text: 'text-emerald-800' },
-    relevant: { bg: 'bg-yellow-200', border: 'border-yellow-400', text: 'text-yellow-800' },
-    tangential: { bg: 'bg-orange-200', border: 'border-orange-400', text: 'text-orange-800' },
-    gap: { bg: 'bg-red-200', border: 'border-red-400', text: 'text-red-800' }
+    core_strength: { bg: 'bg-teal-100', border: 'border-teal-400', text: 'text-teal-800' },
+    extremely_relevant: { bg: 'bg-green-100', border: 'border-green-400', text: 'text-green-800' },
+    relevant: { bg: 'bg-amber-100', border: 'border-amber-500', text: 'text-amber-800' },
+    tangential: { bg: 'bg-orange-100', border: 'border-orange-400', text: 'text-orange-800' },
+    gap: { bg: 'bg-rose-100', border: 'border-rose-400', text: 'text-rose-800' }
 };
 
 const REQUIREMENT_COLORS = {
