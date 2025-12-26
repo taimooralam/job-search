@@ -173,11 +173,19 @@
                     </div>
                 </div>
 
-                <!-- View Posting Button -->
-                <div class="job-detail-header-actions">
+                <!-- Header Action Buttons -->
+                <div class="job-detail-header-actions" style="display: flex; gap: 0.5rem;">
+                    {% if job.application_url %}
+                    <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="job-detail-apply-btn">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Apply
+                    </a>
+                    {% endif %}
                     {% set header_job_url = job.url or job.jobUrl %}
                     {% if header_job_url %}
-                    <a href="{{ header_job_url }}" target="_blank" class="job-detail-view-posting-btn">
+                    <a href="{{ header_job_url }}" target="_blank" rel="noopener noreferrer" class="job-detail-view-posting-btn">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
@@ -197,12 +205,19 @@
                 <span class="job-detail-header-compact-score">{{ job.score }}%</span>
                 {% endif %}
             </div>
-            {% set header_job_url = job.url or job.jobUrl %}
-            {% if header_job_url %}
-            <a href="{{ header_job_url }}" target="_blank" class="job-detail-view-posting-btn" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">
-                View Posting
-            </a>
-            {% endif %}
+            <div style="display: flex; gap: 0.375rem;">
+                {% if job.application_url %}
+                <a href="{{ job.application_url }}" target="_blank" rel="noopener noreferrer" class="job-detail-apply-btn" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">
+                    Apply
+                </a>
+                {% endif %}
+                {% set header_job_url = job.url or job.jobUrl %}
+                {% if header_job_url %}
+                <a href="{{ header_job_url }}" target="_blank" rel="noopener noreferrer" class="job-detail-view-posting-btn" style="font-size: 0.75rem; padding: 0.375rem 0.75rem;">
+                    View Posting
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
 

@@ -557,6 +557,32 @@
   height: 1rem;
 }
 
+/* Apply Button - Green themed for primary action */
+.job-detail-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #10b981;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.job-detail-apply-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.job-detail-apply-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 /* ============================================================================
    Sidebar Delete Button - De-emphasized danger zone
    ============================================================================ */
