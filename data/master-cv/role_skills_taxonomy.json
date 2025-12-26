@@ -16,7 +16,25 @@
         "metric_priorities": ["team_size", "retention", "velocity", "delivery", "hiring"],
         "headline_pattern": "{Title} | {Years}+ Years Building High-Performing Engineering Teams",
         "key_achievement_focus": ["team growth", "culture impact", "delivery improvement", "talent development", "process optimization"],
-        "differentiators": ["multiplier effect", "high-performing teams", "engineering excellence", "talent development"]
+        "differentiators": ["multiplier effect", "high-performing teams", "engineering excellence", "talent development"],
+        "metric_emphasis": 0.50,
+        "high_impact_themes": [
+          "Team scaling (e.g., 5→15 engineers)",
+          "Agile/process transformation",
+          "Cross-functional collaboration initiatives",
+          "Retention improvements",
+          "Technical debt reduction programs"
+        ],
+        "red_flags_to_avoid": [
+          "Buzzword stuffing without concrete achievements",
+          "Vague language (responsible for, helped with, worked on)",
+          "No quantified results for team or delivery metrics",
+          "Overemphasis on individual technical contributions vs team outcomes"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": "6-15",
+        "expected_budget_range": null,
+        "ats_priority": "medium_high"
       },
       "sections": [
         {
@@ -123,7 +141,25 @@
         "metric_priorities": ["system_scale", "latency", "reliability", "adoption", "technical_debt_reduction"],
         "headline_pattern": "{Title} | {Years}+ Years Architecting Scalable Systems",
         "key_achievement_focus": ["architectural impact", "cross-team influence", "technical depth", "system reliability", "performance optimization"],
-        "differentiators": ["architectural excellence", "cross-team impact", "technical strategy", "system thinking"]
+        "differentiators": ["architectural excellence", "cross-team impact", "technical strategy", "system thinking"],
+        "metric_emphasis": 0.65,
+        "high_impact_themes": [
+          "Large-scale system design (processing Xk/M requests)",
+          "Technical debt elimination programs",
+          "Platform/infrastructure modernization",
+          "Cross-team technical alignment",
+          "Engineering best practices establishment"
+        ],
+        "red_flags_to_avoid": [
+          "Technology lists without context or impact",
+          "Missing connection between technical decisions and business outcomes",
+          "No evidence of cross-team influence",
+          "Pure IC contributions without architectural leadership"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": null,
+        "expected_budget_range": null,
+        "ats_priority": "high"
       },
       "sections": [
         {
@@ -225,7 +261,25 @@
         "metric_priorities": ["org_size", "team_count", "budget", "delivery", "manager_development"],
         "headline_pattern": "{Title} | {Years}+ Years Scaling Engineering Organizations",
         "key_achievement_focus": ["org scaling", "manager development", "program delivery", "strategic execution", "culture transformation"],
-        "differentiators": ["multi-team leadership", "engineering excellence", "strategic delivery", "org design"]
+        "differentiators": ["multi-team leadership", "engineering excellence", "strategic delivery", "org design"],
+        "metric_emphasis": 0.50,
+        "high_impact_themes": [
+          "Multi-team leadership (teams of teams)",
+          "Organizational design and restructuring",
+          "$M+ budget management",
+          "Engineering excellence programs",
+          "Department-wide OKR implementation"
+        ],
+        "red_flags_to_avoid": [
+          "Focusing on tactical/operational details vs strategic outcomes",
+          "No evidence of managing managers",
+          "Missing budget or organizational scale metrics",
+          "Overemphasis on hands-on coding"
+        ],
+        "board_level_language": true,
+        "expected_team_size_range": "15-100+",
+        "expected_budget_range": "$2M-$50M",
+        "ats_priority": "medium_high"
       },
       "sections": [
         {
@@ -320,7 +374,25 @@
         "metric_priorities": ["function_size", "revenue_impact", "culture_metrics", "time_to_market"],
         "headline_pattern": "{Title} | {Years}+ Years Building Engineering Organizations",
         "key_achievement_focus": ["function building", "executive presence", "business impact", "culture creation", "first hire to scale"],
-        "differentiators": ["function building", "executive leadership", "transformation", "culture champion"]
+        "differentiators": ["function building", "executive leadership", "transformation", "culture champion"],
+        "metric_emphasis": 0.35,
+        "high_impact_themes": [
+          "Zero-to-one engineering organization building",
+          "Rapid scaling (10→100+ engineers)",
+          "Technical due diligence for funding rounds",
+          "Engineering-product partnership building",
+          "Technical roadmap creation"
+        ],
+        "red_flags_to_avoid": [
+          "Operational focus without strategic narrative",
+          "Missing evidence of executive-level communication",
+          "No transformation or culture-building stories",
+          "Vague platitudes without specific outcomes"
+        ],
+        "board_level_language": true,
+        "expected_team_size_range": "5-50+",
+        "expected_budget_range": "$1M-$20M",
+        "ats_priority": "medium"
       },
       "sections": [
         {
@@ -411,7 +483,25 @@
         "metric_priorities": ["org_size", "revenue_impact", "strategic_delivery", "operational_excellence"],
         "headline_pattern": "{Title} | {Years}+ Years Engineering Executive Leadership",
         "key_achievement_focus": ["organizational scale", "business impact", "executive partnership", "delivery excellence", "strategic execution"],
-        "differentiators": ["executive leadership", "business transformation", "organizational scale", "operational excellence"]
+        "differentiators": ["executive leadership", "business transformation", "organizational scale", "operational excellence"],
+        "metric_emphasis": 0.35,
+        "high_impact_themes": [
+          "Multi-year strategic planning and execution",
+          "C-suite partnership and alignment",
+          "Large-scale organizational transformation",
+          "Revenue-driving engineering initiatives",
+          "Engineering culture at scale"
+        ],
+        "red_flags_to_avoid": [
+          "Tactical focus without 12+ month planning horizon",
+          "No evidence of C-suite/board-level communication",
+          "Missing organizational health or culture metrics",
+          "Overemphasis on technical details vs business outcomes"
+        ],
+        "board_level_language": true,
+        "expected_team_size_range": "50-250+",
+        "expected_budget_range": "$10M-$100M+",
+        "ats_priority": "medium"
       },
       "sections": [
         {
@@ -504,7 +594,25 @@
         "metric_priorities": ["company_impact", "valuation", "revenue", "transformation", "innovation"],
         "headline_pattern": "{Title} | {Years}+ Years Technology Vision & Business Transformation",
         "key_achievement_focus": ["technology vision", "business transformation", "executive leadership", "innovation", "strategic partnerships"],
-        "differentiators": ["technology vision", "business transformation", "innovation", "board-level presence"]
+        "differentiators": ["technology vision", "business transformation", "innovation", "board-level presence"],
+        "metric_emphasis": 0.30,
+        "high_impact_themes": [
+          "Technology vision tied to business outcomes",
+          "Revenue/valuation impact ($XM → $XM growth)",
+          "Board-level communication and investor relations",
+          "M&A technical due diligence",
+          "Industry thought leadership (patents, publications, speaking)"
+        ],
+        "red_flags_to_avoid": [
+          "VP Engineering positioning (operational vs strategic)",
+          "Excessive technical depth without business narrative",
+          "No evidence of board or investor communication",
+          "Missing transformation stories or vision articulation"
+        ],
+        "board_level_language": true,
+        "expected_team_size_range": "50-500+",
+        "expected_budget_range": "$20M-$200M+",
+        "ats_priority": "low"
       },
       "sections": [
         {
@@ -579,7 +687,25 @@
         "metric_priorities": ["delivery", "system_quality", "team_velocity", "technical_debt_reduction"],
         "headline_pattern": "{Title} | {Years}+ Years Hands-On Technical Leadership",
         "key_achievement_focus": ["delivery excellence", "technical quality", "team guidance", "architectural decisions", "hands-on coding"],
-        "differentiators": ["player-coach", "hands-on leadership", "delivery focus", "technical mentorship"]
+        "differentiators": ["player-coach", "hands-on leadership", "delivery focus", "technical mentorship"],
+        "metric_emphasis": 0.55,
+        "high_impact_themes": [
+          "System delivery with quality metrics",
+          "Team technical mentorship",
+          "Architectural decision-making",
+          "Hands-on coding contribution",
+          "Process improvement and velocity gains"
+        ],
+        "red_flags_to_avoid": [
+          "Pure management without hands-on contribution",
+          "No evidence of team guidance or mentoring",
+          "Missing delivery or quality metrics",
+          "Technology lists without project context"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": "3-10",
+        "expected_budget_range": null,
+        "ats_priority": "high"
       },
       "sections": [
         {
@@ -674,7 +800,25 @@
         "metric_priorities": ["system_performance", "delivery", "code_quality", "reliability"],
         "headline_pattern": "{Title} | {Years}+ Years Building Scalable Software Systems",
         "key_achievement_focus": ["system delivery", "technical expertise", "performance optimization", "code quality", "feature delivery"],
-        "differentiators": ["technical depth", "delivery track record", "system expertise", "collaborative approach"]
+        "differentiators": ["technical depth", "delivery track record", "system expertise", "collaborative approach"],
+        "metric_emphasis": 0.60,
+        "high_impact_themes": [
+          "System performance improvements (latency, throughput)",
+          "Feature delivery with measurable user impact",
+          "Code quality and maintainability gains",
+          "Technical problem-solving for complex challenges",
+          "Cross-team collaboration on shared systems"
+        ],
+        "red_flags_to_avoid": [
+          "Technology lists without context or project outcomes",
+          "No quantified results (performance gains, delivery metrics)",
+          "Vague descriptions (worked on, helped with, contributed to)",
+          "Missing evidence of independent problem-solving"
+        ],
+        "board_level_language": false,
+        "expected_team_size_range": null,
+        "expected_budget_range": null,
+        "ats_priority": "high"
       },
       "sections": [
         {

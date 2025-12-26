@@ -14,7 +14,49 @@
       "bachelors": "B.Sc. Computer Software Engineering — GIK Institute"
     },
     "certifications": ["AWS Essentials", "ECS & Multi-Region LB", "Data Scientist's Toolbox", "R Programming"],
-    "years_experience": 11
+    "years_experience": 11,
+    "regional_variants": {
+      "us": {
+        "include_photo": false,
+        "max_pages": 2,
+        "include_personal_details": false,
+        "ats_priority": "high",
+        "spelling": "american",
+        "tone": "direct"
+      },
+      "uk": {
+        "include_photo": false,
+        "max_pages": 2,
+        "include_personal_details": false,
+        "ats_priority": "high",
+        "spelling": "british",
+        "tone": "professional"
+      },
+      "germany": {
+        "include_photo": true,
+        "max_pages": 2,
+        "include_personal_details": true,
+        "ats_priority": "medium",
+        "spelling": "british",
+        "tone": "formal"
+      },
+      "uae": {
+        "include_photo": true,
+        "max_pages": 3,
+        "include_personal_details": true,
+        "ats_priority": "low",
+        "spelling": "british",
+        "tone": "formal"
+      },
+      "saudi": {
+        "include_photo": true,
+        "max_pages": 3,
+        "include_personal_details": true,
+        "ats_priority": "low",
+        "spelling": "british",
+        "tone": "formal"
+      }
+    }
   },
   "roles": [
     {
@@ -126,7 +168,9 @@
       "hard_skills": ["Node.js", "JavaScript", "RabbitMQ", "Pub/Sub", "Microservices", "Swagger", "OpenAPI", "MongoDB", "SQL", "Docker", "Event-Driven Architecture", "Message Broker", "Asynchronous Messaging", "Service Design", "API Contracts"],
       "soft_skills": ["Agile Methodologies", "Client Communication", "Research Collaboration", "Interpersonal Communication", "SCRUM", "Demo Presentations", "Feedback Integration", "Academic Stakeholder Management"],
       "achievement_themes": ["microservices architecture", "RabbitMQ messaging", "API standards", "research collaboration", "service design", "event-driven communication", "API-first development"],
-      "career_stage": "early-mid"
+      "career_stage": "early-mid",
+      "early_career_mode": true,
+      "max_bullets": 2
     },
     {
       "id": "05_osram",
@@ -156,7 +200,9 @@
       "hard_skills": ["Python", "C++", "C", "Qt", "QML", "CoAP", "OSCOAP", "UDP", "REST", "Linux", "Git", "Eclipse", "IoT", "Protocol Design", "Middleware Development", "Cross-Platform Development", "Embedded Systems", "Security Implementation", "Protocol Translation", "DTLS", "Multicast"],
       "soft_skills": ["Agile Methodologies", "SCRUM", "Technical Documentation", "Team Collaboration", "Client Demonstrations", "Interpersonal Communication", "International Team Collaboration", "Demo Presentations", "Business Development Support"],
       "achievement_themes": ["cross-platform IoT application", "protocol middleware", "CoAP security enhancement", "reference implementation", "legacy system integration", "technical documentation", "business demonstrations", "ecosystem expansion", "security implementation"],
-      "career_stage": "early"
+      "career_stage": "early",
+      "early_career_mode": true,
+      "max_bullets": 2
     },
     {
       "id": "06_clary_icon",
@@ -186,7 +232,9 @@
       "hard_skills": ["Node.js", "JavaScript", "C++", "Qt", "WebRTC", "Licode", "FFmpeg", "REST API", "WebSocket", "MySQL", "MongoDB", "C#", "WPF", "SIP", "Linux", "Visual Studio", "Git", "OOP", "SQL", "HTML", "CSS", "Video Transcoding", "Real-Time Streaming", "Media Server", "Text-to-Speech", "Call Recording", "Timestamp Synchronization"],
       "soft_skills": ["Client Communication", "Initiative", "Problem Solving", "Self-Direction", "Technical Writing", "Team Collaboration", "Software Documentation", "Requirements Gathering", "Stakeholder Management", "Client Ownership", "Expectation Management", "Cross-Stack Adaptability", "Reverse Engineering Mindset"],
       "achievement_themes": ["video recording systems", "media transcoding", "real-time playback", "multi-party synchronization", "desktop UI development", "user onboarding tutorials", "client delivery", "reverse engineering", "cross-platform polyglot", "contract-critical delivery", "compliance systems"],
-      "career_stage": "early"
+      "career_stage": "early",
+      "early_career_mode": true,
+      "max_bullets": 2
     }
   ]
 }
