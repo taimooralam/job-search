@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-26 (GAP-110 COMPLETE - annotation editor colors semantically differentiated with improved readability)
+**Last Updated**: 2025-12-26 (GAP-112 COMPLETE - batch pipeline confirmation popups removed; GAP-108 COMPLETE - batch annotation sidebar delete fixed)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -1146,6 +1146,73 @@ truncated_profile = candidate_profile[:1500]
 **Related Gaps**:
 - GAP-099: Contact Discovery Decoupling (similar MongoDB-awareness pattern)
 - GAP-069: FireCrawl Caching (company data caching)
+
+---
+
+### GAP-108: Batch Annotation Sidebar Delete Not Working
+**Priority**: P1 HIGH | **Status**: ✅ COMPLETE (2025-12-25) | **Effort**: 1-2 hours
+**Impact**: Deleting annotations from the batch page sidebar was broken because it referenced the wrong annotation manager
+
+**Problem** (FIXED):
+- When deleting annotations from the batch page sidebar, the delete operation failed
+- The `renderAnnotationItem()` function was hardcoded to use the detail page's `annotationManager`
+- Batch pages use a different manager instance (`batchAnnotationManager`), causing context mismatch
+
+**Root Cause**:
+- `renderAnnotationItem()` function in `jd-annotation.js` had a hardcoded reference to `annotationManager`
+- No way to select the correct manager based on the execution context (batch vs detail page)
+- This broke all delete operations when running from batch page sidebar
+
+**Solution Implemented**:
+- Created `getActiveAnnotationManager()` helper function that returns the correct manager based on context
+- Batch pages set `window.batchAnnotationManager` before initializing annotation components
+- Detail pages use the default `window.annotationManager`
+- `renderAnnotationItem()` now calls `getActiveAnnotationManager()` to get the correct instance
+- Enables context-aware manager selection for all annotation operations
+
+**Files Modified**:
+- `frontend/static/js/jd-annotation.js` - Added `getActiveAnnotationManager()` helper; updated `renderAnnotationItem()` to use context-aware selection
+
+**Test Coverage**:
+- Existing batch page annotation tests continue to pass
+- Manual testing confirms delete operations work correctly on batch page sidebar
+
+**Impact**:
+- Users can now delete annotations from batch page sidebar without errors
+- Multi-instance annotation management works correctly across different UI contexts
+
+---
+
+### GAP-112: Remove Confirmation Popups for Batch Pipeline Actions
+**Priority**: P3 LOW | **Status**: ✅ COMPLETE (2025-12-26) | **Effort**: 1-2 hours
+**Impact**: Extra confirmation dialogs slowed down batch processing workflow; removed for immediate action execution
+
+**Problem** (FIXED):
+- Batch page had 4 confirmation dialogs that blocked operations:
+  1. Batch operations (CV generation, all-ops, research-company, etc.)
+  2. Status update dropdown selections
+  3. Single job "Process" button
+  4. "Scrape & Fill" button for job details
+- These dialogs created friction in the workflow and violated the Gmail undo pattern
+
+**Solution Implemented**:
+- Removed all 4 `confirm()` dialog calls from batch processing operations
+- Actions now execute immediately without blocking user confirmation
+- Follows Gmail undo pattern for better UX and workflow efficiency
+- Maintains operation logging for accountability
+
+**Files Modified**:
+- `frontend/templates/batch_processing.html` - Removed confirmation dialogs from batch operation buttons
+- `frontend/templates/partials/batch_job_rows.html` - Removed confirmation dialogs from status dropdown and process button
+
+**Test Coverage**:
+- Existing batch action tests continue to pass
+- Manual testing confirms operations execute immediately without prompts
+
+**Impact**:
+- Batch processing workflow is now faster and more responsive
+- Users can process multiple jobs without confirmation friction
+- Consistent UX across all batch operations
 
 ---
 
