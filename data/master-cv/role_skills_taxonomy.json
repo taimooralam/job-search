@@ -12,14 +12,40 @@
           "Engineering leader passionate about {passion} and delivering {outcome}.",
           "{Identity} with a track record of {metric_hook} through people-first leadership."
         ],
-        "power_verbs": ["built", "scaled", "grew", "coached", "developed", "delivered", "mentored", "transformed"],
-        "metric_priorities": ["team_size", "retention", "velocity", "delivery", "hiring"],
+        "power_verbs": [
+          "built",
+          "scaled",
+          "grew",
+          "coached",
+          "developed",
+          "delivered",
+          "mentored",
+          "transformed"
+        ],
+        "metric_priorities": [
+          "team_size",
+          "retention",
+          "velocity",
+          "delivery",
+          "hiring"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Building High-Performing Engineering Teams",
-        "key_achievement_focus": ["team growth", "culture impact", "delivery improvement", "talent development", "process optimization"],
-        "differentiators": ["multiplier effect", "high-performing teams", "engineering excellence", "talent development"],
-        "metric_emphasis": 0.50,
+        "key_achievement_focus": [
+          "team growth",
+          "culture impact",
+          "delivery improvement",
+          "talent development",
+          "process optimization"
+        ],
+        "differentiators": [
+          "multiplier effect",
+          "high-performing teams",
+          "engineering excellence",
+          "talent development"
+        ],
+        "metric_emphasis": 0.5,
         "high_impact_themes": [
-          "Team scaling (e.g., 5→15 engineers)",
+          "Team scaling (e.g., 5\u219215 engineers)",
           "Agile/process transformation",
           "Cross-functional collaboration initiatives",
           "Retention improvements",
@@ -52,7 +78,19 @@
             "Technical Hiring",
             "Innovation Culture"
           ],
-          "jd_signals": ["technical leadership", "lead engineers", "mentor", "technical direction", "architect", "technical vision", "engineering excellence", "technical strategy"]
+          "jd_signals": [
+            "technical leadership",
+            "lead engineers",
+            "mentor",
+            "technical direction",
+            "architect",
+            "technical vision",
+            "engineering excellence",
+            "technical strategy",
+            "ai",
+            "ml",
+            "machine learning"
+          ]
         },
         {
           "name": "People Management",
@@ -69,7 +107,21 @@
             "Change Management",
             "Blameless Postmortems"
           ],
-          "jd_signals": ["team management", "hire", "grow team", "performance", "1:1", "direct reports", "people management", "team lead", "coaching", "talent"]
+          "jd_signals": [
+            "team management",
+            "hire",
+            "grow team",
+            "performance",
+            "1:1",
+            "direct reports",
+            "people management",
+            "team lead",
+            "coaching",
+            "talent",
+            "cross-functional",
+            "recruiting",
+            "stakeholder"
+          ]
         },
         {
           "name": "Cloud & Platform",
@@ -87,7 +139,26 @@
             "Observability",
             "Docker"
           ],
-          "jd_signals": ["aws", "cloud", "infrastructure", "devops", "kubernetes", "terraform", "serverless", "lambda", "platform", "observability"]
+          "jd_signals": [
+            "aws",
+            "cloud",
+            "infrastructure",
+            "devops",
+            "kubernetes",
+            "terraform",
+            "serverless",
+            "lambda",
+            "platform",
+            "observability",
+            "gcp",
+            "azure",
+            "ci/cd",
+            "docker",
+            "python",
+            "typescript",
+            "go",
+            "golang"
+          ]
         },
         {
           "name": "Delivery & Process",
@@ -104,7 +175,18 @@
             "Process Improvement",
             "Risk Analysis"
           ],
-          "jd_signals": ["agile", "delivery", "ship", "release", "sprint", "quality", "scrum", "kanban", "process", "roadmap"]
+          "jd_signals": [
+            "agile",
+            "delivery",
+            "ship",
+            "release",
+            "sprint",
+            "quality",
+            "scrum",
+            "kanban",
+            "process",
+            "roadmap"
+          ]
         },
         {
           "name": "Architecture & Design",
@@ -120,7 +202,18 @@
             "Distributed Systems",
             "Event Sourcing"
           ],
-          "jd_signals": ["architecture", "system design", "microservices", "scalability", "ddd", "distributed", "event-driven"]
+          "jd_signals": [
+            "architecture",
+            "system design",
+            "microservices",
+            "scalability",
+            "ddd",
+            "distributed",
+            "event-driven",
+            "compliance",
+            "gdpr",
+            "security"
+          ]
         }
       ],
       "max_sections": 4,
@@ -137,11 +230,37 @@
           "Technical leader driving {passion} across {scope}.",
           "{Identity} with deep expertise in {domain} and cross-team influence."
         ],
-        "power_verbs": ["architected", "designed", "led", "drove", "established", "scaled", "pioneered", "influenced"],
-        "metric_priorities": ["system_scale", "latency", "reliability", "adoption", "technical_debt_reduction"],
+        "power_verbs": [
+          "architected",
+          "designed",
+          "led",
+          "drove",
+          "established",
+          "scaled",
+          "pioneered",
+          "influenced"
+        ],
+        "metric_priorities": [
+          "system_scale",
+          "latency",
+          "reliability",
+          "adoption",
+          "technical_debt_reduction"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Architecting Scalable Systems",
-        "key_achievement_focus": ["architectural impact", "cross-team influence", "technical depth", "system reliability", "performance optimization"],
-        "differentiators": ["architectural excellence", "cross-team impact", "technical strategy", "system thinking"],
+        "key_achievement_focus": [
+          "architectural impact",
+          "cross-team influence",
+          "technical depth",
+          "system reliability",
+          "performance optimization"
+        ],
+        "differentiators": [
+          "architectural excellence",
+          "cross-team impact",
+          "technical strategy",
+          "system thinking"
+        ],
         "metric_emphasis": 0.65,
         "high_impact_themes": [
           "Large-scale system design (processing Xk/M requests)",
@@ -177,7 +296,21 @@
             "System Design",
             "Architectural Runway"
           ],
-          "jd_signals": ["architecture", "system design", "scalability", "distributed", "ddd", "microservices", "technical strategy", "principal", "staff"]
+          "jd_signals": [
+            "architecture",
+            "scalability",
+            "ai",
+            "system design",
+            "technical strategy",
+            "ddd",
+            "principal",
+            "security",
+            "microservices",
+            "ml",
+            "distributed",
+            "staff",
+            "api"
+          ]
         },
         {
           "name": "Technical Excellence",
@@ -194,7 +327,22 @@
             "Technical Debt Reduction",
             "Engineering Standards"
           ],
-          "jd_signals": ["technical depth", "hands-on", "coding", "performance", "optimization", "backend", "full-stack", "senior engineer"]
+          "jd_signals": [
+            "full-stack",
+            "coding",
+            "performance",
+            "backend",
+            "senior engineer",
+            "azure",
+            "go",
+            "optimization",
+            "java",
+            "golang",
+            "technical depth",
+            "typescript",
+            "hands-on",
+            "python"
+          ]
         },
         {
           "name": "Cloud Platform",
@@ -211,7 +359,18 @@
             "Infrastructure as Code",
             "Docker"
           ],
-          "jd_signals": ["aws", "cloud", "infrastructure", "terraform", "kubernetes", "platform", "serverless", "devops"]
+          "jd_signals": [
+            "devops",
+            "terraform",
+            "cloud",
+            "kubernetes",
+            "serverless",
+            "observability",
+            "infrastructure",
+            "aws",
+            "platform",
+            "kafka"
+          ]
         },
         {
           "name": "Technical Influence",
@@ -226,7 +385,20 @@
             "Knowledge Sharing",
             "Technical Leadership"
           ],
-          "jd_signals": ["influence", "mentor", "cross-team", "collaboration", "technical leadership", "guide", "coach"]
+          "jd_signals": [
+            "coach",
+            "innovation",
+            "collaboration",
+            "mentor",
+            "vision",
+            "influence",
+            "culture",
+            "cross-team",
+            "growth",
+            "cross-functional",
+            "guide",
+            "technical leadership"
+          ]
         },
         {
           "name": "Delivery & Quality",
@@ -240,7 +412,14 @@
             "Incident Management",
             "Blameless Postmortems"
           ],
-          "jd_signals": ["delivery", "quality", "ci/cd", "testing", "reliability", "production"]
+          "jd_signals": [
+            "delivery",
+            "quality",
+            "ci/cd",
+            "testing",
+            "reliability",
+            "production"
+          ]
         }
       ],
       "max_sections": 4,
@@ -257,12 +436,38 @@
           "Engineering executive building {passion} at {scope}.",
           "{Identity} with a track record of growing teams from {start} to {end} engineers."
         ],
-        "power_verbs": ["scaled", "transformed", "built", "drove", "established", "grew", "led", "unified"],
-        "metric_priorities": ["org_size", "team_count", "budget", "delivery", "manager_development"],
+        "power_verbs": [
+          "scaled",
+          "transformed",
+          "built",
+          "drove",
+          "established",
+          "grew",
+          "led",
+          "unified"
+        ],
+        "metric_priorities": [
+          "org_size",
+          "team_count",
+          "budget",
+          "delivery",
+          "manager_development"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Scaling Engineering Organizations",
-        "key_achievement_focus": ["org scaling", "manager development", "program delivery", "strategic execution", "culture transformation"],
-        "differentiators": ["multi-team leadership", "engineering excellence", "strategic delivery", "org design"],
-        "metric_emphasis": 0.50,
+        "key_achievement_focus": [
+          "org scaling",
+          "manager development",
+          "program delivery",
+          "strategic execution",
+          "culture transformation"
+        ],
+        "differentiators": [
+          "multi-team leadership",
+          "engineering excellence",
+          "strategic delivery",
+          "org design"
+        ],
+        "metric_emphasis": 0.5,
         "high_impact_themes": [
           "Multi-team leadership (teams of teams)",
           "Organizational design and restructuring",
@@ -296,7 +501,21 @@
             "Change Management",
             "Mentoring"
           ],
-          "jd_signals": ["director", "multiple teams", "org design", "culture", "strategy", "engineering leadership", "scale", "grow"]
+          "jd_signals": [
+            "hiring",
+            "scale",
+            "org design",
+            "innovation",
+            "director",
+            "growth",
+            "revenue",
+            "engineering leadership",
+            "vision",
+            "grow",
+            "culture",
+            "strategy",
+            "multiple teams"
+          ]
         },
         {
           "name": "Operational Excellence",
@@ -312,7 +531,21 @@
             "Blameless Postmortems",
             "Observability"
           ],
-          "jd_signals": ["operational", "delivery", "quality", "reliability", "sla", "incident", "production", "excellence"]
+          "jd_signals": [
+            "excellence",
+            "technical debt",
+            "operational",
+            "quality",
+            "delivery",
+            "production",
+            "performance",
+            "ci/cd",
+            "incident",
+            "reliability",
+            "sla",
+            "observability",
+            "agile"
+          ]
         },
         {
           "name": "Technology Strategy",
@@ -327,7 +560,18 @@
             "Domain-Driven Design",
             "System Design"
           ],
-          "jd_signals": ["technology strategy", "roadmap", "modernization", "platform", "architecture", "technical direction"]
+          "jd_signals": [
+            "architecture",
+            "compliance",
+            "roadmap",
+            "modernization",
+            "technology strategy",
+            "security",
+            "ml",
+            "ai",
+            "platform",
+            "technical direction"
+          ]
         },
         {
           "name": "Business Partnership",
@@ -340,7 +584,18 @@
             "Risk Analysis",
             "GDPR Compliance"
           ],
-          "jd_signals": ["business", "stakeholder", "okr", "budget", "cross-functional", "executive", "strategic"]
+          "jd_signals": [
+            "backend",
+            "budget",
+            "strategic",
+            "stakeholder",
+            "executive",
+            "business",
+            "python",
+            "distributed",
+            "okr",
+            "cross-functional"
+          ]
         },
         {
           "name": "Cloud & Infrastructure",
@@ -353,7 +608,13 @@
             "Infrastructure as Code",
             "CI/CD"
           ],
-          "jd_signals": ["aws", "cloud", "infrastructure", "devops", "platform"]
+          "jd_signals": [
+            "aws",
+            "cloud",
+            "infrastructure",
+            "devops",
+            "platform"
+          ]
         }
       ],
       "max_sections": 4,
@@ -370,15 +631,40 @@
           "Engineering executive who transforms {passion} into {outcome}.",
           "{Identity} with experience building teams from {start} to {end} engineers."
         ],
-        "power_verbs": ["built", "established", "transformed", "drove", "scaled", "created", "founded", "defined"],
-        "metric_priorities": ["function_size", "revenue_impact", "culture_metrics", "time_to_market"],
+        "power_verbs": [
+          "built",
+          "established",
+          "transformed",
+          "drove",
+          "scaled",
+          "created",
+          "founded",
+          "defined"
+        ],
+        "metric_priorities": [
+          "function_size",
+          "revenue_impact",
+          "culture_metrics",
+          "time_to_market"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Building Engineering Organizations",
-        "key_achievement_focus": ["function building", "executive presence", "business impact", "culture creation", "first hire to scale"],
-        "differentiators": ["function building", "executive leadership", "transformation", "culture champion"],
+        "key_achievement_focus": [
+          "function building",
+          "executive presence",
+          "business impact",
+          "culture creation",
+          "first hire to scale"
+        ],
+        "differentiators": [
+          "function building",
+          "executive leadership",
+          "transformation",
+          "culture champion"
+        ],
         "metric_emphasis": 0.35,
         "high_impact_themes": [
           "Zero-to-one engineering organization building",
-          "Rapid scaling (10→100+ engineers)",
+          "Rapid scaling (10\u2192100+ engineers)",
           "Technical due diligence for funding rounds",
           "Engineering-product partnership building",
           "Technical roadmap creation"
@@ -408,7 +694,20 @@
             "Strategic Planning",
             "Stakeholder Management"
           ],
-          "jd_signals": ["head of", "build team", "scale", "executive", "leadership team", "organization", "talent", "culture"]
+          "jd_signals": [
+            "hiring",
+            "scale",
+            "performance",
+            "growth",
+            "head of",
+            "build team",
+            "talent",
+            "leadership team",
+            "culture",
+            "executive",
+            "organization",
+            "cross-functional"
+          ]
         },
         {
           "name": "Strategic Delivery",
@@ -422,7 +721,19 @@
             "Release Management",
             "Process Improvement"
           ],
-          "jd_signals": ["strategic", "delivery", "roadmap", "product", "risk", "execution", "velocity"]
+          "jd_signals": [
+            "devops",
+            "delivery",
+            "scalability",
+            "execution",
+            "roadmap",
+            "strategic",
+            "risk",
+            "ci/cd",
+            "agile",
+            "velocity",
+            "product"
+          ]
         },
         {
           "name": "Technology Vision",
@@ -436,7 +747,20 @@
             "Event-Driven Architecture",
             "System Design"
           ],
-          "jd_signals": ["vision", "technology", "architecture", "innovation", "modernization", "platform", "technical strategy"]
+          "jd_signals": [
+            "technology",
+            "innovation",
+            "architecture",
+            "technical strategy",
+            "modernization",
+            "vision",
+            "security",
+            "distributed",
+            "ml",
+            "ai",
+            "platform",
+            "api"
+          ]
         },
         {
           "name": "Business Impact",
@@ -449,7 +773,18 @@
             "Risk Analysis",
             "Strategic Planning"
           ],
-          "jd_signals": ["business", "okr", "budget", "compliance", "vendor", "impact", "revenue"]
+          "jd_signals": [
+            "revenue",
+            "compliance",
+            "budget",
+            "typescript",
+            "react",
+            "vendor",
+            "impact",
+            "business",
+            "python",
+            "okr"
+          ]
         },
         {
           "name": "Platform & Infrastructure",
@@ -462,7 +797,13 @@
             "CI/CD",
             "Infrastructure as Code"
           ],
-          "jd_signals": ["aws", "cloud", "platform", "infrastructure", "operations"]
+          "jd_signals": [
+            "aws",
+            "cloud",
+            "platform",
+            "infrastructure",
+            "operations"
+          ]
         }
       ],
       "max_sections": 4,
@@ -479,11 +820,36 @@
           "Engineering VP passionate about {passion} and {passion}.",
           "{Identity} who combines strategic vision with operational excellence to {metric_hook}."
         ],
-        "power_verbs": ["led", "scaled", "transformed", "drove", "built", "established", "delivered", "executed"],
-        "metric_priorities": ["org_size", "revenue_impact", "strategic_delivery", "operational_excellence"],
+        "power_verbs": [
+          "led",
+          "scaled",
+          "transformed",
+          "drove",
+          "built",
+          "established",
+          "delivered",
+          "executed"
+        ],
+        "metric_priorities": [
+          "org_size",
+          "revenue_impact",
+          "strategic_delivery",
+          "operational_excellence"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Engineering Executive Leadership",
-        "key_achievement_focus": ["organizational scale", "business impact", "executive partnership", "delivery excellence", "strategic execution"],
-        "differentiators": ["executive leadership", "business transformation", "organizational scale", "operational excellence"],
+        "key_achievement_focus": [
+          "organizational scale",
+          "business impact",
+          "executive partnership",
+          "delivery excellence",
+          "strategic execution"
+        ],
+        "differentiators": [
+          "executive leadership",
+          "business transformation",
+          "organizational scale",
+          "operational excellence"
+        ],
         "metric_emphasis": 0.35,
         "high_impact_themes": [
           "Multi-year strategic planning and execution",
@@ -517,7 +883,15 @@
             "Change Management",
             "Strategic Planning"
           ],
-          "jd_signals": ["vp engineering", "vice president", "engineering executive", "organizational leadership", "multiple directors", "scale", "executive"]
+          "jd_signals": [
+            "vp engineering",
+            "vice president",
+            "engineering executive",
+            "organizational leadership",
+            "multiple directors",
+            "scale",
+            "executive"
+          ]
         },
         {
           "name": "Operational Excellence",
@@ -533,7 +907,15 @@
             "Roadmap Execution",
             "Observability"
           ],
-          "jd_signals": ["operational", "delivery", "velocity", "reliability", "engineering excellence", "execution", "quality"]
+          "jd_signals": [
+            "operational",
+            "delivery",
+            "velocity",
+            "reliability",
+            "engineering excellence",
+            "execution",
+            "quality"
+          ]
         },
         {
           "name": "Technology Strategy",
@@ -547,7 +929,14 @@
             "Event-Driven Architecture",
             "System Design"
           ],
-          "jd_signals": ["technology strategy", "platform", "architecture", "modernization", "technical direction", "roadmap"]
+          "jd_signals": [
+            "technology strategy",
+            "platform",
+            "architecture",
+            "modernization",
+            "technical direction",
+            "roadmap"
+          ]
         },
         {
           "name": "Business Partnership",
@@ -560,7 +949,15 @@
             "Risk Analysis",
             "GDPR Compliance"
           ],
-          "jd_signals": ["business", "stakeholder", "executive", "budget", "cross-functional", "partnership", "c-level"]
+          "jd_signals": [
+            "business",
+            "stakeholder",
+            "executive",
+            "budget",
+            "cross-functional",
+            "partnership",
+            "c-level"
+          ]
         },
         {
           "name": "Cloud & Infrastructure",
@@ -573,7 +970,13 @@
             "Infrastructure as Code",
             "CI/CD"
           ],
-          "jd_signals": ["aws", "cloud", "infrastructure", "platform", "devops"]
+          "jd_signals": [
+            "aws",
+            "cloud",
+            "infrastructure",
+            "platform",
+            "devops"
+          ]
         }
       ],
       "max_sections": 4,
@@ -590,15 +993,41 @@
           "Technology executive driving {passion} and {passion}.",
           "{Identity} who translates technology vision into {metric_hook}."
         ],
-        "power_verbs": ["led", "transformed", "established", "drove", "defined", "shaped", "built", "innovated"],
-        "metric_priorities": ["company_impact", "valuation", "revenue", "transformation", "innovation"],
+        "power_verbs": [
+          "led",
+          "transformed",
+          "established",
+          "drove",
+          "defined",
+          "shaped",
+          "built",
+          "innovated"
+        ],
+        "metric_priorities": [
+          "company_impact",
+          "valuation",
+          "revenue",
+          "transformation",
+          "innovation"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Technology Vision & Business Transformation",
-        "key_achievement_focus": ["technology vision", "business transformation", "executive leadership", "innovation", "strategic partnerships"],
-        "differentiators": ["technology vision", "business transformation", "innovation", "board-level presence"],
-        "metric_emphasis": 0.30,
+        "key_achievement_focus": [
+          "technology vision",
+          "business transformation",
+          "executive leadership",
+          "innovation",
+          "strategic partnerships"
+        ],
+        "differentiators": [
+          "technology vision",
+          "business transformation",
+          "innovation",
+          "board-level presence"
+        ],
+        "metric_emphasis": 0.3,
         "high_impact_themes": [
           "Technology vision tied to business outcomes",
-          "Revenue/valuation impact ($XM → $XM growth)",
+          "Revenue/valuation impact ($XM \u2192 $XM growth)",
           "Board-level communication and investor relations",
           "M&A technical due diligence",
           "Industry thought leadership (patents, publications, speaking)"
@@ -626,7 +1055,19 @@
             "Technical Debt Strategy",
             "Innovation Culture"
           ],
-          "jd_signals": ["cto", "technology strategy", "transformation", "innovation", "vision", "digital", "roadmap"]
+          "jd_signals": [
+            "transformation",
+            "innovation",
+            "performance",
+            "growth",
+            "ai",
+            "roadmap",
+            "technology strategy",
+            "vision",
+            "ml",
+            "cto",
+            "digital"
+          ]
         },
         {
           "name": "Business Partnership",
@@ -639,7 +1080,21 @@
             "Risk Analysis",
             "Change Management"
           ],
-          "jd_signals": ["business", "executive", "board", "revenue", "product", "partnership", "c-level"]
+          "jd_signals": [
+            "hiring",
+            "revenue",
+            "budget",
+            "business",
+            "recruiting",
+            "stakeholder",
+            "cross-functional",
+            "executive",
+            "product",
+            "leadership",
+            "board",
+            "c-level",
+            "partnership"
+          ]
         },
         {
           "name": "Engineering Organization",
@@ -653,7 +1108,18 @@
             "Engineering Standards",
             "Mentoring"
           ],
-          "jd_signals": ["organization", "culture", "talent", "team", "engineering", "scale", "build"]
+          "jd_signals": [
+            "scale",
+            "build",
+            "talent",
+            "reliability",
+            "agile",
+            "team",
+            "culture",
+            "engineering",
+            "organization",
+            "monitoring"
+          ]
         },
         {
           "name": "Technical Authority",
@@ -666,7 +1132,18 @@
             "AWS",
             "GDPR Compliance"
           ],
-          "jd_signals": ["architecture", "platform", "compliance", "security", "vendor", "technical"]
+          "jd_signals": [
+            "architecture",
+            "compliance",
+            "azure",
+            "go",
+            "technical",
+            "vendor",
+            "security",
+            "golang",
+            "aws",
+            "platform"
+          ]
         }
       ],
       "max_sections": 4,
@@ -683,11 +1160,36 @@
           "Technical leader combining hands-on expertise with {passion}.",
           "{Identity} who drives engineering excellence while shipping {outcome}."
         ],
-        "power_verbs": ["led", "delivered", "architected", "built", "mentored", "shipped", "drove", "optimized"],
-        "metric_priorities": ["delivery", "system_quality", "team_velocity", "technical_debt_reduction"],
+        "power_verbs": [
+          "led",
+          "delivered",
+          "architected",
+          "built",
+          "mentored",
+          "shipped",
+          "drove",
+          "optimized"
+        ],
+        "metric_priorities": [
+          "delivery",
+          "system_quality",
+          "team_velocity",
+          "technical_debt_reduction"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Hands-On Technical Leadership",
-        "key_achievement_focus": ["delivery excellence", "technical quality", "team guidance", "architectural decisions", "hands-on coding"],
-        "differentiators": ["player-coach", "hands-on leadership", "delivery focus", "technical mentorship"],
+        "key_achievement_focus": [
+          "delivery excellence",
+          "technical quality",
+          "team guidance",
+          "architectural decisions",
+          "hands-on coding"
+        ],
+        "differentiators": [
+          "player-coach",
+          "hands-on leadership",
+          "delivery focus",
+          "technical mentorship"
+        ],
         "metric_emphasis": 0.55,
         "high_impact_themes": [
           "System delivery with quality metrics",
@@ -722,7 +1224,20 @@
             "Code Quality",
             "REST API"
           ],
-          "jd_signals": ["technical", "hands-on", "coding", "development", "backend", "full-stack", "engineer"]
+          "jd_signals": [
+            "development",
+            "full-stack",
+            "coding",
+            "backend",
+            "azure",
+            "engineer",
+            "technical",
+            "ml",
+            "java",
+            "hands-on",
+            "python",
+            "api"
+          ]
         },
         {
           "name": "Architecture & Design",
@@ -737,7 +1252,17 @@
             "Event Sourcing",
             "API Design"
           ],
-          "jd_signals": ["architecture", "design", "microservices", "scalability", "distributed", "ddd"]
+          "jd_signals": [
+            "architecture",
+            "scalability",
+            "compliance",
+            "ai",
+            "design",
+            "ddd",
+            "security",
+            "microservices",
+            "distributed"
+          ]
         },
         {
           "name": "Cloud & Platform",
@@ -753,7 +1278,17 @@
             "Observability",
             "Serverless Architecture"
           ],
-          "jd_signals": ["aws", "cloud", "devops", "ci/cd", "infrastructure", "kubernetes", "docker"]
+          "jd_signals": [
+            "devops",
+            "cloud",
+            "ci/cd",
+            "react",
+            "kubernetes",
+            "frontend",
+            "infrastructure",
+            "aws",
+            "docker"
+          ]
         },
         {
           "name": "Team Leadership",
@@ -767,7 +1302,20 @@
             "Stakeholder Management",
             "Cross-Functional Collaboration"
           ],
-          "jd_signals": ["lead", "mentor", "team", "agile", "scrum", "guide", "coach"]
+          "jd_signals": [
+            "coach",
+            "innovation",
+            "performance",
+            "guide",
+            "mentor",
+            "roadmap",
+            "agile",
+            "team",
+            "lead",
+            "culture",
+            "growth",
+            "scrum"
+          ]
         },
         {
           "name": "Delivery & Quality",
@@ -779,7 +1327,13 @@
             "Incident Management",
             "Process Improvement"
           ],
-          "jd_signals": ["delivery", "quality", "release", "testing", "production"]
+          "jd_signals": [
+            "delivery",
+            "quality",
+            "release",
+            "testing",
+            "production"
+          ]
         }
       ],
       "max_sections": 4,
@@ -796,12 +1350,37 @@
           "Software engineer passionate about {passion} and {passion}.",
           "{Identity} with expertise in {domain} delivering {outcome}."
         ],
-        "power_verbs": ["built", "developed", "designed", "implemented", "optimized", "shipped", "created", "improved"],
-        "metric_priorities": ["system_performance", "delivery", "code_quality", "reliability"],
+        "power_verbs": [
+          "built",
+          "developed",
+          "designed",
+          "implemented",
+          "optimized",
+          "shipped",
+          "created",
+          "improved"
+        ],
+        "metric_priorities": [
+          "system_performance",
+          "delivery",
+          "code_quality",
+          "reliability"
+        ],
         "headline_pattern": "{Title} | {Years}+ Years Building Scalable Software Systems",
-        "key_achievement_focus": ["system delivery", "technical expertise", "performance optimization", "code quality", "feature delivery"],
-        "differentiators": ["technical depth", "delivery track record", "system expertise", "collaborative approach"],
-        "metric_emphasis": 0.60,
+        "key_achievement_focus": [
+          "system delivery",
+          "technical expertise",
+          "performance optimization",
+          "code quality",
+          "feature delivery"
+        ],
+        "differentiators": [
+          "technical depth",
+          "delivery track record",
+          "system expertise",
+          "collaborative approach"
+        ],
+        "metric_emphasis": 0.6,
         "high_impact_themes": [
           "System performance improvements (latency, throughput)",
           "Feature delivery with measurable user impact",
@@ -833,7 +1412,20 @@
             "REST API",
             "Backend Development"
           ],
-          "jd_signals": ["typescript", "python", "javascript", "node", "backend", "full-stack", "senior"]
+          "jd_signals": [
+            "full-stack",
+            "backend",
+            "azure",
+            "javascript",
+            "go",
+            "react",
+            "senior",
+            "golang",
+            "frontend",
+            "node",
+            "typescript",
+            "python"
+          ]
         },
         {
           "name": "Architecture & Design",
@@ -846,7 +1438,17 @@
             "System Design",
             "Domain-Driven Design"
           ],
-          "jd_signals": ["architecture", "design", "microservices", "scalable", "distributed"]
+          "jd_signals": [
+            "architecture",
+            "ai",
+            "design",
+            "scalable",
+            "reliability",
+            "security",
+            "microservices",
+            "ml",
+            "distributed"
+          ]
         },
         {
           "name": "Cloud & DevOps",
@@ -860,7 +1462,16 @@
             "Terraform",
             "Serverless Architecture"
           ],
-          "jd_signals": ["aws", "cloud", "docker", "ci/cd", "devops", "kubernetes"]
+          "jd_signals": [
+            "innovation",
+            "performance",
+            "devops",
+            "cloud",
+            "ci/cd",
+            "kubernetes",
+            "aws",
+            "docker"
+          ]
         },
         {
           "name": "Collaboration & Process",
@@ -873,7 +1484,19 @@
             "Cross-Functional Collaboration",
             "Code Quality"
           ],
-          "jd_signals": ["agile", "scrum", "team", "collaborate", "mentor"]
+          "jd_signals": [
+            "hiring",
+            "mentor",
+            "agile",
+            "collaborate",
+            "team",
+            "culture",
+            "product",
+            "leadership",
+            "growth",
+            "cross-functional",
+            "scrum"
+          ]
         }
       ],
       "max_sections": 4,
@@ -883,98 +1506,529 @@
   },
   "skill_aliases": {
     "_comment": "Comprehensive skill aliases for ATS matching and evidence detection",
-
     "// LEADERSHIP & MANAGEMENT": "----------------------------------------",
-    "technical leadership": ["Technical Leadership", "Tech Leadership", "Engineering Leadership", "Technical Lead", "Tech Lead"],
-    "architectural runway": ["Architectural Runway", "Tech Runway", "Capability Runway", "Architecture Evolution", "Technical Runway"],
-    "technical debt strategy": ["Technical Debt", "Debt Reduction", "Tech Debt Management", "Refactoring Strategy", "Technical Debt Reduction"],
-    "engineering standards": ["Engineering Standards", "Code Standards", "Engineering Best Practices", "Quality Standards", "Coding Guidelines"],
-    "code review leadership": ["Code Review Leadership", "Code Review", "Peer Review", "Review Process", "PR Review", "Pull Request Review"],
-    "technical hiring": ["Technical Hiring", "Technical Recruitment", "Engineering Hiring", "Technical Assessment", "Hiring Engineers"],
-    "innovation culture": ["Innovation Culture", "Innovation", "Culture Building", "Experimentation", "Innovation Program", "Lean Friday"],
-    "performance management": ["Performance Management", "Performance Reviews", "Goal Setting", "OKRs", "Performance Feedback", "Performance Plan"],
-    "1:1 coaching": ["1:1 Coaching", "One-on-One", "1:1s", "Individual Coaching", "Direct Report Meetings", "1:1 Meetings"],
-    "career development": ["Career Development", "Career Growth", "Development Plans", "Career Pathing", "Succession Planning", "Talent Development"],
-    "change management": ["Change Management", "Organizational Change", "Transformation", "Process Change", "Change Leadership"],
-    "blameless postmortems": ["Blameless Postmortems", "Postmortem", "Incident Retrospective", "Post-Incident Review", "RCA", "Root Cause Analysis"],
-    "strategic planning": ["Strategic Planning", "Strategy", "Long-term Planning", "Vision Setting", "Strategic Roadmap", "Multi-year Planning"],
-    "risk analysis": ["Risk Analysis", "Risk Assessment", "Risk Mitigation", "Compliance Risk", "Risk Management"],
-    "roadmap execution": ["Roadmap Execution", "Roadmap", "Delivery Planning", "Milestone Tracking", "Execution", "Roadmap Management"],
-    "process improvement": ["Process Improvement", "Continuous Improvement", "Kaizen", "Lean", "Efficiency Improvement"],
-    "mentoring": ["Mentoring", "Technical Mentoring", "Coaching", "Knowledge Transfer", "Talent Development", "Engineer Development"],
-    "team building": ["Team Building", "Talent Acquisition", "Org Design", "Culture Building", "Growing Teams"],
-    "hiring & interviewing": ["Hiring & Interviewing", "Hiring", "Interviewing", "Recruitment", "Talent Acquisition", "Technical Interviews"],
-    "stakeholder management": ["Stakeholder Management", "Stakeholder Communication", "Executive Communication", "Business Alignment"],
-    "cross-functional collaboration": ["Cross-Functional Collaboration", "Cross-Functional", "Cross Team", "Cross-Team Collaboration"],
-    "technical vision": ["Technical Vision", "Technology Strategy", "Architecture Strategy", "Platform Direction", "Technical Direction"],
-    "knowledge sharing": ["Knowledge Sharing", "Knowledge Transfer", "Documentation", "Tech Talks", "Brown Bags"],
-
+    "technical leadership": [
+      "Technical Leadership",
+      "Tech Leadership",
+      "Engineering Leadership",
+      "Technical Lead",
+      "Tech Lead"
+    ],
+    "architectural runway": [
+      "Architectural Runway",
+      "Tech Runway",
+      "Capability Runway",
+      "Architecture Evolution",
+      "Technical Runway"
+    ],
+    "technical debt strategy": [
+      "Technical Debt",
+      "Debt Reduction",
+      "Tech Debt Management",
+      "Refactoring Strategy",
+      "Technical Debt Reduction"
+    ],
+    "engineering standards": [
+      "Engineering Standards",
+      "Code Standards",
+      "Engineering Best Practices",
+      "Quality Standards",
+      "Coding Guidelines"
+    ],
+    "code review leadership": [
+      "Code Review Leadership",
+      "Code Review",
+      "Peer Review",
+      "Review Process",
+      "PR Review",
+      "Pull Request Review"
+    ],
+    "technical hiring": [
+      "Technical Hiring",
+      "Technical Recruitment",
+      "Engineering Hiring",
+      "Technical Assessment",
+      "Hiring Engineers"
+    ],
+    "innovation culture": [
+      "Innovation Culture",
+      "Innovation",
+      "Culture Building",
+      "Experimentation",
+      "Innovation Program",
+      "Lean Friday"
+    ],
+    "performance management": [
+      "Performance Management",
+      "Performance Reviews",
+      "Goal Setting",
+      "OKRs",
+      "Performance Feedback",
+      "Performance Plan"
+    ],
+    "1:1 coaching": [
+      "1:1 Coaching",
+      "One-on-One",
+      "1:1s",
+      "Individual Coaching",
+      "Direct Report Meetings",
+      "1:1 Meetings"
+    ],
+    "career development": [
+      "Career Development",
+      "Career Growth",
+      "Development Plans",
+      "Career Pathing",
+      "Succession Planning",
+      "Talent Development"
+    ],
+    "change management": [
+      "Change Management",
+      "Organizational Change",
+      "Transformation",
+      "Process Change",
+      "Change Leadership"
+    ],
+    "blameless postmortems": [
+      "Blameless Postmortems",
+      "Postmortem",
+      "Incident Retrospective",
+      "Post-Incident Review",
+      "RCA",
+      "Root Cause Analysis"
+    ],
+    "strategic planning": [
+      "Strategic Planning",
+      "Strategy",
+      "Long-term Planning",
+      "Vision Setting",
+      "Strategic Roadmap",
+      "Multi-year Planning"
+    ],
+    "risk analysis": [
+      "Risk Analysis",
+      "Risk Assessment",
+      "Risk Mitigation",
+      "Compliance Risk",
+      "Risk Management"
+    ],
+    "roadmap execution": [
+      "Roadmap Execution",
+      "Roadmap",
+      "Delivery Planning",
+      "Milestone Tracking",
+      "Execution",
+      "Roadmap Management"
+    ],
+    "process improvement": [
+      "Process Improvement",
+      "Continuous Improvement",
+      "Kaizen",
+      "Lean",
+      "Efficiency Improvement"
+    ],
+    "mentoring": [
+      "Mentoring",
+      "Technical Mentoring",
+      "Coaching",
+      "Knowledge Transfer",
+      "Talent Development",
+      "Engineer Development"
+    ],
+    "team building": [
+      "Team Building",
+      "Talent Acquisition",
+      "Org Design",
+      "Culture Building",
+      "Growing Teams"
+    ],
+    "hiring & interviewing": [
+      "Hiring & Interviewing",
+      "Hiring",
+      "Interviewing",
+      "Recruitment",
+      "Talent Acquisition",
+      "Technical Interviews"
+    ],
+    "stakeholder management": [
+      "Stakeholder Management",
+      "Stakeholder Communication",
+      "Executive Communication",
+      "Business Alignment"
+    ],
+    "cross-functional collaboration": [
+      "Cross-Functional Collaboration",
+      "Cross-Functional",
+      "Cross Team",
+      "Cross-Team Collaboration"
+    ],
+    "technical vision": [
+      "Technical Vision",
+      "Technology Strategy",
+      "Architecture Strategy",
+      "Platform Direction",
+      "Technical Direction"
+    ],
+    "knowledge sharing": [
+      "Knowledge Sharing",
+      "Knowledge Transfer",
+      "Documentation",
+      "Tech Talks",
+      "Brown Bags"
+    ],
     "// TECHNICAL ARCHITECTURE": "----------------------------------------",
-    "system design": ["System Design", "Systems Design", "Architecture Design", "System Architecture", "High-Level Design"],
-    "distributed systems": ["Distributed Systems", "Distributed Computing", "Distributed Architecture", "Horizontally Scalable"],
-    "api design": ["API Design", "API Architecture", "REST Design", "API Specification", "Contract-First Design", "OpenAPI"],
-    "backend development": ["Backend Development", "Backend Engineering", "Server-Side Development", "Backend Systems"],
-    "performance optimization": ["Performance Optimization", "Optimization", "Performance Tuning", "Latency Reduction", "Throughput Optimization"],
-    "code quality": ["Code Quality", "Code Maintainability", "Clean Code", "Code Health", "Technical Excellence"],
-    "release management": ["Release Management", "Release Planning", "Deployment Management", "Release Engineering"],
-    "incident management": ["Incident Management", "Incident Response", "On-Call", "Production Support", "Reliability Engineering", "MTTR"],
-    "scalability": ["Scalability", "Scaling", "Horizontal Scaling", "Vertical Scaling", "Load Handling", "High Throughput"],
-    "fault tolerance": ["Fault Tolerance", "Resilience", "High Availability", "HA", "Failover", "Disaster Recovery"],
-    "data modeling": ["Data Modeling", "Database Design", "Schema Design", "Data Architecture"],
-    "microservices": ["Microservices", "Micro-services", "Microservice Architecture", "Service-Oriented", "SOA"],
-    "event-driven architecture": ["Event-Driven Architecture", "EDA", "Event Driven", "Asynchronous Architecture", "Reactive Systems"],
-    "domain-driven design": ["Domain-Driven Design", "DDD", "Domain Driven Design", "Strategic Design", "Bounded Contexts"],
-    "cqrs": ["CQRS", "Command Query Responsibility Segregation", "Read/Write Separation"],
-    "event sourcing": ["Event Sourcing", "EventStore", "Event Store", "Event Log", "Append-Only Log"],
-
+    "system design": [
+      "System Design",
+      "Systems Design",
+      "Architecture Design",
+      "System Architecture",
+      "High-Level Design"
+    ],
+    "distributed systems": [
+      "Distributed Systems",
+      "Distributed Computing",
+      "Distributed Architecture",
+      "Horizontally Scalable"
+    ],
+    "api design": [
+      "API Design",
+      "API Architecture",
+      "REST Design",
+      "API Specification",
+      "Contract-First Design",
+      "OpenAPI"
+    ],
+    "backend development": [
+      "Backend Development",
+      "Backend Engineering",
+      "Server-Side Development",
+      "Backend Systems"
+    ],
+    "performance optimization": [
+      "Performance Optimization",
+      "Optimization",
+      "Performance Tuning",
+      "Latency Reduction",
+      "Throughput Optimization"
+    ],
+    "code quality": [
+      "Code Quality",
+      "Code Maintainability",
+      "Clean Code",
+      "Code Health",
+      "Technical Excellence"
+    ],
+    "release management": [
+      "Release Management",
+      "Release Planning",
+      "Deployment Management",
+      "Release Engineering"
+    ],
+    "incident management": [
+      "Incident Management",
+      "Incident Response",
+      "On-Call",
+      "Production Support",
+      "Reliability Engineering",
+      "MTTR"
+    ],
+    "scalability": [
+      "Scalability",
+      "Scaling",
+      "Horizontal Scaling",
+      "Vertical Scaling",
+      "Load Handling",
+      "High Throughput"
+    ],
+    "fault tolerance": [
+      "Fault Tolerance",
+      "Resilience",
+      "High Availability",
+      "HA",
+      "Failover",
+      "Disaster Recovery"
+    ],
+    "data modeling": [
+      "Data Modeling",
+      "Database Design",
+      "Schema Design",
+      "Data Architecture"
+    ],
+    "microservices": [
+      "Microservices",
+      "Micro-services",
+      "Microservice Architecture",
+      "Service-Oriented",
+      "SOA"
+    ],
+    "event-driven architecture": [
+      "Event-Driven Architecture",
+      "EDA",
+      "Event Driven",
+      "Asynchronous Architecture",
+      "Reactive Systems"
+    ],
+    "domain-driven design": [
+      "Domain-Driven Design",
+      "DDD",
+      "Domain Driven Design",
+      "Strategic Design",
+      "Bounded Contexts"
+    ],
+    "cqrs": [
+      "CQRS",
+      "Command Query Responsibility Segregation",
+      "Read/Write Separation"
+    ],
+    "event sourcing": [
+      "Event Sourcing",
+      "EventStore",
+      "Event Store",
+      "Event Log",
+      "Append-Only Log"
+    ],
     "// CLOUD & INFRASTRUCTURE": "----------------------------------------",
-    "aws": ["AWS", "Amazon Web Services", "AWS Cloud"],
-    "aws lambda": ["AWS Lambda", "Lambda", "Serverless Functions", "FaaS"],
-    "aws ecs": ["AWS ECS", "ECS", "Elastic Container Service", "Container Orchestration"],
-    "eventbridge": ["EventBridge", "AWS EventBridge", "Event Bus", "CloudWatch Events"],
-    "serverless": ["Serverless", "Serverless Architecture", "Serverless Framework", "Function-as-a-Service", "FaaS"],
-    "terraform": ["Terraform", "HCL", "HashiCorp", "Terraform IaC"],
-    "infrastructure as code": ["Infrastructure as Code", "IaC", "Declarative Infrastructure", "Configuration as Code"],
-    "docker": ["Docker", "Containers", "Containerization", "Container Images"],
-    "kubernetes": ["Kubernetes", "K8s", "Container Orchestration", "EKS", "GKE", "AKS"],
-    "ci/cd": ["CI/CD", "Continuous Integration", "Continuous Deployment", "CICD", "Deployment Pipeline", "GitOps"],
-    "observability": ["Observability", "Monitoring", "Logging", "Tracing", "APM", "OpenSearch", "Datadog", "Grafana", "Prometheus"],
-
+    "aws": [
+      "AWS",
+      "Amazon Web Services",
+      "AWS Cloud"
+    ],
+    "aws lambda": [
+      "AWS Lambda",
+      "Lambda",
+      "Serverless Functions",
+      "FaaS"
+    ],
+    "aws ecs": [
+      "AWS ECS",
+      "ECS",
+      "Elastic Container Service",
+      "Container Orchestration"
+    ],
+    "eventbridge": [
+      "EventBridge",
+      "AWS EventBridge",
+      "Event Bus",
+      "CloudWatch Events"
+    ],
+    "serverless": [
+      "Serverless",
+      "Serverless Architecture",
+      "Serverless Framework",
+      "Function-as-a-Service",
+      "FaaS"
+    ],
+    "terraform": [
+      "Terraform",
+      "HCL",
+      "HashiCorp",
+      "Terraform IaC"
+    ],
+    "infrastructure as code": [
+      "Infrastructure as Code",
+      "IaC",
+      "Declarative Infrastructure",
+      "Configuration as Code"
+    ],
+    "docker": [
+      "Docker",
+      "Containers",
+      "Containerization",
+      "Container Images"
+    ],
+    "kubernetes": [
+      "Kubernetes",
+      "K8s",
+      "Container Orchestration",
+      "EKS",
+      "GKE",
+      "AKS"
+    ],
+    "ci/cd": [
+      "CI/CD",
+      "Continuous Integration",
+      "Continuous Deployment",
+      "CICD",
+      "Deployment Pipeline",
+      "GitOps"
+    ],
+    "observability": [
+      "Observability",
+      "Monitoring",
+      "Logging",
+      "Tracing",
+      "APM",
+      "OpenSearch",
+      "Datadog",
+      "Grafana",
+      "Prometheus"
+    ],
     "// DATABASES & DATA": "----------------------------------------",
-    "mongodb": ["MongoDB", "Mongo", "NoSQL", "Document Database", "Atlas"],
-    "postgresql": ["PostgreSQL", "Postgres", "SQL Database", "Relational Database", "RDBMS"],
-    "mysql": ["MySQL", "MariaDB", "SQL", "Relational Database"],
-    "redis": ["Redis", "In-Memory Cache", "Key-Value Store", "Caching"],
-    "rabbitmq": ["RabbitMQ", "Message Queue", "AMQP", "Message Broker"],
-
+    "mongodb": [
+      "MongoDB",
+      "Mongo",
+      "NoSQL",
+      "Document Database",
+      "Atlas"
+    ],
+    "postgresql": [
+      "PostgreSQL",
+      "Postgres",
+      "SQL Database",
+      "Relational Database",
+      "RDBMS"
+    ],
+    "mysql": [
+      "MySQL",
+      "MariaDB",
+      "SQL",
+      "Relational Database"
+    ],
+    "redis": [
+      "Redis",
+      "In-Memory Cache",
+      "Key-Value Store",
+      "Caching"
+    ],
+    "rabbitmq": [
+      "RabbitMQ",
+      "Message Queue",
+      "AMQP",
+      "Message Broker"
+    ],
     "// LANGUAGES & FRAMEWORKS": "----------------------------------------",
-    "typescript": ["TypeScript", "TS", "TypeScript Language"],
-    "javascript": ["JavaScript", "JS", "ECMAScript", "ES6"],
-    "python": ["Python", "Python3", "Python Language"],
-    "node.js": ["Node.js", "NodeJS", "Node", "Node Runtime"],
-    "nestjs": ["NestJS", "Nest.js", "Nest Framework"],
-    "angular": ["Angular", "AngularJS", "Angular Framework"],
-    "flask": ["Flask", "Flask Framework", "Python Flask"],
-
+    "typescript": [
+      "TypeScript",
+      "TS",
+      "TypeScript Language"
+    ],
+    "javascript": [
+      "JavaScript",
+      "JS",
+      "ECMAScript",
+      "ES6"
+    ],
+    "python": [
+      "Python",
+      "Python3",
+      "Python Language"
+    ],
+    "node.js": [
+      "Node.js",
+      "NodeJS",
+      "Node",
+      "Node Runtime"
+    ],
+    "nestjs": [
+      "NestJS",
+      "Nest.js",
+      "Nest Framework"
+    ],
+    "angular": [
+      "Angular",
+      "AngularJS",
+      "Angular Framework"
+    ],
+    "flask": [
+      "Flask",
+      "Flask Framework",
+      "Python Flask"
+    ],
     "// REAL-TIME & PROTOCOLS": "----------------------------------------",
-    "webrtc": ["WebRTC", "Real-Time Communication", "Video Calling", "P2P Video"],
-    "websocket": ["WebSocket", "WebSockets", "Real-Time Messaging", "Socket.io"],
-    "rest api": ["REST API", "REST", "RESTful", "HTTP API", "JSON API"],
-    "graphql": ["GraphQL", "Graph Query Language", "Apollo GraphQL"],
-    "openapi": ["OpenAPI", "Swagger", "API Documentation", "API Spec"],
-
+    "webrtc": [
+      "WebRTC",
+      "Real-Time Communication",
+      "Video Calling",
+      "P2P Video"
+    ],
+    "websocket": [
+      "WebSocket",
+      "WebSockets",
+      "Real-Time Messaging",
+      "Socket.io"
+    ],
+    "rest api": [
+      "REST API",
+      "REST",
+      "RESTful",
+      "HTTP API",
+      "JSON API"
+    ],
+    "graphql": [
+      "GraphQL",
+      "Graph Query Language",
+      "Apollo GraphQL"
+    ],
+    "openapi": [
+      "OpenAPI",
+      "Swagger",
+      "API Documentation",
+      "API Spec"
+    ],
     "// PROCESS & METHODOLOGY": "----------------------------------------",
-    "agile": ["Agile", "Agile Methodologies", "Agile Practices", "Agile Development", "SAFe", "Lean Agile"],
-    "scrum": ["Scrum", "SCRUM", "Scrum Master", "Scrum Framework"],
-    "sprint planning": ["Sprint Planning", "Backlog Grooming", "Capacity Planning", "Iteration Planning"],
-    "quality engineering": ["Quality Engineering", "QA", "Quality Assurance", "Test Engineering", "Testing Practices", "TDD", "BDD"],
-    "devops": ["DevOps", "DevOps Practices", "DevSecOps", "SRE Practices", "Platform Engineering"],
-    "event storming": ["Event Storming", "Domain Discovery", "Collaborative Modeling", "DDD Workshop"],
-    "technical writing": ["Technical Writing", "Technical Documentation", "Software Documentation", "API Documentation"],
-
+    "agile": [
+      "Agile",
+      "Agile Methodologies",
+      "Agile Practices",
+      "Agile Development",
+      "SAFe",
+      "Lean Agile"
+    ],
+    "scrum": [
+      "Scrum",
+      "SCRUM",
+      "Scrum Master",
+      "Scrum Framework"
+    ],
+    "sprint planning": [
+      "Sprint Planning",
+      "Backlog Grooming",
+      "Capacity Planning",
+      "Iteration Planning"
+    ],
+    "quality engineering": [
+      "Quality Engineering",
+      "QA",
+      "Quality Assurance",
+      "Test Engineering",
+      "Testing Practices",
+      "TDD",
+      "BDD"
+    ],
+    "devops": [
+      "DevOps",
+      "DevOps Practices",
+      "DevSecOps",
+      "SRE Practices",
+      "Platform Engineering"
+    ],
+    "event storming": [
+      "Event Storming",
+      "Domain Discovery",
+      "Collaborative Modeling",
+      "DDD Workshop"
+    ],
+    "technical writing": [
+      "Technical Writing",
+      "Technical Documentation",
+      "Software Documentation",
+      "API Documentation"
+    ],
     "// COMPLIANCE & SECURITY": "----------------------------------------",
-    "gdpr": ["GDPR", "GDPR Compliance", "Data Privacy", "Privacy", "Data Protection"],
-    "security": ["Security", "Application Security", "Security Design", "Secure Coding", "InfoSec"]
+    "gdpr": [
+      "GDPR",
+      "GDPR Compliance",
+      "Data Privacy",
+      "Privacy",
+      "Data Protection"
+    ],
+    "security": [
+      "Security",
+      "Application Security",
+      "Security Design",
+      "Secure Coding",
+      "InfoSec"
+    ]
   },
   "default_fallback_role": "engineering_manager"
 }
