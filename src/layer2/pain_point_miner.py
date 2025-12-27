@@ -1005,7 +1005,12 @@ class PainPointMiner:
         match = re.search(r'<reasoning>(.*?)</reasoning>', response, re.DOTALL)
         return match.group(1).strip() if match else ""
 
-    def _parse_response(self, llm_response: str, logger=None) -> EnhancedPainPointAnalysis:
+    def _parse_response(
+        self,
+        llm_response: str,
+        logger=None,
+        emit_callback: Optional[Callable[[Dict[str, Any]], None]] = None
+    ) -> EnhancedPainPointAnalysis:
         """
         Parse LLM response into structured analysis.
 
@@ -1014,6 +1019,7 @@ class PainPointMiner:
         Args:
             llm_response: Raw LLM response text
             logger: Optional logger for diagnostic output
+            emit_callback: Optional callback to emit events to frontend stream
         """
         # Log raw response for debugging (first 500 chars to avoid spam)
         if logger:
@@ -1024,6 +1030,13 @@ class PainPointMiner:
         has_final_tags = '<final>' in llm_response and '</final>' in llm_response
         if logger:
             logger.info(f"[PARSE] Response contains <final> tags: {has_final_tags}")
+
+        # Emit tag detection status to frontend
+        if emit_callback:
+            emit_callback({
+                "message": f"Parse: <final> tags {'found' if has_final_tags else 'NOT found'}",
+                "has_final_tags": has_final_tags,
+            })
 
         # Extract from <final> tags first
         final_match = re.search(r'<final>(.*?)</final>', llm_response, re.DOTALL)
@@ -1068,10 +1081,24 @@ class PainPointMiner:
                 for key in ["pain_points", "strategic_needs", "risks_if_unfilled", "success_metrics"]:
                     arr = data.get(key, [])
                     logger.info(f"[PARSE] {key}: {len(arr)} items")
+
+            # Emit JSON parse success with array counts to frontend
+            if emit_callback:
+                counts = {k: len(data.get(k, [])) for k in ["pain_points", "strategic_needs", "risks_if_unfilled", "success_metrics"]}
+                emit_callback({
+                    "message": f"Parse: JSON extracted - pain_points={counts['pain_points']}, strategic_needs={counts['strategic_needs']}",
+                    "array_counts": counts,
+                })
         except json.JSONDecodeError as e:
             if logger:
                 logger.error(f"[PARSE] JSON decode failed: {e}")
                 logger.error(f"[PARSE] JSON string preview: {json_str[:500]}")
+            # Emit JSON decode failure to frontend
+            if emit_callback:
+                emit_callback({
+                    "message": f"Parse: JSON decode FAILED - {str(e)[:100]}",
+                    "error_type": "json_decode_error",
+                })
             raise ValueError(f"Failed to parse JSON: {e}\nResponse: {json_str[:500]}")
 
         # Handle legacy format (string arrays) and convert to enhanced
@@ -1092,6 +1119,13 @@ class PainPointMiner:
                 logger.error(f"[PARSE] Pydantic validation failed:")
                 for msg in error_msgs:
                     logger.error(f"[PARSE]   - {msg}")
+            # Emit Pydantic validation failure to frontend
+            if emit_callback:
+                emit_callback({
+                    "message": f"Parse: Validation FAILED - {'; '.join(error_msgs[:3])}",
+                    "error_count": len(e.errors()),
+                    "error_type": "validation_error",
+                })
             raise ValueError(
                 f"Schema validation failed:\n" +
                 "\n".join(f"  - {msg}" for msg in error_msgs)
@@ -1277,6 +1311,13 @@ class PainPointMiner:
                 "model": llm_result.model,
             })
 
+            # Emit LLM response preview to frontend for debugging
+            preview_len = min(300, len(llm_result.content))
+            self._emit_log({
+                "message": f"LLM response preview: {llm_result.content[:preview_len]}{'...' if len(llm_result.content) > preview_len else ''}",
+                "response_length": len(llm_result.content),
+            })
+
             # Extract reasoning for logging
             reasoning = self._extract_reasoning(llm_result.content)
             if reasoning:
@@ -1284,8 +1325,8 @@ class PainPointMiner:
                 for line in reasoning.split('\n')[:5]:  # Log first 5 lines
                     logger.info(f"  {line.strip()}")
 
-            # Parse and validate (with logger for diagnostic output)
-            analysis = self._parse_response(llm_result.content, logger=logger)
+            # Parse and validate (with logger for diagnostic output and emit_callback for frontend)
+            analysis = self._parse_response(llm_result.content, logger=logger, emit_callback=self._emit_log)
 
             # Log confidence distribution
             all_items = (
@@ -1366,6 +1407,13 @@ class PainPointMiner:
                 "message": f"Layer 2 complete: {len(analysis.pain_points)} pain points, {len(analysis.strategic_needs)} strategic needs"
             })
 
+            # Emit warning if 0 pain points extracted (for debugging)
+            if len(analysis.pain_points) == 0:
+                self._emit_log({
+                    "message": "WARNING: 0 pain points extracted - check LLM response preview and parse logs above",
+                    "warning_type": "zero_results",
+                })
+
             return result
 
         except Exception as e:
@@ -1379,6 +1427,12 @@ class PainPointMiner:
             logger.error(f"[EXCEPTION] Job ID: {state.get('job_id', 'unknown')}")
             logger.error(f"[EXCEPTION] Title: {state.get('title', 'unknown')}")
             logger.error(f"[EXCEPTION] JD length: {len(state.get('job_description', ''))}")
+
+            # Emit error to frontend stream
+            self._emit_log({
+                "message": f"Layer 2 ERROR: {type(e).__name__}: {str(e)[:150]}",
+                "error_type": type(e).__name__,
+            })
 
             # Return empty structure (don't block pipeline)
             if self.use_enhanced_format:

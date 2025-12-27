@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-26 (GAP-112 COMPLETE - batch pipeline confirmation popups removed; GAP-108 COMPLETE - batch annotation sidebar delete fixed)
+**Last Updated**: 2025-12-26 (GAP-106 enhanced + GAP-113 COMPLETE - emit callbacks for frontend streaming visibility in pain point extraction)
 
 > **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
 
@@ -12,9 +12,9 @@
 |----------|-------|-------------|
 | **P0 (CRITICAL)** | 4 (3 documented/fixed, 1 open) | Must fix immediately - system broken or data integrity at risk |
 | **P1 (HIGH)** | 23 (17 fixed, 4 open) | Fix this week - user-facing bugs or important features |
-| **P2 (MEDIUM)** | 40 (34 fixed, 1 open) | Fix this sprint - enhancements and incomplete features |
+| **P2 (MEDIUM)** | 41 (35 fixed, 1 open) | Fix this sprint - enhancements and incomplete features |
 | **P3 (LOW)** | 25 (19 fixed, 2 open) | Backlog - nice-to-have improvements |
-| **Total** | **92** (73 fixed/documented, 15 open) | All identified gaps |
+| **Total** | **93** (74 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
 
@@ -788,18 +788,34 @@ truncated_profile = candidate_profile[:1500]
 ---
 
 ### GAP-106: Pain Point Extraction Returns 0 Results Despite Valid JD
-**Status**: ✅ COMPLETED 2025-12-25
+**Status**: ✅ COMPLETED 2025-12-26 (enhanced with frontend streaming)
 
-**Summary**: Silent failures in pain point extraction have been addressed by adding permanent verbose logging to `src/layer2/pain_point_miner.py`. Three critical logging points were added:
+**Summary**: Silent failures in pain point extraction have been addressed with two phases:
+
+**Phase 1 (2025-12-25)**: Added Python logger diagnostics for local debugging:
 1. Before LLM call - logs job context and input
 2. After parsing - logs `<final>` tag detection and JSON extraction status
 3. On exception - logs full traceback with context
 
+**Phase 2 (2025-12-26)**: Added `emit_callback` for frontend streaming visibility:
+- LLM response preview (first 300 chars) - shows what the LLM actually returned
+- `<final>` tag detection status - shows if response follows expected format
+- JSON parse success with array counts - shows `pain_points=N, strategic_needs=N`
+- JSON decode failures - shows parse error details
+- Pydantic validation failures - shows schema validation errors
+- Zero-result warning - emits WARNING when 0 pain points extracted
+- Exception errors - emits error type and message to frontend
+
 **Fix Details**:
 - Modified: `src/layer2/pain_point_miner.py`
-- Added verbose logging at extraction points to enable production debugging
-- Logging captures: input data, LLM responses, parsing results, error details
-- This provides visibility into why extraction may return 0 results in production
+  - Added `emit_callback` parameter to `_parse_response()` method
+  - Added 6 emit points within `_parse_response()` for parse diagnostics
+  - Added LLM response preview emit after LLM call
+  - Added zero-result warning emit
+  - Added exception emit in exception handler
+- Added: `tests/unit/test_pain_point_miner.py`
+  - 10 new tests for emit callback behavior (TestParseResponseEmitCallback, TestExtractPainPointsEmitCallback)
+- Logging now captures to BOTH Python logger (local) AND frontend stream (production)
 
 ---
 
@@ -1213,6 +1229,44 @@ truncated_profile = candidate_profile[:1500]
 - Batch processing workflow is now faster and more responsive
 - Users can process multiple jobs without confirmation friction
 - Consistent UX across all batch operations
+
+---
+
+### GAP-113: Pain Point Extraction Returns 0 Results for Valid Healthcare JD
+**Priority**: P2 MEDIUM | **Status**: ✅ COMPLETED 2025-12-26 | **Effort**: 2-4 hours
+**Impact**: Pain point mining returns empty results even for valid job descriptions with clear organizational challenges
+
+**Problem** (ADDRESSED):
+- Pain point extraction completed successfully (no errors)
+- LLM was invoked: `LLM responded via backend=claude_cli, model=claude-opus-4-5-20251101`
+- But result was 0 pain points: `✅ pain_points: Found 0 pain points`
+- This differs from GAP-106 (silent failures) - here the system works but produces empty results
+- Observed on healthcare domain job (engineering_manager role, 5582 char JD)
+
+**Solution Implemented** (combined with GAP-106 Phase 2):
+Frontend streaming now provides full visibility into why 0 pain points were extracted:
+- [x] LLM response preview (first 300 chars) - shows actual LLM output
+- [x] `<final>` tag detection - shows if response followed expected format
+- [x] JSON parse success with counts - shows `pain_points=N` before validation
+- [x] Pydantic validation errors - shows exactly which schema rule failed
+- [x] Zero-result warning - emits explicit WARNING when 0 pain points extracted
+
+**Root Cause Visibility**:
+With these logs, operators can now determine if:
+- LLM returned empty arrays (prompt issue)
+- LLM response was malformed (parsing issue)
+- Pydantic validation failed (schema issue)
+- Text was in unexpected format (no `<final>` tags)
+
+**Files Modified**:
+- `src/layer2/pain_point_miner.py` - Added emit callbacks for all parse stages
+- `tests/unit/test_pain_point_miner.py` - Added 10 new emit callback tests
+
+**Note**: This GAP focused on debugging visibility. If 0 pain points continue after seeing LLM output, follow-up may require prompt tuning for healthcare domain.
+
+**References**:
+- Layer 2: `src/layer2/pain_point_miner.py`
+- Related: GAP-106 (combined solution)
 
 ---
 

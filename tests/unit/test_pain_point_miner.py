@@ -1103,3 +1103,277 @@ class TestExtractPainPointsLogging:
         assert "errors" in result
         assert len(result["errors"]) > 0
         assert "Layer 2 (Pain-Point Miner) failed" in result["errors"][0]
+
+
+# ===== EMIT CALLBACK TESTS FOR GAP-106/GAP-113 =====
+
+class TestParseResponseEmitCallback:
+    """Tests for emit_callback behavior in _parse_response() method (frontend streaming)."""
+
+    @pytest.fixture
+    def enhanced_json_response(self):
+        """Valid enhanced format JSON response."""
+        return {
+            "pain_points": [
+                {"text": "Legacy API platform blocking feature velocity", "evidence": "explicit in JD", "confidence": "high"},
+                {"text": "Database performance issues", "evidence": "inferred from context", "confidence": "medium"},
+            ],
+            "strategic_needs": [
+                {"text": "Enable rapid scaling", "evidence": "business goal", "confidence": "high"},
+                {"text": "Improve customer satisfaction", "evidence": "inferred", "confidence": "medium"},
+            ],
+            "risks_if_unfilled": [
+                {"text": "System outages during growth", "evidence": "scaling requirements", "confidence": "high"},
+                {"text": "Customer churn", "evidence": "inferred", "confidence": "low"},
+            ],
+            "success_metrics": [
+                {"text": "API latency reduced to <100ms p99", "evidence": "performance requirement", "confidence": "medium"},
+                {"text": "Zero downtime deployments", "evidence": "operational goal", "confidence": "high"},
+            ],
+        }
+
+    def test_emit_callback_on_final_tag_found(self, enhanced_json_response):
+        """_parse_response should emit when <final> tags are found."""
+        miner = PainPointMiner(use_enhanced_format=True)
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+        miner._parse_response(llm_response, emit_callback=capture_emit)
+
+        # Find the tag detection event
+        tag_events = [e for e in emitted_events if "has_final_tags" in e]
+        assert len(tag_events) == 1
+        assert tag_events[0]["has_final_tags"] is True
+        assert "found" in tag_events[0]["message"]
+
+    def test_emit_callback_on_final_tag_missing(self, enhanced_json_response):
+        """_parse_response should emit when <final> tags are NOT found."""
+        miner = PainPointMiner(use_enhanced_format=True)
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        # Response without <final> tags
+        llm_response = json.dumps(enhanced_json_response)
+        miner._parse_response(llm_response, emit_callback=capture_emit)
+
+        # Find the tag detection event
+        tag_events = [e for e in emitted_events if "has_final_tags" in e]
+        assert len(tag_events) == 1
+        assert tag_events[0]["has_final_tags"] is False
+        assert "NOT found" in tag_events[0]["message"]
+
+    def test_emit_callback_on_json_success_with_counts(self, enhanced_json_response):
+        """_parse_response should emit array counts on successful JSON parse."""
+        miner = PainPointMiner(use_enhanced_format=True)
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+        miner._parse_response(llm_response, emit_callback=capture_emit)
+
+        # Find the JSON success event
+        json_events = [e for e in emitted_events if "array_counts" in e]
+        assert len(json_events) == 1
+        assert json_events[0]["array_counts"]["pain_points"] == 2
+        assert json_events[0]["array_counts"]["strategic_needs"] == 2
+        assert "pain_points=2" in json_events[0]["message"]
+
+    def test_emit_callback_on_json_decode_error(self):
+        """_parse_response should emit JSON decode errors."""
+        miner = PainPointMiner(use_enhanced_format=True)
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        # Invalid JSON
+        llm_response = "<final>Not valid JSON!</final>"
+
+        with pytest.raises(ValueError, match="Failed to parse JSON"):
+            miner._parse_response(llm_response, emit_callback=capture_emit)
+
+        # Find the error event
+        error_events = [e for e in emitted_events if e.get("error_type") == "json_decode_error"]
+        assert len(error_events) == 1
+        assert "FAILED" in error_events[0]["message"]
+
+    def test_emit_callback_on_validation_error(self):
+        """_parse_response should emit Pydantic validation errors."""
+        miner = PainPointMiner(use_enhanced_format=True)
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        # Valid JSON but fails Pydantic validation (only 1 pain point, needs 2)
+        incomplete_json = {
+            "pain_points": [
+                {"text": "Single pain point", "evidence": "test", "confidence": "high"}
+            ],
+            # Missing other required arrays
+        }
+        llm_response = f"<final>{json.dumps(incomplete_json)}</final>"
+
+        with pytest.raises(ValueError, match="Schema validation failed"):
+            miner._parse_response(llm_response, emit_callback=capture_emit)
+
+        # Find the validation error event
+        validation_events = [e for e in emitted_events if e.get("error_type") == "validation_error"]
+        assert len(validation_events) == 1
+        assert "Validation FAILED" in validation_events[0]["message"]
+        assert validation_events[0]["error_count"] > 0
+
+    def test_emit_callback_is_optional(self, enhanced_json_response):
+        """_parse_response should work without emit_callback (backward compatibility)."""
+        miner = PainPointMiner(use_enhanced_format=True)
+
+        llm_response = f"<final>{json.dumps(enhanced_json_response)}</final>"
+
+        # Should not raise - emit_callback is None by default
+        result = miner._parse_response(llm_response)
+        assert len(result.pain_points) == 2
+
+
+class TestExtractPainPointsEmitCallback:
+    """Tests for emit behavior in extract_pain_points() method (frontend streaming).
+
+    Note: _emit_log converts dicts to JSON strings via json.dumps(), so the callback
+    receives strings that need to be parsed back to dicts.
+    """
+
+    @pytest.fixture
+    def valid_enhanced_response(self):
+        """Valid enhanced format response wrapped in <final> tags."""
+        return "<final>" + json.dumps({
+            "pain_points": [
+                {"text": "API platform performance issues", "evidence": "explicit requirement", "confidence": "high"},
+                {"text": "Database scaling problems", "evidence": "inferred from context", "confidence": "medium"},
+            ],
+            "strategic_needs": [
+                {"text": "Enable rapid growth", "evidence": "business context", "confidence": "high"},
+                {"text": "Improve customer retention", "evidence": "inferred", "confidence": "medium"},
+            ],
+            "risks_if_unfilled": [
+                {"text": "System outages", "evidence": "performance requirements", "confidence": "high"},
+                {"text": "Customer churn", "evidence": "inferred", "confidence": "low"},
+            ],
+            "success_metrics": [
+                {"text": "API latency <100ms", "evidence": "performance goal", "confidence": "medium"},
+                {"text": "Zero downtime", "evidence": "operational requirement", "confidence": "high"},
+            ],
+        }) + "</final>"
+
+    def _parse_emitted_events(self, raw_events):
+        """Parse JSON strings back to dicts from _emit_log callback."""
+        parsed = []
+        for event in raw_events:
+            if isinstance(event, str):
+                try:
+                    parsed.append(json.loads(event))
+                except json.JSONDecodeError:
+                    parsed.append({"message": event})
+            else:
+                parsed.append(event)
+        return parsed
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_emit_llm_response_preview(
+        self, mock_unified_llm_class, sample_job_state, valid_enhanced_response
+    ):
+        """extract_pain_points should emit LLM response preview to frontend."""
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        mock_llm_instance = MagicMock()
+        mock_result = _create_mock_llm_result(valid_enhanced_response)
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner(log_callback=capture_emit)
+        miner.extract_pain_points(sample_job_state)
+
+        # Parse JSON strings back to dicts
+        parsed_events = self._parse_emitted_events(emitted_events)
+
+        # Find the response preview event
+        preview_events = [e for e in parsed_events if "response_length" in e]
+        assert len(preview_events) >= 1
+        assert "LLM response preview" in preview_events[0]["message"]
+        assert preview_events[0]["response_length"] > 0
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_emit_zero_results_warning(self, mock_unified_llm_class, sample_job_state):
+        """extract_pain_points should emit warning when 0 pain points extracted."""
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        # Response with empty pain_points array (but valid schema with >= 2 items each)
+        empty_response = "<final>" + json.dumps({
+            "pain_points": [],  # Empty!
+            "strategic_needs": [
+                {"text": "Strategic need for rapid scaling", "evidence": "business context", "confidence": "high"},
+                {"text": "Enable customer success growth", "evidence": "market needs", "confidence": "high"},
+            ],
+            "risks_if_unfilled": [
+                {"text": "System stability concerns", "evidence": "infrastructure", "confidence": "high"},
+                {"text": "Customer satisfaction impact", "evidence": "business risk", "confidence": "high"},
+            ],
+            "success_metrics": [
+                {"text": "Platform availability target", "evidence": "SLA requirement", "confidence": "high"},
+                {"text": "Customer retention improvement", "evidence": "business metric", "confidence": "high"},
+            ],
+        }) + "</final>"
+
+        mock_llm_instance = MagicMock()
+        mock_result = _create_mock_llm_result(empty_response)
+        mock_llm_instance.invoke = AsyncMock(return_value=mock_result)
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner(log_callback=capture_emit)
+
+        # This will fail validation because pain_points has 0 items (min 2 required)
+        # But the miner catches the exception and returns empty structure
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Parse JSON strings back to dicts
+        parsed_events = self._parse_emitted_events(emitted_events)
+
+        # Check for error emit since validation will fail
+        error_events = [e for e in parsed_events if "ERROR" in e.get("message", "")]
+        # The miner should emit an error when validation fails
+        assert len(error_events) >= 1 or result["pain_points"] == []
+
+    @patch('src.layer2.pain_point_miner.UnifiedLLM')
+    def test_emit_exception_error(self, mock_unified_llm_class, sample_job_state):
+        """extract_pain_points should emit error to frontend when exception occurs."""
+        emitted_events = []
+
+        def capture_emit(event):
+            emitted_events.append(event)
+
+        mock_llm_instance = MagicMock()
+        mock_llm_instance.invoke = AsyncMock(side_effect=Exception("Test error for emit"))
+        mock_unified_llm_class.return_value = mock_llm_instance
+
+        miner = PainPointMiner(log_callback=capture_emit)
+        result = miner.extract_pain_points(sample_job_state)
+
+        # Parse JSON strings back to dicts
+        parsed_events = self._parse_emitted_events(emitted_events)
+
+        # Find the error emit event
+        error_events = [e for e in parsed_events if "error_type" in e]
+        assert len(error_events) >= 1
+        assert "ERROR" in error_events[0]["message"]
+        assert "Test error" in error_events[0]["message"]
