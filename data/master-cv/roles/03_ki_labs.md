@@ -45,12 +45,12 @@ Per the CV generation critique recommendations:
 
 **Variants**:
 - **Quality**: Implemented comprehensive testing strategy (unit, E2E, snapshot) reducing production incidents by 35%
-- **Technical**: Built multi-layered test suite with snapshot testing for API contract verification
+- **Technical**: Built pytest-based multi-layered test suite (unit, E2E, snapshot) for API contract verification, reducing production incidents by 35%
 - **Process**: Established testing practices improving release confidence and reducing incidents
 - **Impact**: Reduced production incidents by 35% through systematic testing approach
 - **Short**: Testing strategy (unit/E2E/snapshot)—35% incident reduction
 
-**Keywords**: testing, unit tests, E2E, snapshot testing, quality assurance, incident reduction
+**Keywords**: testing, unit tests, E2E, snapshot testing, quality assurance, incident reduction, pytest, Python, test automation, code review
 
 **Interview Defensibility**: ✅ Can explain testing pyramid approach, snapshot testing rationale, incident measurement
 
@@ -88,23 +88,7 @@ Per the CV generation critique recommendations:
 
 ---
 
-### Achievement 5: Event-Driven Microservices Communication
-
-**Core Fact**: Designed event-driven communication patterns between microservices using message queues.
-
-**Variants**:
-- **Architecture**: Designed event-driven communication patterns using message queues for microservice decoupling
-- **Technical**: Implemented asynchronous messaging between microservices for scalable event processing
-- **Integration**: Built message queue integration enabling loose coupling between pipeline components
-- **Short**: Event-driven microservices communication via message queues
-
-**Keywords**: event-driven, message queues, microservices, asynchronous, decoupling
-
-**Interview Defensibility**: ✅ Can explain messaging patterns, queue selection, event schema design
-
----
-
-### Achievement 6: Agile Delivery
+### Achievement 5: Agile Delivery
 
 **Core Fact**: Collaborated in agile team with bi-weekly sprints, consistently delivering features on time with high quality standards.
 
@@ -124,14 +108,17 @@ Per the CV generation critique recommendations:
 
 **Hard Skills**:
 - **Languages**: Python
-- **Backend**: Flask, REST API, JWT
-- **Database**: MongoDB, NoSQL
-- **Architecture**: Onion Architecture, Event-Driven, Microservices
-- **Testing**: Unit, E2E, Snapshot Testing
-- **Documentation**: Swagger/OpenAPI
-- **Cloud**: Cloud Computing, Linux
+- **Backend**: Flask, REST API, JWT, APIs, API Design, API Integration
+- **Database**: MongoDB, NoSQL, Indexing, Aggregation Pipelines
+- **Architecture**: Onion Architecture, Event-Driven, Microservices, System Architecture, System Design, Distributed Systems, Scalable Systems
+- **Testing**: Unit, E2E, Snapshot Testing, Automation
+- **Documentation**: Swagger/OpenAPI, Logging
+- **Data**: Data Pipelines, Analytics Dashboards
+- **Infrastructure**: Docker, Linux, Kubernetes, Third-Party System Integration
+- **Cloud & Observability**: AWS, Grafana, Prometheus
+- **Orchestration**: Apache Airflow
 
-**Soft Skills**: Agile Methodologies, Team Collaboration, SCRUM, Interpersonal Communication
+**Soft Skills**: Agile Methodologies, Team Collaboration, SCRUM, Interpersonal Communication, Accountability, Adaptability, Analytical Thinking, Autonomy, Client Relationship Management, Communication, Continuous Improvement Mindset, Continuous Learning, Creativity, Cross-Functional Collaboration, Curiosity, Customer Focus, Decision Making, Documentation, Empathy, Flexibility, Growth Mindset, Initiative, Innovation, Knowledge Sharing, Ownership, Prioritization, Problem Solving, Relationship Building, Requirements Analysis, Resourcefulness, Self-Motivation, Stakeholder Communication, Stakeholder Management, Technical Communication, Written Communication
 
 ---
 
