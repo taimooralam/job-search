@@ -143,6 +143,8 @@
             "aws",
             "cloud",
             "infrastructure",
+            "cloud infrastructure",
+            "infrastructure as code",
             "devops",
             "kubernetes",
             "terraform",
@@ -154,10 +156,26 @@
             "azure",
             "ci/cd",
             "docker",
+            "containerization",
             "python",
             "typescript",
             "go",
-            "golang"
+            "golang",
+            "node.js",
+            "node",
+            "react",
+            "angular",
+            "postgresql",
+            "postgres",
+            "javascript",
+            "kafka",
+            "linux",
+            "c++",
+            "rust",
+            "c#",
+            "java",
+            "sql",
+            "data pipelines"
           ]
         },
         {
@@ -209,10 +227,17 @@
             "scalability",
             "ddd",
             "distributed",
+            "distributed systems",
             "event-driven",
+            "event-driven architecture",
             "compliance",
             "gdpr",
-            "security"
+            "security",
+            "api design",
+            "rest apis",
+            "rest api",
+            "software architecture",
+            "cloud architecture"
           ]
         }
       ],
@@ -308,8 +333,15 @@
             "microservices",
             "ml",
             "distributed",
+            "distributed systems",
             "staff",
-            "api"
+            "api",
+            "api design",
+            "event-driven architecture",
+            "rest apis",
+            "rest api",
+            "software architecture",
+            "cloud architecture"
           ]
         },
         {
@@ -341,7 +373,19 @@
             "technical depth",
             "typescript",
             "hands-on",
-            "python"
+            "python",
+            "javascript",
+            "node.js",
+            "node",
+            "react",
+            "angular",
+            "postgresql",
+            "postgres",
+            "c++",
+            "rust",
+            "c#",
+            "sql",
+            "linux"
           ]
         },
         {
@@ -363,13 +407,20 @@
             "devops",
             "terraform",
             "cloud",
+            "cloud infrastructure",
+            "infrastructure as code",
             "kubernetes",
             "serverless",
             "observability",
             "infrastructure",
             "aws",
             "platform",
-            "kafka"
+            "kafka",
+            "docker",
+            "containerization",
+            "data pipelines",
+            "gcp",
+            "azure"
           ]
         },
         {
@@ -514,7 +565,9 @@
             "grow",
             "culture",
             "strategy",
-            "multiple teams"
+            "multiple teams",
+            "distributed systems",
+            "api design"
           ]
         },
         {
@@ -570,7 +623,11 @@
             "ml",
             "ai",
             "platform",
-            "technical direction"
+            "technical direction",
+            "microservices",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture"
           ]
         },
         {
@@ -611,9 +668,17 @@
           "jd_signals": [
             "aws",
             "cloud",
+            "cloud infrastructure",
             "infrastructure",
+            "infrastructure as code",
             "devops",
-            "platform"
+            "platform",
+            "kubernetes",
+            "docker",
+            "kafka",
+            "azure",
+            "gcp",
+            "data pipelines"
           ]
         }
       ],
@@ -706,7 +771,9 @@
             "culture",
             "executive",
             "organization",
-            "cross-functional"
+            "cross-functional",
+            "distributed systems",
+            "api design"
           ]
         },
         {
@@ -756,10 +823,15 @@
             "vision",
             "security",
             "distributed",
+            "distributed systems",
             "ml",
             "ai",
             "platform",
-            "api"
+            "api",
+            "microservices",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture"
           ]
         },
         {
@@ -800,9 +872,18 @@
           "jd_signals": [
             "aws",
             "cloud",
+            "cloud infrastructure",
             "platform",
             "infrastructure",
-            "operations"
+            "infrastructure as code",
+            "operations",
+            "kubernetes",
+            "docker",
+            "kafka",
+            "azure",
+            "gcp",
+            "data pipelines",
+            "devops"
           ]
         }
       ],
@@ -890,7 +971,9 @@
             "organizational leadership",
             "multiple directors",
             "scale",
-            "executive"
+            "executive",
+            "distributed systems",
+            "api design"
           ]
         },
         {
@@ -935,7 +1018,12 @@
             "architecture",
             "modernization",
             "technical direction",
-            "roadmap"
+            "roadmap",
+            "microservices",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture",
+            "distributed systems"
           ]
         },
         {
@@ -973,9 +1061,17 @@
           "jd_signals": [
             "aws",
             "cloud",
+            "cloud infrastructure",
             "infrastructure",
+            "infrastructure as code",
             "platform",
-            "devops"
+            "devops",
+            "kubernetes",
+            "docker",
+            "kafka",
+            "azure",
+            "gcp",
+            "data pipelines"
           ]
         }
       ],
@@ -1066,7 +1162,9 @@
             "vision",
             "ml",
             "cto",
-            "digital"
+            "digital",
+            "distributed systems",
+            "api design"
           ]
         },
         {
@@ -1142,7 +1240,17 @@
             "security",
             "golang",
             "aws",
-            "platform"
+            "platform",
+            "microservices",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture",
+            "kubernetes",
+            "docker",
+            "kafka",
+            "gcp",
+            "infrastructure as code",
+            "cloud infrastructure"
           ]
         }
       ],
@@ -1236,7 +1344,20 @@
             "java",
             "hands-on",
             "python",
-            "api"
+            "api",
+            "api design",
+            "javascript",
+            "node.js",
+            "node",
+            "postgresql",
+            "postgres",
+            "c++",
+            "rust",
+            "c#",
+            "sql",
+            "linux",
+            "rest apis",
+            "rest api"
           ]
         },
         {
@@ -1261,7 +1382,11 @@
             "ddd",
             "security",
             "microservices",
-            "distributed"
+            "distributed",
+            "distributed systems",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture"
           ]
         },
         {
@@ -1281,13 +1406,21 @@
           "jd_signals": [
             "devops",
             "cloud",
+            "cloud infrastructure",
             "ci/cd",
             "react",
             "kubernetes",
             "frontend",
             "infrastructure",
+            "infrastructure as code",
             "aws",
-            "docker"
+            "docker",
+            "containerization",
+            "angular",
+            "kafka",
+            "azure",
+            "gcp",
+            "data pipelines"
           ]
         },
         {
@@ -1423,8 +1556,21 @@
             "golang",
             "frontend",
             "node",
+            "node.js",
             "typescript",
-            "python"
+            "python",
+            "api design",
+            "postgresql",
+            "postgres",
+            "angular",
+            "c++",
+            "rust",
+            "c#",
+            "sql",
+            "linux",
+            "java",
+            "rest apis",
+            "rest api"
           ]
         },
         {
@@ -1447,7 +1593,11 @@
             "security",
             "microservices",
             "ml",
-            "distributed"
+            "distributed",
+            "distributed systems",
+            "event-driven architecture",
+            "software architecture",
+            "cloud architecture"
           ]
         },
         {
@@ -1467,10 +1617,19 @@
             "performance",
             "devops",
             "cloud",
+            "cloud infrastructure",
             "ci/cd",
             "kubernetes",
             "aws",
-            "docker"
+            "docker",
+            "containerization",
+            "react",
+            "angular",
+            "infrastructure as code",
+            "kafka",
+            "azure",
+            "gcp",
+            "data pipelines"
           ]
         },
         {
