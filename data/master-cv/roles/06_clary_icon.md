@@ -145,7 +145,7 @@ Per the CV generation critique recommendations:
 - **Platforms**: Linux, Windows, Desktop
 - **Tools**: Visual Studio, Git
 
-**Soft Skills**: Client Communication, Initiative, Problem Solving, Self-Direction, Technical Writing, Team Collaboration, Software Documentation, Requirements Gathering
+**Soft Skills**: Client Communication, Initiative, Problem Solving, Self-Direction, Technical Writing, Team Collaboration, Software Documentation, Requirements Gathering, Analytical Thinking, Autonomy, Creativity, Curiosity, Customer Focus, Flexibility, Growth Mindset, Innovation, Interpersonal Skills, Ownership, Relationship Building, Resourcefulness, Written Communication
 
 ---
 

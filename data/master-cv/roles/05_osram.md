@@ -134,14 +134,14 @@ Per the CV generation critique recommendations:
 ## Skills
 
 **Hard Skills**:
-- **Languages**: Python, C++, C, QML
-- **Frameworks**: Qt
-- **Protocols**: CoAP, OSCOAP, UDP, REST
+- **Languages**: Python, C++, C, QML, Bash
+- **Frameworks**: Qt, Frontend Frameworks
+- **Protocols**: CoAP, OSCOAP, UDP, REST, TCP/IP
 - **Platforms**: Linux, Mobile, Desktop, Cross-Platform
-- **Tools**: Eclipse, Git, JIRA
-- **Domains**: IoT, Embedded Systems, Protocol Design, Middleware, Smart Lighting
+- **Tools**: Eclipse, Git, JIRA, Logging
+- **Domains**: IoT, Embedded Systems, Protocol Design, Middleware, Smart Lighting, API Design, API Integration, Backend Development, Code Review
 
-**Soft Skills**: Agile Methodologies, SCRUM, Technical Documentation, Team Collaboration, Client Demonstrations, Interpersonal Communication
+**Soft Skills**: Agile Methodologies, SCRUM, Technical Documentation, Team Collaboration, Client Demonstrations, Interpersonal Communication, Analytical Thinking, Autonomy, Clear Communication, Cross-Functional Collaboration, Interpersonal Skills, Knowledge Sharing, Problem Solving, Self-Motivation, Written Communication
 
 ---
 

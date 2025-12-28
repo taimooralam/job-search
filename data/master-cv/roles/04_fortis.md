@@ -92,11 +92,12 @@ Per the CV generation critique recommendations:
 - **Languages**: JavaScript, Node.js, SQL
 - **Messaging**: RabbitMQ, Pub/Sub, Event-Driven Architecture
 - **Database**: MongoDB, SQL
-- **Cloud**: Cloud Computing, Docker
-- **Documentation**: Swagger/OpenAPI
-- **Architecture**: Microservices, Event-Driven, Design Patterns
+- **Cloud**: Cloud Computing, Docker, Containerization
+- **Documentation**: Swagger/OpenAPI, Logging
+- **Architecture**: Microservices, Event-Driven, Design Patterns, System Architecture, System Design, Distributed Systems
+- **Development**: Backend Development, API Design, API Integration, Linux
 
-**Soft Skills**: Agile Methodologies, Client Communication, Research Collaboration, Interpersonal Communication
+**Soft Skills**: Agile Methodologies, Client Communication, Research Collaboration, Interpersonal Communication, Analytical Thinking, Autonomy, Cross-Functional Collaboration, Curiosity, Decision Making, Documentation, Flexibility, Growth Mindset, Initiative, Innovation, Knowledge Sharing, Ownership, Prioritization, Problem Solving, Relationship Building, Requirements Analysis, Resourcefulness, Self-Motivation, Team Collaboration, Technical Communication, Written Communication
 
 ---
 
