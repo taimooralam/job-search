@@ -64,9 +64,10 @@ Per the CV generation critique recommendations:
 - **Architecture**: Created reusable Angular component library standardizing UI development across platform
 - **Leadership**: Defined engineering standards for startup codebase, balancing speed with quality through testing discipline
 - **Impact**: Reduced production bugs by 40% through comprehensive testing strategy and code standards
+- **Code Review**: Conducted code reviews ensuring architectural compliance and coding standards adoption across the team
 - **Short**: Engineering standards—85% coverage, 40% bug reduction, reusable component library
 
-**Keywords**: Jest, testing, code coverage, Angular, component library, engineering standards, quality
+**Keywords**: Jest, testing, code coverage, Angular, component library, engineering standards, quality, code review
 
 **Interview Defensibility**: ✅ Can explain testing strategy, component library architecture, how 40% reduction was measured
 
@@ -114,7 +115,7 @@ Per the CV generation critique recommendations:
 - **Culture**: Invested in junior engineer development despite startup pace, demonstrating commitment to growth
 - **Short**: Junior-to-mid-level mentorship within 12 months through apprenticeship program
 
-**Keywords**: mentoring, apprenticeship, talent development, career growth, junior engineers
+**Keywords**: mentoring, coaching, apprenticeship, talent development, career growth, junior engineers, onboarding
 
 **Interview Defensibility**: ✅ Can describe mentorship approach, specific skills developed, promotion criteria met
 
@@ -143,10 +144,10 @@ Per the CV generation critique recommendations:
 **Variants**:
 - **Architecture**: Designed architecture balancing startup agility with enterprise scalability for 10x growth
 - **Strategy**: Made architectural trade-offs enabling rapid iteration while preparing for scale
-- **Technical**: Built multi-tenant foundation supporting horizontal scaling for future growth
+- **Technical**: Built multi-tenant CQRS foundation on GCP using NestJS, EventStore, and MongoDB with RxJS pub/sub patterns—enabling 10x horizontal scaling
 - **Short**: Scalable architecture—startup speed with 10x growth runway
 
-**Keywords**: scalability, multi-tenant, architecture, growth, startup, enterprise
+**Keywords**: scalability, multi-tenant, architecture, growth, startup, enterprise, NestJS, EventStore, MongoDB, GCP, CQRS, RxJS, pub/sub, event-driven
 
 **Interview Defensibility**: ✅ Can explain scalability decisions, trade-offs made, multi-tenant architecture
 
@@ -155,15 +156,18 @@ Per the CV generation critique recommendations:
 ## Skills
 
 **Hard Skills**:
-- **Languages**: TypeScript, JavaScript
-- **Backend**: NestJS, EventStore, CQRS, Event Sourcing
-- **Frontend**: Angular, Component Libraries
-- **Cloud**: GCP
-- **Testing**: Jest, TDD
-- **Infrastructure**: CI/CD, Terraform
-- **Documentation**: Swagger/OpenAPI
+- **Languages**: TypeScript, JavaScript, Node.js, Bash
+- **Backend**: NestJS, EventStore, CQRS, Event Sourcing, API Design, API Integration, Microservices, Event-Driven Architecture
+- **Frontend**: Angular, Component Libraries, Frontend Frameworks, Frontend Development
+- **Cloud**: GCP, Google Cloud Platform, Cloud Architecture, Cloud Infrastructure, Cloud-Native Architecture
+- **Testing**: Jest, TDD, Unit Testing, Code Review
+- **Infrastructure**: CI/CD, Terraform, Docker, Containerization, Container Orchestration, Infrastructure as Code, Linux, Logging
+- **Architecture**: Distributed Systems, System Architecture, System Design, Scalable Systems
+- **Tools**: Git, Bitbucket, Swagger/OpenAPI
+- **Database**: MongoDB, Mongoose, NoSQL, ORM
+- **Domain**: CRM, SaaS, Backend Development
 
-**Soft Skills**: Technical Leadership, Event Storming Facilitation, Mentoring, SCRUM, Agile, Startup Velocity, Stakeholder Management
+**Soft Skills**: Technical Leadership, Event Storming Facilitation, Mentoring, SCRUM, Agile, Startup Velocity, Stakeholder Management, Accountability, Adaptability, Analytical Thinking, Autonomy, Clear Communication, Coaching, Collaboration, Communication, Continuous Improvement Mindset, Continuous Learning, Creativity, Cross-Functional Team Leadership, Culture Building, Curiosity, Customer Focus, Decision Making, Documentation, Empathy, Entrepreneurial Mindset, Feedback Delivery, Flexibility, Growth Mindset, Influence, Initiative, Innovation, Interpersonal Skills, Knowledge Sharing, Leadership, Ownership, People Management, Presentation Skills, Prioritization, Problem Solving, Product Mindset, Project Management, Relationship Building, Requirements Analysis, Resourcefulness, Self-Motivation, Stakeholder Communication, Strategic Thinking, Team Building, Team Collaboration, Team Development, Team Leadership, Team Management, Technical Advisory, Technical Communication, Written Communication
 
 ---
 
