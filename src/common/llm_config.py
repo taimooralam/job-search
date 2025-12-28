@@ -157,7 +157,7 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
 
     # JD Processing
     "jd_structure_parsing": StepConfig(tier="low"),
-    "jd_extraction": StepConfig(tier="middle"),
+    "jd_extraction": StepConfig(tier="middle", use_fallback=False),
 
     # Cover Letter
     "cover_letter_generation": StepConfig(tier="middle"),
