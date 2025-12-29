@@ -1084,7 +1084,7 @@
         // Skip if user is typing in an input field
         const activeElement = document.activeElement;
         const isInputFocused = activeElement && (
-            activeElement.tagName === 'INPUT' ||
+            (activeElement.tagName === 'INPUT' && activeElement.type !== 'checkbox') ||
             activeElement.tagName === 'TEXTAREA' ||
             activeElement.tagName === 'SELECT' ||
             activeElement.isContentEditable

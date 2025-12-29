@@ -596,6 +596,79 @@
             opacity: 0.7;
         }
 
+        /* Job Preview Hover Card */
+        .job-preview-card {
+            width: 22rem;
+            max-height: 26rem;
+            overflow-y: auto;
+        }
+
+        .job-preview-card .skill-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border-radius: 9999px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            margin: 2px;
+        }
+
+        .job-preview-card .description-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        /* Row Action Animations (delete, batch, discard) */
+        @keyframes row-action-gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+                opacity: 0;
+            }
+        }
+
+        .row-action-deleting {
+            background: linear-gradient(90deg,
+                rgba(239, 68, 68, 0.15),
+                rgba(239, 68, 68, 0.3),
+                rgba(239, 68, 68, 0.15));
+            background-size: 200% 100%;
+            animation: row-action-gradient 0.6s ease-out forwards;
+        }
+
+        .row-action-batching {
+            background: linear-gradient(90deg,
+                rgba(59, 130, 246, 0.15),
+                rgba(59, 130, 246, 0.3),
+                rgba(59, 130, 246, 0.15));
+            background-size: 200% 100%;
+            animation: row-action-gradient 0.6s ease-out forwards;
+        }
+
+        .row-action-discarding {
+            background: linear-gradient(90deg,
+                rgba(245, 158, 11, 0.15),
+                rgba(245, 158, 11, 0.3),
+                rgba(245, 158, 11, 0.15));
+            background-size: 200% 100%;
+            animation: row-action-gradient 0.6s ease-out forwards;
+        }
+
+        .row-action-applying {
+            background: linear-gradient(90deg,
+                rgba(34, 197, 94, 0.15),
+                rgba(34, 197, 94, 0.3),
+                rgba(34, 197, 94, 0.15));
+            background-size: 200% 100%;
+            animation: row-action-gradient 0.6s ease-out forwards;
+        }
+
         /* Card Components - Theme-aware */
         .card {
             background-color: var(--bg-card);
@@ -1843,10 +1916,10 @@
                         <!-- Queue Dropdowns (WebSocket-powered) -->
                         {% include 'components/queue_dropdowns.html' %}
 
-                        <!-- Batch Processing Button -->
+                        <!-- Batch Processing Button with Count Badge -->
                         <a
                             href="/batch-processing"
-                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                            class="p-2 rounded-lg transition-all duration-200 hover:scale-105 relative"
                             style="background-color: var(--bg-hover); color: var(--text-secondary);"
                             title="Batch Processing"
                             aria-label="Batch Processing"
@@ -1854,6 +1927,13 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
+                            <!-- Batch count badge -->
+                            <span id="batch-count-badge"
+                                  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center
+                                         text-[10px] font-bold text-white bg-accent-500 rounded-full px-1
+                                         opacity-0 scale-0 transition-all duration-200"
+                                  style="display: none;">
+                            </span>
                         </a>
 
                         <!-- Job Ingestion Button -->
@@ -2105,6 +2185,10 @@
             if (selectedJobIds.size === 0) return;
 
             try {
+                // Animate rows and close modal
+                animateSelectedRows('row-action-deleting');
+                closeDeleteModal();
+
                 const response = await fetch('/api/jobs/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2183,6 +2267,29 @@
             const display = container.querySelector('.score-display');
             input.classList.add('hidden');
             display.classList.remove('hidden');
+        }
+
+        // Save application URL for a job (main page)
+        async function saveJobApplicationUrl(jobId, url) {
+            try {
+                const response = await fetch(`/api/jobs/${jobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ application_url: url })
+                });
+
+                if (response.ok) {
+                    showToast('Application URL saved', 'success');
+                    // Refresh the job table to show updated URL
+                    htmx.trigger('#job-table-container', 'refresh');
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to save URL', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to save application URL:', error);
+                showToast('Failed to save URL', 'error');
+            }
         }
 
         async function saveScore(input, jobId) {
@@ -2586,6 +2693,20 @@
             }
         }
 
+        // ============================================================================
+        // Row Action Animation Helper
+        // ============================================================================
+        // Animate selected rows with gradient effect before action completes
+
+        function animateSelectedRows(animationClass) {
+            selectedJobIds.forEach(jobId => {
+                const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
+                if (row) {
+                    row.classList.add(animationClass);
+                }
+            });
+        }
+
         // Mark multiple selected jobs as "applied"
         async function markSelectedAsApplied() {
             if (selectedJobIds.size === 0) return;
@@ -2599,6 +2720,8 @@
             if (!confirmed) return;
 
             try {
+                // Animate rows
+                animateSelectedRows('row-action-applying');
                 showToast(`Updating ${count} jobs...`, 'info');
 
                 // Call bulk status update endpoint
@@ -2639,6 +2762,8 @@
             const count = selectedJobIds.size;
 
             try {
+                // Animate rows
+                animateSelectedRows('row-action-discarding');
                 showToast(`Discarding ${count} jobs...`, 'info');
 
                 // Call bulk status update endpoint
@@ -2679,6 +2804,8 @@
             const count = selectedJobIds.size;
 
             try {
+                // Animate rows
+                animateSelectedRows('row-action-batching');
                 showToast(`Moving ${count} jobs to batch...`, 'info');
 
                 const response = await fetch('/api/jobs/move-to-batch', {
@@ -2697,6 +2824,9 @@
                     // Clear selection
                     selectedJobIds.clear();
                     updateSelectionCount();
+
+                    // Invalidate batch count cache and notify listeners
+                    window.dispatchEvent(new CustomEvent('batch:updated'));
 
                     // Refresh the table to remove moved jobs (consistent with single job behavior)
                     htmx.trigger('#job-table-container', 'refresh');
@@ -3062,32 +3192,6 @@
                 </div>
             `);
 
-            // WebSocket Queue Health - dynamically updated by queue-websocket.js
-            const ws = window.queueWebSocket;
-            let wsClass, wsTitle;
-            if (ws?.isConnected) {
-                wsClass = 'health-healthy';
-                wsTitle = 'WebSocket: Connected';
-            } else if (ws?.shouldReconnect === false) {
-                wsClass = 'health-unknown';
-                wsTitle = 'WebSocket: Disabled (mixed content or service unavailable)';
-            } else if (ws?.isConnecting) {
-                wsClass = 'health-unknown';
-                wsTitle = 'WebSocket: Connecting...';
-            } else if (!ws || ws.reconnectAttempts === 0) {
-                wsClass = 'health-unknown';
-                wsTitle = 'WebSocket: Initializing...';
-            } else {
-                wsClass = 'health-unhealthy';
-                wsTitle = 'WebSocket: Disconnected';
-            }
-            indicators.push(`
-                <div class="health-indicator" id="ws-health-indicator" title="${wsTitle}">
-                    <div class="health-dot ${wsClass}"></div>
-                    <span class="text-gray-700">Q(ws)</span>
-                </div>
-            `);
-
             // PDF Service Health
             const pdfStatus = data.runner_response?.pdf_service_status || 'unknown';
             const pdfClass = pdfStatus === 'healthy' ? 'health-healthy' :
@@ -3209,8 +3313,67 @@
             // Load health status
             updateHealthStatus();
 
+            // Load batch count
+            loadBatchCount();
+
             // Refresh health status every 30 seconds
             setInterval(updateHealthStatus, 30000);
+
+            // Refresh batch count every 60 seconds
+            setInterval(loadBatchCount, 60000);
+        });
+
+        // ============================================================================
+        // Batch Count Badge
+        // ============================================================================
+
+        let batchCountCache = { count: null, timestamp: 0 };
+        const BATCH_COUNT_CACHE_TTL = 30000; // 30 seconds cache
+
+        async function loadBatchCount() {
+            const badge = document.getElementById('batch-count-badge');
+            if (!badge) return;
+
+            // Check cache
+            const now = Date.now();
+            if (batchCountCache.count !== null && (now - batchCountCache.timestamp) < BATCH_COUNT_CACHE_TTL) {
+                updateBatchCountBadge(batchCountCache.count);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/jobs/batch/count');
+                if (response.ok) {
+                    const data = await response.json();
+                    const count = data.count || 0;
+                    batchCountCache = { count, timestamp: now };
+                    updateBatchCountBadge(count);
+                }
+            } catch (err) {
+                console.error('Failed to load batch count:', err);
+            }
+        }
+
+        function updateBatchCountBadge(count) {
+            const badge = document.getElementById('batch-count-badge');
+            if (!badge) return;
+
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'flex';
+                badge.classList.remove('opacity-0', 'scale-0');
+                badge.classList.add('opacity-100', 'scale-100');
+            } else {
+                badge.classList.remove('opacity-100', 'scale-100');
+                badge.classList.add('opacity-0', 'scale-0');
+                setTimeout(() => { badge.style.display = 'none'; }, 200);
+            }
+        }
+
+        // Invalidate cache and refresh when jobs are moved to batch
+        window.addEventListener('batch:updated', () => {
+            batchCountCache = { count: null, timestamp: 0 };
+            loadBatchCount();
         });
     </script>
 

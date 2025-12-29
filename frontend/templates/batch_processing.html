@@ -1163,7 +1163,7 @@
             // Skip if user is typing in an input field
             const activeElement = document.activeElement;
             const isInputFocused = activeElement && (
-                activeElement.tagName === 'INPUT' ||
+                (activeElement.tagName === 'INPUT' && activeElement.type !== 'checkbox') ||
                 activeElement.tagName === 'TEXTAREA' ||
                 activeElement.tagName === 'SELECT' ||
                 activeElement.isContentEditable
@@ -1688,6 +1688,20 @@
     }
 
     // ============================================================================
+    // Row Action Animation Helper
+    // ============================================================================
+
+    function animateBatchSelectedRows(animationClass) {
+        batchSelectedJobs.forEach(jobId => {
+            const row = document.querySelector(`tr.job-row[data-job-id="${jobId}"]`) ||
+                        document.querySelector(`tbody[data-job-id="${jobId}"] tr.job-row`);
+            if (row) {
+                row.classList.add(animationClass);
+            }
+        });
+    }
+
+    // ============================================================================
     // Status Updates
     // ============================================================================
 
@@ -1697,6 +1711,12 @@
         const count = batchSelectedJobs.size;
 
         try {
+            // Animate rows based on status
+            const animClass = newStatus === 'applied' ? 'row-action-applying' :
+                             newStatus === 'discarded' ? 'row-action-discarding' :
+                             'row-action-batching';
+            animateBatchSelectedRows(animClass);
+
             const response = await fetch('/api/jobs/status/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1796,6 +1816,10 @@
         if (batchSelectedJobs.size === 0) return;
 
         try {
+            // Animate rows and close modal
+            animateBatchSelectedRows('row-action-deleting');
+            closeBatchDeleteModal();
+
             const response = await fetch('/api/jobs/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

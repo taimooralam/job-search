@@ -60,11 +60,17 @@
             </div>
         </td>
 
-        <!-- Role/Title with Application URL Quick Entry -->
-        <td class="px-2 sm:px-4 py-3 cursor-pointer group"
+        <!-- Role/Title with Hover Preview + Application URL -->
+        {% set has_extracted = job.extracted_jd is defined and job.extracted_jd %}
+        {% set jd = job.extracted_jd if has_extracted else {} %}
+        {% set desc = job.description or job.job_description or job.jobDescription or '' %}
+        <td class="px-2 sm:px-4 py-3 cursor-pointer group overflow-visible relative"
+            x-data="{ showPreview: false, hoverTimeout: null, leaveTimeout: null }"
+            @mouseenter="clearTimeout(leaveTimeout); hoverTimeout = setTimeout(() => showPreview = true, 200)"
+            @mouseleave="clearTimeout(hoverTimeout); leaveTimeout = setTimeout(() => showPreview = false, 150)"
             onclick="navigateToBatchJob(event, '{{ job._id }}')">
             <div class="flex items-center gap-1.5">
-                <div class="text-sm theme-text-primary max-w-[180px] truncate" title="{{ job.title or '' }}">
+                <div class="text-sm theme-text-primary max-w-[180px] truncate">
                     {% if job_url %}
                     <a href="{{ job_url }}" target="_blank"
                        class="text-accent-500 hover:text-accent-400 hover:underline no-navigate"
@@ -75,18 +81,30 @@
                     {{ job.title or '-' }}
                     {% endif %}
                 </div>
-                <!-- Application URL Quick Entry -->
-                <div class="relative no-navigate flex-shrink-0"
+                <!-- Application URL Quick Entry + Quick Open Link -->
+                <div class="relative no-navigate flex-shrink-0 flex items-center gap-0.5"
                      x-data="{ showPopover: false, url: '{{ (app_url or '') | e }}', saving: false }"
                      onclick="event.stopPropagation()">
-                    <button @click="showPopover = !showPopover"
-                            class="p-1 rounded transition-all
-                                   {% if app_url %}text-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30
-                                   {% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover{% endif %}"
-                            title="{{ 'Application URL: ' ~ app_url if app_url else 'Set application URL' }}">
+                    <!-- Quick open link (if URL exists) -->
+                    {% if app_url %}
+                    <a href="{{ app_url }}" target="_blank"
+                       class="p-1 text-green-500 hover:text-green-600 rounded hover:bg-green-50 dark:hover:bg-green-900/30 transition-all"
+                       title="Open application form">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </a>
+                    {% endif %}
+                    <!-- Edit button -->
+                    <button @click="showPopover = !showPopover"
+                            class="p-1 rounded transition-all
+                                   {% if app_url %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover
+                                   {% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover{% endif %}"
+                            title="{{ 'Edit application URL' if app_url else 'Set application URL' }}">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                         </svg>
                     </button>
                     <!-- Popover -->
@@ -123,6 +141,69 @@
                         <p class="text-xs theme-text-tertiary mt-1.5">Press Enter to save, Escape to cancel</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Hover Preview Card -->
+            <div x-show="showPreview"
+                 x-cloak
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 @mouseenter="clearTimeout(leaveTimeout)"
+                 @mouseleave="leaveTimeout = setTimeout(() => showPreview = false, 150)"
+                 class="absolute left-0 top-full mt-1 job-preview-card rounded-lg shadow-xl theme-bg-card border theme-border z-50 p-4 no-navigate"
+                 onclick="event.stopPropagation()">
+                <!-- Header -->
+                <div class="mb-3 pb-2 border-b theme-border">
+                    <h4 class="font-semibold theme-text-primary text-sm">{{ job.title or 'Untitled' }}</h4>
+                    <p class="text-xs theme-text-secondary">{{ job.company or 'Unknown' }} • {{ job.location or 'Location N/A' }}</p>
+                </div>
+
+                {% if has_extracted %}
+                <!-- Extracted JD Info -->
+                <div class="space-y-2 mb-3">
+                    {% if jd.role_category %}
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="theme-text-tertiary">📋 Role:</span>
+                        <span class="theme-text-primary font-medium">{{ jd.role_category | replace('_', ' ') | title }}</span>
+                    </div>
+                    {% endif %}
+                    {% if jd.seniority_level %}
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="theme-text-tertiary">🎯 Level:</span>
+                        <span class="theme-text-primary font-medium">{{ jd.seniority_level | title }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Skills -->
+                {% if jd.technical_skills or jd.top_keywords %}
+                <div class="mb-3">
+                    <p class="text-xs theme-text-tertiary mb-1">🔧 Skills:</p>
+                    <div class="flex flex-wrap">
+                        {% for skill in (jd.technical_skills or jd.top_keywords or [])[:8] %}
+                        <span class="skill-badge">{{ skill }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% else %}
+                <!-- Not analyzed notice -->
+                <div class="mb-3 p-2 rounded bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300">⚠️ Not yet analyzed</p>
+                </div>
+                {% endif %}
+
+                <!-- Description Preview -->
+                {% if desc %}
+                <div>
+                    <p class="text-xs theme-text-tertiary mb-1">Description:</p>
+                    <p class="text-xs theme-text-secondary description-text line-clamp-6">{{ desc[:500] }}{% if desc|length > 500 %}...{% endif %}</p>
+                </div>
+                {% endif %}
             </div>
         </td>
 
