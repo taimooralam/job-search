@@ -575,6 +575,27 @@
             transform: translateY(-1px);
         }
 
+        /* Keyboard Shortcut Hints */
+        .btn-with-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .shortcut-hint {
+            font-size: 0.65rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: var(--text-tertiary);
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        .shortcut-hint.visible {
+            opacity: 0.7;
+        }
+
         /* Card Components - Theme-aware */
         .card {
             background-color: var(--bg-card);
