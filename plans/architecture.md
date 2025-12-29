@@ -417,6 +417,89 @@ self.unified_llm.invoke(prompt, max_turns=3)
 - `frontend/templates/base.html` - `.btn-warning` styling and `markSelectedAsDiscarded()` function
 - Leverages existing checkbox selection system and `/api/jobs/status/bulk` API
 
+### Google Drive CV Upload
+
+**Overview:** Seamless CV export to Google Drive with visual feedback and persistent tracking.
+
+**Components:**
+
+1. **Backend Endpoint** (`runner_service/routes/operations.py`)
+   - `POST /operations/jobs/<job_id>/cv/upload-drive` - Triggers CV upload to Google Drive
+   - Calls PDF service to generate CV if not cached
+   - Posts to n8n webhook for Drive file creation
+   - Updates MongoDB with `gdrive_uploaded_at` timestamp upon success
+
+2. **Frontend Proxy** (`frontend/app.py`)
+   - `POST /api/jobs/<job_id>/cv/upload-drive` - Flask proxy to runner service
+   - Handles authentication and request forwarding
+   - Returns status: `{'status': 'success'}` or `{'error': message}`
+
+3. **UI Components** (3 button locations)
+   - Job detail page: `frontend/templates/job_detail.html` - "Upload to Drive" button in Generated CV section
+   - CV editor panel: `frontend/templates/components/cv_editor.html` - Button next to "Export PDF"
+   - CV editor sidebar: `frontend/static/js/batch-sidebars.js` - Batch upload for multiple CVs
+
+4. **Frontend Logic**
+   - `frontend/static/js/cv-editor.js` - `uploadCVToGDrive()` function
+   - `frontend/static/js/batch-sidebars.js` - `uploadBatchCVToGDrive()` function for batch operations
+   - Visual feedback via CSS classes: `uploading` (orange pulse), `uploaded` (green check), `error` (red)
+   - Button state persists via MongoDB `gdrive_uploaded_at` field (re-enable on page load)
+
+5. **Styling** (`frontend/static/css/cv-editor.css`)
+   - `.btn-gdrive.uploading` - Orange pulse animation during upload
+   - `.btn-gdrive.uploaded` - Green background and checkmark icon (persists)
+   - `.btn-gdrive.error` - Red background for failed uploads
+   - Smooth transitions between states
+
+**Data Flow:**
+
+```
+User clicks "Upload to Drive"
+        ↓
+uploadCVToGDrive() (cv-editor.js)
+        ↓
+POST /api/jobs/<job_id>/cv/upload-drive (Flask proxy)
+        ↓
+POST /operations/jobs/<job_id>/cv/upload-drive (runner service)
+        ↓
+PDF Service generates/retrieves PDF
+        ↓
+POST to n8n webhook (Google Drive creation)
+        ↓
+Update MongoDB: gdrive_uploaded_at = current_timestamp
+        ↓
+Return success, button changes to green
+```
+
+**MongoDB Schema Addition:**
+
+- Field: `gdrive_uploaded_at` (datetime or ISO string)
+- Location: Job document in `level-2` collection
+- Purpose: Track when CV was last uploaded to Drive
+- Used for: Button state persistence, audit trail
+
+**Error Handling:**
+
+- Failed PDF generation: Returns error message, button shows red state
+- n8n webhook timeout: Logs error, button shows red state
+- Network errors: Client-side retry with exponential backoff
+
+**Integration Points:**
+
+- n8n webhook endpoint: Called for Google Drive file creation
+- PDF service: Generates/retrieves tailored CV for upload
+- MongoDB: Stores upload timestamp for state persistence
+
+**Files Changed:**
+
+- `runner_service/routes/operations.py` - `upload_cv_to_gdrive()` endpoint
+- `frontend/app.py` - `/api/jobs/<job_id>/cv/upload-drive` proxy
+- `frontend/templates/job_detail.html` - Upload button in CV section
+- `frontend/templates/components/cv_editor.html` - Upload button in editor
+- `frontend/static/css/cv-editor.css` - Button states and animations
+- `frontend/static/js/cv-editor.js` - `uploadCVToGDrive()` function
+- `frontend/static/js/batch-sidebars.js` - `uploadBatchCVToGDrive()` function
+
 ### Job Ingestion Management Page
 
 **New `/ingestion` Page:**
