@@ -959,17 +959,48 @@ class CVGeneratorV2:
 
         lines.append("")
 
-        # Profile - bold section header, sanitize LLM output
-        lines.append("**PROFILE**")
-        lines.append(sanitize_markdown(header.profile.text))
-        lines.append("")
+        # Profile / Executive Summary - use V2 format if available
+        if header.profile.is_v2_format:
+            # V2: Use effective_summary_title (EXECUTIVE SUMMARY or PROFESSIONAL SUMMARY)
+            lines.append(f"**{header.profile.effective_summary_title}**")
+            lines.append("")
 
-        # Core competencies / Skills - bold section header and category names
-        lines.append("**CORE COMPETENCIES**")
-        for section in header.skills_sections:
-            skill_names = ", ".join(section.skill_names)
-            lines.append(f"**{section.category}:** {skill_names}")
-        lines.append("")
+            # Value proposition (replaces tagline in V2)
+            if header.profile.value_proposition:
+                lines.append(sanitize_markdown(header.profile.value_proposition))
+                lines.append("")
+
+            # Key achievements as bullet list
+            for achievement in header.profile.key_achievements:
+                clean_bullet = sanitize_bullet_text(achievement)
+                lines.append(f"• {clean_bullet}")
+            lines.append("")
+
+            # Core competencies with V2 static sections
+            lines.append("**CORE COMPETENCIES**")
+            if header.profile.core_competencies_v2:
+                for section_name, skills in header.profile.core_competencies_v2.items():
+                    if skills:
+                        skill_names = ", ".join(skills[:10])  # Max 10 per section
+                        lines.append(f"**{section_name}:** {skill_names}")
+            else:
+                # Fallback to V1 skills_sections
+                for section in header.skills_sections:
+                    skill_names = ", ".join(section.skill_names)
+                    lines.append(f"**{section.category}:** {skill_names}")
+            lines.append("")
+        else:
+            # V1: Original format - bold section header, sanitize LLM output
+            lines.append("**PROFILE**")
+            lines.append(sanitize_markdown(header.profile.text))
+            lines.append("")
+
+            # Core competencies / Skills - bold section header and category names
+            lines.append("**CORE COMPETENCIES**")
+            for section in header.skills_sections:
+                skill_names = ", ".join(section.skill_names)
+                lines.append(f"**{section.category}:** {skill_names}")
+            lines.append("")
 
         # Professional Experience - bold section header
         lines.append("**PROFESSIONAL EXPERIENCE**")
