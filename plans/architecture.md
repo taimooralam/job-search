@@ -144,6 +144,82 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - Worker threads handle blocking operations (ThreadPoolExecutor.run_async internally blocks)
 - Main event loop remains responsive for log polling and other endpoints
 
+### Queue Thread-Safety Pattern (CRITICAL)
+
+**Problem:** Worker threads were calling async Redis operations (`redis_queue.start_item()`, `redis_queue.complete()`, `redis_queue.fail()`) directly. However, aioredis clients are bound to the main event loop and cannot be used from worker threads. Result: bulk tasks stuck in "pending" state with "Stale: pending for over 60 minutes" errors.
+
+**Root Cause:** Thread-safety violation - async Redis client used outside its event loop context
+
+**Solution:** Thread-safe wrapper functions that schedule Redis operations on the main event loop
+
+**Components:**
+
+- `runner_service/routes/operations.py` - Three thread-safe wrapper functions:
+  - `_queue_start_item_threadsafe(job_id)` - Schedule `redis_queue.start_item()` on main loop
+  - `_queue_complete_threadsafe(job_id)` - Schedule `redis_queue.complete()` on main loop
+  - `_queue_fail_threadsafe(job_id, error)` - Schedule `redis_queue.fail()` on main loop
+
+**Implementation Pattern:**
+
+```python
+def _queue_start_item_threadsafe(job_id: str) -> None:
+    """Schedule queue state update on main event loop (thread-safe)"""
+    try:
+        # Get main event loop and schedule coroutine from worker thread
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # No event loop in this thread, create one temporarily
+        loop = asyncio.new_event_loop()
+
+    # Schedule coroutine and get result
+    future = asyncio.run_coroutine_threadsafe(
+        redis_queue.start_item(job_id), loop
+    )
+    future.result(timeout=5)  # Block until complete
+
+# Fixed usage in _execute_cv_bulk_task():
+_queue_start_item_threadsafe(job_id)  # Instead of await redis_queue.start_item(job_id)
+```
+
+**Functions Fixed:**
+
+- `_execute_cv_bulk_task()` - CV generation bulk operations
+- `_execute_extraction_bulk_task()` - Full extraction bulk operations
+- `_execute_research_bulk_task()` - Company research bulk operations
+- `_execute_all_ops_bulk_task()` - Combined pipeline bulk operations
+
+**Critical Design Constraint:**
+
+- **ALWAYS use thread-safe wrappers** when calling queue operations from worker threads
+- Direct async calls will cause silent failures (tasks stuck pending)
+- Main event loop must remain responsive (hence asyncio.run_coroutine_threadsafe)
+
+**Testing Implications:**
+
+- Bulk operations that were timing out now complete successfully
+- Tasks correctly transition from pending → running → completed
+- No more stale task errors in logs
+
+### Redis Log TTL Configuration
+
+**File:** `runner_service/routes/operation_streaming.py`
+
+**Change:** Reduced log retention from 24 hours to 6 hours
+
+```python
+# Before
+REDIS_LOG_TTL = 86400  # 24 hours
+
+# After
+REDIS_LOG_TTL = 21600  # 6 hours
+```
+
+**Rationale:**
+
+- 6 hours sufficient for UI log polling and debugging
+- Reduces Redis memory overhead for long-running services
+- Logs still available for complete operation lifecycle (most jobs < 1 hour)
+
 ## Frontend Architecture
 
 ### CV Editor (TipTap)
