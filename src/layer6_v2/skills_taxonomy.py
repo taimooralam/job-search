@@ -808,6 +808,432 @@ class TaxonomyBasedSkillsGenerator:
         )
 
 
+# ============================================================================
+# V2 CORE COMPETENCY GENERATOR (Anti-Hallucination)
+# ============================================================================
+#
+# This class implements the V2 header generation's core competencies component.
+# Key differences from TaxonomyBasedSkillsGenerator:
+# 1. Uses STATIC section names from taxonomy (not dynamic selection)
+# 2. Returns Dict[str, List[str]] instead of SkillsSection objects
+# 3. Provides full SkillsProvenance for anti-hallucination tracking
+# 4. Designed for 4 fixed sections per role category
+# ============================================================================
+
+
+class CoreCompetencyGeneratorV2:
+    """
+    V2 Core Competency Generator - Algorithmic skills selection with static sections.
+
+    This generator produces the CORE COMPETENCIES section for CV headers using
+    a purely algorithmic approach (no LLM) with strict anti-hallucination guarantees:
+
+    1. All skills MUST exist in candidate's whitelist
+    2. Section names are STATIC (from taxonomy's static_competency_sections)
+    3. JD keywords are used for PRIORITIZATION only, not ADDITION
+    4. Full provenance tracking for every skill
+
+    Usage:
+        generator = CoreCompetencyGeneratorV2(
+            role_category="engineering_manager",
+            skill_whitelist={"hard_skills": [...], "soft_skills": [...]}
+        )
+        competencies, provenance = generator.generate(extracted_jd, annotations)
+    """
+
+    # Scoring weights for skill prioritization
+    BASE_WEIGHT = 1.0
+    JD_MATCH_BOOST = 2.0
+    ANNOTATION_BOOST = 1.5
+    COMPETENCY_ALIGNMENT_BONUS = 0.5
+
+    # Configuration
+    MIN_SKILLS_PER_SECTION = 4
+    MAX_SKILLS_PER_SECTION = 10
+    TARGET_JD_MATCH_RATIO = 0.5  # At least 50% of skills should match JD
+
+    def __init__(
+        self,
+        role_category: str,
+        skill_whitelist: Dict[str, List[str]],
+        taxonomy: Optional[SkillsTaxonomy] = None,
+    ):
+        """
+        Initialize the V2 Core Competency Generator.
+
+        Args:
+            role_category: Target role category (e.g., "engineering_manager")
+            skill_whitelist: Candidate's verified skills {hard_skills: [...], soft_skills: [...]}
+            taxonomy: Optional SkillsTaxonomy instance (loads default if not provided)
+        """
+        self._logger = get_logger(__name__)
+        self._role_category = role_category
+        self._skill_whitelist = skill_whitelist
+        self._taxonomy = taxonomy or SkillsTaxonomy()
+
+        # Build normalized whitelist for fast lookup
+        self._whitelist_skills: Set[str] = set()
+        self._whitelist_lower: Dict[str, str] = {}  # lower -> original
+
+        for skill in skill_whitelist.get("hard_skills", []):
+            self._whitelist_skills.add(skill)
+            self._whitelist_lower[skill.lower()] = skill
+
+        for skill in skill_whitelist.get("soft_skills", []):
+            self._whitelist_skills.add(skill)
+            self._whitelist_lower[skill.lower()] = skill
+
+        # Load static sections for this role
+        self._static_sections = self._load_static_sections()
+
+        self._logger.info(
+            f"CoreCompetencyGeneratorV2 initialized: role={role_category}, "
+            f"{len(self._whitelist_skills)} whitelisted skills, "
+            f"{len(self._static_sections)} static sections"
+        )
+
+    def _load_static_sections(self) -> List[Dict[str, str]]:
+        """
+        Load static section definitions from taxonomy.
+
+        Returns:
+            List of section dicts with 'name' and 'description'
+        """
+        role_taxonomy = self._taxonomy.get_role_taxonomy(self._role_category)
+        taxonomy_data = self._taxonomy._taxonomy_data.get("target_roles", {})
+        role_data = taxonomy_data.get(self._role_category, {})
+
+        static_sections_data = role_data.get("static_competency_sections", {})
+
+        sections = []
+        for key in ["section_1", "section_2", "section_3", "section_4"]:
+            section_data = static_sections_data.get(key, {})
+            if section_data:
+                sections.append({
+                    "name": section_data.get("name", f"Section {key[-1]}"),
+                    "description": section_data.get("description", ""),
+                })
+
+        # Fallback to dynamic sections if no static defined
+        if not sections:
+            self._logger.warning(
+                f"No static_competency_sections for {self._role_category}, using dynamic sections"
+            )
+            for section in role_taxonomy.sections[:4]:
+                sections.append({
+                    "name": section.name,
+                    "description": section.description,
+                })
+
+        return sections
+
+    def generate(
+        self,
+        extracted_jd: Dict,
+        annotations: Optional[Dict] = None,
+    ) -> Tuple[Dict[str, List[str]], "SkillsProvenance"]:
+        """
+        Generate core competencies using algorithmic selection.
+
+        Args:
+            extracted_jd: Extracted JD data with keywords, pain_points, responsibilities
+            annotations: Optional JD annotations with emphasis areas
+
+        Returns:
+            Tuple of:
+            - Dict[str, List[str]]: section_name → list of skills
+            - SkillsProvenance: Full traceability for anti-hallucination proof
+        """
+        from src.layer6_v2.types import SkillsProvenance
+
+        # Extract JD keywords for prioritization
+        jd_keywords = set()
+        for key in ["priority_keywords", "top_keywords", "keywords", "technical_skills"]:
+            for kw in extracted_jd.get(key, []):
+                jd_keywords.add(kw.lower())
+
+        # Extract annotation emphasis for additional boost
+        annotation_keywords = set()
+        if annotations:
+            for key in ["core_strengths", "emphasis_areas", "must_haves"]:
+                for item in annotations.get(key, []):
+                    if isinstance(item, str):
+                        annotation_keywords.add(item.lower())
+
+        self._logger.debug(
+            f"Generating competencies: {len(jd_keywords)} JD keywords, "
+            f"{len(annotation_keywords)} annotation keywords"
+        )
+
+        # Step 1: Score all whitelist skills
+        skill_scores = self._score_all_skills(jd_keywords, annotation_keywords)
+
+        # Step 2: Assign skills to sections
+        section_assignments = self._assign_skills_to_sections(skill_scores)
+
+        # Step 3: Rank and select top skills per section
+        final_sections = self._select_top_skills(section_assignments)
+
+        # Step 4: Build provenance tracking
+        provenance = self._build_provenance(
+            final_sections, jd_keywords, annotation_keywords
+        )
+
+        return final_sections, provenance
+
+    def _score_all_skills(
+        self,
+        jd_keywords: Set[str],
+        annotation_keywords: Set[str],
+    ) -> Dict[str, float]:
+        """
+        Score all whitelist skills based on JD and annotation relevance.
+
+        Args:
+            jd_keywords: Lowercased JD keywords
+            annotation_keywords: Lowercased annotation emphasis keywords
+
+        Returns:
+            Dict mapping skill name → score
+        """
+        scores = {}
+
+        for skill in self._whitelist_skills:
+            skill_lower = skill.lower()
+
+            # Base score for being in whitelist
+            score = self.BASE_WEIGHT
+
+            # JD keyword match boost
+            if self._skill_matches_keywords(skill_lower, jd_keywords):
+                score += self.JD_MATCH_BOOST
+
+            # Annotation emphasis boost
+            if self._skill_matches_keywords(skill_lower, annotation_keywords):
+                score += self.ANNOTATION_BOOST
+
+            scores[skill] = score
+
+        return scores
+
+    def _skill_matches_keywords(self, skill_lower: str, keywords: Set[str]) -> bool:
+        """
+        Check if a skill matches any keyword (with fuzzy matching).
+
+        Args:
+            skill_lower: Lowercased skill name
+            keywords: Set of lowercased keywords
+
+        Returns:
+            True if skill matches any keyword
+        """
+        # Direct match
+        if skill_lower in keywords:
+            return True
+
+        # Substring match (skill contains keyword or keyword contains skill)
+        for kw in keywords:
+            if skill_lower in kw or kw in skill_lower:
+                return True
+
+        # Check aliases
+        aliases = self._taxonomy.get_skill_aliases(skill_lower)
+        for alias in aliases:
+            alias_lower = alias.lower()
+            if alias_lower in keywords:
+                return True
+            for kw in keywords:
+                if alias_lower in kw or kw in alias_lower:
+                    return True
+
+        return False
+
+    def _assign_skills_to_sections(
+        self,
+        skill_scores: Dict[str, float],
+    ) -> Dict[str, List[Tuple[str, float]]]:
+        """
+        Assign skills to the 4 static sections based on best fit.
+
+        Uses the existing taxonomy sections to determine which skills
+        belong in which category.
+
+        Args:
+            skill_scores: Dict of skill → score
+
+        Returns:
+            Dict of section_name → list of (skill, score) tuples
+        """
+        # Get the taxonomy sections for skill-to-section mapping
+        role_taxonomy = self._taxonomy.get_role_taxonomy(self._role_category)
+
+        # Build section → skills mapping from taxonomy
+        section_skill_map: Dict[str, Set[str]] = {}
+        for section in role_taxonomy.sections:
+            section_skill_map[section.name.lower()] = {
+                s.lower() for s in section.skills
+            }
+
+        # Assign skills to static sections
+        assignments: Dict[str, List[Tuple[str, float]]] = {
+            section["name"]: [] for section in self._static_sections
+        }
+
+        # Track assigned skills to avoid duplicates
+        assigned_skills: Set[str] = set()
+
+        # First pass: assign skills to their primary section
+        for skill, score in skill_scores.items():
+            skill_lower = skill.lower()
+
+            # Find best matching section
+            best_section = None
+            best_match_score = 0
+
+            for static_section in self._static_sections:
+                section_name_lower = static_section["name"].lower()
+
+                # Check taxonomy sections for this static section name
+                for taxonomy_section_name, taxonomy_skills in section_skill_map.items():
+                    if section_name_lower in taxonomy_section_name or taxonomy_section_name in section_name_lower:
+                        if skill_lower in taxonomy_skills:
+                            if score > best_match_score:
+                                best_section = static_section["name"]
+                                best_match_score = score
+
+            if best_section and skill not in assigned_skills:
+                assignments[best_section].append((skill, score))
+                assigned_skills.add(skill)
+
+        # Second pass: distribute unassigned high-score skills
+        for skill, score in sorted(skill_scores.items(), key=lambda x: x[1], reverse=True):
+            if skill in assigned_skills:
+                continue
+
+            # Add to section with fewest skills
+            min_section = min(assignments.keys(), key=lambda s: len(assignments[s]))
+            if len(assignments[min_section]) < self.MAX_SKILLS_PER_SECTION:
+                assignments[min_section].append((skill, score))
+                assigned_skills.add(skill)
+
+        return assignments
+
+    def _select_top_skills(
+        self,
+        section_assignments: Dict[str, List[Tuple[str, float]]],
+    ) -> Dict[str, List[str]]:
+        """
+        Select top skills for each section, respecting min/max constraints.
+
+        Args:
+            section_assignments: Dict of section → (skill, score) list
+
+        Returns:
+            Dict of section_name → ordered skill list
+        """
+        final_sections = {}
+
+        for section_name, skill_scores in section_assignments.items():
+            # Sort by score descending
+            sorted_skills = sorted(skill_scores, key=lambda x: x[1], reverse=True)
+
+            # Select top N skills (within constraints)
+            selected = [skill for skill, _ in sorted_skills[:self.MAX_SKILLS_PER_SECTION]]
+
+            # Ensure minimum if we have enough skills
+            if len(selected) < self.MIN_SKILLS_PER_SECTION and len(sorted_skills) >= self.MIN_SKILLS_PER_SECTION:
+                selected = [skill for skill, _ in sorted_skills[:self.MIN_SKILLS_PER_SECTION]]
+
+            final_sections[section_name] = selected
+
+        return final_sections
+
+    def _build_provenance(
+        self,
+        final_sections: Dict[str, List[str]],
+        jd_keywords: Set[str],
+        annotation_keywords: Set[str],
+    ) -> "SkillsProvenance":
+        """
+        Build full provenance tracking for anti-hallucination proof.
+
+        Args:
+            final_sections: Final section → skills mapping
+            jd_keywords: JD keywords used for matching
+            annotation_keywords: Annotation keywords used
+
+        Returns:
+            SkillsProvenance with full traceability
+        """
+        from src.layer6_v2.types import SkillsProvenance
+
+        # Track JD-matched vs whitelist-only skills
+        jd_matched_skills = []
+        whitelist_only_skills = []
+
+        all_selected_skills = []
+        for section_name, skills in final_sections.items():
+            all_selected_skills.extend(skills)
+
+            for skill in skills:
+                skill_lower = skill.lower()
+                if self._skill_matches_keywords(skill_lower, jd_keywords):
+                    jd_matched_skills.append(skill)
+                else:
+                    whitelist_only_skills.append(skill)
+
+        # Find JD skills we rejected (not in whitelist)
+        rejected_jd_skills = []
+        for kw in jd_keywords:
+            # Check if this JD keyword was NOT in our whitelist
+            matched_whitelist = False
+            for skill in self._whitelist_skills:
+                if self._skill_matches_keywords(kw, {skill.lower()}):
+                    matched_whitelist = True
+                    break
+            if not matched_whitelist:
+                # This JD skill was not in our whitelist - we rejected it
+                rejected_jd_skills.append(kw)
+
+        return SkillsProvenance(
+            all_from_whitelist=True,  # Always true by construction
+            whitelist_source="master_cv",
+            total_skills_selected=len(all_selected_skills),
+            jd_matched_skills=list(set(jd_matched_skills)),
+            whitelist_only_skills=list(set(whitelist_only_skills)),
+            rejected_jd_skills=list(set(rejected_jd_skills)),
+            skills_by_section=final_sections,
+        )
+
+    def get_static_section_names(self) -> List[str]:
+        """Get the static section names for this role category."""
+        return [section["name"] for section in self._static_sections]
+
+
+def create_core_competency_generator_v2(
+    role_category: str,
+    skill_whitelist: Dict[str, List[str]],
+    taxonomy_path: Optional[Path] = None,
+) -> CoreCompetencyGeneratorV2:
+    """
+    Factory function to create a V2 Core Competency Generator.
+
+    Args:
+        role_category: Target role category
+        skill_whitelist: Candidate's verified skills
+        taxonomy_path: Optional path to taxonomy file
+
+    Returns:
+        Configured CoreCompetencyGeneratorV2
+    """
+    taxonomy = SkillsTaxonomy(taxonomy_path)
+    return CoreCompetencyGeneratorV2(
+        role_category=role_category,
+        skill_whitelist=skill_whitelist,
+        taxonomy=taxonomy,
+    )
+
+
 def create_taxonomy_generator(
     skill_whitelist: Dict[str, List[str]],
     taxonomy_path: Optional[Path] = None,
