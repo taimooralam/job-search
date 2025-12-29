@@ -272,7 +272,7 @@
                             <span class="hidden sm:inline">Selected: </span><span id="selection-count" class="font-semibold">0</span><span class="sm:hidden"> sel.</span>
                         </span>
                         <!-- Process Selected Button with Tier Dropdown -->
-                        <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <div id="tier-dropdown" class="relative btn-with-hint" x-data="{ open: false }" @click.away="open = false">
                             <input type="hidden" id="bulk-selected-tier" value="auto">
                             <div class="flex items-center">
                                 <button id="process-selected-btn"
@@ -351,47 +351,60 @@
                                     </button>
                                 </div>
                             </div>
+                            <span class="shortcut-hint">(T)</span>
                         </div>
                         <!-- Move to Batch Button -->
-                        <button id="move-to-batch-btn"
-                                onclick="moveSelectedToBatch()"
-                                disabled
-                                class="btn btn-secondary btn-md">
-                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                            <span class="hidden sm:inline">Move to Batch</span>
-                            <span class="sm:hidden">Batch</span>
-                        </button>
+                        <div class="btn-with-hint">
+                            <button id="move-to-batch-btn"
+                                    onclick="moveSelectedToBatch()"
+                                    disabled
+                                    class="btn btn-secondary btn-md">
+                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                                <span class="hidden sm:inline">Move to Batch</span>
+                                <span class="sm:hidden">Batch</span>
+                            </button>
+                            <span class="shortcut-hint">(B)</span>
+                        </div>
                         <!-- Mark as Applied Button -->
-                        <button id="apply-selected-btn"
-                                onclick="markSelectedAsApplied()"
-                                disabled
-                                class="btn btn-primary btn-md">
-                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <span class="hidden sm:inline">Mark Applied</span>
-                            <span class="sm:hidden">Applied</span>
-                        </button>
+                        <div class="btn-with-hint">
+                            <button id="apply-selected-btn"
+                                    onclick="markSelectedAsApplied()"
+                                    disabled
+                                    class="btn btn-primary btn-md">
+                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="hidden sm:inline">Mark Applied</span>
+                                <span class="sm:hidden">Applied</span>
+                            </button>
+                            <span class="shortcut-hint">(A)</span>
+                        </div>
                         <!-- Discard Selected Button -->
-                        <button id="discard-selected-btn"
-                                onclick="markSelectedAsDiscarded()"
-                                disabled
-                                class="btn btn-warning btn-md">
-                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                            </svg>
-                            <span class="hidden sm:inline">Discard Selected</span>
-                            <span class="sm:hidden">Discard</span>
-                        </button>
-                        <button id="delete-selected-btn"
-                                onclick="openDeleteModal()"
-                                disabled
-                                class="btn btn-danger btn-md">
-                            <span class="hidden sm:inline">Delete Selected</span>
-                            <span class="sm:hidden">Delete</span>
-                        </button>
+                        <div class="btn-with-hint">
+                            <button id="discard-selected-btn"
+                                    onclick="markSelectedAsDiscarded()"
+                                    disabled
+                                    class="btn btn-warning btn-md">
+                                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                                <span class="hidden sm:inline">Discard Selected</span>
+                                <span class="sm:hidden">Discard</span>
+                            </button>
+                            <span class="shortcut-hint">(D)</span>
+                        </div>
+                        <div class="btn-with-hint">
+                            <button id="delete-selected-btn"
+                                    onclick="openDeleteModal()"
+                                    disabled
+                                    class="btn btn-danger btn-md">
+                                <span class="hidden sm:inline">Delete Selected</span>
+                                <span class="sm:hidden">Delete</span>
+                            </button>
+                            <span class="shortcut-hint">(⌫)</span>
+                        </div>
                     </div>
 
                     <!-- Loading indicator -->
@@ -1022,10 +1035,50 @@
     // ============================================================================
     // Keyboard Shortcuts for Job Actions
     // ============================================================================
-    // Backspace: Delete selected (with confirmation)
+    // Backspace/Delete: Delete selected (with confirmation)
     // D: Discard selected
     // B: Move to Batch
     // A: Mark as Applied
+    // T: Toggle tier dropdown
+    // 1-4 (when tier dropdown open): Select tier option
+
+    // Track which dropdown is open for number key selection
+    let activeDropdown = null; // 'tier' | null
+
+    // Tier options mapping (1-4 keys)
+    const tierOptions = ['auto', 'A', 'B', 'C'];
+
+    // Toggle tier dropdown
+    function toggleTierDropdown() {
+        const dropdown = document.getElementById('tier-dropdown');
+        if (dropdown && dropdown.__x) {
+            const isOpen = dropdown.__x.$data.open;
+            if (isOpen) {
+                dropdown.__x.$data.open = false;
+                activeDropdown = null;
+            } else {
+                dropdown.__x.$data.open = true;
+                activeDropdown = 'tier';
+            }
+        }
+    }
+
+    // Close tier dropdown
+    function closeTierDropdown() {
+        const dropdown = document.getElementById('tier-dropdown');
+        if (dropdown && dropdown.__x) {
+            dropdown.__x.$data.open = false;
+        }
+        activeDropdown = null;
+    }
+
+    // Select tier by index (0-3)
+    function selectTierByIndex(index) {
+        if (index >= 0 && index < tierOptions.length) {
+            setBulkProcessingTier(tierOptions[index]);
+            closeTierDropdown();
+        }
+    }
 
     document.addEventListener('keydown', function(e) {
         // Skip if user is typing in an input field
@@ -1039,7 +1092,21 @@
 
         if (isInputFocused) return;
 
-        // Only act if jobs are selected
+        // Handle Escape to close dropdown
+        if (e.key === 'Escape' && activeDropdown) {
+            e.preventDefault();
+            closeTierDropdown();
+            return;
+        }
+
+        // Handle number keys when dropdown is open
+        if (activeDropdown === 'tier' && e.key >= '1' && e.key <= '4') {
+            e.preventDefault();
+            selectTierByIndex(parseInt(e.key) - 1);
+            return;
+        }
+
+        // Only act on other shortcuts if jobs are selected
         if (typeof selectedJobIds === 'undefined' || selectedJobIds.size === 0) return;
 
         switch (e.key) {
@@ -1063,7 +1130,33 @@
                 e.preventDefault();
                 markSelectedAsApplied();
                 break;
+            case 't':
+            case 'T':
+                e.preventDefault();
+                toggleTierDropdown();
+                break;
         }
     });
+
+    // ============================================================================
+    // Shortcut Hint Visibility
+    // ============================================================================
+    // Show/hide shortcut hints based on job selection
+
+    function updateShortcutHintVisibility() {
+        const hasSelection = typeof selectedJobIds !== 'undefined' && selectedJobIds.size > 0;
+        document.querySelectorAll('.shortcut-hint').forEach(hint => {
+            hint.classList.toggle('visible', hasSelection);
+        });
+    }
+
+    // Hook into the existing selection count update (called from job_rows.html)
+    const originalUpdateSelectionCount = window.updateSelectionCount;
+    window.updateSelectionCount = function() {
+        if (originalUpdateSelectionCount) {
+            originalUpdateSelectionCount.apply(this, arguments);
+        }
+        updateShortcutHintVisibility();
+    };
 </script>
 {% endblock %}
