@@ -8,7 +8,7 @@ pipeline streams logs.
 Key Components:
 - OperationState: In-memory state tracking for operation logs
 - _operation_runs: Global dict for operation state
-- Redis persistence for logs with 24-hour TTL
+- Redis persistence for logs with 6-hour TTL
 - Helper functions for log appending and SSE streaming
 """
 
@@ -30,7 +30,7 @@ MAX_LOG_BUFFER = 100
 
 # Redis key prefixes for log persistence
 REDIS_LOG_PREFIX = "logs:"
-REDIS_LOG_TTL = 86400  # 24 hours in seconds
+REDIS_LOG_TTL = 21600  # 6 hours in seconds
 
 
 @dataclass
@@ -399,7 +399,7 @@ def cleanup_old_runs(max_age_seconds: int = 3600) -> int:
 
 
 # =============================================================================
-# Redis Log Persistence (24-hour TTL)
+# Redis Log Persistence (6-hour TTL)
 # =============================================================================
 
 
@@ -513,7 +513,7 @@ async def _set_redis_log_ttl(run_id: str) -> None:
         for key in keys:
             await redis.expire(key, REDIS_LOG_TTL)
 
-        logger.debug(f"[{run_id[:16]}] Set 24h TTL on Redis logs")
+        logger.debug(f"[{run_id[:16]}] Set 6h TTL on Redis logs")
 
     except Exception as e:
         logger.debug(f"[{run_id[:16]}] Redis TTL set failed: {e}")
