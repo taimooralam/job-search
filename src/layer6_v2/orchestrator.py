@@ -457,6 +457,65 @@ class CVGeneratorV2:
                         changes_count=len(improvement_result.changes_made),
                     )
 
+            # Phase 6.5: Final Tailoring Pass (Keyword Emphasis)
+            tailoring_result = None
+            if jd_annotations and self._should_apply_tailoring(keyword_placement_result):
+                self._logger.info("Phase 6.5: Applying keyword emphasis pass...")
+                self._emit_log("phase_start", "Applying keyword emphasis...", phase=6.5)
+
+                from src.layer6_v2.cv_tailorer import tailor_cv
+
+                original_cv_text = cv_text  # Save for potential revert
+                tailoring_result = asyncio.run(tailor_cv(
+                    cv_text=cv_text,
+                    jd_annotations=jd_annotations,
+                    extracted_jd=extracted_jd,
+                    job_id=job_id,
+                    progress_callback=llm_callback,
+                ))
+
+                if tailoring_result.tailored:
+                    cv_text = tailoring_result.cv_text
+                    self._logger.info(
+                        f"  Tailored {len(tailoring_result.keywords_repositioned)} keywords"
+                    )
+                    self._emit_log(
+                        "tailoring_complete",
+                        f"Tailored {len(tailoring_result.keywords_repositioned)} keywords",
+                        phase=6.5,
+                        keywords_repositioned=tailoring_result.keywords_repositioned,
+                        placement_score=tailoring_result.keyword_placement_score,
+                    )
+
+                    # Phase 6.6: Post-tailoring validation - re-validate ATS coverage
+                    self._logger.info("Phase 6.6: Post-tailoring validation...")
+                    post_tailor_ats = self._validate_ats_coverage(
+                        cv_text=cv_text,
+                        jd_annotations=jd_annotations,
+                        extracted_jd=extracted_jd,
+                    )
+
+                    if not post_tailor_ats.passed:
+                        # Revert tailoring if ATS validation fails
+                        self._logger.warning(
+                            "  Tailoring rejected: ATS constraints violated - reverting"
+                        )
+                        cv_text = original_cv_text
+                        tailoring_result.tailored = False
+                        tailoring_result.ats_validation_passed = False
+                        tailoring_result.tailoring_summary = "Reverted: ATS constraints violated"
+                        self._emit_log(
+                            "tailoring_reverted",
+                            "Tailoring reverted: ATS constraints violated",
+                            phase=6.6,
+                        )
+                    else:
+                        tailoring_result.ats_validation_passed = True
+                        self._logger.info("  Post-tailoring ATS validation passed")
+                else:
+                    self._logger.info("  No tailoring needed")
+                    self._emit_log("phase_complete", "No tailoring needed", phase=6.5)
+
             # Save CV to disk
             cv_path = self._save_cv_to_disk(cv_text, company, title)
 
@@ -488,6 +547,8 @@ class CVGeneratorV2:
                 "ats_validation": ats_validation.to_dict() if ats_validation else None,
                 # Phase 5.7 (P2): Keyword placement validation result
                 "keyword_placement_validation": keyword_placement_result.to_dict() if keyword_placement_result else None,
+                # Phase 6.5: Tailoring result
+                "tailoring_result": tailoring_result.to_dict() if tailoring_result else None,
                 # Phase 9 (GAP-092): Reframe traceability result
                 "reframe_validation": reframe_validation,
             }
@@ -1210,6 +1271,50 @@ class CVGeneratorV2:
                 self._logger.info(f"    💡 {s}")
 
         return result
+
+    def _should_apply_tailoring(
+        self,
+        keyword_placement_result: Optional[KeywordPlacementResult],
+    ) -> bool:
+        """
+        Determine if Phase 6.5 tailoring pass should run.
+
+        Tailoring is applied when keyword placement needs improvement:
+        - Overall placement score below 90%
+        - Must-have keywords not 100% in top 1/3
+        - Identity keywords not 100% in headline
+
+        Args:
+            keyword_placement_result: Result from Phase 5.7 placement validation
+
+        Returns:
+            True if tailoring should be applied
+        """
+        if not keyword_placement_result:
+            return False
+
+        # Apply if overall placement score is below 90%
+        if keyword_placement_result.overall_score < 90:
+            self._logger.info(
+                f"  Tailoring needed: placement score {keyword_placement_result.overall_score} < 90"
+            )
+            return True
+
+        # Apply if must-have keywords not fully covered in top 1/3
+        if keyword_placement_result.must_have_score < 100:
+            self._logger.info(
+                f"  Tailoring needed: must-have score {keyword_placement_result.must_have_score} < 100"
+            )
+            return True
+
+        # Apply if identity keywords not in headline
+        if keyword_placement_result.identity_score < 100:
+            self._logger.info(
+                f"  Tailoring needed: identity score {keyword_placement_result.identity_score} < 100"
+            )
+            return True
+
+        return False
 
     def _validate_reframe_application(
         self,
