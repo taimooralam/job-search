@@ -141,10 +141,11 @@ class TestPainPointAnalysisSchema:
         )
 
     def test_too_many_strategic_needs(self):
-        """Too many strategic needs (> 8) should fail."""
+        """Too many strategic needs (> SOFT_MAX=9) should fail."""
+        from src.layer2.pain_point_miner import SOFT_MAX
         invalid = {
             "pain_points": ["Pain 1", "Pain 2", "Pain 3"],
-            "strategic_needs": [f"Need {i}" for i in range(1, 11)],  # 10 items, max 8
+            "strategic_needs": [f"Need {i}" for i in range(1, 12)],  # 11 items, exceeds SOFT_MAX=9
             "risks_if_unfilled": ["Risk 1", "Risk 2"],
             "success_metrics": ["Metric 1", "Metric 2", "Metric 3"]
         }
@@ -153,7 +154,7 @@ class TestPainPointAnalysisSchema:
 
         errors = exc_info.value.errors()
         assert any(
-            e['loc'] == ('strategic_needs',) and 'at most 8 items' in e['msg'].lower()
+            e['loc'] == ('strategic_needs',) and f'at most {SOFT_MAX} items' in e['msg'].lower()
             for e in errors
         )
 
@@ -178,6 +179,129 @@ class TestPainPointAnalysisSchema:
         }
         with pytest.raises(ValidationError):
             PainPointAnalysis(**invalid)
+
+
+# ===== SOFT VALIDATION TESTS =====
+
+class TestSoftValidation:
+    """Test soft validation behavior for list lengths."""
+
+    def test_soft_validate_list_lengths_no_warnings_within_nominal(self):
+        """No warnings when all fields are within nominal limit (6)."""
+        from src.layer2.pain_point_miner import (
+            soft_validate_list_lengths,
+            NOMINAL_LIST_LIMIT,
+            TOLERANCE
+        )
+        data = {
+            "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(6)],
+            "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk {i}", "evidence": "ev", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Metric {i}", "evidence": "ev", "confidence": "high"} for i in range(5)],
+        }
+        warnings = soft_validate_list_lengths(data)
+        assert warnings == []
+
+    def test_soft_validate_list_lengths_warns_on_soft_violation(self):
+        """Warnings are emitted when a field exceeds nominal but within hard max."""
+        from src.layer2.pain_point_miner import (
+            soft_validate_list_lengths,
+            NOMINAL_LIST_LIMIT,
+            TOLERANCE,
+            SOFT_MAX
+        )
+        # 7 items exceeds nominal (6) but is within SOFT_MAX (9)
+        data = {
+            "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(7)],
+            "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk {i}", "evidence": "ev", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Metric {i}", "evidence": "ev", "confidence": "high"} for i in range(5)],
+        }
+        warnings = soft_validate_list_lengths(data)
+        assert len(warnings) == 1
+        assert "pain_points" in warnings[0]
+        assert "7 items" in warnings[0]
+
+    def test_soft_validate_list_lengths_multiple_soft_violations(self):
+        """Multiple fields exceeding nominal limit produces multiple warnings."""
+        from src.layer2.pain_point_miner import (
+            soft_validate_list_lengths,
+            NOMINAL_LIST_LIMIT,
+            TOLERANCE
+        )
+        # 8 items for pain_points, 7 for strategic_needs
+        data = {
+            "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(8)],
+            "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(7)],
+            "risks_if_unfilled": [{"text": f"Risk {i}", "evidence": "ev", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Metric {i}", "evidence": "ev", "confidence": "high"} for i in range(5)],
+        }
+        warnings = soft_validate_list_lengths(data)
+        assert len(warnings) == 2
+        assert any("pain_points" in w for w in warnings)
+        assert any("strategic_needs" in w for w in warnings)
+
+    def test_soft_validate_list_lengths_calls_emit_callback(self):
+        """emit_callback is called for soft violations."""
+        from src.layer2.pain_point_miner import soft_validate_list_lengths
+        data = {
+            "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(8)],
+            "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk {i}", "evidence": "ev", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Metric {i}", "evidence": "ev", "confidence": "high"} for i in range(5)],
+        }
+        emitted = []
+        soft_validate_list_lengths(data, emit_callback=lambda d: emitted.append(d))
+        assert len(emitted) == 1
+        assert emitted[0]["field"] == "pain_points"
+        assert emitted[0]["count"] == 8
+        assert emitted[0]["warning_type"] == "soft_limit_exceeded"
+
+    def test_soft_validate_list_lengths_logs_warnings(self):
+        """Logger receives warnings for soft violations."""
+        from src.layer2.pain_point_miner import soft_validate_list_lengths
+        data = {
+            "pain_points": [{"text": f"Pain {i}", "evidence": "ev", "confidence": "high"} for i in range(9)],
+            "strategic_needs": [{"text": f"Need {i}", "evidence": "ev", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk {i}", "evidence": "ev", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Metric {i}", "evidence": "ev", "confidence": "high"} for i in range(5)],
+        }
+        logger = Mock()
+        soft_validate_list_lengths(data, logger=logger)
+        logger.warning.assert_called_once()
+        assert "pain_points" in logger.warning.call_args[0][0]
+
+    def test_soft_validation_allows_7_items_pydantic_passes(self):
+        """7 items (soft violation) still passes Pydantic validation with SOFT_MAX=9."""
+        from src.layer2.pain_point_miner import EnhancedPainPointAnalysis
+        # 7 items exceeds nominal (6) but is within SOFT_MAX (9) - should pass Pydantic
+        data = {
+            "pain_points": [{"text": f"Pain point {i} that is long enough", "evidence": "evidence text", "confidence": "high"} for i in range(7)],
+            "strategic_needs": [{"text": f"Strategic need {i} that is long enough", "evidence": "evidence text", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk if unfilled {i} long enough", "evidence": "evidence text", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Success metric {i} that is long enough", "evidence": "evidence text", "confidence": "high"} for i in range(5)],
+        }
+        # This should NOT raise ValidationError
+        result = EnhancedPainPointAnalysis(**data)
+        assert len(result.pain_points) == 7
+
+    def test_soft_validation_rejects_10_items_pydantic_fails(self):
+        """10 items exceeds SOFT_MAX=9 and fails Pydantic validation."""
+        from src.layer2.pain_point_miner import EnhancedPainPointAnalysis, SOFT_MAX
+        # 10 items exceeds SOFT_MAX (9) - should fail Pydantic
+        data = {
+            "pain_points": [{"text": f"Pain point {i} that is long enough", "evidence": "evidence text", "confidence": "high"} for i in range(10)],
+            "strategic_needs": [{"text": f"Strategic need {i} that is long enough", "evidence": "evidence text", "confidence": "medium"} for i in range(4)],
+            "risks_if_unfilled": [{"text": f"Risk if unfilled {i} long enough", "evidence": "evidence text", "confidence": "low"} for i in range(3)],
+            "success_metrics": [{"text": f"Success metric {i} that is long enough", "evidence": "evidence text", "confidence": "high"} for i in range(5)],
+        }
+        with pytest.raises(ValidationError) as exc_info:
+            EnhancedPainPointAnalysis(**data)
+        errors = exc_info.value.errors()
+        assert any(
+            e['loc'] == ('pain_points',) and f'at most {SOFT_MAX}' in e['msg'].lower()
+            for e in errors
+        )
 
 
 # ===== PAIN POINT MINER TESTS =====

@@ -476,6 +476,90 @@ self.unified_llm.invoke(prompt, max_turns=3)
 - **Loss:** Cost/token metadata no longer available (acceptable for reliability)
 - **Impact:** Text format returns raw LLM response directly (no JSON wrapper); turn limits prevent truncation errors
 
+### Layer 2 - Soft Validation for List Field Over-Generation
+
+**Overview:** Robustness improvement to handle LLM responses that exceed the nominal list field limit (6 items) but remain within acceptable tolerance (up to 9 items).
+
+**Problem:** LLMs occasionally generate more list items than requested (e.g., 7-9 items instead of 6 for pain_points, strategic_needs, risks_if_unfilled, success_metrics). Hard failure on >6 items blocked valid analyses.
+
+**Solution:** Two-tier validation approach
+
+**Components:**
+
+- `src/layer2/pain_point_miner.py` - Lines 38-44: Soft validation constants
+  - `NOMINAL_LIST_LIMIT = 6` - Requested/preferred limit in prompts
+  - `TOLERANCE = 3` - Extra items allowed before hard failure
+  - `SOFT_MAX = 9` - Hard limit for Pydantic validation (nominal + tolerance)
+
+- `soft_validate_list_lengths()` function (lines 717-786):
+  - Inspects list field lengths BEFORE Pydantic validation
+  - 6 < length <= 9: Logs warning, emits frontend event, continues processing (soft violation)
+  - length > 9: Caught by Pydantic validation (hard failure)
+  - No exceptions raised for soft violations
+
+- `EnhancedPainPointAnalysis` and `LegacyPainPointAnalysis` schemas (lines 606-685):
+  - `max_length=SOFT_MAX` (9) allows tolerance for LLM over-generation
+  - Soft warnings logged before schema validation
+
+- `_parse_response()` method (lines 1100-1236):
+  - Calls `soft_validate_list_lengths()` with logger and emit_callback
+  - Warnings logged to: file logger, frontend stream (via emit_callback)
+  - Pydantic validation runs after soft validation
+
+**Validation Flow:**
+
+```
+LLM response with 7 pain_points
+        ↓
+soft_validate_list_lengths(data)
+        ↓
+Detects: 6 < 7 <= 9 (soft violation)
+        ↓
+Log warning: "Soft limit exceeded for 'pain_points': 7 items (nominal=6, hard_max=9)"
+        ↓
+Emit to frontend: "WARN: pain_points has 7 items (limit was 6)"
+        ↓
+Continue (no exception)
+        ↓
+Pydantic validation (max_length=9) - PASSES
+        ↓
+Return analysis with 7 pain_points
+```
+
+**Hard Failure Example:**
+
+```
+LLM response with 11 pain_points
+        ↓
+soft_validate_list_lengths(data)
+        ↓
+Detects: 11 > 9 (hard violation)
+        ↓
+Log error: "Hard limit exceeded for 'pain_points': 11 items (hard_max=9). Pydantic will reject."
+        ↓
+Pydantic validation (max_length=9) - REJECTS
+        ↓
+Raise ValidationError
+```
+
+**Benefits:**
+
+- **Graceful degradation:** 7-9 items processed with warnings instead of hard failure
+- **Transparent:** Warnings logged to both file logs and frontend stream for visibility
+- **Auditable:** Confidence scoring allows downstream layers to weight over-limit items lower
+- **Tunable:** Constants easily adjusted if tolerance needs change
+- **Backward compatible:** Legacy format unchanged, Pydantic validation still enforces hard max
+
+**Testing Implications:**
+
+- Tests can now pass with 7-9 items without adjustment
+- Hard failures (>9) still caught and reported
+- Soft warnings emitted for diagnostic visibility
+
+**Files Changed:**
+
+- `src/layer2/pain_point_miner.py` - Added soft validation constants and logic
+
 ### Bulk Job Management UI
 
 **Discard Selected Feature:**

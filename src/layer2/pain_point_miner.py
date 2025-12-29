@@ -35,6 +35,14 @@ if TYPE_CHECKING:
 # Type alias for log callback function
 LogCallback = Callable[[str], None]
 
+# ===== SOFT VALIDATION CONSTANTS =====
+# These constants define the soft validation behavior for list lengths.
+# LLMs occasionally return more items than requested. Rather than fail hard,
+# we allow a tolerance zone where we log warnings but continue processing.
+NOMINAL_LIST_LIMIT = 6  # Requested limit in prompts
+TOLERANCE = 3           # Extra items allowed before hard failure
+SOFT_MAX = NOMINAL_LIST_LIMIT + TOLERANCE  # = 9, hard limit for Pydantic
+
 
 # ===== DOMAIN DETECTION =====
 
@@ -605,29 +613,32 @@ class EnhancedPainPointAnalysis(BaseModel):
     - confidence: high/medium/low based on evidence strength
 
     This enables downstream processes to weight insights appropriately.
+
+    Note: max_length is set to SOFT_MAX (9) to allow tolerance for LLM over-generation.
+    Soft validation (warnings for >6 items) happens before Pydantic validation.
     """
     pain_points: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=6,
+        max_length=SOFT_MAX,
         description="Specific technical/operational problems with evidence"
     )
     strategic_needs: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=6,
+        max_length=SOFT_MAX,
         description="Strategic business reasons for this role"
     )
     risks_if_unfilled: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=6,
+        max_length=SOFT_MAX,
         description="Business consequences if role stays empty"
     )
     success_metrics: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=6,
+        max_length=SOFT_MAX,
         description="Measurable outcomes for success"
     )
     reasoning_summary: Optional[str] = Field(
@@ -644,30 +655,33 @@ class LegacyPainPointAnalysis(BaseModel):
     """
     Legacy schema for backward compatibility.
     Maintains original validation constraints for string lists.
+
+    Note: max_length is set to SOFT_MAX (9) to allow tolerance for LLM over-generation.
+    Soft validation (warnings for >6 items) happens before Pydantic validation.
     """
     pain_points: List[str] = Field(
         ...,
         min_length=1,
-        max_length=8,
-        description="1-8 specific technical/operational problems they need solved"
+        max_length=SOFT_MAX,
+        description=f"1-{SOFT_MAX} specific technical/operational problems they need solved"
     )
     strategic_needs: List[str] = Field(
         ...,
         min_length=1,
-        max_length=8,
-        description="1-8 strategic business reasons why this role matters"
+        max_length=SOFT_MAX,
+        description=f"1-{SOFT_MAX} strategic business reasons why this role matters"
     )
     risks_if_unfilled: List[str] = Field(
         ...,
         min_length=1,
-        max_length=8,
-        description="1-8 consequences if this role stays empty"
+        max_length=SOFT_MAX,
+        description=f"1-{SOFT_MAX} consequences if this role stays empty"
     )
     success_metrics: List[str] = Field(
         ...,
         min_length=1,
-        max_length=8,
-        description="1-8 measurable outcomes for success"
+        max_length=SOFT_MAX,
+        description=f"1-{SOFT_MAX} measurable outcomes for success"
     )
 
     @field_validator('pain_points', 'strategic_needs', 'risks_if_unfilled', 'success_metrics')
@@ -692,6 +706,84 @@ class LegacyPainPointAnalysis(BaseModel):
 
 # Backward-compatible alias for legacy tests and imports
 PainPointAnalysis = LegacyPainPointAnalysis
+
+
+# ===== SOFT VALIDATION =====
+
+# List fields that should be soft-validated
+_LIST_FIELDS = ["pain_points", "strategic_needs", "risks_if_unfilled", "success_metrics"]
+
+
+def soft_validate_list_lengths(
+    data: Dict[str, Any],
+    nominal_limit: int = NOMINAL_LIST_LIMIT,
+    tolerance: int = TOLERANCE,
+    logger=None,
+    emit_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+) -> List[str]:
+    """
+    Perform soft validation on list field lengths.
+
+    This function checks if list fields exceed the nominal limit but are still
+    within the hard max (nominal + tolerance). For soft violations, it logs
+    warnings but does NOT raise exceptions, allowing the pipeline to continue.
+
+    Args:
+        data: Parsed JSON data from LLM response
+        nominal_limit: The requested/preferred limit (default: 6)
+        tolerance: Extra items allowed before hard failure (default: 3)
+        logger: Optional logger for diagnostic output
+        emit_callback: Optional callback to emit events to frontend stream
+
+    Returns:
+        List of warning messages for soft violations (6 < length <= 9).
+        Empty list if no soft violations.
+
+    Note:
+        - Does NOT raise exceptions for soft violations
+        - Hard violations (> nominal + tolerance) will be caught by Pydantic
+    """
+    hard_max = nominal_limit + tolerance
+    warnings: List[str] = []
+
+    for field in _LIST_FIELDS:
+        items = data.get(field, [])
+        if not isinstance(items, list):
+            continue
+
+        length = len(items)
+
+        if length > nominal_limit and length <= hard_max:
+            # Soft violation - warn but continue
+            warning_msg = (
+                f"Soft limit exceeded for '{field}': {length} items "
+                f"(nominal={nominal_limit}, hard_max={hard_max}). "
+                f"Pipeline continues but consider prompt tuning."
+            )
+            warnings.append(warning_msg)
+
+            if logger:
+                logger.warning(f"[SOFT_VALIDATION] {warning_msg}")
+
+            if emit_callback:
+                emit_callback({
+                    "message": f"WARN: {field} has {length} items (limit was {nominal_limit})",
+                    "warning_type": "soft_limit_exceeded",
+                    "field": field,
+                    "count": length,
+                    "nominal_limit": nominal_limit,
+                    "hard_max": hard_max,
+                })
+
+        elif length > hard_max:
+            # Hard violation - will be caught by Pydantic, but log for visibility
+            if logger:
+                logger.error(
+                    f"[SOFT_VALIDATION] Hard limit exceeded for '{field}': "
+                    f"{length} items (hard_max={hard_max}). Pydantic will reject."
+                )
+
+    return warnings
 
 
 # ===== ENHANCED PROMPT DESIGN =====
@@ -1106,6 +1198,18 @@ class PainPointMiner:
             if logger:
                 logger.info("[PARSE] Converting legacy format (string arrays) to enhanced format")
             data = self._convert_legacy_to_enhanced(data)
+
+        # Soft validation: warn for items > nominal limit but within tolerance
+        # This runs BEFORE Pydantic so we can log warnings without blocking
+        soft_warnings = soft_validate_list_lengths(
+            data=data,
+            nominal_limit=NOMINAL_LIST_LIMIT,
+            tolerance=TOLERANCE,
+            logger=logger,
+            emit_callback=emit_callback,
+        )
+        if soft_warnings and logger:
+            logger.info(f"[PARSE] Soft validation completed with {len(soft_warnings)} warning(s)")
 
         try:
             result = EnhancedPainPointAnalysis(**data)
