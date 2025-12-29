@@ -191,6 +191,27 @@
                 <span class="sm:hidden">PDF</span>
                 {% endif %}
             </button>
+
+            {# Google Drive Upload Button #}
+            {% set gdrive_uploaded = (job.gdrive_uploaded_at if job else false) %}
+            <button id="{{ id_prefix }}gdrive-upload-btn"
+                    onclick="{% if mode == 'sidebar' %}uploadBatchCVToGDrive(){% else %}uploadCVToGDrive(){% endif %}"
+                    class="inline-flex items-center {{ padding_x }} sm:px-3 {{ padding_y }} {{ text_size }} font-medium
+                           rounded-md text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 transition
+                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500
+                           gdrive-btn {{ 'gdrive-uploaded' if gdrive_uploaded else '' }}"
+                    aria-label="Upload CV to Google Drive"
+                    title="Upload to Google Drive">
+                <svg class="{{ icon_size_sm }} {% if not compact_toolbar %}sm:mr-1.5{% else %}mr-1{% endif %}" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
+                </svg>
+                {% if compact_toolbar %}
+                <span class="gdrive-btn-text">{{ 'Done' if gdrive_uploaded else 'Drive' }}</span>
+                {% else %}
+                <span class="gdrive-btn-text hidden sm:inline">{{ 'Uploaded' if gdrive_uploaded else 'Upload to Drive' }}</span>
+                <span class="gdrive-btn-text sm:hidden">{{ 'Done' if gdrive_uploaded else 'Drive' }}</span>
+                {% endif %}
+            </button>
         </div>
     </div>
 

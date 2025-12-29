@@ -1932,6 +1932,14 @@
                         </svg>
                         Export PDF
                     </button>
+                    <button id="gdrive-upload-btn-detail"
+                            onclick="uploadCVToGDrive('{{ job._id }}')"
+                            class="btn btn-secondary btn-sm gdrive-btn {{ 'gdrive-uploaded' if job.gdrive_uploaded_at else '' }}">
+                        <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
+                        </svg>
+                        <span class="gdrive-btn-text">{{ 'Uploaded' if job.gdrive_uploaded_at else 'Upload to Drive' }}</span>
+                    </button>
                 </div>
             </div>
             <!-- CV Preview - Full Width -->

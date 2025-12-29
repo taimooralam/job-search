@@ -443,6 +443,95 @@ async function exportBatchCVToPDF() {
 }
 
 /**
+ * Upload CV PDF to Google Drive via n8n webhook (batch page version).
+ *
+ * This function:
+ * 1. Saves the current CV state
+ * 2. Calls the backend to generate PDF and upload to Google Drive
+ * 3. Updates button state to show upload progress (orange pulse)
+ * 4. On success, button turns green and stays green (persisted in MongoDB)
+ */
+async function uploadBatchCVToGDrive() {
+    if (!batchCVEditorInstance) {
+        if (typeof showToast === 'function') {
+            showToast('CV editor not initialized', 'error');
+        }
+        return;
+    }
+
+    const jobId = batchCVEditorInstance.jobId;
+
+    // Find all Google Drive upload buttons to update state
+    const buttons = document.querySelectorAll('.gdrive-btn');
+
+    try {
+        // Update UI: uploading state (orange pulse)
+        buttons.forEach(btn => {
+            btn.classList.add('uploading');
+            btn.classList.remove('gdrive-uploaded', 'upload-error');
+            btn.disabled = true;
+            const textSpan = btn.querySelector('.gdrive-btn-text');
+            if (textSpan) textSpan.textContent = 'Uploading';
+        });
+
+        if (typeof showToast === 'function') {
+            showToast('Uploading CV to Google Drive...', 'info');
+        }
+
+        // Save first to ensure latest content
+        await batchCVEditorInstance.save();
+
+        // Call upload endpoint
+        const response = await fetch(`/api/jobs/${jobId}/cv/upload-drive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Upload failed');
+        }
+
+        // Success: update UI to green (persists on page refresh via MongoDB)
+        buttons.forEach(btn => {
+            btn.classList.remove('uploading');
+            btn.classList.add('gdrive-uploaded');
+            btn.disabled = false;
+            const textSpan = btn.querySelector('.gdrive-btn-text');
+            if (textSpan) textSpan.textContent = 'Done';
+        });
+
+        if (typeof showToast === 'function') {
+            showToast('CV uploaded to Google Drive!', 'success');
+        }
+
+    } catch (error) {
+        console.error('Google Drive upload failed:', error);
+
+        // Error: show error state briefly, then reset
+        buttons.forEach(btn => {
+            btn.classList.remove('uploading');
+            btn.classList.add('upload-error');
+            btn.disabled = false;
+            const textSpan = btn.querySelector('.gdrive-btn-text');
+            if (textSpan) textSpan.textContent = 'Failed';
+
+            // Reset error state after animation
+            setTimeout(() => {
+                btn.classList.remove('upload-error');
+                if (textSpan) textSpan.textContent = 'Drive';
+            }, 2000);
+        });
+
+        if (typeof showToast === 'function') {
+            showToast(`Upload failed: ${error.message}`, 'error');
+        }
+    }
+}
+
+/**
  * Update toolbar button states based on current selection
  * Called from editor selection change events
  */
