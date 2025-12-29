@@ -2139,6 +2139,48 @@ class ImprovementResult:
 
 
 @dataclass
+class TailoringResult:
+    """
+    Result of CV tailoring pass (Phase 6.5).
+
+    Final pass for keyword emphasis - ensures must-have and identity keywords
+    appear in prominent locations (headline, first 50 words, competencies).
+
+    Key Constraints:
+    - Keyword emphasis ONLY (no reframe transformations)
+    - Preserve ATS constraints (min 2, max 5 mentions per keyword)
+    - Maintain readability
+    - Single LLM call for targeted edits
+
+    Anti-Hallucination Guarantees:
+    - No keyword addition (only reposition existing)
+    - No format changes (preserve markdown structure)
+    - No metric changes (all numbers stay identical)
+    - Post-validation required (ATS constraints checked after tailoring)
+    """
+
+    tailored: bool                     # Whether tailoring was applied
+    cv_text: str                       # The tailored CV text
+    changes_made: List[str]            # Description of changes
+    keywords_repositioned: List[str]   # Keywords that were moved to prominent positions
+    tailoring_summary: str = ""        # Brief summary
+    keyword_placement_score: int = 0   # Score after tailoring (0-100)
+    ats_validation_passed: bool = True # ATS constraints still met after tailoring
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "tailored": self.tailored,
+            "cv_text": self.cv_text,
+            "changes_made": self.changes_made,
+            "keywords_repositioned": self.keywords_repositioned,
+            "tailoring_summary": self.tailoring_summary,
+            "keyword_placement_score": self.keyword_placement_score,
+            "ats_validation_passed": self.ats_validation_passed,
+        }
+
+
+@dataclass
 class FinalCV:
     """
     The complete, final CV after all generation stages.
