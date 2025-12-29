@@ -4,6 +4,25 @@
   "target_roles": {
     "engineering_manager": {
       "display_name": "Engineering Manager",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Technical Leadership",
+          "description": "Architecture decisions, technical vision, engineering standards, and tech debt strategy"
+        },
+        "section_2": {
+          "name": "People Management",
+          "description": "Team building, hiring, mentoring, performance management, and career development"
+        },
+        "section_3": {
+          "name": "Cloud & Platform",
+          "description": "AWS/cloud infrastructure, DevOps practices, CI/CD, and platform technologies"
+        },
+        "section_4": {
+          "name": "Delivery & Process",
+          "description": "Agile methodologies, sprint planning, quality engineering, and roadmap execution"
+        }
+      },
       "persona": {
         "identity_statement": "team multiplier and talent developer who builds high-performing engineering teams",
         "voice": "confident, people-focused, delivery-oriented",
@@ -247,6 +266,25 @@
     },
     "staff_principal_engineer": {
       "display_name": "Staff/Principal Engineer",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "System Architecture",
+          "description": "Large-scale system design, distributed systems, API design, and architectural patterns"
+        },
+        "section_2": {
+          "name": "Technical Excellence",
+          "description": "Deep technical skills, performance optimization, code quality, and engineering best practices"
+        },
+        "section_3": {
+          "name": "Cloud Platform",
+          "description": "Cloud infrastructure, platform engineering, observability, and infrastructure as code"
+        },
+        "section_4": {
+          "name": "Technical Influence",
+          "description": "Cross-team technical leadership, mentorship, knowledge sharing, and technical vision"
+        }
+      },
       "persona": {
         "identity_statement": "technical architect and systems thinker who drives architectural excellence across organizations",
         "voice": "technically deep, thoughtful, influential, authoritative",
@@ -479,6 +517,25 @@
     },
     "director_of_engineering": {
       "display_name": "Director of Engineering",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Engineering Leadership",
+          "description": "Multi-team leadership, organizational development, hiring strategy, and engineering culture"
+        },
+        "section_2": {
+          "name": "Operational Excellence",
+          "description": "Delivery excellence, quality engineering, incident management, and process improvement"
+        },
+        "section_3": {
+          "name": "Technology Strategy",
+          "description": "Technical vision, architecture roadmap, platform decisions, and modernization initiatives"
+        },
+        "section_4": {
+          "name": "Business Partnership",
+          "description": "Stakeholder management, cross-functional collaboration, budget ownership, and strategic planning"
+        }
+      },
       "persona": {
         "identity_statement": "organizational builder and engineering strategist who scales engineering organizations",
         "voice": "strategic, organizational, impactful, executive",
@@ -688,6 +745,25 @@
     },
     "head_of_engineering": {
       "display_name": "Head of Engineering",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Executive Leadership",
+          "description": "Organization building, executive presence, strategic hiring, and culture creation"
+        },
+        "section_2": {
+          "name": "Strategic Delivery",
+          "description": "Product-engineering alignment, roadmap execution, risk management, and quality engineering"
+        },
+        "section_3": {
+          "name": "Technology Vision",
+          "description": "Technical strategy, platform modernization, architecture decisions, and innovation"
+        },
+        "section_4": {
+          "name": "Business Impact",
+          "description": "Revenue alignment, stakeholder management, compliance, and cross-functional partnership"
+        }
+      },
       "persona": {
         "identity_statement": "function builder and engineering culture champion who creates world-class engineering teams from scratch",
         "voice": "executive, transformative, culture-focused, visionary",
@@ -893,6 +969,25 @@
     },
     "vp_engineering": {
       "display_name": "VP of Engineering",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Engineering Leadership",
+          "description": "Executive engineering leadership, organizational development, and multi-team management"
+        },
+        "section_2": {
+          "name": "Operational Excellence",
+          "description": "Delivery excellence, engineering operations, and organizational efficiency"
+        },
+        "section_3": {
+          "name": "Technology Strategy",
+          "description": "Technical strategy, platform decisions, architecture oversight, and modernization"
+        },
+        "section_4": {
+          "name": "Business Partnership",
+          "description": "Executive partnership, C-suite collaboration, budget management, and strategic alignment"
+        }
+      },
       "persona": {
         "identity_statement": "engineering executive and operational leader who delivers at scale through organizational excellence",
         "voice": "strategic, executive, business-aligned, operational",
@@ -1081,6 +1176,25 @@
     },
     "cto": {
       "display_name": "CTO",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Technology Vision & Strategy",
+          "description": "Technology strategy, digital transformation, innovation, and long-term technical direction"
+        },
+        "section_2": {
+          "name": "Business Partnership",
+          "description": "Executive leadership, board communication, investor relations, and business alignment"
+        },
+        "section_3": {
+          "name": "Engineering Organization",
+          "description": "Organization building, engineering culture, talent strategy, and engineering standards"
+        },
+        "section_4": {
+          "name": "Technical Authority",
+          "description": "Architecture oversight, platform strategy, security, and compliance governance"
+        }
+      },
       "persona": {
         "identity_statement": "technology visionary and business transformer who drives company success through technology strategy",
         "voice": "visionary, strategic, business-focused, executive",
@@ -1260,6 +1374,25 @@
     },
     "tech_lead": {
       "display_name": "Tech Lead",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Technical Excellence",
+          "description": "Core technical skills, development practices, API design, and code quality"
+        },
+        "section_2": {
+          "name": "Architecture & Design",
+          "description": "System design, architectural patterns, scalability, and distributed systems"
+        },
+        "section_3": {
+          "name": "Cloud & Platform",
+          "description": "Cloud infrastructure, DevOps practices, CI/CD, and containerization"
+        },
+        "section_4": {
+          "name": "Team Leadership",
+          "description": "Technical mentorship, team guidance, agile practices, and stakeholder management"
+        }
+      },
       "persona": {
         "identity_statement": "hands-on technical leader and player-coach who drives delivery through technical excellence",
         "voice": "technically hands-on, pragmatic, team-oriented, delivery-focused",
@@ -1475,6 +1608,25 @@
     },
     "senior_engineer": {
       "display_name": "Senior Engineer",
+      "static_competency_sections": {
+        "_comment": "V2 Header Generation: Fixed 4 section names for core competencies. Skills assigned algorithmically, not by LLM.",
+        "section_1": {
+          "name": "Core Technologies",
+          "description": "Primary programming languages, frameworks, and backend development skills"
+        },
+        "section_2": {
+          "name": "Architecture & Design",
+          "description": "System design, architectural patterns, API design, and scalability"
+        },
+        "section_3": {
+          "name": "Cloud & DevOps",
+          "description": "Cloud platforms, containerization, CI/CD, and infrastructure practices"
+        },
+        "section_4": {
+          "name": "Delivery & Quality",
+          "description": "Agile practices, code quality, collaboration, and process improvement"
+        }
+      },
       "persona": {
         "identity_statement": "experienced software engineer with deep technical expertise who delivers high-impact solutions",
         "voice": "technically deep, solution-oriented, collaborative, pragmatic",
