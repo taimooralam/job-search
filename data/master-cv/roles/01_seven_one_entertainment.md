@@ -25,18 +25,27 @@ Per the CV generation critique recommendations:
 
 ### Achievement 1: Legacy Modernization & Platform Transformation
 
-**Core Fact**: Led multi-year transformation of large-scale legacy JavaScript monolithic AdTech platform (processing millions of impressions daily) into choreographed event-driven microservices in TypeScript on AWS (Lambda, EventBridge, ECS), achieving 75% incident reduction and zero downtime for 3 years while maintaining feature delivery.
+**Core Fact**: Diagnosed and transformed legacy 2015-era JavaScript AdTech platform—plagued by callback hell, mixed-criticality endpoints (consumer requests vs TV signal-affecting calls), and application-level anti-patterns—into autonomous event-driven TypeScript microservices on AWS. Shifted infrastructure responsibilities from application code to AWS-native services: caching to CloudFront, async orchestration to EventBridge choreography, observability to dedicated pipeline. Achieved 75% incident reduction, 3 years zero downtime, and reduced costs across people, compute, storage, and complexity—while continuously shipping features.
 
 **Variants**:
-- **Architecture**: Led multi-year transformation of legacy JavaScript monolith into event-driven TypeScript microservices on AWS, achieving 75% incident reduction and 3 years zero downtime
-- **Technical**: Architected TypeScript microservices migration on AWS (Lambda, EventBridge, ECS) from legacy JavaScript monolith, processing millions of daily impressions with 75% incident reduction
-- **Leadership**: Drove platform modernization initiative balancing continuous feature delivery with architectural transformation, achieving 75% incident reduction
-- **Impact**: Transformed AdTech platform serving millions of impressions into resilient microservices architecture with zero downtime for 3 consecutive years
-- **Short**: Legacy-to-microservices transformation—75% fewer incidents, 3 years zero downtime
+- **Architecture**: Transformed platform with mixed-criticality endpoints (consumer requests vs TV signal-affecting calls) into autonomous event-driven microservices, moving orchestration from frontend clients to EventBridge choreography—achieving zero-maintenance async workflows
+- **Technical**: Eliminated 2015-era callback hell and anti-patterns (app-level log aggregation, code-level caching) by migrating to TypeScript microservices with AWS-native infrastructure (CloudFront caching, EventBridge choreography, observability pipeline)
+- **Leadership**: Built organizational buy-in for infrastructure-first approach over application-level workarounds, convincing product ownership to invest in tech debt resolution that yielded 75% incident reduction
+- **Impact**: Reduced costs across 6 dimensions (people, knowledge, tech, compute, storage, complexity) through platform transformation—3 years zero downtime, 75% fewer incidents, near-zero maintenance
+- **Initiative**: Took ownership of neglected legacy system others avoided, driving multi-year transformation that converted a "don't touch it" monolith into a state-of-the-art autonomous platform
+- **Communication**: Bridged business and technical stakeholders using system visualizations (Miro diagrams) to explain why infrastructure investment would pay off—then delivered on that promise
+- **Short**: Legacy transformation—moved infra from app to AWS, 75% fewer incidents, 3yr zero downtime, zero maintenance
 
-**Keywords**: legacy modernization, microservices, TypeScript, AWS Lambda, EventBridge, ECS, event-driven architecture, monolith decomposition, AdTech, distributed systems, large-scale, system design, scalability
+**Keywords**: legacy modernization, microservices, TypeScript, AWS Lambda, EventBridge, ECS, CloudFront, event-driven architecture, choreography, monolith decomposition, AdTech, distributed systems, large-scale, system design, scalability, mixed-criticality, infrastructure-first, tech debt
 
-**Interview Defensibility**: ✅ Can explain decomposition strategy, event choreography patterns, why EventBridge, migration phases, how zero downtime was achieved
+**Interview Defensibility**: ✅ Can explain:
+- Why choreography over orchestration (frontend was orchestrating async workflows → moved to EventBridge; services became autonomous and auto-scalable; upfront investment → zero maintenance)
+- Mixed-criticality problem (some endpoints served millions of consumer requests with failure tolerance, others affected TV broadcast signal with zero tolerance)
+- Anti-patterns fixed (app-level log aggregation → observability pipeline; Redis caching in code → CloudFront at infra level; frontend orchestration → EventBridge choreography)
+- Buy-in challenges (team mindset shift from app to infra responsibility; product trust for tech debt investment; proving ROI through reduced incidents)
+- Unique approach (bird's-eye view to specifics; Miro diagrams to explain systems to both business and tech audiences)
+
+**Differentiators**: See `docs/differentiators.md` → Seven.One #1
 
 ---
 
