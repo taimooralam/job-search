@@ -238,6 +238,112 @@ class HeaderGenerationV2Output(TypedDict):
 
 **Testing:** 50 tests covering template validation, whitelist enforcement, JD prioritization, provenance tracking, and edge cases.
 
+### Phase 6.5 - Final Tailoring Pass with Keyword Emphasis
+
+**Overview:** Post-improver tailoring pass that strategically repositions keywords from JD annotations to prominent locations (headline, opening, competencies) while maintaining ATS compliance.
+
+**Components:**
+
+1. **CVTailorer Class** (`src/layer6_v2/cv_tailorer.py`)
+   - Single LLM call for targeted keyword repositioning
+   - Validates output against ATS constraints before committing
+   - Reverts to original CV on validation failure
+   - Decision logic in orchestrator via `_should_apply_tailoring()`
+
+2. **Keyword Emphasis Strategy**
+   - **Must-have keywords** (e.g., "SAP", "ERP") → Positioned in first 50 words of summary
+   - **Identity keywords** (e.g., "FinTech", "Cloud Architecture") → Positioned in headline
+   - **Core strength keywords** (from competencies) → Expanded in skills section
+   - Source: JD annotations with role-specific weighting
+
+3. **Post-Tailoring Validation**
+   - `ATSConstraintValidator.validate_tailored_cv()` checks:
+     - Length increase ≤ 5% (prevent ATS parsing errors from bloated CV)
+     - No formatting changes (maintains section integrity)
+     - No invented content (only repositions existing bullets)
+   - On failure: Automatically reverts to pre-tailored version (no manual recovery needed)
+
+**Data Flow:**
+
+```
+Improved CV (from Phase 6 improver)
+         ↓
+_should_apply_tailoring() decision
+         ↓ (if true)
+CVTailorer.tailor()
+         ↓
+Generate LLM prompt: "Reposition keywords in prominent locations"
+         ↓
+Apply edits (rewrite bullets to naturally include keywords)
+         ↓
+ATSConstraintValidator.validate_tailored_cv()
+         ↓
+   If valid: Return tailored CV
+   If invalid: Return original CV (auto-revert)
+```
+
+**Decision Logic (`_should_apply_tailoring()`):**
+
+- Apply if: `USE_TAILORING=true` AND JD has annotation highlights
+- Skip if: Annotation signals weak (< 3 must-have keywords) OR CV already contains keywords
+- Fallback: Always safe (revert on any validation failure)
+
+**Testing:** 33 comprehensive tests in `test_annotation_tailoring.py` covering:
+- Keyword extraction from annotations
+- Prominent location repositioning
+- ATS constraint validation
+- Auto-revert on failures
+- Edge cases (empty CV, all keywords present, etc.)
+
+**Files Changed:**
+- `src/layer6_v2/cv_tailorer.py` - New `CVTailorer` class
+- `src/layer6_v2/types.py` - New `TailoringResult` dataclass
+- `src/layer6_v2/orchestrator.py` - Integrated Phase 6.5 after improver, added `_should_apply_tailoring()`
+- `tests/unit/test_annotation_tailoring.py` - 33 tests with mocked LLM and validation
+
+**Feature Flag:** `USE_TAILORING=true` (can be disabled to skip phase)
+
+### Persona-Aware Role Generation
+
+**Overview:** Integrates candidate persona into role bullet generation for context-aware professional framing.
+
+**Components:**
+
+1. **Persona System Prompt Builder** (`src/layer6_v2/prompts/role_generation.py`)
+   - `build_role_system_prompt_with_persona()` function
+   - Injects persona context into LLM system prompt
+   - Persona frames bullet generation within professional identity (e.g., "You are a fintech architect describing achievements that demonstrate thought leadership in distributed systems")
+
+2. **Integration in RoleGenerator** (`src/layer6_v2/role_generator.py`)
+   - Calls `build_role_system_prompt_with_persona(persona)` before LLM bullet generation
+   - System prompt now includes: role context + persona identity + expected tone/style
+   - Improves bullet quality by aligning with candidate's professional brand
+
+3. **Data Model:**
+
+```python
+# From JobState (LangGraph state)
+persona: dict  # From master-cv.md metadata or user input
+  - professional_identity: str  # e.g., "fintech architect"
+  - key_themes: list[str]       # e.g., ["thought leadership", "system design"]
+  - tone: str                   # e.g., "authoritative", "collaborative"
+```
+
+**Example Persona System Prompt:**
+
+```
+You are a cloud infrastructure architect with deep expertise in
+distributed systems and enterprise DevOps. You value automation,
+scalability, and operational resilience. When describing achievements,
+emphasize architectural decisions, cross-team impact, and system outcomes.
+
+Generate role-specific bullets that...
+```
+
+**Files Changed:**
+- `src/layer6_v2/prompts/role_generation.py` - New persona prompt builder
+- `src/layer6_v2/role_generator.py` - Integrated persona into system prompt
+
 ### Claude CLI Text Format with Error Detection (FIXED)
 
 **Components:**
