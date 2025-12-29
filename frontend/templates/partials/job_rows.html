@@ -76,7 +76,7 @@
                 data-job-id="{{ job._id }}"
                 onclick="navigateToJob(event, '{{ job._id }}')"
                 onmouseenter="prefetchJobOnHover('{{ job._id }}')"
-                oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}'); return false;">
+                oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
                 <!-- Checkbox -->
                 <td class="px-4 py-3" onclick="event.stopPropagation()">
                     <input type="checkbox"

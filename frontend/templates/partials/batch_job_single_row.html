@@ -11,7 +11,8 @@
        hx-swap="outerHTML">
     <!-- Main row -->
     <tr class="job-row hover:theme-bg-hover border-b theme-border"
-        :class="{ 'theme-bg-hover': expanded }">
+        :class="{ 'theme-bg-hover': expanded }"
+        oncontextmenu="showBatchJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
         <!-- Expand toggle -->
         <td class="px-2 py-3 no-navigate" onclick="event.stopPropagation()">
             <button @click="expanded = toggleJobExpand('{{ job._id }}')"

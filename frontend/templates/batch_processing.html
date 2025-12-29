@@ -438,6 +438,41 @@
 
 {# Batch Page Sidebars - for JD annotations, contacts, and CV editor #}
 {% include 'partials/batch/_batch_sidebars.html' %}
+
+<!-- Batch Job Row Context Menu -->
+<div id="batch-job-context-menu" class="cli-context-menu hidden" style="position: fixed; z-index: 9999;">
+    <button onclick="batchContextMenuAction('open')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Open in New Tab
+    </button>
+    <button id="batch-context-menu-open-job-url" onclick="batchContextMenuAction('openJobUrl')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+        </svg>
+        Open Job URL
+    </button>
+    <div class="cli-context-divider"></div>
+    <button onclick="batchContextMenuAction('process')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Process Job
+    </button>
+    <button onclick="batchContextMenuAction('applied')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Mark as Applied
+    </button>
+    <button onclick="batchContextMenuAction('discard')" class="cli-context-item">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+        </svg>
+        Discard
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -477,6 +512,119 @@
     // ============================================================================
 
     const batchSelectedJobs = new Set();
+
+    // ============================================================================
+    // Batch Job Context Menu
+    // ============================================================================
+
+    let batchContextMenuTargetJobId = null;
+    let batchContextMenuTargetJobTitle = null;
+    let batchContextMenuTargetJobUrl = null;
+
+    function showBatchJobContextMenu(event, jobId, jobTitle, jobUrl) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const menu = document.getElementById('batch-job-context-menu');
+        if (!menu) return;
+
+        // Store target job info
+        batchContextMenuTargetJobId = jobId;
+        batchContextMenuTargetJobTitle = jobTitle || 'this job';
+        batchContextMenuTargetJobUrl = jobUrl || null;
+
+        // Show/hide the "Open Job URL" option based on whether URL exists
+        const openJobUrlBtn = document.getElementById('batch-context-menu-open-job-url');
+        if (openJobUrlBtn) {
+            openJobUrlBtn.style.display = jobUrl ? 'flex' : 'none';
+        }
+
+        // Position menu at click location, but ensure it stays on screen
+        const menuWidth = 180;
+        const menuHeight = 200;
+        let x = event.clientX;
+        let y = event.clientY;
+
+        if (x + menuWidth > window.innerWidth) {
+            x = window.innerWidth - menuWidth - 10;
+        }
+        if (y + menuHeight > window.innerHeight) {
+            y = y - menuHeight;
+        }
+
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+        menu.classList.remove('hidden');
+
+        setTimeout(() => {
+            document.addEventListener('click', hideBatchContextMenuOnClickOutside);
+            document.addEventListener('keydown', hideBatchContextMenuOnEscape);
+        }, 0);
+    }
+
+    function hideBatchJobContextMenu() {
+        const menu = document.getElementById('batch-job-context-menu');
+        if (menu) {
+            menu.classList.add('hidden');
+        }
+        batchContextMenuTargetJobId = null;
+        batchContextMenuTargetJobTitle = null;
+        batchContextMenuTargetJobUrl = null;
+        document.removeEventListener('click', hideBatchContextMenuOnClickOutside);
+        document.removeEventListener('keydown', hideBatchContextMenuOnEscape);
+    }
+
+    function hideBatchContextMenuOnClickOutside(event) {
+        const menu = document.getElementById('batch-job-context-menu');
+        if (menu && !menu.contains(event.target)) {
+            hideBatchJobContextMenu();
+        }
+    }
+
+    function hideBatchContextMenuOnEscape(event) {
+        if (event.key === 'Escape') {
+            hideBatchJobContextMenu();
+        }
+    }
+
+    async function batchContextMenuAction(action) {
+        const jobId = batchContextMenuTargetJobId;
+        const jobTitle = batchContextMenuTargetJobTitle;
+        const jobUrl = batchContextMenuTargetJobUrl;
+
+        if (!jobId) {
+            hideBatchJobContextMenu();
+            return;
+        }
+
+        hideBatchJobContextMenu();
+
+        switch (action) {
+            case 'open':
+                window.open(`/job/${jobId}`, '_blank');
+                break;
+
+            case 'openJobUrl':
+                if (jobUrl) {
+                    window.open(jobUrl, '_blank');
+                } else {
+                    showToast('No external URL available for this job', 'warning');
+                }
+                break;
+
+            case 'process':
+                processSingleBatchJob(jobId);
+                break;
+
+            case 'applied':
+                await updateBatchJobStatus(jobId, 'applied');
+                break;
+
+            case 'discard':
+                await updateBatchJobStatus(jobId, 'discarded');
+                break;
+        }
+    }
     // Unified tier labels and icons (Phase 2 refactoring)
     const tierLabels = {
         'fast': 'Fast',

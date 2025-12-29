@@ -2694,14 +2694,16 @@
         // Context menu state
         let contextMenuTargetJobId = null;
         let contextMenuTargetJobTitle = null;
+        let contextMenuTargetJobUrl = null;
 
         /**
          * Show the context menu at the click position
          * @param {Event} event - The contextmenu event
          * @param {string} jobId - The job ID
          * @param {string} jobTitle - The job title for display
+         * @param {string} jobUrl - The external job URL (optional)
          */
-        function showJobContextMenu(event, jobId, jobTitle) {
+        function showJobContextMenu(event, jobId, jobTitle, jobUrl) {
             event.preventDefault();
             event.stopPropagation();
 
@@ -2711,6 +2713,13 @@
             // Store target job info
             contextMenuTargetJobId = jobId;
             contextMenuTargetJobTitle = jobTitle || 'this job';
+            contextMenuTargetJobUrl = jobUrl || null;
+
+            // Show/hide the "Open Job URL" option based on whether URL exists
+            const openJobUrlBtn = document.getElementById('context-menu-open-job-url');
+            if (openJobUrlBtn) {
+                openJobUrlBtn.style.display = jobUrl ? 'flex' : 'none';
+            }
 
             // Position menu at click location, but ensure it stays on screen
             const menuWidth = 180;
@@ -2749,6 +2758,7 @@
             }
             contextMenuTargetJobId = null;
             contextMenuTargetJobTitle = null;
+            contextMenuTargetJobUrl = null;
             document.removeEventListener('click', hideJobContextMenuOnClickOutside);
             document.removeEventListener('keydown', hideJobContextMenuOnEscape);
         }
@@ -2773,6 +2783,7 @@
         async function contextMenuAction(action) {
             const jobId = contextMenuTargetJobId;
             const jobTitle = contextMenuTargetJobTitle;
+            const jobUrl = contextMenuTargetJobUrl;
 
             if (!jobId) {
                 hideJobContextMenu();
@@ -2790,6 +2801,15 @@
                 case 'open':
                     // Open job detail in new tab
                     window.open(`/job/${jobId}`, '_blank');
+                    break;
+
+                case 'openJobUrl':
+                    // Open external job URL in new tab
+                    if (jobUrl) {
+                        window.open(jobUrl, '_blank');
+                    } else {
+                        showToast('No external URL available for this job', 'warning');
+                    }
                     break;
 
                 case 'applied':
