@@ -473,6 +473,228 @@ class StitchedCV:
 
 # ===== PHASE 5: HEADER GENERATOR TYPES =====
 
+# ----- Header Generation V2 Types (Anti-Hallucination) -----
+
+
+@dataclass
+class AchievementSource:
+    """
+    Tracks the source of a key achievement bullet for traceability.
+
+    V2 Header Generation: Each key achievement in the profile MUST trace back
+    to a specific bullet in the master CV. This dataclass provides the proof.
+
+    Anti-hallucination guarantee:
+    - bullet_text: The exact text used in the CV
+    - source_bullet: The original bullet from role_bullets_summary
+    - source_role_id: Which role file it came from
+    - match_confidence: How closely it matches (1.0 = exact, 0.8+ = tailored)
+    """
+
+    bullet_text: str                           # The text shown in CV key achievements
+    source_bullet: str                         # Original bullet from master CV
+    source_role_id: str                        # e.g., "01_seven_one_entertainment"
+    source_role_title: str                     # e.g., "Head of Software Development"
+    match_confidence: float = 1.0              # 1.0 = exact, 0.8+ = tailored version
+    tailoring_applied: bool = False            # Whether LLM tailored the bullet
+    tailoring_changes: Optional[str] = None    # Description of changes made
+    scoring_breakdown: Dict[str, float] = field(default_factory=dict)  # pain_point: 2.0, keyword: 0.5, etc.
+
+    @property
+    def is_exact_match(self) -> bool:
+        """Check if bullet is an exact match from source."""
+        return self.match_confidence >= 0.99 and not self.tailoring_applied
+
+    @property
+    def total_score(self) -> float:
+        """Total score from scoring breakdown."""
+        return sum(self.scoring_breakdown.values())
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "bullet_text": self.bullet_text,
+            "source_bullet": self.source_bullet,
+            "source_role_id": self.source_role_id,
+            "source_role_title": self.source_role_title,
+            "match_confidence": self.match_confidence,
+            "tailoring_applied": self.tailoring_applied,
+            "tailoring_changes": self.tailoring_changes,
+            "scoring_breakdown": self.scoring_breakdown,
+            "is_exact_match": self.is_exact_match,
+            "total_score": self.total_score,
+        }
+
+
+@dataclass
+class SkillsProvenance:
+    """
+    Tracks the provenance of skills in core competencies section.
+
+    V2 Header Generation: Every skill in the final CV MUST exist in the
+    candidate's whitelist (hard_skills + soft_skills from master CV).
+    JD keywords are used for PRIORITIZATION only, not ADDITION.
+
+    Anti-hallucination guarantee:
+    - all_from_whitelist: True if every skill exists in candidate's whitelist
+    - jd_matched_skills: Skills that matched JD keywords (prioritized)
+    - whitelist_only_skills: Skills not in JD but in candidate whitelist
+    - rejected_jd_skills: JD skills NOT in whitelist (prevented hallucination)
+    """
+
+    all_from_whitelist: bool = True            # Critical: must be True for valid CV
+    whitelist_source: str = ""                 # "master_cv" | "role_skills_taxonomy"
+    total_skills_selected: int = 0             # Total skills in final CV
+    jd_matched_skills: List[str] = field(default_factory=list)      # Skills matching JD
+    whitelist_only_skills: List[str] = field(default_factory=list)  # Skills not in JD
+    rejected_jd_skills: List[str] = field(default_factory=list)     # JD skills we refused to add
+    skills_by_section: Dict[str, List[str]] = field(default_factory=dict)  # section_name → skills
+
+    @property
+    def jd_match_ratio(self) -> float:
+        """Ratio of skills that matched JD keywords."""
+        if self.total_skills_selected == 0:
+            return 0.0
+        return len(self.jd_matched_skills) / self.total_skills_selected
+
+    @property
+    def hallucination_prevented_count(self) -> int:
+        """Number of JD skills we prevented from being added."""
+        return len(self.rejected_jd_skills)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "all_from_whitelist": self.all_from_whitelist,
+            "whitelist_source": self.whitelist_source,
+            "total_skills_selected": self.total_skills_selected,
+            "jd_matched_skills": self.jd_matched_skills,
+            "whitelist_only_skills": self.whitelist_only_skills,
+            "rejected_jd_skills": self.rejected_jd_skills,
+            "skills_by_section": self.skills_by_section,
+            "jd_match_ratio": self.jd_match_ratio,
+            "hallucination_prevented_count": self.hallucination_prevented_count,
+        }
+
+
+@dataclass
+class CoreCompetencySection:
+    """
+    A single core competency section in the V2 header format.
+
+    V2 Header Generation: Each role category has exactly 4 static sections
+    (not LLM-generated). Section names are pre-defined in role_skills_taxonomy.json.
+
+    Example for engineering_manager:
+    - Technical Leadership: skill1, skill2, ...
+    - People Management: skill1, skill2, ...
+    - Cloud & Platform: skill1, skill2, ...
+    - Delivery & Process: skill1, skill2, ...
+    """
+
+    name: str                                  # Static section name (from taxonomy)
+    skills: List[str]                          # Skills in priority order
+    jd_matched_count: int = 0                  # How many matched JD keywords
+    max_skills: int = 10                       # Maximum skills to include
+
+    @property
+    def skill_count(self) -> int:
+        """Number of skills in this section."""
+        return len(self.skills)
+
+    @property
+    def jd_match_ratio(self) -> float:
+        """Ratio of skills that matched JD."""
+        if self.skill_count == 0:
+            return 0.0
+        return self.jd_matched_count / self.skill_count
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "name": self.name,
+            "skills": self.skills,
+            "jd_matched_count": self.jd_matched_count,
+            "max_skills": self.max_skills,
+            "skill_count": self.skill_count,
+            "jd_match_ratio": self.jd_match_ratio,
+        }
+
+    def to_markdown(self) -> str:
+        """Format as markdown for CV output."""
+        skills_str = ", ".join(self.skills)
+        return f"**{self.name}:** {skills_str}"
+
+
+@dataclass
+class SelectionResult:
+    """
+    Result of achievement bullet selection for V2 header generation.
+
+    Tracks whether we found enough high-quality bullets and any warnings.
+    """
+
+    bullets_selected: int                      # Number of bullets selected
+    target_count: int = 6                      # Target number (5-6)
+    needs_review: bool = False                 # True if insufficient relevant bullets
+    warning_message: Optional[str] = None      # e.g., "Only 4 relevant bullets found"
+    lowest_score_selected: float = 0.0         # Score of lowest-scoring selected bullet
+
+    @property
+    def met_target(self) -> bool:
+        """Check if we met the target count."""
+        return self.bullets_selected >= self.target_count - 1  # Allow 5 for target 6
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "bullets_selected": self.bullets_selected,
+            "target_count": self.target_count,
+            "needs_review": self.needs_review,
+            "warning_message": self.warning_message,
+            "lowest_score_selected": self.lowest_score_selected,
+            "met_target": self.met_target,
+        }
+
+
+@dataclass
+class ScoringWeights:
+    """
+    Configurable weights for achievement bullet scoring algorithm.
+
+    V2 Header Generation: Bullets are scored to select the most relevant
+    for the key achievements section. Higher scores = more relevant to JD.
+    """
+
+    pain_point_match: float = 2.0              # Per matched pain point
+    annotation_suggested: float = 3.0          # If annotation recommends this bullet
+    keyword_match: float = 0.5                 # Per JD keyword found in bullet
+    core_strength: float = 1.5                 # Demonstrates candidate core strength
+    emphasis_area: float = 1.5                 # Matches annotation emphasis area
+    competency_weight: float = 1.0             # Matches JD competency dimension
+    recency_current_role: float = 1.0          # Bullet is from current role
+    recency_previous_role: float = 0.5         # Bullet is from previous role
+    recency_old_role: float = 0.0              # Bullet is from older role
+    variant_type_match: float = 1.0            # Bullet variant matches JD emphasis
+    interview_defensible: float = 0.5          # Marked as interview-defensible
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "pain_point_match": self.pain_point_match,
+            "annotation_suggested": self.annotation_suggested,
+            "keyword_match": self.keyword_match,
+            "core_strength": self.core_strength,
+            "emphasis_area": self.emphasis_area,
+            "competency_weight": self.competency_weight,
+            "recency_current_role": self.recency_current_role,
+            "recency_previous_role": self.recency_previous_role,
+            "recency_old_role": self.recency_old_role,
+            "variant_type_match": self.variant_type_match,
+            "interview_defensible": self.interview_defensible,
+        }
+
+
 # ----- Skills Taxonomy Types (Role-Based Skills Selection) -----
 
 @dataclass
@@ -711,6 +933,13 @@ class ProfileOutput:
     2. What problems can you solve? (Relevance) - answered by key_achievements
     3. What proof do you have? (Evidence) - answered by key_achievements with metrics
     4. Why should they call you? (Differentiation) - answered by tagline
+
+    V2 Header Generation (USE_HEADER_V2=true):
+    - value_proposition: Replaces tagline with role-specific formula
+    - achievement_sources: Full traceability for each key achievement
+    - skills_provenance: Proves all skills are from whitelist (anti-hallucination)
+    - core_competencies_v2: Dict[str, List[str]] with static section names
+    - summary_type: "executive_summary" (Director+) or "professional_summary" (others)
     """
 
     # Core content - Hybrid Executive Summary structure
@@ -745,6 +974,30 @@ class ProfileOutput:
     provenance: Optional[Any] = None           # HeaderProvenance for annotation tracing
     annotation_influenced: bool = False        # Whether annotations affected generation
 
+    # ===== V2 HEADER GENERATION FIELDS (Anti-Hallucination) =====
+    # These are optional and only populated when USE_HEADER_V2=true
+
+    # V2: Value Proposition (replaces tagline)
+    value_proposition: str = ""                # Role-specific: [Domain] + [Scale] + [Impact]
+
+    # V2: Achievement traceability (proves each bullet exists in master CV)
+    achievement_sources: List[Any] = field(default_factory=list)  # List[AchievementSource]
+
+    # V2: Skills provenance (proves all skills from whitelist)
+    skills_provenance: Optional[Any] = None    # SkillsProvenance
+
+    # V2: Core competencies with static section names
+    core_competencies_v2: Dict[str, List[str]] = field(default_factory=dict)  # section_name → skills
+
+    # V2: Summary type based on role level
+    summary_type: str = "professional_summary"  # "executive_summary" | "professional_summary"
+
+    # V2: Generation mode tracking
+    generation_mode: str = "v1"                # "v1" | "v2" - which generation path was used
+
+    # V2: Selection result (for warnings about insufficient bullets)
+    selection_result: Optional[Any] = None     # SelectionResult
+
     def __post_init__(self):
         """Calculate word count and ensure backward compatibility."""
         # Calculate word count from tagline + key_achievements (primary content)
@@ -762,6 +1015,25 @@ class ProfileOutput:
     def is_hybrid_format(self) -> bool:
         """Check if using new hybrid format vs legacy narrative."""
         return bool(self.tagline and self.key_achievements)
+
+    @property
+    def is_v2_format(self) -> bool:
+        """Check if using V2 header generation (anti-hallucination)."""
+        return self.generation_mode == "v2"
+
+    @property
+    def effective_tagline(self) -> str:
+        """Get the effective tagline (value_proposition in V2, tagline in V1)."""
+        if self.is_v2_format and self.value_proposition:
+            return self.value_proposition
+        return self.tagline
+
+    @property
+    def effective_summary_title(self) -> str:
+        """Get the summary section title based on role level."""
+        if self.summary_type == "executive_summary":
+            return "EXECUTIVE SUMMARY"
+        return "PROFESSIONAL SUMMARY"
 
     @property
     def formatted_summary(self) -> str:
@@ -820,7 +1092,7 @@ class ProfileOutput:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
-        return {
+        result = {
             "headline": self.headline,
             "tagline": self.tagline,                    # NEW: Hybrid format
             "key_achievements": self.key_achievements,  # NEW: Hybrid format
@@ -842,6 +1114,40 @@ class ProfileOutput:
             "provenance": self.provenance.to_dict() if self.provenance else None,
             "annotation_influenced": self.annotation_influenced,
         }
+
+        # V2 fields (only included if V2 generation was used)
+        if self.is_v2_format:
+            result.update({
+                "generation_mode": self.generation_mode,
+                "value_proposition": self.value_proposition,
+                "summary_type": self.summary_type,
+                "core_competencies_v2": self.core_competencies_v2,
+                "is_v2_format": True,
+                "effective_tagline": self.effective_tagline,
+                "effective_summary_title": self.effective_summary_title,
+                # Achievement sources with full traceability
+                "achievement_sources": [
+                    s.to_dict() if hasattr(s, 'to_dict') else s
+                    for s in self.achievement_sources
+                ],
+                # Skills provenance for anti-hallucination proof
+                "skills_provenance": (
+                    self.skills_provenance.to_dict()
+                    if self.skills_provenance and hasattr(self.skills_provenance, 'to_dict')
+                    else self.skills_provenance
+                ),
+                # Selection result for warnings
+                "selection_result": (
+                    self.selection_result.to_dict()
+                    if self.selection_result and hasattr(self.selection_result, 'to_dict')
+                    else self.selection_result
+                ),
+            })
+        else:
+            result["generation_mode"] = "v1"
+            result["is_v2_format"] = False
+
+        return result
 
     @classmethod
     def from_legacy(
