@@ -613,6 +613,11 @@ document.addEventListener('alpine:init', () => {
             }
         }
     });
+
+    // Register components with Alpine.data()
+    // Note: Function declarations are hoisted, so they're available even though defined below
+    Alpine.data('claudeExtractionButton', claudeExtractionButton);
+    Alpine.data('pipelineCard', pipelineCard);
 });
 
 /* ============================================================================

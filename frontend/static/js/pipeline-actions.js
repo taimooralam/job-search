@@ -1226,6 +1226,12 @@ document.addEventListener('alpine:init', () => {
             Alpine.store('pipeline').tiers[action] = saved;
         }
     });
+
+    // Register components with Alpine.data()
+    // This ensures the components are available when Alpine parses x-data expressions
+    // Note: Function declarations are hoisted, so they're available even though defined below
+    Alpine.data('tieredActionButton', tieredActionButton);
+    Alpine.data('pipelineCostDisplay', pipelineCostDisplay);
 });
 
 /* ============================================================================
@@ -1261,41 +1267,47 @@ function tieredActionButton(config) {
         open: false,
         customLabel: config.label || null,
 
-        // Computed properties
+        // Computed properties (with defensive null checks for store availability)
         get label() {
             return this.customLabel || PIPELINE_CONFIG.labels[this.action] || this.action;
         },
 
         get tier() {
-            return Alpine.store('pipeline').getTier(this.action);
+            const store = Alpine.store('pipeline');
+            return store ? store.getTier(this.action) : 'balanced';
         },
 
         get model() {
-            return Alpine.store('pipeline').getModel(this.action);
+            const store = Alpine.store('pipeline');
+            return store ? store.getModel(this.action) : 'gpt-4o-mini';
         },
 
         get cost() {
-            return Alpine.store('pipeline').getCost(this.tier);
+            const store = Alpine.store('pipeline');
+            return store ? store.getCost(this.tier) : 0;
         },
 
         get formattedCost() {
-            return Alpine.store('pipeline').getFormattedCost(this.tier);
+            const store = Alpine.store('pipeline');
+            return store ? store.getFormattedCost(this.tier) : '$0.00';
         },
 
         get loading() {
-            return Alpine.store('pipeline').loading[this.action];
+            const store = Alpine.store('pipeline');
+            return store ? store.loading[this.action] : false;
         },
 
         get tierInfo() {
-            return Alpine.store('pipeline').getTierInfo(this.tier);
+            const store = Alpine.store('pipeline');
+            return store ? store.getTierInfo(this.tier) : { icon: '⚡', label: 'Balanced' };
         },
 
         get tierIcon() {
-            return this.tierInfo.icon;
+            return this.tierInfo?.icon || '⚡';
         },
 
         get tierLabel() {
-            return this.tierInfo.label;
+            return this.tierInfo?.label || 'Balanced';
         },
 
         get models() {

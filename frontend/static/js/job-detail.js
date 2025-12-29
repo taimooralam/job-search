@@ -50,6 +50,11 @@ function stickyHeader() {
 // Expose stickyHeader globally for Alpine.js
 window.stickyHeader = stickyHeader;
 
+// Register with Alpine.data() for proper initialization
+document.addEventListener('alpine:init', () => {
+    Alpine.data('stickyHeader', stickyHeader);
+});
+
 // Track highest layer reached (monotonic progress)
 let highestLayerReached = 0;
 const layerOrder = ['intake', 'pain_points', 'company_research', 'role_research', 'fit_scoring', 'people_mapping', 'cv_outreach_generation'];
