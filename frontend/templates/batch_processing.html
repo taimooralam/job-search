@@ -87,7 +87,7 @@
             <div class="h-6 w-px theme-bg-tertiary"></div>
 
             <!-- Pipeline Operations Dropdown (Unified Menu) -->
-            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+            <div id="pipeline-dropdown" class="relative btn-with-hint" x-data="{ open: false }" @click.away="open = false">
                 <button @click="open = !open"
                         id="batch-process-btn"
                         disabled
@@ -201,10 +201,11 @@
                         </button>
                     </div>
                 </div>
+                <span class="shortcut-hint">(P)</span>
             </div>
 
             <!-- Unified Tier Selection (Fast/Balanced/Quality) -->
-            <div class="relative" x-data="{ open: false }" @click.away="open = false">
+            <div id="tier-dropdown" class="relative btn-with-hint" x-data="{ open: false }" @click.away="open = false">
                 <input type="hidden" id="batch-tier" value="balanced">
                 <button @click="open = !open"
                         class="btn btn-ghost btn-md flex items-center gap-2">
@@ -252,50 +253,63 @@
                         </button>
                     </div>
                 </div>
+                <span class="shortcut-hint">(T)</span>
             </div>
 
             <div class="h-6 w-px theme-bg-tertiary"></div>
 
             <!-- Status Actions -->
-            <button id="batch-mark-applied-btn"
-                    onclick="batchUpdateStatus('applied')"
-                    disabled
-                    class="btn btn-primary btn-md">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Mark Applied
-            </button>
+            <div class="btn-with-hint">
+                <button id="batch-mark-applied-btn"
+                        onclick="batchUpdateStatus('applied')"
+                        disabled
+                        class="btn btn-primary btn-md">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Mark Applied
+                </button>
+                <span class="shortcut-hint">(A)</span>
+            </div>
 
-            <button id="batch-mark-ready-btn"
-                    onclick="batchUpdateStatus('ready for applying')"
-                    disabled
-                    class="btn btn-secondary btn-md">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                Mark Ready
-            </button>
+            <div class="btn-with-hint">
+                <button id="batch-mark-ready-btn"
+                        onclick="batchUpdateStatus('ready for applying')"
+                        disabled
+                        class="btn btn-secondary btn-md">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Mark Ready
+                </button>
+                <span class="shortcut-hint">(R)</span>
+            </div>
 
-            <button id="batch-discard-btn"
-                    onclick="batchUpdateStatus('discarded')"
-                    disabled
-                    class="btn btn-ghost btn-md text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                </svg>
-                Discard
-            </button>
+            <div class="btn-with-hint">
+                <button id="batch-discard-btn"
+                        onclick="batchUpdateStatus('discarded')"
+                        disabled
+                        class="btn btn-ghost btn-md text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                    Discard
+                </button>
+                <span class="shortcut-hint">(D)</span>
+            </div>
 
-            <button id="batch-delete-btn"
-                    onclick="openBatchDeleteModal()"
-                    disabled
-                    class="btn btn-danger btn-md">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Delete
-            </button>
+            <div class="btn-with-hint">
+                <button id="batch-delete-btn"
+                        onclick="openBatchDeleteModal()"
+                        disabled
+                        class="btn btn-danger btn-md">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Delete
+                </button>
+                <span class="shortcut-hint">(⌫)</span>
+            </div>
         </div>
     </div>
 
@@ -928,6 +942,11 @@
         document.getElementById('batch-discard-btn').disabled = !hasSelection;
         document.getElementById('batch-delete-btn').disabled = !hasSelection;
 
+        // Toggle keyboard shortcut hint visibility
+        document.querySelectorAll('.shortcut-hint').forEach(hint => {
+            hint.classList.toggle('visible', hasSelection);
+        });
+
         // Update select-all checkbox state
         const allCheckboxes = document.querySelectorAll('.batch-row-checkbox');
         const selectAll = document.getElementById('batch-select-all');
@@ -1097,6 +1116,48 @@
     // Keyboard Shortcuts
     // ============================================================================
 
+    // Track which dropdown is currently open for number key selection
+    let activeDropdown = null; // 'pipeline' | 'tier' | null
+
+    // Pipeline operations mapped to number keys
+    const pipelineOperations = [
+        'full-analysis',        // 1
+        'analyze-job',          // 2
+        'prepare-annotations',  // 3
+        'research-company',     // 4
+        'discover-contacts',    // 5
+        'generate-cv',          // 6
+        'generate-cover-letter',// 7
+        'generate-outreach'     // 8
+    ];
+
+    // Tier options mapped to number keys
+    const tierOptions = ['fast', 'balanced', 'quality']; // 1, 2, 3
+
+    // Helper to toggle dropdown via Alpine.js
+    function toggleDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown && dropdown.__x) {
+            const isOpen = dropdown.__x.$data.open;
+            // Close any other open dropdown first
+            closeAllDropdowns();
+            if (!isOpen) {
+                dropdown.__x.$data.open = true;
+                activeDropdown = dropdownId === 'pipeline-dropdown' ? 'pipeline' : 'tier';
+            } else {
+                activeDropdown = null;
+            }
+        }
+    }
+
+    function closeAllDropdowns() {
+        const pipelineDropdown = document.getElementById('pipeline-dropdown');
+        const tierDropdown = document.getElementById('tier-dropdown');
+        if (pipelineDropdown && pipelineDropdown.__x) pipelineDropdown.__x.$data.open = false;
+        if (tierDropdown && tierDropdown.__x) tierDropdown.__x.$data.open = false;
+        activeDropdown = null;
+    }
+
     function setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             // Skip if user is typing in an input field
@@ -1124,9 +1185,15 @@
                 return;
             }
 
-            // Escape: Clear selection or close modals
+            // Escape: Close dropdowns, modals, or clear selection
             if (e.key === 'Escape') {
-                // First try to close any open modals
+                // First try to close open dropdowns
+                if (activeDropdown) {
+                    closeAllDropdowns();
+                    return;
+                }
+
+                // Then try to close any open modals
                 const deleteModal = document.getElementById('batch-delete-modal');
                 const shortcutsModal = document.getElementById('keyboard-shortcuts-modal');
 
@@ -1147,16 +1214,64 @@
             // Skip single-key shortcuts if input is focused
             if (isInputFocused) return;
 
-            // 'd': Mark selected as discarded
-            if (e.key === 'd' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            // Number keys 1-9: Select dropdown item when dropdown is open
+            if (activeDropdown && e.key >= '1' && e.key <= '9' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                const index = parseInt(e.key) - 1;
+                e.preventDefault();
+
+                if (activeDropdown === 'pipeline' && index < pipelineOperations.length) {
+                    executeBatchOperation(pipelineOperations[index]);
+                    closeAllDropdowns();
+                } else if (activeDropdown === 'tier' && index < tierOptions.length) {
+                    setBatchTier(tierOptions[index]);
+                    closeAllDropdowns();
+                }
+                return;
+            }
+
+            // P: Toggle pipeline dropdown (only when jobs selected)
+            if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (batchSelectedJobs.size > 0) {
+                    e.preventDefault();
+                    toggleDropdown('pipeline-dropdown');
+                }
+                return;
+            }
+
+            // T: Toggle tier dropdown
+            if ((e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                toggleDropdown('tier-dropdown');
+                return;
+            }
+
+            // Backspace/Delete: Open delete modal
+            if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (batchSelectedJobs.size > 0) {
+                    e.preventDefault();
+                    openBatchDeleteModal();
+                }
+                return;
+            }
+
+            // R: Mark selected as ready
+            if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (batchSelectedJobs.size > 0) {
+                    batchUpdateStatus('ready for applying');
+                }
+                return;
+            }
+
+            // D: Mark selected as discarded
+            if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 if (batchSelectedJobs.size > 0) {
                     batchUpdateStatus('discarded');
                 }
                 return;
             }
 
-            // 'a' (without Ctrl): Mark selected as applied
-            if (e.key === 'a' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            // A (without Ctrl): Mark selected as applied
+            if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 if (batchSelectedJobs.size > 0) {
                     batchUpdateStatus('applied');
                 }
