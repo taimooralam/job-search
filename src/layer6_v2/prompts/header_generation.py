@@ -883,6 +883,416 @@ Combine the best elements:
 Generate the synthesized hybrid executive summary JSON:"""
 
 
+# ============================================================================
+# V2 HEADER GENERATION PROMPTS (Anti-Hallucination)
+# ============================================================================
+#
+# These prompts implement the new 3-component header generation system:
+# 1. Value Proposition Statement (replaces tagline)
+# 2. Key Achievement Bullets (selection + tailoring from master CV)
+# 3. Core Competencies (algorithmic - no LLM prompt needed)
+#
+# Key guarantees:
+# - All achievements trace back to master CV bullets
+# - All skills come from candidate whitelist
+# - JD keywords used for PRIORITIZATION only, not ADDITION
+# ============================================================================
+
+
+# ---- Value Proposition Templates by Role Level ----
+
+VALUE_PROPOSITION_TEMPLATES = {
+    "senior_engineer": {
+        "formula": "[Technical domain] engineer with [X years] experience [building/scaling specific systems] that [business impact].",
+        "examples": [
+            "Backend engineer with 8+ years experience building high-throughput payment systems processing $2B+ annually.",
+            "Full-stack engineer with expertise in TypeScript and cloud-native architectures, delivering platforms serving 10M+ users.",
+            "Software engineer specialized in distributed systems and API design, reducing latency by 60% for mission-critical services.",
+        ],
+        "emphasis": ["technical depth", "system scale", "performance metrics"],
+    },
+    "tech_lead": {
+        "formula": "[Technical leadership role] with [X years] leading teams to [deliver/architect/scale specific outcome].",
+        "examples": [
+            "Tech lead with 10+ years leading teams to deliver cloud-native platforms reducing infrastructure costs by 40%.",
+            "Hands-on technical leader guiding engineering teams to architect microservices processing 50M+ daily transactions.",
+            "Player-coach tech lead combining deep TypeScript expertise with team mentorship to ship products 3x faster.",
+        ],
+        "emphasis": ["hands-on leadership", "team guidance", "delivery acceleration"],
+    },
+    "staff_principal_engineer": {
+        "formula": "[Architect/system thinker] with [X years] driving [architectural decisions/technical strategy] at [scope/scale].",
+        "examples": [
+            "System architect with 12+ years driving event-driven architecture adoption across 5 product teams.",
+            "Principal engineer with deep expertise in distributed systems, establishing platform standards for 200+ engineers.",
+            "Technical strategist with 15+ years architecting systems handling 100M+ daily requests with 99.99% availability.",
+        ],
+        "emphasis": ["cross-team influence", "architectural decisions", "technical depth"],
+    },
+    "engineering_manager": {
+        "formula": "[Leadership identity] with [X years] building [team size/type] that [delivery/culture/outcome metric].",
+        "examples": [
+            "Engineering leader with 10+ years building teams of 25+ engineers delivering platform capabilities 3x faster.",
+            "Team builder with track record of scaling engineering organizations from 5 to 40+ while maintaining 95% retention.",
+            "Engineering manager combining technical depth with people leadership to grow high-performing teams across 3 regions.",
+        ],
+        "emphasis": ["team scaling", "retention", "delivery velocity"],
+    },
+    "head_of_engineering": {
+        "formula": "[Function builder/culture champion] with [X years] creating [engineering organization description] that [business outcome].",
+        "examples": [
+            "Engineering executive with 15+ years building engineering functions from scratch to 50+ engineers.",
+            "Function builder with track record of transforming startup engineering into enterprise-grade organizations.",
+            "Engineering leader who created world-class teams driving $50M+ annual revenue through platform innovation.",
+        ],
+        "emphasis": ["function building", "zero-to-one", "culture creation"],
+    },
+    "director_of_engineering": {
+        "formula": "[Organizational leader] with [X years] scaling [engineering organization scope] to deliver [strategic outcome].",
+        "examples": [
+            "Engineering director with 15+ years scaling multi-team organizations delivering complex platform transformations.",
+            "Organizational builder with experience managing 50+ engineers across 5 teams while driving 40% efficiency gains.",
+            "Strategic engineering leader aligning technology investments with business objectives for $100M+ impact.",
+        ],
+        "emphasis": ["multi-team leadership", "organizational scale", "strategic delivery"],
+    },
+    "vp_engineering": {
+        "formula": "[Engineering executive] with [X years] leading [org scope] to achieve [business-level outcome].",
+        "examples": [
+            "Engineering VP with 18+ years leading 100+ engineer organizations through IPO-readiness transformations.",
+            "Executive engineering leader with track record of building engineering excellence at scale across multiple business units.",
+            "Operational excellence leader driving engineering organizations to 99.99% reliability while reducing costs by 35%.",
+        ],
+        "emphasis": ["executive presence", "organizational scale", "business partnership"],
+    },
+    "cto": {
+        "formula": "[Technology visionary] with [X years] transforming [business scope] through [technology strategy/innovation].",
+        "examples": [
+            "Technology visionary with 20+ years transforming enterprises through cloud-native and AI-driven architectures.",
+            "CTO with track record of building $500M+ technology organizations aligned to business growth objectives.",
+            "Technology strategist driving digital transformation resulting in 3x revenue growth through platform innovation.",
+        ],
+        "emphasis": ["business transformation", "technology vision", "board-level impact"],
+    },
+}
+
+
+VALUE_PROPOSITION_SYSTEM_PROMPT_V2 = """You are generating a VALUE PROPOSITION STATEMENT for a CV header.
+
+=== VALUE PROPOSITION FORMULA ===
+
+[Domain expertise] + [Scope/scale from actual experience] + [Unique business impact]
+
+=== CONSTRAINTS (CRITICAL - VIOLATING THESE INVALIDATES THE OUTPUT) ===
+
+1. MAXIMUM 40 WORDS - Absolutely no exceptions
+2. NO SOFT SKILL CLICHÉS - Never use: passionate, driven, results-oriented, team player, synergy, leverage
+3. NO SKILLS LISTS - Don't list technologies; weave them naturally if mentioned
+4. NO FIRST-PERSON PRONOUNS - Never use: I, my, me, we, our
+5. THIRD-PERSON ABSENT VOICE - Write as if describing the candidate
+6. MUST CONTAIN SCALE INDICATORS - Numbers from actual experience: team size, users, revenue, systems scale
+7. ONLY REFERENCE METRICS FROM PROVIDED ACHIEVEMENTS - Never invent numbers
+
+=== ROLE-LEVEL TEMPLATES ===
+
+{role_templates}
+
+=== VALIDATION CHECKLIST ===
+
+Before outputting, verify:
+[ ] Under 40 words
+[ ] No soft skill clichés
+[ ] No skills lists
+[ ] No pronouns (I, my, we, our)
+[ ] Contains at least one scale indicator (team size, users, revenue, etc.)
+[ ] All metrics exist in provided achievements
+
+=== OUTPUT FORMAT ===
+
+Return ONLY the value proposition statement as a single string.
+No JSON, no markdown, no explanation. Just the statement.
+
+Example output:
+"Engineering leader with 12+ years building teams of 30+ engineers delivering cloud platforms serving 10M+ daily users."
+"""
+
+
+def build_value_proposition_prompt_v2(
+    role_category: str,
+    candidate_achievements: list,
+    candidate_scope: dict,
+    extracted_jd: dict,
+    annotations: dict = None,
+) -> str:
+    """
+    Build the user prompt for V2 value proposition generation.
+
+    Args:
+        role_category: Target role category (e.g., "engineering_manager")
+        candidate_achievements: Key achievements from master CV with metrics
+        candidate_scope: Scope indicators (team_size, years_experience, etc.)
+        extracted_jd: Extracted JD data (role_category, pain_points, etc.)
+        annotations: Optional JD annotations with emphasis areas
+
+    Returns:
+        Formatted user prompt for value proposition generation
+    """
+    # Get role-specific template
+    template_data = VALUE_PROPOSITION_TEMPLATES.get(
+        role_category,
+        VALUE_PROPOSITION_TEMPLATES.get("engineering_manager")
+    )
+
+    # Format role templates for prompt
+    role_templates = f"""
+FORMULA: {template_data['formula']}
+
+EXAMPLES:
+{chr(10).join(f'- {ex}' for ex in template_data['examples'])}
+
+EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
+"""
+
+    # Format achievements
+    achievements_text = "\n".join(f"- {a}" for a in candidate_achievements[:10])
+
+    # Format scope indicators
+    scope_text = ""
+    if candidate_scope:
+        scope_items = []
+        if candidate_scope.get("years_experience"):
+            scope_items.append(f"Years of Experience: {candidate_scope['years_experience']}+")
+        if candidate_scope.get("team_size"):
+            scope_items.append(f"Team Size Managed: {candidate_scope['team_size']}+")
+        if candidate_scope.get("org_size"):
+            scope_items.append(f"Organization Size: {candidate_scope['org_size']}+")
+        if candidate_scope.get("revenue_impact"):
+            scope_items.append(f"Revenue Impact: {candidate_scope['revenue_impact']}")
+        if candidate_scope.get("user_scale"):
+            scope_items.append(f"User Scale: {candidate_scope['user_scale']}")
+        scope_text = "\n".join(scope_items)
+
+    # Format annotation emphasis if provided
+    emphasis_text = ""
+    if annotations:
+        core_strengths = annotations.get("core_strengths", [])
+        if core_strengths:
+            emphasis_text = f"""
+ANNOTATION EMPHASIS (prioritize these themes):
+{chr(10).join(f'- {s}' for s in core_strengths[:3])}
+"""
+
+    # Format JD context
+    jd_context = ""
+    if extracted_jd:
+        jd_title = extracted_jd.get("job_title", "")
+        jd_pain_points = extracted_jd.get("pain_points", [])
+        if jd_title:
+            jd_context = f"""
+TARGET ROLE: {jd_title}
+"""
+        if jd_pain_points:
+            jd_context += f"""JD PAIN POINTS (value proposition should address):
+{chr(10).join(f'- {p}' for p in jd_pain_points[:3])}
+"""
+
+    return f"""Generate a VALUE PROPOSITION STATEMENT for this candidate.
+
+=== ROLE CATEGORY: {role_category.upper()} ===
+{role_templates}
+{jd_context}
+=== CANDIDATE SCOPE INDICATORS (use these exact numbers) ===
+{scope_text if scope_text else "- Extract from achievements below"}
+{emphasis_text}
+=== CANDIDATE ACHIEVEMENTS (source of truth for metrics) ===
+{achievements_text}
+
+=== REQUIREMENTS ===
+1. Maximum 40 words
+2. Third-person absent voice (no I, my, we)
+3. Include at least one scope indicator (team size, users, revenue)
+4. No soft skill clichés
+5. All metrics must come from achievements above
+
+Generate the value proposition statement:"""
+
+
+KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2 = """You are selecting and tailoring KEY ACHIEVEMENT BULLETS for a CV header.
+
+=== TASK ===
+
+Select 5-6 bullets from the provided master CV bullets that best address the target JD.
+You may TAILOR bullets for better JD alignment, but with strict constraints.
+
+=== TAILORING RULES (CRITICAL) ===
+
+ALLOWED:
+- Reorder words for better JD keyword positioning (front-load keywords)
+- Substitute synonym action verbs (e.g., "Built" → "Architected")
+- Add JD keywords that genuinely apply to the achievement
+- Emphasize different aspects of the same achievement
+
+FORBIDDEN (VIOLATING THESE INVALIDATES THE OUTPUT):
+- Inventing metrics not in the source bullet
+- Adding skills/technologies not evidenced in the source
+- Changing the core achievement
+- Adding scope that doesn't exist in source
+
+=== SKILL WHITELIST ENFORCEMENT ===
+
+You can ONLY reference skills from the provided SKILL WHITELIST.
+If a JD skill is NOT in the whitelist, you CANNOT add it to bullets.
+JD skills are for PRIORITIZATION of existing bullets, not ADDITION of new skills.
+
+=== SCORING GUIDANCE (use this to rank candidates) ===
+
+Each bullet starts at base score 1.0. Add:
+- +2.0 if addresses a JD pain point
+- +3.0 if annotation suggests this achievement
+- +0.5 per JD keyword naturally present
+- +1.5 if demonstrates a core strength
+- +1.5 if matches annotation emphasis area
+- +1.0 if from current role (recency)
+- +0.5 if from previous role
+
+=== OUTPUT FORMAT ===
+
+Return ONLY valid JSON:
+{
+  "selected_bullets": [
+    {
+      "bullet_text": "The final bullet text (tailored or original)",
+      "source_bullet": "The exact original bullet from master CV",
+      "source_role": "Role ID where this came from",
+      "score": 8.5,
+      "score_breakdown": {
+        "pain_point": 2.0,
+        "keyword_match": 1.5,
+        "core_strength": 1.5,
+        "recency": 1.0
+      },
+      "tailoring_applied": true,
+      "tailoring_changes": "Front-loaded 'Kubernetes' keyword, changed 'Built' to 'Architected'"
+    }
+  ],
+  "rejected_jd_skills": ["skill1 not in whitelist", "skill2 not in whitelist"]
+}
+"""
+
+
+def build_key_achievement_bullets_prompt_v2(
+    master_cv_bullets: list,
+    skill_whitelist: dict,
+    extracted_jd: dict,
+    annotations: dict = None,
+    role_category: str = "engineering_manager",
+) -> str:
+    """
+    Build the user prompt for V2 key achievement bullets selection.
+
+    Args:
+        master_cv_bullets: All bullets from master CV with role context
+        skill_whitelist: Candidate's verified skills (hard_skills, soft_skills)
+        extracted_jd: Extracted JD data (pain_points, keywords, responsibilities)
+        annotations: Optional JD annotations with suggested achievements
+        role_category: Target role category for action verb selection
+
+    Returns:
+        Formatted user prompt for achievement selection
+    """
+    # Format master CV bullets with role context
+    bullets_text = ""
+    for bullet in master_cv_bullets:
+        if isinstance(bullet, dict):
+            text = bullet.get("text", bullet.get("bullet", ""))
+            role = bullet.get("role_id", bullet.get("source_role", "unknown"))
+            bullets_text += f"[{role}] {text}\n"
+        else:
+            bullets_text += f"- {bullet}\n"
+
+    # Format skill whitelist
+    hard_skills = skill_whitelist.get("hard_skills", [])
+    soft_skills = skill_whitelist.get("soft_skills", [])
+    whitelist_text = f"""
+HARD SKILLS (technical): {', '.join(hard_skills[:30])}
+SOFT SKILLS (leadership): {', '.join(soft_skills[:20])}
+"""
+
+    # Format JD context
+    jd_keywords = extracted_jd.get("priority_keywords", extracted_jd.get("keywords", []))
+    jd_pain_points = extracted_jd.get("pain_points", [])
+    jd_responsibilities = extracted_jd.get("responsibilities", [])
+
+    jd_context = f"""
+JD KEYWORDS (prioritize bullets containing these): {', '.join(jd_keywords[:15])}
+
+JD PAIN POINTS (select bullets that address these):
+{chr(10).join(f'- {p}' for p in jd_pain_points[:5])}
+
+JD RESPONSIBILITIES (select bullets demonstrating these):
+{chr(10).join(f'- {r}' for r in jd_responsibilities[:5])}
+"""
+
+    # Format annotation guidance if provided
+    annotation_text = ""
+    if annotations:
+        suggested = annotations.get("suggested_achievements", [])
+        core_strengths = annotations.get("core_strengths", [])
+        emphasis_areas = annotations.get("emphasis_areas", [])
+
+        if suggested:
+            annotation_text += f"""
+ANNOTATION SUGGESTED ACHIEVEMENTS (+3.0 bonus if selected):
+{chr(10).join(f'- {s}' for s in suggested[:5])}
+"""
+        if core_strengths:
+            annotation_text += f"""
+CORE STRENGTHS (+1.5 bonus if demonstrated):
+{chr(10).join(f'- {s}' for s in core_strengths[:3])}
+"""
+        if emphasis_areas:
+            annotation_text += f"""
+EMPHASIS AREAS (+1.5 bonus if matched):
+{chr(10).join(f'- {a}' for a in emphasis_areas[:3])}
+"""
+
+    # Role-specific action verbs
+    role_verbs = {
+        "engineering_manager": ["Built", "Scaled", "Led", "Grew", "Coached", "Developed"],
+        "staff_principal_engineer": ["Architected", "Designed", "Drove", "Established", "Led"],
+        "director_of_engineering": ["Scaled", "Transformed", "Built", "Drove", "Established"],
+        "head_of_engineering": ["Built", "Established", "Transformed", "Drove", "Created"],
+        "vp_engineering": ["Led", "Scaled", "Transformed", "Drove", "Delivered"],
+        "cto": ["Led", "Transformed", "Established", "Drove", "Defined"],
+        "tech_lead": ["Led", "Delivered", "Architected", "Built", "Mentored"],
+        "senior_engineer": ["Built", "Developed", "Designed", "Implemented", "Optimized"],
+    }
+    verbs = role_verbs.get(role_category, role_verbs["engineering_manager"])
+
+    return f"""Select and tailor 5-6 KEY ACHIEVEMENT BULLETS for the CV header.
+
+=== ROLE CATEGORY: {role_category.upper()} ===
+PREFERRED ACTION VERBS: {', '.join(verbs)}
+
+=== SKILL WHITELIST (ONLY these skills can appear in bullets) ===
+{whitelist_text}
+{jd_context}
+{annotation_text}
+=== MASTER CV BULLETS (select from these ONLY) ===
+{bullets_text}
+
+=== REQUIREMENTS ===
+1. Select 5-6 bullets
+2. Rank by scoring algorithm
+3. You may tailor for JD alignment but:
+   - Keep all metrics exact
+   - Only use skills from whitelist
+   - Don't change core achievement
+4. Return rejected_jd_skills for any JD skills not in whitelist
+
+Generate the achievement selection JSON:"""
+
+
 # Role category to superpower mapping (all 8 role categories)
 ROLE_SUPERPOWERS = {
     "engineering_manager": [
