@@ -3269,3 +3269,167 @@ async def _execute_all_ops_bulk_task(
                 await queue_manager.fail(queue_id, str(e))
             except Exception:
                 pass
+
+
+# ============================================================================
+# Google Drive Upload Endpoint
+# ============================================================================
+
+
+class GDriveUploadResponse(BaseModel):
+    """Response model for Google Drive upload."""
+
+    success: bool
+    uploaded_at: Optional[str] = None
+    message: str
+    gdrive_file_id: Optional[str] = None
+    gdrive_folder_id: Optional[str] = None
+
+
+@router.post(
+    "/{job_id}/cv/upload-drive",
+    response_model=GDriveUploadResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Upload CV PDF to Google Drive",
+    description="Generate CV PDF and upload to Google Drive via n8n webhook. Creates company/role folder hierarchy.",
+)
+async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
+    """
+    Upload CV PDF to Google Drive via n8n webhook.
+
+    This endpoint:
+    1. Fetches job from MongoDB (company, title, cv_editor_state)
+    2. Generates PDF via PDF service
+    3. POSTs to n8n webhook with company_name, role_name, and PDF binary
+    4. Updates MongoDB with gdrive_uploaded_at timestamp
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+
+    Returns:
+        GDriveUploadResponse with success status and timestamp
+    """
+    import httpx
+    from io import BytesIO
+
+    # Get n8n webhook URL from environment
+    n8n_webhook_url = os.getenv(
+        "N8N_WEBHOOK_CV_UPLOAD",
+        "https://n8n.srv1112039.hstgr.cloud/webhook/cv-upload",
+    )
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
+
+    # Validate and fetch job
+    job = _validate_job_exists_sync(job_id)
+    company_name = job.get("company", "Unknown Company")
+    role_name = job.get("title", "Unknown Role")
+
+    # Get editor state for PDF generation
+    editor_state = job.get("cv_editor_state")
+
+    # If no editor state, try to migrate from cv_text
+    if not editor_state and job.get("cv_text"):
+        # Import migration function from app.py
+        from ..app import migrate_cv_text_to_editor_state
+
+        editor_state = migrate_cv_text_to_editor_state(job.get("cv_text"))
+
+    if not editor_state:
+        raise HTTPException(
+            status_code=400,
+            detail="No CV content available. Please generate or edit a CV first.",
+        )
+
+    # Build PDF request payload
+    pdf_request = {
+        "tiptap_json": editor_state.get("content", {"type": "doc", "content": []}),
+        "documentStyles": editor_state.get("documentStyles", {}),
+        "header": editor_state.get("header", ""),
+        "footer": editor_state.get("footer", ""),
+        "company": company_name,
+        "role": role_name,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as http_client:
+            # Step 1: Generate PDF
+            logger.info(f"Generating PDF for job {job_id} for Google Drive upload")
+            pdf_response = await http_client.post(
+                f"{pdf_service_url}/cv-to-pdf",
+                json=pdf_request,
+            )
+            pdf_response.raise_for_status()
+            pdf_content = pdf_response.content
+
+            # Step 2: Upload to n8n webhook
+            logger.info(
+                f"Uploading PDF to Google Drive: company={company_name}, role={role_name}"
+            )
+
+            # Prepare multipart form data
+            # n8n expects: data (PDF file), company_name, role_name
+            files = {
+                "data": (
+                    "Taimoor Alam Resume.pdf",
+                    BytesIO(pdf_content),
+                    "application/pdf",
+                ),
+            }
+            form_data = {
+                "company_name": company_name,
+                "role_name": role_name,
+            }
+
+            upload_response = await http_client.post(
+                n8n_webhook_url,
+                files=files,
+                data=form_data,
+                timeout=30.0,
+            )
+            upload_response.raise_for_status()
+
+            # Parse n8n response
+            n8n_result = upload_response.json()
+            logger.info(f"Google Drive upload successful: {n8n_result}")
+
+            # Step 3: Update MongoDB with upload timestamp
+            uploaded_at = datetime.utcnow()
+            client = _get_mongo_client()
+            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
+            db["level-2"].update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"gdrive_uploaded_at": uploaded_at}},
+            )
+
+            return GDriveUploadResponse(
+                success=True,
+                uploaded_at=uploaded_at.isoformat() + "Z",
+                message="CV uploaded to Google Drive successfully",
+                gdrive_file_id=n8n_result.get("file_id"),
+                gdrive_folder_id=n8n_result.get("role_folder"),
+            )
+
+    except httpx.TimeoutException as e:
+        logger.error(f"Timeout during Google Drive upload for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail="Upload timed out. Please try again.",
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            f"HTTP error during Google Drive upload for job {job_id}: {e.response.status_code}"
+        )
+        try:
+            error_detail = e.response.json().get("detail", str(e))
+        except Exception:
+            error_detail = str(e)
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Upload failed: {error_detail}",
+        )
+    except Exception as e:
+        logger.error(f"Google Drive upload failed for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload failed: {str(e)}",
+        )
