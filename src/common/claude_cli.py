@@ -294,22 +294,20 @@ class ClaudeCLI:
         self,
         prompt: str,
         job_id: str,
-        max_turns: int = 1,
         validate_json: bool = True,
         allow_tools: bool = False,
     ) -> CLIResult:
         """
         Execute Claude CLI with prompt and return parsed result.
 
-        Runs: claude -p {prompt} --output-format text --model {model} --max-turns {max_turns}
+        Runs: claude -p {prompt} --output-format text --model {model}
 
         Args:
             prompt: Full prompt text (system + user combined)
             job_id: Tracking ID for this invocation
-            max_turns: Maximum conversation turns (default 1 for extraction)
             validate_json: Whether to parse result as JSON (default True)
             allow_tools: Whether to enable CLI tools (WebSearch, WebFetch, Read).
-                        Default False to prevent tool_use responses with max_turns=1.
+                        Default False to prevent tool_use responses.
                         Set True for research tasks that need web search.
 
         Returns:
@@ -391,7 +389,6 @@ class ClaudeCLI:
                     prompt_length=len(prompt),
                     prompt_preview=prompt_preview,
                     model=self.model,
-                    max_turns=max_turns,
                 )
                 return CLIResult(
                     job_id=job_id,

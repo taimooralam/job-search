@@ -398,7 +398,6 @@ class ClaudeCVService:
         result = self.role_cli.invoke(
             prompt=prompt,
             job_id=job_id,
-            max_turns=1,
             validate_json=True,
         )
 
@@ -505,7 +504,6 @@ class ClaudeCVService:
         result = self.profile_cli.invoke(
             prompt=prompt,
             job_id="profile-synthesis",
-            max_turns=1,
             validate_json=True,
         )
 
@@ -590,7 +588,6 @@ class ClaudeCVService:
         result = self.validator_cli.invoke(
             prompt=prompt,
             job_id="ats-validation",
-            max_turns=1,
             validate_json=True,
         )
 

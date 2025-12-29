@@ -228,18 +228,6 @@ class TestClaudeCLIInvoke:
         assert "empty" in result.error.lower()
 
     @patch('subprocess.run')
-    def test_invocation_with_max_turns(self, mock_subprocess_run, mock_successful_subprocess):
-        """Should pass max_turns parameter to CLI."""
-        mock_subprocess_run.return_value = mock_successful_subprocess
-
-        cli = ClaudeCLI()
-        cli.invoke(prompt="test", job_id="test_007", max_turns=3)
-
-        call_args = mock_subprocess_run.call_args[0][0]
-        assert "--max-turns" in call_args
-        assert "3" in call_args
-
-    @patch('subprocess.run')
     def test_invocation_without_json_validation(self, mock_subprocess_run, plain_text_output):
         """Should skip JSON parsing when validate_json=False."""
         mock_result = MagicMock()
