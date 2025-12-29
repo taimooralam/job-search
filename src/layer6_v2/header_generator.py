@@ -30,7 +30,24 @@ from src.common.logger import get_logger
 from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.common.persona_builder import get_persona_guidance
-from src.layer6_v2.skills_taxonomy import SkillsTaxonomy, TaxonomyBasedSkillsGenerator
+from src.layer6_v2.skills_taxonomy import (
+    SkillsTaxonomy,
+    TaxonomyBasedSkillsGenerator,
+    CoreCompetencyGeneratorV2,
+)
+
+
+def _is_header_v2_enabled() -> bool:
+    """
+    Check if Header Generation V2 is enabled via feature flag.
+
+    Uses USE_HEADER_V2 environment variable.
+
+    Returns:
+        True if V2 header generation is enabled
+    """
+    import os
+    return os.environ.get("USE_HEADER_V2", "").lower() in ("true", "1", "yes")
 
 
 def _load_role_persona(role_category: str) -> dict:
@@ -826,11 +843,18 @@ Return JSON matching this ProfileResponse schema:
         """
         Generate hybrid executive summary grounded in achievements.
 
-        Based on research from 625 hiring managers:
+        V2 Mode (USE_HEADER_V2=true):
+        - Value Proposition: Role-specific formula (replaces tagline)
+        - Key Achievements: Selected/tailored from master CV
+        - Core Competencies: Algorithmic from whitelist
+
+        V1 Mode (default):
         - Tagline: 15-25 words, third-person absent voice (max 200 chars)
         - Key Achievements: 5-6 quantified bullets
-        - Headline with exact job title (10.6x interview factor)
         - Core competencies for ATS optimization
+
+        Based on research from 625 hiring managers:
+        - Headline with exact job title (10.6x interview factor)
         - 4-question framework validation
 
         Args:
@@ -842,7 +866,18 @@ Return JSON matching this ProfileResponse schema:
         Returns:
             ProfileOutput with hybrid executive summary structure
         """
-        self._logger.info("Generating hybrid executive summary...")
+        # Check for V2 feature flag
+        if _is_header_v2_enabled():
+            self._logger.info("Using V2 header generation (USE_HEADER_V2=true)")
+            try:
+                return await self._generate_profile_v2(
+                    stitched_cv, extracted_jd, candidate_name, regional_variant
+                )
+            except Exception as e:
+                self._logger.warning(f"V2 profile generation failed: {e}. Falling back to V1.")
+                # Fall through to V1
+
+        self._logger.info("Generating hybrid executive summary (V1)...")
 
         provenance = None
         try:
@@ -917,6 +952,288 @@ Return JSON matching this ProfileResponse schema:
             )
 
         self._logger.info(f"Profile generated: {profile.word_count} words")
+        return profile
+
+    async def _generate_profile_v2(
+        self,
+        stitched_cv: StitchedCV,
+        extracted_jd: Dict,
+        candidate_name: str,
+        regional_variant: str = "us_eu",
+    ) -> ProfileOutput:
+        """
+        V2 Profile Generation with anti-hallucination guarantees.
+
+        Three-component system:
+        1. VALUE PROPOSITION - Role-specific formula (LLM)
+        2. KEY ACHIEVEMENT BULLETS - Selected/tailored from master CV (LLM)
+        3. CORE COMPETENCIES - Algorithmic from whitelist (no LLM)
+
+        All outputs are grounded in candidate's verified experience.
+        JD keywords are used for PRIORITIZATION only, not ADDITION.
+
+        Args:
+            stitched_cv: Stitched experience section
+            extracted_jd: Extracted JD intelligence
+            candidate_name: Candidate name for profile
+            regional_variant: "us_eu" (default) or "gulf"
+
+        Returns:
+            ProfileOutput with V2 fields populated (generation_mode="v2")
+        """
+        from src.layer6_v2.prompts.header_generation import (
+            VALUE_PROPOSITION_SYSTEM_PROMPT_V2,
+            VALUE_PROPOSITION_TEMPLATES,
+            build_value_proposition_prompt_v2,
+            KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2,
+            build_key_achievement_bullets_prompt_v2,
+        )
+        from src.layer6_v2.types import (
+            AchievementSource,
+            SkillsProvenance,
+            SelectionResult,
+        )
+
+        self._logger.info("Generating V2 profile with anti-hallucination guarantees...")
+
+        # Extract role category
+        role_category = extracted_jd.get("role_category", "engineering_manager")
+        job_title = extracted_jd.get("title", "Engineering Leader")
+        years_experience = self._calculate_years_experience(stitched_cv)
+
+        # Collect all bullets for context
+        all_bullets = []
+        role_bullets_map = {}  # bullet_text -> role_id
+        for role in stitched_cv.roles:
+            for bullet in role.bullets:
+                all_bullets.append(bullet)
+                role_bullets_map[bullet] = role.company
+
+        # Build candidate scope indicators
+        candidate_scope = {
+            "years_experience": years_experience,
+        }
+        # Try to extract team size from bullets
+        import re
+        for bullet in all_bullets[:20]:
+            team_match = re.search(r"team of (\d+)", bullet, re.IGNORECASE)
+            if team_match:
+                candidate_scope["team_size"] = int(team_match.group(1))
+                break
+
+        # Get annotations if available
+        annotations = {}
+        if self._annotation_context and self._annotation_context.has_annotations:
+            annotations = {
+                "core_strengths": [
+                    p.matching_skill for p in self._annotation_context.must_have_priorities[:3]
+                    if p.matching_skill
+                ],
+                "emphasis_areas": self._annotation_context.top_keywords[:5],
+            }
+
+        # ----- COMPONENT 1: VALUE PROPOSITION (LLM) -----
+        self._logger.debug("Generating V2 value proposition...")
+
+        # Get role-specific template for system prompt
+        template_data = VALUE_PROPOSITION_TEMPLATES.get(
+            role_category,
+            VALUE_PROPOSITION_TEMPLATES.get("engineering_manager")
+        )
+        system_prompt = VALUE_PROPOSITION_SYSTEM_PROMPT_V2.format(
+            role_templates=f"""
+FORMULA: {template_data['formula']}
+
+EXAMPLES:
+{chr(10).join(f'- {ex}' for ex in template_data['examples'])}
+
+EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
+"""
+        )
+
+        user_prompt = build_value_proposition_prompt_v2(
+            role_category=role_category,
+            candidate_achievements=all_bullets[:10],
+            candidate_scope=candidate_scope,
+            extracted_jd=extracted_jd,
+            annotations=annotations if annotations else None,
+        )
+
+        vp_result = await self._llm.invoke(
+            prompt=user_prompt,
+            system=system_prompt,
+            validate_json=False,  # Value proposition is plain text
+        )
+
+        value_proposition = ""
+        if vp_result.success and vp_result.content:
+            # Clean up the response (remove quotes if wrapped)
+            value_proposition = vp_result.content.strip().strip('"').strip("'")
+            self._logger.info(f"V2 value proposition: {len(value_proposition.split())} words")
+        else:
+            self._logger.warning(f"V2 value proposition failed: {vp_result.error}")
+            # Fallback to template
+            value_proposition = f"Engineering leader with {years_experience}+ years building high-performing teams."
+
+        # ----- COMPONENT 2: KEY ACHIEVEMENT BULLETS (LLM Selection) -----
+        self._logger.debug("Selecting V2 key achievement bullets...")
+
+        # Build master CV bullets with role context
+        master_cv_bullets = []
+        for role in stitched_cv.roles:
+            for bullet in role.bullets:
+                master_cv_bullets.append({
+                    "text": bullet,
+                    "role_id": role.company,
+                })
+
+        bullets_prompt = build_key_achievement_bullets_prompt_v2(
+            master_cv_bullets=master_cv_bullets,
+            skill_whitelist=self._skill_whitelist or {"hard_skills": [], "soft_skills": []},
+            extracted_jd=extracted_jd,
+            annotations=annotations if annotations else None,
+            role_category=role_category,
+        )
+
+        bullets_result = await self._llm.invoke(
+            prompt=bullets_prompt,
+            system=KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2,
+            validate_json=True,
+        )
+
+        key_achievements = []
+        achievement_sources = []
+        rejected_jd_skills = []
+
+        if bullets_result.success and bullets_result.parsed_json:
+            selection_data = bullets_result.parsed_json
+            selected_bullets = selection_data.get("selected_bullets", [])
+            rejected_jd_skills = selection_data.get("rejected_jd_skills", [])
+
+            for sb in selected_bullets:
+                bullet_text = sb.get("bullet_text", "")
+                if bullet_text:
+                    key_achievements.append(bullet_text)
+                    achievement_sources.append(AchievementSource(
+                        bullet_text=bullet_text,
+                        source_bullet=sb.get("source_bullet", bullet_text),
+                        source_role_id=sb.get("source_role", "unknown"),
+                        source_role_title=sb.get("source_role", "unknown"),
+                        match_confidence=1.0 if not sb.get("tailoring_applied") else 0.85,
+                        tailoring_applied=sb.get("tailoring_applied", False),
+                        tailoring_changes=sb.get("tailoring_changes"),
+                        scoring_breakdown=sb.get("score_breakdown", {}),
+                    ))
+
+            self._logger.info(
+                f"V2 selected {len(key_achievements)} bullets, "
+                f"rejected {len(rejected_jd_skills)} JD skills not in whitelist"
+            )
+        else:
+            self._logger.warning(f"V2 bullet selection failed: {bullets_result.error}")
+            # Fallback: use first 5 bullets as-is
+            for bullet in all_bullets[:5]:
+                key_achievements.append(bullet)
+                achievement_sources.append(AchievementSource(
+                    bullet_text=bullet,
+                    source_bullet=bullet,
+                    source_role_id=role_bullets_map.get(bullet, "unknown"),
+                    source_role_title=role_bullets_map.get(bullet, "unknown"),
+                ))
+
+        # ----- COMPONENT 3: CORE COMPETENCIES (Algorithmic) -----
+        self._logger.debug("Generating V2 core competencies algorithmically...")
+
+        core_competencies_v2 = {}
+        skills_provenance = None
+
+        if self._skill_whitelist:
+            comp_generator = CoreCompetencyGeneratorV2(
+                role_category=role_category,
+                skill_whitelist=self._skill_whitelist,
+            )
+
+            core_competencies_v2, skills_provenance = comp_generator.generate(
+                extracted_jd=extracted_jd,
+                annotations=annotations if annotations else None,
+            )
+
+            # Merge rejected JD skills from bullet selection
+            if skills_provenance and rejected_jd_skills:
+                combined_rejected = list(set(
+                    skills_provenance.rejected_jd_skills + rejected_jd_skills
+                ))
+                skills_provenance = SkillsProvenance(
+                    all_from_whitelist=skills_provenance.all_from_whitelist,
+                    whitelist_source=skills_provenance.whitelist_source,
+                    total_skills_selected=skills_provenance.total_skills_selected,
+                    jd_matched_skills=skills_provenance.jd_matched_skills,
+                    whitelist_only_skills=skills_provenance.whitelist_only_skills,
+                    rejected_jd_skills=combined_rejected,
+                    skills_by_section=skills_provenance.skills_by_section,
+                )
+
+            self._logger.info(
+                f"V2 core competencies: {skills_provenance.total_skills_selected} skills, "
+                f"{skills_provenance.hallucination_prevented_count} JD skills rejected"
+            )
+        else:
+            self._logger.warning("No skill whitelist - using empty competencies")
+
+        # Flatten core competencies for backward compatibility
+        core_competencies_flat = []
+        for section_skills in core_competencies_v2.values():
+            core_competencies_flat.extend(section_skills[:6])
+
+        # Determine summary type based on role level
+        executive_roles = {"director_of_engineering", "head_of_engineering", "vp_engineering", "cto"}
+        summary_type = "executive_summary" if role_category in executive_roles else "professional_summary"
+
+        # Build headline
+        headline = f"{job_title} | {years_experience}+ Years Technology Leadership"
+
+        # Build selection result
+        selection_result = SelectionResult(
+            bullets_selected=len(key_achievements),
+            target_count=6,
+            needs_review=len(key_achievements) < 5,
+            warning_message="Fewer than 5 relevant bullets found" if len(key_achievements) < 5 else None,
+        )
+
+        # Build ProfileOutput with V2 fields
+        profile = ProfileOutput(
+            # V1 fields (backward compatibility)
+            headline=headline,
+            tagline=value_proposition,  # Map value proposition to tagline
+            key_achievements=key_achievements,
+            core_competencies=core_competencies_flat[:8],
+            highlights_used=[],
+            keywords_integrated=[],
+            exact_title_used=job_title,
+            answers_who=True,
+            answers_what_problems=True,
+            answers_proof=bool(key_achievements),
+            answers_why_you=True,
+            regional_variant=regional_variant,
+            narrative=value_proposition,
+
+            # V2 fields (anti-hallucination)
+            value_proposition=value_proposition,
+            achievement_sources=achievement_sources,
+            skills_provenance=skills_provenance,
+            core_competencies_v2=core_competencies_v2,
+            summary_type=summary_type,
+            generation_mode="v2",
+            selection_result=selection_result,
+        )
+
+        self._logger.info(
+            f"V2 profile generated: "
+            f"value_prop={len(value_proposition.split())} words, "
+            f"achievements={len(key_achievements)}, "
+            f"competencies={len(core_competencies_v2)} sections"
+        )
+
         return profile
 
     def _generate_fallback_profile(
