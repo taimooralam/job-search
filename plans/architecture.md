@@ -164,6 +164,80 @@ submit_service_task(_execute_extraction_bulk_task(...))  # Returns immediately
 - Step-by-step logging of JD processing
 - Status updates for long-running operations
 
+### Header Generation V2 - Anti-Hallucination System
+
+**Overview:** Three-component header generation system eliminating LLM hallucinations through strict whitelist enforcement and algorithmic selection.
+
+**Components:**
+
+1. **Value Proposition Statement** (LLM + role templates)
+   - `src/layer6_v2/prompts/header_generation.py` - Role-specific templates for 8 categories
+   - Formula: [Domain expertise] + [Scope/scale] + [Unique business impact]
+   - Constraints: 40-word max, third-person absent voice
+   - Examples: "Full-stack engineer maximizing cloud platform ROI across Fortune 500 infrastructure"
+
+2. **Key Achievement Bullets** (LLM selection + whitelist validation)
+   - `src/layer6_v2/header_generator.py` - LLM selects and optionally tailors bullets from master CV
+   - Strict whitelist: No skills/achievements not in candidate experience
+   - Scoring: JD-matched bullets > annotation-emphasized > default bullets
+   - Output: 3-4 achievement bullets with clear business impact
+
+3. **Core Competencies** (Pure algorithmic, no LLM)
+   - `src/layer6_v2/skills_taxonomy.py` - `CoreCompetencyGeneratorV2` class
+   - 4 static sections per role (defined in `data/master-cv/role_skills_taxonomy.json`)
+   - Selection algorithm: Pure whitelist + JD keyword prioritization (not addition)
+   - Provenance tracking: `SkillsProvenance` dataclass with source (master_cv, jd_signal)
+
+**Data Model:**
+
+```python
+# New V2 dataclasses in src/layer6_v2/types.py
+class SkillsProvenance(TypedDict):
+    source: Literal['master_cv', 'jd_signal']
+    confidence: float  # 0.0-1.0
+
+class HeaderGenerationV2Output(TypedDict):
+    value_proposition: str              # 40-word statement
+    achievement_bullets: list[str]     # 3-4 bullets from master CV
+    core_competencies: dict[str, list[dict]]  # 4 sections, whitelist-backed
+    provenance: dict[str, SkillsProvenance]   # Track all sources
+```
+
+**Role Skills Taxonomy:**
+
+```json
+{
+  "Software Engineer": {
+    "core_competencies": {
+      "Languages": ["Python", "JavaScript", "Go"],
+      "Platforms": ["AWS", "GCP", "Kubernetes"],
+      "Practices": ["SOLID", "TDD", "Microservices"],
+      "Tools": ["Docker", "Git", "GitHub Actions"]
+    }
+  }
+}
+```
+
+**Anti-Hallucination Guarantees:**
+
+- No invented skills: All listed skills must exist in master CV or be JD keywords used for PRIORITIZATION only
+- Whitelist-backed: `CoreCompetencyGeneratorV2` validates against master CV before output
+- Provenance tracking: Every competency tagged with source (master_cv or jd_signal)
+- No synthetic synthesis: Bullets selected/tailored from existing master CV content, not generated
+
+**Feature Flag:** `USE_HEADER_V2=true`
+
+**Files Changed:**
+- `src/layer6_v2/types.py` - New V2 dataclasses
+- `src/layer6_v2/skills_taxonomy.py` - `CoreCompetencyGeneratorV2` implementation
+- `src/layer6_v2/prompts/header_generation.py` - Role-specific templates
+- `src/layer6_v2/header_generator.py` - V2 integration with LLM
+- `src/layer6_v2/orchestrator.py` - V2 CV assembly orchestration
+- `data/master-cv/role_skills_taxonomy.json` - Static section definitions
+- `tests/unit/test_header_generation_v2.py` - 50 comprehensive tests
+
+**Testing:** 50 tests covering template validation, whitelist enforcement, JD prioritization, provenance tracking, and edge cases.
+
 ### Claude CLI Text Format with Error Detection (FIXED)
 
 **Components:**
