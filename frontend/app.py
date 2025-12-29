@@ -1001,6 +1001,24 @@ def get_statuses():
     return jsonify({"statuses": JOB_STATUSES})
 
 
+@app.route("/api/jobs/batch/count", methods=["GET"])
+@login_required
+def get_batch_count():
+    """Return the count of jobs in batch processing queue."""
+    collection = get_collection()
+    count = collection.count_documents({"batch_added_at": {"$exists": True}})
+    return jsonify({"count": count})
+
+
+@app.route("/api/jobs/count", methods=["GET"])
+@login_required
+def get_job_count():
+    """Return the total count of jobs in level-2 collection."""
+    collection = get_collection()
+    count = collection.count_documents({})
+    return jsonify({"count": count})
+
+
 @app.route("/api/jobs/move-to-batch", methods=["POST"])
 @login_required
 def move_to_batch():
