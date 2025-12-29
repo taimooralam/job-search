@@ -184,6 +184,227 @@ async def ingest_himalaya_jobs(
         raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
 
 
+@router.post("/ingest/indeed", response_model=IngestResponse, dependencies=[Depends(verify_token)])
+async def ingest_indeed_jobs(
+    search_term: str = Query(
+        ...,
+        description="Job title/keywords to search (e.g., 'engineering manager')"
+    ),
+    location: Optional[str] = Query(
+        default=None,
+        description="Location to search (e.g., 'Remote', 'New York, NY')"
+    ),
+    country: str = Query(
+        default="USA",
+        description="Country code (USA, UK, Canada, Australia, Germany)"
+    ),
+    max_results: int = Query(
+        default=50,
+        le=100,
+        description="Maximum jobs to fetch (max 100)"
+    ),
+    hours_old: Optional[int] = Query(
+        default=None,
+        description="Only jobs posted within N hours (optional)"
+    ),
+    skip_scoring: bool = Query(
+        default=False,
+        description="Skip LLM scoring (faster, for testing)"
+    ),
+    incremental: bool = Query(
+        default=True,
+        description="Only fetch jobs newer than last run"
+    ),
+    score_threshold: int = Query(
+        default=70,
+        ge=0,
+        le=100,
+        description="Minimum score for ingestion (0-100)"
+    ),
+) -> IngestResponse:
+    """
+    Fetch and ingest jobs from Indeed on-demand using JobSpy.
+
+    This endpoint:
+    1. Fetches jobs from Indeed using JobSpy scraper
+    2. Filters by search term and optional location
+    3. Scores each job using Claude CLI (free with Max subscription)
+    4. Inserts qualifying jobs into MongoDB level-2 collection
+    5. Updates state for incremental fetching
+
+    Note: Uses web scraping - keep volume low (~50 jobs/run).
+
+    Returns:
+        Ingestion statistics and list of ingested jobs
+    """
+    try:
+        logger.info(
+            f"Starting Indeed ingestion: term='{search_term}', "
+            f"location='{location}', country={country}, max_results={max_results}, "
+            f"hours_old={hours_old}, incremental={incremental}"
+        )
+
+        # Get MongoDB connection
+        db = get_db()
+
+        # Import and initialize services
+        from src.services.job_sources import IndeedSource
+        from src.services.job_ingest_service import IngestService
+
+        # Build search config
+        search_config = {
+            "search_term": search_term,
+            "location": location or "",
+            "results_wanted": max_results,
+            "country": country,
+        }
+        if hours_old:
+            search_config["hours_old"] = hours_old
+
+        # Fetch jobs from Indeed
+        source = IndeedSource()
+        jobs = source.fetch_jobs(search_config)
+
+        logger.info(f"Fetched {len(jobs)} jobs from Indeed API")
+
+        if not jobs:
+            return IngestResponse(
+                success=True,
+                source="indeed_auto",
+                incremental=incremental,
+                stats={
+                    "fetched": 0,
+                    "ingested": 0,
+                    "duplicates_skipped": 0,
+                    "below_threshold": 0,
+                    "errors": 0,
+                    "duration_ms": 0,
+                },
+                jobs=[],
+            )
+
+        # Initialize ingest service with Claude scorer
+        ingest_service = IngestService(db, use_claude_scorer=True)
+
+        # Run ingestion
+        result = await ingest_service.ingest_jobs(
+            jobs=jobs,
+            source_name="indeed_auto",
+            score_threshold=score_threshold,
+            skip_scoring=skip_scoring,
+            incremental=incremental,
+        )
+
+        return IngestResponse(**result.to_dict())
+
+    except Exception as e:
+        logger.exception(f"Indeed ingestion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+
+@router.post("/ingest/bayt", response_model=IngestResponse, dependencies=[Depends(verify_token)])
+async def ingest_bayt_jobs(
+    search_term: str = Query(
+        ...,
+        description="Job title/keywords to search (e.g., 'software engineer')"
+    ),
+    max_results: int = Query(
+        default=25,
+        le=50,
+        description="Maximum jobs to fetch (max 50 for Bayt)"
+    ),
+    skip_scoring: bool = Query(
+        default=False,
+        description="Skip LLM scoring (faster, for testing)"
+    ),
+    incremental: bool = Query(
+        default=True,
+        description="Only fetch jobs newer than last run"
+    ),
+    score_threshold: int = Query(
+        default=70,
+        ge=0,
+        le=100,
+        description="Minimum score for ingestion (0-100)"
+    ),
+) -> IngestResponse:
+    """
+    Fetch and ingest jobs from Bayt.com on-demand using JobSpy.
+
+    Bayt is the largest job board in the Gulf region (UAE, Saudi Arabia, Qatar, Kuwait).
+
+    This endpoint:
+    1. Fetches jobs from Bayt using JobSpy scraper
+    2. Scores each job using Claude CLI (free with Max subscription)
+    3. Inserts qualifying jobs into MongoDB level-2 collection
+    4. Updates state for incremental fetching
+
+    Note: Bayt does not support location filtering - it searches all Gulf region jobs.
+    Uses web scraping - keep volume low (~25 jobs/run).
+
+    Returns:
+        Ingestion statistics and list of ingested jobs
+    """
+    try:
+        logger.info(
+            f"Starting Bayt ingestion: term='{search_term}', "
+            f"max_results={max_results}, incremental={incremental}"
+        )
+
+        # Get MongoDB connection
+        db = get_db()
+
+        # Import and initialize services
+        from src.services.job_sources import BaytSource
+        from src.services.job_ingest_service import IngestService
+
+        # Build search config (Bayt only supports search_term)
+        search_config = {
+            "search_term": search_term,
+            "results_wanted": max_results,
+        }
+
+        # Fetch jobs from Bayt
+        source = BaytSource()
+        jobs = source.fetch_jobs(search_config)
+
+        logger.info(f"Fetched {len(jobs)} jobs from Bayt API")
+
+        if not jobs:
+            return IngestResponse(
+                success=True,
+                source="bayt",
+                incremental=incremental,
+                stats={
+                    "fetched": 0,
+                    "ingested": 0,
+                    "duplicates_skipped": 0,
+                    "below_threshold": 0,
+                    "errors": 0,
+                    "duration_ms": 0,
+                },
+                jobs=[],
+            )
+
+        # Initialize ingest service with Claude scorer
+        ingest_service = IngestService(db, use_claude_scorer=True)
+
+        # Run ingestion
+        result = await ingest_service.ingest_jobs(
+            jobs=jobs,
+            source_name="bayt",
+            score_threshold=score_threshold,
+            skip_scoring=skip_scoring,
+            incremental=incremental,
+        )
+
+        return IngestResponse(**result.to_dict())
+
+    except Exception as e:
+        logger.exception(f"Bayt ingestion failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+
 @router.get("/ingest/state/{source}", dependencies=[Depends(verify_token)])
 async def get_ingest_state(source: str) -> dict:
     """
