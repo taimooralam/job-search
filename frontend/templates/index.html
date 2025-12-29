@@ -1012,5 +1012,52 @@
             });
         }
     });
+
+    // ============================================================================
+    // Keyboard Shortcuts for Job Actions
+    // ============================================================================
+    // Backspace: Delete selected (with confirmation)
+    // D: Discard selected
+    // B: Move to Batch
+    // A: Mark as Applied
+
+    document.addEventListener('keydown', function(e) {
+        // Skip if user is typing in an input field
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable
+        );
+
+        if (isInputFocused) return;
+
+        // Only act if jobs are selected
+        if (typeof selectedJobIds === 'undefined' || selectedJobIds.size === 0) return;
+
+        switch (e.key) {
+            case 'Backspace':
+            case 'Delete':
+                e.preventDefault();
+                openDeleteModal();
+                break;
+            case 'd':
+            case 'D':
+                e.preventDefault();
+                markSelectedAsDiscarded();
+                break;
+            case 'b':
+            case 'B':
+                e.preventDefault();
+                moveSelectedToBatch();
+                break;
+            case 'a':
+            case 'A':
+                e.preventDefault();
+                markSelectedAsApplied();
+                break;
+        }
+    });
 </script>
 {% endblock %}

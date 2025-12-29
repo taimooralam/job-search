@@ -2616,13 +2616,6 @@
             if (selectedJobIds.size === 0) return;
 
             const count = selectedJobIds.size;
-            const confirmed = confirm(
-                `Discard ${count} job${count > 1 ? 's' : ''}?\n\n` +
-                `This will remove them from the default view.\n` +
-                `You can find discarded jobs by enabling the "discarded" status filter.`
-            );
-
-            if (!confirmed) return;
 
             try {
                 showToast(`Discarding ${count} jobs...`, 'info');
@@ -2663,12 +2656,6 @@
             if (selectedJobIds.size === 0) return;
 
             const count = selectedJobIds.size;
-            const confirmed = confirm(
-                `Move ${count} job${count > 1 ? 's' : ''} to batch processing?\n\n` +
-                `Jobs will be moved to the batch processing view for bulk operations.`
-            );
-
-            if (!confirmed) return;
 
             try {
                 showToast(`Moving ${count} jobs to batch...`, 'info');
