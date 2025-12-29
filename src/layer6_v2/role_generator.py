@@ -29,6 +29,7 @@ from src.layer6_v2.types import (
 from src.layer6_v2.prompts.role_generation import (
     ROLE_GENERATION_SYSTEM_PROMPT,
     build_role_generation_user_prompt,
+    build_role_system_prompt_with_persona,
     STAR_CORRECTION_SYSTEM_PROMPT,
     build_star_correction_user_prompt,
 )
@@ -171,6 +172,7 @@ class RoleGenerator:
         extracted_jd: ExtractedJD,
         career_context: CareerContext,
         target_bullet_count: Optional[int] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Call LLM with role generation prompt.
@@ -180,6 +182,7 @@ class RoleGenerator:
             extracted_jd: Structured JD intelligence
             career_context: Career stage context
             target_bullet_count: Target number of bullets
+            jd_annotations: Optional JD annotations with persona for system prompt framing
 
         Returns:
             Raw LLM response string (JSON)
@@ -189,12 +192,23 @@ class RoleGenerator:
             extracted_jd=extracted_jd,
             career_context=career_context,
             target_bullet_count=target_bullet_count,
+            jd_annotations=jd_annotations,
         )
+
+        # Build system prompt with persona if available
+        system_prompt = build_role_system_prompt_with_persona(
+            jd_annotations=jd_annotations,
+            base_prompt=ROLE_GENERATION_SYSTEM_PROMPT,
+        )
+
+        # Log persona injection for debugging
+        if jd_annotations and jd_annotations.get("synthesized_persona", {}).get("persona_statement"):
+            self._logger.info("📌 Persona injected into role generation system prompt")
 
         # Use UnifiedLLM with JSON validation
         result = await self._llm.invoke(
             prompt=user_prompt,
-            system=ROLE_GENERATION_SYSTEM_PROMPT,
+            system=system_prompt,
             validate_json=True,
         )
 
@@ -263,6 +277,7 @@ class RoleGenerator:
         extracted_jd: ExtractedJD,
         career_context: Optional[CareerContext] = None,
         target_bullet_count: Optional[int] = None,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> RoleBullets:
         """
         Generate tailored bullets for a role.
@@ -272,6 +287,7 @@ class RoleGenerator:
             extracted_jd: Structured JD intelligence from Layer 1.4
             career_context: Career stage context (built automatically if not provided)
             target_bullet_count: Target number of bullets
+            jd_annotations: Optional JD annotations with persona for system prompt framing
 
         Returns:
             RoleBullets with generated bullets
@@ -293,12 +309,13 @@ class RoleGenerator:
         self._logger.info(f"Career stage: {career_context.career_stage}")
         self._logger.info(f"Source achievements: {len(role.achievements)}")
 
-        # Call LLM
+        # Call LLM with persona from annotations (if available)
         llm_response = await self._call_llm(
             role=role,
             extracted_jd=extracted_jd,
             career_context=career_context,
             target_bullet_count=target_bullet_count,
+            jd_annotations=jd_annotations,
         )
 
         # Parse and validate
@@ -451,6 +468,7 @@ class RoleGenerator:
         career_context: Optional[CareerContext] = None,
         target_bullet_count: Optional[int] = None,
         prefer_variants: bool = True,
+        jd_annotations: Optional[Dict[str, Any]] = None,
     ) -> RoleBullets:
         """
         Generate bullets with variant selection first, LLM as fallback.
@@ -465,6 +483,7 @@ class RoleGenerator:
             career_context: Career stage context
             target_bullet_count: Target number of bullets
             prefer_variants: If True, try variant selection first (default: True)
+            jd_annotations: Optional JD annotations with persona for LLM fallback
 
         Returns:
             RoleBullets with generated/selected bullets
@@ -475,18 +494,20 @@ class RoleGenerator:
                 role=role,
                 extracted_jd=extracted_jd,
                 target_bullet_count=target_bullet_count,
+                jd_annotations=jd_annotations,
             )
             if variant_result and variant_result.bullet_count > 0:
                 self._logger.info(f"Used variant selection for {role.company}")
                 return variant_result
 
-        # Fall back to LLM generation
+        # Fall back to LLM generation with persona from annotations
         self._logger.info(f"Using LLM generation for {role.company}")
         return await self.generate(
             role=role,
             extracted_jd=extracted_jd,
             career_context=career_context,
             target_bullet_count=target_bullet_count,
+            jd_annotations=jd_annotations,
         )
 
     async def generate_with_star_enforcement(

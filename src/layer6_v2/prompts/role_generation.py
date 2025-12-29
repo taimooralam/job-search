@@ -153,6 +153,52 @@ Return ONLY valid JSON with this structure:
 IMPORTANT: Return ONLY the JSON. No markdown, no preamble, no explanation."""
 
 
+def build_role_system_prompt_with_persona(
+    jd_annotations: Optional[Dict[str, Any]] = None,
+    base_prompt: str = ROLE_GENERATION_SYSTEM_PROMPT,
+) -> str:
+    """
+    Build system prompt with persona context for role bullet generation.
+
+    Injects the candidate's synthesized persona as a framing guide for bullet generation.
+    This ensures role bullets reflect the candidate's professional identity.
+
+    Args:
+        jd_annotations: JD annotations dict containing synthesized_persona
+        base_prompt: Base system prompt to prepend persona to
+
+    Returns:
+        System prompt with persona section prepended (if persona available)
+    """
+    if not jd_annotations:
+        return base_prompt
+
+    synthesized_persona = jd_annotations.get("synthesized_persona", {})
+    persona_statement = synthesized_persona.get("persona_statement", "")
+
+    if not persona_statement:
+        return base_prompt
+
+    # Build persona section to prepend
+    persona_section = f"""=== CANDIDATE PERSONA (Frame bullets around this identity) ===
+
+CANDIDATE PERSONA: {persona_statement}
+
+This persona defines WHO the candidate is professionally. When writing achievement bullets:
+- Frame accomplishments through this persona's lens
+- Use language that reinforces this professional identity
+- Match emphasis style to persona type:
+  * Leadership-focused personas: emphasize team impact, strategic outcomes, organizational change
+  * Technical-focused personas: emphasize engineering depth, system scale, architectural decisions
+  * Platform/infrastructure personas: emphasize reliability, scale, cost optimization
+  * Delivery-focused personas: emphasize velocity, efficiency, process improvements
+
+=============================================================================
+
+"""
+    return persona_section + base_prompt
+
+
 def build_role_generation_user_prompt(
     role: RoleData,
     extracted_jd: ExtractedJD,
