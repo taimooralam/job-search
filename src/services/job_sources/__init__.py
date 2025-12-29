@@ -2,8 +2,9 @@
 Job Sources Module
 
 Provides unified interfaces for fetching jobs from multiple sources:
-- Indeed (via JobSpy)
-- Himalayas.app (remote jobs API)
+- Indeed (via JobSpy) - Global job board, excellent for remote jobs
+- Bayt (via JobSpy) - Largest Gulf region job board
+- Himalayas.app (remote jobs API) - Remote-first companies worldwide
 
 Each source implements the JobSource abstract base class for consistent handling.
 """
@@ -77,5 +78,6 @@ class JobSource(ABC):
 # Import concrete implementations for convenience
 from .indeed_source import IndeedSource
 from .himalayas_source import HimalayasSource
+from .bayt_source import BaytSource
 
-__all__ = ["JobSource", "JobData", "IndeedSource", "HimalayasSource"]
+__all__ = ["JobSource", "JobData", "IndeedSource", "HimalayasSource", "BaytSource"]

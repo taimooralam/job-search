@@ -10,6 +10,7 @@ from .contacts import router as contacts_router
 from .master_cv import router as master_cv_router
 from .log_polling import router as log_polling_router
 from .job_ingest import router as job_ingest_router
+from .job_search import router as job_search_router
 
 __all__ = [
     "operations_router",
@@ -17,4 +18,5 @@ __all__ = [
     "master_cv_router",
     "log_polling_router",
     "job_ingest_router",
+    "job_search_router",
 ]
