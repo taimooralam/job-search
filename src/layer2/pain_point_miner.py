@@ -615,13 +615,13 @@ class EnhancedPainPointAnalysis(BaseModel):
     strategic_needs: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=5,
+        max_length=6,
         description="Strategic business reasons for this role"
     )
     risks_if_unfilled: List[AnalysisItem] = Field(
         ...,
         min_length=2,
-        max_length=5,
+        max_length=6,
         description="Business consequences if role stays empty"
     )
     success_metrics: List[AnalysisItem] = Field(
