@@ -8,3 +8,4 @@ add job spy
 update outreach generation
 migrate mongodb
 refactor for agents
+generate generic cvs for the roles
