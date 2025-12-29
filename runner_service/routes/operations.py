@@ -1687,7 +1687,7 @@ async def get_operation_status(run_id: str) -> OperationStatusResponse:
     response_model=OperationStatusResponse,
     dependencies=[Depends(verify_token)],
     summary="Get operation logs from Redis",
-    description="Fetch logs from Redis persistence (24h TTL) for completed runs",
+    description="Fetch logs from Redis persistence (6h TTL) for completed runs",
 )
 async def get_operation_redis_logs(run_id: str) -> OperationStatusResponse:
     """
@@ -1707,7 +1707,7 @@ async def get_operation_redis_logs(run_id: str) -> OperationStatusResponse:
     if not state:
         raise HTTPException(
             status_code=404,
-            detail="Logs not found in Redis. They may have expired (24h TTL) or were never persisted.",
+            detail="Logs not found in Redis. They may have expired (6h TTL) or were never persisted.",
         )
 
     return OperationStatusResponse(
@@ -2731,8 +2731,9 @@ async def _execute_extraction_bulk_task(
 
     try:
         # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        # Use thread-safe wrapper since we're running in a worker thread
         if queue_id:
-            await _start_queue_item(queue_manager, queue_id, log_cb)
+            _queue_start_item_threadsafe(queue_manager, queue_id, log_cb)
 
         update_operation_status(run_id, "running")
 
@@ -2745,7 +2746,7 @@ async def _execute_extraction_bulk_task(
             log_cb(f"❌ Job validation failed: {e.detail}")
             update_operation_status(run_id, "failed", error=e.detail)
             if queue_id and queue_manager and queue_manager.is_connected:
-                await queue_manager.fail(queue_id, e.detail)
+                _queue_fail_threadsafe(queue_manager, queue_id, e.detail)
             return
 
         # Execute extraction
@@ -2770,25 +2771,19 @@ async def _execute_extraction_bulk_task(
         })
         log_cb("✅ Extraction complete" if result.success else f"❌ Extraction failed: {result.error}")
 
-        # Complete queue item (broadcasts WebSocket event)
+        # Complete queue item using thread-safe wrapper
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                if result.success:
-                    await queue_manager.complete(queue_id, success=True)
-                else:
-                    await queue_manager.fail(queue_id, result.error or "Extraction failed")
-            except Exception as e:
-                logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+            if result.success:
+                _queue_complete_threadsafe(queue_manager, queue_id, success=True)
+            else:
+                _queue_fail_threadsafe(queue_manager, queue_id, result.error or "Extraction failed")
 
     except Exception as e:
         logger.exception(f"[{run_id[:16]}] Bulk extraction failed: {e}")
         log_cb(f"❌ Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                await queue_manager.fail(queue_id, str(e))
-            except Exception:
-                pass
+            _queue_fail_threadsafe(queue_manager, queue_id, str(e))
 
 
 @router.post(
@@ -2885,8 +2880,9 @@ async def _execute_research_bulk_task(
 
     try:
         # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        # Use thread-safe wrapper since we're running in a worker thread
         if queue_id:
-            await _start_queue_item(queue_manager, queue_id, log_cb)
+            _queue_start_item_threadsafe(queue_manager, queue_id, log_cb)
 
         update_operation_status(run_id, "running")
 
@@ -2899,7 +2895,7 @@ async def _execute_research_bulk_task(
             log_cb(f"❌ Job validation failed: {e.detail}")
             update_operation_status(run_id, "failed", error=e.detail)
             if queue_id and queue_manager and queue_manager.is_connected:
-                await queue_manager.fail(queue_id, e.detail)
+                _queue_fail_threadsafe(queue_manager, queue_id, e.detail)
             return
 
         # Execute research
@@ -2923,15 +2919,12 @@ async def _execute_research_bulk_task(
             })
             log_cb("✅ Research complete" if result.success else f"❌ Research failed: {result.error}")
 
-            # Complete queue item
+            # Complete queue item using thread-safe wrapper
             if queue_id and queue_manager and queue_manager.is_connected:
-                try:
-                    if result.success:
-                        await queue_manager.complete(queue_id, success=True)
-                    else:
-                        await queue_manager.fail(queue_id, result.error or "Research failed")
-                except Exception as e:
-                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+                if result.success:
+                    _queue_complete_threadsafe(queue_manager, queue_id, success=True)
+                else:
+                    _queue_fail_threadsafe(queue_manager, queue_id, result.error or "Research failed")
 
         finally:
             service.close()
@@ -2941,10 +2934,7 @@ async def _execute_research_bulk_task(
         log_cb(f"❌ Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                await queue_manager.fail(queue_id, str(e))
-            except Exception:
-                pass
+            _queue_fail_threadsafe(queue_manager, queue_id, str(e))
 
 
 @router.post(
@@ -3039,8 +3029,9 @@ async def _execute_cv_bulk_task(
 
     try:
         # Move from PENDING → RUNNING (broadcasts WebSocket event)
+        # Use thread-safe wrapper since we're running in a worker thread
         if queue_id:
-            await _start_queue_item(queue_manager, queue_id, log_cb)
+            _queue_start_item_threadsafe(queue_manager, queue_id, log_cb)
 
         update_operation_status(run_id, "running")
 
@@ -3053,7 +3044,7 @@ async def _execute_cv_bulk_task(
             log_cb(f"❌ Job validation failed: {e.detail}")
             update_operation_status(run_id, "failed", error=e.detail)
             if queue_id and queue_manager and queue_manager.is_connected:
-                await queue_manager.fail(queue_id, e.detail)
+                _queue_fail_threadsafe(queue_manager, queue_id, e.detail)
             return
 
         # Execute CV generation
@@ -3075,25 +3066,19 @@ async def _execute_cv_bulk_task(
         })
         log_cb("✅ CV generation complete" if result.success else f"❌ CV generation failed: {result.error}")
 
-        # Complete queue item
+        # Complete queue item using thread-safe wrapper
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                if result.success:
-                    await queue_manager.complete(queue_id, success=True)
-                else:
-                    await queue_manager.fail(queue_id, result.error or "CV generation failed")
-            except Exception as e:
-                logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+            if result.success:
+                _queue_complete_threadsafe(queue_manager, queue_id, success=True)
+            else:
+                _queue_fail_threadsafe(queue_manager, queue_id, result.error or "CV generation failed")
 
     except Exception as e:
         logger.exception(f"[{run_id[:16]}] Bulk CV generation failed: {e}")
         log_cb(f"❌ Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                await queue_manager.fail(queue_id, str(e))
-            except Exception:
-                pass
+            _queue_fail_threadsafe(queue_manager, queue_id, str(e))
 
 
 @router.post(
@@ -3199,8 +3184,9 @@ async def _execute_all_ops_bulk_task(
 
     try:
         # Move from PENDING -> RUNNING (broadcasts WebSocket event)
+        # Use thread-safe wrapper since we're running in a worker thread
         if queue_id:
-            await _start_queue_item(queue_manager, queue_id, log_cb)
+            _queue_start_item_threadsafe(queue_manager, queue_id, log_cb)
 
         update_operation_status(run_id, "running")
 
@@ -3213,7 +3199,7 @@ async def _execute_all_ops_bulk_task(
             log_cb(f"Job validation failed: {e.detail}")
             update_operation_status(run_id, "failed", error=e.detail)
             if queue_id and queue_manager and queue_manager.is_connected:
-                await queue_manager.fail(queue_id, e.detail)
+                _queue_fail_threadsafe(queue_manager, queue_id, e.detail)
             return
 
         # Execute all operations
@@ -3247,15 +3233,12 @@ async def _execute_all_ops_bulk_task(
                 "error": result.error,
             })
 
-            # Complete queue item
+            # Complete queue item using thread-safe wrapper
             if queue_id and queue_manager and queue_manager.is_connected:
-                try:
-                    if result.success:
-                        await queue_manager.complete(queue_id, success=True)
-                    else:
-                        await queue_manager.fail(queue_id, result.error or "All-ops failed")
-                except Exception as e:
-                    logger.warning(f"[{run_id[:16]}] Failed to complete queue item: {e}")
+                if result.success:
+                    _queue_complete_threadsafe(queue_manager, queue_id, success=True)
+                else:
+                    _queue_fail_threadsafe(queue_manager, queue_id, result.error or "All-ops failed")
 
         finally:
             service.close()
@@ -3265,10 +3248,7 @@ async def _execute_all_ops_bulk_task(
         log_cb(f"Error: {str(e)}")
         update_operation_status(run_id, "failed", error=str(e))
         if queue_id and queue_manager and queue_manager.is_connected:
-            try:
-                await queue_manager.fail(queue_id, str(e))
-            except Exception:
-                pass
+            _queue_fail_threadsafe(queue_manager, queue_id, str(e))
 
 
 # ============================================================================
