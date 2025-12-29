@@ -1459,6 +1459,28 @@
     }
 
     async function updateBatchJobStatus(jobId, newStatus) {
+        // DEBUG: Log all status change attempts to help trace the bug
+        const selectEl = document.getElementById(`status-select-${jobId}`);
+        const previousStatus = selectEl?.dataset.currentStatus || 'unknown';
+        console.log(`[STATUS-DEBUG] updateBatchJobStatus called: jobId=${jobId}, newStatus=${newStatus}, previousStatus=${previousStatus}`);
+
+        // Safety check: if the newStatus is the same as the data attribute, skip the update
+        // This prevents HTMX swap race conditions from triggering duplicate/erroneous updates
+        if (selectEl && selectEl.dataset.currentStatus === newStatus) {
+            console.log(`[STATUS-DEBUG] Skipping - status unchanged: ${newStatus}`);
+            return;
+        }
+
+        // Safety check: warn if job is currently in an active operation
+        const queueStore = window.Alpine?.store('queue');
+        if (queueStore) {
+            const isRunning = queueStore.running?.some(j => j.job_id === jobId);
+            const isPending = queueStore.pending?.some(j => j.job_id === jobId);
+            if (isRunning || isPending) {
+                console.warn(`[STATUS-DEBUG] Warning: Status change while job is in queue (running=${isRunning}, pending=${isPending})`);
+            }
+        }
+
         try {
             const response = await fetch('/api/jobs/status', {
                 method: 'POST',
@@ -1467,6 +1489,11 @@
             });
 
             if (response.ok) {
+                // Update the data attribute to reflect the new status
+                if (selectEl) {
+                    selectEl.dataset.currentStatus = newStatus;
+                }
+
                 // If job is no longer "under processing", remove from view after a brief delay
                 if (newStatus !== 'under processing') {
                     setTimeout(() => {
@@ -1475,9 +1502,17 @@
                 }
             } else {
                 showToast('Failed to update status', 'error');
+                // Revert the dropdown to the previous value on failure
+                if (selectEl) {
+                    selectEl.value = previousStatus;
+                }
             }
         } catch (err) {
             showToast('Status update failed: ' + err.message, 'error');
+            // Revert the dropdown to the previous value on failure
+            if (selectEl) {
+                selectEl.value = previousStatus;
+            }
         }
     }
 

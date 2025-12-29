@@ -151,12 +151,15 @@
             {% endif %}
         </td>
 
-        <!-- Status dropdown -->
+        <!-- Status dropdown - hx-preserve prevents HTMX swap race conditions that could trigger onChange -->
         <td class="px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
             {% set status = job.status or 'not processed' %}
             {% set status_class = status | replace(' ', '-') %}
-            <select class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
+            <select id="status-select-{{ job._id }}"
+                    hx-preserve="true"
+                    class="text-xs px-2 py-1 rounded-full border-0 cursor-pointer status-{{ status_class }}"
                     onchange="updateBatchJobStatus('{{ job._id }}', this.value)"
+                    data-current-status="{{ status }}"
                     style="min-width: 130px;">
                 {% for s in statuses %}
                 <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
