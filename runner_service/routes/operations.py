@@ -3321,8 +3321,20 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
         )
 
     # Build PDF request payload
+    # Ensure tiptap_json is a proper TipTap document structure (dict with type: "doc")
+    content = editor_state.get("content", [])
+    if isinstance(content, list):
+        # Content is just the nodes array, wrap it in a doc structure
+        tiptap_doc = {"type": "doc", "content": content}
+    elif isinstance(content, dict) and content.get("type") == "doc":
+        # Already a proper doc structure
+        tiptap_doc = content
+    else:
+        # Fallback to empty doc
+        tiptap_doc = {"type": "doc", "content": []}
+
     pdf_request = {
-        "tiptap_json": editor_state.get("content", {"type": "doc", "content": []}),
+        "tiptap_json": tiptap_doc,
         "documentStyles": editor_state.get("documentStyles", {}),
         "header": editor_state.get("header", ""),
         "footer": editor_state.get("footer", ""),
