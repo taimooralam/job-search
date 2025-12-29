@@ -844,6 +844,19 @@ def update_job_status():
 
     # GAP-064: Build update data with appliedOn timestamp when status is "applied"
     update_data = {"status": new_status}
+
+    # DEBUG: Log when status is changed to 'discarded' to trace the source
+    if new_status == "discarded":
+        import traceback
+        stack_trace = ''.join(traceback.format_stack())
+        referer = request.headers.get('Referer', 'unknown')
+        user_agent = request.headers.get('User-Agent', 'unknown')[:100]
+        app.logger.warning(
+            f"[STATUS-DEBUG] Job {job_id} status changing to 'discarded' | "
+            f"Referer: {referer} | UA: {user_agent[:50]} | "
+            f"Stack:\n{stack_trace}"
+        )
+
     if new_status == "applied":
         update_data["appliedOn"] = datetime.utcnow()
     elif new_status != "applied":
