@@ -261,7 +261,7 @@
     <div class="job-detail-actions-bar" x-data="{ advancedOpen: localStorage.getItem('job_detail_advanced_open') === 'true' }">
         <div class="actions-bar-primary">
             <!-- Full Analysis - Hero Button with Tier Dropdown (unified naming) -->
-            <div x-data="tieredActionButton({ action: 'full-analysis', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+            <div x-data="tieredActionButton({ action: 'full-analysis', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                  class="action-primary hero-button-wrapper">
                 <div class="btn-action-hero-group" :class="{ 'btn-action-loading': loading }">
                     <button @click="queueExecute()"
@@ -324,7 +324,7 @@
             </div>
 
             <!-- Generate CV - Prominent Button with Tier Dropdown -->
-            <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+            <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                  class="action-secondary prominent-button-wrapper">
                 <div class="btn-action-prominent-group" :class="{ 'btn-action-loading': loading }">
                     <button @click="queueExecute()"
@@ -396,7 +396,7 @@
         <div x-show="advancedOpen" x-collapse x-cloak class="actions-bar-advanced">
             <div class="advanced-actions-grid">
                 <!-- ANALYSIS GROUP -->
-                <div x-data="tieredActionButton({ action: 'analyze-job', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'analyze-job', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -451,7 +451,7 @@
                     </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'prepare-annotations', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'prepare-annotations', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -507,7 +507,7 @@
                 </div>
 
                 <!-- RESEARCH GROUP -->
-                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -562,7 +562,7 @@
                     </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'discover-contacts', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'discover-contacts', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -618,7 +618,7 @@
                 </div>
 
                 <!-- GENERATION GROUP -->
-                <div x-data="tieredActionButton({ action: 'generate-cover-letter', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'generate-cover-letter', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -673,7 +673,7 @@
                     </div>
                 </div>
 
-                <div x-data="tieredActionButton({ action: 'generate-outreach', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'generate-outreach', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="action-compact-wrapper">
                     <div class="btn-action-compact-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -954,7 +954,7 @@
             </h2>
             <div class="pipeline-actions-container space-y-2">
                 {# Structure JD Button #}
-                <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'structure-jd', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -1004,7 +1004,7 @@
                 </div>
 
                 {# Full Extraction Button (GPT-4o) #}
-                <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'full-extraction', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -1076,7 +1076,7 @@
                 </div>
 
                 {# Research Company Button #}
-                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'research-company', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -1126,7 +1126,7 @@
                 </div>
 
                 {# Generate CV Button #}
-                <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'generate-cv', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -1179,7 +1179,7 @@
                 <div class="border-t theme-border pt-2 mt-2"></div>
 
                 {# Run All Ops Button - Full Pipeline (Alt+5) #}
-                <div x-data="tieredActionButton({ action: 'all-ops', jobId: '{{ job._id }}', jobTitle: '{{ (job.title or 'Unknown Role') | e }} @ {{ (job.company or 'Unknown') | e }}' })"
+                <div x-data="tieredActionButton({ action: 'all-ops', jobId: '{{ job._id }}', jobTitle: '{{ ((job.title or "Unknown Role") ~ " @ " ~ (job.company or "Unknown")) | replace("'", "\\'") | replace('"', '\\"') }}' })"
                      class="pipeline-action-wrapper">
                     <div class="btn-action-group" :class="{ 'btn-action-loading': loading }">
                         <button @click="queueExecute()"
@@ -2587,7 +2587,7 @@
 </script>
 
 {# Job Pipelines Panel - must load before pipeline-actions.js for queue integration #}
-<script src="/static/js/job-pipelines-panel.js"></script>
+<script src="/static/js/job-pipelines-panel.js?v=20251229"></script>
 
 {# Job Detail Scripts - Extracted to external file for maintainability #}
 <script>
@@ -2598,7 +2598,7 @@
         applicationUrl: "{{ job.application_url | default('', true) }}"
     };
 </script>
-<script src="/static/js/job-detail.js?v=20251212"></script>
+<script src="/static/js/job-detail.js?v=20251229"></script>
 
 <!-- Phase 5.1: Page Break Calculator Module -->
 <script src="/static/js/page-break-calculator.js?v=20251128"></script>
