@@ -204,19 +204,121 @@
                                     placeholder="e.g., Remote, New York"
                                     class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
                             </div>
-                            <div>
+                            <div x-data="{
+                                countrySearch: '',
+                                showCountryDropdown: false,
+                                countries: [
+                                    { code: 'USA', name: 'United States', flag: '🇺🇸' },
+                                    { code: 'UK', name: 'United Kingdom', flag: '🇬🇧' },
+                                    { code: 'Canada', name: 'Canada', flag: '🇨🇦' },
+                                    { code: 'Australia', name: 'Australia', flag: '🇦🇺' },
+                                    { code: 'Germany', name: 'Germany', flag: '🇩🇪' },
+                                    { code: 'France', name: 'France', flag: '🇫🇷' },
+                                    { code: 'Netherlands', name: 'Netherlands', flag: '🇳🇱' },
+                                    { code: 'Ireland', name: 'Ireland', flag: '🇮🇪' },
+                                    { code: 'Spain', name: 'Spain', flag: '🇪🇸' },
+                                    { code: 'Italy', name: 'Italy', flag: '🇮🇹' },
+                                    { code: 'Poland', name: 'Poland', flag: '🇵🇱' },
+                                    { code: 'Sweden', name: 'Sweden', flag: '🇸🇪' },
+                                    { code: 'Norway', name: 'Norway', flag: '🇳🇴' },
+                                    { code: 'Denmark', name: 'Denmark', flag: '🇩🇰' },
+                                    { code: 'Finland', name: 'Finland', flag: '🇫🇮' },
+                                    { code: 'Belgium', name: 'Belgium', flag: '🇧🇪' },
+                                    { code: 'Austria', name: 'Austria', flag: '🇦🇹' },
+                                    { code: 'Switzerland', name: 'Switzerland', flag: '🇨🇭' },
+                                    { code: 'Portugal', name: 'Portugal', flag: '🇵🇹' },
+                                    { code: 'Czech Republic', name: 'Czech Republic', flag: '🇨🇿' },
+                                    { code: 'Hungary', name: 'Hungary', flag: '🇭🇺' },
+                                    { code: 'Romania', name: 'Romania', flag: '🇷🇴' },
+                                    { code: 'Greece', name: 'Greece', flag: '🇬🇷' },
+                                    { code: 'Luxembourg', name: 'Luxembourg', flag: '🇱🇺' },
+                                    { code: 'Singapore', name: 'Singapore', flag: '🇸🇬' },
+                                    { code: 'Japan', name: 'Japan', flag: '🇯🇵' },
+                                    { code: 'India', name: 'India', flag: '🇮🇳' },
+                                    { code: 'Israel', name: 'Israel', flag: '🇮🇱' },
+                                    { code: 'UAE', name: 'United Arab Emirates', flag: '🇦🇪' },
+                                    { code: 'Saudi Arabia', name: 'Saudi Arabia', flag: '🇸🇦' },
+                                    { code: 'Qatar', name: 'Qatar', flag: '🇶🇦' },
+                                    { code: 'Kuwait', name: 'Kuwait', flag: '🇰🇼' },
+                                    { code: 'Bahrain', name: 'Bahrain', flag: '🇧🇭' },
+                                    { code: 'Oman', name: 'Oman', flag: '🇴🇲' },
+                                    { code: 'Egypt', name: 'Egypt', flag: '🇪🇬' },
+                                    { code: 'South Africa', name: 'South Africa', flag: '🇿🇦' },
+                                    { code: 'Brazil', name: 'Brazil', flag: '🇧🇷' },
+                                    { code: 'Mexico', name: 'Mexico', flag: '🇲🇽' },
+                                    { code: 'Argentina', name: 'Argentina', flag: '🇦🇷' },
+                                    { code: 'Chile', name: 'Chile', flag: '🇨🇱' },
+                                    { code: 'Colombia', name: 'Colombia', flag: '🇨🇴' },
+                                    { code: 'New Zealand', name: 'New Zealand', flag: '🇳🇿' },
+                                    { code: 'Malaysia', name: 'Malaysia', flag: '🇲🇾' },
+                                    { code: 'Philippines', name: 'Philippines', flag: '🇵🇭' },
+                                    { code: 'Thailand', name: 'Thailand', flag: '🇹🇭' },
+                                    { code: 'Indonesia', name: 'Indonesia', flag: '🇮🇩' },
+                                    { code: 'Vietnam', name: 'Vietnam', flag: '🇻🇳' },
+                                    { code: 'South Korea', name: 'South Korea', flag: '🇰🇷' },
+                                    { code: 'China', name: 'China', flag: '🇨🇳' },
+                                    { code: 'Hong Kong', name: 'Hong Kong', flag: '🇭🇰' },
+                                    { code: 'Taiwan', name: 'Taiwan', flag: '🇹🇼' },
+                                ],
+                                get filteredCountries() {
+                                    if (!this.countrySearch) return this.countries;
+                                    const search = this.countrySearch.toLowerCase();
+                                    return this.countries.filter(c =>
+                                        c.name.toLowerCase().includes(search) ||
+                                        c.code.toLowerCase().includes(search)
+                                    );
+                                },
+                                selectCountry(code) {
+                                    indeed.country = code;
+                                    this.showCountryDropdown = false;
+                                    this.countrySearch = '';
+                                },
+                                getSelectedCountry() {
+                                    return this.countries.find(c => c.code === indeed.country) || { name: indeed.country, flag: '🌍' };
+                                }
+                            }" class="relative">
                                 <label class="block text-sm font-medium theme-text-secondary mb-1">Country</label>
-                                <select x-model="indeed.country" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm">
-                                    <option value="USA">United States</option>
-                                    <option value="UK">United Kingdom</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="Australia">Australia</option>
-                                    <option value="Germany">Germany</option>
-                                    <option value="France">France</option>
-                                    <option value="Netherlands">Netherlands</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="UAE">UAE</option>
-                                </select>
+                                <button
+                                    type="button"
+                                    @click="showCountryDropdown = !showCountryDropdown"
+                                    class="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm px-3 py-2 text-left flex items-center justify-between">
+                                    <span class="flex items-center gap-2">
+                                        <span x-text="getSelectedCountry().flag"></span>
+                                        <span x-text="getSelectedCountry().name"></span>
+                                    </span>
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div
+                                    x-show="showCountryDropdown"
+                                    @click.outside="showCountryDropdown = false"
+                                    x-transition
+                                    class="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 max-h-64 overflow-hidden">
+                                    <div class="p-2 border-b border-gray-200 dark:border-gray-600">
+                                        <input
+                                            type="text"
+                                            x-model="countrySearch"
+                                            placeholder="Search countries..."
+                                            class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-sm px-2 py-1"
+                                            @keydown.escape="showCountryDropdown = false">
+                                    </div>
+                                    <div class="overflow-y-auto max-h-48">
+                                        <template x-for="country in filteredCountries" :key="country.code">
+                                            <button
+                                                type="button"
+                                                @click="selectCountry(country.code)"
+                                                :class="indeed.country === country.code ? 'bg-accent-50 dark:bg-accent-900/30 text-accent-700 dark:text-accent-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                                class="w-full px-3 py-2 text-left text-sm flex items-center gap-2">
+                                                <span x-text="country.flag"></span>
+                                                <span x-text="country.name"></span>
+                                            </button>
+                                        </template>
+                                        <div x-show="filteredCountries.length === 0" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                            No countries found
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
