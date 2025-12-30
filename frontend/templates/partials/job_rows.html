@@ -19,16 +19,17 @@
             </th>
 
             {# Column widths: narrow for metadata, wider for role/company #}
+            {# Total fixed ~650px + flexible role column to fit 1024px+ screens #}
             {% set sort_fields = [
-                ('createdAt', 'Created', 'hide-mobile', 'w-[70px]'),
-                ('company', 'Company', '', 'w-[120px] max-w-[120px]'),
+                ('createdAt', 'Created', 'hide-mobile', 'w-[60px]'),
+                ('company', 'Company', '', 'w-[100px] max-w-[100px]'),
                 ('title', 'Role/Title', '', ''),
-                ('location', 'Location', 'hide-mobile', 'w-[50px]'),
-                ('url', 'URL', 'hide-mobile', 'w-[100px]'),
-                ('jobId', 'Job ID', 'hide-mobile', 'w-[90px]'),
-                ('status', 'Status', '', 'w-[100px]'),
-                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[80px]'),
-                ('score', 'Score', 'hide-mobile', 'w-[60px]')
+                ('location', 'Location', 'hide-mobile', 'w-[40px]'),
+                ('url', 'URL', 'hide-tablet', 'w-[80px]'),
+                ('jobId', 'Job ID', 'hide-tablet', 'w-[75px]'),
+                ('status', 'Status', '', 'w-[90px]'),
+                ('pipeline', 'Pipeline', 'hide-mobile', 'w-[70px]'),
+                ('score', 'Score', 'hide-mobile', 'w-[50px]')
             ] %}
 
             {% for field, label, css_class, width_class in sort_fields %}
@@ -63,7 +64,7 @@
             {% endfor %}
 
             <!-- Actions column -->
-            <th scope="col" class="px-4 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[90px]">
+            <th scope="col" class="px-2 py-3 text-left text-xs font-medium theme-text-secondary uppercase tracking-wider w-[80px]">
                 Actions
             </th>
         </tr>
@@ -229,7 +230,7 @@
                 </td>
 
                 <!-- Job URL -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-mobile" onclick="event.stopPropagation()">
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm hide-tablet" onclick="event.stopPropagation()">
                     {% if job_url %}
                     <a href="{{ job_url }}" target="_blank"
                        class="text-accent-500 hover:text-accent-400 hover:underline flex items-center gap-1 max-w-[120px]"
@@ -245,7 +246,7 @@
                 </td>
 
                 <!-- Job ID -->
-                <td class="px-2 sm:px-4 py-3 whitespace-nowrap hide-mobile">
+                <td class="px-2 sm:px-4 py-3 whitespace-nowrap hide-tablet">
                     <span class="text-xs font-mono theme-text-secondary" title="{{ job.jobId or '' }}">
                         {{ (job.jobId or '-')[:12] }}{% if job.jobId and job.jobId|length > 12 %}...{% endif %}
                     </span>
