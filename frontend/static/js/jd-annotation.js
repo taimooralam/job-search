@@ -1343,12 +1343,26 @@ class AnnotationManager {
 
     /**
      * Render annotations in list
+     * @param {number} retryCount - Internal retry counter for deferred rendering
      */
-    renderAnnotations() {
+    renderAnnotations(retryCount = 0) {
         const container = document.getElementById(this.config.listId);
         const emptyState = document.getElementById(this.config.listEmptyId);
 
-        if (!container) return;
+        if (!container) {
+            // Container not found - might be a timing issue with HTMX/fetch content loading
+            // Retry up to 3 times with increasing delays to handle async DOM updates
+            const maxRetries = 3;
+            if (retryCount < maxRetries) {
+                const delay = (retryCount + 1) * 50; // 50ms, 100ms, 150ms
+                setTimeout(() => this.renderAnnotations(retryCount + 1), delay);
+                return;
+            }
+            // All retries exhausted - log error with diagnostic info
+            console.error(`[AnnotationManager] renderAnnotations: Container not found with id="${this.config.listId}" after ${maxRetries} retries. Available IDs containing "annotation":`,
+                [...document.querySelectorAll('[id*="annotation"]')].map(el => el.id).slice(0, 10));
+            return;
+        }
 
         // Filter annotations
         const filtered = this.getFilteredAnnotations();
