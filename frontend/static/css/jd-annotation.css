@@ -603,11 +603,13 @@ section[data-section-type="about_role"] {
     background-color: var(--color-bg-selected, rgba(99, 102, 241, 0.2));
 }
 
-/* Persona panel z-index fix - ensure it renders above CLI panel (z-1030) */
+/* Persona panel z-index fix - ensure it renders above other content within sidebar.
+   Note: The main fix is in _batch_sidebars.html where sidebars use z-[1040] to be above
+   CLI panel (z-1030). This is kept as defense-in-depth for the persona panel within sidebar. */
 #batch-persona-panel-container,
 #persona-panel-container {
     position: relative;
-    z-index: 1035; /* Above CLI panel (1030), below modals (1040) */
+    z-index: 10; /* Higher than sibling content within sidebar */
 }
 
 /* ============================================================================

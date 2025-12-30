@@ -2,17 +2,19 @@
 {# Contains overlay and three slide-out sidebars for JD annotations, contacts, and CV editor #}
 
 <!-- Global Overlay for all sidebars -->
+<!-- z-[1035] ensures overlay is above CLI panel (z-1030) but below sidebars (z-[1040]) -->
 <div id="batch-sidebar-overlay"
-     class="fixed inset-0 bg-black/50 z-40 hidden opacity-0 transition-opacity duration-200"
+     class="fixed inset-0 bg-black/50 z-[1035] hidden opacity-0 transition-opacity duration-200"
      onclick="closeBatchSidebar()"
      role="presentation"
      aria-hidden="true">
 </div>
 
 <!-- JD Annotation Sidebar -->
+<!-- z-[1040] ensures sidebar is above CLI panel (z-1030) and overlay (z-[1035]) -->
 <div id="batch-annotation-sidebar"
      class="fixed inset-y-0 right-0 w-11/12 sm:w-3/4 lg:w-2/3 bg-white dark:bg-gray-900 shadow-2xl
-            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+            transform translate-x-full transition-transform duration-300 ease-in-out z-[1040] flex flex-col"
      role="dialog"
      aria-labelledby="batch-annotation-title"
      aria-modal="true"
@@ -67,9 +69,10 @@
 </div>
 
 <!-- Contacts Sidebar -->
+<!-- z-[1040] ensures sidebar is above CLI panel (z-1030) -->
 <div id="batch-contacts-sidebar"
      class="fixed inset-y-0 right-0 w-96 max-w-[90vw] bg-white dark:bg-gray-900 shadow-2xl
-            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+            transform translate-x-full transition-transform duration-300 ease-in-out z-[1040] flex flex-col"
      role="dialog"
      aria-labelledby="batch-contacts-title"
      aria-modal="true"
@@ -114,9 +117,10 @@
 </div>
 
 <!-- CV Editor Sidebar -->
+<!-- z-[1040] ensures sidebar is above CLI panel (z-1030) -->
 <div id="batch-cv-sidebar"
      class="fixed inset-y-0 right-0 w-11/12 sm:w-2/3 lg:w-1/2 bg-white dark:bg-gray-900 shadow-2xl
-            transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col"
+            transform translate-x-full transition-transform duration-300 ease-in-out z-[1040] flex flex-col"
      role="dialog"
      aria-labelledby="batch-cv-title"
      aria-modal="true"
