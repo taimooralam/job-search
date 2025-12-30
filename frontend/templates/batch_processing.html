@@ -1135,14 +1135,24 @@
     const tierOptions = ['fast', 'balanced', 'quality']; // 1, 2, 3
 
     // Helper to toggle dropdown via Alpine.js
+    function getAlpineData(el) {
+        // Alpine v3 uses _x_dataStack, v2 uses __x
+        if (el._x_dataStack && el._x_dataStack[0]) return el._x_dataStack[0];
+        if (el.__x && el.__x.$data) return el.__x.$data;
+        return null;
+    }
+
     function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId);
-        if (dropdown && dropdown.__x) {
-            const isOpen = dropdown.__x.$data.open;
+        if (!dropdown) return;
+
+        const data = getAlpineData(dropdown);
+        if (data && typeof data.open !== 'undefined') {
+            const isOpen = data.open;
             // Close any other open dropdown first
             closeAllDropdowns();
             if (!isOpen) {
-                dropdown.__x.$data.open = true;
+                data.open = true;
                 activeDropdown = dropdownId === 'pipeline-dropdown' ? 'pipeline' : 'tier';
             } else {
                 activeDropdown = null;
@@ -1153,8 +1163,12 @@
     function closeAllDropdowns() {
         const pipelineDropdown = document.getElementById('pipeline-dropdown');
         const tierDropdown = document.getElementById('tier-dropdown');
-        if (pipelineDropdown && pipelineDropdown.__x) pipelineDropdown.__x.$data.open = false;
-        if (tierDropdown && tierDropdown.__x) tierDropdown.__x.$data.open = false;
+
+        const pipelineData = pipelineDropdown ? getAlpineData(pipelineDropdown) : null;
+        const tierData = tierDropdown ? getAlpineData(tierDropdown) : null;
+
+        if (pipelineData) pipelineData.open = false;
+        if (tierData) tierData.open = false;
         activeDropdown = null;
     }
 
