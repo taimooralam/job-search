@@ -192,11 +192,13 @@
                         </div>
                         {% endif %}
 
-                        <!-- Description Preview -->
+                        <!-- Description Preview (scrollable) -->
                         {% if desc %}
-                        <div>
+                        <div class="description-container">
                             <p class="text-xs theme-text-tertiary mb-1">Description:</p>
-                            <p class="text-xs theme-text-secondary description-text line-clamp-6">{{ desc[:500] }}{% if desc|length > 500 %}...{% endif %}</p>
+                            <div class="description-scroll">
+                                <p class="text-xs theme-text-secondary description-text">{{ desc }}</p>
+                            </div>
                         </div>
                         {% endif %}
                     </div>

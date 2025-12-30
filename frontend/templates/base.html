@@ -619,6 +619,37 @@
             line-height: 1.5;
         }
 
+        /* Scrollable description within hover card */
+        .job-preview-card .description-container {
+            display: flex;
+            flex-direction: column;
+            max-height: 12rem;  /* ~192px */
+        }
+
+        .job-preview-card .description-scroll {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        /* Subtle scrollbar for description */
+        .job-preview-card .description-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .job-preview-card .description-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .job-preview-card .description-scroll::-webkit-scrollbar-thumb {
+            background: var(--border-color, #d1d5db);
+            border-radius: 2px;
+        }
+
+        .job-preview-card .description-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary, #9ca3af);
+        }
+
         /* Row Action Animations (delete, batch, discard) */
         @keyframes row-action-gradient {
             0% {
