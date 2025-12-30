@@ -149,6 +149,13 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Layer 5: People Mapper
     "people_research": StepConfig(tier="middle"),
 
+    # Research steps (called with f"research_{type}" pattern)
+    # IMPORTANT: use_fallback=False because Claude CLI with WebSearch is required
+    # LangChain doesn't have web search, so fallback would produce garbage
+    "research_company": StepConfig(tier="middle", use_fallback=False),
+    "research_role": StepConfig(tier="middle", use_fallback=False),
+    "research_people": StepConfig(tier="middle", use_fallback=False),
+
     # Persona Builder
     "persona_synthesis": StepConfig(tier="high"),
 
@@ -221,6 +228,11 @@ def get_step_config(step_name: str) -> StepConfig:
         'claude-haiku-4-5-20251001'
     """
     # Start with default config or step-specific config
+    if step_name not in STEP_CONFIGS:
+        logger.warning(
+            f"Unrecognized step name '{step_name}' - using default config. "
+            f"Add it to STEP_CONFIGS in llm_config.py if this is a new step."
+        )
     base_config = STEP_CONFIGS.get(step_name, StepConfig())
 
     # Apply environment variable overrides
