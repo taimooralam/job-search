@@ -287,6 +287,11 @@ class CVGeneratorV2:
             qa_passed = sum(1 for qa in qa_results if qa.passed)
             self._emit_log("phase_complete", f"QA passed: {qa_passed}/{len(qa_results)} roles", phase=3)
 
+            # GAP-001 FIX: Fetch skill whitelist before stitching to prevent hallucinated skills
+            # This whitelist is used both in Phase 4 (stitcher) and Phase 5 (header generator)
+            skill_whitelist = self.cv_loader.get_skill_whitelist()
+            self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
+
             # Phase 4: Stitch roles together
             self._logger.info("Phase 4: Stitching roles with deduplication...")
             self._emit_log("phase_start", "Stitching CV sections...", phase=4)
@@ -294,6 +299,7 @@ class CVGeneratorV2:
                 role_bullets_list,
                 word_budget=self.word_budget,
                 target_keywords=extracted_jd.get("top_keywords", []),
+                skill_whitelist=skill_whitelist,  # GAP-001: Validate skills against whitelist
             )
             self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
             self._emit_log(
@@ -307,9 +313,6 @@ class CVGeneratorV2:
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
             self._emit_log("phase_start", "Generating profile header...", phase=5)
-            # GAP-001 FIX: Pass skill whitelist to prevent hallucinated skills
-            skill_whitelist = self.cv_loader.get_skill_whitelist()
-            self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
 
             # Phase 4.5: Build annotation context for header generation
             annotation_context = None

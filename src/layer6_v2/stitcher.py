@@ -19,7 +19,7 @@ Usage:
 """
 
 import re
-from typing import List, Set, Tuple, Optional
+from typing import List, Set, Tuple, Optional, Dict
 from difflib import SequenceMatcher
 from collections import defaultdict
 
@@ -58,6 +58,7 @@ class CVStitcher:
         word_budget: Optional[int] = None,  # None = no limit (include all content)
         similarity_threshold: float = 0.75,
         min_bullets_per_role: int = 2,
+        skill_whitelist: Optional[dict] = None,  # GAP-001: Whitelist to prevent hallucinated skills
     ):
         """
         Initialize the stitcher.
@@ -66,11 +67,24 @@ class CVStitcher:
             word_budget: Target word count (None = no limit, include all roles fully)
             similarity_threshold: Threshold for considering bullets as duplicates (0-1)
             min_bullets_per_role: Minimum bullets to keep per role (prevents empty roles)
+            skill_whitelist: Dict with 'hard_skills' and 'soft_skills' lists (from CVLoader)
         """
         self.word_budget = word_budget  # None = unlimited
         self.similarity_threshold = similarity_threshold
         self.min_bullets_per_role = min_bullets_per_role
         self._logger = get_logger(__name__)
+
+        # GAP-001: Store skill whitelist for validation
+        self._skill_whitelist = skill_whitelist
+        # Build combined set for efficient case-insensitive lookup
+        self._whitelist_set: Optional[Set[str]] = None
+        if skill_whitelist:
+            hard_skills = skill_whitelist.get("hard_skills", [])
+            soft_skills = skill_whitelist.get("soft_skills", [])
+            self._whitelist_set = {s.lower() for s in hard_skills + soft_skills}
+            self._logger.debug(
+                f"Skill whitelist loaded: {len(self._whitelist_set)} unique skills"
+            )
 
     def _extract_keywords(self, text: str) -> Set[str]:
         """Extract meaningful keywords from bullet text."""
@@ -85,6 +99,20 @@ class CVStitcher:
         # Numbers with context
         metrics.update(re.findall(r'\b\d+(?:,\d{3})*\b', text))
         return metrics
+
+    def _is_skill_in_whitelist(self, skill: str) -> bool:
+        """
+        GAP-001: Check if skill exists in whitelist (case-insensitive).
+
+        Args:
+            skill: Skill name to validate
+
+        Returns:
+            True if skill is in whitelist, or True if no whitelist (backward compat)
+        """
+        if self._whitelist_set is None:
+            return True  # No whitelist = no validation (backward compat)
+        return skill.lower() in self._whitelist_set
 
     def _calculate_similarity(self, bullet1: str, bullet2: str) -> Tuple[float, str]:
         """
@@ -261,6 +289,9 @@ class CVStitcher:
         """
         Compute combined skills for a role: JD-matching first, then role-specific.
 
+        GAP-001: Now validates skills against whitelist to prevent hallucinations.
+        Skills not in the whitelist are filtered out with debug logging.
+
         Args:
             hard_skills: Technical skills from this role
             soft_skills: Soft skills from this role
@@ -271,6 +302,22 @@ class CVStitcher:
             List of skills, JD-matching first, then others, capped at max_skills
         """
         all_skills = hard_skills + soft_skills
+
+        # GAP-001: Filter skills against whitelist before processing
+        if self._whitelist_set is not None:
+            validated_skills = []
+            filtered_out = []
+            for skill in all_skills:
+                if self._is_skill_in_whitelist(skill):
+                    validated_skills.append(skill)
+                else:
+                    filtered_out.append(skill)
+            if filtered_out:
+                self._logger.debug(
+                    f"Filtered out non-whitelist skills: {filtered_out}"
+                )
+            all_skills = validated_skills
+
         jd_matching = []
         other_skills = []
 
@@ -413,6 +460,7 @@ def stitch_all_roles(
     role_bullets_list: List[RoleBullets],
     word_budget: Optional[int] = None,  # None = no limit
     target_keywords: Optional[List[str]] = None,
+    skill_whitelist: Optional[Dict[str, List[str]]] = None,  # GAP-001: Prevent hallucinated skills
 ) -> StitchedCV:
     """
     Convenience function to stitch all roles.
@@ -421,9 +469,10 @@ def stitch_all_roles(
         role_bullets_list: List of RoleBullets from per-role generation
         word_budget: Target word count (None = no limit, include all)
         target_keywords: JD keywords to track
+        skill_whitelist: Dict with 'hard_skills' and 'soft_skills' lists (GAP-001)
 
     Returns:
         StitchedCV with deduplicated content
     """
-    stitcher = CVStitcher(word_budget=word_budget)
+    stitcher = CVStitcher(word_budget=word_budget, skill_whitelist=skill_whitelist)
     return stitcher.stitch(role_bullets_list, target_keywords)

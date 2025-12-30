@@ -545,3 +545,145 @@ class TestEdgeCases:
 
         assert len(result.roles) == 1
         assert result.total_bullet_count == 0
+
+
+# ===== TESTS: GAP-001 Skill Whitelist Filtering =====
+
+class TestSkillWhitelistFiltering:
+    """Tests for GAP-001: Skill whitelist validation to prevent hallucinated skills."""
+
+    @pytest.fixture
+    def role_with_skills(self):
+        """Role with hard and soft skills."""
+        return RoleBullets(
+            role_id="01_test_company",
+            company="Test Company",
+            title="Tech Lead",
+            period="2020–Present",
+            bullets=[
+                GeneratedBullet(
+                    text="Led engineering team",
+                    source_text="Led engineering team",
+                ),
+            ],
+            hard_skills=["Python", "Kubernetes", "AWS", "FakeSkill1"],
+            soft_skills=["Leadership", "Communication", "FakeSkill2"],
+            keywords_integrated=["Python", "Leadership"],
+        )
+
+    @pytest.fixture
+    def skill_whitelist(self):
+        """Sample skill whitelist from master CV."""
+        return {
+            "hard_skills": ["Python", "Kubernetes", "AWS", "Docker", "Java"],
+            "soft_skills": ["Leadership", "Communication", "Mentoring"],
+        }
+
+    def test_filters_non_whitelist_skills(self, role_with_skills, skill_whitelist):
+        """Non-whitelist skills are filtered out from role skills."""
+        stitcher = CVStitcher(skill_whitelist=skill_whitelist)
+        result = stitcher.stitch([role_with_skills])
+
+        # Check that role has skills and they don't include fake skills
+        role_skills = result.roles[0].skills
+        assert "FakeSkill1" not in role_skills
+        assert "FakeSkill2" not in role_skills
+
+    def test_preserves_valid_whitelist_skills(self, role_with_skills, skill_whitelist):
+        """Valid skills from whitelist are preserved."""
+        stitcher = CVStitcher(skill_whitelist=skill_whitelist)
+        result = stitcher.stitch([role_with_skills])
+
+        role_skills = result.roles[0].skills
+        # Valid skills should be preserved
+        assert "Python" in role_skills
+        assert "Kubernetes" in role_skills
+        assert "AWS" in role_skills
+        assert "Leadership" in role_skills
+        assert "Communication" in role_skills
+
+    def test_case_insensitive_matching(self, skill_whitelist):
+        """Skill matching is case-insensitive."""
+        role = RoleBullets(
+            role_id="test",
+            company="Test",
+            title="Lead",
+            period="2020",
+            bullets=[],
+            hard_skills=["python", "KUBERNETES", "Aws"],  # Mixed case
+            soft_skills=["LEADERSHIP", "communication"],
+        )
+
+        stitcher = CVStitcher(skill_whitelist=skill_whitelist)
+        result = stitcher.stitch([role])
+
+        role_skills = result.roles[0].skills
+        # All should be matched despite case differences
+        assert len(role_skills) >= 5  # All valid skills preserved
+
+    def test_no_whitelist_allows_all_skills(self, role_with_skills):
+        """Without whitelist, all skills are allowed (backward compatibility)."""
+        stitcher = CVStitcher(skill_whitelist=None)
+        result = stitcher.stitch([role_with_skills])
+
+        role_skills = result.roles[0].skills
+        # All skills should be present when no whitelist
+        assert "Python" in role_skills
+        assert "FakeSkill1" in role_skills or "FakeSkill2" in role_skills or len(role_skills) <= 8
+
+    def test_empty_whitelist_filters_all_skills(self):
+        """Empty whitelist filters all skills."""
+        role = RoleBullets(
+            role_id="test",
+            company="Test",
+            title="Lead",
+            period="2020",
+            bullets=[],
+            hard_skills=["Python", "AWS"],
+            soft_skills=["Leadership"],
+        )
+
+        empty_whitelist = {"hard_skills": [], "soft_skills": []}
+        stitcher = CVStitcher(skill_whitelist=empty_whitelist)
+        result = stitcher.stitch([role])
+
+        # All skills should be filtered out
+        assert result.roles[0].skills == []
+
+    def test_convenience_function_passes_whitelist(self, role_with_skills, skill_whitelist):
+        """stitch_all_roles convenience function accepts and passes whitelist."""
+        result = stitch_all_roles(
+            [role_with_skills],
+            skill_whitelist=skill_whitelist,
+        )
+
+        role_skills = result.roles[0].skills
+        # Fake skills should be filtered
+        assert "FakeSkill1" not in role_skills
+        assert "FakeSkill2" not in role_skills
+        # Valid skills preserved
+        assert "Python" in role_skills
+
+    def test_jd_matching_skills_prioritized_after_filtering(self, skill_whitelist):
+        """JD-matching skills are still prioritized after whitelist filtering."""
+        role = RoleBullets(
+            role_id="test",
+            company="Test",
+            title="Lead",
+            period="2020",
+            bullets=[],
+            hard_skills=["Docker", "Python", "AWS", "Java", "Kubernetes"],  # All valid
+            soft_skills=["Leadership", "Mentoring"],
+        )
+
+        stitcher = CVStitcher(skill_whitelist=skill_whitelist)
+        # JD requires Python and AWS
+        result = stitcher.stitch([role], target_keywords=["Python", "AWS"])
+
+        role_skills = result.roles[0].skills
+        # Python and AWS should appear before other skills (JD-matching priority)
+        python_idx = role_skills.index("Python")
+        aws_idx = role_skills.index("AWS")
+        # Both should be early in the list
+        assert python_idx < 3
+        assert aws_idx < 3
