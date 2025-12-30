@@ -600,6 +600,9 @@ def list_jobs():
         "auto_discovered": 1,  # Auto-discovery badge
         "source": 1,  # Job source (indeed_auto, himalayas_auto, etc.)
         "description": 1,  # For hover preview tooltip (truncated client-side)
+        "job_description": 1,  # Fallback field name for description
+        "jobDescription": 1,  # Another fallback field name
+        "extracted_jd": 1,  # Analyzed JD data for hover preview
         "fit_score": 1,  # For hover preview tooltip
     }
 
