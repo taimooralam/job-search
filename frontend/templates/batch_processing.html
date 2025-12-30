@@ -113,6 +113,7 @@
                                 <div class="font-semibold text-sm theme-text-primary">Full Analysis</div>
                                 <div class="text-xs theme-text-tertiary">Run all analysis steps in parallel</div>
                             </div>
+                            <span class="shortcut-badge">(1)</span>
                         </button>
 
                         <!-- ANALYSIS Section -->
@@ -128,6 +129,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Analyze Job</div>
                                 <div class="text-xs theme-text-tertiary">Extract JD, identify pain points, calculate fit score</div>
                             </div>
+                            <span class="shortcut-badge">(2)</span>
                         </button>
                         <button @click="executeBatchOperation('prepare-annotations'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
@@ -138,6 +140,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Prepare Annotations</div>
                                 <div class="text-xs theme-text-tertiary">Structure JD into sections for annotation editor</div>
                             </div>
+                            <span class="shortcut-badge">(3)</span>
                         </button>
 
                         <!-- RESEARCH Section -->
@@ -153,6 +156,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Research Company</div>
                                 <div class="text-xs theme-text-tertiary">Gather company signals, funding, news, and role context</div>
                             </div>
+                            <span class="shortcut-badge">(4)</span>
                         </button>
                         <button @click="executeBatchOperation('discover-contacts'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
@@ -163,6 +167,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Discover Contacts</div>
                                 <div class="text-xs theme-text-tertiary">Find hiring managers, recruiters, and relevant peers</div>
                             </div>
+                            <span class="shortcut-badge">(5)</span>
                         </button>
 
                         <!-- GENERATION Section -->
@@ -178,6 +183,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Generate CV</div>
                                 <div class="text-xs theme-text-tertiary">Create tailored CV matched to job requirements</div>
                             </div>
+                            <span class="shortcut-badge">(6)</span>
                         </button>
                         <button @click="executeBatchOperation('generate-cover-letter'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
@@ -188,6 +194,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Generate Cover Letter</div>
                                 <div class="text-xs theme-text-tertiary">Write personalized cover letter for this role</div>
                             </div>
+                            <span class="shortcut-badge">(7)</span>
                         </button>
                         <button @click="executeBatchOperation('generate-outreach'); open = false"
                                 class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3">
@@ -198,6 +205,7 @@
                                 <div class="font-medium text-sm theme-text-primary">Generate Outreach</div>
                                 <div class="text-xs theme-text-tertiary">Create LinkedIn and email messages for contacts</div>
                             </div>
+                            <span class="shortcut-badge">(8)</span>
                         </button>
                     </div>
                 </div>
