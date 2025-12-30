@@ -200,6 +200,42 @@
                             </div>
                         </div>
                         {% endif %}
+
+                        <!-- Key Responsibilities -->
+                        {% if jd.responsibilities %}
+                        <div class="mb-3">
+                            <p class="text-xs theme-text-tertiary mb-1">📌 Key Responsibilities:</p>
+                            <ul class="space-y-1 text-xs theme-text-secondary">
+                                {% for resp in jd.responsibilities[:4] %}
+                                <li class="flex items-start gap-1">
+                                    <span class="text-accent-500 flex-shrink-0">›</span>
+                                    <span class="line-clamp-2">{{ resp }}</span>
+                                </li>
+                                {% endfor %}
+                                {% if jd.responsibilities|length > 4 %}
+                                <li class="text-xs theme-text-muted italic">+{{ jd.responsibilities|length - 4 }} more...</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Required Qualifications -->
+                        {% if jd.required_qualifications %}
+                        <div class="mb-3">
+                            <p class="text-xs theme-text-tertiary mb-1">✓ Required Qualifications:</p>
+                            <ul class="space-y-1 text-xs theme-text-secondary">
+                                {% for qual in jd.required_qualifications[:4] %}
+                                <li class="flex items-start gap-1">
+                                    <span class="text-green-500 flex-shrink-0">✓</span>
+                                    <span class="line-clamp-2">{{ qual }}</span>
+                                </li>
+                                {% endfor %}
+                                {% if jd.required_qualifications|length > 4 %}
+                                <li class="text-xs theme-text-muted italic">+{{ jd.required_qualifications|length - 4 }} more...</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                        {% endif %}
                         {% else %}
                         <!-- Not analyzed notice -->
                         <div class="mb-3 p-2 rounded bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
