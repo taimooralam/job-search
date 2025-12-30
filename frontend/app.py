@@ -2887,6 +2887,87 @@ def upload_cv_to_gdrive(job_id: str):
         }), 500
 
 
+@app.route("/api/jobs/<job_id>/dossier/upload-drive", methods=["POST"])
+@login_required
+def upload_dossier_to_gdrive(job_id: str):
+    """
+    Upload dossier PDF to Google Drive via runner service proxy.
+
+    This endpoint proxies to the runner service which:
+    1. Fetches generated_dossier from MongoDB
+    2. Converts to PDF
+    3. Uploads to Google Drive via n8n webhook
+    4. Updates MongoDB with dossier_gdrive_uploaded_at timestamp
+
+    Returns:
+        JSON with success status, timestamp, and file IDs
+    """
+    import requests
+
+    # Get runner service URL
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    endpoint = f"{runner_url}/api/jobs/{job_id}/dossier/upload-drive"
+
+    # Get authentication token for runner service
+    runner_token = os.getenv("RUNNER_API_SECRET")
+    headers = {"Content-Type": "application/json"}
+    if runner_token:
+        headers["Authorization"] = f"Bearer {runner_token}"
+        logger.info(f"Dossier Google Drive upload request for job {job_id} - authentication configured")
+    else:
+        logger.warning(f"RUNNER_API_SECRET not set for job {job_id}")
+
+    try:
+        logger.info(f"Requesting dossier Google Drive upload from {endpoint}")
+
+        # Send request to runner service
+        response = requests.post(
+            endpoint,
+            headers=headers,
+            timeout=90,  # 90 second timeout (PDF gen + upload)
+        )
+
+        logger.info(f"Runner service responded with status {response.status_code}")
+
+        if response.status_code == 401:
+            logger.error(f"Authentication failed for job {job_id}")
+            return jsonify({
+                "error": "Authentication failed. Please contact support.",
+            }), 401
+
+        if response.status_code != 200:
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", "Upload failed")
+                logger.error(f"Dossier Google Drive upload failed for job {job_id}: {error_msg}")
+            except Exception:
+                error_msg = f"Upload failed with status {response.status_code}"
+                logger.error(f"Dossier Google Drive upload failed for job {job_id}: {response.text[:200]}")
+
+            return jsonify({"error": error_msg}), response.status_code
+
+        # Return success response from runner
+        result = response.json()
+        logger.info(f"Dossier Google Drive upload successful for job {job_id}")
+        return jsonify(result), 200
+
+    except requests.Timeout:
+        logger.error(f"Dossier Google Drive upload timed out for job {job_id}")
+        return jsonify({
+            "error": "Upload timed out. Please try again.",
+        }), 504
+    except requests.ConnectionError as e:
+        logger.error(f"Failed to connect to runner service: {str(e)}")
+        return jsonify({
+            "error": "Service unavailable. Please try again later.",
+        }), 503
+    except Exception as e:
+        logger.exception(f"Unexpected error during dossier Google Drive upload for job {job_id}")
+        return jsonify({
+            "error": f"Upload failed: {str(e)}",
+        }), 500
+
+
 @app.route("/api/jobs/<job_id>/export-page-pdf", methods=["POST"])
 @login_required
 def export_job_page_to_pdf(job_id: str):
