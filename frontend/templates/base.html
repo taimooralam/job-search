@@ -3359,7 +3359,7 @@
             if (!badge) return;
 
             if (count > 0) {
-                badge.textContent = count > 99 ? '99+' : count;
+                badge.textContent = count > 9999 ? '9999+' : count;
                 badge.style.display = 'flex';
                 badge.classList.remove('opacity-0', 'scale-0');
                 badge.classList.add('opacity-100', 'scale-100');
