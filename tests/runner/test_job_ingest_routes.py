@@ -6,6 +6,11 @@ Tests the runner service ingestion endpoints:
 - GET /jobs/ingest/state/{source}
 - DELETE /jobs/ingest/state/{source}
 - GET /jobs/ingest/history/{source}
+- GET /jobs/ingest/{run_id}/result
+
+NOTE: The ingestion endpoints are now async - they return immediately with a
+run_id and status="queued". The actual ingestion runs in a background task.
+Error handling for the ingestion process is tested via the result endpoint.
 """
 
 import pytest
@@ -121,163 +126,164 @@ def mock_ingest_service(mocker):
     return mock_service
 
 
+@pytest.fixture
+def mock_operation_streaming(mocker):
+    """Mock operation streaming functions for async endpoints."""
+    mocker.patch(
+        "runner_service.routes.job_ingest.create_operation_run",
+        return_value="op_ingest-himalaya_abc123",
+    )
+    mocker.patch(
+        "runner_service.routes.job_ingest.create_log_callback",
+        return_value=lambda msg: None,
+    )
+    mocker.patch(
+        "runner_service.routes.job_ingest.update_operation_status",
+    )
+    mocker.patch(
+        "runner_service.routes.job_ingest.get_operation_state",
+        return_value=MagicMock(status="queued"),
+    )
+
+
 # =============================================================================
-# HAPPY PATH TESTS - POST /jobs/ingest/himalaya
+# HAPPY PATH TESTS - POST /jobs/ingest/himalaya (Async API)
 # =============================================================================
 
 
 class TestIngestHimalayaJobs:
-    """Tests for the Himalaya job ingestion endpoint."""
+    """Tests for the Himalaya job ingestion endpoint (async API)."""
 
     @pytest.mark.asyncio
-    async def test_ingest_himalaya_with_defaults(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+    async def test_ingest_himalaya_returns_run_id(
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should ingest Himalaya jobs with default parameters."""
+        """Should return run_id and queued status immediately."""
         # Act
         response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
 
-        # Assert
+        # Assert - Async API returns immediately with run_id
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
+        assert "run_id" in data
+        assert data["status"] == "queued"
         assert data["source"] == "himalayas_auto"
-        assert data["stats"]["fetched"] > 0
-        mock_himalaya_source.fetch_jobs.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_with_custom_keywords(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should accept custom keywords parameter."""
+        """Should accept custom keywords and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?keywords=python&keywords=engineer",
             headers=auth_headers,
         )
 
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-
-        # Verify keywords were passed to source
-        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
-        assert "keywords" in call_args
-        assert len(call_args["keywords"]) == 2
+        assert "run_id" in data
+        assert data["status"] == "queued"
+        assert data["source"] == "himalayas_auto"
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_with_max_results(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should respect max_results parameter."""
+        """Should accept max_results parameter and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?max_results=10",
             headers=auth_headers,
         )
 
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
-        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
-        assert call_args["max_results"] == 10
+        data = response.json()
+        assert "run_id" in data
+        assert data["status"] == "queued"
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_skip_scoring(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should skip LLM scoring when skip_scoring=true."""
+        """Should accept skip_scoring parameter and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?skip_scoring=true",
             headers=auth_headers,
         )
 
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
-
-        # Verify skip_scoring was passed to ingest service
-        call_args = mock_ingest_service.ingest_jobs.call_args
-        assert call_args[1]["skip_scoring"] is True
+        data = response.json()
+        assert "run_id" in data
+        assert data["status"] == "queued"
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_non_incremental(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should perform full fetch when incremental=false."""
+        """Should accept incremental=false parameter and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?incremental=false",
             headers=auth_headers,
         )
 
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
-        call_args = mock_ingest_service.ingest_jobs.call_args
-        assert call_args[1]["incremental"] is False
+        data = response.json()
+        assert "run_id" in data
+        assert data["status"] == "queued"
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_custom_threshold(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should accept custom score threshold."""
+        """Should accept custom score threshold and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?score_threshold=80",
             headers=auth_headers,
         )
 
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
-        call_args = mock_ingest_service.ingest_jobs.call_args
-        assert call_args[1]["score_threshold"] == 80
+        data = response.json()
+        assert "run_id" in data
+        assert data["status"] == "queued"
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_worldwide_only_false(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
-        """Should fetch non-worldwide jobs when worldwide_only=false."""
+        """Should accept worldwide_only=false parameter and return run_id."""
         # Act
         response = client.post(
             "/jobs/ingest/himalaya?worldwide_only=false",
             headers=auth_headers,
         )
 
-        # Assert
-        assert response.status_code == 200
-        call_args = mock_himalaya_source.fetch_jobs.call_args[0][0]
-        assert call_args["worldwide_only"] is False
-
-
-# =============================================================================
-# EDGE CASE TESTS - POST /jobs/ingest/himalaya
-# =============================================================================
-
-
-class TestIngestHimalayaEdgeCases:
-    """Tests for edge cases in Himalaya ingestion."""
-
-    @pytest.mark.asyncio
-    async def test_ingest_himalaya_no_jobs_found(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
-    ):
-        """Should handle case where no jobs are fetched."""
-        # Arrange
-        mock_himalaya_source.fetch_jobs.return_value = []
-
-        # Act
-        response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
-
-        # Assert
+        # Assert - Async API returns immediately
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert data["stats"]["fetched"] == 0
-        assert data["stats"]["ingested"] == 0
+        assert "run_id" in data
+        assert data["status"] == "queued"
+
+
+# =============================================================================
+# VALIDATION TESTS - POST /jobs/ingest/himalaya
+# =============================================================================
+
+
+class TestIngestHimalayaValidation:
+    """Tests for parameter validation in Himalaya ingestion."""
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_max_results_exceeds_limit(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should reject max_results > 100."""
         # Act
@@ -291,7 +297,7 @@ class TestIngestHimalayaEdgeCases:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_invalid_score_threshold(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
+        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should reject score_threshold outside 0-100 range."""
         # Act
@@ -303,35 +309,135 @@ class TestIngestHimalayaEdgeCases:
         # Assert
         assert response.status_code == 422  # Validation error
 
-    @pytest.mark.asyncio
-    async def test_ingest_himalaya_mongodb_error(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
-    ):
-        """Should return 500 when MongoDB connection fails."""
+
+# =============================================================================
+# ERROR TESTS - Background Task Errors (via result endpoint)
+#
+# NOTE: Since errors now happen in background tasks, the initial POST always
+# returns 200 with a run_id. Error handling is tested via the result endpoint.
+# =============================================================================
+
+
+class TestIngestResultEndpoint:
+    """Tests for the ingestion result endpoint."""
+
+    def test_get_ingest_result_completed(self, client, auth_headers, mocker):
+        """Should return completed result with data."""
         # Arrange
-        with patch("runner_service.routes.job_ingest.get_db") as mock_get_db:
-            mock_get_db.side_effect = Exception("MongoDB connection failed")
+        from runner_service.routes.job_ingest import IngestResponse
 
-            # Act
-            response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+        mock_result = IngestResponse(
+            success=True,
+            source="himalayas_auto",
+            incremental=True,
+            stats={"fetched": 5, "ingested": 3},
+            last_fetch_at="2025-01-15T10:00:00",
+            jobs=[{"title": "Test Job"}],
+            error=None,
+        )
 
-            # Assert
-            assert response.status_code == 500
-            assert "failed" in response.json()["detail"].lower()
-
-    @pytest.mark.asyncio
-    async def test_ingest_himalaya_source_fetch_error(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service
-    ):
-        """Should return 500 when job source fetch fails."""
-        # Arrange
-        mock_himalaya_source.fetch_jobs.side_effect = Exception("API timeout")
+        mocker.patch(
+            "runner_service.routes.job_ingest.get_operation_state",
+            return_value=MagicMock(status="completed", error=None),
+        )
+        mocker.patch(
+            "runner_service.routes.job_ingest._get_stored_ingest_result",
+            return_value=mock_result,
+        )
 
         # Act
-        response = client.post("/jobs/ingest/himalaya", headers=auth_headers)
+        response = client.get(
+            "/jobs/ingest/op_test123/result",
+            headers=auth_headers,
+        )
 
         # Assert
-        assert response.status_code == 500
+        assert response.status_code == 200
+        data = response.json()
+        assert data["run_id"] == "op_test123"
+        assert data["status"] == "completed"
+        assert data["result"]["success"] is True
+        assert data["result"]["stats"]["ingested"] == 3
+
+    def test_get_ingest_result_failed(self, client, auth_headers, mocker):
+        """Should return failed status with error message."""
+        # Arrange
+        from runner_service.routes.job_ingest import IngestResponse
+
+        mock_result = IngestResponse(
+            success=False,
+            source="himalayas_auto",
+            incremental=True,
+            stats={"fetched": 0, "ingested": 0},
+            last_fetch_at=None,
+            jobs=[],
+            error="API timeout",
+        )
+
+        mocker.patch(
+            "runner_service.routes.job_ingest.get_operation_state",
+            return_value=MagicMock(status="failed", error="API timeout"),
+        )
+        mocker.patch(
+            "runner_service.routes.job_ingest._get_stored_ingest_result",
+            return_value=mock_result,
+        )
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/op_test123/result",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["run_id"] == "op_test123"
+        assert data["status"] == "failed"
+        assert data["result"]["success"] is False
+        assert data["result"]["error"] == "API timeout"
+
+    def test_get_ingest_result_still_running(self, client, auth_headers, mocker):
+        """Should return running status when operation not complete."""
+        # Arrange
+        mocker.patch(
+            "runner_service.routes.job_ingest.get_operation_state",
+            return_value=MagicMock(status="running", error=None),
+        )
+        mocker.patch(
+            "runner_service.routes.job_ingest._get_stored_ingest_result",
+            return_value=None,
+        )
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/op_test123/result",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["run_id"] == "op_test123"
+        assert data["status"] == "running"
+        assert data["result"] is None
+
+    def test_get_ingest_result_not_found(self, client, auth_headers, mocker):
+        """Should return 404 when run_id not found."""
+        # Arrange
+        mocker.patch(
+            "runner_service.routes.job_ingest.get_operation_state",
+            return_value=None,
+        )
+
+        # Act
+        response = client.get(
+            "/jobs/ingest/op_nonexistent/result",
+            headers=auth_headers,
+        )
+
+        # Assert
+        assert response.status_code == 404
 
 
 # =============================================================================
@@ -633,6 +739,14 @@ class TestIngestAuthenticationRequired:
         """Should reject request without valid token."""
         # Act
         response = client.get("/jobs/ingest/history/himalayas_auto")
+
+        # Assert
+        assert response.status_code == 401
+
+    def test_get_result_requires_auth(self, client):
+        """Should reject request without valid token."""
+        # Act
+        response = client.get("/jobs/ingest/op_test123/result")
 
         # Assert
         assert response.status_code == 401
