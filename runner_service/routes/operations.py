@@ -3370,6 +3370,7 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
             form_data = {
                 "company_name": company_name,
                 "role_name": role_name,
+                "file_name": "Taimoor Alam Resume.pdf",
             }
 
             upload_response = await http_client.post(
