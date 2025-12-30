@@ -3426,3 +3426,169 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
             status_code=500,
             detail=f"Upload failed: {str(e)}",
         )
+
+
+@router.post(
+    "/{job_id}/dossier/upload-drive",
+    response_model=GDriveUploadResponse,
+    dependencies=[Depends(verify_token)],
+    summary="Upload Dossier PDF to Google Drive",
+    description="Generate dossier PDF and upload to Google Drive via n8n webhook. Creates company/role folder hierarchy.",
+)
+async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
+    """
+    Upload dossier PDF to Google Drive via n8n webhook.
+
+    Steps:
+    1. Fetch job from MongoDB (company, title, generated_dossier)
+    2. Convert dossier text to HTML
+    3. Generate PDF via pdf-service
+    4. POST to n8n webhook with company_name, role_name, file_name, and PDF
+    5. Update MongoDB with dossier_gdrive_uploaded_at timestamp
+    """
+    import httpx
+    from io import BytesIO
+
+    # Import the filename generator from pdf_service
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from pdf_service.pdf_helpers import generate_dossier_filename
+
+    n8n_webhook_url = os.getenv(
+        "N8N_WEBHOOK_CV_UPLOAD",
+        "https://n8n.srv1112039.hstgr.cloud/webhook/cv-upload",
+    )
+    pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
+
+    try:
+        # Validate and fetch job
+        job = _validate_job_exists_sync(job_id)
+        company_name = job.get("company", "Unknown Company")
+        role_name = job.get("title", "Unknown Role")
+
+        # Get generated dossier content
+        generated_dossier = job.get("generated_dossier")
+        if not generated_dossier:
+            raise HTTPException(
+                status_code=400,
+                detail="No dossier available. Please process the job first.",
+            )
+
+        # Generate filename with timestamp
+        file_name = generate_dossier_filename(company_name, role_name)
+
+        # Convert plain text dossier to simple HTML for PDF rendering
+        # Escape HTML entities and preserve formatting
+        import html as html_module
+        escaped_dossier = html_module.escape(generated_dossier)
+        # Convert line breaks to HTML and preserve spacing
+        formatted_dossier = escaped_dossier.replace("\n", "<br>")
+
+        dossier_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin: 40px;
+            color: #333;
+        }}
+        pre {{
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+        }}
+    </style>
+</head>
+<body>
+    <pre>{escaped_dossier}</pre>
+</body>
+</html>"""
+
+        async with httpx.AsyncClient(timeout=60.0) as http_client:
+            # Step 1: Generate PDF from dossier HTML
+            logger.info(f"Generating dossier PDF for job {job_id}")
+            pdf_response = await http_client.post(
+                f"{pdf_service_url}/render-pdf",
+                json={"html": dossier_html},
+            )
+            pdf_response.raise_for_status()
+            pdf_content = pdf_response.content
+
+            # Step 2: Upload to n8n webhook
+            logger.info(
+                f"Uploading dossier PDF to Google Drive: company={company_name}, role={role_name}, file={file_name}"
+            )
+
+            # Prepare multipart form data
+            files = {
+                "data": (
+                    file_name,
+                    BytesIO(pdf_content),
+                    "application/pdf",
+                ),
+            }
+            form_data = {
+                "company_name": company_name,
+                "role_name": role_name,
+                "file_name": file_name,
+            }
+
+            upload_response = await http_client.post(
+                n8n_webhook_url,
+                files=files,
+                data=form_data,
+                timeout=30.0,
+            )
+            upload_response.raise_for_status()
+
+            # Parse n8n response
+            n8n_result = upload_response.json()
+            logger.info(f"Dossier Google Drive upload successful: {n8n_result}")
+
+            # Step 3: Update MongoDB with upload timestamp
+            uploaded_at = datetime.utcnow()
+            client = _get_mongo_client()
+            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
+            db["level-2"].update_one(
+                {"_id": ObjectId(job_id)},
+                {"$set": {"dossier_gdrive_uploaded_at": uploaded_at}},
+            )
+
+            return GDriveUploadResponse(
+                success=True,
+                uploaded_at=uploaded_at.isoformat() + "Z",
+                message="Dossier uploaded to Google Drive successfully",
+                gdrive_file_id=n8n_result.get("file_id"),
+                gdrive_folder_id=n8n_result.get("role_folder"),
+            )
+
+    except httpx.TimeoutException as e:
+        logger.error(f"Timeout during dossier Google Drive upload for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail="Upload timed out. Please try again.",
+        )
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            f"HTTP error during dossier Google Drive upload for job {job_id}: {e.response.status_code}"
+        )
+        try:
+            error_detail = e.response.json().get("detail", str(e))
+        except Exception:
+            error_detail = str(e)
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Upload failed: {error_detail}",
+        )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as-is
+    except Exception as e:
+        logger.error(f"Dossier Google Drive upload failed for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Upload failed: {str(e)}",
+        )
