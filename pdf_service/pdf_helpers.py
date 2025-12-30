@@ -32,6 +32,26 @@ def sanitize_for_path(text: str) -> str:
     return cleaned.replace(" ", "_")
 
 
+def generate_dossier_filename(company: str, role: str) -> str:
+    """
+    Generate timestamped dossier filename for Google Drive upload.
+
+    Args:
+        company: Company name
+        role: Role title
+
+    Returns:
+        Filename like: dossier_Stripe_Senior_SRE_20251231_143022.pdf
+    """
+    from datetime import datetime
+
+    company_clean = sanitize_for_path(company)[:30] if company else "Unknown_Company"
+    role_clean = sanitize_for_path(role)[:30] if role else "Unknown_Role"
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+    return f"dossier_{company_clean}_{role_clean}_{timestamp}.pdf"
+
+
 def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 50) -> str:
     """
     Convert TipTap JSON to HTML for display compatibility.
