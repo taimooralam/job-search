@@ -98,7 +98,7 @@ class ClaudeQuickScorer:
             tier: LLM tier to use - "low" for cost-effective scoring
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
         """
-        self.llm = UnifiedLLM(tier=tier)
+        self.llm = UnifiedLLM(step_name="quick_scorer")
         self._candidate_profile_cache: Optional[str] = None
         self._log_callback = log_callback
 

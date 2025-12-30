@@ -174,6 +174,9 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
 
     # Outreach Generation - MANDATORY Claude CLI for quality
     "outreach_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=180),
+
+    # Job Scoring - MANDATORY Claude CLI (avoid invalid OpenAI key fallback)
+    "quick_scorer": StepConfig(tier="low", use_fallback=False),
 }
 
 

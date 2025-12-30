@@ -75,6 +75,7 @@
             {% set job_url = job.url or job.jobUrl %}
             {% set app_url = job.application_url or job_url %}
             <tr class="job-row cursor-pointer"
+                x-data="{ anyPopoverOpen: false }"
                 data-job-id="{{ job._id }}"
                 onclick="navigateToJob(event, '{{ job._id }}')"
                 onmouseenter="prefetchJobOnHover('{{ job._id }}')"
@@ -127,7 +128,7 @@
                 {% set desc = job.description or job.job_description or job.jobDescription or '' %}
                 <td class="px-2 sm:px-4 py-3 role-col overflow-visible relative group"
                     x-data="{ showPreview: false, hoverTimeout: null, leaveTimeout: null }"
-                    @mouseenter="clearTimeout(leaveTimeout); hoverTimeout = setTimeout(() => showPreview = true, 200)"
+                    @mouseenter="if (!anyPopoverOpen) { clearTimeout(leaveTimeout); hoverTimeout = setTimeout(() => showPreview = true, 200) }"
                     @mouseleave="clearTimeout(hoverTimeout); leaveTimeout = setTimeout(() => showPreview = false, 150)">
                     <div class="flex items-center gap-1.5">
                         <div class="text-sm font-semibold theme-text-primary truncate">
@@ -154,7 +155,7 @@
                     </div>
 
                     <!-- Hover Preview Card -->
-                    <div x-show="showPreview"
+                    <div x-show="showPreview && !anyPopoverOpen"
                          x-cloak
                          x-transition:enter="transition ease-out duration-100"
                          x-transition:enter-start="opacity-0 scale-95"
@@ -360,7 +361,7 @@
                             </a>
                             {% endif %}
                             <!-- Edit button (shows on hover or if no URL) -->
-                            <button @click="showPopover = !showPopover"
+                            <button @click="showPopover = !showPopover; anyPopoverOpen = showPopover"
                                     class="p-0.5 rounded transition-all
                                            {% if not app_url %}theme-text-tertiary hover:theme-text-primary{% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary ml-0.5{% endif %}"
                                     title="{{ 'Edit application URL' if app_url else 'Set application URL' }}">
@@ -372,7 +373,7 @@
                             <!-- Popover -->
                             <div x-show="showPopover"
                                  x-cloak
-                                 @click.away="showPopover = false"
+                                 @click.away="showPopover = false; anyPopoverOpen = false"
                                  x-transition:enter="transition ease-out duration-100"
                                  x-transition:enter-start="opacity-0 scale-95"
                                  x-transition:enter-end="opacity-100 scale-100"
@@ -384,9 +385,9 @@
                                            x-model="url"
                                            class="flex-1 px-2 py-1.5 text-sm rounded border theme-border theme-bg-secondary theme-text-primary focus:ring-2 focus:ring-accent-500"
                                            placeholder="https://..."
-                                           @keydown.enter="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; })"
-                                           @keydown.escape="showPopover = false">
-                                    <button @click="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; })"
+                                           @keydown.enter="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; anyPopoverOpen = false; })"
+                                           @keydown.escape="showPopover = false; anyPopoverOpen = false">
+                                    <button @click="saving = true; saveJobApplicationUrl('{{ job._id }}', url).then(() => { saving = false; showPopover = false; anyPopoverOpen = false; })"
                                             :disabled="saving"
                                             class="px-2.5 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-xs font-medium transition flex items-center gap-1">
                                         <template x-if="saving">
