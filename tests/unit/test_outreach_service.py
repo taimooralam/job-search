@@ -151,6 +151,47 @@ def mock_llm_inmail_response():
     return mock_response
 
 
+@pytest.fixture
+def mock_unified_llm_result():
+    """Mock LLMResult for invoke_unified_sync (connection message)."""
+    from src.common.unified_llm import LLMResult
+    return LLMResult(
+        content=(
+            f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+            f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+            f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+        ),
+        backend="claude_cli",
+        model="claude-opus-4-5-20251101",
+        tier="high",
+        duration_ms=1234,
+        success=True,
+        input_tokens=500,
+        output_tokens=100,
+        cost_usd=0.01,
+    )
+
+
+@pytest.fixture
+def mock_unified_llm_inmail_result():
+    """Mock LLMResult for invoke_unified_sync (InMail message)."""
+    from src.common.unified_llm import LLMResult
+    return LLMResult(
+        content="""{
+        "subject": "Re: Engineering Growth",
+        "body": "Hi Jane,\\n\\nI saw your post about TechCorp's scaling challenges. Having led similar growth at PreviousCorp - hiring 15 engineers in 6 months with 90% retention - I understand the complexities involved.\\n\\nI've just applied for the Senior Engineer role and would love to discuss how my experience could help your team.\\n\\nBest regards,\\nTaimoor"
+    }""",
+        backend="claude_cli",
+        model="claude-opus-4-5-20251101",
+        tier="high",
+        duration_ms=2345,
+        success=True,
+        input_tokens=800,
+        output_tokens=200,
+        cost_usd=0.02,
+    )
+
+
 # =============================================================================
 # Test OutreachGenerationService Initialization
 # =============================================================================
@@ -364,11 +405,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should return OperationResult."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -386,11 +437,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should return success=True for valid inputs."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -409,11 +470,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate connection message when requested."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -433,11 +504,20 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate InMail message when requested."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_inmail_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content="""{
+        "subject": "Re: Engineering Growth",
+        "body": "Hi Jane,\\n\\nI saw your post about TechCorp's scaling challenges. Having led similar growth at PreviousCorp - hiring 15 engineers in 6 months with 90% retention - I understand the complexities involved.\\n\\nI've just applied for the Senior Engineer role and would love to discuss how my experience could help your team.\\n\\nBest regards,\\nTaimoor"
+    }""",
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=2345,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -457,11 +537,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should persist result to MongoDB."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -479,11 +569,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include contact info in result data."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -504,11 +604,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include char_count in result data."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -527,11 +637,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should estimate cost."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -549,11 +669,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include model_used in result."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -573,11 +703,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should include duration_ms in result."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -595,11 +735,21 @@ class TestOutreachGenerationServiceExecuteSuccess:
     ):
         """Execute should generate unique run_id."""
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result1 = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -687,11 +837,19 @@ class TestOutreachGenerationServiceExecuteErrors:
         service._fetch_job = MagicMock(return_value=sample_job_document)
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.side_effect = Exception("LLM API error")
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            # Simulate CLI failure - returns LLMResult with success=False
+            mock_invoke.return_value = LLMResult(
+                content="",
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=0,
+                success=False,
+                error="Claude CLI failed: LLM API error",
+            )
 
             result = await service.execute(
                 job_id=sample_job_id,
@@ -702,7 +860,7 @@ class TestOutreachGenerationServiceExecuteErrors:
             )
 
         assert result.success is False
-        assert "LLM API error" in result.error
+        assert "Claude CLI failed" in result.error
 
     @pytest.mark.asyncio
     async def test_continues_on_persist_failure(
@@ -714,11 +872,21 @@ class TestOutreachGenerationServiceExecuteErrors:
         service._persist_outreach = MagicMock(return_value=False)
 
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_llm_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content=(
+                    f"Hi Jane, I noticed TechCorp is scaling - I led similar growth at "
+                    f"PreviousCorp (15 hires, 90% retention). Would love to connect! "
+                    f"{CANDIDATE_CALENDLY} {CANDIDATE_SIGNATURE}"
+                ),
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service.execute(
                 job_id=sample_job_id,
@@ -1029,15 +1197,18 @@ class TestOutreachGenerationServiceInMailParsing:
         self, service_with_mocks, sample_job_id
     ):
         """Should parse valid JSON response correctly."""
-        mock_response = MagicMock()
-        mock_response.content = '{"subject": "Test Subject", "body": "Test body message"}'
-
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content='{"subject": "Test Subject", "body": "Test body message"}',
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -1056,15 +1227,18 @@ class TestOutreachGenerationServiceInMailParsing:
         self, service_with_mocks, sample_job_id
     ):
         """Should handle non-JSON response gracefully."""
-        mock_response = MagicMock()
-        mock_response.content = "This is not JSON, just plain text message."
-
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content="This is not JSON, just plain text message.",
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,
@@ -1084,15 +1258,18 @@ class TestOutreachGenerationServiceInMailParsing:
         self, service_with_mocks, sample_job_id
     ):
         """Should truncate subject if too long."""
-        mock_response = MagicMock()
-        mock_response.content = '{"subject": "This is a very long subject line that exceeds the maximum allowed length for InMail subjects", "body": "Test body"}'
-
         with patch(
-            "src.common.llm_factory.create_tracked_llm_for_model"
-        ) as mock_create_llm:
-            mock_llm = MagicMock()
-            mock_llm.invoke.return_value = mock_response
-            mock_create_llm.return_value = mock_llm
+            "src.services.outreach_service.invoke_unified_sync"
+        ) as mock_invoke:
+            from src.common.unified_llm import LLMResult
+            mock_invoke.return_value = LLMResult(
+                content='{"subject": "This is a very long subject line that exceeds the maximum allowed length for InMail subjects", "body": "Test body"}',
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             result = await service_with_mocks.execute(
                 job_id=sample_job_id,

@@ -347,17 +347,21 @@ I have applied for this role. Calendly: https://calendly.com/taimooralam/15min""
 class TestCoverLetterGenerator:
     """Test CoverLetterGenerator class."""
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_generates_cover_letter_successfully(self, mock_llm_class, sample_job_state, valid_cover_letter):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_generates_cover_letter_successfully(self, mock_invoke, sample_job_state, valid_cover_letter):
         """CoverLetterGenerator.generate_cover_letter returns valid letter."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
-        # Mock LLM to return valid cover letter
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = valid_cover_letter
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        # Mock invoke_unified_sync to return valid cover letter
+        mock_invoke.return_value = LLMResult(
+            content=valid_cover_letter,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="high",
+            duration_ms=1234,
+            success=True,
+        )
 
         generator = CoverLetterGenerator()
         result = generator.generate_cover_letter(sample_job_state)
@@ -367,43 +371,54 @@ class TestCoverLetterGenerator:
         assert "75%" in result  # Contains metric
         assert "TechCorp" in result  # Contains company name
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_retry_on_invalid_output(self, mock_llm_class, sample_job_state, invalid_cover_letter_no_metrics, valid_cover_letter):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_retry_on_invalid_output(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics, valid_cover_letter):
         """Generator retries on validation failure and succeeds with valid output."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
-
-        # Mock LLM to return invalid then valid
-        mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
-
-        invalid_response = MagicMock()
-        invalid_response.content = invalid_cover_letter_no_metrics
-
-        valid_response = MagicMock()
-        valid_response.content = valid_cover_letter
+        from src.common.unified_llm import LLMResult
 
         # First call returns invalid, second returns valid
-        mock_llm.invoke.side_effect = [invalid_response, valid_response]
+        mock_invoke.side_effect = [
+            LLMResult(
+                content=invalid_cover_letter_no_metrics,
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            ),
+            LLMResult(
+                content=valid_cover_letter,
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            ),
+        ]
 
         generator = CoverLetterGenerator()
         result = generator.generate_cover_letter(sample_job_state)
 
         # Should succeed with valid output after retry
         assert result == valid_cover_letter
-        assert mock_llm.invoke.call_count == 2
+        assert mock_invoke.call_count == 2
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_raises_after_max_retries(self, mock_llm_class, sample_job_state, invalid_cover_letter_no_metrics):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_raises_after_max_retries(self, mock_invoke, sample_job_state, invalid_cover_letter_no_metrics):
         """Generator raises error after exhausting retries."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
-        # Mock LLM to always return invalid
-        mock_llm = MagicMock()
-        mock_llm_class.return_value = mock_llm
-
-        invalid_response = MagicMock()
-        invalid_response.content = invalid_cover_letter_no_metrics
-        mock_llm.invoke.return_value = invalid_response
+        # Mock invoke_unified_sync to always return invalid
+        mock_invoke.return_value = LLMResult(
+            content=invalid_cover_letter_no_metrics,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="high",
+            duration_ms=1234,
+            success=True,
+        )
 
         generator = CoverLetterGenerator()
 
@@ -411,60 +426,72 @@ class TestCoverLetterGenerator:
             generator.generate_cover_letter(sample_job_state)
 
         # Should have tried multiple times (1 initial + 2 retries = 3 total)
-        assert mock_llm.invoke.call_count == 3
+        assert mock_invoke.call_count == 3
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_includes_company_research_in_prompt(self, mock_llm_class, sample_job_state, valid_cover_letter):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_includes_company_research_in_prompt(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generator includes company research in LLM prompt."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = valid_cover_letter
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = LLMResult(
+            content=valid_cover_letter,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="high",
+            duration_ms=1234,
+            success=True,
+        )
 
         generator = CoverLetterGenerator()
         generator.generate_cover_letter(sample_job_state)
 
         # Check that prompt includes company research
-        call_args = mock_llm.invoke.call_args[0][0]
+        call_args = mock_invoke.call_args
         prompt_text = str(call_args)
 
         assert "Series B" in prompt_text or "funding" in prompt_text.lower()
         assert "TechCorp" in prompt_text
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_includes_role_research_in_prompt(self, mock_llm_class, sample_job_state, valid_cover_letter):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_includes_role_research_in_prompt(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generator includes role research in LLM prompt."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = valid_cover_letter
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = LLMResult(
+            content=valid_cover_letter,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="high",
+            duration_ms=1234,
+            success=True,
+        )
 
         generator = CoverLetterGenerator()
         generator.generate_cover_letter(sample_job_state)
 
         # Check that prompt includes role research
-        call_args = mock_llm.invoke.call_args[0][0]
+        call_args = mock_invoke.call_args
         prompt_text = str(call_args)
 
         assert "reliability" in prompt_text.lower() or "scale" in prompt_text.lower()
         assert "Business Impact" in prompt_text or "Why Now" in prompt_text
 
-    @patch('src.layer6.cover_letter_generator.create_tracked_llm')
-    def test_references_star_metrics(self, mock_llm_class, sample_job_state, valid_cover_letter):
+    @patch('src.layer6.cover_letter_generator.invoke_unified_sync')
+    def test_references_star_metrics(self, mock_invoke, sample_job_state, valid_cover_letter):
         """Generated cover letter references STAR metrics."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = valid_cover_letter
-        mock_llm.invoke.return_value = mock_response
-        mock_llm_class.return_value = mock_llm
+        mock_invoke.return_value = LLMResult(
+            content=valid_cover_letter,
+            backend="claude_cli",
+            model="claude-opus-4-5-20251101",
+            tier="high",
+            duration_ms=1234,
+            success=True,
+        )
 
         generator = CoverLetterGenerator()
         result = generator.generate_cover_letter(sample_job_state)
@@ -476,16 +503,19 @@ class TestCoverLetterGenerator:
     def test_validates_on_generation(self, sample_job_state):
         """Generator validates output before returning."""
         from src.layer6.cover_letter_generator import CoverLetterGenerator
+        from src.common.unified_llm import LLMResult
 
         # This test verifies the integration: generate -> validate -> return
         # We'll use a mock that returns invalid output to trigger validation
-        with patch('src.layer6.cover_letter_generator.create_tracked_llm') as mock_llm_class:
-            mock_llm = MagicMock()
-            mock_llm_class.return_value = mock_llm
-
-            invalid_response = MagicMock()
-            invalid_response.content = "Too short"
-            mock_llm.invoke.return_value = invalid_response
+        with patch('src.layer6.cover_letter_generator.invoke_unified_sync') as mock_invoke:
+            mock_invoke.return_value = LLMResult(
+                content="Too short",
+                backend="claude_cli",
+                model="claude-opus-4-5-20251101",
+                tier="high",
+                duration_ms=1234,
+                success=True,
+            )
 
             generator = CoverLetterGenerator()
 

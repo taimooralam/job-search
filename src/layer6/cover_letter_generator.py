@@ -16,11 +16,10 @@ Phase 6 Enhancement (JD Annotation System):
 import logging
 import re
 from typing import List, Optional, Dict, Any
-from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
-from src.common.llm_factory import create_tracked_llm
+from src.common.unified_llm import invoke_unified_sync
 from src.common.state import JobState
 from src.common.annotation_types import ConcernAnnotation
 from src.common.persona_builder import get_persona_guidance
@@ -699,20 +698,13 @@ class CoverLetterGenerator:
     - JD-specificity checks
     - Generic boilerplate detection
     - Automatic retry on validation failure
-    - LLM API retry with exponential backoff
+    - Uses Claude Code CLI exclusively (no LangChain fallback)
     """
 
     def __init__(self):
-        """Initialize LLM for cover letter generation."""
+        """Initialize cover letter generator."""
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
-
-        # GAP-066: Token tracking enabled
-        self.llm = create_tracked_llm(
-            model=Config.DEFAULT_MODEL,
-            temperature=Config.CREATIVE_TEMPERATURE,  # 0.7 for creative writing
-            layer="layer6_cover_letter",
-        )
         self.max_validation_retries = 2
 
     @retry(
@@ -720,23 +712,34 @@ class CoverLetterGenerator:
         wait=wait_exponential(multiplier=1, min=2, max=30),
         reraise=True,
     )
-    def _call_llm(self, messages: list) -> str:
+    def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         """
-        Call LLM with retry logic for transient failures.
+        Call LLM via Claude Code CLI (mandatory - no fallback).
 
         Uses exponential backoff: 2s, 4s, 8s...up to 30s max wait.
 
         Args:
-            messages: List of SystemMessage/HumanMessage
+            system_prompt: System prompt for the LLM
+            user_prompt: User prompt for the LLM
 
         Returns:
             Raw response content from LLM
 
         Raises:
-            Exception: After 3 failed attempts
+            ValueError: If Claude CLI fails (no fallback to OpenAI)
         """
-        response = self.llm.invoke(messages)
-        return response.content.strip()
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=system_prompt,
+            step_name="cover_letter_generation",
+            job_id="cover_letter",
+            validate_json=False,
+        )
+
+        if not result.success:
+            raise ValueError(f"Claude CLI failed for cover letter: {result.error}")
+
+        return result.content.strip()
 
     def _format_pain_points(self, pain_points: List[dict]) -> str:
         """Format pain points as numbered list."""
@@ -987,29 +990,25 @@ KEY METRICS: {star.get('metrics', 'N/A')}
         # Build system prompt with persona context (Phase 5: persona in SYSTEM prompt)
         system_prompt = _build_cover_letter_system_prompt_with_persona(jd_annotations_data)
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(
-                content=USER_PROMPT_TEMPLATE.format(
-                    title=state.get("title") or "",
-                    company=state.get("company") or "",
-                    job_description=(state.get("job_description") or "")[:1500],
-                    pain_points=self._format_pain_points(state.get("pain_points") or []),
-                    strategic_needs=self._format_strategic_needs(state.get("strategic_needs") or []),
-                    company_research=self._format_company_research(state.get("company_research") or {}),
-                    role_research=self._format_role_research(state.get("role_research") or {}),
-                    candidate_profile=candidate_profile,
-                    selected_stars=self._format_selected_stars(state.get("selected_stars") or []),
-                    fit_score=state.get("fit_score") or "N/A",
-                    fit_rationale=state.get("fit_rationale") or "No fit analysis available.",
-                    passion_identity_section=passion_identity_section,
-                    concern_mitigation_section=concern_mitigation_section,
-                )
-            )
-        ]
+        # Build user prompt from template
+        user_prompt = USER_PROMPT_TEMPLATE.format(
+            title=state.get("title") or "",
+            company=state.get("company") or "",
+            job_description=(state.get("job_description") or "")[:1500],
+            pain_points=self._format_pain_points(state.get("pain_points") or []),
+            strategic_needs=self._format_strategic_needs(state.get("strategic_needs") or []),
+            company_research=self._format_company_research(state.get("company_research") or {}),
+            role_research=self._format_role_research(state.get("role_research") or {}),
+            candidate_profile=candidate_profile,
+            selected_stars=self._format_selected_stars(state.get("selected_stars") or []),
+            fit_score=state.get("fit_score") or "N/A",
+            fit_rationale=state.get("fit_rationale") or "No fit analysis available.",
+            passion_identity_section=passion_identity_section,
+            concern_mitigation_section=concern_mitigation_section,
+        )
 
-        # Call LLM with retry
-        cover_letter = self._call_llm(messages)
+        # Call LLM via Claude Code CLI (mandatory - no fallback)
+        cover_letter = self._call_llm(system_prompt, user_prompt)
 
         # Validate
         try:

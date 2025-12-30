@@ -166,14 +166,14 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     "jd_structure_parsing": StepConfig(tier="low"),
     "jd_extraction": StepConfig(tier="middle", use_fallback=False),
 
-    # Cover Letter
-    "cover_letter_generation": StepConfig(tier="middle"),
+    # Cover Letter - MANDATORY Claude CLI for quality
+    "cover_letter_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=180),
 
     # LinkedIn
     "linkedin_optimization": StepConfig(tier="middle"),
 
-    # Outreach Generation
-    "outreach_generation": StepConfig(tier="high", timeout_seconds=180),
+    # Outreach Generation - MANDATORY Claude CLI for quality
+    "outreach_generation": StepConfig(tier="high", use_fallback=False, timeout_seconds=180),
 }
 
 

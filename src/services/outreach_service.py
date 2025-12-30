@@ -21,8 +21,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from bson import ObjectId
-from langchain_core.messages import HumanMessage, SystemMessage
 from pymongo import MongoClient
+
+from src.common.unified_llm import invoke_unified_sync
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.services.operation_base import OperationResult, OperationService
@@ -682,24 +683,18 @@ class OutreachGenerationService(OperationService):
         Generate LinkedIn connection request (<=300 chars).
 
         Uses persona-enhanced prompt if persona is available in context.
+        Uses Claude Code CLI exclusively via invoke_unified_sync (no LangChain fallback).
 
         Args:
             context: Context dictionary with job/contact info
-            model: Model name to use
+            model: Model name to use (ignored - uses step config)
 
         Returns:
             Connection message string
+
+        Raises:
+            ValueError: If Claude CLI fails (no fallback to OpenAI)
         """
-        from src.common.llm_factory import create_tracked_llm_for_model
-
-        # Create LLM - use create_tracked_llm_for_model to auto-detect provider
-        # This allows using Claude models for quality tier (claude-opus-4-5-20251101)
-        llm = create_tracked_llm_for_model(
-            model=model,
-            temperature=0.7,  # Slightly creative for personalization
-            layer="outreach_service",
-        )
-
         # Choose system prompt based on persona availability
         if context.get("has_persona") and context.get("persona_statement"):
             # Use persona-enhanced prompt - LLM "becomes" the candidate
@@ -732,14 +727,19 @@ class OutreachGenerationService(OperationService):
             char_limit=CONNECTION_CHAR_LIMIT,
         )
 
-        # Generate message
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ]
+        # Generate message using Claude Code CLI (mandatory - no OpenAI fallback)
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=system_prompt,
+            step_name="outreach_generation",
+            job_id="outreach",
+            validate_json=False,
+        )
 
-        response = llm.invoke(messages)
-        message = response.content.strip()
+        if not result.success:
+            raise ValueError(f"Claude CLI failed for connection message: {result.error}")
+
+        message = result.content.strip()
 
         # Validate and fix message
         message = self._validate_connection_message(message)
@@ -755,25 +755,20 @@ class OutreachGenerationService(OperationService):
         Generate InMail message with subject and body.
 
         Uses persona-enhanced prompt if persona is available in context.
+        Uses Claude Code CLI exclusively via invoke_unified_sync (no LangChain fallback).
 
         Args:
             context: Context dictionary with job/contact info
-            model: Model name to use
+            model: Model name to use (ignored - uses step config)
 
         Returns:
             Tuple of (subject, body)
+
+        Raises:
+            ValueError: If Claude CLI fails (no fallback to OpenAI)
         """
         import json
-
-        from src.common.llm_factory import create_tracked_llm_for_model
-
-        # Create LLM - use create_tracked_llm_for_model to auto-detect provider
-        # This allows using Claude models for quality tier (claude-opus-4-5-20251101)
-        llm = create_tracked_llm_for_model(
-            model=model,
-            temperature=0.7,
-            layer="outreach_service",
-        )
+        import re
 
         # Choose system prompt based on persona availability
         if context.get("has_persona") and context.get("persona_statement"):
@@ -808,41 +803,45 @@ class OutreachGenerationService(OperationService):
             max_chars=INMAIL_MAX_CHARS,
         )
 
-        # Generate message
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ]
+        # Generate message using Claude Code CLI (mandatory - no OpenAI fallback)
+        result = invoke_unified_sync(
+            prompt=user_prompt,
+            system=system_prompt,
+            step_name="outreach_generation",
+            job_id="outreach",
+            validate_json=False,
+        )
 
-        response = llm.invoke(messages)
-        content = response.content.strip()
+        if not result.success:
+            raise ValueError(f"Claude CLI failed for InMail message: {result.error}")
+
+        content = result.content.strip()
 
         # Parse JSON response
         try:
             # Try to extract JSON from response
             if content.startswith("{"):
-                result = json.loads(content)
+                parsed = json.loads(content)
             else:
                 # Try to find JSON in response
-                import re
                 json_match = re.search(r'\{[^{}]*"subject"[^{}]*"body"[^{}]*\}', content, re.DOTALL)
                 if json_match:
-                    result = json.loads(json_match.group())
+                    parsed = json.loads(json_match.group())
                 else:
                     # Fallback: use content as body
-                    result = {
+                    parsed = {
                         "subject": f"Re: {context['role']} opportunity",
                         "body": content,
                     }
         except json.JSONDecodeError:
             logger.warning("Failed to parse InMail JSON response, using fallback")
-            result = {
+            parsed = {
                 "subject": f"Re: {context['role']} opportunity",
                 "body": content,
             }
 
-        subject = result.get("subject", f"Re: {context['role']} opportunity")
-        body = result.get("body", content)
+        subject = parsed.get("subject", f"Re: {context['role']} opportunity")
+        body = parsed.get("body", content)
 
         # Validate subject length
         if len(subject) > 50:
