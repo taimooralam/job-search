@@ -1084,6 +1084,107 @@ def ingest_himalaya_jobs():
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/jobs/ingest/indeed", methods=["POST"])
+def ingest_indeed_jobs():
+    """
+    Trigger Indeed job ingestion on-demand.
+
+    Query Parameters:
+        search_term: Job search query
+        location: Location to search in
+        country: Country code (e.g., 'us', 'uk')
+        max_results: Maximum jobs to fetch (default 50, max 100)
+        hours_old: Only fetch jobs posted within this many hours
+        skip_scoring: Skip LLM scoring for faster testing
+        incremental: Only fetch jobs newer than last run (default true)
+        score_threshold: Minimum score for ingestion (default 70)
+
+    Returns:
+        JSON with ingestion stats and list of ingested jobs
+    """
+    try:
+        # Build query params from request args
+        params = {}
+        if request.args.get("search_term"):
+            params["search_term"] = request.args.get("search_term")
+        if request.args.get("location"):
+            params["location"] = request.args.get("location")
+        if request.args.get("country"):
+            params["country"] = request.args.get("country")
+        if request.args.get("max_results"):
+            params["max_results"] = request.args.get("max_results")
+        if request.args.get("hours_old"):
+            params["hours_old"] = request.args.get("hours_old")
+        if request.args.get("skip_scoring"):
+            params["skip_scoring"] = request.args.get("skip_scoring")
+        if request.args.get("incremental"):
+            params["incremental"] = request.args.get("incremental")
+        if request.args.get("score_threshold"):
+            params["score_threshold"] = request.args.get("score_threshold")
+
+        response = requests.post(
+            f"{RUNNER_URL}/jobs/ingest/indeed",
+            headers=get_headers(),
+            params=params,
+            timeout=120,  # Longer timeout for ingestion
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Ingestion timeout - operation may still be running"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/jobs/ingest/bayt", methods=["POST"])
+def ingest_bayt_jobs():
+    """
+    Trigger Bayt job ingestion on-demand.
+
+    Query Parameters:
+        search_term: Job search query
+        max_results: Maximum jobs to fetch (default 50, max 100)
+        skip_scoring: Skip LLM scoring for faster testing
+        incremental: Only fetch jobs newer than last run (default true)
+        score_threshold: Minimum score for ingestion (default 70)
+
+    Returns:
+        JSON with ingestion stats and list of ingested jobs
+    """
+    try:
+        # Build query params from request args
+        params = {}
+        if request.args.get("search_term"):
+            params["search_term"] = request.args.get("search_term")
+        if request.args.get("max_results"):
+            params["max_results"] = request.args.get("max_results")
+        if request.args.get("skip_scoring"):
+            params["skip_scoring"] = request.args.get("skip_scoring")
+        if request.args.get("incremental"):
+            params["incremental"] = request.args.get("incremental")
+        if request.args.get("score_threshold"):
+            params["score_threshold"] = request.args.get("score_threshold")
+
+        response = requests.post(
+            f"{RUNNER_URL}/jobs/ingest/bayt",
+            headers=get_headers(),
+            params=params,
+            timeout=120,  # Longer timeout for ingestion
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Ingestion timeout - operation may still be running"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/jobs/ingest/state/<source>", methods=["GET"])
 def get_ingest_state(source: str):
     """
