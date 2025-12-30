@@ -6,22 +6,50 @@ On-demand job ingestion endpoint for fetching jobs from external sources
 
 This endpoint runs on the VPS runner service, using Claude CLI for
 scoring (free with Max subscription).
+
+Supports real-time verbose logging via Redis + LogPoller infrastructure.
 """
 
 import logging
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
 from ..auth import verify_token
+from .operation_streaming import (
+    create_operation_run,
+    create_log_callback,
+    update_operation_status,
+    get_operation_state,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["ingestion"])
+
+# In-memory storage for ingest results (keyed by run_id)
+_ingest_results: Dict[str, "IngestResponse"] = {}
+
+
+class IngestStartResponse(BaseModel):
+    """Response when starting an async ingestion operation."""
+
+    run_id: str
+    status: str
+    source: str
+
+
+class IngestResultResponse(BaseModel):
+    """Response when polling for ingestion result."""
+
+    run_id: str
+    status: str  # "queued", "running", "completed", "failed"
+    result: Optional["IngestResponse"] = None
+    error: Optional[str] = None
 
 
 class IngestResponse(BaseModel):
@@ -34,6 +62,16 @@ class IngestResponse(BaseModel):
     last_fetch_at: Optional[str] = None
     jobs: List[dict] = Field(default_factory=list)
     error: Optional[str] = None
+
+
+def _store_ingest_result(run_id: str, result: "IngestResponse") -> None:
+    """Store ingestion result for later retrieval."""
+    _ingest_results[run_id] = result
+
+
+def _get_stored_ingest_result(run_id: str) -> Optional["IngestResponse"]:
+    """Retrieve stored ingestion result."""
+    return _ingest_results.get(run_id)
 
 
 def get_db():
@@ -76,8 +114,9 @@ def get_default_keywords() -> List[str]:
     ]
 
 
-@router.post("/ingest/himalaya", response_model=IngestResponse, dependencies=[Depends(verify_token)])
+@router.post("/ingest/himalaya", response_model=IngestStartResponse, dependencies=[Depends(verify_token)])
 async def ingest_himalaya_jobs(
+    background_tasks: BackgroundTasks,
     keywords: Optional[List[str]] = Query(
         default=None,
         description="Keywords to filter jobs (defaults to INDEED_SEARCH_TERMS env var)"
@@ -105,32 +144,61 @@ async def ingest_himalaya_jobs(
         le=100,
         description="Minimum score for ingestion (0-100)"
     ),
-) -> IngestResponse:
+) -> IngestStartResponse:
     """
-    Fetch and ingest jobs from Himalaya on-demand.
+    Start Himalaya job ingestion (async with real-time logging).
 
-    This endpoint:
+    This endpoint returns immediately with a run_id. Use:
+    - GET /jobs/ingest/{run_id}/logs for real-time SSE logs
+    - GET /jobs/ingest/{run_id}/result for final result
+
+    The ingestion process:
     1. Fetches remote jobs from Himalaya API
     2. Filters by keywords and worldwide availability
     3. Scores each job using Claude CLI (free with Max subscription)
     4. Inserts qualifying jobs into MongoDB level-2 collection
     5. Updates state for incremental fetching
 
-    Jobs are inserted with the same schema as LinkedIn/Indeed imports,
-    ready for Layer 1.4 (JD Extraction) and beyond.
-
     Returns:
-        Ingestion statistics and list of ingested jobs
+        run_id for tracking the operation
     """
-    try:
-        # Use default keywords if not provided
-        search_keywords = keywords or get_default_keywords()
+    # Use default keywords if not provided
+    search_keywords = keywords or get_default_keywords()
 
-        logger.info(
-            f"Starting Himalaya ingestion: keywords={search_keywords}, "
-            f"max_results={max_results}, worldwide_only={worldwide_only}, "
-            f"incremental={incremental}"
-        )
+    # Create operation run for log streaming
+    run_id = create_operation_run(job_id="ingest", operation="ingest-himalaya")
+    log_cb = create_log_callback(run_id)
+
+    # Start background task
+    background_tasks.add_task(
+        _run_himalaya_ingestion,
+        run_id=run_id,
+        log_callback=log_cb,
+        keywords=search_keywords,
+        max_results=max_results,
+        worldwide_only=worldwide_only,
+        skip_scoring=skip_scoring,
+        incremental=incremental,
+        score_threshold=score_threshold,
+    )
+
+    return IngestStartResponse(run_id=run_id, status="queued", source="himalayas_auto")
+
+
+async def _run_himalaya_ingestion(
+    run_id: str,
+    log_callback: Callable[[str], None],
+    keywords: List[str],
+    max_results: int,
+    worldwide_only: bool,
+    skip_scoring: bool,
+    incremental: bool,
+    score_threshold: int,
+) -> None:
+    """Background task for Himalaya ingestion with verbose logging."""
+    try:
+        update_operation_status(run_id, "running")
+        log_callback(f"[ingest_start] source=himalayas, keywords={keywords}, incremental={incremental}")
 
         # Get MongoDB connection
         db = get_db()
@@ -140,17 +208,17 @@ async def ingest_himalaya_jobs(
         from src.services.job_ingest_service import IngestService
 
         # Fetch jobs from Himalaya
-        source = HimalayasSource()
+        log_callback(f"[fetch_start] Fetching from Himalayas API (max={max_results}, worldwide={worldwide_only})...")
+        source = HimalayasSource(log_callback=log_callback)
         jobs = source.fetch_jobs({
-            "keywords": search_keywords,
+            "keywords": keywords,
             "max_results": max_results,
             "worldwide_only": worldwide_only,
         })
-
-        logger.info(f"Fetched {len(jobs)} jobs from Himalaya API")
+        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Himalayas API")
 
         if not jobs:
-            return IngestResponse(
+            result = IngestResponse(
                 success=True,
                 source="himalayas_auto",
                 incremental=incremental,
@@ -164,12 +232,17 @@ async def ingest_himalaya_jobs(
                 },
                 jobs=[],
             )
+            _store_ingest_result(run_id, result)
+            update_operation_status(run_id, "completed", result=result.model_dump())
+            log_callback("[ingest_complete] No jobs to ingest")
+            return
 
-        # Initialize ingest service with Claude scorer
-        ingest_service = IngestService(db, use_claude_scorer=True)
+        # Initialize ingest service with Claude scorer and logging
+        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
-        result = await ingest_service.ingest_jobs(
+        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="himalayas_auto",
             score_threshold=score_threshold,
@@ -177,15 +250,29 @@ async def ingest_himalaya_jobs(
             incremental=incremental,
         )
 
-        return IngestResponse(**result.to_dict())
+        # Build response
+        result = IngestResponse(**ingest_result.to_dict())
+        _store_ingest_result(run_id, result)
+
+        # Mark complete
+        update_operation_status(run_id, "completed", result=result.model_dump())
+        stats = result.stats
+        log_callback(
+            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
+            f"Dupes={stats.get('duplicates_skipped', 0)}, "
+            f"BelowThreshold={stats.get('below_threshold', 0)}, "
+            f"Duration={stats.get('duration_ms', 0)}ms"
+        )
 
     except Exception as e:
         logger.exception(f"Himalaya ingestion failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        log_callback(f"[ingest_error] {str(e)}")
 
 
-@router.post("/ingest/indeed", response_model=IngestResponse, dependencies=[Depends(verify_token)])
+@router.post("/ingest/indeed", response_model=IngestStartResponse, dependencies=[Depends(verify_token)])
 async def ingest_indeed_jobs(
+    background_tasks: BackgroundTasks,
     search_term: str = Query(
         ...,
         description="Job title/keywords to search (e.g., 'engineering manager')"
@@ -221,11 +308,15 @@ async def ingest_indeed_jobs(
         le=100,
         description="Minimum score for ingestion (0-100)"
     ),
-) -> IngestResponse:
+) -> IngestStartResponse:
     """
-    Fetch and ingest jobs from Indeed on-demand using JobSpy.
+    Start Indeed job ingestion (async with real-time logging).
 
-    This endpoint:
+    This endpoint returns immediately with a run_id. Use:
+    - GET /jobs/ingest/{run_id}/logs for real-time SSE logs
+    - GET /jobs/ingest/{run_id}/result for final result
+
+    The ingestion process:
     1. Fetches jobs from Indeed using JobSpy scraper
     2. Filters by search term and optional location
     3. Scores each job using Claude CLI (free with Max subscription)
@@ -235,13 +326,50 @@ async def ingest_indeed_jobs(
     Note: Uses web scraping - keep volume low (~50 jobs/run).
 
     Returns:
-        Ingestion statistics and list of ingested jobs
+        run_id for tracking the operation
     """
+    # Create operation run for log streaming
+    run_id = create_operation_run(job_id="ingest", operation="ingest-indeed")
+    log_cb = create_log_callback(run_id)
+
+    # Build search config
+    search_config = {
+        "search_term": search_term,
+        "location": location or "",
+        "results_wanted": max_results,
+        "country": country,
+    }
+    if hours_old:
+        search_config["hours_old"] = hours_old
+
+    # Start background task
+    background_tasks.add_task(
+        _run_indeed_ingestion,
+        run_id=run_id,
+        log_callback=log_cb,
+        search_config=search_config,
+        skip_scoring=skip_scoring,
+        incremental=incremental,
+        score_threshold=score_threshold,
+    )
+
+    return IngestStartResponse(run_id=run_id, status="queued", source="indeed_auto")
+
+
+async def _run_indeed_ingestion(
+    run_id: str,
+    log_callback: Callable[[str], None],
+    search_config: dict,
+    skip_scoring: bool,
+    incremental: bool,
+    score_threshold: int,
+) -> None:
+    """Background task for Indeed ingestion with verbose logging."""
     try:
-        logger.info(
-            f"Starting Indeed ingestion: term='{search_term}', "
-            f"location='{location}', country={country}, max_results={max_results}, "
-            f"hours_old={hours_old}, incremental={incremental}"
+        update_operation_status(run_id, "running")
+        log_callback(
+            f"[ingest_start] source=indeed, term='{search_config.get('search_term')}', "
+            f"location='{search_config.get('location')}', incremental={incremental}"
         )
 
         # Get MongoDB connection
@@ -251,24 +379,14 @@ async def ingest_indeed_jobs(
         from src.services.job_sources import IndeedSource
         from src.services.job_ingest_service import IngestService
 
-        # Build search config
-        search_config = {
-            "search_term": search_term,
-            "location": location or "",
-            "results_wanted": max_results,
-            "country": country,
-        }
-        if hours_old:
-            search_config["hours_old"] = hours_old
-
         # Fetch jobs from Indeed
-        source = IndeedSource()
+        log_callback(f"[fetch_start] Fetching from Indeed (max={search_config.get('results_wanted')})...")
+        source = IndeedSource(log_callback=log_callback)
         jobs = source.fetch_jobs(search_config)
-
-        logger.info(f"Fetched {len(jobs)} jobs from Indeed API")
+        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Indeed")
 
         if not jobs:
-            return IngestResponse(
+            result = IngestResponse(
                 success=True,
                 source="indeed_auto",
                 incremental=incremental,
@@ -282,12 +400,17 @@ async def ingest_indeed_jobs(
                 },
                 jobs=[],
             )
+            _store_ingest_result(run_id, result)
+            update_operation_status(run_id, "completed", result=result.model_dump())
+            log_callback("[ingest_complete] No jobs to ingest")
+            return
 
-        # Initialize ingest service with Claude scorer
-        ingest_service = IngestService(db, use_claude_scorer=True)
+        # Initialize ingest service with Claude scorer and logging
+        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
-        result = await ingest_service.ingest_jobs(
+        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="indeed_auto",
             score_threshold=score_threshold,
@@ -295,15 +418,29 @@ async def ingest_indeed_jobs(
             incremental=incremental,
         )
 
-        return IngestResponse(**result.to_dict())
+        # Build response
+        result = IngestResponse(**ingest_result.to_dict())
+        _store_ingest_result(run_id, result)
+
+        # Mark complete
+        update_operation_status(run_id, "completed", result=result.model_dump())
+        stats = result.stats
+        log_callback(
+            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
+            f"Dupes={stats.get('duplicates_skipped', 0)}, "
+            f"BelowThreshold={stats.get('below_threshold', 0)}, "
+            f"Duration={stats.get('duration_ms', 0)}ms"
+        )
 
     except Exception as e:
         logger.exception(f"Indeed ingestion failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        log_callback(f"[ingest_error] {str(e)}")
 
 
-@router.post("/ingest/bayt", response_model=IngestResponse, dependencies=[Depends(verify_token)])
+@router.post("/ingest/bayt", response_model=IngestStartResponse, dependencies=[Depends(verify_token)])
 async def ingest_bayt_jobs(
+    background_tasks: BackgroundTasks,
     search_term: str = Query(
         ...,
         description="Job title/keywords to search (e.g., 'software engineer')"
@@ -327,13 +464,17 @@ async def ingest_bayt_jobs(
         le=100,
         description="Minimum score for ingestion (0-100)"
     ),
-) -> IngestResponse:
+) -> IngestStartResponse:
     """
-    Fetch and ingest jobs from Bayt.com on-demand using JobSpy.
+    Start Bayt.com job ingestion (async with real-time logging).
 
     Bayt is the largest job board in the Gulf region (UAE, Saudi Arabia, Qatar, Kuwait).
 
-    This endpoint:
+    This endpoint returns immediately with a run_id. Use:
+    - GET /jobs/ingest/{run_id}/logs for real-time SSE logs
+    - GET /jobs/ingest/{run_id}/result for final result
+
+    The ingestion process:
     1. Fetches jobs from Bayt using JobSpy scraper
     2. Scores each job using Claude CLI (free with Max subscription)
     3. Inserts qualifying jobs into MongoDB level-2 collection
@@ -343,12 +484,46 @@ async def ingest_bayt_jobs(
     Uses web scraping - keep volume low (~25 jobs/run).
 
     Returns:
-        Ingestion statistics and list of ingested jobs
+        run_id for tracking the operation
     """
+    # Create operation run for log streaming
+    run_id = create_operation_run(job_id="ingest", operation="ingest-bayt")
+    log_cb = create_log_callback(run_id)
+
+    # Build search config (Bayt only supports search_term)
+    search_config = {
+        "search_term": search_term,
+        "results_wanted": max_results,
+    }
+
+    # Start background task
+    background_tasks.add_task(
+        _run_bayt_ingestion,
+        run_id=run_id,
+        log_callback=log_cb,
+        search_config=search_config,
+        skip_scoring=skip_scoring,
+        incremental=incremental,
+        score_threshold=score_threshold,
+    )
+
+    return IngestStartResponse(run_id=run_id, status="queued", source="bayt")
+
+
+async def _run_bayt_ingestion(
+    run_id: str,
+    log_callback: Callable[[str], None],
+    search_config: dict,
+    skip_scoring: bool,
+    incremental: bool,
+    score_threshold: int,
+) -> None:
+    """Background task for Bayt ingestion with verbose logging."""
     try:
-        logger.info(
-            f"Starting Bayt ingestion: term='{search_term}', "
-            f"max_results={max_results}, incremental={incremental}"
+        update_operation_status(run_id, "running")
+        log_callback(
+            f"[ingest_start] source=bayt, term='{search_config.get('search_term')}', "
+            f"incremental={incremental}"
         )
 
         # Get MongoDB connection
@@ -358,20 +533,14 @@ async def ingest_bayt_jobs(
         from src.services.job_sources import BaytSource
         from src.services.job_ingest_service import IngestService
 
-        # Build search config (Bayt only supports search_term)
-        search_config = {
-            "search_term": search_term,
-            "results_wanted": max_results,
-        }
-
         # Fetch jobs from Bayt
-        source = BaytSource()
+        log_callback(f"[fetch_start] Fetching from Bayt (max={search_config.get('results_wanted')})...")
+        source = BaytSource(log_callback=log_callback)
         jobs = source.fetch_jobs(search_config)
-
-        logger.info(f"Fetched {len(jobs)} jobs from Bayt API")
+        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Bayt")
 
         if not jobs:
-            return IngestResponse(
+            result = IngestResponse(
                 success=True,
                 source="bayt",
                 incremental=incremental,
@@ -385,12 +554,17 @@ async def ingest_bayt_jobs(
                 },
                 jobs=[],
             )
+            _store_ingest_result(run_id, result)
+            update_operation_status(run_id, "completed", result=result.model_dump())
+            log_callback("[ingest_complete] No jobs to ingest")
+            return
 
-        # Initialize ingest service with Claude scorer
-        ingest_service = IngestService(db, use_claude_scorer=True)
+        # Initialize ingest service with Claude scorer and logging
+        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
-        result = await ingest_service.ingest_jobs(
+        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="bayt",
             score_threshold=score_threshold,
@@ -398,11 +572,24 @@ async def ingest_bayt_jobs(
             incremental=incremental,
         )
 
-        return IngestResponse(**result.to_dict())
+        # Build response
+        result = IngestResponse(**ingest_result.to_dict())
+        _store_ingest_result(run_id, result)
+
+        # Mark complete
+        update_operation_status(run_id, "completed", result=result.model_dump())
+        stats = result.stats
+        log_callback(
+            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
+            f"Dupes={stats.get('duplicates_skipped', 0)}, "
+            f"BelowThreshold={stats.get('below_threshold', 0)}, "
+            f"Duration={stats.get('duration_ms', 0)}ms"
+        )
 
     except Exception as e:
         logger.exception(f"Bayt ingestion failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+        update_operation_status(run_id, "failed", error=str(e))
+        log_callback(f"[ingest_error] {str(e)}")
 
 
 @router.get("/ingest/state/{source}", dependencies=[Depends(verify_token)])
@@ -506,3 +693,45 @@ async def get_ingest_history(
     except Exception as e:
         logger.error(f"Error getting ingest history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Log Streaming and Result Endpoints for Async Ingestion
+# =============================================================================
+
+
+@router.get("/ingest/{run_id}/logs", dependencies=[Depends(verify_token)])
+async def stream_ingest_logs(run_id: str):
+    """
+    Stream real-time logs for an ingestion operation via SSE.
+
+    Returns Server-Sent Events with log messages as they are generated.
+    Poll this endpoint after starting an ingestion operation.
+    """
+    from .operation_streaming import stream_operation_logs
+
+    return await stream_operation_logs(run_id)
+
+
+@router.get("/ingest/{run_id}/result", response_model=IngestResultResponse, dependencies=[Depends(verify_token)])
+async def get_ingest_result(run_id: str) -> IngestResultResponse:
+    """
+    Get the result of an ingestion operation.
+
+    Returns:
+        - status: "queued", "running", "completed", or "failed"
+        - result: The IngestResponse if completed
+        - error: Error message if failed
+    """
+    state = get_operation_state(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    result = _get_stored_ingest_result(run_id)
+
+    return IngestResultResponse(
+        run_id=run_id,
+        status=state.status,
+        result=result,
+        error=state.error,
+    )

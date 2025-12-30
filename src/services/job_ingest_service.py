@@ -28,13 +28,16 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
 from src.services.job_sources import JobData
 
 logger = logging.getLogger(__name__)
+
+# Type alias for log callback
+LogCallback = Callable[[str], None]
 
 
 @dataclass
@@ -83,9 +86,15 @@ class IngestService:
     - Quick scoring (Claude CLI or OpenRouter)
     - Incremental fetching via last_fetch_at state
     - Tier derivation and auto_discovered flag
+    - Optional verbose logging via log_callback
     """
 
-    def __init__(self, db: Database, use_claude_scorer: bool = True):
+    def __init__(
+        self,
+        db: Database,
+        use_claude_scorer: bool = True,
+        log_callback: Optional[LogCallback] = None,
+    ):
         """
         Initialize the ingest service.
 
@@ -93,12 +102,19 @@ class IngestService:
             db: MongoDB database instance
             use_claude_scorer: If True, use Claude CLI for scoring (free).
                                If False, use OpenRouter (paid per token).
+            log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
         """
         self.db = db
         self.level2 = db["level-2"]
         self.system_state = db["system_state"]
         self.use_claude_scorer = use_claude_scorer
+        self._log_callback = log_callback
         self._scorer = None  # Lazy init
+
+    def _log(self, message: str) -> None:
+        """Emit a log message via callback if available."""
+        if self._log_callback:
+            self._log_callback(message)
 
     def _get_scorer(self):
         """Get the appropriate scorer (lazy initialization)."""
@@ -106,7 +122,7 @@ class IngestService:
             if self.use_claude_scorer:
                 try:
                     from src.services.claude_quick_scorer import ClaudeQuickScorer
-                    self._scorer = ClaudeQuickScorer()
+                    self._scorer = ClaudeQuickScorer(log_callback=self._log_callback)
                     logger.info("Using ClaudeQuickScorer (Claude CLI)")
                 except Exception as e:
                     logger.warning(f"Claude scorer unavailable, falling back to OpenRouter: {e}")
@@ -297,40 +313,51 @@ class IngestService:
                 result.last_fetch_at = last_fetch
                 if last_fetch:
                     logger.info(f"Incremental mode: filtering jobs newer than {last_fetch}")
+                    self._log(f"[filter_incremental] Filtering jobs newer than {last_fetch.isoformat()}")
 
             # Filter by timestamp if incremental
             filtered_jobs = jobs
+            original_count = len(jobs)
             if last_fetch:
                 filtered_jobs = [
                     j for j in jobs
                     if j.posted_date and j.posted_date > last_fetch
                 ]
                 logger.info(f"Filtered {len(jobs)} jobs to {len(filtered_jobs)} new jobs")
+                self._log(f"[filter_result] {original_count} -> {len(filtered_jobs)} after incremental filter")
 
             result.fetched = len(filtered_jobs)
+            self._log(f"[process_start] Processing {len(filtered_jobs)} jobs...")
 
             # Process each job
+            job_index = 0
             for job in filtered_jobs:
+                job_index += 1
                 try:
                     # Check for duplicates
                     dedupe_key = self.generate_dedupe_key(job, source_name)
                     if self.level2.find_one({"dedupeKey": dedupe_key}):
                         result.duplicates_skipped += 1
+                        self._log(f"[dedupe_skip] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} - duplicate")
                         continue
 
                     # Score the job
                     if skip_scoring:
                         score, rationale = 75, "Scoring skipped (test mode)"
+                        self._log(f"[score_skip] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} - scoring skipped")
                     else:
+                        self._log(f"[score_start] ({job_index}/{len(filtered_jobs)}) Scoring {job.company} | {job.title}...")
                         score, rationale = await self._score_job(job, candidate_profile)
 
                     # Check threshold
                     if score is None or score < score_threshold:
                         result.below_threshold += 1
+                        tier = self._derive_tier_label(score)
                         logger.debug(
                             f"Below threshold: {job.company} - {job.title} "
                             f"(score: {score}, threshold: {score_threshold})"
                         )
+                        self._log(f"[score_reject] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} | Score: {score} ({tier}) - below threshold")
                         continue
 
                     # Create and insert document
@@ -341,6 +368,7 @@ class IngestService:
                         f"Ingested: {job.company} - {job.title} "
                         f"(score: {score}, tier: {doc['tier']})"
                     )
+                    self._log(f"[score_accept] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} | Score: {score} ({doc['tier']}) - ingested")
 
                     result.ingested += 1
                     result.ingested_jobs.append({
@@ -353,6 +381,7 @@ class IngestService:
 
                 except Exception as e:
                     logger.error(f"Error processing job {job.company} - {job.title}: {e}")
+                    self._log(f"[score_error] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} - error: {str(e)}")
                     result.errors += 1
 
             # Update state after successful run
@@ -372,6 +401,7 @@ class IngestService:
             logger.exception(f"Ingestion failed for {source_name}: {e}")
             result.success = False
             result.error_message = str(e)
+            self._log(f"[ingest_error] Ingestion failed: {str(e)}")
 
         # Calculate duration
         end_time = datetime.utcnow()
@@ -383,5 +413,23 @@ class IngestService:
             f"duplicates={result.duplicates_skipped}, below_threshold={result.below_threshold}, "
             f"errors={result.errors}, duration={result.duration_ms}ms"
         )
+        self._log(
+            f"[ingest_summary] Fetched={result.fetched}, Ingested={result.ingested}, "
+            f"Dupes={result.duplicates_skipped}, BelowThreshold={result.below_threshold}, "
+            f"Errors={result.errors}"
+        )
 
         return result
+
+    def _derive_tier_label(self, score: Optional[int]) -> str:
+        """Helper to derive tier label for logging."""
+        if score is None:
+            return "N/A"
+        if score >= 80:
+            return "A"
+        elif score >= 60:
+            return "B"
+        elif score >= 40:
+            return "C"
+        else:
+            return "D"

@@ -575,6 +575,127 @@ class TestGetIngestHistoryProxyErrors:
 
 
 # =============================================================================
+# HAPPY PATH TESTS - GET /api/runner/jobs/ingest/<run_id>/result
+# =============================================================================
+
+
+class TestGetIngestResultProxy:
+    """Tests for ingestion result proxy endpoint."""
+
+    def test_proxy_get_ingest_result_success(
+        self, authenticated_client, mock_db, mock_requests_module
+    ):
+        """Should proxy get result request successfully."""
+        # Arrange
+        expected_response = {
+            "result": {
+                "success": True,
+                "stats": {
+                    "fetched": 50,
+                    "ingested": 25,
+                    "duplicates_skipped": 10,
+                    "below_threshold": 15,
+                },
+                "jobs": [{"id": "job1"}, {"id": "job2"}],
+            }
+        }
+        mock_requests_module["get"].return_value = create_mock_response(
+            200, expected_response
+        )
+
+        # Act
+        response = authenticated_client.get("/api/runner/jobs/ingest/test-run-id-123/result")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["result"]["success"] is True
+        assert data["result"]["stats"]["ingested"] == 25
+
+        # Verify request was made to runner
+        mock_requests_module["get"].assert_called_once()
+        call_args = mock_requests_module["get"].call_args
+        assert "/jobs/ingest/test-run-id-123/result" in call_args[0][0]
+        assert call_args[1]["timeout"] == 30
+
+    def test_proxy_get_ingest_result_pending(
+        self, authenticated_client, mock_db, mock_requests_module
+    ):
+        """Should handle pending result response."""
+        # Arrange
+        expected_response = {
+            "status": "running",
+            "message": "Ingestion still in progress",
+        }
+        mock_requests_module["get"].return_value = create_mock_response(
+            200, expected_response
+        )
+
+        # Act
+        response = authenticated_client.get("/api/runner/jobs/ingest/run-123/result")
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "running"
+
+    def test_proxy_get_ingest_result_not_found(
+        self, authenticated_client, mock_db, mock_requests_module
+    ):
+        """Should handle not found result response."""
+        # Arrange
+        expected_response = {"error": "Run not found"}
+        mock_requests_module["get"].return_value = create_mock_response(
+            404, expected_response
+        )
+
+        # Act
+        response = authenticated_client.get("/api/runner/jobs/ingest/nonexistent/result")
+
+        # Assert
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+
+# =============================================================================
+# ERROR HANDLING TESTS - GET /api/runner/jobs/ingest/<run_id>/result
+# =============================================================================
+
+
+class TestGetIngestResultProxyErrors:
+    """Tests for error handling in get result proxy."""
+
+    def test_proxy_get_result_timeout(
+        self, authenticated_client, mock_db, mock_requests_module
+    ):
+        """Should return 504 on timeout."""
+        # Arrange
+        mock_requests_module["get"].side_effect = requests.exceptions.Timeout()
+
+        # Act
+        response = authenticated_client.get("/api/runner/jobs/ingest/run-123/result")
+
+        # Assert
+        assert response.status_code == 504
+        data = response.get_json()
+        assert "timeout" in data["error"].lower()
+
+    def test_proxy_get_result_connection_error(
+        self, authenticated_client, mock_db, mock_requests_module
+    ):
+        """Should return 503 on connection error."""
+        # Arrange
+        mock_requests_module["get"].side_effect = requests.exceptions.ConnectionError()
+
+        # Act
+        response = authenticated_client.get("/api/runner/jobs/ingest/run-123/result")
+
+        # Assert
+        assert response.status_code == 503
+
+
+# =============================================================================
 # AUTHENTICATION TESTS
 # =============================================================================
 # Note: Authentication is handled at the runner service layer, not in the Flask proxy.

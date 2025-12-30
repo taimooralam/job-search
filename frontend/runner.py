@@ -1185,6 +1185,33 @@ def ingest_bayt_jobs():
         return jsonify({"error": str(e)}), 500
 
 
+@runner_bp.route("/jobs/ingest/<run_id>/result", methods=["GET"])
+def get_ingest_result(run_id: str):
+    """
+    Get the result of an ingestion operation.
+
+    Used by the frontend to fetch final results after log polling completes.
+
+    Returns:
+        JSON with ingestion result (stats, ingested jobs, etc.)
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/jobs/ingest/{run_id}/result",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @runner_bp.route("/jobs/ingest/state/<source>", methods=["GET"])
 def get_ingest_state(source: str):
     """

@@ -10,18 +10,33 @@ Use responsibly with low volume (~50 jobs/run).
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from . import JobSource, JobData
 
 logger = logging.getLogger(__name__)
 
+# Type alias for log callback
+LogCallback = Callable[[str], None]
+
 
 class IndeedSource(JobSource):
     """Indeed job source using JobSpy scraper."""
 
-    def __init__(self):
+    def __init__(self, log_callback: Optional[LogCallback] = None):
+        """
+        Initialize the Indeed source.
+
+        Args:
+            log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
+        """
         self._jobspy_available = None
+        self._log_callback = log_callback
+
+    def _log(self, message: str) -> None:
+        """Emit a log message via callback if available."""
+        if self._log_callback:
+            self._log_callback(message)
 
     def _check_jobspy(self) -> bool:
         """Check if JobSpy is available."""
@@ -54,6 +69,7 @@ class IndeedSource(JobSource):
         """
         if not self._check_jobspy():
             logger.error("JobSpy not available, returning empty list")
+            self._log("[api_error] JobSpy library not available")
             return []
 
         from jobspy import scrape_jobs
@@ -61,6 +77,7 @@ class IndeedSource(JobSource):
         search_term = search_config.get("search_term", "")
         if not search_term:
             logger.warning("No search_term provided for Indeed source")
+            self._log("[api_error] No search_term provided")
             return []
 
         location = search_config.get("location", "")
@@ -71,6 +88,10 @@ class IndeedSource(JobSource):
         logger.info(
             f"Fetching Indeed jobs: term='{search_term}', "
             f"location='{location}', country={country}, max={results_wanted}"
+        )
+        self._log(
+            f"[api_call] Scraping Indeed (term='{search_term}', "
+            f"location='{location}', country={country}, max={results_wanted})..."
         )
 
         try:
@@ -91,15 +112,20 @@ class IndeedSource(JobSource):
 
             if jobs_df is None or jobs_df.empty:
                 logger.info("No jobs found from Indeed")
+                self._log("[api_result] No jobs found from Indeed")
                 return []
+
+            self._log(f"[api_result] Received {len(jobs_df)} raw jobs from Indeed")
 
             # Convert DataFrame to JobData objects
             jobs = self._convert_to_job_data(jobs_df)
             logger.info(f"Fetched {len(jobs)} jobs from Indeed")
+            self._log(f"[convert_result] Converted {len(jobs)} valid jobs")
             return jobs
 
         except Exception as e:
             logger.error(f"Error fetching Indeed jobs: {e}")
+            self._log(f"[api_error] Scraping failed: {str(e)}")
             return []
 
     def _convert_to_job_data(self, df) -> List[JobData]:

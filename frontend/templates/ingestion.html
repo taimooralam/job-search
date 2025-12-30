@@ -2,6 +2,10 @@
 
 {% block title %}Job Ingestion - Job Search Manager{% endblock %}
 
+{% block extra_head %}
+<script src="{{ url_for('static', filename='js/log-poller.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="space-y-4" x-data="ingestionManager()">
     <!-- Page Header -->
@@ -380,6 +384,41 @@
                     </template>
                 </div>
             </template>
+
+            <!-- Real-time Logs Panel -->
+            <template x-if="currentRunId && (ingesting || logs.length > 0)">
+                <div class="mt-6 bg-gray-900 rounded-lg overflow-hidden">
+                    <div class="px-4 py-2 bg-gray-800 flex items-center justify-between">
+                        <span class="text-gray-300 text-sm font-medium flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 rounded-full"
+                                  :class="pollingActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'"></span>
+                            Pipeline Console
+                        </span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-gray-500 text-xs" x-text="logs.length + ' logs'"></span>
+                            <button
+                                @click="logs = []; currentRunId = null"
+                                class="text-gray-500 hover:text-gray-300 text-xs"
+                                x-show="!pollingActive"
+                                title="Clear logs">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ingest-log-container"
+                         class="p-4 font-mono text-sm text-gray-100 max-h-80 overflow-y-auto">
+                        <template x-for="log in logs" :key="log.index">
+                            <div class="py-0.5 hover:bg-gray-800 px-2 -mx-2 rounded"
+                                 :class="getLogClass(log.message)"
+                                 x-text="log.message">
+                            </div>
+                        </template>
+                        <template x-if="logs.length === 0 && ingesting">
+                            <div class="text-gray-500 animate-pulse">Waiting for logs...</div>
+                        </template>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 
@@ -475,6 +514,12 @@ function ingestionManager() {
         lastResult: null,
         activeSource: 'himalaya',
 
+        // Log polling state
+        currentRunId: null,
+        logs: [],
+        logPoller: null,
+        pollingActive: false,
+
         // Source metadata
         sources: {
             himalaya: {
@@ -522,9 +567,19 @@ function ingestionManager() {
 
         init() {
             this.loadAll();
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                this.stopLogPolling();
+            });
         },
 
         switchSource(source) {
+            // Stop any active polling when switching sources
+            this.stopLogPolling();
+            this.logs = [];
+            this.currentRunId = null;
+
             this.activeSource = source;
             this.lastResult = null;
             this.loadAll();
@@ -586,6 +641,8 @@ function ingestionManager() {
             this.ingesting = true;
             this.error = null;
             this.lastResult = null;
+            this.logs = [];  // Clear previous logs
+            this.currentRunId = null;
 
             try {
                 const endpoint = this.sources[this.activeSource].endpoint;
@@ -620,16 +677,110 @@ function ingestionManager() {
 
                 if (!response.ok) {
                     this.lastResult = { success: false, error: data.detail || data.error || 'Ingestion failed' };
-                } else {
+                    this.ingesting = false;
+                } else if (data.run_id) {
+                    // New async response format - start log polling
+                    this.currentRunId = data.run_id;
+                    this.startLogPolling(data.run_id);
+                } else if (data.success !== undefined) {
+                    // Old sync response format (fallback)
                     this.lastResult = data;
-                    // Reload state and history after successful ingestion
                     await this.loadAll();
+                    this.ingesting = false;
+                } else {
+                    // Unknown response format
+                    this.lastResult = { success: false, error: 'Unknown response format' };
+                    this.ingesting = false;
                 }
             } catch (err) {
                 this.lastResult = { success: false, error: err.message || 'Network error' };
-            } finally {
                 this.ingesting = false;
             }
+        },
+
+        startLogPolling(runId) {
+            this.pollingActive = true;
+
+            // Use existing LogPoller class
+            this.logPoller = new LogPoller(runId, {
+                pollInterval: 200,
+                debug: false
+            });
+
+            this.logPoller.onLog((log) => {
+                this.logs.push(log);
+                this.$nextTick(() => this.scrollLogsToBottom());
+            });
+
+            this.logPoller.onComplete(async (status, error) => {
+                this.pollingActive = false;
+
+                if (status === 'completed') {
+                    // Fetch final result
+                    await this.fetchIngestResult(runId);
+                } else if (status === 'failed') {
+                    this.lastResult = { success: false, error: error || 'Ingestion failed' };
+                }
+
+                this.ingesting = false;
+                await this.loadAll();
+            });
+
+            this.logPoller.start();
+        },
+
+        stopLogPolling() {
+            if (this.logPoller) {
+                this.logPoller.stop();
+                this.logPoller = null;
+            }
+            this.pollingActive = false;
+        },
+
+        async fetchIngestResult(runId) {
+            try {
+                const response = await fetch(`/api/runner/jobs/ingest/${runId}/result`);
+                const data = await response.json();
+
+                if (data.result) {
+                    this.lastResult = data.result;
+                } else if (data.error) {
+                    this.lastResult = { success: false, error: data.error };
+                } else {
+                    // The response itself might be the result
+                    this.lastResult = data;
+                }
+            } catch (e) {
+                console.error('Failed to fetch ingestion result:', e);
+                // Don't overwrite lastResult if we already have logs showing success
+            }
+        },
+
+        scrollLogsToBottom() {
+            const container = document.getElementById('ingest-log-container');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        },
+
+        getLogClass(message) {
+            if (!message) return 'text-gray-300';
+            if (message.includes('[ingest_complete]') || message.includes('[score_accept]') || message.includes('[ingested]')) {
+                return 'text-green-400';
+            }
+            if (message.includes('[score_reject]') || message.includes('[dedupe_skip]') || message.includes('[below_threshold]')) {
+                return 'text-yellow-400';
+            }
+            if (message.includes('[error]') || message.includes('[ingest_error]') || message.includes('[failed]')) {
+                return 'text-red-400';
+            }
+            if (message.includes('[llm_') || message.includes('[scoring]')) {
+                return 'text-blue-400';
+            }
+            if (message.includes('[fetch]') || message.includes('[processing]')) {
+                return 'text-cyan-400';
+            }
+            return 'text-gray-300';
         },
 
         async resetState() {

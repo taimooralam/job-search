@@ -10,7 +10,7 @@ MCP Server: https://mcp.himalayas.app/sse
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Any, Dict
+from typing import Callable, List, Optional, Any, Dict
 
 import requests
 
@@ -18,12 +18,29 @@ from . import JobSource, JobData
 
 logger = logging.getLogger(__name__)
 
+# Type alias for log callback
+LogCallback = Callable[[str], None]
+
 
 class HimalayasSource(JobSource):
     """Himalayas.app remote jobs source."""
 
     API_URL = "https://himalayas.app/jobs/api"
     TIMEOUT = 30  # seconds
+
+    def __init__(self, log_callback: Optional[LogCallback] = None):
+        """
+        Initialize the Himalayas source.
+
+        Args:
+            log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
+        """
+        self._log_callback = log_callback
+
+    def _log(self, message: str) -> None:
+        """Emit a log message via callback if available."""
+        if self._log_callback:
+            self._log_callback(message)
 
     def get_source_name(self) -> str:
         return "himalayas_auto"
@@ -49,6 +66,7 @@ class HimalayasSource(JobSource):
             f"Fetching Himalayas jobs: keywords={keywords}, "
             f"max={max_results}, worldwide_only={worldwide_only}"
         )
+        self._log(f"[api_call] Calling Himalayas API (keywords={keywords}, max={max_results})...")
 
         try:
             response = requests.get(self.API_URL, timeout=self.TIMEOUT)
@@ -63,12 +81,18 @@ class HimalayasSource(JobSource):
 
             if not data:
                 logger.info("No jobs returned from Himalayas API")
+                self._log("[api_result] No jobs returned from Himalayas API")
                 return []
+
+            self._log(f"[api_result] Received {len(data)} raw jobs from API")
 
             # Filter and convert jobs
             jobs = self._filter_and_convert(data, keywords, worldwide_only)
+            self._log(f"[filter_result] {len(data)} -> {len(jobs)} after keyword/location filter")
 
             # Limit results
+            if len(jobs) > max_results:
+                self._log(f"[limit_result] Limiting from {len(jobs)} to {max_results} jobs")
             jobs = jobs[:max_results]
 
             logger.info(f"Fetched {len(jobs)} jobs from Himalayas")
@@ -76,12 +100,15 @@ class HimalayasSource(JobSource):
 
         except requests.exceptions.Timeout:
             logger.error("Himalayas API request timed out")
+            self._log("[api_error] Request timed out after 30 seconds")
             return []
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching Himalayas jobs: {e}")
+            self._log(f"[api_error] Request failed: {str(e)}")
             return []
         except Exception as e:
             logger.error(f"Unexpected error fetching Himalayas jobs: {e}")
+            self._log(f"[api_error] Unexpected error: {str(e)}")
             return []
 
     def _filter_and_convert(

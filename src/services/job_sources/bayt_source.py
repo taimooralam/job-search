@@ -15,18 +15,33 @@ ToS Considerations:
 
 import logging
 from datetime import datetime
-from typing import List
+from typing import Callable, List, Optional
 
 from . import JobSource, JobData
 
 logger = logging.getLogger(__name__)
 
+# Type alias for log callback
+LogCallback = Callable[[str], None]
+
 
 class BaytSource(JobSource):
     """Bayt.com job source using JobSpy scraper."""
 
-    def __init__(self):
+    def __init__(self, log_callback: Optional[LogCallback] = None):
+        """
+        Initialize the Bayt source.
+
+        Args:
+            log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
+        """
         self._jobspy_available = None
+        self._log_callback = log_callback
+
+    def _log(self, message: str) -> None:
+        """Emit a log message via callback if available."""
+        if self._log_callback:
+            self._log_callback(message)
 
     def _check_jobspy(self) -> bool:
         """Check if JobSpy is available."""
@@ -59,6 +74,7 @@ class BaytSource(JobSource):
         """
         if not self._check_jobspy():
             logger.error("JobSpy not available, returning empty list")
+            self._log("[api_error] JobSpy library not available")
             return []
 
         from jobspy import scrape_jobs
@@ -66,6 +82,7 @@ class BaytSource(JobSource):
         search_term = search_config.get("search_term", "")
         if not search_term:
             logger.warning("No search_term provided for Bayt source")
+            self._log("[api_error] No search_term provided")
             return []
 
         results_wanted = search_config.get("results_wanted", 25)
@@ -73,6 +90,7 @@ class BaytSource(JobSource):
         logger.info(
             f"Fetching Bayt jobs: term='{search_term}', max={results_wanted}"
         )
+        self._log(f"[api_call] Scraping Bayt (term='{search_term}', max={results_wanted})...")
 
         try:
             # JobSpy scrape_jobs parameters for Bayt
@@ -88,15 +106,20 @@ class BaytSource(JobSource):
 
             if jobs_df is None or jobs_df.empty:
                 logger.info("No jobs found from Bayt")
+                self._log("[api_result] No jobs found from Bayt")
                 return []
+
+            self._log(f"[api_result] Received {len(jobs_df)} raw jobs from Bayt")
 
             # Convert DataFrame to JobData objects
             jobs = self._convert_to_job_data(jobs_df)
             logger.info(f"Fetched {len(jobs)} jobs from Bayt")
+            self._log(f"[convert_result] Converted {len(jobs)} valid jobs")
             return jobs
 
         except Exception as e:
             logger.error(f"Error fetching Bayt jobs: {e}")
+            self._log(f"[api_error] Scraping failed: {str(e)}")
             return []
 
     def _convert_to_job_data(self, df) -> List[JobData]:

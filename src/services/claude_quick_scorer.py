@@ -22,12 +22,15 @@ Usage:
 import logging
 import re
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 from src.common.unified_llm import UnifiedLLM
 from src.common.config import Config
 
 logger = logging.getLogger(__name__)
+
+# Type alias for log callback
+LogCallback = Callable[[str], None]
 
 
 # Scoring prompt - same as original quick_scorer for consistency
@@ -80,17 +83,29 @@ class ClaudeQuickScorer:
     - Uses Claude Max subscription (free with CLI)
     - Falls back to LangChain/OpenRouter if CLI unavailable
     - Same scoring logic as original quick_scorer.py
+    - Optional verbose logging via log_callback
     """
 
-    def __init__(self, tier: str = "low"):
+    def __init__(
+        self,
+        tier: str = "low",
+        log_callback: Optional[LogCallback] = None,
+    ):
         """
         Initialize the scorer.
 
         Args:
             tier: LLM tier to use - "low" for cost-effective scoring
+            log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
         """
         self.llm = UnifiedLLM(tier=tier)
         self._candidate_profile_cache: Optional[str] = None
+        self._log_callback = log_callback
+
+    def _log(self, message: str) -> None:
+        """Emit a log message via callback if available."""
+        if self._log_callback:
+            self._log_callback(message)
 
     async def score_job(
         self,
@@ -132,6 +147,7 @@ class ClaudeQuickScorer:
         )
 
         try:
+            self._log(f"[llm_call] Calling LLM for {company} | {title}...")
             result = await self.llm.invoke(
                 prompt=prompt,
                 system=QUICK_SCORE_SYSTEM,
@@ -144,13 +160,19 @@ class ClaudeQuickScorer:
                     f"Claude quick score for {company} - {title}: {score} "
                     f"(backend={result.backend}, duration={result.duration_ms}ms)"
                 )
+                self._log(
+                    f"[llm_result] {company} | {title} | Score: {score} | "
+                    f"Backend: {result.backend} | Duration: {result.duration_ms}ms"
+                )
                 return score, rationale
             else:
                 logger.warning(f"Scoring failed: {result.error}")
+                self._log(f"[llm_error] {company} | {title} | Error: {result.error}")
                 return None, None
 
         except Exception as e:
             logger.error(f"Claude quick scoring error: {e}")
+            self._log(f"[llm_exception] {company} | {title} | Exception: {str(e)}")
             return None, None
 
     def _load_candidate_profile(self) -> str:
