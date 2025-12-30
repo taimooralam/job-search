@@ -221,6 +221,25 @@
         }
     }
 
+    // Save score for a job
+    async function saveBatchJobScore(jobId, score) {
+        try {
+            const response = await fetch('/api/jobs/score', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: jobId, score: score ? parseInt(score) : null })
+            });
+
+            if (response.ok) {
+                showToast('Score saved', 'success');
+            } else {
+                showToast('Failed to save score', 'error');
+            }
+        } catch (err) {
+            showToast('Save failed: ' + err.message, 'error');
+        }
+    }
+
     // Sync the header checkbox with the main one
     document.addEventListener('DOMContentLoaded', function() {
         const headerCheckbox = document.getElementById('batch-select-all-header');

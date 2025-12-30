@@ -245,19 +245,45 @@
             </div>
         </td>
 
-        <!-- Score -->
-        <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm">
-            {% if job.score is not none %}
-                {% if job.score >= 80 %}
-                <span class="px-2 py-1 rounded-full text-xs font-medium badge-success">{{ job.score }}</span>
-                {% elif job.score >= 60 %}
-                <span class="px-2 py-1 rounded-full text-xs font-medium badge-warning">{{ job.score }}</span>
-                {% else %}
-                <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">{{ job.score }}</span>
-                {% endif %}
-            {% else %}
-                <span class="px-2 py-1 rounded-full text-xs font-medium badge-gray">-</span>
-            {% endif %}
+        <!-- Score (editable) -->
+        <td class="px-2 sm:px-4 py-3 whitespace-nowrap text-sm"
+            x-data="{ editing: false, score: {{ job.score if job.score is not none else 'null' }} }">
+            <!-- View mode -->
+            <template x-if="!editing">
+                <div class="flex items-center gap-1">
+                    <span @click="editing = true" class="cursor-pointer"
+                          :class="{
+                              'px-2 py-1 rounded-full text-xs font-medium badge-success': score >= 80,
+                              'px-2 py-1 rounded-full text-xs font-medium badge-warning': score >= 60 && score < 80,
+                              'px-2 py-1 rounded-full text-xs font-medium badge-gray': score < 60 || score === null
+                          }"
+                          x-text="score !== null ? score : '-'"
+                          title="Click to edit"></span>
+                </div>
+            </template>
+            <!-- Edit mode -->
+            <template x-if="editing">
+                <div class="flex items-center gap-1">
+                    <input type="number" min="0" max="100"
+                           x-model="score"
+                           class="w-16 px-2 py-1 text-sm rounded border theme-border theme-bg-card theme-text-primary focus:ring-2 focus:ring-accent-500"
+                           @keydown.enter="saveBatchJobScore('{{ job._id }}', score); editing = false"
+                           @keydown.escape="editing = false"
+                           x-init="$nextTick(() => $el.focus())">
+                    <button @click="saveBatchJobScore('{{ job._id }}', score); editing = false"
+                            class="p-1 rounded bg-green-600 hover:bg-green-700 text-white" title="Save">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                    <button @click="editing = false"
+                            class="p-1 rounded hover:theme-bg-hover theme-text-tertiary" title="Cancel">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </template>
         </td>
 
         <!-- Added to batch -->
