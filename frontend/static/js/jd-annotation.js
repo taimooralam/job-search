@@ -1285,9 +1285,11 @@ class AnnotationManager {
             // Add to annotations
             this.annotations.push(annotation);
             console.log('Created annotation:', annotation);
+            console.log('[createAnnotationFromPopover] After push, this.annotations.length =', this.annotations.length);
         }
 
         // Re-render list and stats immediately
+        console.log('[createAnnotationFromPopover] Calling renderAnnotations, this.annotations.length =', this.annotations.length);
         this.renderAnnotations();
         this.updateStats();
 
@@ -1349,6 +1351,20 @@ class AnnotationManager {
         const container = document.getElementById(this.config.listId);
         const emptyState = document.getElementById(this.config.listEmptyId);
 
+        // DEBUG: Log render state with detailed info
+        console.log('[renderAnnotations] Called:', {
+            containerId: this.config.listId,
+            containerFound: !!container,
+            containerTagName: container?.tagName,
+            containerParentId: container?.parentElement?.id,
+            emptyStateFound: !!emptyState,
+            annotationsCount: this.annotations.length,
+            annotationIds: this.annotations.map(a => a.id?.slice(-8)),
+            currentFilter: this.currentFilter,
+            retryCount,
+            callerStack: new Error().stack?.split('\n').slice(1, 4).join(' <- ')
+        });
+
         if (!container) {
             // Container not found - might be a timing issue with HTMX/fetch content loading
             // Retry up to 3 times with increasing delays to handle async DOM updates
@@ -1367,17 +1383,32 @@ class AnnotationManager {
         // Filter annotations
         const filtered = this.getFilteredAnnotations();
 
+        // DEBUG: Log filtered results
+        console.log('[renderAnnotations] Filtered:', {
+            filteredCount: filtered.length,
+            annotations: filtered.map(a => ({ id: a.id, relevance: a.relevance }))
+        });
+
         // Show/hide empty state
         if (emptyState) {
             emptyState.classList.toggle('hidden', filtered.length > 0);
         }
 
         // Render items
-        container.innerHTML = filtered.map(ann => this.renderAnnotationItem(ann)).join('');
+        const renderedHtml = filtered.map(ann => this.renderAnnotationItem(ann)).join('');
+        container.innerHTML = renderedHtml;
 
         // Update count
         const countEl = document.getElementById(this.config.listCountId);
         if (countEl) countEl.textContent = filtered.length;
+
+        // DEBUG: Verify render completed
+        console.log('[renderAnnotations] Completed:', {
+            renderedHtmlLength: renderedHtml.length,
+            containerChildCount: container.children.length,
+            countElValue: countEl?.textContent,
+            emptyStateHidden: emptyState?.classList.contains('hidden')
+        });
     }
 
     /**
@@ -2575,18 +2606,8 @@ function togglePopoverField(field) {
     }
 }
 
-/**
- * Get the active annotation manager (batch or job detail)
- * Batch annotation manager takes priority when the batch sidebar is open
- */
-function getActiveAnnotationManager() {
-    // Check for batch annotation manager first (set by batch-sidebars.js)
-    if (typeof batchAnnotationManager !== 'undefined' && batchAnnotationManager) {
-        return batchAnnotationManager;
-    }
-    // Fall back to job detail annotation manager
-    return annotationManager;
-}
+// NOTE: getActiveAnnotationManager() is defined later in this file (line ~2727)
+// to support both batch and job detail contexts
 
 /**
  * Set quick annotation (from toolbar)
