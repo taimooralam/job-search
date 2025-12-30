@@ -806,6 +806,66 @@ async function exportDossierPDF(jobId) {
     }
 }
 
+/**
+ * Upload dossier PDF to Google Drive via n8n webhook.
+ * Similar to uploadCVToGDrive but for dossier documents.
+ *
+ * @param {string} jobId - The job ID to upload dossier for
+ */
+async function uploadDossierToGDrive(jobId) {
+    const btn = document.getElementById('dossier-gdrive-upload-btn');
+    const textSpan = btn.querySelector('.dossier-gdrive-btn-text');
+    const originalText = textSpan ? textSpan.textContent : 'Upload Dossier to Drive';
+
+    try {
+        // Update UI: uploading state
+        btn.classList.add('uploading');
+        btn.classList.remove('gdrive-uploaded', 'upload-error');
+        btn.disabled = true;
+        if (textSpan) textSpan.textContent = 'Uploading...';
+
+        showToast('Uploading dossier to Google Drive...', 'info');
+
+        // Call upload endpoint
+        const response = await fetch(`/api/jobs/${jobId}/dossier/upload-drive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Upload failed');
+        }
+
+        // Success: update UI to show uploaded state
+        btn.classList.remove('uploading');
+        btn.classList.add('gdrive-uploaded');
+        btn.disabled = false;
+        if (textSpan) textSpan.textContent = 'Uploaded';
+
+        showToast('Dossier uploaded to Google Drive!', 'success');
+
+    } catch (error) {
+        console.error('Dossier Google Drive upload failed:', error);
+
+        // Error: show error state briefly, then reset
+        btn.classList.remove('uploading');
+        btn.classList.add('upload-error');
+        if (textSpan) textSpan.textContent = 'Error';
+
+        showToast(error.message || 'Failed to upload dossier to Google Drive', 'error');
+
+        // Reset after 3 seconds
+        setTimeout(() => {
+            btn.classList.remove('upload-error');
+            btn.disabled = false;
+            if (textSpan) textSpan.textContent = originalText;
+        }, 3000);
+    }
+}
+
 async function copyMetaPrompt(jobId) {
     const btn = document.getElementById('copy-meta-prompt-btn');
     const textEl = document.getElementById('copy-meta-prompt-text');
