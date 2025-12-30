@@ -1506,6 +1506,11 @@ async function uploadCVToGDrive(jobId = null) {
             if (textSpan) textSpan.textContent = 'Uploaded';
         });
 
+        // Dispatch event to update CV badge to indigo
+        window.dispatchEvent(new CustomEvent('cv:uploaded-to-drive', {
+            detail: { jobId: targetJobId }
+        }));
+
         notifyUser('CV uploaded to Google Drive!', 'success');
 
     } catch (error) {
