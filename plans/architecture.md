@@ -240,20 +240,29 @@ REDIS_LOG_TTL = 21600  # 6 hours
 - Step-by-step logging of JD processing
 - Status updates for long-running operations
 
-### Header Generation V2 - Anti-Hallucination System
+### Layer 6 - Skill Whitelist Validation (Anti-Hallucination)
 
-**Overview:** Three-component header generation system eliminating LLM hallucinations through strict whitelist enforcement and algorithmic selection.
+**Overview:** Consistent skill validation across CV generation to prevent LLM hallucinations. Skills must exist in candidate's experience before inclusion in any tailored CV role section.
+
+**Validation Pattern:**
+
+All skill generation now follows the same validation pipeline:
+1. LLM generates candidate skills for role context
+2. Whitelist validation: Check against `skill_whitelist` (candidate's actual skills)
+3. Output: Only skills found in whitelist are included
+4. Fallback: Return explicit "No additional skills" if whitelist is empty or all generated skills are invalid
 
 **Components:**
 
-1. **Value Proposition Statement** (LLM + role templates)
-   - `src/layer6_v2/prompts/header_generation.py` - Role-specific templates for 8 categories
-   - Formula: [Domain expertise] + [Scope/scale] + [Unique business impact]
-   - Constraints: 40-word max, third-person absent voice
-   - Examples: "Full-stack engineer maximizing cloud platform ROI across Fortune 500 infrastructure"
+1. **CVStitcher - Role Skills Generation** (`src/layer6_v2/stitcher.py`)
+   - `_compute_role_skills()` method validates skills against whitelist
+   - Receives `skill_whitelist` parameter from orchestrator (same pattern as HeaderGenerator)
+   - Filters LLM-generated skills before inclusion in role section
+   - Returns only whitelisted skills to prevent hallucinations
+   - Mock implementation for safety: Returns empty dict if whitelist is empty
 
-2. **Key Achievement Bullets** (LLM selection + whitelist validation)
-   - `src/layer6_v2/header_generator.py` - LLM selects and optionally tailors bullets from master CV
+2. **HeaderGenerator - Achievement Bullets** (existing pattern)
+   - `src/layer6_v2/header_generator.py` - Already validates bullets against whitelist
    - Strict whitelist: No skills/achievements not in candidate experience
    - Scoring: JD-matched bullets > annotation-emphasized > default bullets
    - Output: 3-4 achievement bullets with clear business impact
@@ -475,6 +484,48 @@ self.unified_llm.invoke(prompt, max_turns=3)
 - **Gain:** Reliable output without CLI format bugs; proper error detection
 - **Loss:** Cost/token metadata no longer available (acceptable for reliability)
 - **Impact:** Text format returns raw LLM response directly (no JSON wrapper); turn limits prevent truncation errors
+
+### Orchestrator Whitelist Distribution Pattern
+
+**Problem:** Layer 6 components (HeaderGenerator, CVStitcher, etc.) need access to candidate's skill whitelist to validate LLM outputs, but the whitelist lives in LangGraph JobState.
+
+**Solution:** Orchestrator extracts whitelist from JobState and passes it to all downstream generators
+
+**Implementation:**
+
+```python
+# src/layer6_v2/orchestrator.py
+class CVOrchestrator:
+    def _assemble_cv(self, state: JobState) -> str:
+        # Extract skill whitelist from master CV
+        skill_whitelist = self._extract_skill_whitelist(state)
+
+        # Pass to all generators that need it
+        header_output = self.header_generator.generate(
+            role=role,
+            jd=jd,
+            skill_whitelist=skill_whitelist  # ← Pass whitelist
+        )
+
+        role_output = self.stitcher.stitch_role(
+            role=role,
+            variants=variants,
+            skill_whitelist=skill_whitelist  # ← Pass whitelist
+        )
+```
+
+**Pattern Benefits:**
+
+1. **Consistent validation:** All generators use same whitelist source
+2. **Centralized extraction:** Orchestrator responsible for whitelist logic
+3. **Scalable:** Easy to add new generators that need whitelist
+4. **Safe fallback:** Each generator handles empty/missing whitelist gracefully
+
+**Files Modified:**
+
+- `src/layer6_v2/orchestrator.py` - Added whitelist extraction and distribution
+- `src/layer6_v2/stitcher.py` - Added whitelist parameter to `_compute_role_skills()` and `stitch_role()`
+- Tests: `tests/unit/test_layer6_v2_stitcher.py` - 7 new tests covering whitelist validation
 
 ### Layer 2 - Soft Validation for List Field Over-Generation
 
