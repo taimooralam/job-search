@@ -625,8 +625,8 @@
 
         /* Job Preview Hover Card */
         .job-preview-card {
-            width: 24rem;
-            max-height: 32rem;
+            width: 28rem;
+            max-height: 80vh;
             overflow-y: auto;
         }
 
@@ -646,11 +646,41 @@
             line-height: 1.5;
         }
 
+        /* Scrollable sections within hover card (responsibilities, qualifications) */
+        .job-preview-card .preview-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .job-preview-card .preview-section-scroll {
+            max-height: 10rem;  /* ~160px per section */
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Subtle scrollbar for preview sections */
+        .job-preview-card .preview-section-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .job-preview-card .preview-section-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .job-preview-card .preview-section-scroll::-webkit-scrollbar-thumb {
+            background: var(--border-color, #d1d5db);
+            border-radius: 2px;
+        }
+
+        .job-preview-card .preview-section-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary, #9ca3af);
+        }
+
         /* Scrollable description within hover card */
         .job-preview-card .description-container {
             display: flex;
             flex-direction: column;
-            max-height: 12rem;  /* ~192px */
+            max-height: 10rem;  /* ~160px */
         }
 
         .job-preview-card .description-scroll {
