@@ -164,6 +164,7 @@ function closeBatchSidebar(animate = true) {
 
             if (sidebar) {
                 sidebar.classList.add('translate-x-full');
+                sidebar.classList.remove('translate-x-0'); // Remove class added by jd-prefetch.js
             }
 
             // Clean up CV editor if it was open
