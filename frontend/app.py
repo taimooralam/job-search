@@ -1007,9 +1007,9 @@ def get_statuses():
 @app.route("/api/jobs/batch/count", methods=["GET"])
 @login_required
 def get_batch_count():
-    """Return the count of jobs in batch processing queue."""
+    """Return the count of jobs in batch processing queue (status='under processing')."""
     collection = get_collection()
-    count = collection.count_documents({"batch_added_at": {"$exists": True}})
+    count = collection.count_documents({"status": "under processing"})
     return jsonify({"count": count})
 
 
@@ -1143,6 +1143,70 @@ def import_linkedin_job():
     except Exception as e:
         logger.exception(f"Unexpected error proxying LinkedIn import: {e}")
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@app.route("/api/jobs/import-indeed", methods=["POST"])
+@login_required
+def import_indeed_job():
+    """
+    Import a job from Indeed by job key or URL.
+
+    Proxies to VPS runner service to avoid Vercel's timeout limits.
+
+    Request body:
+        job_key_or_url: Indeed job key or URL
+
+    Returns:
+        JSON with imported job data including MongoDB _id, title, company, and score
+    """
+    data = request.get_json()
+    job_key_or_url = data.get("job_key_or_url", "").strip()
+
+    if not job_key_or_url:
+        return jsonify({"success": False, "error": "job_key_or_url is required"}), 400
+
+    # Proxy to VPS runner service (no timeout limits, stable IP)
+    runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+    runner_token = os.getenv("RUNNER_API_SECRET", "")
+
+    try:
+        logger.info(f"Proxying Indeed import to runner: {job_key_or_url}")
+        response = requests.post(
+            f"{runner_url}/jobs/import-indeed",
+            json={"job_key_or_url": job_key_or_url},
+            headers={
+                "Authorization": f"Bearer {runner_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=90,  # Allow up to 90 seconds for scraping with FireCrawl fallback + scoring
+        )
+
+        # Forward the response from runner service
+        if response.status_code == 200:
+            result = response.json()
+            return jsonify(result), 200
+        else:
+            # Try to get error message from runner
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("detail", f"Runner error: {response.status_code}")
+            except Exception:
+                error_msg = f"Runner returned status {response.status_code}"
+
+            logger.warning(f"Runner Indeed import failed: {error_msg}")
+            return jsonify({"success": False, "error": error_msg}), response.status_code
+
+    except requests.exceptions.Timeout:
+        logger.error("Runner service timeout during Indeed import")
+        return jsonify({"success": False, "error": "Import timed out. Indeed may be blocking requests."}), 504
+
+    except requests.exceptions.ConnectionError:
+        logger.error("Cannot connect to runner service")
+        return jsonify({"success": False, "error": "Cannot connect to import service. Please try again later."}), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error proxying Indeed import: {e}")
+        return jsonify({"success": False, "error": f"Unexpected error: {str(e)}"}), 500
 
 
 @app.route("/api/jobs/<job_id>", methods=["GET"])

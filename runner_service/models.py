@@ -122,6 +122,29 @@ class LinkedInImportResponse(BaseModel):
     error: Optional[str] = None
 
 
+# === Indeed Import Models ===
+
+class IndeedImportRequest(BaseModel):
+    """Request body for importing an Indeed job."""
+
+    job_key_or_url: str = Field(..., description="Indeed job key or URL")
+
+
+class IndeedImportResponse(BaseModel):
+    """Response after importing an Indeed job."""
+
+    success: bool = True
+    job_id: str = Field(..., description="MongoDB job ID")
+    title: str
+    company: str
+    location: Optional[str] = None
+    score: Optional[int] = None
+    tier: Optional[str] = None
+    score_rationale: Optional[str] = None
+    duplicate: bool = False
+    error: Optional[str] = None
+
+
 # Pipeline layer definitions for progress tracking
 PIPELINE_LAYERS = [
     {"id": "intake", "name": "Job Intake", "order": 1},

@@ -32,6 +32,8 @@ from .models import (
     DiagnosticsResponse,
     FireCrawlCreditsResponse,
     HealthResponse,
+    IndeedImportRequest,
+    IndeedImportResponse,
     LayerProgress,
     LinkedInImportRequest,
     LinkedInImportResponse,
@@ -582,6 +584,144 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
 
     except Exception as e:
         logger.exception(f"Unexpected error importing LinkedIn job: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+@app.post("/jobs/import-indeed", response_model=IndeedImportResponse, dependencies=[Depends(verify_token)])
+async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportResponse:
+    """
+    Import a job from Indeed by job key or URL.
+
+    This endpoint runs on the VPS runner service to avoid Vercel's timeout limits.
+    It scrapes Indeed (direct HTTP with FireCrawl fallback), scores the job, and stores in MongoDB.
+    """
+    from pymongo import MongoClient
+
+    job_key_or_url = request.job_key_or_url.strip()
+
+    if not job_key_or_url:
+        raise HTTPException(status_code=400, detail="job_key_or_url is required")
+
+    try:
+        # Import the scraper
+        from src.services.indeed_scraper import (
+            scrape_indeed_job,
+            indeed_job_to_mongodb_doc,
+            IndeedScraperError,
+            JobNotFoundError,
+            BlockedError,
+        )
+
+        # Scrape the job
+        logger.info(f"Importing Indeed job: {job_key_or_url}")
+        indeed_data = scrape_indeed_job(job_key_or_url)
+
+        # Convert to MongoDB document
+        mongo_doc = indeed_job_to_mongodb_doc(indeed_data)
+
+        # Connect to MongoDB
+        mongo_uri = os.getenv("MONGODB_URI")
+        if not mongo_uri:
+            raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
+
+        client = MongoClient(mongo_uri)
+        db = client[os.getenv("MONGODB_DATABASE", "jobs")]
+        level1_collection = db["level-1"]
+        level2_collection = db["level-2"]
+
+        # Check for duplicates
+        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level2:
+            logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
+            return IndeedImportResponse(
+                success=True,
+                job_id=str(existing_level2["_id"]),
+                title=existing_level2.get("title", ""),
+                company=existing_level2.get("company", ""),
+                location=existing_level2.get("location"),
+                score=existing_level2.get("score"),
+                tier=existing_level2.get("tier"),
+                duplicate=True,
+                error="Job already exists in database",
+            )
+
+        existing_level1 = level1_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        if existing_level1:
+            logger.info(f"Job already exists in level-1: {existing_level1['_id']}")
+            return IndeedImportResponse(
+                success=True,
+                job_id=str(existing_level1["_id"]),
+                title=existing_level1.get("title", ""),
+                company=existing_level1.get("company", ""),
+                location=existing_level1.get("location"),
+                score=existing_level1.get("score"),
+                tier=existing_level1.get("tier"),
+                duplicate=True,
+                error="Job already exists in level-1 database",
+            )
+
+        # Quick score the job (optional)
+        score = None
+        score_rationale = None
+        tier = None
+        try:
+            from src.services.quick_scorer import quick_score_job, derive_tier_from_score
+
+            score, score_rationale = quick_score_job(
+                title=indeed_data.title,
+                company=indeed_data.company,
+                location=indeed_data.location,
+                description=indeed_data.description,
+            )
+
+            if score is not None:
+                mongo_doc["score"] = score
+                tier = derive_tier_from_score(score)
+                mongo_doc["tier"] = tier
+                mongo_doc["score_rationale"] = score_rationale
+                logger.info(f"Quick scored job: {score} ({tier})")
+        except Exception as score_err:
+            logger.warning(f"Quick scoring failed (continuing without score): {score_err}")
+
+        # Insert into both collections
+        level1_doc = mongo_doc.copy()
+        level1_collection.insert_one(level1_doc)
+
+        level2_doc = mongo_doc.copy()
+        level2_result = level2_collection.insert_one(level2_doc)
+        job_id = str(level2_result.inserted_id)
+
+        logger.info(f"Imported Indeed job {job_id}: {indeed_data.title} at {indeed_data.company}")
+
+        return IndeedImportResponse(
+            success=True,
+            job_id=job_id,
+            title=indeed_data.title,
+            company=indeed_data.company,
+            location=indeed_data.location,
+            score=score,
+            tier=tier,
+            score_rationale=score_rationale,
+        )
+
+    except JobNotFoundError as e:
+        logger.warning(f"Indeed job not found: {e}")
+        raise HTTPException(status_code=404, detail=f"Job not found on Indeed: {str(e)}")
+
+    except BlockedError as e:
+        logger.warning(f"Indeed blocked request: {e}")
+        raise HTTPException(status_code=503, detail="Indeed blocked the request. Please try again later.")
+
+    except IndeedScraperError as e:
+        logger.error(f"Indeed scraper error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to scrape Indeed: {str(e)}")
+
+    except ValueError as e:
+        logger.warning(f"Invalid job key: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except Exception as e:
+        logger.exception(f"Unexpected error importing Indeed job: {e}")
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
