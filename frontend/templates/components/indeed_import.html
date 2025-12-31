@@ -1,0 +1,87 @@
+<!-- Indeed Multi-Import Hover Dropdown Component -->
+<!-- Usage: include 'components/indeed_import.html' in your template -->
+<div class="relative" x-data="indeedImport()">
+    <!-- Trigger Button -->
+    <button
+        @mouseenter="open = true"
+        @click="open = !open"
+        class="btn btn-sm btn-ghost flex items-center gap-1.5 group"
+        :class="{'bg-indigo-50 dark:bg-indigo-900/20': open}"
+        title="Import Indeed Jobs"
+    >
+        <!-- Indeed "i" icon (stylized) -->
+        <svg class="h-4 w-4 text-[#2164f3]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        <span class="text-xs font-medium hidden sm:inline">Indeed</span>
+        <svg class="h-3 w-3 transition-transform" :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    <!-- Dropdown Panel -->
+    <div
+        x-show="open"
+        @mouseleave="if (!input && results.length === 0) open = false"
+        @click.away="open = false"
+        x-transition:enter="transition ease-out duration-100"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-75"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="absolute z-50 mt-1 right-0 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border theme-border p-3"
+        x-cloak
+    >
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium theme-text-secondary">
+                Paste Indeed job keys or URLs (one per line)
+            </label>
+            <textarea
+                x-model="input"
+                x-ref="inputField"
+                placeholder="abc123def4567890&#10;https://indeed.com/viewjob?jk=abc123def4567890"
+                rows="3"
+                class="form-input text-sm w-full resize-none"
+                @keydown.ctrl.enter="importJobs()"
+                @keydown.meta.enter="importJobs()"
+                @focus="open = true"
+            ></textarea>
+            <div class="flex justify-between items-center">
+                <span class="text-xs theme-text-tertiary" x-show="!loading">Ctrl+Enter to import</span>
+                <span class="text-xs text-indigo-600" x-show="loading" x-text="'Importing ' + progress + '...'"></span>
+                <button
+                    @click="importJobs()"
+                    :disabled="loading || !input.trim()"
+                    class="btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <span x-show="!loading">Import & Score</span>
+                    <span x-show="loading" class="flex items-center gap-1">
+                        <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Importing...
+                    </span>
+                </button>
+            </div>
+            <!-- Results -->
+            <div x-show="results.length > 0" class="max-h-40 overflow-y-auto text-xs space-y-1 border-t theme-border pt-2 mt-1">
+                <template x-for="r in results" :key="r.id">
+                    <div :class="r.success ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'" class="flex items-start gap-1">
+                        <span x-text="r.success ? '✓' : '✗'" class="flex-shrink-0"></span>
+                        <span x-text="r.message" class="break-all"></span>
+                    </div>
+                </template>
+            </div>
+            <!-- Clear Results Button -->
+            <button
+                x-show="results.length > 0 && !loading"
+                @click="results = []; input = ''"
+                class="text-xs theme-text-tertiary hover:theme-text-primary underline self-end"
+            >
+                Clear results
+            </button>
+        </div>
+    </div>
+</div>

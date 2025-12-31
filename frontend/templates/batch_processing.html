@@ -26,6 +26,8 @@
         <div class="flex items-center gap-4">
             <!-- LinkedIn Multi-Import Dropdown -->
             {% include 'components/linkedin_import.html' %}
+            <!-- Indeed Multi-Import Dropdown -->
+            {% include 'components/indeed_import.html' %}
             <!-- Keyboard Shortcuts Help -->
             <button onclick="toggleKeyboardShortcutsHelp()"
                     class="btn btn-ghost btn-sm flex items-center gap-1"
@@ -507,6 +509,11 @@
 <!-- Batch Sidebars - manages JD annotation, contacts, and CV editor panels -->
 <script src="{{ url_for('static', filename='js/batch-sidebars.js') }}"></script>
 <style>
+/* Prevent horizontal scrollbar from off-screen sidebars */
+html, body {
+    overflow-x: hidden;
+}
+
 /* Expanded row styling for batch processing table */
 .expanded-detail-row {
     position: relative;
