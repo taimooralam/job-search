@@ -112,6 +112,10 @@
         const cached = getCachedJD(jobId);
 
         if (cached) {
+            // Set global state for close functionality (shared with batch-sidebars.js)
+            window.currentBatchSidebar = 'jd-preview';
+            window.currentBatchJobId = jobId;
+
             // Instant display from cache
             const contentEl = document.getElementById('batch-jd-preview-content');
             if (contentEl) {
@@ -126,6 +130,12 @@
                 }
             }
 
+            // Update detail link
+            const detailLink = document.getElementById('batch-jd-preview-detail-link');
+            if (detailLink) {
+                detailLink.href = `/job/${jobId}`;
+            }
+
             // Show sidebar
             const sidebar = document.getElementById('batch-jd-preview-sidebar');
             const overlay = document.getElementById('batch-sidebar-overlay');
@@ -136,6 +146,11 @@
             }
             if (overlay) {
                 overlay.classList.remove('hidden');
+                // Trigger opacity transition
+                requestAnimationFrame(() => {
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                });
             }
 
             // Prevent body scroll

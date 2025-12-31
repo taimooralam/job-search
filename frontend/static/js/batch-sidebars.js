@@ -5,9 +5,10 @@
  * Ensures only one sidebar is open at a time and implements click-outside-to-close.
  */
 
-// Track currently open sidebar
-let currentBatchSidebar = null;
-let currentBatchJobId = null;
+// Track currently open sidebar (exposed globally for jd-prefetch integration)
+// Using window object directly so jd-prefetch.js can modify these
+window.window.currentBatchSidebar = null;
+window.window.currentBatchJobId = null;
 
 // Batch annotation manager instance (separate from job detail page's annotationManager)
 let batchAnnotationManager = null;
@@ -51,7 +52,7 @@ async function openJDPreviewSidebar(jobId) {
  */
 async function openBatchSidebar(type, jobId) {
     // Close any currently open sidebar first (without animation if switching)
-    if (currentBatchSidebar) {
+    if (window.currentBatchSidebar) {
         await closeBatchSidebar(false);
     }
 
@@ -64,8 +65,8 @@ async function openBatchSidebar(type, jobId) {
         return;
     }
 
-    currentBatchSidebar = type;
-    currentBatchJobId = jobId;
+    window.currentBatchSidebar = type;
+    window.currentBatchJobId = jobId;
 
     // Update detail link to point to job detail page
     const detailLink = sidebar.querySelector(`#batch-${type}-detail-link`);
@@ -158,20 +159,20 @@ function closeBatchSidebar(animate = true) {
     return new Promise((resolve) => {
         const overlay = document.getElementById('batch-sidebar-overlay');
 
-        if (currentBatchSidebar) {
-            const sidebar = document.getElementById(`batch-${currentBatchSidebar}-sidebar`);
+        if (window.currentBatchSidebar) {
+            const sidebar = document.getElementById(`batch-${window.currentBatchSidebar}-sidebar`);
 
             if (sidebar) {
                 sidebar.classList.add('translate-x-full');
             }
 
             // Clean up CV editor if it was open
-            if (currentBatchSidebar === 'cv' && typeof cleanupBatchCVEditor === 'function') {
+            if (window.currentBatchSidebar === 'cv' && typeof cleanupBatchCVEditor === 'function') {
                 cleanupBatchCVEditor();
             }
 
             // Clean up annotation manager if it was open
-            if (currentBatchSidebar === 'annotation' && typeof cleanupBatchAnnotationManager === 'function') {
+            if (window.currentBatchSidebar === 'annotation' && typeof cleanupBatchAnnotationManager === 'function') {
                 cleanupBatchAnnotationManager();
             }
         }
@@ -188,8 +189,8 @@ function closeBatchSidebar(animate = true) {
 
         setTimeout(() => {
             if (overlay) overlay.classList.add('hidden');
-            currentBatchSidebar = null;
-            currentBatchJobId = null;
+            window.currentBatchSidebar = null;
+            window.currentBatchJobId = null;
             resolve();
         }, duration);
     });
@@ -199,7 +200,7 @@ function closeBatchSidebar(animate = true) {
  * Keyboard handler for Escape to close
  */
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && currentBatchSidebar) {
+    if (e.key === 'Escape' && window.currentBatchSidebar) {
         e.preventDefault();
         closeBatchSidebar();
     }
@@ -710,7 +711,7 @@ function cleanupBatchAnnotationManager() {
  */
 window.filterAnnotations = function(filter) {
     // Use batch annotation manager if available and in batch context
-    if (batchAnnotationManager && currentBatchSidebar === 'annotation') {
+    if (batchAnnotationManager && window.currentBatchSidebar === 'annotation') {
         batchAnnotationManager.setFilter(filter);
     } else if (typeof annotationManager !== 'undefined' && annotationManager) {
         // Fall back to global annotation manager (job detail page)
@@ -765,7 +766,7 @@ async function copyToClipboard(text, label, button) {
  * @param {HTMLElement} button - Button element for loading state
  */
 async function generateOutreach(contactName, contactRole, messageType, button) {
-    if (!currentBatchJobId) {
+    if (!window.currentBatchJobId) {
         console.error('No job ID set');
         return;
     }
@@ -784,7 +785,7 @@ async function generateOutreach(contactName, contactRole, messageType, button) {
     `;
 
     try {
-        const response = await fetch(`/api/jobs/${currentBatchJobId}/contacts/generate-message`, {
+        const response = await fetch(`/api/jobs/${window.currentBatchJobId}/contacts/generate-message`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -807,7 +808,7 @@ async function generateOutreach(contactName, contactRole, messageType, button) {
             // Refresh the contacts content to show the saved message
             const contentContainer = document.getElementById('batch-contacts-content');
             if (contentContainer) {
-                const refreshResponse = await fetch(`/partials/batch-contacts/${currentBatchJobId}`);
+                const refreshResponse = await fetch(`/partials/batch-contacts/${window.currentBatchJobId}`);
                 if (refreshResponse.ok) {
                     contentContainer.innerHTML = await refreshResponse.text();
                 }
