@@ -118,6 +118,27 @@
 .jd-collapsible .collapsible-content {
     padding: 0 1rem 1rem;
     border-top: 1px solid var(--border-default, #e5e7eb);
+    max-height: 50vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+/* Scrollbar styling for collapsible content */
+.jd-collapsible .collapsible-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.jd-collapsible .collapsible-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.jd-collapsible .collapsible-content::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.jd-collapsible .collapsible-content::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
 }
 
 /* ============================================
