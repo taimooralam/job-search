@@ -2487,6 +2487,91 @@
             }, 4000);
         }
 
+        // ============================================================================
+        // Discard with Undo - 5 second countdown before actual discard
+        // ============================================================================
+
+        let pendingDiscard = null; // { jobIds: Set, timeoutId: number, toastEl: HTMLElement, intervalId: number }
+
+        function showDiscardCountdown(jobIds, onConfirm) {
+            const count = jobIds.size;
+            let secondsLeft = 5;
+
+            // Create countdown toast
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-warning';
+            toast.style.cssText = 'position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 10000; min-width: 320px;';
+
+            const updateToastContent = () => {
+                toast.innerHTML = `
+                    <div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg bg-amber-50 border border-amber-200">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <span class="text-amber-800 font-medium">Discarding ${count} job${count > 1 ? 's' : ''} in ${secondsLeft}s...</span>
+                        </div>
+                        <button onclick="cancelPendingDiscard()" class="px-3 py-1 text-sm font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors">
+                            Undo
+                        </button>
+                    </div>
+                `;
+            };
+
+            updateToastContent();
+            document.body.appendChild(toast);
+
+            // Countdown interval
+            const intervalId = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    updateToastContent();
+                }
+            }, 1000);
+
+            // Timeout to execute discard
+            const timeoutId = setTimeout(() => {
+                clearInterval(intervalId);
+                toast.remove();
+                pendingDiscard = null;
+                onConfirm();
+            }, 5000);
+
+            // Store pending state
+            pendingDiscard = {
+                jobIds: new Set(jobIds),
+                timeoutId,
+                toastEl: toast,
+                intervalId
+            };
+        }
+
+        function cancelPendingDiscard() {
+            if (!pendingDiscard) return;
+
+            // Clear timers
+            clearTimeout(pendingDiscard.timeoutId);
+            clearInterval(pendingDiscard.intervalId);
+
+            // Remove toast
+            if (pendingDiscard.toastEl) {
+                pendingDiscard.toastEl.remove();
+            }
+
+            // Remove animation classes from rows
+            pendingDiscard.jobIds.forEach(id => {
+                const row = document.querySelector(`tr[data-job-id="${id}"]`);
+                if (row) {
+                    row.classList.remove('row-action-discarding');
+                }
+            });
+
+            showToast('Discard cancelled', 'info');
+            pendingDiscard = null;
+        }
+
         // Clear selections when table refreshes
         document.body.addEventListener('htmx:afterSwap', function(event) {
             if (event.target.id === 'job-table-container') {
@@ -2853,46 +2938,64 @@
             }
         }
 
-        // Mark multiple selected jobs as "discarded"
+        // Mark multiple selected jobs as "discarded" with 5-second undo window
         async function markSelectedAsDiscarded() {
             if (selectedJobIds.size === 0) return;
 
-            const count = selectedJobIds.size;
-
-            try {
-                // Animate rows
-                animateSelectedRows('row-action-discarding');
-                showToast(`Discarding ${count} jobs...`, 'info');
-
-                // Call bulk status update endpoint
-                const response = await fetch('/api/jobs/status/bulk', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        job_ids: Array.from(selectedJobIds),
-                        status: 'discarded'
-                    })
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    showToast(`Discarded ${result.updated_count} job${result.updated_count !== 1 ? 's' : ''}`, 'success');
-                    // Clear selection
-                    selectedJobIds.clear();
-                    updateSelectionCount();
-                    // Uncheck all checkboxes
-                    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
-                    const selectAll = document.getElementById('select-all');
-                    if (selectAll) selectAll.checked = false;
-                    // Refresh the table to show updated status
-                    htmx.trigger('#job-table-container', 'refresh');
-                } else {
-                    showToast(result.error || 'Failed to discard jobs', 'error');
-                }
-            } catch (err) {
-                showToast('Discard failed: ' + err.message, 'error');
+            // If there's already a pending discard, cancel it first
+            if (pendingDiscard) {
+                cancelPendingDiscard();
             }
+
+            // Copy the current selection (in case it changes during countdown)
+            const jobIdsToDiscard = new Set(selectedJobIds);
+
+            // Animate rows to show pending state
+            animateSelectedRows('row-action-discarding');
+
+            // Show countdown toast with undo option
+            showDiscardCountdown(jobIdsToDiscard, async () => {
+                // This runs after 5 seconds if not cancelled
+                try {
+                    const response = await fetch('/api/jobs/status/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            job_ids: Array.from(jobIdsToDiscard),
+                            status: 'discarded'
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showToast(`Discarded ${result.updated_count} job${result.updated_count !== 1 ? 's' : ''}`, 'success');
+                        // Clear selection
+                        selectedJobIds.clear();
+                        updateSelectionCount();
+                        // Uncheck all checkboxes
+                        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = false);
+                        const selectAll = document.getElementById('select-all');
+                        if (selectAll) selectAll.checked = false;
+                        // Refresh the table to show updated status
+                        htmx.trigger('#job-table-container', 'refresh');
+                    } else {
+                        showToast(result.error || 'Failed to discard jobs', 'error');
+                        // Remove animation on failure
+                        jobIdsToDiscard.forEach(id => {
+                            const row = document.querySelector(`tr[data-job-id="${id}"]`);
+                            if (row) row.classList.remove('row-action-discarding');
+                        });
+                    }
+                } catch (err) {
+                    showToast('Discard failed: ' + err.message, 'error');
+                    // Remove animation on error
+                    jobIdsToDiscard.forEach(id => {
+                        const row = document.querySelector(`tr[data-job-id="${id}"]`);
+                        if (row) row.classList.remove('row-action-discarding');
+                    });
+                }
+            });
         }
 
         // Move selected jobs to batch processing queue
