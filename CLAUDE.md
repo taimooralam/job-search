@@ -262,3 +262,17 @@ Claude: *immediately reads code files*  ← WRONG! Delegate first!
 - Understand the user's actual goal (e.g., "frontend console" = StructuredLogger, not stderr)
 - Fix the root cause correctly the first time, even if it takes longer
 - Frustration signals "you're not solving my actual problem" - not "go faster with any solution"
+
+## CV Generation Reference
+
+For CV generation tasks, consult the source of truth:
+
+- **`docs/current/cv-generation-guide.md`** - Complete strategy, data structures, algorithms, quality gates
+
+**Before modifying CV generation code**, read the relevant section of the guide:
+- Pipeline architecture → Part 2
+- Data structures → Part 3
+- Scoring algorithms → Part 4
+- Quality gates (hallucination, STAR, ATS) → Part 5
+- Role-specific guidance → Part 6
+- ATS optimization rules → Part 7
