@@ -46,6 +46,20 @@
             });
         }
 
+        // Step 2.6: Pre-process inline asterisk bullets
+        // Many JDs have inline bullets like: "Requirements: * Python * AWS * Leadership"
+        // Convert these to newline-separated bullets for proper formatting
+        // Only activate if there are 2+ asterisk patterns (likely a list, not emphasis)
+        const asteriskBulletPattern = /\s\*\s+(?=[A-Za-z0-9])/g;
+        const asteriskMatches = html.match(asteriskBulletPattern);
+        if (asteriskMatches && asteriskMatches.length >= 2) {
+            // Replace " * " with newline + asterisk (preserving the text before)
+            // But avoid breaking ** markdown bold patterns
+            html = html.replace(/([^*\n])\s+\*\s+(?=[A-Za-z0-9])/g, '$1\n* ');
+            // Also handle asterisk at start of line after colon (e.g., "Requirements: * Item")
+            html = html.replace(/(:)\s*\*\s+/g, '$1\n* ');
+        }
+
         // Step 3: Detect and format section headers
         // Pattern: ALL CAPS lines, or lines ending with colon that look like headers
         html = html.replace(/^([A-Z][A-Z\s&\/\-]{2,}):?\s*$/gm, '<h4 class="jd-section-header">$1</h4>');
