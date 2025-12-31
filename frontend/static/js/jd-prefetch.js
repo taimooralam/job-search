@@ -171,9 +171,19 @@
      * @param {string} jobId - MongoDB job ID
      */
     function fetchJDAndShowSidebar(jobId) {
+        // Set global state for close functionality (must match openJDPreviewSidebarCached)
+        window.currentBatchSidebar = 'jd-preview';
+        window.currentBatchJobId = jobId;
+
         const contentEl = document.getElementById('batch-jd-preview-content');
         if (contentEl) {
             contentEl.innerHTML = '<div class="flex items-center justify-center p-8"><div class="animate-spin h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full"></div></div>';
+        }
+
+        // Update detail link
+        const detailLink = document.getElementById('batch-jd-preview-detail-link');
+        if (detailLink) {
+            detailLink.href = `/job/${jobId}`;
         }
 
         // Show sidebar immediately with loading state
@@ -186,6 +196,11 @@
         }
         if (overlay) {
             overlay.classList.remove('hidden');
+            // Trigger opacity transition
+            requestAnimationFrame(() => {
+                overlay.classList.remove('opacity-0');
+                overlay.classList.add('opacity-100');
+            });
         }
         document.body.style.overflow = 'hidden';
 
