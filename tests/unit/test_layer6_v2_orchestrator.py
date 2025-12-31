@@ -360,9 +360,8 @@ class TestCVAssembly:
         assert "TEST CANDIDATE" in cv_text
         assert "test@example.com" in cv_text
 
-        # Check profile (GAP-006: uppercase section headers)
-        assert "PROFILE" in cv_text
-        assert "Engineering leader" in cv_text
+        # Check profile (V2: uses PROFESSIONAL SUMMARY or EXECUTIVE SUMMARY)
+        assert "PROFESSIONAL SUMMARY" in cv_text or "EXECUTIVE SUMMARY" in cv_text
 
         # Check skills
         assert "CORE COMPETENCIES" in cv_text
@@ -378,7 +377,7 @@ class TestCVAssembly:
 
         # CV uses markdown formatting for TipTap editor rendering
         # Bold ** and italic * markers ARE expected for TipTap to parse
-        assert "**PROFILE**" in cv_text or "**PROFESSIONAL EXPERIENCE**" in cv_text
+        assert "**PROFESSIONAL SUMMARY**" in cv_text or "**PROFESSIONAL EXPERIENCE**" in cv_text
 
 
 # ===== TESTS: Reasoning Summary =====

@@ -992,9 +992,6 @@ class ProfileOutput:
     # V2: Summary type based on role level
     summary_type: str = "professional_summary"  # "executive_summary" | "professional_summary"
 
-    # V2: Generation mode tracking
-    generation_mode: str = "v1"                # "v1" | "v2" - which generation path was used
-
     # V2: Selection result (for warnings about insufficient bullets)
     selection_result: Optional[Any] = None     # SelectionResult
 
@@ -1015,18 +1012,6 @@ class ProfileOutput:
     def is_hybrid_format(self) -> bool:
         """Check if using new hybrid format vs legacy narrative."""
         return bool(self.tagline and self.key_achievements)
-
-    @property
-    def is_v2_format(self) -> bool:
-        """Check if using V2 header generation (anti-hallucination)."""
-        return self.generation_mode == "v2"
-
-    @property
-    def effective_tagline(self) -> str:
-        """Get the effective tagline (value_proposition in V2, tagline in V1)."""
-        if self.is_v2_format and self.value_proposition:
-            return self.value_proposition
-        return self.tagline
 
     @property
     def effective_summary_title(self) -> str:
@@ -1092,13 +1077,13 @@ class ProfileOutput:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
-        result = {
+        return {
             "headline": self.headline,
-            "tagline": self.tagline,                    # NEW: Hybrid format
-            "key_achievements": self.key_achievements,  # NEW: Hybrid format
+            "tagline": self.tagline,
+            "key_achievements": self.key_achievements,
             "core_competencies": self.core_competencies,
-            "narrative": self.narrative,  # DEPRECATED but included for migration
-            "text": self.text,  # Legacy compatibility
+            "narrative": self.narrative,
+            "text": self.text,
             "highlights_used": self.highlights_used,
             "keywords_integrated": self.keywords_integrated,
             "exact_title_used": self.exact_title_used,
@@ -1109,45 +1094,33 @@ class ProfileOutput:
             "answers_proof": self.answers_proof,
             "answers_why_you": self.answers_why_you,
             "all_four_questions_answered": self.all_four_questions_answered,
-            "is_hybrid_format": self.is_hybrid_format,  # NEW: Format detection
+            "is_hybrid_format": self.is_hybrid_format,
             # Phase 4.5 annotation traceability
             "provenance": self.provenance.to_dict() if self.provenance else None,
             "annotation_influenced": self.annotation_influenced,
+            # V2 fields (always included)
+            "value_proposition": self.value_proposition,
+            "summary_type": self.summary_type,
+            "core_competencies_v2": self.core_competencies_v2,
+            "effective_summary_title": self.effective_summary_title,
+            # Achievement sources with full traceability
+            "achievement_sources": [
+                s.to_dict() if hasattr(s, 'to_dict') else s
+                for s in self.achievement_sources
+            ],
+            # Skills provenance for anti-hallucination proof
+            "skills_provenance": (
+                self.skills_provenance.to_dict()
+                if self.skills_provenance and hasattr(self.skills_provenance, 'to_dict')
+                else self.skills_provenance
+            ),
+            # Selection result for warnings
+            "selection_result": (
+                self.selection_result.to_dict()
+                if self.selection_result and hasattr(self.selection_result, 'to_dict')
+                else self.selection_result
+            ),
         }
-
-        # V2 fields (only included if V2 generation was used)
-        if self.is_v2_format:
-            result.update({
-                "generation_mode": self.generation_mode,
-                "value_proposition": self.value_proposition,
-                "summary_type": self.summary_type,
-                "core_competencies_v2": self.core_competencies_v2,
-                "is_v2_format": True,
-                "effective_tagline": self.effective_tagline,
-                "effective_summary_title": self.effective_summary_title,
-                # Achievement sources with full traceability
-                "achievement_sources": [
-                    s.to_dict() if hasattr(s, 'to_dict') else s
-                    for s in self.achievement_sources
-                ],
-                # Skills provenance for anti-hallucination proof
-                "skills_provenance": (
-                    self.skills_provenance.to_dict()
-                    if self.skills_provenance and hasattr(self.skills_provenance, 'to_dict')
-                    else self.skills_provenance
-                ),
-                # Selection result for warnings
-                "selection_result": (
-                    self.selection_result.to_dict()
-                    if self.selection_result and hasattr(self.selection_result, 'to_dict')
-                    else self.selection_result
-                ),
-            })
-        else:
-            result["generation_mode"] = "v1"
-            result["is_v2_format"] = False
-
-        return result
 
     @classmethod
     def from_legacy(

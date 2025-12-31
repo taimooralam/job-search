@@ -179,49 +179,32 @@ class TestHeaderGeneratorPersonaLoading:
             "VP Engineering identity should mention executive"
 
 
-# ===== TESTS: Prompt Building with Persona =====
+# ===== TESTS: Profile Generation with V2 =====
 
-class TestPromptBuildingWithPersona:
-    """Test that prompts are correctly built with persona data."""
+class TestProfileGenerationV2:
+    """Test that V2 profile generation works correctly."""
 
-    @patch("src.layer6_v2.header_generator.create_tracked_llm")
-    def test_generate_profile_llm_loads_persona(
+    def test_fallback_profile_uses_persona(
         self,
-        mock_create_llm,
         sample_stitched_cv,
         sample_extracted_jd,
         skill_whitelist,
     ):
-        """_generate_profile_llm should load and use persona data."""
-        # Create mock LLM that returns a valid response
-        mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.headline = "Test Headline | 10+ Years"
-        mock_response.tagline = "Test tagline for the role."
-        mock_response.key_achievements = ["Achievement 1", "Achievement 2", "Achievement 3", "Achievement 4", "Achievement 5"]
-        mock_response.core_competencies = ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6"]
-        mock_response.highlights_used = ["metric 1"]
-        mock_response.keywords_integrated = ["keyword 1"]
-        mock_response.exact_title_used = "Engineering Manager"
-        mock_response.answers_who = True
-        mock_response.answers_what_problems = True
-        mock_response.answers_proof = True
-        mock_response.answers_why_you = True
-
-        mock_llm.with_structured_output.return_value.invoke.return_value = mock_response
-        mock_create_llm.return_value = mock_llm
-
+        """Fallback profile should use role-specific persona data."""
         generator = HeaderGenerator(skill_whitelist=skill_whitelist)
 
-        # This should not raise and should load persona internally
-        profile = generator.generate_profile(
+        # Use fallback profile generation which is synchronous
+        profile = generator._generate_fallback_profile(
             stitched_cv=sample_stitched_cv,
-            extracted_jd=sample_extracted_jd,
+            role_category="engineering_manager",
             candidate_name="Test Candidate",
+            job_title="Engineering Manager",
         )
 
         assert profile is not None
         assert profile.headline
+        # Fallback should produce valid V2-compatible output
+        assert profile.effective_summary_title in ["EXECUTIVE SUMMARY", "PROFESSIONAL SUMMARY"]
 
 
 # ===== TESTS: Role-Specific Competencies =====

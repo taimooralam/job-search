@@ -552,23 +552,28 @@ class TestFullHeaderGeneration:
     """Test full header generation flow."""
 
     @pytest.mark.asyncio
-    @patch.object(HeaderGenerator, '_generate_profile_llm')
+    @patch.object(HeaderGenerator, '_generate_profile_v2')
     async def test_generates_complete_header(
         self,
-        mock_llm,
+        mock_v2,
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
         sample_skill_whitelist,
     ):
         """Generates complete header with all sections."""
-        # Mock LLM response
         from unittest.mock import AsyncMock
-        mock_response = Mock()
-        mock_response.profile_text = "Engineering leader with track record of building high-performing teams."
-        mock_response.highlights_used = ["75% latency reduction"]
-        mock_response.keywords_integrated = ["Team Leadership"]
-        mock_llm.return_value = mock_response
+        from src.layer6_v2.types import ProfileOutput
+
+        # Mock V2 profile response
+        mock_profile = ProfileOutput(
+            headline="Engineering Leader | 15+ Years Technology Leadership",
+            value_proposition="Engineering leader with track record of building high-performing teams.",
+            key_achievements=["75% latency reduction"],
+            core_competencies=["Team Leadership"],
+            summary_type="professional_summary",
+        )
+        mock_v2.return_value = mock_profile
 
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
@@ -584,21 +589,26 @@ class TestFullHeaderGeneration:
         assert header.contact_info["name"] == "John Developer"
 
     @pytest.mark.asyncio
-    @patch.object(HeaderGenerator, '_generate_profile_llm')
+    @patch.object(HeaderGenerator, '_generate_profile_v2')
     async def test_validates_skills(
         self,
-        mock_llm,
+        mock_v2,
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
         sample_skill_whitelist,
     ):
         """Validates skills are grounded."""
-        mock_response = Mock()
-        mock_response.profile_text = "Profile text."
-        mock_response.highlights_used = []
-        mock_response.keywords_integrated = []
-        mock_llm.return_value = mock_response
+        from src.layer6_v2.types import ProfileOutput
+
+        mock_profile = ProfileOutput(
+            headline="Test | 15+ Years",
+            value_proposition="Profile text.",
+            key_achievements=[],
+            core_competencies=[],
+            summary_type="professional_summary",
+        )
+        mock_v2.return_value = mock_profile
 
         # GAP-001: Must provide skill whitelist to get skills
         generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
@@ -620,19 +630,25 @@ class TestProfileGeneration:
     """Test profile generation."""
 
     @pytest.mark.asyncio
-    @patch.object(HeaderGenerator, '_generate_profile_llm')
-    async def test_generates_profile_with_llm(
+    @patch.object(HeaderGenerator, '_generate_profile_v2')
+    async def test_generates_profile_with_v2(
         self,
-        mock_llm,
+        mock_v2,
         sample_stitched_cv,
         sample_extracted_jd,
     ):
-        """Generates profile using LLM."""
-        mock_response = Mock()
-        mock_response.profile_text = "Engineering leader with 15 years experience."
-        mock_response.highlights_used = ["75%"]
-        mock_response.keywords_integrated = ["Leadership"]
-        mock_llm.return_value = mock_response
+        """Generates profile using V2 generation."""
+        from src.layer6_v2.types import ProfileOutput
+
+        mock_profile = ProfileOutput(
+            headline="Engineering Leader | 15+ Years Technology Leadership",
+            value_proposition="Engineering leader with 15 years experience.",
+            tagline="Engineering leader with 15 years experience.",  # Required for word_count
+            key_achievements=["75% reduction"],
+            core_competencies=["Leadership"],
+            summary_type="professional_summary",
+        )
+        mock_v2.return_value = mock_profile
 
         generator = HeaderGenerator()
         profile = await generator.generate_profile(
@@ -641,29 +657,7 @@ class TestProfileGeneration:
             "John Developer",
         )
 
-        assert "Engineering leader" in profile.text
-        assert profile.word_count > 0
-
-    @pytest.mark.asyncio
-    @patch.object(HeaderGenerator, '_generate_profile_llm')
-    async def test_uses_fallback_on_llm_failure(
-        self,
-        mock_llm,
-        sample_stitched_cv,
-        sample_extracted_jd,
-    ):
-        """Uses fallback profile when LLM fails."""
-        mock_llm.side_effect = Exception("LLM error")
-
-        generator = HeaderGenerator()
-        profile = await generator.generate_profile(
-            sample_stitched_cv,
-            sample_extracted_jd,
-            "John Developer",
-        )
-
-        # Should still get a profile from fallback
-        assert profile is not None
+        assert "Engineering leader" in profile.value_proposition
         assert profile.word_count > 0
 
 
@@ -749,20 +743,25 @@ class TestConvenienceFunction:
     """Test generate_header convenience function."""
 
     @pytest.mark.asyncio
-    @patch.object(HeaderGenerator, '_generate_profile_llm')
+    @patch.object(HeaderGenerator, '_generate_profile_v2')
     async def test_convenience_function_works(
         self,
-        mock_llm,
+        mock_v2,
         sample_stitched_cv,
         sample_extracted_jd,
         sample_candidate_data,
     ):
         """generate_header convenience function works."""
-        mock_response = Mock()
-        mock_response.profile_text = "Profile text."
-        mock_response.highlights_used = []
-        mock_response.keywords_integrated = []
-        mock_llm.return_value = mock_response
+        from src.layer6_v2.types import ProfileOutput
+
+        mock_profile = ProfileOutput(
+            headline="Test | 15+ Years",
+            value_proposition="Profile text.",
+            key_achievements=[],
+            core_competencies=[],
+            summary_type="professional_summary",
+        )
+        mock_v2.return_value = mock_profile
 
         header = await generate_header(
             sample_stitched_cv,
@@ -808,6 +807,8 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_missing_candidate_contact(self, sample_stitched_cv, sample_extracted_jd):
         """Handles missing candidate contact info."""
+        from src.layer6_v2.types import ProfileOutput
+
         candidate_data = {
             "header": {"name": "John"},
             "education": [],
@@ -815,12 +816,15 @@ class TestEdgeCases:
 
         generator = HeaderGenerator()
 
-        with patch.object(generator, '_generate_profile_llm') as mock_llm:
-            mock_response = Mock()
-            mock_response.profile_text = "Profile."
-            mock_response.highlights_used = []
-            mock_response.keywords_integrated = []
-            mock_llm.return_value = mock_response
+        with patch.object(generator, '_generate_profile_v2') as mock_v2:
+            mock_profile = ProfileOutput(
+                headline="Test | 15+ Years",
+                value_proposition="Profile.",
+                key_achievements=[],
+                core_competencies=[],
+                summary_type="professional_summary",
+            )
+            mock_v2.return_value = mock_profile
 
             header = await generator.generate(
                 sample_stitched_cv,

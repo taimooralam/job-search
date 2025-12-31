@@ -437,42 +437,6 @@ class TestScoringWeights:
 class TestProfileOutputV2:
     """Tests for ProfileOutput V2 fields."""
 
-    def test_is_v2_format_true(self):
-        """Should detect V2 format."""
-        profile = ProfileOutput(
-            generation_mode="v2",
-            value_proposition="Test value prop",
-            headline="Test Headline"
-        )
-        assert profile.is_v2_format is True
-
-    def test_is_v2_format_false(self):
-        """Should detect V1 format."""
-        profile = ProfileOutput(
-            generation_mode="v1",
-            headline="Test Headline"
-        )
-        assert profile.is_v2_format is False
-
-    def test_effective_tagline_v2(self):
-        """Should return value_proposition in V2 mode."""
-        profile = ProfileOutput(
-            generation_mode="v2",
-            value_proposition="Engineering leader with 12+ years",
-            tagline="Old tagline",
-            headline="Test"
-        )
-        assert profile.effective_tagline == "Engineering leader with 12+ years"
-
-    def test_effective_tagline_v1(self):
-        """Should return tagline in V1 mode."""
-        profile = ProfileOutput(
-            generation_mode="v1",
-            tagline="Technology leader who builds teams",
-            headline="Test"
-        )
-        assert profile.effective_tagline == "Technology leader who builds teams"
-
     def test_effective_summary_title_executive(self):
         """Should return EXECUTIVE SUMMARY for executive roles."""
         profile = ProfileOutput(
@@ -490,7 +454,7 @@ class TestProfileOutputV2:
         assert profile.effective_summary_title == "PROFESSIONAL SUMMARY"
 
     def test_to_dict_v2_fields(self):
-        """Should include V2 fields in dict when V2 mode."""
+        """Should include V2 fields in dict."""
         achievement_source = AchievementSource(
             bullet_text="Test",
             source_bullet="Test",
@@ -503,7 +467,6 @@ class TestProfileOutputV2:
         )
 
         profile = ProfileOutput(
-            generation_mode="v2",
             value_proposition="Test value prop",
             achievement_sources=[achievement_source],
             skills_provenance=provenance,
@@ -513,13 +476,10 @@ class TestProfileOutputV2:
         )
 
         result = profile.to_dict()
-        assert result["generation_mode"] == "v2"
-        assert result["is_v2_format"] is True
         assert result["value_proposition"] == "Test value prop"
         assert "achievement_sources" in result
         assert "skills_provenance" in result
         assert "core_competencies_v2" in result
-        assert result["effective_tagline"] == "Test value prop"
 
 
 # ============================================================================
@@ -786,38 +746,6 @@ class TestBuildKeyAchievementBulletsPromptV2:
 
 
 # ============================================================================
-# TEST _is_header_v2_enabled
-# ============================================================================
-
-class TestIsHeaderV2Enabled:
-    """Tests for _is_header_v2_enabled function."""
-
-    def test_returns_true_for_true(self):
-        """Should return True when env var is 'true'."""
-        with patch.dict('os.environ', {'USE_HEADER_V2': 'true'}):
-            from src.layer6_v2.header_generator import _is_header_v2_enabled
-            assert _is_header_v2_enabled() is True
-
-    def test_returns_true_for_1(self):
-        """Should return True when env var is '1'."""
-        with patch.dict('os.environ', {'USE_HEADER_V2': '1'}):
-            from src.layer6_v2.header_generator import _is_header_v2_enabled
-            assert _is_header_v2_enabled() is True
-
-    def test_returns_false_for_false(self):
-        """Should return False when env var is 'false'."""
-        with patch.dict('os.environ', {'USE_HEADER_V2': 'false'}):
-            from src.layer6_v2.header_generator import _is_header_v2_enabled
-            assert _is_header_v2_enabled() is False
-
-    def test_returns_false_for_empty(self):
-        """Should return False when env var is empty."""
-        with patch.dict('os.environ', {'USE_HEADER_V2': ''}):
-            from src.layer6_v2.header_generator import _is_header_v2_enabled
-            assert _is_header_v2_enabled() is False
-
-
-# ============================================================================
 # TEST HeaderGenerator V2 Integration
 # ============================================================================
 
@@ -913,26 +841,21 @@ class TestHeaderGeneratorV2Integration:
             MockLLM.return_value = mock_llm
             mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
 
-            with patch.dict('os.environ', {'USE_HEADER_V2': 'true'}):
-                generator = HeaderGenerator(
-                    skill_whitelist=sample_skill_whitelist
-                )
+            generator = HeaderGenerator(
+                skill_whitelist=sample_skill_whitelist
+            )
 
-                profile = await generator.generate_profile(
-                    stitched_cv=mock_stitched_cv,
-                    extracted_jd=sample_extracted_jd,
-                    candidate_name="Test Candidate"
-                )
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
 
-                # Verify V2 mode
-                assert profile.generation_mode == "v2"
-                assert profile.is_v2_format is True
-
-                # Verify components
-                assert profile.value_proposition != ""
-                assert len(profile.key_achievements) > 0
-                assert profile.skills_provenance is not None
-                assert profile.skills_provenance.all_from_whitelist is True
+            # Verify V2 components
+            assert profile.value_proposition != ""
+            assert len(profile.key_achievements) > 0
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.all_from_whitelist is True
 
     @pytest.mark.asyncio
     async def test_v2_core_competencies_algorithmic(
@@ -999,31 +922,30 @@ class TestHeaderGeneratorV2Integration:
                 mock_taxonomy = SkillsTaxonomy(taxonomy_data=sample_taxonomy_data)
                 MockTaxonomy.return_value = mock_taxonomy
 
-                with patch.dict('os.environ', {'USE_HEADER_V2': 'true'}):
-                    generator = HeaderGenerator(
-                        skill_whitelist=sample_skill_whitelist
-                    )
+                generator = HeaderGenerator(
+                    skill_whitelist=sample_skill_whitelist
+                )
 
-                    profile = await generator.generate_profile(
-                        stitched_cv=mock_stitched_cv,
-                        extracted_jd=sample_extracted_jd,
-                        candidate_name="Test Candidate"
-                    )
+                profile = await generator.generate_profile(
+                    stitched_cv=mock_stitched_cv,
+                    extracted_jd=sample_extracted_jd,
+                    candidate_name="Test Candidate"
+                )
 
-                    # Verify V2 competencies
-                    assert len(profile.core_competencies_v2) > 0
-                    assert profile.skills_provenance is not None
+                # Verify V2 competencies
+                assert len(profile.core_competencies_v2) > 0
+                assert profile.skills_provenance is not None
 
-                    # Verify all skills are from whitelist
-                    all_whitelist = (
-                        sample_skill_whitelist["hard_skills"] +
-                        sample_skill_whitelist["soft_skills"]
-                    )
-                    all_whitelist_lower = {s.lower() for s in all_whitelist}
+                # Verify all skills are from whitelist
+                all_whitelist = (
+                    sample_skill_whitelist["hard_skills"] +
+                    sample_skill_whitelist["soft_skills"]
+                )
+                all_whitelist_lower = {s.lower() for s in all_whitelist}
 
-                    for section_skills in profile.core_competencies_v2.values():
-                        for skill in section_skills:
-                            assert skill.lower() in all_whitelist_lower
+                for section_skills in profile.core_competencies_v2.values():
+                    for skill in section_skills:
+                        assert skill.lower() in all_whitelist_lower
 
 
 # ============================================================================
@@ -1040,13 +962,12 @@ Test Coverage Summary:
 | CoreCompetencySection        | 5     | ✅       |
 | SelectionResult              | 4     | ✅       |
 | ScoringWeights               | 3     | ✅       |
-| ProfileOutput V2             | 7     | ✅       |
+| ProfileOutput V2             | 3     | ✅       |
 | CoreCompetencyGeneratorV2    | 8     | ✅       |
 | VALUE_PROPOSITION_TEMPLATES  | 2     | ✅       |
 | build_value_proposition...   | 3     | ✅       |
 | build_key_achievement...     | 3     | ✅       |
-| _is_header_v2_enabled        | 4     | ✅       |
 | HeaderGenerator V2           | 2     | ✅       |
 
-Total: 50 tests covering all V2 components
+Total: 42 tests covering V2 components (V1 code removed)
 """

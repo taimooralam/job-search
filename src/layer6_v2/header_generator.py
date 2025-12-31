@@ -37,19 +37,6 @@ from src.layer6_v2.skills_taxonomy import (
 )
 
 
-def _is_header_v2_enabled() -> bool:
-    """
-    Check if Header Generation V2 is enabled via feature flag.
-
-    Uses USE_HEADER_V2 environment variable.
-
-    Returns:
-        True if V2 header generation is enabled
-    """
-    import os
-    return os.environ.get("USE_HEADER_V2", "").lower() in ("true", "1", "yes")
-
-
 def _load_role_persona(role_category: str) -> dict:
     """
     Load persona data for a role from role_skills_taxonomy.json.
@@ -630,209 +617,6 @@ class HeaderGenerator:
             return max(max_year - min_year, 5)  # Minimum 5 years for senior roles
         return 10  # Default for senior technical leadership
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    async def _generate_profile_llm(
-        self,
-        stitched_cv: StitchedCV,
-        extracted_jd: Dict,
-        candidate_name: str,
-        regional_variant: str = "us_eu",
-    ) -> Tuple[ProfileResponse, HeaderProvenance]:
-        """
-        Generate research-aligned profile using LLM with structured output.
-
-        Based on research from 625 hiring managers:
-        - 100-150 word narrative (3-5 sentences)
-        - Headline with exact job title (10.6x interview factor)
-        - Core competencies for ATS optimization
-        - 4-question framework (Who/What/Proof/Why)
-        - 60/30/10 content formula
-
-        Phase 4.5: Now injects annotation context into prompt for must-have
-        emphasis, reframes, and gap mitigation.
-
-        Uses Pydantic for response validation.
-
-        Returns:
-            Tuple of (ProfileResponse, HeaderProvenance) for traceability
-        """
-        from src.layer6_v2.prompts.header_generation import build_profile_user_prompt
-        from src.layer6_v2.annotation_header_context import (
-            format_priorities_for_prompt,
-            format_ats_guidance_for_prompt,
-        )
-
-        # Collect all bullets for context
-        all_bullets = []
-        for role in stitched_cv.roles:
-            all_bullets.extend(role.bullets)
-
-        combined_text = " ".join(all_bullets).lower()
-
-        # Extract top metrics for grounding
-        top_metrics = self._extract_metrics_from_bullets(all_bullets)
-
-        # GAP-001 FIX: Filter JD keywords to only those evidenced in experience bullets
-        jd_keywords = extracted_jd.get('top_keywords', [])[:15]
-        grounded_keywords = []
-        for kw in jd_keywords:
-            kw_lower = kw.lower()
-            # Check if keyword appears in experience OR is in whitelist
-            if kw_lower in combined_text:
-                grounded_keywords.append(kw)
-            elif self._skill_whitelist:
-                all_whitelist = (
-                    self._skill_whitelist.get("hard_skills", []) +
-                    self._skill_whitelist.get("soft_skills", [])
-                )
-                if any(kw_lower == s.lower() for s in all_whitelist):
-                    grounded_keywords.append(kw)
-
-        self._logger.debug(
-            f"Profile keywords: {len(grounded_keywords)}/{len(jd_keywords)} grounded in experience"
-        )
-
-        # Calculate years of experience for headline
-        years_experience = self._calculate_years_experience(stitched_cv)
-
-        # Extract pain points for "What problems can you solve?" question
-        jd_pain_points = extracted_jd.get('pain_points', [])
-        if not jd_pain_points:
-            # Fallback: use responsibilities as proxy for pain points
-            jd_pain_points = extracted_jd.get('responsibilities', [])[:5]
-
-        # Extract differentiators from candidate skills for "Why you?" question
-        candidate_differentiators = []
-        if self._skill_whitelist:
-            # Use top soft skills as differentiators
-            candidate_differentiators = self._skill_whitelist.get('soft_skills', [])[:3]
-
-        # Get exact job title from JD (critical for 10.6x factor)
-        exact_job_title = extracted_jd.get('title', 'Engineering Leader')
-        role_category = extracted_jd.get('role_category', 'engineering_manager')
-
-        # Phase 4.5: Build annotation guidance for prompt injection
-        annotation_guidance = ""
-        ats_guidance = ""
-        provenance = HeaderProvenance(title_source="jd_mapping")
-
-        if self._annotation_context and self._annotation_context.has_annotations:
-            self._logger.debug("Injecting annotation context into profile prompt")
-
-            # Format priorities for prompt
-            annotation_guidance = format_priorities_for_prompt(self._annotation_context)
-            ats_guidance = format_ats_guidance_for_prompt(self._annotation_context)
-
-            # Build provenance for traceability
-            provenance.tagline_keywords = self._annotation_context.top_keywords[:3]
-            provenance.tagline_annotation_ids = [
-                aid for p in self._annotation_context.must_have_priorities[:3]
-                for aid in p.annotation_ids
-            ]
-            provenance.summary_annotation_ids = [
-                aid for p in self._annotation_context.priorities[:5]
-                for aid in p.annotation_ids
-            ]
-            # Collect STAR IDs from priorities
-            provenance.summary_star_ids = [
-                star_id
-                for p in self._annotation_context.priorities[:5]
-                for snippet in p.star_snippets
-                for star_id in p.annotation_ids  # Approximate: use annotation IDs
-            ][:5]  # Limit to 5
-            # Track gap mitigation
-            if self._annotation_context.gap_mitigation:
-                provenance.gap_mitigation_annotation_id = (
-                    self._annotation_context.gap_mitigation_annotation_id
-                )
-            # Track reframes
-            provenance.reframes_applied = [
-                aid for p in self._annotation_context.priorities
-                if p.has_reframe
-                for aid in p.annotation_ids
-            ][:5]
-
-            # Enhance grounded keywords with annotation keywords
-            for p in self._annotation_context.priorities[:10]:
-                if p.matching_skill and p.matching_skill not in grounded_keywords:
-                    grounded_keywords.append(p.matching_skill)
-                for variant in p.ats_variants[:2]:
-                    if variant not in grounded_keywords:
-                        grounded_keywords.append(variant)
-
-            # Use annotation STAR snippets as additional proof
-            annotation_proofs = []
-            for p in self._annotation_context.must_have_priorities[:3]:
-                annotation_proofs.extend(p.star_snippets[:1])
-            if annotation_proofs:
-                top_metrics = annotation_proofs[:3] + top_metrics
-
-        # Load role persona from taxonomy for targeted generation
-        role_persona = _load_role_persona(role_category)
-        if role_persona:
-            self._logger.debug(f"Loaded persona for {role_category}: {role_persona.get('voice', 'N/A')}")
-
-        # Build research-aligned prompt
-        user_prompt = build_profile_user_prompt(
-            candidate_name=candidate_name,
-            job_title=exact_job_title,
-            role_category=role_category,
-            top_keywords=grounded_keywords,
-            experience_bullets=all_bullets[:20],
-            metrics=top_metrics,
-            years_experience=years_experience,
-            regional_variant=regional_variant,
-            jd_pain_points=jd_pain_points,
-            candidate_differentiators=candidate_differentiators,
-            role_persona=role_persona,
-        )
-
-        # Phase 4.5: Append annotation guidance to user prompt
-        if annotation_guidance:
-            user_prompt = user_prompt + "\n\n" + annotation_guidance
-        if ats_guidance:
-            user_prompt = user_prompt + "\n\n" + ats_guidance
-        if self._annotation_context and self._annotation_context.gap_mitigation:
-            user_prompt = user_prompt + f"\n\nGAP MITIGATION (include once): {self._annotation_context.gap_mitigation}"
-
-        # Build system prompt with persona context (Phase 5: persona in SYSTEM prompt)
-        system_prompt = _build_profile_system_prompt_with_persona(self._jd_annotations)
-
-        # Add schema guidance to system prompt for JSON response
-        schema_guidance = """
-Return JSON matching this ProfileResponse schema:
-{
-  "headline": "[EXACT JD TITLE] | [X]+ Years Technology Leadership",
-  "tagline": "15-25 word persona-driven hook (max 200 chars, third-person absent voice)",
-  "key_achievements": ["5-6 quantified achievements starting with action verbs"],
-  "core_competencies": ["6-8 ATS-friendly keywords"],
-  "highlights_used": ["exact metrics used"],
-  "keywords_integrated": ["JD keywords included"],
-  "exact_title_used": "the exact title from JD",
-  "answers_who": true,
-  "answers_what_problems": true,
-  "answers_proof": true,
-  "answers_why_you": true
-}"""
-        full_system_prompt = system_prompt + "\n\n" + schema_guidance
-
-        # Use UnifiedLLM with JSON validation
-        result = await self._llm.invoke(
-            prompt=user_prompt,
-            system=full_system_prompt,
-            validate_json=True,
-        )
-
-        if not result.success:
-            raise ValueError(f"LLM profile generation failed: {result.error}")
-
-        if not result.parsed_json:
-            raise ValueError("LLM response was not valid JSON")
-
-        # Parse into Pydantic model
-        response = ProfileResponse(**result.parsed_json)
-        return response, provenance
-
     async def generate_profile(
         self,
         stitched_cv: StitchedCV,
@@ -840,119 +624,10 @@ Return JSON matching this ProfileResponse schema:
         candidate_name: str,
         regional_variant: str = "us_eu",
     ) -> ProfileOutput:
-        """
-        Generate hybrid executive summary grounded in achievements.
-
-        V2 Mode (USE_HEADER_V2=true):
-        - Value Proposition: Role-specific formula (replaces tagline)
-        - Key Achievements: Selected/tailored from master CV
-        - Core Competencies: Algorithmic from whitelist
-
-        V1 Mode (default):
-        - Tagline: 15-25 words, third-person absent voice (max 200 chars)
-        - Key Achievements: 5-6 quantified bullets
-        - Core competencies for ATS optimization
-
-        Based on research from 625 hiring managers:
-        - Headline with exact job title (10.6x interview factor)
-        - 4-question framework validation
-
-        Args:
-            stitched_cv: Stitched experience section
-            extracted_jd: Extracted JD intelligence
-            candidate_name: Candidate name for profile
-            regional_variant: "us_eu" (default) or "gulf"
-
-        Returns:
-            ProfileOutput with hybrid executive summary structure
-        """
-        # Check for V2 feature flag
-        if _is_header_v2_enabled():
-            self._logger.info("Using V2 header generation (USE_HEADER_V2=true)")
-            try:
-                return await self._generate_profile_v2(
-                    stitched_cv, extracted_jd, candidate_name, regional_variant
-                )
-            except Exception as e:
-                self._logger.warning(f"V2 profile generation failed: {e}. Falling back to V1.")
-                # Fall through to V1
-
-        self._logger.info("Generating hybrid executive summary (V1)...")
-
-        provenance = None
-        try:
-            response, provenance = await self._generate_profile_llm(
-                stitched_cv, extracted_jd, candidate_name, regional_variant
-            )
-
-            # Build new hybrid ProfileOutput with Phase 4.5 provenance
-            profile = ProfileOutput(
-                headline=response.headline,
-                tagline=response.tagline,                    # NEW: Hybrid format
-                key_achievements=response.key_achievements,  # NEW: Hybrid format
-                core_competencies=response.core_competencies,
-                highlights_used=response.highlights_used,
-                keywords_integrated=response.keywords_integrated,
-                exact_title_used=response.exact_title_used,
-                answers_who=response.answers_who,
-                answers_what_problems=response.answers_what_problems,
-                answers_proof=response.answers_proof,
-                answers_why_you=response.answers_why_you,
-                regional_variant=regional_variant,
-                # Keep narrative for backward compatibility (use tagline)
-                narrative=response.tagline,
-                # Phase 4.5: Annotation traceability
-                provenance=provenance,
-                annotation_influenced=provenance.has_annotation_influence if provenance else False,
-            )
-
-            # Log 4-question framework validation
-            if profile.all_four_questions_answered:
-                self._logger.info("Profile answers all 4 hiring manager questions")
-            else:
-                missing = []
-                if not profile.answers_who:
-                    missing.append("Who are you?")
-                if not profile.answers_what_problems:
-                    missing.append("What problems?")
-                if not profile.answers_proof:
-                    missing.append("What proof?")
-                if not profile.answers_why_you:
-                    missing.append("Why you?")
-                self._logger.warning(f"Profile missing answers to: {', '.join(missing)}")
-
-            # Log hybrid format details
-            self._logger.info(
-                f"Hybrid summary generated: tagline={len(profile.tagline.split())} words, "
-                f"achievements={len(profile.key_achievements)}, "
-                f"competencies={len(profile.core_competencies)}"
-            )
-
-            # Phase 4.5: Log annotation influence
-            if profile.annotation_influenced:
-                self._logger.info(
-                    f"Profile influenced by {provenance.total_annotations_used} annotations"
-                )
-
-            # Defense-in-depth: Validate third-person absent voice in tagline
-            voice_violations = _check_third_person_voice(profile.tagline)
-            if voice_violations:
-                self._logger.warning(
-                    f"Tagline contains first/second person pronouns (should use third-person absent voice): "
-                    f"found [{', '.join(voice_violations)}] in tagline: '{profile.tagline[:100]}...'"
-                )
-
-        except Exception as e:
-            self._logger.warning(f"LLM profile generation failed: {e}. Using fallback.")
-            # Fallback: Template-based hybrid profile
-            role_category = extracted_jd.get("role_category", "engineering_manager")
-            job_title = extracted_jd.get("title", "Engineering Leader")
-            profile = self._generate_fallback_profile(
-                stitched_cv, role_category, candidate_name, job_title, regional_variant
-            )
-
-        self._logger.info(f"Profile generated: {profile.word_count} words")
-        return profile
+        """Generate hybrid executive summary grounded in achievements."""
+        return await self._generate_profile_v2(
+            stitched_cv, extracted_jd, candidate_name, regional_variant
+        )
 
     async def _generate_profile_v2(
         self,
@@ -979,7 +654,7 @@ Return JSON matching this ProfileResponse schema:
             regional_variant: "us_eu" (default) or "gulf"
 
         Returns:
-            ProfileOutput with V2 fields populated (generation_mode="v2")
+            ProfileOutput with V2 fields populated
         """
         from src.layer6_v2.prompts.header_generation import (
             VALUE_PROPOSITION_SYSTEM_PROMPT_V2,
@@ -1223,7 +898,6 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             skills_provenance=skills_provenance,
             core_competencies_v2=core_competencies_v2,
             summary_type=summary_type,
-            generation_mode="v2",
             selection_result=selection_result,
         )
 
