@@ -736,7 +736,10 @@ class CVGeneratorV2:
 
         # Profile from Claude CLI
         profile = cv_result.profile
-        lines.append("**PROFILE**")
+        # Determine summary title based on role level (same logic as V2 header generator)
+        executive_roles = {"director_of_engineering", "head_of_engineering", "vp_engineering", "cto"}
+        summary_title = "EXECUTIVE SUMMARY" if role_category in executive_roles else "PROFESSIONAL SUMMARY"
+        lines.append(f"**{summary_title}**")
         lines.append(f"**{profile.headline}**")
         lines.append(profile.tagline)
         lines.append("")
@@ -1023,48 +1026,34 @@ class CVGeneratorV2:
 
         lines.append("")
 
-        # Profile / Executive Summary - use V2 format if available
-        if header.profile.is_v2_format:
-            # V2: Use effective_summary_title (EXECUTIVE SUMMARY or PROFESSIONAL SUMMARY)
-            lines.append(f"**{header.profile.effective_summary_title}**")
+        # Profile / Executive Summary - always use V2 format
+        lines.append(f"**{header.profile.effective_summary_title}**")
+        lines.append("")
+
+        # Value proposition (replaces tagline in V2)
+        if header.profile.value_proposition:
+            lines.append(sanitize_markdown(header.profile.value_proposition))
             lines.append("")
 
-            # Value proposition (replaces tagline in V2)
-            if header.profile.value_proposition:
-                lines.append(sanitize_markdown(header.profile.value_proposition))
-                lines.append("")
+        # Key achievements as bullet list
+        for achievement in header.profile.key_achievements:
+            clean_bullet = sanitize_bullet_text(achievement)
+            lines.append(f"• {clean_bullet}")
+        lines.append("")
 
-            # Key achievements as bullet list
-            for achievement in header.profile.key_achievements:
-                clean_bullet = sanitize_bullet_text(achievement)
-                lines.append(f"• {clean_bullet}")
-            lines.append("")
-
-            # Core competencies with V2 static sections
-            lines.append("**CORE COMPETENCIES**")
-            if header.profile.core_competencies_v2:
-                for section_name, skills in header.profile.core_competencies_v2.items():
-                    if skills:
-                        skill_names = ", ".join(skills[:10])  # Max 10 per section
-                        lines.append(f"**{section_name}:** {skill_names}")
-            else:
-                # Fallback to V1 skills_sections
-                for section in header.skills_sections:
-                    skill_names = ", ".join(section.skill_names)
-                    lines.append(f"**{section.category}:** {skill_names}")
-            lines.append("")
+        # Core competencies with V2 static sections
+        lines.append("**CORE COMPETENCIES**")
+        if header.profile.core_competencies_v2:
+            for section_name, skills in header.profile.core_competencies_v2.items():
+                if skills:
+                    skill_names = ", ".join(skills[:10])  # Max 10 per section
+                    lines.append(f"**{section_name}:** {skill_names}")
         else:
-            # V1: Original format - bold section header, sanitize LLM output
-            lines.append("**PROFILE**")
-            lines.append(sanitize_markdown(header.profile.text))
-            lines.append("")
-
-            # Core competencies / Skills - bold section header and category names
-            lines.append("**CORE COMPETENCIES**")
+            # Fallback to skills_sections if V2 competencies not populated
             for section in header.skills_sections:
                 skill_names = ", ".join(section.skill_names)
                 lines.append(f"**{section.category}:** {skill_names}")
-            lines.append("")
+        lines.append("")
 
         # Professional Experience - bold section header
         lines.append("**PROFESSIONAL EXPERIENCE**")
