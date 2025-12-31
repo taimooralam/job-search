@@ -20,6 +20,32 @@
         // Step 2: Normalize line endings
         html = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
+        // Step 2.5: Pre-process prose - add breaks before common section starters in dense text
+        // This helps with JDs that are pasted without newlines
+        const sectionStarters = [
+            'About Us', 'About The', 'About the', 'About Company', 'About Our',
+            'Requirements:', 'Required:', 'Qualifications:', 'What You', 'What We',
+            'Who You', 'Your Responsibilities', 'Key Responsibilities', 'Role Overview',
+            'Responsibilities:', 'Benefits:', 'What we offer', 'We offer', 'We are looking',
+            'We are seeking', 'We are hiring', 'The Role', 'The Position', 'The Opportunity',
+            'This role', 'This position', 'In this role', 'As a', 'As an',
+            'Why Join', 'Perks', 'Compensation', 'Salary', 'Location:',
+            'Nice to have', 'Preferred:', 'Bonus:', 'Required Skills', 'Technical Skills',
+            'Minimum Requirements', 'Minimum Qualifications'
+        ];
+
+        // Only add breaks if text is dense (few existing breaks relative to length)
+        const existingBreaks = (html.match(/\n/g) || []).length;
+        const textDensity = html.length / Math.max(existingBreaks + 1, 1);
+
+        if (textDensity > 500) { // If avg > 500 chars per line, text is very dense
+            sectionStarters.forEach(starter => {
+                // Add newline before these starters if they appear mid-text
+                const regex = new RegExp(`([.!?])\\s+(${starter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'g');
+                html = html.replace(regex, '$1\n\n$2');
+            });
+        }
+
         // Step 3: Detect and format section headers
         // Pattern: ALL CAPS lines, or lines ending with colon that look like headers
         html = html.replace(/^([A-Z][A-Z\s&\/\-]{2,}):?\s*$/gm, '<h4 class="jd-section-header">$1</h4>');
@@ -27,6 +53,10 @@
         // Pattern: Title Case headers with colon (e.g., "About Us:", "Requirements:")
         html = html.replace(/^((?:About|Requirements|Qualifications|Responsibilities|Benefits|What|Why|How|Who|Our|The|Your|Key|Essential|Preferred|Nice|Must|Skills|Experience|Education|Salary|Compensation|Location|Team|Role|Position|Job|Company|Culture|Perks|Offer)[^:\n]{0,40}):\s*$/gim,
             '<h4 class="jd-section-header">$1</h4>');
+
+        // Also detect inline section starters (not at start of line) and make them headers
+        html = html.replace(/\n((?:About Us|About The Company|Requirements|Qualifications|Responsibilities|Benefits|What You\'ll|What We|Why Join|The Role|Key Responsibilities)[^:\n]{0,30}):?\s*\n/gi,
+            '\n<h4 class="jd-section-header">$1</h4>\n');
 
         // Step 4: Convert bullet points to list items
         // Match various bullet characters: •, -, *, ○, ▪, ▸, ►, ·, ●
@@ -40,6 +70,23 @@
 
         // Step 6: Wrap consecutive list items in <ul>
         html = wrapListItems(html);
+
+        // Step 6.5: For dense prose without natural breaks, add paragraph breaks every 3-4 sentences
+        // Check if text is still very dense after previous processing
+        const currentBreaks = (html.match(/\n/g) || []).length;
+        const currentDensity = html.length / Math.max(currentBreaks + 1, 1);
+
+        if (currentDensity > 400 && html.length > 800) {
+            // Split dense prose at sentence boundaries (after every 3rd sentence ending with period)
+            let sentenceCount = 0;
+            html = html.replace(/([.!?])\s+([A-Z])/g, (match, punct, nextChar) => {
+                sentenceCount++;
+                if (sentenceCount % 3 === 0) {
+                    return punct + '\n\n' + nextChar;
+                }
+                return match;
+            });
+        }
 
         // Step 7: Convert double newlines to paragraph breaks
         html = html.replace(/\n\n+/g, '</p><p class="jd-paragraph">');
