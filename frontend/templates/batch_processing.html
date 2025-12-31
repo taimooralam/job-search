@@ -1804,9 +1804,10 @@ html, body {
             pendingBatchDiscard.toastEl.remove();
         }
 
-        // Remove animation classes from rows
+        // Remove animation classes from rows (use correct selector matching animateBatchSelectedRows)
         pendingBatchDiscard.jobIds.forEach(id => {
-            const row = document.querySelector(`tr[data-job-id="${id}"]`);
+            const row = document.querySelector(`tr.job-row[data-job-id="${id}"]`) ||
+                        document.querySelector(`tbody[data-job-id="${id}"] tr.job-row`);
             if (row) {
                 row.classList.remove('row-action-discarding');
             }
@@ -1856,17 +1857,19 @@ html, body {
                         htmx.trigger('#batch-table-container', 'refresh');
                     } else {
                         showToast(result.error || 'Failed to discard jobs', 'error');
-                        // Remove animation on failure
+                        // Remove animation on failure (use correct selector matching animateBatchSelectedRows)
                         jobIdsToDiscard.forEach(id => {
-                            const row = document.querySelector(`tr[data-job-id="${id}"]`);
+                            const row = document.querySelector(`tr.job-row[data-job-id="${id}"]`) ||
+                                        document.querySelector(`tbody[data-job-id="${id}"] tr.job-row`);
                             if (row) row.classList.remove('row-action-discarding');
                         });
                     }
                 } catch (err) {
                     showToast('Discard failed: ' + err.message, 'error');
-                    // Remove animation on error
+                    // Remove animation on error (use correct selector matching animateBatchSelectedRows)
                     jobIdsToDiscard.forEach(id => {
-                        const row = document.querySelector(`tr[data-job-id="${id}"]`);
+                        const row = document.querySelector(`tr.job-row[data-job-id="${id}"]`) ||
+                                    document.querySelector(`tbody[data-job-id="${id}"] tr.job-row`);
                         if (row) row.classList.remove('row-action-discarding');
                     });
                 }
@@ -1927,6 +1930,12 @@ html, body {
             }
         }
 
+        // Special handling for discard - use 5-second countdown with undo (same as bulk discard)
+        if (newStatus === 'discarded') {
+            discardSingleJob(jobId, selectEl, previousStatus);
+            return;
+        }
+
         try {
             const response = await fetch('/api/jobs/status', {
                 method: 'POST',
@@ -1960,6 +1969,65 @@ html, body {
                 selectEl.value = previousStatus;
             }
         }
+    }
+
+    // Single-job discard with countdown (mirrors bulk discard behavior)
+    function discardSingleJob(jobId, selectEl, previousStatus) {
+        // If there's already a pending discard, cancel it first
+        if (pendingBatchDiscard) {
+            cancelPendingBatchDiscard();
+        }
+
+        // Find and animate the row
+        const row = document.querySelector(`tr.job-row[data-job-id="${jobId}"]`) ||
+                    document.querySelector(`tbody[data-job-id="${jobId}"] tr.job-row`);
+        if (row) {
+            row.classList.add('row-action-discarding');
+        }
+
+        // Use the same countdown mechanism as bulk discard
+        const jobIdsToDiscard = new Set([jobId]);
+        showBatchDiscardCountdown(jobIdsToDiscard, async () => {
+            // This runs after 5 seconds if not cancelled
+            try {
+                const response = await fetch('/api/jobs/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, status: 'discarded' })
+                });
+
+                if (response.ok) {
+                    // Update the data attribute to reflect the new status
+                    if (selectEl) {
+                        selectEl.dataset.currentStatus = 'discarded';
+                    }
+                    showToast('Job discarded', 'success');
+                    setTimeout(() => {
+                        htmx.trigger('#batch-table-container', 'refresh');
+                    }, 500);
+                } else {
+                    showToast('Failed to discard job', 'error');
+                    // Revert the dropdown to the previous value on failure
+                    if (selectEl) {
+                        selectEl.value = previousStatus;
+                    }
+                    // Remove animation on failure
+                    if (row) {
+                        row.classList.remove('row-action-discarding');
+                    }
+                }
+            } catch (err) {
+                showToast('Discard failed: ' + err.message, 'error');
+                // Revert the dropdown to the previous value on failure
+                if (selectEl) {
+                    selectEl.value = previousStatus;
+                }
+                // Remove animation on error
+                if (row) {
+                    row.classList.remove('row-action-discarding');
+                }
+            }
+        });
     }
 
     // ============================================================================
