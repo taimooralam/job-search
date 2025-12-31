@@ -211,13 +211,10 @@
         </a>
     </div>
 
-    <!-- Content loaded via fetch -->
-    <div id="batch-jd-preview-content" class="flex-1 overflow-y-auto p-4" style="overscroll-behavior: contain;">
-        <div class="flex items-center justify-center h-full">
-            <svg class="animate-spin h-8 w-8 text-accent-500" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
+    <!-- Content loaded via fetch - padding handled by jd-preview-panel -->
+    <div id="batch-jd-preview-content" class="flex-1 overflow-y-auto" style="overscroll-behavior: contain;">
+        <div class="jd-loading">
+            <div class="jd-loading-spinner"></div>
         </div>
     </div>
 </div>

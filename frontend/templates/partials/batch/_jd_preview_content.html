@@ -1,107 +1,216 @@
-{# JD Preview Sidebar Content #}
+{# JD Preview Sidebar Content - Enhanced Version #}
 {# Loaded via /partials/jd-preview/<job_id> endpoint #}
 
 {% set has_extracted = job.extracted_jd is defined and job.extracted_jd %}
 {% set jd = job.extracted_jd if has_extracted else {} %}
 {% set desc = job.description or job.job_description or job.jobDescription or '' %}
+{% set fit_score = job.fit_score or job.score %}
+{% set fit_category = job.fit_category or 'unknown' %}
 
-<!-- Header with job info -->
-<div class="mb-4 pb-3 border-b theme-border">
-    <h3 class="font-semibold theme-text-primary text-base">{{ job.title or 'Untitled' }}</h3>
-    <p class="text-sm theme-text-secondary mt-1">{{ job.company or 'Unknown' }}</p>
-    <p class="text-xs theme-text-tertiary mt-0.5">{{ job.location or 'Location N/A' }}</p>
-</div>
-
-{% if has_extracted %}
-<!-- Extracted JD Info -->
-<div class="space-y-3 mb-4">
-    {% if jd.role_category %}
-    <div class="flex items-center gap-2 text-sm">
-        <span class="theme-text-tertiary w-16">Role:</span>
-        <span class="theme-text-primary font-medium">{{ jd.role_category | replace('_', ' ') | title }}</span>
+<div class="jd-preview-panel">
+    <!-- Header with job info and score -->
+    <div class="jd-preview-header">
+        <h2>{{ job.title or 'Untitled' }}</h2>
+        <div class="company-location">
+            <span>{{ job.company or 'Unknown' }}</span>
+            {% if job.location %}
+            <span class="mx-1">·</span>
+            <span>{{ job.location }}</span>
+            {% endif %}
+        </div>
+        <div class="jd-preview-meta">
+            {% if fit_score %}
+            <span class="fit-score-badge {{ fit_category }}">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                {{ fit_score }}%
+            </span>
+            {% endif %}
+            {% if jd.role_category %}
+            <span class="role-badge">{{ jd.role_category | replace('_', ' ') | title }}</span>
+            {% endif %}
+            {% if jd.seniority_level %}
+            <span class="seniority-badge">{{ jd.seniority_level | title }}</span>
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
-    {% if jd.seniority_level %}
-    <div class="flex items-center gap-2 text-sm">
-        <span class="theme-text-tertiary w-16">Level:</span>
-        <span class="theme-text-primary font-medium">{{ jd.seniority_level | title }}</span>
-    </div>
-    {% endif %}
-</div>
 
-<!-- Skills -->
-{% if jd.technical_skills or jd.top_keywords %}
-<div class="mb-4">
-    <p class="text-sm theme-text-tertiary mb-2 font-medium">Technical Skills</p>
-    <div class="flex flex-wrap gap-1.5">
-        {% for skill in (jd.technical_skills or jd.top_keywords or []) %}
-        <span class="px-2 py-1 text-xs rounded-full theme-bg-secondary theme-text-secondary">{{ skill }}</span>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Key Responsibilities -->
-{% if jd.responsibilities %}
-<div class="mb-4">
-    <p class="text-sm theme-text-tertiary mb-2 font-medium">Key Responsibilities</p>
-    <ul class="space-y-2 text-sm theme-text-secondary">
-        {% for resp in jd.responsibilities %}
-        <li class="flex items-start gap-2">
-            <span class="text-accent-500 flex-shrink-0 mt-0.5">›</span>
-            <span>{{ resp }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<!-- Required Qualifications -->
-{% if jd.required_qualifications %}
-<div class="mb-4">
-    <p class="text-sm theme-text-tertiary mb-2 font-medium">Required Qualifications</p>
-    <ul class="space-y-2 text-sm theme-text-secondary">
-        {% for qual in jd.required_qualifications %}
-        <li class="flex items-start gap-2">
-            <span class="text-green-500 flex-shrink-0 mt-0.5">✓</span>
-            <span>{{ qual }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<!-- Preferred Qualifications -->
-{% if jd.preferred_qualifications %}
-<div class="mb-4">
-    <p class="text-sm theme-text-tertiary mb-2 font-medium">Preferred Qualifications</p>
-    <ul class="space-y-2 text-sm theme-text-secondary">
-        {% for qual in jd.preferred_qualifications %}
-        <li class="flex items-start gap-2">
-            <span class="text-blue-500 flex-shrink-0 mt-0.5">○</span>
-            <span>{{ qual }}</span>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-{% else %}
-<!-- Not analyzed notice -->
-<div class="mb-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-    <p class="text-sm text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {% if not has_extracted %}
+    <!-- Not analyzed notice -->
+    <div class="jd-not-analyzed">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
-        JD not yet analyzed
-    </p>
-</div>
-{% endif %}
+        <span>JD not yet analyzed</span>
+    </div>
+    {% endif %}
 
-<!-- Raw Description -->
-{% if desc %}
-<div class="border-t theme-border pt-4">
-    <p class="text-sm theme-text-tertiary mb-2 font-medium">Full Description</p>
-    <div class="text-sm theme-text-secondary whitespace-pre-wrap break-words leading-relaxed max-h-[50vh] overflow-y-auto">{{ desc }}</div>
+    {% if has_extracted %}
+    <!-- Collapsible: Extracted Analysis -->
+    <details class="jd-collapsible" open>
+        <summary>
+            <span class="collapsible-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+                Extracted Analysis
+            </span>
+            <span class="collapsible-meta">
+                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </span>
+        </summary>
+        <div class="collapsible-content pt-3">
+            {% if jd.technical_skills %}
+            <!-- Technical Skills -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Technical Skills</div>
+                <div class="jd-field-tags">
+                    {% for skill in jd.technical_skills[:12] %}
+                    <span class="skill-tag technical">{{ skill }}</span>
+                    {% endfor %}
+                    {% if jd.technical_skills|length > 12 %}
+                    <span class="skill-tag" style="background: #f3f4f6; color: #6b7280;">+{{ jd.technical_skills|length - 12 }} more</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if jd.top_keywords %}
+            <!-- Keywords -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Top Keywords</div>
+                <div class="jd-field-tags">
+                    {% for keyword in jd.top_keywords[:10] %}
+                    <span class="skill-tag keyword">{{ keyword }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if jd.implied_pain_points or job.pain_points %}
+            <!-- Pain Points -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Implied Pain Points</div>
+                <ul class="jd-field-list pain-points">
+                    {% for point in (jd.implied_pain_points or job.pain_points)[:5] %}
+                    <li>
+                        <svg class="list-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <span>{{ point if point is string else point.text }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if jd.success_metrics or job.success_metrics %}
+            <!-- Success Metrics -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Success Metrics</div>
+                <ul class="jd-field-list success-metrics">
+                    {% for metric in (jd.success_metrics or job.success_metrics)[:5] %}
+                    <li>
+                        <svg class="list-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>{{ metric }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if jd.responsibilities %}
+            <!-- Responsibilities -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Key Responsibilities</div>
+                <ul class="jd-field-list responsibilities">
+                    {% for resp in jd.responsibilities[:6] %}
+                    <li>
+                        <svg class="list-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span>{{ resp }}</span>
+                    </li>
+                    {% endfor %}
+                    {% if jd.responsibilities|length > 6 %}
+                    <li class="text-xs text-gray-400 pl-6">+{{ jd.responsibilities|length - 6 }} more...</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if jd.required_qualifications %}
+            <!-- Required Qualifications -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Required Qualifications</div>
+                <ul class="jd-field-list qualifications">
+                    {% for qual in jd.required_qualifications[:5] %}
+                    <li>
+                        <svg class="list-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>{{ qual }}</span>
+                    </li>
+                    {% endfor %}
+                    {% if jd.required_qualifications|length > 5 %}
+                    <li class="text-xs text-gray-400 pl-6">+{{ jd.required_qualifications|length - 5 }} more...</li>
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if jd.soft_skills %}
+            <!-- Soft Skills -->
+            <div class="jd-field-section">
+                <div class="jd-field-label">Soft Skills</div>
+                <div class="jd-field-tags">
+                    {% for skill in jd.soft_skills[:8] %}
+                    <span class="skill-tag soft">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </details>
+    {% endif %}
+
+    {% if desc %}
+    <!-- Collapsible: Full Job Description -->
+    <details class="jd-collapsible">
+        <summary>
+            <span class="collapsible-title">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+                </svg>
+                Full Job Description
+            </span>
+            <span class="collapsible-meta">
+                <span class="char-count">{{ desc|length }} chars</span>
+                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </span>
+        </summary>
+        <div class="collapsible-content pt-3">
+            <div class="jd-formatted" data-jd-format="auto" data-job-id="{{ job._id }}">{{ desc }}</div>
+        </div>
+    </details>
+    {% endif %}
 </div>
-{% endif %}
+
+<script>
+// Auto-format JD content when this partial loads
+(function() {
+    if (window.JDFormatter) {
+        const jdEl = document.querySelector('[data-jd-format="auto"][data-job-id="{{ job._id }}"]');
+        if (jdEl) {
+            window.JDFormatter.formatElement(jdEl);
+        }
+    }
+})();
+</script>

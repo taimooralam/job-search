@@ -77,8 +77,8 @@
             <tr class="job-row cursor-pointer"
                 x-data="{ anyPopoverOpen: false }"
                 data-job-id="{{ job._id }}"
+                onmouseenter="if(window.JDPrefetch) JDPrefetch.prefetch('{{ job._id }}')"
                 onclick="navigateToJob(event, '{{ job._id }}')"
-                onmouseenter="prefetchJobOnHover('{{ job._id }}')"
                 oncontextmenu="showJobContextMenu(event, '{{ job._id }}', '{{ (job.title or '') | e | replace("'", "\\'") }}', '{{ (job_url or '') | e | replace("'", "\\'") }}'); return false;">
                 <!-- Checkbox -->
                 <td class="px-4 py-3" onclick="event.stopPropagation()">
@@ -135,7 +135,7 @@
                             {% endif %}
                         </div>
                         <!-- JD Preview Button -->
-                        <button onclick="event.stopPropagation(); openJDPreviewSidebar('{{ job._id }}')"
+                        <button onclick="event.stopPropagation(); (window.JDPrefetch ? JDPrefetch.openSidebar : openJDPreviewSidebar)('{{ job._id }}')"
                                 class="p-1 rounded opacity-70 hover:opacity-100 theme-text-secondary hover:theme-text-primary hover:theme-bg-hover transition-all no-navigate flex-shrink-0"
                                 title="View job description">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

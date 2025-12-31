@@ -1835,8 +1835,8 @@
                         </div>
                     </div>
                 </summary>
-                <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-96 overflow-y-auto">
-                    <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap text-xs">{{ job.description }}</div>
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="jd-formatted" data-jd-format="auto" id="job-detail-description">{{ job.description }}</div>
                 </div>
             </details>
         </div>
@@ -2604,6 +2604,18 @@
             window.PREFETCHED_JOB_DATA = JSON.parse(prefetched);
         }
     })();
+</script>
+
+{# Format job description with JD Formatter #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.JDFormatter) {
+            const jdEl = document.getElementById('job-detail-description');
+            if (jdEl) {
+                window.JDFormatter.formatElement(jdEl);
+            }
+        }
+    });
 </script>
 
 {# Job Pipelines Panel - must load before pipeline-actions.js for queue integration #}

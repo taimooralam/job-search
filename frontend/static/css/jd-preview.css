@@ -1,0 +1,472 @@
+/**
+ * JD Preview Panel Styles
+ * Styles for job description preview sidebar and collapsible sections
+ */
+
+/* ============================================
+   JD Preview Panel Container
+   ============================================ */
+
+.jd-preview-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.jd-preview-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-default, #e5e7eb);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.jd-preview-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+}
+
+.jd-preview-header .company-location {
+    font-size: 0.8125rem;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: 0.5rem;
+}
+
+.jd-preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+/* ============================================
+   Collapsible Component
+   ============================================ */
+
+.jd-collapsible {
+    border: 1px solid var(--border-default, #e5e7eb);
+    border-radius: 0.75rem;
+    margin: 0.75rem;
+    background: var(--bg-card, #ffffff);
+    overflow: hidden;
+}
+
+.jd-collapsible summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--text-primary, #111827);
+    list-style: none;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+
+.jd-collapsible summary:hover {
+    background-color: var(--bg-hover, #f9fafb);
+}
+
+.jd-collapsible summary::-webkit-details-marker {
+    display: none;
+}
+
+.jd-collapsible summary::marker {
+    display: none;
+}
+
+.jd-collapsible .collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-collapsible .collapsible-title svg {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+.jd-collapsible .collapsible-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.jd-collapsible .char-count {
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--text-tertiary, #9ca3af);
+}
+
+.jd-collapsible .chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-tertiary, #9ca3af);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.jd-collapsible[open] .chevron {
+    transform: rotate(90deg);
+}
+
+.jd-collapsible .collapsible-content {
+    padding: 0 1rem 1rem;
+    border-top: 1px solid var(--border-default, #e5e7eb);
+}
+
+/* ============================================
+   Fit Score Badge
+   ============================================ */
+
+.fit-score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.fit-score-badge.exceptional {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.fit-score-badge.strong {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.fit-score-badge.good {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.fit-score-badge.moderate {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.fit-score-badge.weak {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.fit-score-badge.unknown {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* ============================================
+   Role & Seniority Badges
+   ============================================ */
+
+.role-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.seniority-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+/* ============================================
+   Skill & Keyword Tags
+   ============================================ */
+
+.skill-tag {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    margin: 0.125rem;
+}
+
+.skill-tag.technical {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.skill-tag.keyword {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.skill-tag.soft {
+    background: #fce7f3;
+    color: #9d174d;
+}
+
+/* ============================================
+   Data Field Lists
+   ============================================ */
+
+.jd-field-section {
+    margin-bottom: 1rem;
+}
+
+.jd-field-section:last-child {
+    margin-bottom: 0;
+}
+
+.jd-field-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: 0.375rem;
+}
+
+.jd-field-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.jd-field-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.jd-field-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-primary, #374151);
+    margin-bottom: 0.375rem;
+    line-height: 1.4;
+}
+
+.jd-field-list li:last-child {
+    margin-bottom: 0;
+}
+
+.jd-field-list .list-icon {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.125rem;
+}
+
+.jd-field-list.pain-points .list-icon {
+    color: #f97316;
+}
+
+.jd-field-list.success-metrics .list-icon {
+    color: #14b8a6;
+}
+
+.jd-field-list.responsibilities .list-icon {
+    color: #8b5cf6;
+}
+
+.jd-field-list.qualifications .list-icon {
+    color: #3b82f6;
+}
+
+/* ============================================
+   JD Formatted Content
+   ============================================ */
+
+.jd-formatted {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text-primary, #374151);
+}
+
+.jd-formatted .jd-section-header {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary, #111827);
+    margin: 1.25rem 0 0.5rem 0;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-default, #e5e7eb);
+}
+
+.jd-formatted .jd-section-header:first-child {
+    margin-top: 0;
+}
+
+.jd-formatted .jd-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem 0;
+}
+
+.jd-formatted .jd-list-item {
+    position: relative;
+    padding-left: 1.25rem;
+    margin-bottom: 0.375rem;
+    line-height: 1.5;
+}
+
+.jd-formatted .jd-list-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 0.375rem;
+    height: 0.375rem;
+    background: var(--color-primary-500, #6366f1);
+    border-radius: 50%;
+}
+
+.jd-formatted .jd-list-item.jd-numbered::before {
+    display: none;
+}
+
+.jd-formatted .jd-paragraph {
+    margin: 0 0 0.75rem 0;
+}
+
+.jd-formatted .jd-paragraph:last-child {
+    margin-bottom: 0;
+}
+
+/* Highlighted terms */
+.jd-formatted .jd-highlight-experience {
+    background: #fef3c7;
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+.jd-formatted .jd-highlight-salary {
+    background: #d1fae5;
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+.jd-formatted .jd-highlight-required {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.jd-formatted .jd-highlight-preferred {
+    color: #059669;
+    font-weight: 500;
+}
+
+/* ============================================
+   JD Not Analyzed Warning
+   ============================================ */
+
+.jd-not-analyzed {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fefce8;
+    border: 1px solid #fde047;
+    border-radius: 0.5rem;
+    margin: 0.75rem;
+}
+
+.jd-not-analyzed svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #ca8a04;
+    flex-shrink: 0;
+}
+
+.jd-not-analyzed span {
+    font-size: 0.8125rem;
+    color: #854d0e;
+    font-weight: 500;
+}
+
+/* ============================================
+   Batch Count Badge Animation
+   ============================================ */
+
+.batch-count-updated {
+    animation: countPulse 0.3s ease;
+}
+
+@keyframes countPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+
+.jd-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.jd-loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--border-default, #e5e7eb);
+    border-top-color: var(--color-primary-500, #6366f1);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 640px) {
+    .jd-collapsible {
+        margin: 0.5rem;
+        border-radius: 0.5rem;
+    }
+
+    .jd-collapsible summary {
+        padding: 0.625rem 0.75rem;
+    }
+
+    .jd-collapsible .collapsible-content {
+        padding: 0 0.75rem 0.75rem;
+    }
+
+    .jd-preview-header {
+        padding: 0.75rem;
+    }
+
+    .jd-preview-header h2 {
+        font-size: 0.9375rem;
+    }
+}
