@@ -60,14 +60,8 @@
             </div>
         </td>
 
-        <!-- Role/Title with Hover Preview + Application URL -->
-        {% set has_extracted = job.extracted_jd is defined and job.extracted_jd %}
-        {% set jd = job.extracted_jd if has_extracted else {} %}
-        {% set desc = job.description or job.job_description or job.jobDescription or '' %}
-        <td class="px-2 sm:px-4 py-3 cursor-pointer group overflow-visible relative"
-            x-data="{ showPreview: false, hoverTimeout: null, leaveTimeout: null }"
-            @mouseenter="if (!anyPopoverOpen) { clearTimeout(leaveTimeout); hoverTimeout = setTimeout(() => showPreview = true, 200) }"
-            @mouseleave="clearTimeout(hoverTimeout); leaveTimeout = setTimeout(() => showPreview = false, 150)"
+        <!-- Role/Title + JD Preview Button + Application URL -->
+        <td class="px-2 sm:px-4 py-3 cursor-pointer group"
             onclick="navigateToBatchJob(event, '{{ job._id }}')">
             <div class="flex items-center gap-1.5">
                 <div class="text-sm theme-text-primary max-w-[180px] truncate">
@@ -81,6 +75,15 @@
                     {{ job.title or '-' }}
                     {% endif %}
                 </div>
+                <!-- JD Preview Button -->
+                <button onclick="event.stopPropagation(); openJDPreviewSidebar('{{ job._id }}')"
+                        class="p-1 rounded opacity-70 hover:opacity-100 theme-text-secondary hover:theme-text-primary hover:theme-bg-hover transition-all no-navigate flex-shrink-0"
+                        title="View job description">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </button>
                 <!-- Application URL Quick Entry + Quick Open Link -->
                 <div class="relative no-navigate flex-shrink-0 flex items-center gap-0.5"
                      x-data="{ showPopover: false, url: '{{ (app_url or '') | e }}', saving: false }"
@@ -141,105 +144,6 @@
                         <p class="text-xs theme-text-tertiary mt-1.5">Press Enter to save, Escape to cancel</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Hover Preview Card -->
-            <div x-show="showPreview && !anyPopoverOpen"
-                 x-cloak
-                 x-transition:enter="transition ease-out duration-100"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition ease-in duration-75"
-                 x-transition:leave-start="opacity-100 scale-100"
-                 x-transition:leave-end="opacity-0 scale-95"
-                 @mouseenter="clearTimeout(leaveTimeout)"
-                 @mouseleave="leaveTimeout = setTimeout(() => showPreview = false, 150)"
-                 class="absolute left-0 top-full mt-1 job-preview-card rounded-lg shadow-xl theme-bg-card border theme-border z-50 p-4 no-navigate"
-                 onclick="event.stopPropagation()">
-                <!-- Header -->
-                <div class="mb-3 pb-2 border-b theme-border">
-                    <h4 class="font-semibold theme-text-primary text-sm">{{ job.title or 'Untitled' }}</h4>
-                    <p class="text-xs theme-text-secondary">{{ job.company or 'Unknown' }} • {{ job.location or 'Location N/A' }}</p>
-                </div>
-
-                {% if has_extracted %}
-                <!-- Extracted JD Info -->
-                <div class="space-y-2 mb-3">
-                    {% if jd.role_category %}
-                    <div class="flex items-center gap-2 text-xs">
-                        <span class="theme-text-tertiary">📋 Role:</span>
-                        <span class="theme-text-primary font-medium">{{ jd.role_category | replace('_', ' ') | title }}</span>
-                    </div>
-                    {% endif %}
-                    {% if jd.seniority_level %}
-                    <div class="flex items-center gap-2 text-xs">
-                        <span class="theme-text-tertiary">🎯 Level:</span>
-                        <span class="theme-text-primary font-medium">{{ jd.seniority_level | title }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Skills -->
-                {% if jd.technical_skills or jd.top_keywords %}
-                <div class="mb-3">
-                    <p class="text-xs theme-text-tertiary mb-1">🔧 Skills:</p>
-                    <div class="flex flex-wrap">
-                        {% for skill in (jd.technical_skills or jd.top_keywords or [])[:8] %}
-                        <span class="skill-badge">{{ skill }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Key Responsibilities -->
-                {% if jd.responsibilities %}
-                <div class="mb-3 preview-section">
-                    <p class="text-xs theme-text-tertiary mb-1 font-medium">📌 Key Responsibilities:</p>
-                    <div class="preview-section-scroll">
-                        <ul class="space-y-1.5 text-xs theme-text-secondary">
-                            {% for resp in jd.responsibilities %}
-                            <li class="flex items-start gap-1.5">
-                                <span class="text-accent-500 flex-shrink-0 mt-0.5">›</span>
-                                <span>{{ resp }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Required Qualifications -->
-                {% if jd.required_qualifications %}
-                <div class="mb-3 preview-section">
-                    <p class="text-xs theme-text-tertiary mb-1 font-medium">✓ Required Qualifications:</p>
-                    <div class="preview-section-scroll">
-                        <ul class="space-y-1.5 text-xs theme-text-secondary">
-                            {% for qual in jd.required_qualifications %}
-                            <li class="flex items-start gap-1.5">
-                                <span class="text-green-500 flex-shrink-0 mt-0.5">✓</span>
-                                <span>{{ qual }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-                {% endif %}
-                {% else %}
-                <!-- Not analyzed notice -->
-                <div class="mb-3 p-2 rounded bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                    <p class="text-xs text-yellow-700 dark:text-yellow-300">⚠️ Not yet analyzed</p>
-                </div>
-                {% endif %}
-
-                <!-- Description Preview (scrollable) -->
-                {% if desc %}
-                <div class="description-container">
-                    <p class="text-xs theme-text-tertiary mb-1">Description:</p>
-                    <div class="description-scroll">
-                        <p class="text-xs theme-text-secondary description-text">{{ desc }}</p>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </td>
 

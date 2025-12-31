@@ -576,9 +576,13 @@
         Discard
     </button>
 </div>
+
+{# JD Preview Sidebar - reuses batch sidebar system #}
+{% include 'partials/batch/_batch_sidebars.html' %}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/batch-sidebars.js') }}"></script>
 <script>
     // ============================================================================
     // Filter State Management

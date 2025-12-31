@@ -37,8 +37,16 @@ async function openBatchCVEditor(jobId) {
 }
 
 /**
+ * Open JD Preview sidebar for a job
+ * @param {string} jobId - The job ID to preview JD for
+ */
+async function openJDPreviewSidebar(jobId) {
+    await openBatchSidebar('jd-preview', jobId);
+}
+
+/**
  * Generic sidebar opener
- * @param {string} type - 'annotation', 'contacts', or 'cv'
+ * @param {string} type - 'annotation', 'contacts', 'cv', or 'jd-preview'
  * @param {string} jobId - The job ID
  */
 async function openBatchSidebar(type, jobId) {
@@ -97,7 +105,8 @@ async function openBatchSidebar(type, jobId) {
         const endpoints = {
             annotation: `/partials/batch-annotation/${jobId}`,
             contacts: `/partials/batch-contacts/${jobId}`,
-            cv: `/partials/batch-cv/${jobId}`
+            cv: `/partials/batch-cv/${jobId}`,
+            'jd-preview': `/partials/jd-preview/${jobId}`
         };
 
         try {

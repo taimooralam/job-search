@@ -2494,6 +2494,30 @@ def batch_cv_partial(job_id: str):
     )
 
 
+@app.route("/partials/jd-preview/<job_id>")
+@login_required
+def jd_preview_partial(job_id: str):
+    """
+    HTMX partial: Return JD preview content for sidebar.
+
+    Displays extracted JD info (role, seniority, skills, responsibilities,
+    qualifications) and raw job description in a readable format.
+    """
+    collection = get_collection()
+    try:
+        job = collection.find_one({"_id": ObjectId(job_id)})
+    except Exception:
+        abort(404)
+
+    if not job:
+        abort(404)
+
+    return render_template(
+        "partials/batch/_jd_preview_content.html",
+        job=job,
+    )
+
+
 # =============================================================================
 # Job Ingestion Page
 # =============================================================================

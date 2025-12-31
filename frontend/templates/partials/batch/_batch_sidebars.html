@@ -174,6 +174,54 @@
     </div>
 </div>
 
+<!-- JD Preview Sidebar -->
+<!-- z-[1040] ensures sidebar is above CLI panel (z-1030) and overlay (z-[1035]) -->
+<div id="batch-jd-preview-sidebar"
+     class="fixed inset-y-0 right-0 w-[28rem] max-w-[90vw] bg-white dark:bg-gray-900 shadow-2xl
+            transform translate-x-full transition-transform duration-300 ease-in-out z-[1040] flex flex-col"
+     role="dialog"
+     aria-labelledby="batch-jd-preview-title"
+     aria-modal="true"
+     data-sidebar-type="jd-preview">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-4 border-b theme-border theme-bg-secondary flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <button onclick="closeBatchSidebar()"
+                    class="theme-text-tertiary hover:theme-text-primary transition p-2 -ml-2 rounded-lg hover:theme-bg-hover"
+                    aria-label="Close job description preview"
+                    title="Close (Esc)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            <div>
+                <h2 id="batch-jd-preview-title" class="text-lg font-semibold theme-text-primary">
+                    Job Description
+                </h2>
+                <span id="batch-jd-preview-job-info" class="text-xs theme-text-tertiary"></span>
+            </div>
+        </div>
+        <a id="batch-jd-preview-detail-link" href="#"
+           class="text-sm text-accent-500 hover:text-accent-400 flex items-center gap-1">
+            <span>Open Details</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Content loaded via fetch -->
+    <div id="batch-jd-preview-content" class="flex-1 overflow-y-auto p-4" style="overscroll-behavior: contain;">
+        <div class="flex items-center justify-center h-full">
+            <svg class="animate-spin h-8 w-8 text-accent-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+        </div>
+    </div>
+</div>
+
 {# Annotation Popover - Shared between batch and job detail pages #}
 {# Uses the same popover template for consistent behavior #}
 {% include 'partials/job_detail/_annotation_popover.html' %}
