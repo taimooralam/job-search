@@ -7,8 +7,8 @@
 
 // Track currently open sidebar (exposed globally for jd-prefetch integration)
 // Using window object directly so jd-prefetch.js can modify these
-window.window.currentBatchSidebar = null;
-window.window.currentBatchJobId = null;
+window.currentBatchSidebar = null;
+window.currentBatchJobId = null;
 
 // Batch annotation manager instance (separate from job detail page's annotationManager)
 let batchAnnotationManager = null;
