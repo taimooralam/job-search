@@ -934,7 +934,7 @@ class ProfileOutput:
     3. What proof do you have? (Evidence) - answered by key_achievements with metrics
     4. Why should they call you? (Differentiation) - answered by tagline
 
-    V2 Header Generation (USE_HEADER_V2=true):
+    V2 Header Generation (now the only path - V1 removed):
     - value_proposition: Replaces tagline with role-specific formula
     - achievement_sources: Full traceability for each key achievement
     - skills_provenance: Proves all skills are from whitelist (anti-hallucination)
@@ -975,7 +975,7 @@ class ProfileOutput:
     annotation_influenced: bool = False        # Whether annotations affected generation
 
     # ===== V2 HEADER GENERATION FIELDS (Anti-Hallucination) =====
-    # These are optional and only populated when USE_HEADER_V2=true
+    # These fields provide full traceability for anti-hallucination guarantees
 
     # V2: Value Proposition (replaces tagline)
     value_proposition: str = ""                # Role-specific: [Domain] + [Scale] + [Impact]

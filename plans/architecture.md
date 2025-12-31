@@ -310,8 +310,6 @@ class HeaderGenerationV2Output(TypedDict):
 - Provenance tracking: Every competency tagged with source (master_cv or jd_signal)
 - No synthetic synthesis: Bullets selected/tailored from existing master CV content, not generated
 
-**Feature Flag:** `USE_HEADER_V2=true`
-
 **Files Changed:**
 - `src/layer6_v2/types.py` - New V2 dataclasses
 - `src/layer6_v2/skills_taxonomy.py` - `CoreCompetencyGeneratorV2` implementation
