@@ -3471,13 +3471,25 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
         # Get jobId from document (may be string or int), fallback to _id
         webhook_job_id = str(job.get("jobId")) if job.get("jobId") is not None else job_id
 
-        # Get generated dossier content
+        # Get generated dossier content OR generate best-effort from available data
         generated_dossier = job.get("generated_dossier")
+
         if not generated_dossier:
-            raise HTTPException(
-                status_code=400,
-                detail="No dossier available. Please process the job first.",
+            # Import best-effort generator
+            from runner_service.utils.best_effort_dossier import (
+                generate_best_effort_dossier,
+                has_minimum_dossier_data,
             )
+
+            if not has_minimum_dossier_data(job):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Insufficient data for dossier. Need company, title, and job description or extracted JD.",
+                )
+
+            logger.info(f"Generating best-effort dossier for job {job_id}")
+            generated_dossier, sections_included = generate_best_effort_dossier(job)
+            logger.info(f"Best-effort dossier generated with sections: {list(sections_included.keys())}")
 
         # Generate filename with timestamp
         file_name = generate_dossier_filename(company_name, role_name)
