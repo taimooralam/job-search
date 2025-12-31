@@ -298,6 +298,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                 </a>
+                <!-- Dossier Upload to Drive Button -->
+                <button onclick="uploadBatchDossierToGDrive('{{ job._id }}')"
+                        data-dossier-btn="{{ job._id }}"
+                        class="p-1 rounded transition gdrive-btn {{ 'gdrive-uploaded' if job.dossier_gdrive_uploaded_at else '' }} theme-text-secondary hover:text-accent-400 hover:theme-bg-hover"
+                        title="{{ 'Dossier uploaded to Drive' if job.dossier_gdrive_uploaded_at else 'Upload dossier to Drive' }}">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
+                    </svg>
+                </button>
                 <button onclick="processSingleBatchJob('{{ job._id }}')"
                         class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition"
                         title="Process job through pipeline">

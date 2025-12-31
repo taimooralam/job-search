@@ -825,3 +825,86 @@ async function generateOutreach(contactName, contactRole, messageType, button) {
         }
     }
 }
+
+/**
+ * Upload dossier PDF to Google Drive for a batch job.
+ * Uses best-effort generation if no pre-generated dossier exists.
+ *
+ * @param {string} jobId - The job ID to upload dossier for
+ */
+async function uploadBatchDossierToGDrive(jobId) {
+    const btn = document.querySelector(`[data-dossier-btn="${jobId}"]`);
+    if (!btn) return;
+
+    // Store original state
+    const originalHTML = btn.innerHTML;
+
+    try {
+        // Update UI: uploading state
+        btn.disabled = true;
+        btn.classList.add('uploading');
+        btn.classList.remove('gdrive-uploaded', 'upload-error');
+        btn.innerHTML = `
+            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+        `;
+
+        if (typeof showToast === 'function') {
+            showToast('Uploading dossier to Google Drive...', 'info');
+        }
+
+        // Call upload endpoint
+        const response = await fetch(`/api/jobs/${jobId}/dossier/upload-drive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || result.detail || 'Upload failed');
+        }
+
+        // Success: update UI
+        btn.disabled = false;
+        btn.classList.remove('uploading');
+        btn.classList.add('gdrive-uploaded');
+        btn.title = 'Dossier uploaded to Drive';
+        btn.innerHTML = `
+            <svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        `;
+
+        if (typeof showToast === 'function') {
+            showToast('Dossier uploaded to Google Drive!', 'success');
+        }
+
+    } catch (error) {
+        console.error('Dossier upload failed:', error);
+
+        // Error state
+        btn.disabled = false;
+        btn.classList.remove('uploading');
+        btn.classList.add('upload-error');
+        btn.innerHTML = `
+            <svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        `;
+
+        if (typeof showToast === 'function') {
+            showToast(`Dossier upload failed: ${error.message}`, 'error');
+        }
+
+        // Reset after 3 seconds
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('upload-error');
+            btn.title = 'Upload dossier to Drive';
+        }, 3000);
+    }
+}
