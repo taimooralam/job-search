@@ -3303,6 +3303,8 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
     job = _validate_job_exists_sync(job_id)
     company_name = job.get("company", "Unknown Company")
     role_name = job.get("title", "Unknown Role")
+    # Get jobId from document (may be string or int), fallback to _id
+    webhook_job_id = str(job.get("jobId")) if job.get("jobId") is not None else job_id
 
     # Get editor state for PDF generation
     editor_state = job.get("cv_editor_state")
@@ -3371,6 +3373,7 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
                 "company_name": company_name,
                 "role_name": role_name,
                 "file_name": "Taimoor Alam Resume.pdf",
+                "jobId": webhook_job_id,
             }
 
             upload_response = await http_client.post(
@@ -3465,6 +3468,8 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
         job = _validate_job_exists_sync(job_id)
         company_name = job.get("company", "Unknown Company")
         role_name = job.get("title", "Unknown Role")
+        # Get jobId from document (may be string or int), fallback to _id
+        webhook_job_id = str(job.get("jobId")) if job.get("jobId") is not None else job_id
 
         # Get generated dossier content
         generated_dossier = job.get("generated_dossier")
@@ -3535,6 +3540,7 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
                 "company_name": company_name,
                 "role_name": role_name,
                 "file_name": file_name,
+                "jobId": webhook_job_id,
             }
 
             upload_response = await http_client.post(
