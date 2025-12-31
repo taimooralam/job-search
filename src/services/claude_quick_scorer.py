@@ -152,6 +152,7 @@ class ClaudeQuickScorer:
                 prompt=prompt,
                 system=QUICK_SCORE_SYSTEM,
                 job_id=f"score_{company[:20]}_{title[:20]}".replace(" ", "_"),
+                validate_json=False,  # Quick scorer uses plain text format (SCORE: / RATIONALE:)
             )
 
             if result.success:
