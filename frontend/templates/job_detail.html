@@ -148,6 +148,14 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
                             </svg>
                         </button>
+                        <button onclick="uploadDossierToGDrive('{{ job._id }}')"
+                                title="{{ 'Dossier uploaded to Drive' if job.dossier_gdrive_uploaded_at else 'Upload dossier to Drive' }}"
+                                class="quick-action-icon gdrive-btn {{ 'gdrive-uploaded' if job.dossier_gdrive_uploaded_at else '' }}"
+                                id="header-dossier-gdrive-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
+                            </svg>
+                        </button>
                         <button onclick="toggleBookmark('{{ job._id }}')" title="Bookmark" class="quick-action-icon" id="bookmark-btn">
                             <svg fill="{{ 'currentColor' if job.bookmarked else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>

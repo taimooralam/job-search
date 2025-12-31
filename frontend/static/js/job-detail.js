@@ -813,15 +813,21 @@ async function exportDossierPDF(jobId) {
  * @param {string} jobId - The job ID to upload dossier for
  */
 async function uploadDossierToGDrive(jobId) {
-    const btn = document.getElementById('dossier-gdrive-upload-btn');
-    const textSpan = btn.querySelector('.dossier-gdrive-btn-text');
+    // Get both sidebar and header buttons
+    const sidebarBtn = document.getElementById('dossier-gdrive-upload-btn');
+    const headerBtn = document.getElementById('header-dossier-gdrive-btn');
+    const buttons = [sidebarBtn, headerBtn].filter(Boolean);
+
+    const textSpan = sidebarBtn?.querySelector('.dossier-gdrive-btn-text');
     const originalText = textSpan ? textSpan.textContent : 'Upload Dossier to Drive';
 
     try {
-        // Update UI: uploading state
-        btn.classList.add('uploading');
-        btn.classList.remove('gdrive-uploaded', 'upload-error');
-        btn.disabled = true;
+        // Update UI: uploading state for all buttons
+        buttons.forEach(btn => {
+            btn.classList.add('uploading');
+            btn.classList.remove('gdrive-uploaded', 'upload-error');
+            btn.disabled = true;
+        });
         if (textSpan) textSpan.textContent = 'Uploading...';
 
         showToast('Uploading dossier to Google Drive...', 'info');
@@ -839,10 +845,13 @@ async function uploadDossierToGDrive(jobId) {
             throw new Error(result.error || 'Upload failed');
         }
 
-        // Success: update UI to show uploaded state
-        btn.classList.remove('uploading');
-        btn.classList.add('gdrive-uploaded');
-        btn.disabled = false;
+        // Success: update UI to show uploaded state for all buttons
+        buttons.forEach(btn => {
+            btn.classList.remove('uploading');
+            btn.classList.add('gdrive-uploaded');
+            btn.disabled = false;
+            btn.title = 'Dossier uploaded to Drive';
+        });
         if (textSpan) textSpan.textContent = 'Uploaded';
 
         showToast('Dossier uploaded to Google Drive!', 'success');
@@ -850,17 +859,21 @@ async function uploadDossierToGDrive(jobId) {
     } catch (error) {
         console.error('Dossier Google Drive upload failed:', error);
 
-        // Error: show error state briefly, then reset
-        btn.classList.remove('uploading');
-        btn.classList.add('upload-error');
+        // Error: show error state briefly, then reset for all buttons
+        buttons.forEach(btn => {
+            btn.classList.remove('uploading');
+            btn.classList.add('upload-error');
+        });
         if (textSpan) textSpan.textContent = 'Error';
 
         showToast(error.message || 'Failed to upload dossier to Google Drive', 'error');
 
         // Reset after 3 seconds
         setTimeout(() => {
-            btn.classList.remove('upload-error');
-            btn.disabled = false;
+            buttons.forEach(btn => {
+                btn.classList.remove('upload-error');
+                btn.disabled = false;
+            });
             if (textSpan) textSpan.textContent = originalText;
         }, 3000);
     }
