@@ -21,7 +21,10 @@ Usage:
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 from src.common.claude_cli import ClaudeCLI
 
@@ -343,7 +346,10 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         return self.has_persona_annotations(jd_annotations)
 
     async def synthesize(
-        self, jd_annotations: Dict[str, Any], job_id: str = "unknown"
+        self,
+        jd_annotations: Dict[str, Any],
+        job_id: str = "unknown",
+        struct_logger: Optional["StructuredLogger"] = None,
     ) -> Optional[SynthesizedPersona]:
         """
         Synthesize persona from identity, passion, and strength annotations using Claude CLI.
@@ -353,6 +359,7 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
         Args:
             jd_annotations: Full jd_annotations dict from job document
             job_id: Job ID for logging and tracking
+            struct_logger: Optional StructuredLogger for Redis live-tail visibility
 
         Returns:
             SynthesizedPersona if relevant annotations exist, else None
@@ -385,7 +392,12 @@ Return ONLY the persona statement, nothing else. No quotes around it."""
             full_prompt = f"{self.SYSTEM_PROMPT}\n\n{user_prompt}"
 
             # Call Claude CLI (no JSON validation - we want raw text)
-            result = cli.invoke(full_prompt, job_id=job_id, validate_json=False)
+            result = cli.invoke(
+                full_prompt,
+                job_id=job_id,
+                validate_json=False,
+                struct_logger=struct_logger,
+            )
 
             if not result.success:
                 logger.error(f"Claude CLI failed for persona synthesis: {result.error}")

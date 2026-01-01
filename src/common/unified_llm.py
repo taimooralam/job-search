@@ -410,10 +410,16 @@ class UnifiedLLM:
         start_time = datetime.utcnow()
 
         # Run sync CLI in thread pool
+        # Pass struct_logger for Redis live-tail logging of prompts/results
         loop = asyncio.get_event_loop()
         cli_result: CLIResult = await loop.run_in_executor(
             None,
-            lambda: self.cli.invoke(prompt, job_id, validate_json=validate_json),
+            lambda: self.cli.invoke(
+                prompt,
+                job_id,
+                validate_json=validate_json,
+                struct_logger=self._struct_logger,
+            ),
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)

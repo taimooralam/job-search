@@ -24,9 +24,12 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from src.common.claude_cli import CLIResult, ClaudeCLI
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.prompts.cv_generation_prompts import (
     ROLE_KEYWORDS,
     build_role_bullet_prompt,
@@ -158,6 +161,7 @@ class ClaudeCVService:
         timeout: int = 180,
         max_role_concurrent: int = 5,
         ats_threshold: int = 75,
+        struct_logger: Optional["StructuredLogger"] = None,
     ):
         """
         Initialize the Claude CV service.
@@ -166,6 +170,7 @@ class ClaudeCVService:
             timeout: CLI timeout in seconds (default 180s)
             max_role_concurrent: Max concurrent role generations (default 5)
             ats_threshold: ATS score threshold for fixes (default 75)
+            struct_logger: Optional StructuredLogger for Redis live-tail visibility
         """
         # Three-tier CLI setup
         self.role_cli = ClaudeCLI(tier="balanced", timeout=timeout)  # Sonnet
@@ -175,6 +180,7 @@ class ClaudeCVService:
         self.timeout = timeout
         self.max_role_concurrent = max_role_concurrent
         self.ats_threshold = ats_threshold
+        self._struct_logger = struct_logger
 
         # Track costs
         self._total_cost = 0.0
@@ -399,6 +405,7 @@ class ClaudeCVService:
             prompt=prompt,
             job_id=job_id,
             validate_json=True,
+            struct_logger=self._struct_logger,
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -505,6 +512,7 @@ class ClaudeCVService:
             prompt=prompt,
             job_id="profile-synthesis",
             validate_json=True,
+            struct_logger=self._struct_logger,
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
@@ -589,6 +597,7 @@ class ClaudeCVService:
             prompt=prompt,
             job_id="ats-validation",
             validate_json=True,
+            struct_logger=self._struct_logger,
         )
 
         duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
