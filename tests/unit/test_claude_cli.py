@@ -897,3 +897,235 @@ class TestCLIErrorDetectionInStdout:
         # So this WOULD match the general pattern
         assert result.success is False
         assert "Error:" in result.error
+
+
+# ===== STRUCTURED LOGGER INTEGRATION TESTS =====
+
+class TestStructuredLoggerIntegration:
+    """Test struct_logger integration for Redis live-tail visibility.
+
+    These tests verify that ClaudeCLI correctly emits structured logs
+    with session_id, prompt previews, and result previews to StructuredLogger.
+    """
+
+    @patch('subprocess.run')
+    def test_struct_logger_receives_start_event(self, mock_subprocess_run, valid_cli_output):
+        """Should emit 'start' event to struct_logger with prompt previews."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        # Create mock struct_logger
+        mock_struct_logger = MagicMock()
+
+        cli = ClaudeCLI()
+        cli.invoke(
+            prompt="Test prompt for extraction",
+            job_id="test_struct_001",
+            struct_logger=mock_struct_logger
+        )
+
+        # Verify struct_logger.emit_llm_call was called with 'start' status
+        start_calls = [
+            call for call in mock_struct_logger.emit_llm_call.call_args_list
+            if call.kwargs.get('status') == 'start'
+        ]
+        assert len(start_calls) == 1
+
+        start_call = start_calls[0]
+        assert start_call.kwargs['backend'] == 'claude_cli'
+        assert 'session_id' in start_call.kwargs['metadata']
+        assert start_call.kwargs['metadata']['session_id'].startswith('claude_')
+        assert 'prompt_length' in start_call.kwargs['metadata']
+
+    @patch('subprocess.run')
+    def test_struct_logger_receives_complete_event(self, mock_subprocess_run, valid_cli_output):
+        """Should emit 'complete' event with result preview."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        mock_struct_logger = MagicMock()
+
+        cli = ClaudeCLI()
+        cli.invoke(
+            prompt="Test prompt",
+            job_id="test_struct_002",
+            struct_logger=mock_struct_logger
+        )
+
+        # Verify 'complete' event was emitted
+        complete_calls = [
+            call for call in mock_struct_logger.emit_llm_call.call_args_list
+            if call.kwargs.get('status') == 'complete'
+        ]
+        assert len(complete_calls) == 1
+
+        complete_call = complete_calls[0]
+        assert complete_call.kwargs['backend'] == 'claude_cli'
+        assert 'result_preview' in complete_call.kwargs['metadata']
+        assert 'result_length' in complete_call.kwargs['metadata']
+        assert complete_call.kwargs.get('duration_ms') is not None
+
+    @patch('subprocess.run')
+    def test_struct_logger_receives_error_event(self, mock_subprocess_run):
+        """Should emit 'error' event when CLI fails."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        mock_result.stderr = "Authentication failed"
+        mock_subprocess_run.return_value = mock_result
+
+        mock_struct_logger = MagicMock()
+
+        cli = ClaudeCLI()
+        result = cli.invoke(
+            prompt="Test prompt",
+            job_id="test_struct_003",
+            struct_logger=mock_struct_logger
+        )
+
+        assert result.success is False
+
+        # Verify 'error' event was emitted
+        error_calls = [
+            call for call in mock_struct_logger.emit_llm_call.call_args_list
+            if call.kwargs.get('status') == 'error'
+        ]
+        assert len(error_calls) == 1
+
+        error_call = error_calls[0]
+        assert error_call.kwargs['backend'] == 'claude_cli'
+        # Error is passed as top-level kwarg, not in metadata
+        assert error_call.kwargs.get('error') is not None
+        assert 'session_id' in error_call.kwargs['metadata']
+
+    @patch('subprocess.run')
+    def test_struct_logger_session_id_consistent(self, mock_subprocess_run, valid_cli_output):
+        """Same session_id should be used for start and complete events."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        mock_struct_logger = MagicMock()
+
+        cli = ClaudeCLI()
+        cli.invoke(
+            prompt="Test prompt",
+            job_id="test_struct_004",
+            struct_logger=mock_struct_logger
+        )
+
+        # Extract session_ids from all calls
+        session_ids = [
+            call.kwargs['metadata'].get('session_id')
+            for call in mock_struct_logger.emit_llm_call.call_args_list
+            if call.kwargs.get('metadata')
+        ]
+
+        # All session_ids should be the same (non-None)
+        assert len(session_ids) >= 2
+        assert all(sid == session_ids[0] for sid in session_ids)
+        assert session_ids[0] is not None
+
+    @patch('subprocess.run')
+    def test_no_struct_logger_no_error(self, mock_subprocess_run, valid_cli_output):
+        """Should work without struct_logger (backward compatibility)."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        cli = ClaudeCLI()
+        # No struct_logger passed - should not raise
+        result = cli.invoke(
+            prompt="Test prompt",
+            job_id="test_struct_005"
+        )
+
+        assert result.success is True
+
+    @patch('subprocess.run')
+    def test_struct_logger_with_separate_prompts(self, mock_subprocess_run, valid_cli_output):
+        """Should use separate system/user prompts when provided."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = valid_cli_output
+        mock_result.stderr = ""
+        mock_subprocess_run.return_value = mock_result
+
+        mock_struct_logger = MagicMock()
+
+        cli = ClaudeCLI()
+        cli.invoke(
+            prompt="Combined prompt",
+            job_id="test_struct_006",
+            system_prompt="You are a helpful assistant.",
+            user_prompt="Extract pain points from this JD.",
+            struct_logger=mock_struct_logger
+        )
+
+        # Verify start event has both previews
+        start_calls = [
+            call for call in mock_struct_logger.emit_llm_call.call_args_list
+            if call.kwargs.get('status') == 'start'
+        ]
+        assert len(start_calls) == 1
+
+        metadata = start_calls[0].kwargs['metadata']
+        assert 'system_prompt_preview' in metadata
+        assert 'user_prompt_preview' in metadata
+
+
+# ===== PREVIEW TEXT HELPER TESTS =====
+
+class TestPreviewTextHelper:
+    """Test the _preview_text helper function."""
+
+    def test_preview_short_text_unchanged(self):
+        """Short text (<=23 chars) should be returned unchanged."""
+        from src.common.claude_cli import _preview_text
+
+        short_text = "Hello world!"
+        assert _preview_text(short_text) == short_text
+
+        exactly_23 = "a" * 23
+        assert _preview_text(exactly_23) == exactly_23
+
+    def test_preview_long_text_truncated(self):
+        """Long text should show first 10 + ... + last 10 chars."""
+        from src.common.claude_cli import _preview_text
+
+        long_text = "ABCDEFGHIJ" + "x" * 50 + "0123456789"  # 70 chars
+        preview = _preview_text(long_text)
+
+        assert preview.startswith("ABCDEFGHIJ")
+        assert preview.endswith("0123456789")
+        assert "..." in preview
+        # Should be: 10 + 3 + 10 = 23 chars
+        assert len(preview) == 23
+
+    def test_preview_empty_text(self):
+        """Empty text should return empty string."""
+        from src.common.claude_cli import _preview_text
+
+        assert _preview_text("") == ""
+        assert _preview_text(None) == ""
+
+    def test_preview_custom_length(self):
+        """Should respect custom n parameter."""
+        from src.common.claude_cli import _preview_text
+
+        long_text = "12345" + "x" * 50 + "67890"
+        preview = _preview_text(long_text, n=5)
+
+        assert preview.startswith("12345")
+        assert preview.endswith("67890")
+        assert "..." in preview
