@@ -949,6 +949,533 @@ class TestHeaderGeneratorV2Integration:
 
 
 # ============================================================================
+# TEST Type Coercion in LLM Response Handling
+# ============================================================================
+
+class TestLLMResponseTypeCoercion:
+    """Tests for type coercion fix in _select_final_bullets method (lines 786-795)."""
+
+    @pytest.fixture
+    def mock_llm(self):
+        """Mock UnifiedLLM."""
+        mock = MagicMock()
+        mock.config = MagicMock()
+        mock.config.tier = "middle"
+        return mock
+
+    @pytest.fixture
+    def mock_stitched_cv(self):
+        """Mock StitchedCV with sample data."""
+        from src.layer6_v2.types import StitchedCV, StitchedRole
+
+        role = StitchedRole(
+            role_id="01_test",
+            company="Test Corp",
+            title="Engineering Manager",
+            location="San Francisco, CA",
+            period="2020–Present",
+            bullets=[
+                "Led team of 12 engineers to deliver platform migration",
+                "Built Kubernetes infrastructure handling 10M daily requests"
+            ]
+        )
+        return StitchedCV(roles=[role])
+
+    @pytest.fixture
+    def sample_extracted_jd(self):
+        """Sample extracted JD."""
+        return {
+            "role_category": "engineering_manager",
+            "priority_keywords": ["kubernetes", "aws"],
+            "technical_skills": ["python"],
+        }
+
+    @pytest.fixture
+    def sample_skill_whitelist(self):
+        """Sample skill whitelist."""
+        return {
+            "hard_skills": ["Python", "AWS", "Kubernetes"],
+            "soft_skills": ["Leadership", "Mentoring"],
+        }
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_as_proper_list(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should handle rejected_jd_skills as a proper list without modification."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": ["Java", "React", "PHP"]  # Proper list
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            # Value proposition
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify rejected_jd_skills was preserved as list (order may vary)
+            assert profile.skills_provenance is not None
+            assert set(profile.skills_provenance.rejected_jd_skills) == {"Java", "React", "PHP"}
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_as_comma_separated_string(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should split comma-separated string into list."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": "Java, React, PHP"  # String instead of list
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify string was split into list (order may vary)
+            assert profile.skills_provenance is not None
+            assert set(profile.skills_provenance.rejected_jd_skills) == {"Java", "React", "PHP"}
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_as_empty_string(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should convert empty string to empty list."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": ""  # Empty string
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify empty string became empty list
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.rejected_jd_skills == []
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_missing_entirely(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should default to empty list when field is missing."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ]
+                        # rejected_jd_skills field is missing entirely
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify missing field defaults to empty list
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.rejected_jd_skills == []
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_as_dict(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should convert dict to empty list."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": {"skill1": "Java", "skill2": "React"}  # Dict
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify dict was converted to empty list
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.rejected_jd_skills == []
+
+    @pytest.mark.asyncio
+    async def test_rejected_jd_skills_as_integer(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should convert integer to empty list."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": 123  # Integer
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify integer was converted to empty list
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.rejected_jd_skills == []
+
+    @pytest.mark.asyncio
+    async def test_selected_bullets_not_a_list(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should handle selected_bullets as non-list gracefully."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": "not a list",  # String instead of list
+                        "rejected_jd_skills": ["Java"]
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+
+            # Should not raise an error
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Should have no achievements since selected_bullets was invalid
+            assert len(profile.key_achievements) == 0
+            # But should still process rejected_jd_skills
+            assert profile.skills_provenance is not None
+            assert profile.skills_provenance.rejected_jd_skills == ["Java"]
+
+    @pytest.mark.asyncio
+    async def test_string_with_extra_whitespace_and_empty_items(
+        self,
+        mock_llm,
+        mock_stitched_cv,
+        sample_extracted_jd,
+        sample_skill_whitelist
+    ):
+        """Should handle string with extra whitespace and filter empty items."""
+        from src.layer6_v2.header_generator import HeaderGenerator
+        from src.common.unified_llm import LLMResult
+
+        async def mock_invoke(prompt, system, validate_json=False):
+            if "achievement bullets" in system.lower():
+                return LLMResult(
+                    success=True,
+                    content="",
+                    parsed_json={
+                        "selected_bullets": [
+                            {
+                                "bullet_text": "Led team of 12 engineers",
+                                "source_bullet": "Led team of 12 engineers",
+                                "source_role": "01_test",
+                                "score": 8.0,
+                                "score_breakdown": {},
+                                "tailoring_applied": False
+                            }
+                        ],
+                        "rejected_jd_skills": "  Java  ,  ,  React  , , PHP  "  # Extra whitespace and empty items
+                    },
+                    backend="mock",
+                    model="mock-model",
+                    tier="middle",
+                    duration_ms=100
+                )
+            return LLMResult(
+                success=True,
+                content="Engineering leader",
+                parsed_json=None,
+                backend="mock",
+                model="mock-model",
+                tier="middle",
+                duration_ms=100
+            )
+
+        with patch('src.layer6_v2.header_generator.UnifiedLLM') as MockLLM:
+            MockLLM.return_value = mock_llm
+            mock_llm.invoke = AsyncMock(side_effect=mock_invoke)
+
+            generator = HeaderGenerator(skill_whitelist=sample_skill_whitelist)
+            profile = await generator.generate_profile(
+                stitched_cv=mock_stitched_cv,
+                extracted_jd=sample_extracted_jd,
+                candidate_name="Test Candidate"
+            )
+
+            # Verify whitespace was stripped and empty items filtered (order may vary)
+            assert profile.skills_provenance is not None
+            assert set(profile.skills_provenance.rejected_jd_skills) == {"Java", "React", "PHP"}
+
+
+# ============================================================================
 # TEST COVERAGE SUMMARY
 # ============================================================================
 
@@ -968,6 +1495,7 @@ Test Coverage Summary:
 | build_value_proposition...   | 3     | ✅       |
 | build_key_achievement...     | 3     | ✅       |
 | HeaderGenerator V2           | 2     | ✅       |
+| LLM Response Type Coercion   | 9     | ✅       |
 
-Total: 42 tests covering V2 components (V1 code removed)
+Total: 51 tests covering V2 components (V1 code removed)
 """
