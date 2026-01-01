@@ -62,6 +62,25 @@ def parse_llm_json(text: str) -> Dict[str, Any]:
         # repair_json returns the parsed object when return_objects=True
         if isinstance(repaired, dict):
             return repaired
+        elif isinstance(repaired, list):
+            # LLM sometimes wraps response in brackets: [{...}]
+            # Or returns multiple JSON objects that get parsed as a list
+            if len(repaired) == 1 and isinstance(repaired[0], dict):
+                # Single dict wrapped in brackets - unwrap it
+                return repaired[0]
+            elif len(repaired) > 0 and isinstance(repaired[0], dict):
+                # Multiple dicts - merge them (common LLM pattern)
+                merged = {}
+                for item in repaired:
+                    if isinstance(item, dict):
+                        merged.update(item)
+                return merged
+            else:
+                # List of non-dicts (strings, numbers, etc.) - not valid for our use case
+                raise ValueError(
+                    f"json_repair returned list of non-dict items: {repaired[:3]}..."
+                    if len(repaired) > 3 else f"json_repair returned list of non-dict items: {repaired}"
+                )
         elif isinstance(repaired, str):
             # Sometimes it returns a repaired string
             return json.loads(repaired)

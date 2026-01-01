@@ -844,9 +844,21 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
 
             # Merge rejected JD skills from bullet selection
             if skills_provenance and rejected_jd_skills:
-                combined_rejected = list(set(
-                    skills_provenance.rejected_jd_skills + rejected_jd_skills
-                ))
+                # Defensive type coercion - ensure both are lists before concatenation
+                provenance_rejected = skills_provenance.rejected_jd_skills
+                if isinstance(provenance_rejected, str):
+                    provenance_rejected = [s.strip() for s in provenance_rejected.split(",") if s.strip()]
+                elif not isinstance(provenance_rejected, list):
+                    provenance_rejected = []
+
+                # Double-check rejected_jd_skills (should already be coerced at line 791-795)
+                local_rejected = rejected_jd_skills
+                if isinstance(local_rejected, str):
+                    local_rejected = [s.strip() for s in local_rejected.split(",") if s.strip()]
+                elif not isinstance(local_rejected, list):
+                    local_rejected = []
+
+                combined_rejected = list(set(provenance_rejected + local_rejected))
                 skills_provenance = SkillsProvenance(
                     all_from_whitelist=skills_provenance.all_from_whitelist,
                     whitelist_source=skills_provenance.whitelist_source,
