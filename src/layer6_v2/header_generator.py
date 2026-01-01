@@ -783,7 +783,16 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
         if bullets_result.success and bullets_result.parsed_json:
             selection_data = bullets_result.parsed_json
             selected_bullets = selection_data.get("selected_bullets", [])
+            # Ensure selected_bullets is a list (LLM may return wrong type)
+            if not isinstance(selected_bullets, list):
+                selected_bullets = []
             rejected_jd_skills = selection_data.get("rejected_jd_skills", [])
+            # Ensure rejected_jd_skills is a list (LLM may return string)
+            if isinstance(rejected_jd_skills, str):
+                # Handle comma-separated string or empty string
+                rejected_jd_skills = [s.strip() for s in rejected_jd_skills.split(",") if s.strip()]
+            elif not isinstance(rejected_jd_skills, list):
+                rejected_jd_skills = []
 
             for sb in selected_bullets:
                 bullet_text = sb.get("bullet_text", "")
