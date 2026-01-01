@@ -31,11 +31,15 @@ import asyncio
 import os
 import re
 import sys
-from typing import Optional, Dict, Any, Callable, List, Literal
+import uuid
+from typing import Optional, Dict, Any, Callable, List, Literal, TYPE_CHECKING
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
 from src.common.json_utils import parse_llm_json
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 
 logger = logging.getLogger(__name__)
@@ -100,6 +104,26 @@ class CLIResult:
 # Type alias for log callback (for Redis live-tail integration)
 # Signature: (job_id, level, data) -> None
 LogCallback = Callable[[str, str, Dict[str, Any]], None]
+
+
+def _preview_text(text: str, n: int = 10) -> str:
+    """
+    Generate a preview of text showing first N and last N characters.
+
+    Used for logging prompts and results without exposing full content.
+
+    Args:
+        text: Text to preview
+        n: Number of characters to show at start and end
+
+    Returns:
+        Preview string like "First 10 c...last 10 ch" or full text if short
+    """
+    if not text:
+        return ""
+    if len(text) <= n * 2 + 3:
+        return text
+    return f"{text[:n]}...{text[-n:]}"
 
 
 class ClaudeCLI:
@@ -230,6 +254,24 @@ class ClaudeCLI:
     # which returns the raw LLM response directly, avoiding the known bug (#8126)
     # where --output-format json sometimes returns empty result field.
 
+    def _estimate_cost_from_chars(self, input_chars: int, output_chars: int) -> float:
+        """
+        Estimate cost based on character counts.
+
+        Approximate conversion: ~4 characters per token (rough average).
+
+        Args:
+            input_chars: Number of input characters
+            output_chars: Number of output characters
+
+        Returns:
+            Estimated cost in USD
+        """
+        # Rough approximation: 4 chars per token
+        input_tokens = input_chars // 4
+        output_tokens = output_chars // 4
+        return self.get_tier_cost_estimate(self.tier, input_tokens, output_tokens)
+
     def _extract_cli_error(self, stdout: str, stderr: str, returncode: int) -> str:
         """
         Extract meaningful error message from CLI failure.
@@ -296,6 +338,9 @@ class ClaudeCLI:
         job_id: str,
         validate_json: bool = True,
         allow_tools: bool = False,
+        system_prompt: Optional[str] = None,
+        user_prompt: Optional[str] = None,
+        struct_logger: Optional['StructuredLogger'] = None,
     ) -> CLIResult:
         """
         Execute Claude CLI with prompt and return parsed result.
@@ -309,12 +354,48 @@ class ClaudeCLI:
             allow_tools: Whether to enable CLI tools (WebSearch, WebFetch, Read).
                         Default False to prevent tool_use responses.
                         Set True for research tasks that need web search.
+            system_prompt: Optional system prompt (for logging only, if provided separately)
+            user_prompt: Optional user prompt (for logging only, if provided separately)
+            struct_logger: Optional StructuredLogger for Redis live-tail integration
 
         Returns:
             CLIResult with success/failure status and parsed data
         """
         start_time = datetime.utcnow()
         self._emit_log(job_id, "info", message=f"Starting CLI invocation with {self.tier} tier ({self.model})")
+
+        # Generate unique session ID for this invocation
+        session_id = f"claude_{uuid.uuid4().hex[:8]}"
+
+        # Extract system/user prompts for logging if not provided separately
+        if system_prompt is None and user_prompt is None:
+            # Try to split on common delimiter patterns
+            if "\n\n---\n\n" in prompt:
+                parts = prompt.split("\n\n---\n\n", 1)
+                system_prompt, user_prompt = parts[0], parts[1]
+            elif "\n\nUser Request:\n" in prompt:
+                parts = prompt.split("\n\nUser Request:\n", 1)
+                system_prompt, user_prompt = parts[0], parts[1]
+            else:
+                # Can't split - treat entire prompt as user prompt
+                system_prompt = ""
+                user_prompt = prompt
+
+        # Emit structured log for Redis live-tail (start)
+        if struct_logger:
+            struct_logger.emit_llm_call(
+                step_name=f"claude_cli:{job_id}",
+                backend="claude_cli",
+                model=self.model,
+                tier=self.tier,
+                status="start",
+                metadata={
+                    "session_id": session_id,
+                    "system_prompt_preview": _preview_text(system_prompt or ""),
+                    "user_prompt_preview": _preview_text(user_prompt or ""),
+                    "prompt_length": len(prompt),
+                }
+            )
 
         # Log prompt stats
         self._emit_log(job_id, "debug", message=f"Prompt length: {len(prompt)} chars")
@@ -347,6 +428,21 @@ class ClaudeCLI:
             if result.returncode != 0:
                 error_msg = self._extract_cli_error(result.stdout, result.stderr, result.returncode)
                 self._emit_log(job_id, "error", message=f"CLI failed: {error_msg}")
+                # Emit structured error log for Redis live-tail
+                if struct_logger:
+                    struct_logger.emit_llm_call(
+                        step_name=f"claude_cli:{job_id}",
+                        backend="claude_cli",
+                        model=self.model,
+                        tier=self.tier,
+                        status="error",
+                        duration_ms=duration_ms,
+                        error=error_msg,
+                        metadata={
+                            "session_id": session_id,
+                            "returncode": result.returncode,
+                        }
+                    )
                 return CLIResult(
                     job_id=job_id,
                     success=False,
@@ -372,6 +468,25 @@ class ClaudeCLI:
                 raw_output=raw_preview,
                 stderr=result.stderr[:500] if result.stderr else None,
             )
+
+            # Emit structured log for Redis live-tail (complete)
+            if struct_logger:
+                # Estimate cost based on prompt and output lengths
+                estimated_cost = self._estimate_cost_from_chars(len(prompt), len(raw_output))
+                struct_logger.emit_llm_call(
+                    step_name=f"claude_cli:{job_id}",
+                    backend="claude_cli",
+                    model=self.model,
+                    tier=self.tier,
+                    status="complete",
+                    duration_ms=duration_ms,
+                    cost_usd=estimated_cost,
+                    metadata={
+                        "session_id": session_id,
+                        "result_preview": _preview_text(raw_output),
+                        "result_length": len(raw_output),
+                    }
+                )
 
             if not raw_output:
                 raise ValueError("CLI returned empty response")
@@ -465,6 +580,18 @@ class ClaudeCLI:
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             error_msg = f"CLI timeout after {self.timeout}s"
             self._emit_log(job_id, "error", message=error_msg)
+            # Emit structured error log for Redis live-tail
+            if struct_logger:
+                struct_logger.emit_llm_call(
+                    step_name=f"claude_cli:{job_id}",
+                    backend="claude_cli",
+                    model=self.model,
+                    tier=self.tier,
+                    status="error",
+                    duration_ms=duration_ms,
+                    error=error_msg,
+                    metadata={"session_id": session_id, "error_type": "timeout"}
+                )
             return CLIResult(
                 job_id=job_id,
                 success=False,
@@ -481,6 +608,18 @@ class ClaudeCLI:
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             error_msg = str(e)
             self._emit_log(job_id, "error", message=f"Parse error: {error_msg}")
+            # Emit structured error log for Redis live-tail
+            if struct_logger:
+                struct_logger.emit_llm_call(
+                    step_name=f"claude_cli:{job_id}",
+                    backend="claude_cli",
+                    model=self.model,
+                    tier=self.tier,
+                    status="error",
+                    duration_ms=duration_ms,
+                    error=error_msg,
+                    metadata={"session_id": session_id, "error_type": "parse_error"}
+                )
             return CLIResult(
                 job_id=job_id,
                 success=False,
@@ -497,6 +636,18 @@ class ClaudeCLI:
             duration_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
             error_msg = f"Unexpected error: {str(e)}"
             self._emit_log(job_id, "error", message=error_msg)
+            # Emit structured error log for Redis live-tail
+            if struct_logger:
+                struct_logger.emit_llm_call(
+                    step_name=f"claude_cli:{job_id}",
+                    backend="claude_cli",
+                    model=self.model,
+                    tier=self.tier,
+                    status="error",
+                    duration_ms=duration_ms,
+                    error=error_msg,
+                    metadata={"session_id": session_id, "error_type": "unexpected"}
+                )
             return CLIResult(
                 job_id=job_id,
                 success=False,
