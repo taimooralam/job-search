@@ -18,12 +18,17 @@ Usage:
     stitched_cv = stitcher.stitch(role_bullets_list)
 """
 
+import json
 import re
-from typing import List, Set, Tuple, Optional, Dict
+from datetime import datetime
+from typing import List, Set, Tuple, Optional, Dict, Callable, TYPE_CHECKING
 from difflib import SequenceMatcher
 from collections import defaultdict
 
 from src.common.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.types import (
     RoleBullets,
     StitchedRole,
@@ -59,6 +64,9 @@ class CVStitcher:
         similarity_threshold: float = 0.75,
         min_bullets_per_role: int = 2,
         skill_whitelist: Optional[dict] = None,  # GAP-001: Whitelist to prevent hallucinated skills
+        job_id: Optional[str] = None,
+        struct_logger: Optional["StructuredLogger"] = None,
+        log_callback: Optional[Callable[[str], None]] = None,
     ):
         """
         Initialize the stitcher.
@@ -68,11 +76,17 @@ class CVStitcher:
             similarity_threshold: Threshold for considering bullets as duplicates (0-1)
             min_bullets_per_role: Minimum bullets to keep per role (prevents empty roles)
             skill_whitelist: Dict with 'hard_skills' and 'soft_skills' lists (from CVLoader)
+            job_id: Optional job ID for logging correlation
+            struct_logger: Optional structured logger for Redis live-tail
+            log_callback: Optional callback for in-process log forwarding
         """
         self.word_budget = word_budget  # None = unlimited
         self.similarity_threshold = similarity_threshold
         self.min_bullets_per_role = min_bullets_per_role
         self._logger = get_logger(__name__)
+        self._job_id = job_id
+        self._struct_logger = struct_logger
+        self._log_callback = log_callback
 
         # GAP-001: Store skill whitelist for validation
         self._skill_whitelist = skill_whitelist
@@ -85,6 +99,52 @@ class CVStitcher:
             self._logger.debug(
                 f"Skill whitelist loaded: {len(self._whitelist_set)} unique skills"
             )
+
+    # ===== LOGGING HELPERS (Phase 0 Extension) =====
+
+    @staticmethod
+    def _preview(text: str, n: int = 50) -> str:
+        """Generate a preview of text: first n chars + '...' + last n chars."""
+        if not text:
+            return ""
+        if len(text) <= n * 2 + 3:
+            return text
+        return f"{text[:n]}...{text[-n:]}"
+
+    def _emit_struct_log(self, event: str, metadata: dict) -> None:
+        """
+        Emit structured log for Redis live-tail and in-process callbacks.
+
+        Uses dual-emit pattern:
+        1. log_callback for in-process forwarding (CVGenerationService)
+        2. struct_logger stdout for subprocess mode (pipeline runner)
+        """
+        # Emit via log_callback (works in-process for CVGenerationService)
+        if self._log_callback:
+            try:
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "stitcher",
+                    "event": f"cv_stitch_{event}",
+                    "message": metadata.get("message", event),
+                    "job_id": self._job_id,
+                    "metadata": metadata,
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Fire-and-forget logging
+
+        # Also emit via struct_logger stdout (works in subprocess mode)
+        if self._struct_logger:
+            try:
+                self._struct_logger.emit(
+                    event=f"cv_stitch_{event}",
+                    layer=6,
+                    metadata=metadata,
+                )
+            except Exception:
+                pass
 
     def _extract_keywords(self, text: str) -> Set[str]:
         """Extract meaningful keywords from bullet text."""
@@ -385,9 +445,48 @@ class CVStitcher:
         # Count original bullets
         original_count = sum(rb.bullet_count for rb in role_bullets_list)
 
+        # Phase 0: Emit stitch start
+        self._emit_struct_log("subphase_start", {
+            "message": f"Starting CV stitching for {len(role_bullets_list)} roles",
+            "phase": 4,
+            "subphase": "stitch_start",
+            "roles_count": len(role_bullets_list),
+            "original_bullet_count": original_count,
+            "target_keywords_count": len(target_keywords) if target_keywords else 0,
+            "roles": [
+                {
+                    "company": rb.company,
+                    "title": rb.title,
+                    "bullet_count": rb.bullet_count,
+                }
+                for rb in role_bullets_list
+            ],
+        })
+
         # Step 1: Find duplicates
         duplicates = self._find_duplicates(role_bullets_list)
         self._logger.info(f"Found {len(duplicates)} duplicate pairs")
+
+        # Phase 0: Log duplicate detection results
+        if duplicates:
+            self._emit_struct_log("decision_point", {
+                "message": f"Found {len(duplicates)} duplicate bullet pairs",
+                "decision": "duplicate_detection",
+                "duplicate_count": len(duplicates),
+                "similarity_threshold": self.similarity_threshold,
+                "duplicates": [
+                    {
+                        "bullet1_preview": self._preview(dup.bullet1_text, 40),
+                        "bullet1_role": role_bullets_list[dup.bullet1_role_index].company if dup.bullet1_role_index < len(role_bullets_list) else "unknown",
+                        "bullet2_preview": self._preview(dup.bullet2_text, 40),
+                        "bullet2_role": role_bullets_list[dup.bullet2_role_index].company if dup.bullet2_role_index < len(role_bullets_list) else "unknown",
+                        "similarity_score": round(dup.similarity_score, 3),
+                        "reason": dup.reason,
+                    }
+                    for dup in duplicates[:5]  # Limit to first 5 for brevity
+                ],
+                "showing_first_n": min(5, len(duplicates)),
+            })
 
         # Step 2: Remove duplicates
         bullet_lists = self._remove_duplicates(role_bullets_list, duplicates)
@@ -399,9 +498,23 @@ class CVStitcher:
         )
         final_count = sum(len(b) for b in bullet_lists)
 
+        # Phase 0: Log deduplication results
+        self._emit_struct_log("decision_point", {
+            "message": f"Deduplication complete: {original_count} → {after_dedup_count} → {final_count} bullets",
+            "decision": "deduplication_result",
+            "original_count": original_count,
+            "after_dedup_count": after_dedup_count,
+            "final_count": final_count,
+            "removed_by_dedup": original_count - after_dedup_count,
+            "removed_by_budget": after_dedup_count - final_count,
+            "compression_applied": compression_applied,
+            "word_budget": self.word_budget,
+        })
+
         # Step 4: Build stitched roles with combined skills
         stitched_roles = []
         target_keywords_lower = {kw.lower() for kw in (target_keywords or [])}
+        role_skill_summary = []
 
         for i, (role_bullets, bullets) in enumerate(zip(role_bullets_list, bullet_lists)):
             # Get location from CVLoader if available, otherwise use empty string
@@ -426,8 +539,28 @@ class CVStitcher:
             )
             stitched_roles.append(stitched_role)
 
+            # Collect skill summary for logging
+            jd_matching_skills = [s for s in role_skills if s.lower() in target_keywords_lower]
+            role_skill_summary.append({
+                "company": role_bullets.company,
+                "bullet_count": len(bullets),
+                "skills_count": len(role_skills),
+                "jd_matching_skills": jd_matching_skills,
+            })
+
         # Step 5: Collect keyword coverage
         keywords_found = self._collect_keywords(bullet_lists, target_keywords)
+
+        # Phase 0: Log skill compilation results
+        self._emit_struct_log("decision_point", {
+            "message": f"Compiled skills for {len(stitched_roles)} roles",
+            "decision": "skill_compilation",
+            "roles_summary": role_skill_summary,
+            "total_keywords_found": len(keywords_found),
+            "keywords_found": list(keywords_found)[:15],  # Limit for brevity
+            "whitelist_active": self._whitelist_set is not None,
+            "whitelist_size": len(self._whitelist_set) if self._whitelist_set else 0,
+        })
 
         # Step 6: Build deduplication result
         dedup_result = DeduplicationResult(
@@ -452,6 +585,20 @@ class CVStitcher:
         self._logger.info(f"  Final bullets: {final_count}")
         self._logger.info(f"  Total words: {stitched_cv.total_word_count}")
         self._logger.info(f"  Keywords found: {len(keywords_found)}")
+
+        # Phase 0: Emit stitch complete
+        self._emit_struct_log("subphase_complete", {
+            "message": f"CV stitching complete: {final_count} bullets, {stitched_cv.total_word_count} words",
+            "phase": 4,
+            "subphase": "stitch_complete",
+            "original_bullet_count": original_count,
+            "final_bullet_count": final_count,
+            "total_word_count": stitched_cv.total_word_count,
+            "roles_count": len(stitched_roles),
+            "keywords_coverage_count": len(keywords_found),
+            "duplicates_removed": len(duplicates),
+            "compression_applied": compression_applied,
+        })
 
         return stitched_cv
 

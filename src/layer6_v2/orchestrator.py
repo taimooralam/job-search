@@ -176,7 +176,13 @@ class CVGeneratorV2:
             log_callback=log_callback,
         )
         self.role_qa = RoleQA()
-        self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
+        # Phase 0 Extension: Pass logging params to stitcher for verbose logs
+        self.stitcher = CVStitcher(
+            word_budget=word_budget,  # None = no trimming
+            job_id=job_id,
+            struct_logger=struct_logger,
+            log_callback=log_callback,
+        )
         # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations
         # The whitelist is loaded lazily when cv_loader.load() is called
         # Phase 0 Extension: Pass log_callback for in-process logging (CVGenerationService path)
@@ -419,11 +425,16 @@ class CVGeneratorV2:
                 "word_budget": self.word_budget,
                 "target_keywords_count": len(extracted_jd.get("top_keywords", [])),
             })
-            stitched_cv = stitch_all_roles(
+            # Use self.stitcher (has logging params) instead of stitch_all_roles convenience function
+            # Set skill_whitelist at runtime (it's loaded in Phase 1)
+            self.stitcher._skill_whitelist = skill_whitelist
+            if skill_whitelist:
+                hard_skills = skill_whitelist.get("hard_skills", [])
+                soft_skills = skill_whitelist.get("soft_skills", [])
+                self.stitcher._whitelist_set = {s.lower() for s in hard_skills + soft_skills}
+            stitched_cv = self.stitcher.stitch(
                 role_bullets_list,
-                word_budget=self.word_budget,
                 target_keywords=extracted_jd.get("top_keywords", []),
-                skill_whitelist=skill_whitelist,  # GAP-001: Validate skills against whitelist
             )
             self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
             self._emit_log(
