@@ -509,6 +509,7 @@ class CVGeneratorV2:
                     jd_annotations=jd_annotations,  # Persona framing
                     job_id=self._job_id,  # Enable Redis live-tail logging
                     progress_callback=llm_callback,
+                    log_callback=self._log_callback,  # Phase 0 Extension: In-process logging
                 ))
                 # Log ensemble metadata
                 if header_output.ensemble_metadata:
@@ -528,6 +529,7 @@ class CVGeneratorV2:
                     job_id=self._job_id,  # Enable Redis live-tail logging
                     progress_callback=llm_callback,
                     struct_logger=self._struct_logger,  # Phase 0 Extension
+                    log_callback=self._log_callback,  # Phase 0 Extension: In-process logging
                 ))
 
             # Phase 4.5: Log annotation influence

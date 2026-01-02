@@ -26,6 +26,8 @@
 /* Default expanded height (medium) */
 .cli-panel--expanded {
     max-height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Panel size variants (when expanded) */
@@ -42,7 +44,7 @@
 }
 
 .cli-panel--expanded.cli-panel--xlarge {
-    max-height: 80vh;
+    max-height: calc(100vh - 60px); /* Full viewport minus minimal header */
 }
 
 /* Font size variants */
@@ -179,7 +181,10 @@ body {
 .cli-content {
     display: flex;
     flex-direction: column;
-    height: calc(400px - 44px); /* Total height minus toggle bar */
+    /* Height adapts based on panel size - use flex:1 and min-height instead */
+    flex: 1;
+    min-height: 0; /* Allows content to shrink properly in flex container */
+    overflow: hidden;
 }
 
 /* ============================================================================

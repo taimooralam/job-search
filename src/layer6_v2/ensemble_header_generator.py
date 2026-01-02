@@ -116,6 +116,7 @@ class EnsembleHeaderGenerator:
         jd_annotations: Optional[Dict[str, Any]] = None,
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
     ):
         """
         Initialize the ensemble header generator.
@@ -129,6 +130,7 @@ class EnsembleHeaderGenerator:
                            for persona-framed profile generation.
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
+            log_callback: Optional callback for in-process JSON log emission (Phase 0 Extension)
         """
         self._logger = get_logger(__name__)
         self.tier_config = tier_config
@@ -136,6 +138,7 @@ class EnsembleHeaderGenerator:
         self.temperature = temperature
         self._job_id = job_id or "unknown"
         self._progress_callback = progress_callback
+        self._log_callback = log_callback  # Phase 0 Extension: In-process logging
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -166,6 +169,7 @@ class EnsembleHeaderGenerator:
             jd_annotations=jd_annotations,
             job_id=job_id,
             progress_callback=progress_callback,
+            log_callback=log_callback,  # Phase 0 Extension: In-process logging
         )
 
         self._logger.info(
@@ -660,6 +664,7 @@ async def generate_ensemble_header(
     jd_annotations: Optional[Dict[str, Any]] = None,
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+    log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
 ) -> HeaderOutput:
     """
     Convenience function for ensemble header generation.
@@ -676,6 +681,7 @@ async def generate_ensemble_header(
                        persona-framed profile generation.
         job_id: Job ID for tracking (optional)
         progress_callback: Optional callback for granular LLM progress events to Redis
+        log_callback: Optional callback for in-process JSON log emission (Phase 0 Extension)
 
     Returns:
         HeaderOutput with profile, skills, and ensemble metadata
@@ -696,6 +702,7 @@ async def generate_ensemble_header(
         jd_annotations=jd_annotations,
         job_id=job_id,
         progress_callback=progress_callback,
+        log_callback=log_callback,  # Phase 0 Extension: In-process logging
     )
 
     return await generator.generate(stitched_cv, extracted_jd, candidate_data)

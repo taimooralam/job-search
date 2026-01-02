@@ -1585,6 +1585,7 @@ async def generate_header(
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
+    log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -1603,6 +1604,7 @@ async def generate_header(
         job_id: Job ID for tracking (optional)
         progress_callback: Optional callback for granular LLM progress events to Redis
         struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
+        log_callback: Optional callback for in-process JSON log emission (Phase 0 Extension)
 
     Returns:
         HeaderOutput with all header sections
@@ -1615,5 +1617,6 @@ async def generate_header(
         job_id=job_id,
         progress_callback=progress_callback,
         struct_logger=struct_logger,  # Phase 0 Extension
+        log_callback=log_callback,  # Phase 0 Extension: In-process logging
     )
     return await generator.generate(stitched_cv, extracted_jd, candidate_data)
