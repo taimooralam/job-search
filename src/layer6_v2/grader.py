@@ -87,6 +87,7 @@ class CVGrader:
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
         struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
+        log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
     ):
         """
         Initialize the grader.
@@ -98,6 +99,7 @@ class CVGrader:
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
             struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
+            log_callback: Optional callback for in-process logging (Phase 0 Extension)
         """
         self._logger = get_logger(__name__)
         self.passing_threshold = passing_threshold
@@ -105,6 +107,7 @@ class CVGrader:
         self._job_id = job_id or "unknown"
         self._progress_callback = progress_callback
         self._struct_logger = struct_logger  # Phase 0 Extension
+        self._log_callback = log_callback  # Phase 0 Extension: In-process logging
 
         # Use UnifiedLLM with step config (low tier for grader)
         self._llm = UnifiedLLM(
@@ -117,7 +120,30 @@ class CVGrader:
         )
 
     def _emit_struct_log(self, event: str, metadata: dict) -> None:
-        """Emit structured log event for Redis live-tail debugging (Phase 0 Extension)."""
+        """
+        Emit structured log event for Redis live-tail debugging (Phase 0 Extension).
+
+        Emits through BOTH log_callback (in-process) and struct_logger (subprocess).
+        """
+        # Emit via log_callback (works in-process for CVGenerationService)
+        if self._log_callback:
+            try:
+                import json
+                from datetime import datetime
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "cv_grader",
+                    "event": f"cv_struct_{event}",
+                    "message": metadata.get("message", event),
+                    "job_id": self._job_id,
+                    "metadata": metadata,
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Fire-and-forget
+
+        # Also emit via struct_logger stdout (works in subprocess mode)
         if self._struct_logger:
             try:
                 self._struct_logger.emit(
@@ -327,9 +353,19 @@ class CVGrader:
         - Role category match (3 points)
         - JD terminology usage (3 points)
         """
-        # Pain point coverage
+        # Pain point coverage (with type coercion for LLM output)
         pain_points = extracted_jd.get("implied_pain_points", [])
+        if isinstance(pain_points, str):
+            pain_points = [p.strip() for p in pain_points.split(",") if p.strip()]
+        elif not isinstance(pain_points, list):
+            pain_points = []
+
         responsibilities = extracted_jd.get("responsibilities", [])
+        if isinstance(responsibilities, str):
+            responsibilities = [r.strip() for r in responsibilities.split(",") if r.strip()]
+        elif not isinstance(responsibilities, list):
+            responsibilities = []
+
         all_pain_areas = pain_points + responsibilities
 
         cv_lower = cv_text.lower()
