@@ -333,9 +333,19 @@ class CVGrader:
         category_match = sum(1 for kw in category_kws if kw in cv_lower)
         role_score = min(3, (category_match / max(1, len(category_kws))) * 3)
 
-        # JD terminology
+        # JD terminology (with type coercion for LLM output)
         technical_skills = extracted_jd.get("technical_skills", [])
+        if isinstance(technical_skills, str):
+            technical_skills = [s.strip() for s in technical_skills.split(",") if s.strip()]
+        elif not isinstance(technical_skills, list):
+            technical_skills = []
+
         soft_skills = extracted_jd.get("soft_skills", [])
+        if isinstance(soft_skills, str):
+            soft_skills = [s.strip() for s in soft_skills.split(",") if s.strip()]
+        elif not isinstance(soft_skills, list):
+            soft_skills = []
+
         all_skills = technical_skills + soft_skills
         skills_found = sum(1 for s in all_skills if s.lower() in cv_lower)
         terminology_score = min(3, (skills_found / max(1, len(all_skills))) * 3)
