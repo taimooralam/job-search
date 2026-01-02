@@ -34,6 +34,11 @@ class EventType(str, Enum):
     LLM_CALL_COMPLETE = "llm_call_complete"
     LLM_CALL_ERROR = "llm_call_error"
     LLM_CALL_FALLBACK = "llm_call_fallback"
+    # Phase 0 Extension: CV generation granular logging
+    SUBPHASE_START = "subphase_start"
+    SUBPHASE_COMPLETE = "subphase_complete"
+    DECISION_POINT = "decision_point"
+    VALIDATION_RESULT = "validation_result"
 
 
 class LayerStatus(str, Enum):
