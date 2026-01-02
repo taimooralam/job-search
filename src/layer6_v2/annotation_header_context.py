@@ -425,12 +425,28 @@ class AnnotationHeaderContextBuilder:
             if not ann.get("is_active", True):
                 continue
 
-            # Get keywords from annotation
+            # Get keywords from annotation (with type coercion for LLM output)
             keywords = ann.get("suggested_keywords", [])
+            if isinstance(keywords, str):
+                keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+            elif not isinstance(keywords, list):
+                keywords = []
+
             variants = ann.get("ats_variants", [])
+            if isinstance(variants, str):
+                variants = [v.strip() for v in variants.split(",") if v.strip()]
+            elif not isinstance(variants, list):
+                variants = []
+
             min_occ = ann.get("min_occurrences", 2)
             max_occ = ann.get("max_occurrences", 4)
+
             preferred = ann.get("preferred_sections", [])
+            if isinstance(preferred, str):
+                preferred = [p.strip() for p in preferred.split(",") if p.strip()]
+            elif not isinstance(preferred, list):
+                preferred = []
+
             exact_phrase = ann.get("exact_phrase_match", False)
 
             for keyword in keywords:
