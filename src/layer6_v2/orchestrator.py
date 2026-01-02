@@ -168,7 +168,13 @@ class CVGeneratorV2:
         # Initialize components
         # Use MongoDB for master CV data when enabled (edited via CV Editor)
         self.cv_loader = CVLoader(use_mongodb=Config.USE_MASTER_CV_MONGODB)
-        self.role_generator = RoleGenerator(model=self.model, job_id=job_id)
+        # Phase 0 Extension: Pass log_callback and struct_logger for verbose debugging
+        self.role_generator = RoleGenerator(
+            model=self.model,
+            job_id=job_id,
+            struct_logger=struct_logger,
+            log_callback=log_callback,
+        )
         self.role_qa = RoleQA()
         self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
         # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations

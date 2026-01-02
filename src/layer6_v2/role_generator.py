@@ -11,7 +11,9 @@ Usage:
 
 import json
 import re
-from typing import Dict, Any, List, Optional, Callable
+import uuid
+from datetime import datetime
+from typing import Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -20,6 +22,9 @@ from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.common.state import ExtractedJD
 from src.common.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 from src.layer6_v2.cv_loader import RoleData
 from src.layer6_v2.types import (
     GeneratedBullet,
@@ -135,6 +140,8 @@ class RoleGenerator:
         temperature: Optional[float] = None,
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        struct_logger: Optional["StructuredLogger"] = None,
+        log_callback: Optional[Callable[[str], None]] = None,
     ):
         """
         Initialize the generator with LLM.
@@ -144,12 +151,17 @@ class RoleGenerator:
             temperature: Temperature for generation (defaults to 0.3 for consistency)
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
+            struct_logger: Optional StructuredLogger for Phase 0 structured logging
+            log_callback: Optional callback for Phase 0 dual-emit logging (works in-process)
         """
         self.model = model or Config.DEFAULT_MODEL
         self.temperature = temperature if temperature is not None else 0.3  # Lower for consistency
         self._job_id = job_id or "unknown"
         self._logger = get_logger(__name__)
         self._progress_callback = progress_callback
+        # Phase 0 Extension: Structured logging support
+        self._struct_logger = struct_logger
+        self._log_callback = log_callback
 
         # Use UnifiedLLM with step config (middle tier for role_generator)
         self._llm = UnifiedLLM(
@@ -160,6 +172,49 @@ class RoleGenerator:
         self._logger.info(
             f"RoleGenerator initialized with UnifiedLLM (step=role_generator, tier={self._llm.config.tier})"
         )
+
+    @staticmethod
+    def _preview(text: str, n: int = 50) -> str:
+        """Generate a preview of text: first n chars + '...' + last n chars."""
+        if not text:
+            return ""
+        if len(text) <= n * 2 + 3:
+            return text
+        return f"{text[:n]}...{text[-n:]}"
+
+    def _emit_struct_log(self, event: str, metadata: dict) -> None:
+        """
+        Emit structured log for Phase 0 Extension.
+
+        Dual-emit pattern: sends to BOTH log_callback (for in-process mode)
+        AND struct_logger stdout (for subprocess mode).
+        """
+        # Emit via log_callback (works in-process for CVGenerationService)
+        if self._log_callback:
+            try:
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "role_generator",
+                    "event": f"cv_role_gen_{event}",
+                    "message": metadata.get("message", event),
+                    "job_id": self._job_id,
+                    "metadata": metadata,
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Fire-and-forget logging
+
+        # Also emit via struct_logger stdout (works in subprocess mode)
+        if self._struct_logger:
+            try:
+                self._struct_logger.emit(
+                    event=f"cv_role_gen_{event}",
+                    layer=6,
+                    metadata=metadata,
+                )
+            except Exception:
+                pass  # Fire-and-forget logging
 
     @retry(
         stop=stop_after_attempt(3),
@@ -201,9 +256,29 @@ class RoleGenerator:
             base_prompt=ROLE_GENERATION_SYSTEM_PROMPT,
         )
 
-        # Log persona injection for debugging
+        # Check if persona was injected
+        persona_used = None
         if jd_annotations and jd_annotations.get("synthesized_persona", {}).get("persona_statement"):
             self._logger.info("📌 Persona injected into role generation system prompt")
+            persona_used = jd_annotations.get("synthesized_persona", {}).get("persona_name", "custom")
+
+        # Phase 0: Generate session ID and emit LLM call start
+        session_id = f"role_gen_{uuid.uuid4().hex[:8]}"
+        import time
+        start_time = time.time()
+
+        self._emit_struct_log("llm_call_start", {
+            "message": f"LLM call starting for {role.company} - {role.title}",
+            "session_id": session_id,
+            "role_company": role.company,
+            "role_title": role.title,
+            "system_prompt_preview": self._preview(system_prompt, 100),
+            "user_prompt_preview": self._preview(user_prompt, 200),
+            "system_prompt_length": len(system_prompt),
+            "user_prompt_length": len(user_prompt),
+            "persona_used": persona_used,
+            "target_bullet_count": target_bullet_count,
+        })
 
         # Use UnifiedLLM with JSON validation
         result = await self._llm.invoke(
@@ -212,8 +287,30 @@ class RoleGenerator:
             validate_json=True,
         )
 
+        duration_ms = int((time.time() - start_time) * 1000)
+
         if not result.success:
+            # Emit failure log
+            self._emit_struct_log("llm_call_failed", {
+                "message": f"LLM call FAILED for {role.company}: {result.error}",
+                "session_id": session_id,
+                "role_company": role.company,
+                "role_title": role.title,
+                "error": result.error,
+                "duration_ms": duration_ms,
+            })
             raise ValueError(f"LLM role generation failed: {result.error}")
+
+        # Phase 0: Emit LLM call complete with result preview
+        self._emit_struct_log("llm_call_complete", {
+            "message": f"LLM call complete for {role.company}: {len(result.content)} chars",
+            "session_id": session_id,
+            "role_company": role.company,
+            "role_title": role.title,
+            "result_preview": self._preview(result.content, 150),
+            "result_length": len(result.content),
+            "duration_ms": duration_ms,
+        })
 
         # Return the raw JSON content for parsing
         return result.content
@@ -309,6 +406,20 @@ class RoleGenerator:
         self._logger.info(f"Career stage: {career_context.career_stage}")
         self._logger.info(f"Source achievements: {len(role.achievements)}")
 
+        # Phase 0: Emit subphase start
+        self._emit_struct_log("subphase_start", {
+            "message": f"Starting bullet generation for {role.company} - {role.title}",
+            "phase": 2,
+            "subphase": f"role_{role.company}",
+            "role_title": role.title,
+            "role_company": role.company,
+            "role_period": role.period,
+            "career_stage": career_context.career_stage,
+            "source_achievement_count": len(role.achievements),
+            "target_bullet_count": target_bullet_count,
+            "generation_method": "llm",
+        })
+
         # Call LLM with persona from annotations (if available)
         llm_response = await self._call_llm(
             role=role,
@@ -324,6 +435,41 @@ class RoleGenerator:
         self._logger.info(f"Generated {role_bullets.bullet_count} bullets")
         self._logger.info(f"Word count: {role_bullets.word_count}")
         self._logger.info(f"Keywords integrated: {len(role_bullets.keywords_integrated)}")
+
+        # Phase 0: Emit decision point with bullet details
+        bullet_details = []
+        for i, bullet in enumerate(role_bullets.bullets):
+            bullet_details.append({
+                "index": i,
+                "text_preview": self._preview(bullet.text, 60),
+                "word_count": bullet.word_count,
+                "jd_keyword_used": bullet.jd_keyword_used,
+                "source_metric": bullet.source_metric,
+            })
+
+        self._emit_struct_log("decision_point", {
+            "message": f"Bullet generation complete for {role.company}: {role_bullets.bullet_count} bullets",
+            "decision": "bullet_generation",
+            "role_company": role.company,
+            "role_title": role.title,
+            "bullets_count": role_bullets.bullet_count,
+            "total_word_count": role_bullets.word_count,
+            "keywords_integrated": role_bullets.keywords_integrated[:10],  # Limit for log size
+            "keywords_count": len(role_bullets.keywords_integrated),
+            "bullet_details": bullet_details,
+        })
+
+        # Phase 0: Emit subphase complete
+        self._emit_struct_log("subphase_complete", {
+            "message": f"Completed bullet generation for {role.company}",
+            "phase": 2,
+            "subphase": f"role_{role.company}",
+            "role_title": role.title,
+            "role_company": role.company,
+            "bullets_generated": role_bullets.bullet_count,
+            "word_count": role_bullets.word_count,
+            "generation_method": "llm",
+        })
 
         return role_bullets
 
@@ -361,6 +507,19 @@ class RoleGenerator:
         self._logger.info(f"Selecting variants for: {role.company} - {role.title}")
         self._logger.info(f"Available achievements: {len(role.enhanced_data.achievements)}")
         self._logger.info(f"Total variants: {role.variant_count}")
+
+        # Phase 0: Emit subphase start for variant selection
+        self._emit_struct_log("subphase_start", {
+            "message": f"Starting variant selection for {role.company} - {role.title}",
+            "phase": 2,
+            "subphase": f"role_{role.company}",
+            "role_title": role.title,
+            "role_company": role.company,
+            "available_achievements": len(role.enhanced_data.achievements),
+            "total_variants": role.variant_count,
+            "target_bullet_count": target_bullet_count,
+            "generation_method": "variant_selection",
+        })
 
         # Build JD context for variant selection
         jd_context = {
@@ -441,6 +600,45 @@ class RoleGenerator:
         self._logger.info(f"Generated {role_bullets.bullet_count} bullets from variants")
         self._logger.info(f"Word count: {role_bullets.word_count}")
         self._logger.info(f"Keywords integrated: {len(keywords_integrated)}")
+
+        # Phase 0: Emit decision point with variant selection details
+        bullet_details = []
+        for i, bullet in enumerate(role_bullets.bullets):
+            bullet_details.append({
+                "index": i,
+                "text_preview": self._preview(bullet.text, 60),
+                "word_count": bullet.word_count,
+                "jd_keyword_used": bullet.jd_keyword_used,
+                "source_metric": bullet.source_metric,
+                "annotation_influenced": bullet.annotation_influenced,
+            })
+
+        self._emit_struct_log("decision_point", {
+            "message": f"Variant selection complete for {role.company}: {role_bullets.bullet_count} bullets",
+            "decision": "variant_selection",
+            "role_company": role.company,
+            "role_title": role.title,
+            "bullets_count": role_bullets.bullet_count,
+            "total_word_count": role_bullets.word_count,
+            "keyword_coverage": selection_result.keyword_coverage,
+            "keywords_integrated": keywords_integrated[:10],  # Limit for log size
+            "keywords_count": len(keywords_integrated),
+            "annotation_influenced_count": annotation_count,
+            "bullet_details": bullet_details,
+        })
+
+        # Phase 0: Emit subphase complete
+        self._emit_struct_log("subphase_complete", {
+            "message": f"Completed variant selection for {role.company}",
+            "phase": 2,
+            "subphase": f"role_{role.company}",
+            "role_title": role.title,
+            "role_company": role.company,
+            "bullets_generated": role_bullets.bullet_count,
+            "word_count": role_bullets.word_count,
+            "keyword_coverage": selection_result.keyword_coverage,
+            "generation_method": "variant_selection",
+        })
 
         return role_bullets
 
