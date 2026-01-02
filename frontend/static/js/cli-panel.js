@@ -2004,4 +2004,99 @@ window.cliDetectLogType = function(text) {
     return 'info';
 };
 
+/**
+ * Parse a log message that might be JSON structured log
+ * Returns { isStructured, message, event, metadata } or { isStructured: false, message }
+ */
+window.cliParseStructuredLog = function(text) {
+    if (!text || typeof text !== 'string') {
+        return { isStructured: false, message: text || '' };
+    }
+
+    // Quick check: structured logs start with '{'
+    if (!text.trim().startsWith('{')) {
+        return { isStructured: false, message: text };
+    }
+
+    try {
+        const data = JSON.parse(text);
+
+        // Check if it's a structured log (has event and metadata)
+        if (data.event && typeof data.event === 'string') {
+            const message = data.message || data.event;
+            const metadata = data.metadata || {};
+
+            // Filter out empty/null metadata fields
+            const filteredMetadata = {};
+            for (const [key, value] of Object.entries(metadata)) {
+                if (value !== null && value !== undefined && value !== '') {
+                    filteredMetadata[key] = value;
+                }
+            }
+
+            return {
+                isStructured: true,
+                message: message,
+                event: data.event,
+                layer: data.layer,
+                layer_name: data.layer_name,
+                metadata: filteredMetadata,
+                hasMetadata: Object.keys(filteredMetadata).length > 0
+            };
+        }
+
+        return { isStructured: false, message: text };
+    } catch (e) {
+        return { isStructured: false, message: text };
+    }
+};
+
+/**
+ * Get an icon for structured log event types
+ */
+window.cliGetEventIcon = function(event) {
+    if (!event) return '>';
+
+    if (event.includes('_start')) return '🚀';
+    if (event.includes('_complete')) return '✅';
+    if (event.includes('_failed') || event.includes('_error')) return '❌';
+    if (event.includes('llm_call')) return '🤖';
+    if (event.includes('decision_point')) return '🎯';
+    if (event.includes('validation')) return '🔍';
+    if (event.includes('subphase')) return '📍';
+
+    return '📋';
+};
+
+/**
+ * Format a metadata value for display (handles objects, arrays, long strings)
+ */
+window.cliFormatMetadataValue = function(value) {
+    if (value === null || value === undefined) return '';
+
+    if (typeof value === 'object') {
+        // For arrays, show count and first few items
+        if (Array.isArray(value)) {
+            if (value.length === 0) return '[]';
+            if (value.length <= 3) return JSON.stringify(value);
+            return `[${value.slice(0, 2).map(v => JSON.stringify(v)).join(', ')}, ... +${value.length - 2} more]`;
+        }
+        // For objects, show key count
+        const keys = Object.keys(value);
+        if (keys.length === 0) return '{}';
+        if (keys.length <= 2) return JSON.stringify(value);
+        return `{${keys.slice(0, 2).join(', ')}, ... +${keys.length - 2} more}`;
+    }
+
+    if (typeof value === 'string') {
+        // Truncate long strings
+        if (value.length > 100) {
+            return value.substring(0, 50) + '...' + value.substring(value.length - 30);
+        }
+        return value;
+    }
+
+    return String(value);
+};
+
 console.log('[CLI Panel] Module loaded');

@@ -880,3 +880,101 @@ body {
         justify-content: flex-end;
     }
 }
+
+/* ============================================================================
+   Structured Log Metadata Display
+   ============================================================================ */
+
+.cli-log--structured {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.cli-structured-log {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+}
+
+.cli-log-event-icon {
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.cli-log-message {
+    flex-grow: 1;
+    color: #e2e8f0; /* slate-200 */
+}
+
+/* Metadata toggle button */
+.cli-meta-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border: none;
+    background-color: rgba(59, 130, 246, 0.2); /* blue with opacity */
+    color: #60a5fa; /* blue-400 */
+    font-size: 0.625rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.cli-meta-toggle:hover {
+    background-color: rgba(59, 130, 246, 0.3);
+}
+
+.cli-meta-count {
+    opacity: 0.8;
+}
+
+/* Collapsible metadata content */
+.cli-meta-content {
+    width: 100%;
+    margin-top: 0.375rem;
+    padding: 0.5rem 0.625rem;
+    background-color: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
+    border-left: 2px solid #3b82f6; /* blue-500 */
+    border-radius: 0 0.25rem 0.25rem 0;
+    font-size: 0.75rem;
+}
+
+.cli-meta-row {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.125rem 0;
+    line-height: 1.4;
+}
+
+.cli-meta-row:not(:last-child) {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5); /* slate-700 with opacity */
+}
+
+.cli-meta-key {
+    color: #94a3b8; /* slate-400 */
+    flex-shrink: 0;
+    min-width: 120px;
+}
+
+.cli-meta-value {
+    color: #fbbf24; /* amber-400 for values */
+    word-break: break-word;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Special styling for prompt previews */
+.cli-meta-row .cli-meta-key:has(+ .cli-meta-value:contains("prompt")) {
+    color: #a78bfa; /* purple-400 */
+}
+
+/* Highlight LLM-related metadata values */
+.cli-meta-value:has-text("prompt"),
+.cli-meta-value:has-text("persona") {
+    color: #a78bfa; /* purple-400 */
+}

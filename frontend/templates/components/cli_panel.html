@@ -222,14 +222,19 @@
                     <!-- Log Lines -->
                     <template x-for="(log, index) in $store.cli.runs[$store.cli.activeRunId].logs" :key="index">
                         <div class="cli-log-line"
-                             x-data="{ detectedBackend: log.backend || $store.cli.detectBackendFromText(log.text) }"
+                             x-data="{
+                                 detectedBackend: log.backend || $store.cli.detectBackendFromText(log.text),
+                                 parsed: window.cliParseStructuredLog(log.text),
+                                 metaOpen: false
+                             }"
                              :class="{
                                  'cli-log--error': log.type === 'error',
                                  'cli-log--warning': log.type === 'warning',
                                  'cli-log--success': log.type === 'success',
                                  'cli-log--debug': log.type === 'debug',
                                  'claude-cli': detectedBackend === 'claude_cli',
-                                 'langchain-fallback': detectedBackend === 'langchain'
+                                 'langchain-fallback': detectedBackend === 'langchain',
+                                 'cli-log--structured': parsed.isStructured
                              }">
                             <!-- Backend indicator icon -->
                             <span class="cli-log-backend-icon"
@@ -238,9 +243,45 @@
                             <span class="cli-log-backend-icon"
                                   x-show="detectedBackend === 'langchain'"
                                   title="LangChain Fallback">&#9888;&#65039;</span>
-                            <span class="cli-log-prefix"
-                                  x-show="!detectedBackend">></span>
-                            <span x-text="log.text"></span>
+
+                            <!-- Structured log with metadata -->
+                            <template x-if="parsed.isStructured">
+                                <div class="cli-structured-log">
+                                    <!-- Event icon and message -->
+                                    <span class="cli-log-event-icon" x-text="window.cliGetEventIcon(parsed.event)"></span>
+                                    <span class="cli-log-message" x-text="parsed.message"></span>
+
+                                    <!-- Metadata toggle button (if has metadata) -->
+                                    <button x-show="parsed.hasMetadata"
+                                            class="cli-meta-toggle"
+                                            @click.stop="metaOpen = !metaOpen"
+                                            :title="metaOpen ? 'Hide details' : 'Show details'">
+                                        <span x-text="metaOpen ? '▼' : '▶'"></span>
+                                        <span class="cli-meta-count" x-text="Object.keys(parsed.metadata).length + ' fields'"></span>
+                                    </button>
+
+                                    <!-- Collapsible metadata section -->
+                                    <div x-show="metaOpen && parsed.hasMetadata"
+                                         x-collapse
+                                         class="cli-meta-content">
+                                        <template x-for="(value, key) in parsed.metadata" :key="key">
+                                            <div class="cli-meta-row">
+                                                <span class="cli-meta-key" x-text="key + ':'"></span>
+                                                <span class="cli-meta-value" x-text="window.cliFormatMetadataValue(value)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- Plain text log (non-structured) -->
+                            <template x-if="!parsed.isStructured">
+                                <span>
+                                    <span class="cli-log-prefix" x-show="!detectedBackend">></span>
+                                    <span x-text="log.text"></span>
+                                </span>
+                            </template>
+
                             <!-- Tier badge if available -->
                             <span class="cli-tier-badge"
                                   x-show="log.tier"
