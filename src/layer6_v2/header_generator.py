@@ -277,6 +277,7 @@ class HeaderGenerator:
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
         struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
+        log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
     ):
         """
         Initialize the header generator.
@@ -295,6 +296,7 @@ class HeaderGenerator:
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
             struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
+            log_callback: Optional callback for in-process logging (Phase 0 Extension)
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
@@ -302,6 +304,7 @@ class HeaderGenerator:
         self._job_id = job_id or "unknown"
         self._progress_callback = progress_callback
         self._struct_logger = struct_logger  # Phase 0 Extension: Redis live-tail
+        self._log_callback = log_callback  # Phase 0 Extension: In-process logging
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -356,7 +359,30 @@ class HeaderGenerator:
         )
 
     def _emit_struct_log(self, event: str, metadata: dict) -> None:
-        """Emit structured log event for Redis live-tail debugging (Phase 0 Extension)."""
+        """
+        Emit structured log event for Redis live-tail debugging (Phase 0 Extension).
+
+        Emits through BOTH log_callback (in-process) and struct_logger (subprocess).
+        """
+        # Emit via log_callback (works in-process for CVGenerationService)
+        if self._log_callback:
+            try:
+                import json
+                from datetime import datetime
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "header_generator",
+                    "event": f"cv_struct_{event}",
+                    "message": metadata.get("message", event),
+                    "job_id": self._job_id,
+                    "metadata": metadata,
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Fire-and-forget
+
+        # Also emit via struct_logger stdout (works in subprocess mode)
         if self._struct_logger:
             try:
                 self._struct_logger.emit(

@@ -173,11 +173,16 @@ class CVGeneratorV2:
         self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
         # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations
         # The whitelist is loaded lazily when cv_loader.load() is called
-        self.header_generator = HeaderGenerator(model=self.model)  # Whitelist passed in generate()
+        # Phase 0 Extension: Pass log_callback for in-process logging (CVGenerationService path)
+        self.header_generator = HeaderGenerator(
+            model=self.model,
+            log_callback=log_callback,
+        )  # Whitelist passed in generate()
         self.grader = CVGrader(
             model=self.model,
             passing_threshold=passing_threshold,
             use_llm_grading=use_llm_grading,
+            log_callback=log_callback,  # Phase 0 Extension
         )
         self.improver = CVImprover(model=self.model)
         self.keyword_placement_validator = KeywordPlacementValidator()  # P2: ATS placement validation
@@ -191,10 +196,32 @@ class CVGeneratorV2:
         Phase 0 Extension: This provides granular visibility into CV generation
         for real-time debugging via the frontend live-tail.
 
+        This method emits through BOTH:
+        1. log_callback (for in-process mode, e.g., CVGenerationService)
+        2. struct_logger stdout (for subprocess mode, e.g., run_pipeline.py)
+
         Args:
             event: Event type (e.g., "phase_start", "decision_point", "validation_result")
             metadata: Event-specific metadata dict
         """
+        # Emit via log_callback (works in-process for CVGenerationService)
+        # This is the PRIMARY path that makes logs visible in the browser
+        if self._log_callback:
+            try:
+                data = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "layer": 6,
+                    "layer_name": "cv_generator_v2",
+                    "event": f"cv_struct_{event}",  # Prefix to distinguish from regular logs
+                    "message": metadata.get("message", event),  # Use message if present, else event name
+                    "job_id": self._job_id,
+                    "metadata": metadata,  # Include full metadata for debugging
+                }
+                self._log_callback(json.dumps(data))
+            except Exception:
+                pass  # Fire-and-forget
+
+        # Also emit via struct_logger stdout (works in subprocess mode)
         if self._struct_logger:
             try:
                 self._struct_logger.emit(
