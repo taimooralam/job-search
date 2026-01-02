@@ -162,7 +162,7 @@ class CVGeneratorV2:
         # Initialize components
         # Use MongoDB for master CV data when enabled (edited via CV Editor)
         self.cv_loader = CVLoader(use_mongodb=Config.USE_MASTER_CV_MONGODB)
-        self.role_generator = RoleGenerator(model=self.model)
+        self.role_generator = RoleGenerator(model=self.model, job_id=job_id)
         self.role_qa = RoleQA()
         self.stitcher = CVStitcher(word_budget=word_budget)  # None = no trimming
         # GAP-001 FIX: Get skill whitelist from cv_loader to prevent hallucinations
@@ -360,6 +360,7 @@ class CVGeneratorV2:
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
+                    job_id=self._job_id,  # Enable Redis live-tail logging
                     progress_callback=llm_callback,
                 ))
                 # Log ensemble metadata
@@ -377,6 +378,7 @@ class CVGeneratorV2:
                     skill_whitelist=skill_whitelist,
                     annotation_context=annotation_context,  # Phase 4.5
                     jd_annotations=jd_annotations,  # Persona framing
+                    job_id=self._job_id,  # Enable Redis live-tail logging
                     progress_callback=llm_callback,
                 ))
 
