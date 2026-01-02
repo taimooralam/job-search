@@ -2006,6 +2006,10 @@ window.cliDetectLogType = function(text) {
 
 /**
  * Parse a log message that might be JSON structured log
+ * Handles two formats:
+ * 1. Pure JSON: {"event": "...", "metadata": {...}}
+ * 2. Prefixed: event_name: {"event": "...", "metadata": {...}}
+ *
  * Returns { isStructured, message, event, metadata } or { isStructured: false, message }
  */
 window.cliParseStructuredLog = function(text) {
@@ -2013,22 +2017,35 @@ window.cliParseStructuredLog = function(text) {
         return { isStructured: false, message: text || '' };
     }
 
-    // Quick check: structured logs start with '{'
-    if (!text.trim().startsWith('{')) {
-        return { isStructured: false, message: text };
+    let jsonStr = text.trim();
+    let prefix = '';
+
+    // Check if text starts with JSON directly
+    if (!jsonStr.startsWith('{')) {
+        // Look for "event_name: {json}" pattern (e.g., "cv_role_gen_subphase_start: {...}")
+        const colonBraceIdx = jsonStr.indexOf(': {');
+        if (colonBraceIdx === -1) {
+            return { isStructured: false, message: text };
+        }
+
+        // Extract prefix and JSON portion
+        prefix = jsonStr.substring(0, colonBraceIdx);
+        jsonStr = jsonStr.substring(colonBraceIdx + 2); // Skip ": "
     }
 
     try {
-        const data = JSON.parse(text);
+        const data = JSON.parse(jsonStr);
 
         // Check if it's a structured log (has event and metadata)
         if (data.event && typeof data.event === 'string') {
             const message = data.message || data.event;
             const metadata = data.metadata || {};
 
-            // Filter out empty/null metadata fields
+            // Filter out empty/null metadata fields and 'message' (already shown)
             const filteredMetadata = {};
             for (const [key, value] of Object.entries(metadata)) {
+                // Skip 'message' key since it's displayed as the main message
+                if (key === 'message') continue;
                 if (value !== null && value !== undefined && value !== '') {
                     filteredMetadata[key] = value;
                 }
@@ -2041,7 +2058,8 @@ window.cliParseStructuredLog = function(text) {
                 layer: data.layer,
                 layer_name: data.layer_name,
                 metadata: filteredMetadata,
-                hasMetadata: Object.keys(filteredMetadata).length > 0
+                hasMetadata: Object.keys(filteredMetadata).length > 0,
+                prefix: prefix // Preserve the original prefix if any
             };
         }
 
