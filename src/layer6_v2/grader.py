@@ -17,8 +17,11 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Set, Optional, Tuple, Callable, Any
+from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Callable, Any
 from collections import Counter
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -83,6 +86,7 @@ class CVGrader:
         use_llm_grading: bool = True,
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
     ):
         """
         Initialize the grader.
@@ -93,12 +97,14 @@ class CVGrader:
             use_llm_grading: Whether to use LLM for grading (default: True)
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
+            struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
         """
         self._logger = get_logger(__name__)
         self.passing_threshold = passing_threshold
         self.use_llm_grading = use_llm_grading
         self._job_id = job_id or "unknown"
         self._progress_callback = progress_callback
+        self._struct_logger = struct_logger  # Phase 0 Extension
 
         # Use UnifiedLLM with step config (low tier for grader)
         self._llm = UnifiedLLM(
@@ -109,6 +115,19 @@ class CVGrader:
         self._logger.info(
             f"CVGrader initialized with UnifiedLLM (step=grader, tier={self._llm.config.tier})"
         )
+
+    def _emit_struct_log(self, event: str, metadata: dict) -> None:
+        """Emit structured log event for Redis live-tail debugging (Phase 0 Extension)."""
+        if self._struct_logger:
+            try:
+                self._struct_logger.emit(
+                    event=event,
+                    layer=6,
+                    layer_name="cv_grader",
+                    metadata=metadata,
+                )
+            except Exception:
+                pass  # Fire-and-forget - never break grading for logging
 
     def _count_keywords(self, text: str, keywords: List[str]) -> Tuple[int, List[str]]:
         """Count how many keywords appear in text."""
@@ -652,6 +671,31 @@ Grade each dimension 1-10 with specific feedback."""
         for dim in result.dimension_scores:
             self._logger.info(f"  - {dim.dimension}: {dim.score:.1f}/10")
 
+        # Phase 0 Extension: Log comprehensive grading decision point
+        self._emit_struct_log("decision_point", {
+            "decision": "cv_grade",
+            "composite_score": round(result.composite_score, 2),
+            "passed": result.passed,
+            "threshold": self.passing_threshold,
+            "grading_method": "llm" if self.use_llm_grading else "rule_based",
+            "dimensions": {
+                dim.dimension: {
+                    "score": round(dim.score, 2),
+                    "weight": round(dim.weight, 2),
+                    "weighted_score": round(dim.score * dim.weight, 2),
+                    "issues_count": len(dim.issues) if dim.issues else 0,
+                    "issues": dim.issues[:3] if dim.issues else [],  # Top 3 issues
+                    "strengths_count": len(dim.strengths) if dim.strengths else 0,
+                    "strengths": dim.strengths[:3] if dim.strengths else [],  # Top 3 strengths
+                }
+                for dim in result.dimension_scores
+            },
+            "lowest_dimension": result.lowest_dimension,
+            "highest_dimension": max(result.dimension_scores, key=lambda d: d.score).dimension if result.dimension_scores else None,
+            "improvement_needed": not result.passed,
+            "exemplary_sections_count": len(result.exemplary_sections) if result.exemplary_sections else 0,
+        })
+
         return result
 
     def _grade_rule_based(
@@ -687,6 +731,7 @@ async def grade_cv(
     passing_threshold: float = 8.5,
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+    struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
 ) -> GradeResult:
     """
     Convenience function to grade a CV.
@@ -698,6 +743,7 @@ async def grade_cv(
         passing_threshold: Score threshold for passing
         job_id: Job ID for tracking (optional)
         progress_callback: Optional callback for granular LLM progress events to Redis
+        struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
 
     Returns:
         GradeResult with dimension scores and composite
@@ -706,5 +752,6 @@ async def grade_cv(
         passing_threshold=passing_threshold,
         job_id=job_id,
         progress_callback=progress_callback,
+        struct_logger=struct_logger,  # Phase 0 Extension
     )
     return await grader.grade(cv_text, extracted_jd, master_cv_text)
