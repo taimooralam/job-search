@@ -20,8 +20,11 @@ Usage:
 """
 
 import re
-from typing import List, Dict, Set, Optional, Tuple, Any, Callable
+from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Any, Callable
 from collections import defaultdict
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -273,6 +276,7 @@ class HeaderGenerator:
         jd_annotations: Optional[Dict[str, Any]] = None,
         job_id: Optional[str] = None,
         progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+        struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
     ):
         """
         Initialize the header generator.
@@ -290,12 +294,14 @@ class HeaderGenerator:
                            for persona-framed profile generation.
             job_id: Job ID for tracking (optional)
             progress_callback: Optional callback for granular LLM progress events to Redis
+            struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
         """
         self._logger = get_logger(__name__)
         self.temperature = temperature
         self.lax_mode = lax_mode
         self._job_id = job_id or "unknown"
         self._progress_callback = progress_callback
+        self._struct_logger = struct_logger  # Phase 0 Extension: Redis live-tail
 
         # Store jd_annotations for persona access
         self._jd_annotations = jd_annotations
@@ -348,6 +354,19 @@ class HeaderGenerator:
         self._logger.info(
             f"HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier={self._llm.config.tier})"
         )
+
+    def _emit_struct_log(self, event: str, metadata: dict) -> None:
+        """Emit structured log event for Redis live-tail debugging (Phase 0 Extension)."""
+        if self._struct_logger:
+            try:
+                self._struct_logger.emit(
+                    event=event,
+                    layer=6,
+                    layer_name="header_generator",
+                    metadata=metadata,
+                )
+            except Exception:
+                pass  # Fire-and-forget - never break generation for logging
 
     def _classify_skill_category(self, skill: str) -> str:
         """
@@ -1251,8 +1270,40 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
         # Generate profile
         profile = await self.generate_profile(stitched_cv, extracted_jd, candidate_name)
 
+        # Phase 0 Extension: Log profile generation decision point
+        self._emit_struct_log("decision_point", {
+            "decision": "profile_generation",
+            "headline": {
+                "text_preview": profile.headline[:60] + "..." if len(profile.headline) > 60 else profile.headline,
+                "word_count": len(profile.headline.split()),
+            },
+            "tagline": {
+                "text_preview": profile.tagline[:60] + "..." if len(profile.tagline) > 60 else profile.tagline,
+                "word_count": len(profile.tagline.split()),
+            } if profile.tagline else None,
+            "key_achievements_count": len(profile.key_achievements) if profile.key_achievements else 0,
+            "total_word_count": profile.word_count,
+            "persona_applied": bool(self._jd_annotations),
+        })
+
         # Generate skills
         skills_sections = self.generate_skills(stitched_cv, extracted_jd)
+
+        # Phase 0 Extension: Log skills generation decision point
+        self._emit_struct_log("decision_point", {
+            "decision": "skills_generation",
+            "skills_sections": [
+                {
+                    "category": section.category,
+                    "skills_count": len(section.skills),
+                    "skills": [s.skill for s in section.skills[:5]] + (["..."] if len(section.skills) > 5 else []),
+                }
+                for section in skills_sections
+            ],
+            "total_skills": sum(len(s.skills) for s in skills_sections),
+            "taxonomy_used": self._taxonomy_generator is not None,
+            "lax_mode": self.lax_mode,
+        })
 
         # Validate grounding
         validation = self.validate_skills_grounded(skills_sections, stitched_cv)
@@ -1261,10 +1312,25 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 f"Skills validation failed. Ungrounded skills: {validation.ungrounded_skills}"
             )
             # Remove ungrounded skills
+            # Phase 0 Extension: Log validation failure with ungrounded skills
+            self._emit_struct_log("validation_result", {
+                "validation": "skills_grounding_initial",
+                "passed": False,
+                "ungrounded_skills": validation.ungrounded_skills[:10],  # Truncate for logging
+                "ungrounded_count": len(validation.ungrounded_skills),
+            })
             skills_sections = self._remove_ungrounded_skills(
                 skills_sections, validation.ungrounded_skills
             )
             validation = self.validate_skills_grounded(skills_sections, stitched_cv)
+
+        # Phase 0 Extension: Log final validation result
+        self._emit_struct_log("validation_result", {
+            "validation": "skills_grounding_final",
+            "passed": validation.passed,
+            "total_skills": sum(len(s.skills) for s in skills_sections),
+            "grounded_count": validation.grounded_count if hasattr(validation, 'grounded_count') else None,
+        })
 
         # Build final output
         header = HeaderOutput(
@@ -1281,6 +1347,28 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
         self._logger.info(f"  Profile: {profile.word_count} words")
         self._logger.info(f"  Skills: {header.total_skills_count} across {len(skills_sections)} categories")
         self._logger.info(f"  Validation: {'PASSED' if validation.passed else 'FAILED'}")
+
+        # Phase 0 Extension: Log comprehensive header generation summary
+        self._emit_struct_log("subphase_complete", {
+            "phase": 5,
+            "subphase": "header_generation",
+            "profile": {
+                "headline_preview": profile.headline[:60] + "..." if len(profile.headline) > 60 else profile.headline,
+                "tagline_preview": (profile.tagline[:60] + "..." if len(profile.tagline) > 60 else profile.tagline) if profile.tagline else None,
+                "key_achievements_count": len(profile.key_achievements) if profile.key_achievements else 0,
+                "word_count": profile.word_count,
+            },
+            "skills": {
+                "sections_count": len(skills_sections),
+                "total_skills": header.total_skills_count,
+                "categories": [s.category for s in skills_sections],
+            },
+            "education_count": len(education),
+            "certifications_count": len(certifications),
+            "validation_passed": validation.passed,
+            "persona_applied": bool(self._jd_annotations),
+            "annotation_context_used": self._annotation_context is not None,
+        })
 
         return header
 
@@ -1317,6 +1405,7 @@ async def generate_header(
     jd_annotations: Optional[Dict[str, Any]] = None,
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
+    struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
 ) -> HeaderOutput:
     """
     Convenience function to generate CV header.
@@ -1334,6 +1423,7 @@ async def generate_header(
                        persona-framed profile generation.
         job_id: Job ID for tracking (optional)
         progress_callback: Optional callback for granular LLM progress events to Redis
+        struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
 
     Returns:
         HeaderOutput with all header sections
@@ -1345,5 +1435,6 @@ async def generate_header(
         jd_annotations=jd_annotations,
         job_id=job_id,
         progress_callback=progress_callback,
+        struct_logger=struct_logger,  # Phase 0 Extension
     )
     return await generator.generate(stitched_cv, extracted_jd, candidate_data)
