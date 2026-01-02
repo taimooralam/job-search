@@ -334,10 +334,25 @@ class TaxonomyBasedSkillsGenerator:
         # Load taxonomy for this role
         role_taxonomy = self._taxonomy.get_role_taxonomy(role_category)
 
-        # Extract JD keywords and responsibilities
+        # Extract JD keywords and responsibilities (with type coercion for LLM output)
         jd_keywords = extracted_jd.get("top_keywords", [])
+        if isinstance(jd_keywords, str):
+            jd_keywords = [k.strip() for k in jd_keywords.split(",") if k.strip()]
+        elif not isinstance(jd_keywords, list):
+            jd_keywords = []
+
         jd_technical = extracted_jd.get("technical_skills", [])
+        if isinstance(jd_technical, str):
+            jd_technical = [t.strip() for t in jd_technical.split(",") if t.strip()]
+        elif not isinstance(jd_technical, list):
+            jd_technical = []
+
         jd_responsibilities = extracted_jd.get("responsibilities", [])
+        if isinstance(jd_responsibilities, str):
+            jd_responsibilities = [r.strip() for r in jd_responsibilities.split(",") if r.strip()]
+        elif not isinstance(jd_responsibilities, list):
+            jd_responsibilities = []
+
         all_jd_keywords = list(set(jd_keywords + jd_technical))
 
         # Select sections based on JD alignment
