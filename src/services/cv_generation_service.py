@@ -502,9 +502,9 @@ class CVGenerationService(OperationService):
                     # Forward LLM progress with backend info
                     backend = data.get("backend", "llm")
                     progress_callback(f"cv_{backend}", "processing" if "start" in event else "success", message)
-                elif event.startswith("cv_role_gen_") or event.startswith("cv_struct_") or event.startswith("cv_stitch_"):
-                    # Phase 0 Extension: Preserve structured log events from role_generator & stitcher
-                    # Forward with original event name so they appear as cv_role_gen_*, cv_stitch_*, etc.
+                elif event.startswith("cv_role_gen_") or event.startswith("cv_struct_") or event.startswith("cv_stitch_") or event.startswith("cv_header_"):
+                    # Phase 0 Extension: Preserve structured log events from role_generator, stitcher, & header_generator
+                    # Forward with original event name so they appear as cv_role_gen_*, cv_stitch_*, cv_header_*, etc.
                     # Pass FULL JSON as message so CLI Panel can display metadata
                     status = "success" if "complete" in event else "processing"
                     progress_callback(event, status, json_str)

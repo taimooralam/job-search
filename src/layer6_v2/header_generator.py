@@ -358,11 +358,21 @@ class HeaderGenerator:
             f"HeaderGenerator initialized with UnifiedLLM (step=header_generator, tier={self._llm.config.tier})"
         )
 
+    @staticmethod
+    def _preview(text: str, n: int = 80) -> str:
+        """Generate a preview of text: first n chars + '...' + last n chars."""
+        if not text:
+            return ""
+        if len(text) <= n * 2 + 3:
+            return text
+        return f"{text[:n]}...{text[-n:]}"
+
     def _emit_struct_log(self, event: str, metadata: dict) -> None:
         """
         Emit structured log event for Redis live-tail debugging (Phase 0 Extension).
 
         Emits through BOTH log_callback (in-process) and struct_logger (subprocess).
+        Uses cv_header_ prefix for header generation events.
         """
         # Emit via log_callback (works in-process for CVGenerationService)
         if self._log_callback:
@@ -373,7 +383,7 @@ class HeaderGenerator:
                     "timestamp": datetime.utcnow().isoformat(),
                     "layer": 6,
                     "layer_name": "header_generator",
-                    "event": f"cv_struct_{event}",
+                    "event": f"cv_header_{event}",
                     "message": metadata.get("message", event),
                     "job_id": self._job_id,
                     "metadata": metadata,
@@ -386,7 +396,7 @@ class HeaderGenerator:
         if self._struct_logger:
             try:
                 self._struct_logger.emit(
-                    event=event,
+                    event=f"cv_header_{event}",
                     layer=6,
                     layer_name="header_generator",
                     metadata=metadata,
@@ -779,6 +789,18 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             annotations=annotations if annotations else None,
         )
 
+        # Phase 0: Log LLM call start with prompt previews
+        self._emit_struct_log("llm_call_start", {
+            "message": f"Generating value proposition for {role_category}",
+            "component": "value_proposition",
+            "system_prompt_preview": self._preview(system_prompt, 100),
+            "user_prompt_preview": self._preview(user_prompt, 150),
+            "system_prompt_length": len(system_prompt),
+            "user_prompt_length": len(user_prompt),
+            "role_category": role_category,
+            "years_experience": years_experience,
+        })
+
         vp_result = await self._llm.invoke(
             prompt=user_prompt,
             system=system_prompt,
@@ -790,10 +812,30 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             # Clean up the response (remove quotes if wrapped)
             value_proposition = vp_result.content.strip().strip('"').strip("'")
             self._logger.info(f"V2 value proposition: {len(value_proposition.split())} words")
+
+            # Phase 0: Log successful result
+            self._emit_struct_log("llm_call_complete", {
+                "message": f"Value proposition generated: {len(value_proposition.split())} words",
+                "component": "value_proposition",
+                "success": True,
+                "result_preview": self._preview(value_proposition, 100),
+                "result_length": len(value_proposition),
+                "word_count": len(value_proposition.split()),
+            })
         else:
             self._logger.warning(f"V2 value proposition failed: {vp_result.error}")
             # Fallback to template
             value_proposition = f"Engineering leader with {years_experience}+ years building high-performing teams."
+
+            # Phase 0: Log failure
+            self._emit_struct_log("llm_call_failed", {
+                "message": f"Value proposition failed, using fallback",
+                "component": "value_proposition",
+                "success": False,
+                "error": str(vp_result.error),
+                "fallback_used": True,
+                "fallback_preview": self._preview(value_proposition, 80),
+            })
 
         # ----- COMPONENT 2: KEY ACHIEVEMENT BULLETS (LLM Selection) -----
         self._logger.debug("Selecting V2 key achievement bullets...")
@@ -814,6 +856,18 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             annotations=annotations if annotations else None,
             role_category=role_category,
         )
+
+        # Phase 0: Log LLM call start with prompt previews for bullet selection
+        self._emit_struct_log("llm_call_start", {
+            "message": f"Selecting key achievement bullets from {len(master_cv_bullets)} candidates",
+            "component": "key_achievement_bullets",
+            "system_prompt_preview": self._preview(KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2, 100),
+            "user_prompt_preview": self._preview(bullets_prompt, 150),
+            "system_prompt_length": len(KEY_ACHIEVEMENT_BULLETS_SYSTEM_PROMPT_V2),
+            "user_prompt_length": len(bullets_prompt),
+            "candidate_bullets_count": len(master_cv_bullets),
+            "role_category": role_category,
+        })
 
         bullets_result = await self._llm.invoke(
             prompt=bullets_prompt,
@@ -858,8 +912,37 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 f"V2 selected {len(key_achievements)} bullets, "
                 f"rejected {len(rejected_jd_skills)} JD skills not in whitelist"
             )
+
+            # Phase 0: Log successful bullet selection with details
+            self._emit_struct_log("llm_call_complete", {
+                "message": f"Selected {len(key_achievements)} key achievement bullets",
+                "component": "key_achievement_bullets",
+                "success": True,
+                "bullets_selected": len(key_achievements),
+                "bullets_rejected_jd_skills": len(rejected_jd_skills),
+                "rejected_jd_skills_preview": rejected_jd_skills[:5] if rejected_jd_skills else [],
+                "selected_bullets_preview": [
+                    {
+                        "text_preview": self._preview(b, 60),
+                        "source_role": achievement_sources[i].source_role_id if i < len(achievement_sources) else "unknown",
+                        "tailored": achievement_sources[i].tailoring_applied if i < len(achievement_sources) else False,
+                    }
+                    for i, b in enumerate(key_achievements[:3])
+                ],
+            })
         else:
             self._logger.warning(f"V2 bullet selection failed: {bullets_result.error}")
+
+            # Phase 0: Log bullet selection failure
+            self._emit_struct_log("llm_call_failed", {
+                "message": "Key achievement bullet selection failed, using fallback",
+                "component": "key_achievement_bullets",
+                "success": False,
+                "error": str(bullets_result.error),
+                "fallback_used": True,
+                "fallback_bullets_count": min(5, len(all_bullets)),
+            })
+
             # Fallback: use first 5 bullets as-is
             for bullet in all_bullets[:5]:
                 key_achievements.append(bullet)
@@ -918,8 +1001,36 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 f"V2 core competencies: {skills_provenance.total_skills_selected} skills, "
                 f"{skills_provenance.hallucination_prevented_count} JD skills rejected"
             )
+
+            # Phase 0: Log core competencies generation decision point (algorithmic, no LLM)
+            self._emit_struct_log("decision_point", {
+                "message": f"Generated {skills_provenance.total_skills_selected} core competencies (algorithmic)",
+                "component": "core_competencies",
+                "method": "algorithmic_taxonomy",  # No LLM call
+                "total_skills_selected": skills_provenance.total_skills_selected,
+                "jd_matched_skills_count": len(skills_provenance.jd_matched_skills) if skills_provenance.jd_matched_skills else 0,
+                "jd_matched_skills_preview": skills_provenance.jd_matched_skills[:5] if skills_provenance.jd_matched_skills else [],
+                "whitelist_only_skills_count": len(skills_provenance.whitelist_only_skills) if skills_provenance.whitelist_only_skills else 0,
+                "rejected_jd_skills_count": skills_provenance.hallucination_prevented_count,
+                "rejected_jd_skills_preview": skills_provenance.rejected_jd_skills[:5] if skills_provenance.rejected_jd_skills else [],
+                "skills_by_section": {
+                    section: len(skills)
+                    for section, skills in (skills_provenance.skills_by_section or {}).items()
+                } if skills_provenance.skills_by_section else {},
+                "role_category": role_category,
+                "all_from_whitelist": skills_provenance.all_from_whitelist,
+            })
         else:
             self._logger.warning("No skill whitelist - using empty competencies")
+
+            # Phase 0: Log warning when no whitelist available
+            self._emit_struct_log("decision_point", {
+                "message": "No skill whitelist available - using empty competencies",
+                "component": "core_competencies",
+                "method": "fallback",
+                "warning": "No whitelist provided",
+                "total_skills_selected": 0,
+            })
 
         # Flatten core competencies for backward compatibility
         core_competencies_flat = []
@@ -932,6 +1043,20 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
 
         # Build headline
         headline = f"{job_title} | {years_experience}+ Years Technology Leadership"
+
+        # Phase 0: Log headline construction decision point (algorithmic, no LLM)
+        self._emit_struct_log("decision_point", {
+            "message": f"Constructed headline: {headline[:60]}...",
+            "component": "headline",
+            "method": "algorithmic_template",  # No LLM call - formula-based
+            "job_title": job_title,
+            "years_experience": years_experience,
+            "headline_preview": headline,
+            "headline_word_count": len(headline.split()),
+            "summary_type": summary_type,
+            "role_category": role_category,
+            "is_executive_level": role_category in executive_roles,
+        })
 
         # Build selection result
         selection_result = SelectionResult(
@@ -973,6 +1098,34 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
             f"achievements={len(key_achievements)}, "
             f"competencies={len(core_competencies_v2)} sections"
         )
+
+        # Phase 0: Log comprehensive profile generation summary
+        self._emit_struct_log("subphase_complete", {
+            "message": "Profile generation complete (V2)",
+            "component": "profile_v2",
+            "subphase": "profile_generation",
+            "headline": {
+                "text": headline,
+                "word_count": len(headline.split()),
+            },
+            "tagline": {
+                "text_preview": self._preview(value_proposition, 80),
+                "word_count": len(value_proposition.split()),
+            },
+            "key_achievements": {
+                "count": len(key_achievements),
+                "previews": [self._preview(b, 50) for b in key_achievements[:3]],
+            },
+            "core_competencies": {
+                "sections_count": len(core_competencies_v2),
+                "total_skills": sum(len(skills) for skills in core_competencies_v2.values()),
+                "sections": {section: len(skills) for section, skills in core_competencies_v2.items()},
+            },
+            "summary_type": summary_type,
+            "role_category": role_category,
+            "regional_variant": regional_variant,
+            "total_word_count": profile.word_count,
+        })
 
         return profile
 
