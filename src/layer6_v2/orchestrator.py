@@ -814,6 +814,16 @@ class CVGeneratorV2:
             full_traceback = traceback.format_exc()
             self._logger.error(f"CV Generation V2 failed: {e}")
             self._logger.error(f"Full traceback:\n{full_traceback}")
+
+            # Emit error event with traceback for frontend display
+            self._emit_struct_log("error", {
+                "message": f"CV generation failed: {str(e)}",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "traceback": full_traceback,
+                "phase": "generate",  # Main generate phase
+            })
+
             return {
                 "cv_text": None,
                 "cv_path": None,
@@ -942,6 +952,16 @@ class CVGeneratorV2:
             full_traceback = traceback.format_exc()
             self._logger.error(f"Claude CLI CV generation failed: {e}")
             self._logger.error(f"Full traceback:\n{full_traceback}")
+
+            # Emit error event with traceback for frontend display
+            self._emit_struct_log("error", {
+                "message": f"Claude CLI CV generation failed: {str(e)}",
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "traceback": full_traceback,
+                "phase": "claude_cli_generate",
+                "fallback": True,  # Indicates fallback will be attempted
+            })
 
             # Fall back to standard generation
             self._logger.info("Falling back to standard CV generation...")

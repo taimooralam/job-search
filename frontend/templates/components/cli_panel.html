@@ -296,12 +296,32 @@
                                          x-collapse
                                          class="cli-meta-content">
                                         <template x-for="(value, key) in parsed.metadata" :key="key">
-                                            <div class="cli-meta-row">
-                                                <span class="cli-meta-key" x-text="key + ':'"></span>
-                                                <span class="cli-meta-value" x-text="window.cliFormatMetadataValue(value)"></span>
-                                            </div>
+                                            <!-- Skip traceback in regular metadata - it gets its own section -->
+                                            <template x-if="key !== 'traceback'">
+                                                <div class="cli-meta-row">
+                                                    <span class="cli-meta-key" x-text="key + ':'"></span>
+                                                    <span class="cli-meta-value" x-text="window.cliFormatMetadataValue(value)"></span>
+                                                </div>
+                                            </template>
                                         </template>
                                     </div>
+
+                                    <!-- Collapsible Stack Trace section (for error events) -->
+                                    <template x-if="parsed.metadata && parsed.metadata.traceback">
+                                        <div class="cli-traceback-section" x-data="{ traceOpen: false }">
+                                            <button class="cli-traceback-toggle"
+                                                    @click.stop="traceOpen = !traceOpen"
+                                                    :class="{ 'active': traceOpen }">
+                                                <span x-text="traceOpen ? '▼' : '▶'"></span>
+                                                <span class="cli-traceback-label">🔍 Stack Trace</span>
+                                            </button>
+                                            <div x-show="traceOpen"
+                                                 x-collapse
+                                                 class="cli-traceback-content">
+                                                <pre class="cli-traceback-pre" x-text="parsed.metadata.traceback"></pre>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
 

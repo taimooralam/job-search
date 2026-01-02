@@ -1019,6 +1019,81 @@ body {
 }
 
 /* ============================================================================
+   Stack Trace Display (Collapsible)
+   ============================================================================ */
+
+.cli-traceback-section {
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+}
+
+.cli-traceback-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border: 1px solid #ef4444; /* red-500 */
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    color: #fca5a5; /* red-300 */
+    font-size: 0.6875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cli-traceback-toggle:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #f87171; /* red-400 */
+}
+
+.cli-traceback-toggle.active {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.cli-traceback-label {
+    font-weight: 500;
+}
+
+.cli-traceback-content {
+    margin-top: 0.5rem;
+    border: 1px solid #7f1d1d; /* red-900 */
+    border-radius: 4px;
+    background: #1c0a0a; /* Very dark red/black */
+    max-height: 300px;
+    overflow: auto;
+}
+
+.cli-traceback-pre {
+    margin: 0;
+    padding: 0.75rem;
+    font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+    font-size: 0.625rem;
+    line-height: 1.5;
+    color: #fca5a5; /* red-300 */
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Scrollbar styling for traceback */
+.cli-traceback-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.cli-traceback-content::-webkit-scrollbar-track {
+    background: #1c0a0a;
+}
+
+.cli-traceback-content::-webkit-scrollbar-thumb {
+    background: #7f1d1d;
+    border-radius: 3px;
+}
+
+.cli-traceback-content::-webkit-scrollbar-thumb:hover {
+    background: #991b1b;
+}
+
+/* ============================================================================
    Panel Size & Font Size Controls
    ============================================================================ */
 

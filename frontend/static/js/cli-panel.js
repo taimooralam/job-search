@@ -2127,7 +2127,8 @@ window.cliGetEventIcon = function(event) {
 
     if (event.includes('_start')) return '🚀';
     if (event.includes('_complete')) return '✅';
-    if (event.includes('_failed') || event.includes('_error')) return '❌';
+    if (event.includes('_failed') || event.includes('_error') || event === 'cv_struct_error') return '❌';
+    if (event.includes('error')) return '❌';  // Catch-all for error events
     if (event.includes('llm_call')) return '🤖';
     if (event.includes('decision_point')) return '🎯';
     if (event.includes('validation')) return '🔍';
