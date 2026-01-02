@@ -21,9 +21,12 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import TYPE_CHECKING, Dict, Any, Optional, List, Callable
 
 from src.common.config import Config
+
+if TYPE_CHECKING:
+    from src.common.structured_logger import StructuredLogger
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
@@ -122,6 +125,7 @@ class CVGeneratorV2:
         use_claude_cli: bool = False,  # Phase 3: Claude CLI multi-agent CV generation
         log_callback: Optional[Callable[[str], None]] = None,  # Frontend streaming
         job_id: Optional[str] = None,
+        struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension: Redis live-tail
     ):
         """
         Initialize the CV Generator V2 orchestrator.
@@ -136,10 +140,12 @@ class CVGeneratorV2:
             use_claude_cli: Enable Claude CLI multi-agent CV generation (default: False)
             log_callback: Optional callback for frontend log streaming (JSON string)
             job_id: Job ID for tracking
+            struct_logger: Optional StructuredLogger for Redis live-tail debugging
         """
         self._logger = get_logger(__name__)
         self._log_callback = log_callback
         self._job_id = job_id
+        self._struct_logger = struct_logger  # Phase 0 Extension: Redis live-tail logging
         self.model = model or Config.DEFAULT_MODEL
         self.passing_threshold = passing_threshold
         self.word_budget = word_budget  # None = unlimited
@@ -177,6 +183,28 @@ class CVGeneratorV2:
         self.keyword_placement_validator = KeywordPlacementValidator()  # P2: ATS placement validation
 
         self._logger.info(f"CVGeneratorV2 initialized with model: {self.model}")
+
+    def _emit_struct_log(self, event: str, metadata: dict) -> None:
+        """
+        Emit structured log event for Redis live-tail debugging.
+
+        Phase 0 Extension: This provides granular visibility into CV generation
+        for real-time debugging via the frontend live-tail.
+
+        Args:
+            event: Event type (e.g., "phase_start", "decision_point", "validation_result")
+            metadata: Event-specific metadata dict
+        """
+        if self._struct_logger:
+            try:
+                self._struct_logger.emit(
+                    event=event,
+                    layer=6,
+                    layer_name="cv_generator_v2",
+                    metadata=metadata,
+                )
+            except Exception:
+                pass  # Fire-and-forget: don't let logging errors break the pipeline
 
     def _emit_log(self, event: str, message: str, **kwargs) -> None:
         """
@@ -259,25 +287,66 @@ class CVGeneratorV2:
             # Phase 1: Load candidate data
             self._logger.info("Phase 1: Loading candidate data...")
             self._emit_log("phase_start", "Loading candidate data...", phase=1)
+            self._emit_struct_log("phase_start", {"phase": 1, "phase_name": "load_candidate_data"})
             candidate_data = self.cv_loader.load()
             roles = candidate_data.roles
+            skill_whitelist = self.cv_loader.get_skill_whitelist()
             self._logger.info(f"  Loaded {len(roles)} roles from master CV")
             self._emit_log("phase_complete", f"Loaded {len(roles)} roles", phase=1, roles_count=len(roles))
+            # Phase 0 Extension: Rich metadata for debugging
+            self._emit_struct_log("phase_complete", {
+                "phase": 1,
+                "phase_name": "load_candidate_data",
+                "roles_count": len(roles),
+                "roles": [{"company": r.company, "title": r.title, "period": r.period} for r in roles],
+                "skill_whitelist_size": {
+                    "hard_skills": len(skill_whitelist.get("hard_skills", [])),
+                    "soft_skills": len(skill_whitelist.get("soft_skills", [])),
+                },
+                "certifications_count": len(candidate_data.certifications) if candidate_data.certifications else 0,
+                "education": {
+                    "masters": candidate_data.education_masters[:50] + "..." if candidate_data.education_masters and len(candidate_data.education_masters) > 50 else candidate_data.education_masters,
+                    "bachelors": candidate_data.education_bachelors[:50] + "..." if candidate_data.education_bachelors and len(candidate_data.education_bachelors) > 50 else candidate_data.education_bachelors,
+                },
+            })
 
             # Phase 2: Generate tailored bullets for each role
             # Phase 4: Pass JD annotations for boost calculation
             jd_annotations = state.get("jd_annotations")
             self._logger.info("Phase 2: Generating tailored bullets per role...")
             self._emit_log("phase_start", "Generating role bullets...", phase=2)
+            self._emit_struct_log("phase_start", {
+                "phase": 2,
+                "phase_name": "generate_bullets",
+                "has_jd_annotations": bool(jd_annotations),
+                "roles_to_process": len(roles),
+            })
             if jd_annotations:
                 self._logger.info("  📌 JD annotations detected - will apply boost")
             role_bullets_list = self._generate_all_role_bullets(roles, extracted_jd, jd_annotations)
             self._logger.info(f"  Generated bullets for {len(role_bullets_list)} roles")
             self._emit_log("phase_complete", f"Generated bullets for {len(role_bullets_list)} roles", phase=2)
+            # Phase 0 Extension: Per-role bullet details (summary - full detail in subphase logging)
+            self._emit_struct_log("phase_complete", {
+                "phase": 2,
+                "phase_name": "generate_bullets",
+                "roles_processed": len(role_bullets_list),
+                "per_role_summary": [
+                    {
+                        "company": rb.company,
+                        "title": rb.title,
+                        "bullets_count": len(rb.bullets),
+                        "total_word_count": sum(len(b.text.split()) for b in rb.bullets) if rb.bullets else 0,
+                    }
+                    for rb in role_bullets_list
+                ],
+                "total_bullets": sum(len(rb.bullets) for rb in role_bullets_list),
+            })
 
             # Phase 3: Run QA on all roles
             self._logger.info("Phase 3: Running hallucination QA...")
             self._emit_log("phase_start", "Running quality assurance...", phase=3)
+            self._emit_struct_log("phase_start", {"phase": 3, "phase_name": "hallucination_qa"})
             qa_results, ats_results = run_qa_on_all_roles(
                 role_bullets_list,
                 roles,  # Pass full RoleData objects
@@ -285,16 +354,38 @@ class CVGeneratorV2:
             )
             self._log_qa_summary(qa_results, role_bullets_list)
             qa_passed = sum(1 for qa in qa_results if qa.passed)
+            qa_failed = len(qa_results) - qa_passed
             self._emit_log("phase_complete", f"QA passed: {qa_passed}/{len(qa_results)} roles", phase=3)
+            # Phase 0 Extension: QA results per role
+            self._emit_struct_log("phase_complete", {
+                "phase": 3,
+                "phase_name": "hallucination_qa",
+                "qa_passed_count": qa_passed,
+                "qa_failed_count": qa_failed,
+                "qa_pass_rate": qa_passed / len(qa_results) if qa_results else 0,
+                "per_role_qa": [
+                    {
+                        "role": qa.role_title if hasattr(qa, 'role_title') else f"role_{i}",
+                        "passed": qa.passed,
+                        "grounding_issues": len(qa.grounding_failures) if hasattr(qa, 'grounding_failures') else 0,
+                        "metric_issues": len(qa.metric_issues) if hasattr(qa, 'metric_issues') else 0,
+                    }
+                    for i, qa in enumerate(qa_results)
+                ],
+            })
 
-            # GAP-001 FIX: Fetch skill whitelist before stitching to prevent hallucinated skills
-            # This whitelist is used both in Phase 4 (stitcher) and Phase 5 (header generator)
-            skill_whitelist = self.cv_loader.get_skill_whitelist()
+            # GAP-001 FIX: Skill whitelist already loaded in Phase 1
             self._logger.info(f"  Using skill whitelist: {len(skill_whitelist['hard_skills'])} hard, {len(skill_whitelist['soft_skills'])} soft skills")
 
             # Phase 4: Stitch roles together
             self._logger.info("Phase 4: Stitching roles with deduplication...")
             self._emit_log("phase_start", "Stitching CV sections...", phase=4)
+            self._emit_struct_log("phase_start", {
+                "phase": 4,
+                "phase_name": "stitch_roles",
+                "word_budget": self.word_budget,
+                "target_keywords_count": len(extracted_jd.get("top_keywords", [])),
+            })
             stitched_cv = stitch_all_roles(
                 role_bullets_list,
                 word_budget=self.word_budget,
@@ -309,10 +400,22 @@ class CVGeneratorV2:
                 word_count=stitched_cv.total_word_count,
                 bullet_count=stitched_cv.total_bullet_count,
             )
+            # Phase 0 Extension: Stitching details
+            self._emit_struct_log("phase_complete", {
+                "phase": 4,
+                "phase_name": "stitch_roles",
+                "total_word_count": stitched_cv.total_word_count,
+                "total_bullet_count": stitched_cv.total_bullet_count,
+                "roles_included": len(stitched_cv.roles) if hasattr(stitched_cv, 'roles') else 0,
+                "deduplication_applied": True,
+                "word_budget": self.word_budget,
+                "within_budget": self.word_budget is None or stitched_cv.total_word_count <= self.word_budget,
+            })
 
             # Phase 5: Generate header and skills (tier-aware)
             self._logger.info("Phase 5: Generating header and skills...")
             self._emit_log("phase_start", "Generating profile header...", phase=5)
+            self._emit_struct_log("phase_start", {"phase": 5, "phase_name": "generate_header"})
 
             # Phase 4.5: Build annotation context for header generation
             annotation_context = None
@@ -380,6 +483,7 @@ class CVGeneratorV2:
                     jd_annotations=jd_annotations,  # Persona framing
                     job_id=self._job_id,  # Enable Redis live-tail logging
                     progress_callback=llm_callback,
+                    struct_logger=self._struct_logger,  # Phase 0 Extension
                 ))
 
             # Phase 4.5: Log annotation influence
@@ -399,6 +503,37 @@ class CVGeneratorV2:
                 profile_word_count=header_output.profile.word_count,
                 skills_sections=len(header_output.skills_sections),
             )
+            # Phase 0 Extension: Header generation details
+            profile = header_output.profile
+            ensemble_meta = header_output.ensemble_metadata
+            self._emit_struct_log("phase_complete", {
+                "phase": 5,
+                "phase_name": "generate_header",
+                "tier_used": tier.value,
+                "headline": {
+                    "text_preview": profile.headline[:60] + "..." if profile.headline and len(profile.headline) > 60 else profile.headline,
+                    "word_count": len(profile.headline.split()) if profile.headline else 0,
+                },
+                "tagline": {
+                    "text_preview": profile.tagline[:60] + "..." if profile.tagline and len(profile.tagline) > 60 else profile.tagline,
+                    "word_count": len(profile.tagline.split()) if profile.tagline else 0,
+                },
+                "key_achievements": {
+                    "count": len(profile.key_achievements) if profile.key_achievements else 0,
+                },
+                "core_competencies_count": len(profile.core_competencies) if profile.core_competencies else 0,
+                "profile_word_count": profile.word_count,
+                "skills_sections": [
+                    {"category": s.category, "skills_count": len(s.skills) if hasattr(s, 'skills') else 0}
+                    for s in header_output.skills_sections
+                ],
+                "ensemble": {
+                    "used": ensemble_meta is not None,
+                    "passes_executed": ensemble_meta.passes_executed if ensemble_meta else 0,
+                    "personas_used": ensemble_meta.personas_used if ensemble_meta else [],
+                } if ensemble_meta else None,
+                "annotation_influenced": profile.annotation_influenced if hasattr(profile, 'annotation_influenced') else False,
+            })
 
             # Assemble full CV text
             # GAP-014: Pass job location for Middle East relocation tagline
@@ -414,6 +549,14 @@ class CVGeneratorV2:
                 jd_annotations=jd_annotations,
                 extracted_jd=extracted_jd,
             )
+            # Phase 0 Extension: ATS validation result
+            self._emit_struct_log("validation_result", {
+                "validation": "ats_coverage",
+                "passed": ats_validation.passed if ats_validation else None,
+                "coverage_pct": ats_validation.coverage_percentage if hasattr(ats_validation, 'coverage_percentage') else None,
+                "missing_keywords": ats_validation.missing_keywords[:5] if hasattr(ats_validation, 'missing_keywords') and ats_validation.missing_keywords else [],
+                "frequency_violations": ats_validation.frequency_violations[:3] if hasattr(ats_validation, 'frequency_violations') and ats_validation.frequency_violations else [],
+            })
 
             # Phase 5.6 (GAP-092): Reframe traceability validation
             self._logger.info("Phase 5.6: Reframe traceability validation...")
@@ -421,6 +564,13 @@ class CVGeneratorV2:
                 cv_text=cv_text,
                 jd_annotations=jd_annotations,
             )
+            # Phase 0 Extension: Reframe validation result
+            self._emit_struct_log("validation_result", {
+                "validation": "reframe_traceability",
+                "applied_count": len(reframe_validation.get("applied", [])) if reframe_validation else 0,
+                "not_applied_count": len(reframe_validation.get("not_applied", [])) if reframe_validation else 0,
+                "application_rate": reframe_validation.get("application_rate", 0) if reframe_validation else 0,
+            })
 
             # Phase 5.7 (P2): Keyword placement validation
             self._logger.info("Phase 5.7: Keyword placement validation...")
@@ -429,10 +579,19 @@ class CVGeneratorV2:
                 stitched=stitched_cv,
                 jd_annotations=jd_annotations,
             )
+            # Phase 0 Extension: Keyword placement validation result
+            self._emit_struct_log("validation_result", {
+                "validation": "keyword_placement",
+                "passed": keyword_placement_result.passed if keyword_placement_result else None,
+                "top_third_pct": keyword_placement_result.top_third_percentage if hasattr(keyword_placement_result, 'top_third_percentage') else None,
+                "headline_keywords": keyword_placement_result.headline_keywords[:5] if hasattr(keyword_placement_result, 'headline_keywords') and keyword_placement_result.headline_keywords else [],
+                "placement_score": keyword_placement_result.placement_score if hasattr(keyword_placement_result, 'placement_score') else None,
+            })
 
             # Phase 6: Grade and improve
             self._logger.info("Phase 6: Grading CV...")
             self._emit_log("phase_start", "Grading CV...", phase=6)
+            self._emit_struct_log("phase_start", {"phase": 6, "phase_name": "grade_and_improve"})
             master_cv_text = self._get_master_cv_text()
             job_id = state.get("job_id")
             grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text, job_id=job_id, progress_callback=llm_callback))
@@ -444,11 +603,29 @@ class CVGeneratorV2:
                 score=grade_result.composite_score,
                 passed=grade_result.passed,
             )
+            # Phase 0 Extension: Grading details with dimension breakdown
+            self._emit_struct_log("decision_point", {
+                "decision": "cv_grade",
+                "composite_score": grade_result.composite_score,
+                "passed": grade_result.passed,
+                "threshold": self.passing_threshold,
+                "dimensions": {
+                    dim.name if hasattr(dim, 'name') else f"dim_{i}": {
+                        "score": dim.score if hasattr(dim, 'score') else 0,
+                        "weight": dim.weight if hasattr(dim, 'weight') else 0,
+                        "issues": dim.issues[:3] if hasattr(dim, 'issues') and dim.issues else [],
+                        "strengths": dim.strengths[:3] if hasattr(dim, 'strengths') and dim.strengths else [],
+                    }
+                    for i, dim in enumerate(grade_result.dimensions)
+                } if hasattr(grade_result, 'dimensions') and grade_result.dimensions else {},
+                "improvement_needed": not grade_result.passed,
+            })
 
             improvement_result = None
             if not grade_result.passed:
                 self._logger.info("  CV below threshold - applying single-pass improvement...")
                 self._emit_log("improve_start", "Improving CV...", phase=6)
+                self._emit_struct_log("subphase_start", {"phase": 6, "subphase": "improvement"})
                 improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd, job_id=job_id, progress_callback=llm_callback))
                 if improvement_result.improved:
                     cv_text = improvement_result.cv_text
@@ -461,6 +638,21 @@ class CVGeneratorV2:
                         target_dimension=improvement_result.target_dimension,
                         changes_count=len(improvement_result.changes_made),
                     )
+                    # Phase 0 Extension: Improvement details
+                    self._emit_struct_log("subphase_complete", {
+                        "phase": 6,
+                        "subphase": "improvement",
+                        "improved": True,
+                        "target_dimension": improvement_result.target_dimension,
+                        "changes_made": improvement_result.changes_made[:5] if improvement_result.changes_made else [],
+                        "changes_count": len(improvement_result.changes_made),
+                    })
+                else:
+                    self._emit_struct_log("subphase_complete", {
+                        "phase": 6,
+                        "subphase": "improvement",
+                        "improved": False,
+                    })
 
             # Phase 6.5: Final Tailoring Pass (Keyword Emphasis)
             tailoring_result = None
@@ -540,6 +732,19 @@ class CVGeneratorV2:
                 final_score=grade_result.composite_score,
                 passed=grade_result.passed,
             )
+            # Phase 0 Extension: Pipeline complete with summary
+            self._emit_struct_log("pipeline_complete", {
+                "final_score": grade_result.composite_score,
+                "passed": grade_result.passed,
+                "threshold": self.passing_threshold,
+                "tier_used": tier.value,
+                "total_roles": len(role_bullets_list),
+                "total_bullets": sum(len(rb.bullets) for rb in role_bullets_list),
+                "final_word_count": len(cv_text.split()) if cv_text else 0,
+                "improvement_applied": improvement_result is not None and improvement_result.improved if improvement_result else False,
+                "tailoring_applied": tailoring_result is not None and tailoring_result.tailored if tailoring_result else False,
+                "ats_passed": ats_validation.passed if ats_validation else None,
+            })
 
             return {
                 "cv_text": cv_text,
@@ -898,6 +1103,14 @@ class CVGeneratorV2:
                 role_title=role.title,
                 company=role.company,
             )
+            # Phase 0 Extension: Per-role subphase start
+            self._emit_struct_log("subphase_start", {
+                "phase": 2,
+                "subphase": f"role_{i+1}",
+                "role_title": role.title,
+                "company": role.company,
+                "role_period": role.period,
+            })
 
             # Build career context for this role
             career_context = CareerContext.build(
@@ -924,6 +1137,26 @@ class CVGeneratorV2:
                         career_context=career_context,
                     )
                 role_bullets_list.append(role_bullets)
+                # Phase 0 Extension: Per-role subphase complete with FULL bullet details
+                self._emit_struct_log("subphase_complete", {
+                    "phase": 2,
+                    "subphase": f"role_{i+1}",
+                    "role_title": role.title,
+                    "company": role.company,
+                    "bullets": [
+                        {
+                            "index": j,
+                            "text_preview": b.text[:50] + "..." if len(b.text) > 50 else b.text,
+                            "word_count": len(b.text.split()),
+                            "has_metrics": any(c.isdigit() for c in b.text),
+                            "star_valid": b.star_valid if hasattr(b, 'star_valid') else None,
+                        }
+                        for j, b in enumerate(role_bullets.bullets)
+                    ] if role_bullets.bullets else [],
+                    "bullets_count": len(role_bullets.bullets) if role_bullets.bullets else 0,
+                    "total_word_count": sum(len(b.text.split()) for b in role_bullets.bullets) if role_bullets.bullets else 0,
+                    "star_enforcement": self.use_star_enforcement,
+                })
             except Exception as e:
                 self._logger.warning(f"  Failed to generate bullets for {role.company}: {e}")
                 # Create fallback with original achievements as bullets
@@ -1526,7 +1759,11 @@ def cv_generator_v2_node(state: JobState) -> Dict[str, Any]:
     logger.info("=" * 60)
 
     with LayerContext(struct_logger, 6, "cv_generator_v2") as ctx:
-        generator = CVGeneratorV2(log_callback=log_callback, job_id=job_id)
+        generator = CVGeneratorV2(
+            log_callback=log_callback,
+            job_id=job_id,
+            struct_logger=struct_logger,  # Phase 0 Extension: Pass through for Redis live-tail
+        )
         updates = generator.generate(state)
 
         # Add metadata from CV Gen V2 output
