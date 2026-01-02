@@ -1684,6 +1684,116 @@ async function pollPipelineStatus(runId) {
     }
 }
 
+/**
+ * Create a styled log element from raw log data.
+ * Parses JSON structured logs and displays metadata in a collapsible format.
+ */
+function createLogElement(logData) {
+    const container = document.createElement('div');
+    container.className = 'log-entry';
+
+    // Try to parse as JSON structured log
+    let parsed = null;
+    try {
+        // Check if it looks like JSON (starts with {)
+        const trimmed = logData.trim();
+        if (trimmed.startsWith('{')) {
+            parsed = JSON.parse(trimmed);
+        }
+    } catch (e) {
+        // Not JSON, treat as plain text
+    }
+
+    // If it's a structured log with event and metadata
+    if (parsed && parsed.event && parsed.metadata) {
+        // Main message line
+        const messageLine = document.createElement('div');
+        messageLine.className = 'log-message';
+
+        // Add event icon based on event type
+        const icon = getLogIcon(parsed.event);
+        const message = parsed.message || parsed.metadata.message || parsed.event;
+        messageLine.innerHTML = `<span class="log-icon">${icon}</span> <span class="log-event-name">${parsed.event}:</span> ${escapeHtml(message)}`;
+        container.appendChild(messageLine);
+
+        // Metadata section (collapsible)
+        const metadata = parsed.metadata;
+        const metadataKeys = Object.keys(metadata).filter(k =>
+            k !== 'message' && metadata[k] !== null && metadata[k] !== undefined
+        );
+
+        if (metadataKeys.length > 0) {
+            const metaContainer = document.createElement('div');
+            metaContainer.className = 'log-metadata collapsed';
+
+            // Toggle button
+            const toggleBtn = document.createElement('span');
+            toggleBtn.className = 'log-meta-toggle';
+            toggleBtn.textContent = `▶ ${metadataKeys.length} fields`;
+            toggleBtn.onclick = () => {
+                metaContainer.classList.toggle('collapsed');
+                toggleBtn.textContent = metaContainer.classList.contains('collapsed')
+                    ? `▶ ${metadataKeys.length} fields`
+                    : `▼ ${metadataKeys.length} fields`;
+            };
+            container.appendChild(toggleBtn);
+
+            // Metadata content
+            const metaContent = document.createElement('div');
+            metaContent.className = 'log-meta-content';
+
+            for (const key of metadataKeys) {
+                const value = metadata[key];
+                const metaLine = document.createElement('div');
+                metaLine.className = 'log-meta-line';
+
+                // Format value based on type
+                let displayValue = value;
+                if (typeof value === 'object') {
+                    displayValue = JSON.stringify(value, null, 2);
+                } else if (typeof value === 'string' && value.length > 100) {
+                    // Truncate long strings with ellipsis
+                    displayValue = value;
+                }
+
+                metaLine.innerHTML = `<span class="log-meta-key">${escapeHtml(key)}:</span> <span class="log-meta-value">${escapeHtml(String(displayValue))}</span>`;
+                metaContent.appendChild(metaLine);
+            }
+
+            metaContainer.appendChild(metaContent);
+            container.appendChild(metaContainer);
+        }
+    } else {
+        // Plain text log - display as-is
+        container.textContent = logData;
+    }
+
+    return container;
+}
+
+/**
+ * Get an icon for the log event type.
+ */
+function getLogIcon(eventName) {
+    if (eventName.includes('start')) return '🚀';
+    if (eventName.includes('complete')) return '✅';
+    if (eventName.includes('failed') || eventName.includes('error')) return '❌';
+    if (eventName.includes('decision')) return '🎯';
+    if (eventName.includes('llm_call')) return '🤖';
+    if (eventName.includes('subphase')) return '📍';
+    if (eventName.includes('phase')) return '📋';
+    return '🔄';
+}
+
+/**
+ * Escape HTML to prevent XSS.
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function startLogStreaming(runId) {
     const logsContent = document.getElementById('logs-content');
     const logsContainer = document.getElementById('logs-container');
@@ -1699,8 +1809,7 @@ function startLogStreaming(runId) {
     eventSource = new EventSource(`/api/runner/jobs/${runId}/logs`);
 
     eventSource.onmessage = (event) => {
-        const logLine = document.createElement('div');
-        logLine.textContent = event.data;
+        const logLine = createLogElement(event.data);
         logsContent.appendChild(logLine);
 
         parseLogAndUpdateSteps(event.data);

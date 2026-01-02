@@ -235,3 +235,83 @@
         </div>
     </div>
 </div>
+
+{# Styles for structured log display #}
+<style>
+/* Log entry container */
+.log-entry {
+    margin-bottom: 4px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Main message line */
+.log-message {
+    color: #4ade80; /* green-400 */
+}
+
+.log-icon {
+    margin-right: 4px;
+}
+
+.log-event-name {
+    color: #60a5fa; /* blue-400 */
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+/* Metadata toggle button */
+.log-meta-toggle {
+    display: inline-block;
+    margin-left: 20px;
+    color: #9ca3af; /* gray-400 */
+    cursor: pointer;
+    font-size: 10px;
+    user-select: none;
+}
+
+.log-meta-toggle:hover {
+    color: #d1d5db; /* gray-300 */
+}
+
+/* Metadata container */
+.log-metadata {
+    margin-left: 24px;
+    margin-top: 4px;
+}
+
+.log-metadata.collapsed .log-meta-content {
+    display: none;
+}
+
+/* Metadata content */
+.log-meta-content {
+    background: rgba(0, 0, 0, 0.3);
+    border-left: 2px solid #6366f1; /* indigo-500 */
+    padding: 8px 12px;
+    margin-top: 4px;
+    border-radius: 0 4px 4px 0;
+}
+
+.log-meta-line {
+    margin: 2px 0;
+    word-break: break-word;
+}
+
+.log-meta-key {
+    color: #a78bfa; /* purple-400 */
+    font-weight: 500;
+}
+
+.log-meta-value {
+    color: #d1d5db; /* gray-300 */
+    margin-left: 4px;
+    white-space: pre-wrap;
+}
+
+/* Special styling for prompt previews */
+.log-meta-line:has(.log-meta-key:contains('prompt')) .log-meta-value {
+    color: #fcd34d; /* amber-300 */
+    font-style: italic;
+}
+</style>
