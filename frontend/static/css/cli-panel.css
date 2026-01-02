@@ -23,8 +23,42 @@
     overflow: hidden;
 }
 
+/* Default expanded height (medium) */
 .cli-panel--expanded {
     max-height: 400px;
+}
+
+/* Panel size variants (when expanded) */
+.cli-panel--expanded.cli-panel--small {
+    max-height: 250px;
+}
+
+.cli-panel--expanded.cli-panel--medium {
+    max-height: 400px;
+}
+
+.cli-panel--expanded.cli-panel--large {
+    max-height: 550px;
+}
+
+.cli-panel--expanded.cli-panel--xlarge {
+    max-height: 80vh;
+}
+
+/* Font size variants */
+.cli-font--small {
+    --cli-font-size: 0.6875rem;  /* 11px */
+    --cli-meta-font-size: 0.625rem; /* 10px */
+}
+
+.cli-font--medium {
+    --cli-font-size: 0.75rem;    /* 12px */
+    --cli-meta-font-size: 0.6875rem; /* 11px */
+}
+
+.cli-font--large {
+    --cli-font-size: 0.875rem;   /* 14px */
+    --cli-meta-font-size: 0.75rem; /* 12px */
 }
 
 /* Ensure panel doesn't overlap with main content */
@@ -303,7 +337,7 @@ body {
     background-color: #0f172a; /* slate-900 */
     padding: 0.75rem 1rem;
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-    font-size: 0.8125rem;
+    font-size: var(--cli-font-size, 0.75rem); /* Uses CSS var from font size class */
     line-height: 1.5;
 }
 
@@ -942,7 +976,7 @@ body {
     background-color: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
     border-left: 2px solid #3b82f6; /* blue-500 */
     border-radius: 0 0.25rem 0.25rem 0;
-    font-size: 0.75rem;
+    font-size: var(--cli-meta-font-size, 0.6875rem); /* Uses CSS var from font size class */
 }
 
 .cli-meta-row {
@@ -977,4 +1011,42 @@ body {
 .cli-meta-value:has-text("prompt"),
 .cli-meta-value:has-text("persona") {
     color: #a78bfa; /* purple-400 */
+}
+
+/* ============================================================================
+   Panel Size & Font Size Controls
+   ============================================================================ */
+
+/* Separator between action button groups */
+.cli-action-separator {
+    display: inline-block;
+    width: 1px;
+    height: 16px;
+    background-color: #475569; /* slate-600 */
+    margin: 0 0.25rem;
+    vertical-align: middle;
+}
+
+/* Action button with text label */
+.cli-action-btn--text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.cli-action-label {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #94a3b8; /* slate-400 */
+    min-width: 1.5rem;
+    text-align: center;
+}
+
+/* Font icon (A) styling */
+.cli-font-icon {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #e2e8f0; /* slate-200 */
 }

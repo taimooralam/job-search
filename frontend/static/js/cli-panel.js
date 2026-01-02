@@ -153,6 +153,10 @@ document.addEventListener('alpine:init', () => {
         runOrder: [], // Newest first
         pollingActive: {}, // Track active polling per runId: { runId: true/false }
 
+        // Panel size state (persisted)
+        panelSize: 'medium', // 'small', 'medium', 'large', 'xlarge'
+        fontSize: 'medium',  // 'small', 'medium', 'large'
+
         // Context menu state
         contextMenu: {
             visible: false,
@@ -204,6 +208,14 @@ document.addEventListener('alpine:init', () => {
                     });
 
                     this.expanded = state.expanded || false;
+
+                    // Restore panel and font size preferences
+                    if (state.panelSize && ['small', 'medium', 'large', 'xlarge'].includes(state.panelSize)) {
+                        this.panelSize = state.panelSize;
+                    }
+                    if (state.fontSize && ['small', 'medium', 'large'].includes(state.fontSize)) {
+                        this.fontSize = state.fontSize;
+                    }
 
                     // Sanitize runs first (before runOrder validation)
                     const originalRunsCount = state.runs ? Object.keys(state.runs).length : 0;
@@ -1909,6 +1921,42 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
+         * Cycle panel height: small → medium → large → xlarge → small
+         */
+        cyclePanelSize() {
+            const sizes = ['small', 'medium', 'large', 'xlarge'];
+            const currentIdx = sizes.indexOf(this.panelSize);
+            this.panelSize = sizes[(currentIdx + 1) % sizes.length];
+            this._saveStateImmediate();
+        },
+
+        /**
+         * Cycle font size: small → medium → large → small
+         */
+        cycleFontSize() {
+            const sizes = ['small', 'medium', 'large'];
+            const currentIdx = sizes.indexOf(this.fontSize);
+            this.fontSize = sizes[(currentIdx + 1) % sizes.length];
+            this._saveStateImmediate();
+        },
+
+        /**
+         * Get font size label for display
+         */
+        getFontSizeLabel() {
+            const labels = { small: 'S', medium: 'M', large: 'L' };
+            return labels[this.fontSize] || 'M';
+        },
+
+        /**
+         * Get panel size label for display
+         */
+        getPanelSizeLabel() {
+            const labels = { small: '¼', medium: '½', large: '¾', xlarge: 'Full' };
+            return labels[this.panelSize] || '½';
+        },
+
+        /**
          * Save state to sessionStorage immediately
          */
         _saveStateImmediate() {
@@ -1917,7 +1965,9 @@ document.addEventListener('alpine:init', () => {
                     expanded: this.expanded,
                     activeRunId: this.activeRunId,
                     runs: this.runs,
-                    runOrder: this.runOrder
+                    runOrder: this.runOrder,
+                    panelSize: this.panelSize,
+                    fontSize: this.fontSize
                 };
 
                 sessionStorage.setItem(CLI_STORAGE_KEY, JSON.stringify(state));
