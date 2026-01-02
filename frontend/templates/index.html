@@ -798,8 +798,14 @@
     }
 
     // Trigger HTMX table refresh with current filters
+    // GAP-FIX: Guard against htmx not being loaded yet (CDN race condition)
     function triggerTableRefresh() {
-        htmx.trigger('#job-table-container', 'refresh');
+        if (typeof htmx !== 'undefined') {
+            htmx.trigger('#job-table-container', 'refresh');
+        } else {
+            // htmx not loaded yet - retry after a short delay
+            setTimeout(triggerTableRefresh, 100);
+        }
     }
 
     // ============================================================================
