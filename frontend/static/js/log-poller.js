@@ -466,7 +466,7 @@
 
         /**
          * Internal: Emit log to listeners.
-         * Includes backend attribution, tier, and cost data.
+         * Includes backend attribution, tier, cost data, and structured metadata.
          */
         _emitLog(log) {
             // Normalize log entry with backend attribution
@@ -481,7 +481,13 @@
                 backend: log.backend || this._detectBackend(messageText),
                 tier: log.tier || null,
                 cost_usd: log.cost_usd || 0,
-                timestamp: log.timestamp || Date.now()
+                timestamp: log.timestamp || Date.now(),
+                // Pass through structured data from backend for CLI panel display
+                source: log.source || null,
+                metadata: log.metadata || null,
+                traceback: log.traceback || null,
+                event: log.event || null,
+                prefix: log.prefix || null,
             };
 
             for (const callback of this._onLogCallbacks) {
