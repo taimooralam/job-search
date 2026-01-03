@@ -96,9 +96,12 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                 error_msg = parsed.get("error", "Unknown error")
                 log_obj["message"] = f"❌ Error: {error_msg}"
                 log_obj["level"] = "error"
-                # Extract traceback from metadata for CLI panel display
-                if parsed.get("metadata", {}).get("traceback"):
-                    log_obj["traceback"] = parsed["metadata"]["traceback"]
+                # Extract traceback from metadata for CLI panel display (support both names)
+                metadata = parsed.get("metadata", {})
+                if metadata.get("traceback"):
+                    log_obj["traceback"] = metadata["traceback"]
+                elif metadata.get("stack_trace"):
+                    log_obj["traceback"] = metadata["stack_trace"]
                 if parsed.get("metadata", {}).get("error_type"):
                     log_obj["error_type"] = parsed["metadata"]["error_type"]
 
@@ -406,9 +409,11 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                     # Critical: Extract metadata including traceback for CLI panel display
                     if parsed_json.get("metadata"):
                         log_obj["metadata"] = parsed_json["metadata"]
-                        # Also extract traceback at top level for easy access
+                        # Also extract traceback at top level for easy access (support both names)
                         if parsed_json["metadata"].get("traceback"):
                             log_obj["traceback"] = parsed_json["metadata"]["traceback"]
+                        elif parsed_json["metadata"].get("stack_trace"):
+                            log_obj["traceback"] = parsed_json["metadata"]["stack_trace"]
                         if parsed_json["metadata"].get("error_type"):
                             log_obj["error_type"] = parsed_json["metadata"]["error_type"]
 

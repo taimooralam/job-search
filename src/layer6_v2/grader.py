@@ -52,6 +52,8 @@ class DimensionGrade(BaseModel):
 
 class GradingResponse(BaseModel):
     """Complete grading response from LLM."""
+    model_config = {"extra": "ignore"}  # Ignore extra fields LLM might add
+
     ats_optimization: DimensionGrade
     impact_clarity: DimensionGrade
     jd_alignment: DimensionGrade
@@ -650,9 +652,14 @@ Grade each dimension 1-10 with specific feedback."""
         # Type coercion: LLM sometimes returns exemplary_sections as list of dicts
         # instead of list of strings. Coerce to strings by extracting values.
         parsed_data = result.parsed_json.copy()
+        coercion_applied = False
         if "exemplary_sections" in parsed_data:
             exemplary = parsed_data["exemplary_sections"]
-            if isinstance(exemplary, list):
+            original_types = [type(item).__name__ for item in exemplary] if isinstance(exemplary, list) else []
+            needs_coercion = any(t != "str" for t in original_types)
+
+            if isinstance(exemplary, list) and needs_coercion:
+                self._logger.info(f"Type coercion NEEDED: exemplary_sections types = {original_types}")
                 coerced = []
                 for item in exemplary:
                     if isinstance(item, str):
@@ -665,6 +672,15 @@ Grade each dimension 1-10 with specific feedback."""
                     else:
                         coerced.append(str(item))
                 parsed_data["exemplary_sections"] = coerced
+                coercion_applied = True
+                self._logger.info(f"Type coercion APPLIED: coerced {len(coerced)} items to strings")
+                # Emit to Redis for visibility
+                self._emit_struct_log("type_coercion_applied", {
+                    "message": f"🔧 Type coercion applied to exemplary_sections ({len(coerced)} items)",
+                    "field": "exemplary_sections",
+                    "original_types": original_types,
+                    "coerced_count": len(coerced),
+                })
 
         # Parse into Pydantic model with error logging
         try:
@@ -679,9 +695,14 @@ Grade each dimension 1-10 with specific feedback."""
             # Log validation error details to BOTH loggers for visibility
             keys_in_response = list(result.parsed_json.keys()) if result.parsed_json else []
             stack_trace = traceback.format_exc()
+            # Show what exemplary_sections looks like after coercion attempt
+            coerced_exemplary = parsed_data.get("exemplary_sections", [])
+            coerced_types = [type(item).__name__ for item in coerced_exemplary] if isinstance(coerced_exemplary, list) else []
             self._logger.error(
                 f"Pydantic validation failed: {e}\n"
                 f"Keys in response: {keys_in_response}\n"
+                f"Coercion applied: {coercion_applied}\n"
+                f"Coerced exemplary_sections types: {coerced_types}\n"
                 f"Stack trace:\n{stack_trace}"
             )
             # Emit to struct_logger for frontend visibility
@@ -690,10 +711,12 @@ Grade each dimension 1-10 with specific feedback."""
                 "error_type": "pydantic_validation",
                 "error": str(e),
                 "keys_in_response": keys_in_response,
+                "coercion_applied": coercion_applied,
+                "coerced_exemplary_types": coerced_types,
                 "sample_values": {
                     k: str(v)[:100] for k, v in list(result.parsed_json.items())[:3]
                 } if result.parsed_json else {},
-                "stack_trace": stack_trace,  # Include full stack trace
+                "traceback": stack_trace,  # Include full stack trace (using 'traceback' for log_polling compatibility)
             })
             raise ValueError(f"Grading response validation failed: {e}")
 
