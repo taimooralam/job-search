@@ -832,6 +832,7 @@ async def grade_cv(
     job_id: Optional[str] = None,
     progress_callback: Optional[Callable[[str, str, Dict[str, Any]], None]] = None,
     struct_logger: Optional["StructuredLogger"] = None,  # Phase 0 Extension
+    log_callback: Optional[Callable[[str], None]] = None,  # Phase 0 Extension: In-process logging
 ) -> GradeResult:
     """
     Convenience function to grade a CV.
@@ -844,6 +845,7 @@ async def grade_cv(
         job_id: Job ID for tracking (optional)
         progress_callback: Optional callback for granular LLM progress events to Redis
         struct_logger: Optional StructuredLogger for Redis live-tail debugging (Phase 0 Extension)
+        log_callback: Optional callback for in-process logging (Phase 0 Extension)
 
     Returns:
         GradeResult with dimension scores and composite
@@ -853,5 +855,6 @@ async def grade_cv(
         job_id=job_id,
         progress_callback=progress_callback,
         struct_logger=struct_logger,  # Phase 0 Extension
+        log_callback=log_callback,  # Phase 0 Extension: In-process logging
     )
     return await grader.grade(cv_text, extracted_jd, master_cv_text)
