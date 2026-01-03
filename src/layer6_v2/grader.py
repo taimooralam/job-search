@@ -16,6 +16,7 @@ Usage:
     result = grader.grade(cv_text, extracted_jd, master_cv_text)
 """
 
+import logging
 import re
 from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Callable, Any
 from collections import Counter
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
 
 from pydantic import BaseModel, Field
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential, before_sleep_log, retry_if_exception_type
 
 from src.common.logger import get_logger
 from src.common.config import Config
@@ -34,6 +35,9 @@ from src.layer6_v2.types import (
     DimensionScore,
     GradeResult,
 )
+
+# Module-level logger for retry decorator (instance logger not available at class definition time)
+logger = logging.getLogger(__name__)
 
 
 # Pydantic models for structured LLM grading output
@@ -511,7 +515,12 @@ class CVGrader:
             strengths=["Well-grounded in source material"] if score >= 9 else [],
         )
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
     async def _grade_with_llm(
         self,
         cv_text: str,
@@ -588,8 +597,16 @@ Grade each dimension 1-10 with specific feedback."""
         if not result.parsed_json:
             raise ValueError("LLM response was not valid JSON")
 
-        # Parse into Pydantic model
-        return GradingResponse(**result.parsed_json)
+        # Parse into Pydantic model with error logging
+        try:
+            return GradingResponse(**result.parsed_json)
+        except Exception as e:
+            # Log validation error details before retry
+            self._logger.error(
+                f"Pydantic validation failed: {e}\n"
+                f"Keys in response: {list(result.parsed_json.keys()) if result.parsed_json else 'None'}"
+            )
+            raise ValueError(f"Grading response validation failed: {e}")
 
     async def grade(
         self,
