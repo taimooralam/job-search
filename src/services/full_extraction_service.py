@@ -14,8 +14,10 @@ Usage:
 """
 
 import asyncio
+import json
 import logging
 import os
+import traceback
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
@@ -717,7 +719,41 @@ class FullExtractionService(OperationService):
                 return result
 
             except Exception as e:
+                # Capture full traceback for frontend display
+                tb_str = traceback.format_exc()
+                error_msg = f"{type(e).__name__}: {str(e)}"
+
                 logger.exception(f"[{run_id[:16]}] full-extraction failed: {e}")
+
+                # Emit structured error log with traceback for frontend CLI panel
+                if log_callback:
+                    error_log = json.dumps({
+                        "event": "layer_error",
+                        "layer_name": "full_extraction",
+                        "error": error_msg,
+                        "metadata": {
+                            "error_type": type(e).__name__,
+                            "traceback": tb_str,
+                            "context": "FullExtractionService.execute",
+                            "run_id": run_id,
+                        }
+                    })
+                    log_callback(error_log)
+
+                # Also emit progress callback with error details
+                if progress_callback:
+                    try:
+                        # Include traceback in metadata if layer_callback supports it
+                        progress_callback(
+                            "full_extraction",
+                            "error",
+                            error_msg,
+                            {"traceback": tb_str, "error_type": type(e).__name__},
+                        )
+                    except TypeError:
+                        # Fallback if callback doesn't accept metadata
+                        progress_callback("full_extraction", "error", error_msg)
+
                 error_result = self.create_error_result(
                     run_id=run_id,
                     error=str(e),
