@@ -515,12 +515,23 @@ class CVGrader:
             strengths=["Well-grounded in source material"] if score >= 9 else [],
         )
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        before_sleep=before_sleep_log(logger, logging.WARNING),
-        reraise=True,
-    )
+    def _create_retry_callback(self):
+        """Create a retry callback that emits to struct_logger for frontend visibility."""
+        def before_retry(retry_state):
+            # Log to Python logger
+            logger.warning(
+                f"Grading retry attempt {retry_state.attempt_number} after error: "
+                f"{retry_state.outcome.exception() if retry_state.outcome else 'unknown'}"
+            )
+            # Emit to struct_logger for frontend visibility
+            self._emit_struct_log("retry_attempt", {
+                "message": f"⚠️ Grading retry attempt {retry_state.attempt_number}",
+                "attempt": retry_state.attempt_number,
+                "error": str(retry_state.outcome.exception()) if retry_state.outcome else "unknown",
+                "wait_seconds": retry_state.next_action.sleep if hasattr(retry_state.next_action, 'sleep') else 0,
+            })
+        return before_retry
+
     async def _grade_with_llm(
         self,
         cv_text: str,
@@ -530,8 +541,30 @@ class CVGrader:
         """
         Grade CV using LLM for nuanced evaluation.
 
-        Falls back to rule-based if LLM fails.
+        Uses tenacity retry with exponential backoff.
+        Falls back to rule-based if LLM fails after retries.
         """
+        # Create retry decorator with struct_logger callback
+        retry_decorator = retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            before_sleep=self._create_retry_callback(),
+            reraise=True,
+        )
+
+        @retry_decorator
+        async def _do_grade():
+            return await self._grade_with_llm_inner(cv_text, extracted_jd, master_cv_text)
+
+        return await _do_grade()
+
+    async def _grade_with_llm_inner(
+        self,
+        cv_text: str,
+        extracted_jd: Dict,
+        master_cv_text: str,
+    ) -> GradingResponse:
+        """Inner grading logic (wrapped by retry)."""
         system_prompt = """You are an expert CV grader. Grade this CV on 5 dimensions (1-10 each).
 
 DIMENSION 1: ATS OPTIMIZATION (weight: 20%)
@@ -592,20 +625,53 @@ Grade each dimension 1-10 with specific feedback."""
         )
 
         if not result.success:
-            raise ValueError(f"LLM grading failed: {result.error}")
+            error_msg = f"LLM grading failed: {result.error}"
+            self._emit_struct_log("grading_error", {
+                "message": f"❌ {error_msg}",
+                "error_type": "llm_failure",
+                "error": str(result.error),
+                "content_preview": result.content[:200] if result.content else None,
+            })
+            raise ValueError(error_msg)
 
         if not result.parsed_json:
-            raise ValueError("LLM response was not valid JSON")
+            # Log the raw content that couldn't be parsed
+            content_preview = result.content[:500] if result.content else "empty"
+            error_msg = "LLM response was not valid JSON"
+            self._emit_struct_log("grading_error", {
+                "message": f"❌ {error_msg}",
+                "error_type": "json_parse_failure",
+                "content_preview": content_preview,
+                "content_length": len(result.content) if result.content else 0,
+            })
+            raise ValueError(error_msg)
 
         # Parse into Pydantic model with error logging
         try:
-            return GradingResponse(**result.parsed_json)
+            grading_response = GradingResponse(**result.parsed_json)
+            # Log successful parse
+            self._emit_struct_log("grading_parsed", {
+                "message": "✅ Grading response parsed successfully",
+                "dimensions_parsed": list(result.parsed_json.keys()),
+            })
+            return grading_response
         except Exception as e:
-            # Log validation error details before retry
+            # Log validation error details to BOTH loggers for visibility
+            keys_in_response = list(result.parsed_json.keys()) if result.parsed_json else []
             self._logger.error(
                 f"Pydantic validation failed: {e}\n"
-                f"Keys in response: {list(result.parsed_json.keys()) if result.parsed_json else 'None'}"
+                f"Keys in response: {keys_in_response}"
             )
+            # Emit to struct_logger for frontend visibility
+            self._emit_struct_log("grading_error", {
+                "message": f"❌ Pydantic validation failed: {e}",
+                "error_type": "pydantic_validation",
+                "error": str(e),
+                "keys_in_response": keys_in_response,
+                "sample_values": {
+                    k: str(v)[:100] for k, v in list(result.parsed_json.items())[:3]
+                } if result.parsed_json else {},
+            })
             raise ValueError(f"Grading response validation failed: {e}")
 
     async def grade(
