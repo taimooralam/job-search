@@ -644,7 +644,12 @@ class CVGeneratorV2:
             self._emit_struct_log("phase_start", {"phase": 6, "phase_name": "grade_and_improve"})
             master_cv_text = self._get_master_cv_text()
             job_id = state.get("job_id")
-            grade_result = asyncio.run(grade_cv(cv_text, extracted_jd, master_cv_text, job_id=job_id, progress_callback=llm_callback))
+            grade_result = asyncio.run(grade_cv(
+                cv_text, extracted_jd, master_cv_text,
+                job_id=job_id,
+                progress_callback=llm_callback,
+                log_callback=self._log_callback,  # Phase 0 Extension: In-process logging
+            ))
             self._log_grade_result(grade_result)
             self._emit_log(
                 "grade_complete",
@@ -676,7 +681,12 @@ class CVGeneratorV2:
                 self._logger.info("  CV below threshold - applying single-pass improvement...")
                 self._emit_log("improve_start", "Improving CV...", phase=6)
                 self._emit_struct_log("subphase_start", {"phase": 6, "subphase": "improvement"})
-                improvement_result = asyncio.run(improve_cv(cv_text, grade_result, extracted_jd, job_id=job_id, progress_callback=llm_callback))
+                improvement_result = asyncio.run(improve_cv(
+                    cv_text, grade_result, extracted_jd,
+                    job_id=job_id,
+                    progress_callback=llm_callback,
+                    log_callback=self._log_callback,  # Phase 0 Extension: In-process logging
+                ))
                 if improvement_result.improved:
                     cv_text = improvement_result.cv_text
                     self._logger.info(f"  Improved {improvement_result.target_dimension}")
