@@ -397,11 +397,19 @@ class ClaudeCLI:
                 }
             )
 
-        # Log prompt stats
-        self._emit_log(job_id, "debug", message=f"Prompt length: {len(prompt)} chars")
+        # Log prompt stats with previews (goes through log_callback for CV generation flow)
+        # This is the PRIMARY path for showing prompt previews - struct_logger goes to stdout
+        # which isn't captured in the in-process CV generation flow.
+        self._emit_log(
+            job_id, "info",
+            message=f"Invoking Claude CLI...",
+            prompt_length=len(prompt),
+            system_prompt_preview=_preview_text(system_prompt or ""),
+            user_prompt_preview=_preview_text(user_prompt or ""),
+            session_id=session_id,
+        )
 
         try:
-            self._emit_log(job_id, "debug", message="Invoking Claude CLI...")
 
             # Run Claude CLI in headless mode
             # --dangerously-skip-permissions skips permission prompts
