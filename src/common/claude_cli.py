@@ -400,14 +400,22 @@ class ClaudeCLI:
         # Log prompt stats with previews (goes through log_callback for CV generation flow)
         # This is the PRIMARY path for showing prompt previews - struct_logger goes to stdout
         # which isn't captured in the in-process CV generation flow.
+        sys_preview = _preview_text(system_prompt or "", n=20)
+        user_preview = _preview_text(user_prompt or "", n=30)
         self._emit_log(
             job_id, "info",
-            message=f"Invoking Claude CLI...",
+            message=f"⏳ CLI invocation started ({len(prompt):,} chars) - may take 20-30s",
             prompt_length=len(prompt),
-            system_prompt_preview=_preview_text(system_prompt or ""),
-            user_prompt_preview=_preview_text(user_prompt or ""),
+            system_prompt_preview=sys_preview,
+            user_prompt_preview=user_preview,
             session_id=session_id,
         )
+        # Emit prompt details as separate log for visibility
+        if user_preview:
+            self._emit_log(
+                job_id, "debug",
+                message=f"  📝 Prompt: {user_preview}",
+            )
 
         try:
 
@@ -467,15 +475,22 @@ class ClaudeCLI:
             # (no JSON wrapper, no metadata - but reliable response)
             raw_output = result.stdout.strip()
 
-            # Log full raw output for debugging - this shows what Claude CLI actually returned
-            # Truncate to 2000 chars to avoid overwhelming logs but show enough context
-            raw_preview = raw_output[:2000] + "..." if len(raw_output) > 2000 else raw_output
+            # Log completion with output preview
+            result_preview = _preview_text(raw_output, n=40)
             self._emit_log(
                 job_id, "info",
-                message=f"CLI raw output ({len(raw_output)} chars): {raw_preview[:200]}",
-                raw_output=raw_preview,
-                stderr=result.stderr[:500] if result.stderr else None,
+                message=f"✅ CLI complete ({len(raw_output):,} chars, {duration_ms:,}ms)",
+                result_length=len(raw_output),
+                duration_ms=duration_ms,
+                result_preview=result_preview,
             )
+            # Log first part of response for debugging (separate line for readability)
+            if raw_output:
+                first_line = raw_output.split('\n')[0][:100]
+                self._emit_log(
+                    job_id, "debug",
+                    message=f"  📄 Response: {first_line}{'...' if len(first_line) >= 100 else ''}",
+                )
 
             # Emit structured log for Redis live-tail (complete)
             if struct_logger:
