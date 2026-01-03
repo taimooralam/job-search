@@ -119,12 +119,35 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                 log_obj["model"] = parsed["model"]
 
             # Include verbose context fields if present (for debugging)
+            # These can be at top level OR inside metadata - check both
+            metadata = parsed.get("metadata", {})
+
+            # prompt_length: check top level first, then metadata
             if parsed.get("prompt_length"):
                 log_obj["prompt_length"] = parsed["prompt_length"]
-            if parsed.get("prompt_preview"):
-                log_obj["prompt_preview"] = parsed["prompt_preview"]
+            elif metadata.get("prompt_length"):
+                log_obj["prompt_length"] = metadata["prompt_length"]
+
+            # Prompt previews are in metadata (Phase 0 logging)
+            if metadata.get("system_prompt_preview"):
+                log_obj["system_prompt_preview"] = metadata["system_prompt_preview"]
+            if metadata.get("user_prompt_preview"):
+                log_obj["user_prompt_preview"] = metadata["user_prompt_preview"]
+            if metadata.get("result_preview"):
+                log_obj["result_preview"] = metadata["result_preview"]
+            if metadata.get("result_length"):
+                log_obj["result_length"] = metadata["result_length"]
+
+            # Session ID for correlating start/complete pairs
+            if metadata.get("session_id"):
+                log_obj["session_id"] = metadata["session_id"]
+
             if parsed.get("max_turns"):
                 log_obj["max_turns"] = parsed["max_turns"]
+
+            # Pass through full metadata for frontend collapsible display
+            if metadata:
+                log_obj["metadata"] = metadata
 
             # Extract error fields (critical for CLI error visibility in browser)
             # These were previously dropped by whitelist-based extraction
