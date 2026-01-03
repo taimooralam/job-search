@@ -1007,6 +1007,50 @@ body {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* Copy button for collapsible sections */
+.cli-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.5rem;
+    background: rgba(59, 130, 246, 0.15); /* blue-500 with opacity */
+    border: 1px solid #3b82f6; /* blue-500 */
+    border-radius: 4px;
+    color: #93c5fd; /* blue-300 */
+    font-size: 0.625rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cli-copy-btn:hover {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: #60a5fa; /* blue-400 */
+    color: #bfdbfe; /* blue-200 */
+}
+
+.cli-copy-btn svg {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+/* Stack trace copy button variant */
+.cli-copy-btn--traceback {
+    background: rgba(239, 68, 68, 0.15); /* red-500 with opacity */
+    border-color: #ef4444; /* red-500 */
+    color: #fca5a5; /* red-300 */
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+}
+
+.cli-copy-btn--traceback:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #f87171; /* red-400 */
+    color: #fecaca; /* red-200 */
+}
+
 /* Special styling for prompt previews */
 .cli-meta-row .cli-meta-key:has(+ .cli-meta-value:contains("prompt")) {
     color: #a78bfa; /* purple-400 */
@@ -1055,6 +1099,7 @@ body {
 }
 
 .cli-traceback-content {
+    position: relative; /* For absolute positioning of copy button */
     margin-top: 0.5rem;
     border: 1px solid #7f1d1d; /* red-900 */
     border-radius: 4px;
@@ -1066,6 +1111,7 @@ body {
 .cli-traceback-pre {
     margin: 0;
     padding: 0.75rem;
+    padding-top: 2rem; /* Extra space for the copy button */
     font-family: 'SF Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
     font-size: 0.625rem;
     line-height: 1.5;
