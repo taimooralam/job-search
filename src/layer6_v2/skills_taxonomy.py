@@ -158,6 +158,21 @@ class SkillsTaxonomy:
         """Return list of available role categories."""
         return list(self._taxonomy_data.get("target_roles", {}).keys())
 
+    def _coerce_to_list(self, value) -> List[str]:
+        """Coerce a value to a list of strings.
+
+        Handles inconsistent YAML/JSON data where a value might be
+        a string instead of a list.
+        """
+        if isinstance(value, str):
+            return [value]
+        elif isinstance(value, list):
+            return value
+        elif value is None:
+            return []
+        else:
+            return list(value)
+
     def skill_matches(self, skill: str, target: str) -> bool:
         """
         Check if a skill matches a target (considering aliases).
@@ -178,6 +193,7 @@ class SkillsTaxonomy:
 
         # Check if skill is an alias of target
         for alias_key, aliases in self._skill_aliases.items():
+            aliases = self._coerce_to_list(aliases)
             aliases_lower = [a.lower() for a in aliases]
             if target_lower == alias_key.lower() or target_lower in aliases_lower:
                 if skill_lower == alias_key.lower() or skill_lower in aliases_lower:
@@ -199,6 +215,7 @@ class SkillsTaxonomy:
         result = [skill]
 
         for alias_key, aliases in self._skill_aliases.items():
+            aliases = self._coerce_to_list(aliases)
             aliases_lower = [a.lower() for a in aliases]
             if skill_lower == alias_key.lower() or skill_lower in aliases_lower:
                 result.extend([alias_key] + aliases)
