@@ -570,29 +570,163 @@ class TestCVGenerationEvents:
         assert "Grading complete" in result["message"]
 
     def test_cv_struct_llm_call_start(self):
-        """CV struct LLM call start events are formatted."""
+        """CV struct LLM call start events show target dimension and tactics."""
         log = json.dumps({
             "event": "cv_struct_llm_call_start",
-            "step_name": "cv_grader",
-            "backend": "claude_cli"
+            "metadata": {
+                "target_dimension": "impact_clarity",
+                "strategy_focus": "Metrics and action verbs",
+                "tactics_applied": ["Add quantified metrics", "Replace weak verbs"],
+                "user_prompt_length": 5000,
+                "issues_to_fix": ["weak verbs", "missing metrics"],
+            }
         })
 
         result = _parse_log_entry(log, 0)
 
         assert "🔄" in result["message"]
-        assert "cv_grader" in result["message"]
-        assert "claude_cli" in result["message"]
+        assert "impact_clarity" in result["message"]
+        assert "Metrics and action verbs" in result["message"]
+        assert "2 tactics" in result["message"]
+        assert result.get("tactics") == ["Add quantified metrics", "Replace weak verbs"]
 
     def test_cv_struct_llm_call_complete(self):
-        """CV struct LLM call complete events show duration."""
+        """CV struct LLM call complete events show changes made."""
         log = json.dumps({
             "event": "cv_struct_llm_call_complete",
-            "step_name": "cv_grader",
-            "backend": "claude_cli",
-            "duration_ms": 2500
+            "metadata": {
+                "target_dimension": "impact_clarity",
+                "changes_made_count": 5,
+                "improvement_summary": "Enhanced 5 bullets with stronger metrics",
+                "changes_made": ["Added 40% metric to bullet 1", "Replaced 'helped' with 'drove'"],
+                "cv_length_delta": 50,
+            }
         })
 
         result = _parse_log_entry(log, 0)
 
-        assert "✓" in result["message"]
-        assert "2500ms" in result["message"]
+        assert "✅" in result["message"]
+        assert "impact_clarity" in result["message"]
+        assert "5 changes" in result["message"]
+        assert "Enhanced 5 bullets" in result["message"]
+        assert result.get("changes_made") == ["Added 40% metric to bullet 1", "Replaced 'helped' with 'drove'"]
+
+    def test_cv_struct_improvement_start(self):
+        """CV improvement start shows dimensions being analyzed."""
+        log = json.dumps({
+            "event": "cv_struct_improvement_start",
+            "metadata": {
+                "composite_score": 7.2,
+                "all_dimensions": {
+                    "ats_optimization": {"score": 8.0, "issues_count": 1},
+                    "impact_clarity": {"score": 6.5, "issues_count": 3},
+                },
+                "all_strategies_available": {
+                    "ats_optimization": {"focus": "Keywords", "tactics_count": 4},
+                },
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "🔧" in result["message"]
+        assert "2 dimensions" in result["message"]
+        assert "7.2" in result["message"]
+        assert result.get("all_dimensions") is not None
+
+    def test_cv_struct_improvement_skipped(self):
+        """CV improvement skipped when score passes threshold."""
+        log = json.dumps({
+            "event": "cv_struct_improvement_skipped",
+            "metadata": {
+                "composite_score": 8.7,
+                "reason": "passed_threshold",
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "8.7" in result["message"]
+        assert "no improvement needed" in result["message"]
+
+    def test_cv_struct_decision_point_dimension_targeting(self):
+        """Dimension targeting decision shows ranking and strategy."""
+        log = json.dumps({
+            "event": "cv_struct_decision_point",
+            "metadata": {
+                "decision": "dimension_targeting",
+                "target_dimension": "impact_clarity",
+                "target_score": 6.5,
+                "dimension_ranking": [
+                    {"dimension": "impact_clarity", "score": 6.5, "issues_count": 3},
+                    {"dimension": "ats_optimization", "score": 8.0, "issues_count": 1},
+                ],
+                "strategy_to_apply": {"focus": "Metrics and action verbs"},
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "🎯" in result["message"]
+        assert "impact_clarity" in result["message"]
+        assert "6.5" in result["message"]
+        assert "2 dimensions" in result["message"]
+        assert result.get("dimension_ranking") is not None
+
+    def test_cv_struct_improvement_complete(self):
+        """Improvement complete shows changes and retries."""
+        log = json.dumps({
+            "event": "cv_struct_improvement_complete",
+            "metadata": {
+                "target_dimension": "impact_clarity",
+                "changes_made_count": 4,
+                "improvement_summary": "Added metrics to 4 bullets",
+                "changes_made": ["Change 1", "Change 2"],
+                "retries_used": 1,
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "impact_clarity" in result["message"]
+        assert "4 changes" in result["message"]
+        assert "1 retries" in result["message"]
+        assert result.get("changes_made") == ["Change 1", "Change 2"]
+
+    def test_cv_struct_improvement_failed(self):
+        """Improvement failure shows error and retries."""
+        log = json.dumps({
+            "event": "cv_struct_improvement_failed",
+            "metadata": {
+                "target_dimension": "ats_optimization",
+                "error": "LLM timeout after 30s",
+                "retries_used": 3,
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "❌" in result["message"]
+        assert "ats_optimization" in result["message"]
+        assert "3 retries" in result["message"]
+        assert "LLM timeout" in result["message"]
+        assert result.get("level") == "error"
+
+    def test_cv_struct_retry_attempt(self):
+        """Retry attempt shows attempt number and exception."""
+        log = json.dumps({
+            "event": "cv_struct_retry_attempt",
+            "metadata": {
+                "attempt_number": 2,
+                "exception": "Connection reset by peer",
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "⚠️" in result["message"]
+        assert "2" in result["message"]
+        assert "Connection reset" in result["message"]
+        assert result.get("level") == "warning"

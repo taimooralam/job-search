@@ -203,18 +203,94 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                 icon = "✅" if passed else "⚠️"
                 log_obj["message"] = f"  {icon} Grading complete: {score}/10"
 
-            # LLM call events with cv_struct_ prefix (from grader)
-            elif parsed.get("event") in ("cv_struct_llm_call_start", "cv_struct_llm_call_complete"):
-                step = parsed.get("step_name", "llm_call")
-                status = parsed.get("status", "")
-                backend = parsed.get("backend", "")
-                duration = parsed.get("duration_ms")
-                duration_str = f" ({duration}ms)" if duration else ""
-                backend_str = f" [{backend}]" if backend else ""
-                if "start" in parsed.get("event", ""):
-                    log_obj["message"] = f"  🔄 {step}: calling{backend_str}"
+            # === CVImprover Events (Phase 0 Extension) ===
+
+            # Improvement Start - shows all dimensions being analyzed
+            elif parsed.get("event") == "cv_struct_improvement_start":
+                num_dims = len(metadata.get("all_dimensions", {}))
+                score = metadata.get("composite_score", "?")
+                log_obj["message"] = f"🔧 Starting improvement - analyzing {num_dims} dimensions (score: {score}/10)"
+                log_obj["all_dimensions"] = metadata.get("all_dimensions", {})
+                log_obj["all_strategies"] = metadata.get("all_strategies_available", {})
+
+            # Improvement Skipped - CV already passed
+            elif parsed.get("event") == "cv_struct_improvement_skipped":
+                score = metadata.get("composite_score", "?")
+                log_obj["message"] = f"✅ CV passed ({score}/10) - no improvement needed"
+                log_obj["level"] = "info"
+
+            # Dimension Targeting Decision - shows which dimension was selected and why
+            elif parsed.get("event") == "cv_struct_decision_point":
+                decision = metadata.get("decision", "")
+                if decision == "dimension_targeting":
+                    target = metadata.get("target_dimension", "?")
+                    target_score = metadata.get("target_score", "?")
+                    ranking = metadata.get("dimension_ranking", [])
+                    log_obj["message"] = f"🎯 Targeting: {target} ({target_score}/10) - lowest of {len(ranking)} dimensions"
+                    log_obj["dimension_ranking"] = ranking
+                    log_obj["strategy_to_apply"] = metadata.get("strategy_to_apply", {})
                 else:
-                    log_obj["message"] = f"  ✓ {step}: complete{backend_str}{duration_str}"
+                    log_obj["message"] = f"📝 Decision: {decision}"
+
+            # LLM Call Start - shows full prompt details
+            elif parsed.get("event") == "cv_struct_llm_call_start":
+                target = metadata.get("target_dimension", "improvement")
+                focus = metadata.get("strategy_focus", "")
+                tactics = metadata.get("tactics_applied", [])
+                prompt_len = metadata.get("user_prompt_length", 0)
+                log_obj["message"] = f"🔄 Calling LLM for {target} (focus: {focus}, {len(tactics)} tactics)"
+                log_obj["system_prompt_preview"] = metadata.get("system_prompt_preview", "")
+                log_obj["user_prompt_preview"] = metadata.get("user_prompt_preview", "")
+                log_obj["prompt_length"] = prompt_len
+                log_obj["tactics"] = tactics
+                log_obj["issues_to_fix"] = metadata.get("issues_to_fix", [])
+
+            # LLM Call Complete - shows full result details
+            elif parsed.get("event") == "cv_struct_llm_call_complete":
+                target = metadata.get("target_dimension", "improvement")
+                changes_count = metadata.get("changes_made_count", 0)
+                summary = metadata.get("improvement_summary", "")[:80]
+                log_obj["message"] = f"✅ {target} complete: {changes_count} changes - {summary}"
+                log_obj["changes_made"] = metadata.get("changes_made", [])
+                log_obj["improved_cv_preview"] = metadata.get("improved_cv_preview", "")
+                log_obj["cv_length_delta"] = metadata.get("cv_length_delta", 0)
+
+            # LLM Call Error
+            elif parsed.get("event") == "cv_struct_llm_call_error":
+                error = metadata.get("error", "unknown")[:80]
+                log_obj["message"] = f"❌ LLM error: {error}"
+                log_obj["level"] = "error"
+
+            # Improvement Complete - final result
+            elif parsed.get("event") == "cv_struct_improvement_complete":
+                target = metadata.get("target_dimension", "?")
+                changes_count = metadata.get("changes_made_count", 0)
+                summary = metadata.get("improvement_summary", "")[:60]
+                retries = metadata.get("retries_used", 0)
+                retry_str = f" ({retries} retries)" if retries > 0 else ""
+                log_obj["message"] = f"✅ Improved {target}: {changes_count} changes{retry_str} - {summary}"
+                log_obj["changes_made"] = metadata.get("changes_made", [])
+
+            # Improvement Failed
+            elif parsed.get("event") == "cv_struct_improvement_failed":
+                target = metadata.get("target_dimension", "?")
+                error = metadata.get("error", "")[:60]
+                retries = metadata.get("retries_used", 0)
+                log_obj["message"] = f"❌ Improvement failed for {target} ({retries} retries): {error}"
+                log_obj["level"] = "error"
+
+            # Retry Attempt (generic and improver-specific)
+            elif parsed.get("event") == "cv_struct_retry_attempt":
+                attempt = metadata.get("attempt_number", "?")
+                exc = metadata.get("exception", "")[:50]
+                log_obj["message"] = f"⚠️ Retry attempt {attempt}: {exc}"
+                log_obj["level"] = "warning"
+
+            # Catch-all for other cv_struct_ events not handled above
+            elif parsed.get("event", "").startswith("cv_struct_"):
+                event_name = parsed.get("event", "").replace("cv_struct_", "")
+                msg = metadata.get("message", event_name)
+                log_obj["message"] = f"📋 {msg}"
 
             else:
                 # Fallback: use event type or raw log
