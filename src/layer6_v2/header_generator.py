@@ -33,6 +33,7 @@ from src.common.logger import get_logger
 from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.common.persona_builder import get_persona_guidance
+from src.common.utils import coerce_to_list
 from src.layer6_v2.skills_taxonomy import (
     SkillsTaxonomy,
     TaxonomyBasedSkillsGenerator,
@@ -1370,19 +1371,9 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
         # Fallback: Static categories (if taxonomy not available)
         self._logger.warning("Taxonomy not available, using static categories fallback")
 
-        # Extract JD keywords for skill matching (with type coercion for LLM output)
-        jd_keywords = extracted_jd.get("top_keywords", [])
-        if isinstance(jd_keywords, str):
-            jd_keywords = [k.strip() for k in jd_keywords.split(",") if k.strip()]
-        elif not isinstance(jd_keywords, list):
-            jd_keywords = []
-
-        jd_technical = extracted_jd.get("technical_skills", [])
-        if isinstance(jd_technical, str):
-            jd_technical = [t.strip() for t in jd_technical.split(",") if t.strip()]
-        elif not isinstance(jd_technical, list):
-            jd_technical = []
-
+        # Extract JD keywords for skill matching (use coerce_to_list for LLM output)
+        jd_keywords = coerce_to_list(extracted_jd.get("top_keywords"))
+        jd_technical = coerce_to_list(extracted_jd.get("technical_skills"))
         all_jd_keywords = list(set(jd_keywords + jd_technical))
 
         # Extract skills with evidence using static categories

@@ -29,6 +29,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.common.logger import get_logger
 from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
+from src.common.utils import coerce_to_list
 from src.layer6_v2.types import (
     DimensionScore,
     GradeResult,
@@ -353,19 +354,9 @@ class CVGrader:
         - Role category match (3 points)
         - JD terminology usage (3 points)
         """
-        # Pain point coverage (with type coercion for LLM output)
-        pain_points = extracted_jd.get("implied_pain_points", [])
-        if isinstance(pain_points, str):
-            pain_points = [p.strip() for p in pain_points.split(",") if p.strip()]
-        elif not isinstance(pain_points, list):
-            pain_points = []
-
-        responsibilities = extracted_jd.get("responsibilities", [])
-        if isinstance(responsibilities, str):
-            responsibilities = [r.strip() for r in responsibilities.split(",") if r.strip()]
-        elif not isinstance(responsibilities, list):
-            responsibilities = []
-
+        # Pain point coverage (use coerce_to_list for LLM output)
+        pain_points = coerce_to_list(extracted_jd.get("implied_pain_points"))
+        responsibilities = coerce_to_list(extracted_jd.get("responsibilities"))
         all_pain_areas = pain_points + responsibilities
 
         cv_lower = cv_text.lower()
@@ -388,19 +379,9 @@ class CVGrader:
         category_match = sum(1 for kw in category_kws if kw in cv_lower)
         role_score = min(3, (category_match / max(1, len(category_kws))) * 3)
 
-        # JD terminology (with type coercion for LLM output)
-        technical_skills = extracted_jd.get("technical_skills", [])
-        if isinstance(technical_skills, str):
-            technical_skills = [s.strip() for s in technical_skills.split(",") if s.strip()]
-        elif not isinstance(technical_skills, list):
-            technical_skills = []
-
-        soft_skills = extracted_jd.get("soft_skills", [])
-        if isinstance(soft_skills, str):
-            soft_skills = [s.strip() for s in soft_skills.split(",") if s.strip()]
-        elif not isinstance(soft_skills, list):
-            soft_skills = []
-
+        # JD terminology (use coerce_to_list for LLM output)
+        technical_skills = coerce_to_list(extracted_jd.get("technical_skills"))
+        soft_skills = coerce_to_list(extracted_jd.get("soft_skills"))
         all_skills = technical_skills + soft_skills
         skills_found = sum(1 for s in all_skills if s.lower() in cv_lower)
         terminology_score = min(3, (skills_found / max(1, len(all_skills))) * 3)

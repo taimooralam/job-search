@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from src.common.logger import get_logger
+from src.common.utils import coerce_to_list, coerce_to_dict, safe_get_nested
 
 # Import enhanced format support
 from src.layer6_v2.variant_parser import (
@@ -297,17 +298,22 @@ class CVLoader:
             self._logger.warning("MongoDB metadata missing 'candidate' field")
             return None
 
+        # Use defensive type coercion for nested dict access from MongoDB
+        # This handles cases where contact/education may be None or wrong type
+        contact = coerce_to_dict(candidate_meta.get("contact"))
+        education = coerce_to_dict(candidate_meta.get("education"))
+
         candidate = CandidateData(
             name=candidate_meta.get("name", ""),
             title_base=candidate_meta.get("title_base", ""),
-            email=candidate_meta.get("contact", {}).get("email", ""),
-            phone=candidate_meta.get("contact", {}).get("phone", ""),
-            linkedin=candidate_meta.get("contact", {}).get("linkedin", ""),
-            location=candidate_meta.get("contact", {}).get("location", ""),
-            languages=candidate_meta.get("languages", []),
-            education_masters=candidate_meta.get("education", {}).get("masters", ""),
-            education_bachelors=candidate_meta.get("education", {}).get("bachelors", ""),
-            certifications=candidate_meta.get("certifications", []),
+            email=contact.get("email", ""),
+            phone=contact.get("phone", ""),
+            linkedin=contact.get("linkedin", ""),
+            location=contact.get("location", ""),
+            languages=coerce_to_list(candidate_meta.get("languages")),
+            education_masters=education.get("masters", ""),
+            education_bachelors=education.get("bachelors", ""),
+            certifications=coerce_to_list(candidate_meta.get("certifications")),
             years_experience=candidate_meta.get("years_experience", 0),
             roles=[],
         )
@@ -430,19 +436,23 @@ class CVLoader:
             metadata = json.load(f)
 
         # Build candidate data (static fields only - profile/skills generated later)
+        # Use defensive type coercion for nested dict access from file
         candidate_meta = metadata["candidate"]
+        contact = coerce_to_dict(candidate_meta.get("contact"))
+        education = coerce_to_dict(candidate_meta.get("education"))
+
         self._candidate = CandidateData(
-            name=candidate_meta["name"],
-            title_base=candidate_meta["title_base"],
-            email=candidate_meta["contact"]["email"],
-            phone=candidate_meta["contact"]["phone"],
-            linkedin=candidate_meta["contact"]["linkedin"],
-            location=candidate_meta["contact"]["location"],
-            languages=candidate_meta["languages"],
-            education_masters=candidate_meta["education"]["masters"],
-            education_bachelors=candidate_meta["education"]["bachelors"],
-            certifications=candidate_meta["certifications"],
-            years_experience=candidate_meta["years_experience"],
+            name=candidate_meta.get("name", ""),
+            title_base=candidate_meta.get("title_base", ""),
+            email=contact.get("email", ""),
+            phone=contact.get("phone", ""),
+            linkedin=contact.get("linkedin", ""),
+            location=contact.get("location", ""),
+            languages=coerce_to_list(candidate_meta.get("languages")),
+            education_masters=education.get("masters", ""),
+            education_bachelors=education.get("bachelors", ""),
+            certifications=coerce_to_list(candidate_meta.get("certifications")),
+            years_experience=candidate_meta.get("years_experience", 0),
             roles=[],
         )
 

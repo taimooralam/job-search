@@ -22,6 +22,7 @@ from src.common.config import Config
 from src.common.unified_llm import UnifiedLLM
 from src.common.state import ExtractedJD
 from src.common.logger import get_logger
+from src.common.utils import coerce_to_list
 
 if TYPE_CHECKING:
     from src.common.structured_logger import StructuredLogger
@@ -522,12 +523,13 @@ class RoleGenerator:
         })
 
         # Build JD context for variant selection
+        # Coerce all list fields to handle LLM returning strings instead of lists
         jd_context = {
             "role_category": extracted_jd.get("role_category", "default"),
-            "top_keywords": extracted_jd.get("top_keywords", []),
-            "technical_skills": extracted_jd.get("technical_skills", []),
-            "soft_skills": extracted_jd.get("soft_skills", []),
-            "implied_pain_points": extracted_jd.get("implied_pain_points", []),
+            "top_keywords": coerce_to_list(extracted_jd.get("top_keywords")),
+            "technical_skills": coerce_to_list(extracted_jd.get("technical_skills")),
+            "soft_skills": coerce_to_list(extracted_jd.get("soft_skills")),
+            "implied_pain_points": coerce_to_list(extracted_jd.get("implied_pain_points")),
         }
 
         # Determine target count

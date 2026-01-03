@@ -22,6 +22,7 @@ from typing import Dict, Any, List, Optional, Callable, Tuple
 
 from src.common.logger import get_logger
 from src.common.unified_llm import UnifiedLLM
+from src.common.utils import coerce_to_list
 from src.layer6_v2.types import TailoringResult
 
 
@@ -305,6 +306,8 @@ class CVTailorer:
 
         # Extract from annotations
         annotations = jd_annotations.get("annotations", [])
+        if not isinstance(annotations, list):
+            annotations = []
         for ann in annotations:
             if not ann.get("is_active", True):
                 continue
@@ -312,7 +315,8 @@ class CVTailorer:
             # Get keyword from matching_skill or suggested_keywords
             keyword = ann.get("matching_skill")
             if not keyword:
-                suggested = ann.get("suggested_keywords", [])
+                # Coerce suggested_keywords in case LLM returns a string instead of list
+                suggested = coerce_to_list(ann.get("suggested_keywords"))
                 keyword = suggested[0] if suggested else None
 
             if not keyword:
@@ -332,7 +336,8 @@ class CVTailorer:
             })
 
         # Also include top JD keywords if not already covered
-        jd_keywords = extracted_jd.get("top_keywords", [])[:5]
+        # Coerce in case LLM returns comma-separated string instead of list
+        jd_keywords = coerce_to_list(extracted_jd.get("top_keywords"))[:5]
         existing_keywords = {kw["keyword"].lower() for kw in priority_keywords}
 
         for jd_kw in jd_keywords:

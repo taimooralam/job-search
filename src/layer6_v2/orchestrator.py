@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 from src.common.state import JobState
 from src.common.logger import get_logger
 from src.common.structured_logger import get_structured_logger, LayerContext
-from src.common.utils import sanitize_path_component
+from src.common.utils import sanitize_path_component, coerce_to_list
 from src.common.markdown_sanitizer import sanitize_markdown, sanitize_bullet_text
 
 # GAP-014: Middle East countries for relocation tagline
@@ -388,10 +388,12 @@ class CVGeneratorV2:
             self._logger.info("Phase 3: Running hallucination QA...")
             self._emit_log("phase_start", "Running quality assurance...", phase=3)
             self._emit_struct_log("phase_start", {"phase": 3, "phase_name": "hallucination_qa"})
+            # Coerce top_keywords to list (LLM may return comma-separated string)
+            jd_top_keywords = coerce_to_list(extracted_jd.get("top_keywords"))
             qa_results, ats_results = run_qa_on_all_roles(
                 role_bullets_list,
                 roles,  # Pass full RoleData objects
-                extracted_jd.get("top_keywords", []),
+                jd_top_keywords,
             )
             self._log_qa_summary(qa_results, role_bullets_list)
             qa_passed = sum(1 for qa in qa_results if qa.passed)
@@ -425,18 +427,18 @@ class CVGeneratorV2:
                 "phase": 4,
                 "phase_name": "stitch_roles",
                 "word_budget": self.word_budget,
-                "target_keywords_count": len(extracted_jd.get("top_keywords", [])),
+                "target_keywords_count": len(jd_top_keywords),  # Already coerced in Phase 3
             })
             # Use self.stitcher (has logging params) instead of stitch_all_roles convenience function
             # Set skill_whitelist at runtime (it's loaded in Phase 1)
             self.stitcher._skill_whitelist = skill_whitelist
             if skill_whitelist:
-                hard_skills = skill_whitelist.get("hard_skills", [])
-                soft_skills = skill_whitelist.get("soft_skills", [])
+                hard_skills = coerce_to_list(skill_whitelist.get("hard_skills"))
+                soft_skills = coerce_to_list(skill_whitelist.get("soft_skills"))
                 self.stitcher._whitelist_set = {s.lower() for s in hard_skills + soft_skills}
             stitched_cv = self.stitcher.stitch(
                 role_bullets_list,
-                target_keywords=extracted_jd.get("top_keywords", []),
+                target_keywords=jd_top_keywords,  # Already coerced in Phase 3
             )
             self._logger.info(f"  Stitched CV: {stitched_cv.total_word_count} words, {stitched_cv.total_bullet_count} bullets")
             self._emit_log(
@@ -1721,7 +1723,8 @@ class CVGeneratorV2:
 
                 # Get keyword from annotation
                 # Note: Must handle empty suggested_keywords list - .get() returns [] if key exists
-                suggested = ann.get("suggested_keywords") or []
+                # Coerce to list in case LLM returned a string instead of list
+                suggested = coerce_to_list(ann.get("suggested_keywords"))
                 keyword = ann.get("matching_skill") or (suggested[0] if suggested else "")
                 if not keyword:
                     # Fall back to target text
@@ -1732,17 +1735,19 @@ class CVGeneratorV2:
                     continue
 
                 # Set requirements based on requirement_type
-                # Note: use `or []` to handle both missing key AND None/empty values
+                # Coerce variants to list (LLM may return string)
                 req_type = ann.get("requirement_type", "neutral")
-                variants = ann.get("suggested_keywords") or []
+                variants = coerce_to_list(ann.get("suggested_keywords"))
                 if req_type == "must_have":
                     ats_requirements[keyword] = {"min": 2, "max": 5, "variants": variants}
                 elif req_type == "nice_to_have":
                     ats_requirements[keyword] = {"min": 1, "max": 4, "variants": variants}
 
         # Also include top_keywords from extracted_jd (if not already covered)
+        # Coerce to list in case LLM returned string like "python, java, kubernetes"
         if extracted_jd:
-            for keyword in extracted_jd.get("top_keywords", [])[:10]:
+            top_keywords = coerce_to_list(extracted_jd.get("top_keywords"))
+            for keyword in top_keywords[:10]:
                 if keyword and keyword not in ats_requirements:
                     ats_requirements[keyword] = {"min": 1, "max": 5, "variants": []}
 
