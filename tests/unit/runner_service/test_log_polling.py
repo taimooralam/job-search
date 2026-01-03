@@ -298,3 +298,64 @@ class TestParseLogEntry:
         # Also verify other context fields still work
         assert result["prompt_length"] == 5000
         assert result["max_turns"] == 3
+
+    def test_embedded_json_with_traceback(self):
+        """
+        Embedded JSON format '❌ layer_key: {json}' is parsed correctly.
+
+        This format is used by create_layer_callback for structured error logs
+        with traceback metadata for CLI panel display.
+        """
+        # Note: In real usage, json.dumps properly escapes newlines as \\n
+        traceback_text = "Traceback (most recent call last):\\n  File test.py, line 10"
+        embedded_json = json.dumps({
+            "timestamp": "2025-01-01T00:00:00",
+            "event": "cv_struct_error",
+            "message": "CV generation failed: TypeError",
+            "job_id": "abc123",
+            "layer": 6,
+            "layer_name": "cv_generator_v2",
+            "metadata": {
+                "traceback": traceback_text,
+                "error_type": "TypeError",
+                "error_message": "can only concatenate list",
+            }
+        })
+        log = f"❌ cv_struct_error: {embedded_json}"
+
+        result = _parse_log_entry(log, 0)
+
+        # Verify it's recognized as structured_embedded (not plain text)
+        assert result["source"] == "structured_embedded"
+        assert result["message"] == "CV generation failed: TypeError"
+        assert result["event"] == "cv_struct_error"
+        assert result["layer"] == 6
+        assert result["layer_name"] == "cv_generator_v2"
+
+        # Critical: Verify traceback is extracted for CLI panel
+        assert result["metadata"]["traceback"] == traceback_text
+        assert result["traceback"] == traceback_text
+        assert result["error_type"] == "TypeError"
+
+    def test_embedded_json_with_invalid_json_falls_through(self):
+        """
+        If embedded JSON looks valid but isn't, fall through to plain text.
+        """
+        log = "❌ cv_struct_error: {this is not valid json}"
+
+        result = _parse_log_entry(log, 0)
+
+        # Should fall through to plain text parsing
+        assert result["source"] == "python"
+        assert "cv_struct_error" in result["message"]
+
+    def test_regular_colon_in_text_not_parsed_as_json(self):
+        """
+        Regular text with colons but no JSON should not be parsed as JSON.
+        """
+        log = "Processing: this is a message with colon"
+
+        result = _parse_log_entry(log, 0)
+
+        assert result["source"] == "python"
+        assert result["message"] == "Processing: this is a message with colon"

@@ -137,6 +137,49 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             log_obj["message"] = log_stripped
 
     else:
+        # Check for "emoji layer_key: {json}" pattern (e.g., "❌ cv_struct_error: {...}")
+        # This format is used by create_layer_callback for structured error logs with traceback
+        colon_brace_idx = log_stripped.find(": {")
+        if colon_brace_idx != -1:
+            json_portion = log_stripped[colon_brace_idx + 2:]  # Skip ": "
+            if json_portion.endswith("}"):
+                try:
+                    parsed_json = json.loads(json_portion)
+                    # Successfully parsed embedded JSON - treat as structured log
+                    log_obj["source"] = "structured_embedded"
+
+                    # Extract prefix (e.g., "❌ cv_struct_error")
+                    prefix = log_stripped[:colon_brace_idx].strip()
+                    log_obj["prefix"] = prefix
+
+                    # Use message from JSON or the prefix
+                    log_obj["message"] = parsed_json.get("message", prefix)
+
+                    # Extract event for frontend display
+                    if parsed_json.get("event"):
+                        log_obj["event"] = parsed_json["event"]
+
+                    # Critical: Extract metadata including traceback for CLI panel display
+                    if parsed_json.get("metadata"):
+                        log_obj["metadata"] = parsed_json["metadata"]
+                        # Also extract traceback at top level for easy access
+                        if parsed_json["metadata"].get("traceback"):
+                            log_obj["traceback"] = parsed_json["metadata"]["traceback"]
+                        if parsed_json["metadata"].get("error_type"):
+                            log_obj["error_type"] = parsed_json["metadata"]["error_type"]
+
+                    # Extract other useful fields
+                    if parsed_json.get("layer"):
+                        log_obj["layer"] = parsed_json["layer"]
+                    if parsed_json.get("layer_name"):
+                        log_obj["layer_name"] = parsed_json["layer_name"]
+                    if parsed_json.get("job_id"):
+                        log_obj["job_id"] = parsed_json["job_id"]
+
+                    return log_obj
+                except json.JSONDecodeError:
+                    pass  # Not valid JSON, fall through to plain text parsing
+
         # Plain text log - try to parse Python logger format
         log_obj["source"] = "python"
 

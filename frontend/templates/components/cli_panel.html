@@ -255,7 +255,9 @@
                         <div class="cli-log-line"
                              x-data="{
                                  detectedBackend: log.backend || $store.cli.detectBackendFromText(log.text),
-                                 parsed: window.cliParseStructuredLog(log.text),
+                                 parsed: log.isStructuredFromBackend
+                                     ? { isStructured: true, message: log.text, event: log.event, metadata: log.metadata || {}, hasMetadata: log.metadata && Object.keys(log.metadata).length > 0, prefix: log.prefix }
+                                     : window.cliParseStructuredLog(log.text),
                                  metaOpen: false
                              }"
                              :class="{

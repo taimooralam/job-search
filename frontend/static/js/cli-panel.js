@@ -798,15 +798,26 @@ document.addEventListener('alpine:init', () => {
                     // Extract cost if present
                     const cost_usd = log.cost_usd || 0;
 
-                    // Use spread for Alpine.js reactivity
-                    this.runs[runId].logs = [...this.runs[runId].logs, {
+                    // Build log entry with structured data from backend (if available)
+                    const logEntry = {
                         ts: Date.now(),
                         type: logType,
                         text,
                         backend,
                         tier,
                         cost_usd
-                    }];
+                    };
+
+                    // Include structured data from backend for CLI panel display
+                    // This enables traceback display without re-parsing JSON in frontend
+                    if (log.metadata) logEntry.metadata = log.metadata;
+                    if (log.traceback) logEntry.traceback = log.traceback;
+                    if (log.event) logEntry.event = log.event;
+                    if (log.prefix) logEntry.prefix = log.prefix;
+                    if (log.source === 'structured_embedded') logEntry.isStructuredFromBackend = true;
+
+                    // Use spread for Alpine.js reactivity
+                    this.runs[runId].logs = [...this.runs[runId].logs, logEntry];
 
                     // Dispatch to execution store for unified tracking
                     if (typeof window.dispatchEvent === 'function') {

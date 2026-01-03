@@ -283,6 +283,7 @@ def create_layer_callback(run_id: str) -> Callable[[str, str, Optional[str]], No
             "processing": "🔄",
             "success": "✅",
             "failed": "❌",
+            "error": "❌",  # For structured error events from orchestrator
             "skipped": "⏭️",
         }.get(status, "•")
         log_msg = f"{status_emoji} {layer_key}: {message or status}"

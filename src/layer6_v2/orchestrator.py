@@ -230,8 +230,9 @@ class CVGeneratorV2:
                     "metadata": metadata,  # Include full metadata for debugging
                 }
                 self._log_callback(json.dumps(data))
-            except Exception:
-                pass  # Fire-and-forget
+            except Exception as e:
+                # Fire-and-forget, but log warning for debugging
+                self._logger.warning(f"Failed to emit structured log via callback: {e}")
 
         # Also emit via struct_logger stdout (works in subprocess mode)
         if self._struct_logger:
@@ -242,8 +243,9 @@ class CVGeneratorV2:
                     layer_name="cv_generator_v2",
                     metadata=metadata,
                 )
-            except Exception:
-                pass  # Fire-and-forget: don't let logging errors break the pipeline
+            except Exception as e:
+                # Fire-and-forget, but log warning for debugging
+                self._logger.warning(f"Failed to emit structured log via struct_logger: {e}")
 
     def _emit_log(self, event: str, message: str, **kwargs) -> None:
         """
