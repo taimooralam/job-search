@@ -6,11 +6,14 @@ Handles subprocess execution of the job pipeline with:
 - Timeout management
 - Exit code capture
 - Artifact discovery
+- Error bubbling with full stack traces
 """
 
 import asyncio
+import json
 import logging
 import os
+import traceback
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -103,7 +106,26 @@ async def execute_pipeline(
             return False, {}, None
 
     except Exception as exc:
-        log_callback(f"❌ Pipeline execution error: {exc}")
+        # Capture full traceback for frontend display
+        tb_str = traceback.format_exc()
+        error_msg = f"{type(exc).__name__}: {str(exc)}"
+
+        # Emit structured error log with traceback
+        error_log = json.dumps({
+            "event": "pipeline_error",
+            "error": error_msg,
+            "metadata": {
+                "error_type": type(exc).__name__,
+                "traceback": tb_str,
+                "context": "Pipeline executor exception",
+            }
+        })
+        log_callback(error_log)
+
+        # Also emit human-readable message
+        log_callback(f"❌ Pipeline execution error: {error_msg}")
+        log_callback(f"📋 Traceback:\n{tb_str}")
+
         return False, {}, None
 
 

@@ -16,6 +16,7 @@ Usage:
 import json
 import sys
 import time
+import traceback
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field, asdict
@@ -498,6 +499,118 @@ class StructuredLogger:
             metadata=fallback_metadata,
         )
 
+    # ===== Error with Traceback =====
+
+    def emit_error_with_traceback(
+        self,
+        error: Exception,
+        context: str,
+        layer: Optional[int] = None,
+        layer_name: Optional[str] = None,
+        include_locals: bool = False,
+    ) -> None:
+        """
+        Emit an error event with the full stack trace for frontend debugging.
+
+        This method captures the complete traceback from an exception and
+        formats it for display in the frontend CLI panel.
+
+        Args:
+            error: The exception that was raised
+            context: Human-readable context (e.g., "during CV generation")
+            layer: Optional layer number
+            layer_name: Optional layer name
+            include_locals: Whether to include local variables (can be verbose)
+
+        Example:
+            >>> try:
+            ...     risky_operation()
+            ... except Exception as e:
+            ...     logger.emit_error_with_traceback(e, "during CV generation", layer=6)
+        """
+        # Format the traceback
+        tb_lines = traceback.format_exception(type(error), error, error.__traceback__)
+        tb_str = "".join(tb_lines)
+
+        # Build metadata with error details
+        metadata = {
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "traceback": tb_str,
+            "context": context,
+        }
+
+        # Optionally include local variables from the frame
+        if include_locals and error.__traceback__:
+            try:
+                tb = error.__traceback__
+                while tb.tb_next:
+                    tb = tb.tb_next
+                frame_locals = {
+                    k: repr(v)[:200]  # Truncate large values
+                    for k, v in tb.tb_frame.f_locals.items()
+                    if not k.startswith("_") and not callable(v)
+                }
+                metadata["frame_locals"] = frame_locals
+            except Exception:
+                pass  # Don't fail if we can't get locals
+
+        # Emit as a layer_error or generic error event
+        if layer is not None:
+            self.layer_error(
+                layer=layer,
+                error=f"{type(error).__name__}: {str(error)}",
+                layer_name=layer_name,
+                metadata=metadata,
+            )
+        else:
+            self.emit(
+                event="error",
+                error=f"{type(error).__name__}: {str(error)}",
+                metadata=metadata,
+            )
+
+    def emit_plain_error(
+        self,
+        message: str,
+        traceback_str: Optional[str] = None,
+        context: Optional[str] = None,
+        layer: Optional[int] = None,
+        layer_name: Optional[str] = None,
+    ) -> None:
+        """
+        Emit an error event with optional traceback string.
+
+        Use this when you have a plain error message and traceback string
+        (e.g., captured from subprocess stderr).
+
+        Args:
+            message: Error message
+            traceback_str: Optional formatted traceback string
+            context: Human-readable context
+            layer: Optional layer number
+            layer_name: Optional layer name
+        """
+        metadata = {}
+        if traceback_str:
+            metadata["traceback"] = traceback_str
+        if context:
+            metadata["context"] = context
+
+        if layer is not None:
+            self.layer_error(
+                layer=layer,
+                error=message,
+                layer_name=layer_name,
+                metadata=metadata if metadata else None,
+            )
+        else:
+            self.emit(
+                event="error",
+                error=message,
+                metadata=metadata if metadata else None,
+            )
+
 
 # ===== Context Manager for Layer Timing =====
 
@@ -532,12 +645,21 @@ class LayerContext:
         duration_ms = int((time.time() - self._start_time) * 1000)
 
         if exc_type is not None:
+            # Capture full traceback for frontend display
+            tb_lines = traceback.format_exception(exc_type, exc_val, exc_tb)
+            tb_str = "".join(tb_lines)
+
+            # Include traceback in metadata
+            error_metadata = dict(self.metadata) if self.metadata else {}
+            error_metadata["traceback"] = tb_str
+            error_metadata["error_type"] = exc_type.__name__ if exc_type else "Unknown"
+
             self.logger.layer_error(
                 self.layer,
-                str(exc_val),
+                f"{exc_type.__name__}: {str(exc_val)}" if exc_type else str(exc_val),
                 self.layer_name,
                 duration_ms,
-                self.metadata if self.metadata else None,
+                error_metadata,
             )
             return False  # Re-raise exception
 

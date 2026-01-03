@@ -88,6 +88,16 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                 duration_str = f" ({duration}ms)" if duration else ""
                 backend_str = f" [{backend}]" if backend else ""
                 log_obj["message"] = f"{step}: {status}{backend_str}{duration_str}"
+            elif parsed.get("event") in ("pipeline_error", "error"):
+                # Handle error events with traceback
+                error_msg = parsed.get("error", "Unknown error")
+                log_obj["message"] = f"❌ Error: {error_msg}"
+                log_obj["level"] = "error"
+                # Extract traceback from metadata for CLI panel display
+                if parsed.get("metadata", {}).get("traceback"):
+                    log_obj["traceback"] = parsed["metadata"]["traceback"]
+                if parsed.get("metadata", {}).get("error_type"):
+                    log_obj["error_type"] = parsed["metadata"]["error_type"]
             else:
                 # Fallback: use event type or raw log
                 log_obj["message"] = parsed.get("event", log)

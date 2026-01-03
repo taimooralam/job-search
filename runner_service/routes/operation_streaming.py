@@ -265,7 +265,7 @@ def create_log_callback(run_id: str) -> Callable[[str], None]:
     return callback
 
 
-def create_layer_callback(run_id: str) -> Callable[[str, str, Optional[str]], None]:
+def create_layer_callback(run_id: str) -> Callable[[str, str, Optional[str], Optional[Dict]], None]:
     """
     Create a layer status callback function bound to a specific run ID.
 
@@ -275,7 +275,12 @@ def create_layer_callback(run_id: str) -> Callable[[str, str, Optional[str]], No
     Returns:
         Callback function that updates layer status
     """
-    def callback(layer_key: str, status: str, message: Optional[str] = None) -> None:
+    def callback(
+        layer_key: str,
+        status: str,
+        message: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
         update_layer_status(run_id, layer_key, status, message)
         # Also append a log message for the layer transition
         status_emoji = {
@@ -286,7 +291,20 @@ def create_layer_callback(run_id: str) -> Callable[[str, str, Optional[str]], No
             "error": "❌",  # For structured error events from orchestrator
             "skipped": "⏭️",
         }.get(status, "•")
-        log_msg = f"{status_emoji} {layer_key}: {message or status}"
+
+        # For errors, emit structured log with traceback if provided
+        if status in {"failed", "error"} and metadata:
+            # Build structured error log for frontend parsing
+            structured_log = {
+                "event": "layer_error",
+                "layer_key": layer_key,
+                "message": message or status,
+                "metadata": metadata,
+            }
+            log_msg = f"{status_emoji} {layer_key}: {json.dumps(structured_log)}"
+        else:
+            log_msg = f"{status_emoji} {layer_key}: {message or status}"
+
         append_operation_log(run_id, log_msg)
     return callback
 
