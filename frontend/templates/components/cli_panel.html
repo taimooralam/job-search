@@ -324,6 +324,45 @@
                                         </template>
                                     </div>
 
+                                    <!-- Prompt Preview section (for LLM call events) -->
+                                    <template x-if="parsed.metadata && (parsed.metadata.system_prompt_preview || parsed.metadata.user_prompt_preview || parsed.metadata.result_preview)">
+                                        <div class="cli-prompt-preview-section">
+                                            <!-- System prompt preview -->
+                                            <template x-if="parsed.metadata.system_prompt_preview">
+                                                <div class="cli-prompt-row">
+                                                    <span class="cli-prompt-icon">📝</span>
+                                                    <span class="cli-prompt-label">System:</span>
+                                                    <span class="cli-prompt-text" x-text="parsed.metadata.system_prompt_preview"></span>
+                                                </div>
+                                            </template>
+                                            <!-- User prompt preview -->
+                                            <template x-if="parsed.metadata.user_prompt_preview">
+                                                <div class="cli-prompt-row">
+                                                    <span class="cli-prompt-icon">💬</span>
+                                                    <span class="cli-prompt-label">User:</span>
+                                                    <span class="cli-prompt-text" x-text="parsed.metadata.user_prompt_preview"></span>
+                                                </div>
+                                            </template>
+                                            <!-- Result preview -->
+                                            <template x-if="parsed.metadata.result_preview">
+                                                <div class="cli-prompt-row cli-prompt-row--result">
+                                                    <span class="cli-prompt-icon">✨</span>
+                                                    <span class="cli-prompt-label">Result:</span>
+                                                    <span class="cli-prompt-text" x-text="parsed.metadata.result_preview"></span>
+                                                </div>
+                                            </template>
+                                            <!-- Char counts summary -->
+                                            <div class="cli-prompt-stats">
+                                                <template x-if="parsed.metadata.prompt_length">
+                                                    <span class="cli-prompt-stat">📊 <span x-text="parsed.metadata.prompt_length"></span> chars in</span>
+                                                </template>
+                                                <template x-if="parsed.metadata.result_length">
+                                                    <span class="cli-prompt-stat">→ <span x-text="parsed.metadata.result_length"></span> chars out</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
                                     <!-- Collapsible Stack Trace section (for error events) -->
                                     <template x-if="parsed.metadata && parsed.metadata.traceback">
                                         <div class="cli-traceback-section" x-data="{ traceOpen: false }">
