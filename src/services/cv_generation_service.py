@@ -483,6 +483,10 @@ class CVGenerationService(OperationService):
                 data = json.loads(json_str)
                 event = data.get("event", "")
                 message = data.get("message", "")
+
+                # TEMPORARY DEBUG: Log every incoming event to trace callback chain
+                debug_preview = message[:50] if message else str(data)[:50]
+                progress_callback("DEBUG_STEP_17", "processing", f"[CHAIN-17] event={event} msg={debug_preview}")
                 phase = data.get("phase")
 
                 # Map orchestrator events to layer status updates
