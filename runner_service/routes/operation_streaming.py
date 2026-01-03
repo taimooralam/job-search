@@ -26,7 +26,8 @@ from fastapi.responses import StreamingResponse
 logger = logging.getLogger(__name__)
 
 # Maximum logs to keep per operation (prevents unbounded memory growth)
-MAX_LOG_BUFFER = 100
+# CV generation produces 200-300 logs, so 1000 provides ample headroom
+MAX_LOG_BUFFER = 1000
 
 # Redis key prefixes for log persistence
 REDIS_LOG_PREFIX = "logs:"
