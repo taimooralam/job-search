@@ -256,7 +256,7 @@
                              x-data="{
                                  detectedBackend: log.backend || $store.cli.detectBackendFromText(log.text),
                                  parsed: log.isStructuredFromBackend
-                                     ? { isStructured: true, message: log.text, event: log.event, metadata: log.metadata || {}, hasMetadata: log.metadata && Object.keys(log.metadata).length > 0, prefix: log.prefix }
+                                     ? { isStructured: true, message: log.text, event: log.event, metadata: { ...(log.metadata || {}), ...(log.traceback ? { traceback: log.traceback } : {}) }, hasMetadata: (log.metadata && Object.keys(log.metadata).length > 0) || log.traceback, prefix: log.prefix }
                                      : window.cliParseStructuredLog(log.text),
                                  metaOpen: false
                              }"
