@@ -18,6 +18,7 @@ Usage:
 
 import logging
 import re
+import traceback
 from typing import TYPE_CHECKING, List, Dict, Set, Optional, Tuple, Callable, Any
 from collections import Counter
 
@@ -646,9 +647,28 @@ Grade each dimension 1-10 with specific feedback."""
             })
             raise ValueError(error_msg)
 
+        # Type coercion: LLM sometimes returns exemplary_sections as list of dicts
+        # instead of list of strings. Coerce to strings by extracting values.
+        parsed_data = result.parsed_json.copy()
+        if "exemplary_sections" in parsed_data:
+            exemplary = parsed_data["exemplary_sections"]
+            if isinstance(exemplary, list):
+                coerced = []
+                for item in exemplary:
+                    if isinstance(item, str):
+                        coerced.append(item)
+                    elif isinstance(item, dict):
+                        # Extract values from dict and join them
+                        # e.g., {"section": "Profile", "highlight": "strong metrics"} -> "Profile: strong metrics"
+                        values = [str(v) for v in item.values() if v]
+                        coerced.append(": ".join(values) if values else str(item))
+                    else:
+                        coerced.append(str(item))
+                parsed_data["exemplary_sections"] = coerced
+
         # Parse into Pydantic model with error logging
         try:
-            grading_response = GradingResponse(**result.parsed_json)
+            grading_response = GradingResponse(**parsed_data)
             # Log successful parse
             self._emit_struct_log("grading_parsed", {
                 "message": "✅ Grading response parsed successfully",
@@ -658,9 +678,11 @@ Grade each dimension 1-10 with specific feedback."""
         except Exception as e:
             # Log validation error details to BOTH loggers for visibility
             keys_in_response = list(result.parsed_json.keys()) if result.parsed_json else []
+            stack_trace = traceback.format_exc()
             self._logger.error(
                 f"Pydantic validation failed: {e}\n"
-                f"Keys in response: {keys_in_response}"
+                f"Keys in response: {keys_in_response}\n"
+                f"Stack trace:\n{stack_trace}"
             )
             # Emit to struct_logger for frontend visibility
             self._emit_struct_log("grading_error", {
@@ -671,6 +693,7 @@ Grade each dimension 1-10 with specific feedback."""
                 "sample_values": {
                     k: str(v)[:100] for k, v in list(result.parsed_json.items())[:3]
                 } if result.parsed_json else {},
+                "stack_trace": stack_trace,  # Include full stack trace
             })
             raise ValueError(f"Grading response validation failed: {e}")
 
