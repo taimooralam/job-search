@@ -70,6 +70,9 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             parsed = json.loads(log_stripped)
             log_obj["source"] = "structured"
 
+            # Extract metadata early for use in all event handlers
+            metadata = parsed.get("metadata", {})
+
             # Build human-readable message from structured log
             # Priority: explicit message > layer event > event type
             if "message" in parsed:
@@ -98,6 +101,121 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                     log_obj["traceback"] = parsed["metadata"]["traceback"]
                 if parsed.get("metadata", {}).get("error_type"):
                     log_obj["error_type"] = parsed["metadata"]["error_type"]
+
+            # CV Generation Phase Events
+            elif parsed.get("event") == "phase_start":
+                phase = parsed.get("phase", "?")
+                phase_msg = metadata.get("message", f"Phase {phase}")
+                log_obj["message"] = f"📋 {phase_msg}"
+                log_obj["phase"] = phase
+
+            elif parsed.get("event") == "phase_complete":
+                phase = parsed.get("phase", "?")
+                phase_msg = metadata.get("message", f"Phase {phase} complete")
+                duration = parsed.get("duration_ms")
+                duration_str = f" ({duration}ms)" if duration else ""
+                log_obj["message"] = f"✅ {phase_msg}{duration_str}"
+                log_obj["phase"] = phase
+
+            # CV Generation Subphase Events (per-role processing)
+            elif parsed.get("event") == "subphase_start":
+                subphase = metadata.get("subphase", "subphase")
+                role_title = metadata.get("role_title", "")
+                role_info = f" - {role_title}" if role_title else ""
+                log_obj["message"] = f"  🔹 Starting {subphase}{role_info}"
+                log_obj["subphase"] = subphase
+
+            elif parsed.get("event") == "subphase_complete":
+                subphase = metadata.get("subphase", "subphase")
+                role_title = metadata.get("role_title", "")
+                bullets = metadata.get("bullets_generated", metadata.get("bullets_count"))
+                duration = parsed.get("duration_ms")
+                details = []
+                if bullets:
+                    details.append(f"{bullets} bullets")
+                if duration:
+                    details.append(f"{duration}ms")
+                details_str = f" ({', '.join(details)})" if details else ""
+                log_obj["message"] = f"  ✓ {subphase} complete{details_str}"
+                log_obj["subphase"] = subphase
+
+            # Decision Point Events (key choices with reasoning)
+            elif parsed.get("event") == "decision_point":
+                decision = metadata.get("decision", "decision")
+                # Format based on decision type
+                if decision == "bullet_generation":
+                    bullets_count = metadata.get("output", {}).get("bullets_count", "?")
+                    persona = metadata.get("output", {}).get("persona_used", "")
+                    persona_str = f" [{persona}]" if persona else ""
+                    log_obj["message"] = f"  📝 Generated {bullets_count} bullets{persona_str}"
+                elif decision == "header_generation":
+                    headline_preview = metadata.get("headline", {}).get("text_preview", "")[:40]
+                    log_obj["message"] = f"  📝 Header: {headline_preview}..."
+                elif decision == "cv_grade":
+                    score = metadata.get("composite_score", "?")
+                    passed = "✅" if metadata.get("passed") else "❌"
+                    log_obj["message"] = f"  {passed} Grade: {score}/10"
+                elif decision == "bullet_selection":
+                    selected = metadata.get("selected_count", "?")
+                    rejected = metadata.get("rejected_count", 0)
+                    log_obj["message"] = f"  📝 Selected {selected} bullets (rejected {rejected})"
+                else:
+                    log_obj["message"] = f"  📝 Decision: {decision}"
+                log_obj["decision"] = decision
+
+            # Validation Result Events
+            elif parsed.get("event") == "validation_result":
+                validation = metadata.get("validation", "validation")
+                passed = metadata.get("passed", False)
+                icon = "✅" if passed else "⚠️"
+                # Add relevant details based on validation type
+                if validation == "ats_coverage":
+                    coverage = metadata.get("coverage_pct", "?")
+                    log_obj["message"] = f"  {icon} ATS Coverage: {coverage}%"
+                elif validation == "keyword_placement":
+                    top_third = metadata.get("top_third_pct", "?")
+                    log_obj["message"] = f"  {icon} Keyword Placement: {top_third}% in top third"
+                elif validation == "hallucination_qa":
+                    score = metadata.get("grounding_score", "?")
+                    log_obj["message"] = f"  {icon} Hallucination QA: {score}"
+                else:
+                    log_obj["message"] = f"  {icon} {validation}: {'passed' if passed else 'failed'}"
+                log_obj["validation"] = validation
+                log_obj["validation_passed"] = passed
+
+            # Retry Events (grader retries, etc.)
+            elif parsed.get("event") == "retry_attempt":
+                attempt = metadata.get("attempt", "?")
+                error_msg = metadata.get("error", "")[:50]
+                log_obj["message"] = f"  ⚠️ Retry attempt {attempt}: {error_msg}"
+                log_obj["level"] = "warning"
+
+            # Grading-specific Events
+            elif parsed.get("event") == "grading_error":
+                error_type = metadata.get("error_type", "unknown")
+                error_msg = metadata.get("error", "")[:80]
+                log_obj["message"] = f"  ❌ Grading error ({error_type}): {error_msg}"
+                log_obj["level"] = "error"
+
+            elif parsed.get("event") == "grading_parsed":
+                score = metadata.get("composite_score", "?")
+                passed = metadata.get("passed", False)
+                icon = "✅" if passed else "⚠️"
+                log_obj["message"] = f"  {icon} Grading complete: {score}/10"
+
+            # LLM call events with cv_struct_ prefix (from grader)
+            elif parsed.get("event") in ("cv_struct_llm_call_start", "cv_struct_llm_call_complete"):
+                step = parsed.get("step_name", "llm_call")
+                status = parsed.get("status", "")
+                backend = parsed.get("backend", "")
+                duration = parsed.get("duration_ms")
+                duration_str = f" ({duration}ms)" if duration else ""
+                backend_str = f" [{backend}]" if backend else ""
+                if "start" in parsed.get("event", ""):
+                    log_obj["message"] = f"  🔄 {step}: calling{backend_str}"
+                else:
+                    log_obj["message"] = f"  ✓ {step}: complete{backend_str}{duration_str}"
+
             else:
                 # Fallback: use event type or raw log
                 log_obj["message"] = parsed.get("event", log)
@@ -120,7 +238,7 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
 
             # Include verbose context fields if present (for debugging)
             # These can be at top level OR inside metadata - check both
-            metadata = parsed.get("metadata", {})
+            # (metadata already extracted at top of try block)
 
             # prompt_length: check top level first, then metadata
             if parsed.get("prompt_length"):
@@ -128,14 +246,31 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
             elif metadata.get("prompt_length"):
                 log_obj["prompt_length"] = metadata["prompt_length"]
 
-            # Prompt previews are in metadata (Phase 0 logging)
-            if metadata.get("system_prompt_preview"):
+            # prompt_preview (legacy single field): check top level first, then metadata
+            if parsed.get("prompt_preview"):
+                log_obj["prompt_preview"] = parsed["prompt_preview"]
+            elif metadata.get("prompt_preview"):
+                log_obj["prompt_preview"] = metadata["prompt_preview"]
+
+            # Prompt previews are in metadata (Phase 0 logging) - newer split fields
+            if parsed.get("system_prompt_preview"):
+                log_obj["system_prompt_preview"] = parsed["system_prompt_preview"]
+            elif metadata.get("system_prompt_preview"):
                 log_obj["system_prompt_preview"] = metadata["system_prompt_preview"]
-            if metadata.get("user_prompt_preview"):
+
+            if parsed.get("user_prompt_preview"):
+                log_obj["user_prompt_preview"] = parsed["user_prompt_preview"]
+            elif metadata.get("user_prompt_preview"):
                 log_obj["user_prompt_preview"] = metadata["user_prompt_preview"]
-            if metadata.get("result_preview"):
+
+            if parsed.get("result_preview"):
+                log_obj["result_preview"] = parsed["result_preview"]
+            elif metadata.get("result_preview"):
                 log_obj["result_preview"] = metadata["result_preview"]
-            if metadata.get("result_length"):
+
+            if parsed.get("result_length"):
+                log_obj["result_length"] = parsed["result_length"]
+            elif metadata.get("result_length"):
                 log_obj["result_length"] = metadata["result_length"]
 
             # Session ID for correlating start/complete pairs

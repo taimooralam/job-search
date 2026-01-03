@@ -359,3 +359,240 @@ class TestParseLogEntry:
 
         assert result["source"] == "python"
         assert result["message"] == "Processing: this is a message with colon"
+
+
+class TestCVGenerationEvents:
+    """Tests for CV generation-specific event parsing."""
+
+    def test_phase_start_event(self):
+        """Phase start events are formatted with emoji and phase message."""
+        log = json.dumps({
+            "event": "phase_start",
+            "phase": 2,
+            "metadata": {
+                "message": "Generating role bullets"
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "📋" in result["message"]
+        assert "Generating role bullets" in result["message"]
+        assert result["phase"] == 2
+
+    def test_phase_complete_event(self):
+        """Phase complete events include duration and checkmark."""
+        log = json.dumps({
+            "event": "phase_complete",
+            "phase": 2,
+            "duration_ms": 5000,
+            "metadata": {
+                "message": "Role bullets generated"
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "5000ms" in result["message"]
+        assert result["phase"] == 2
+
+    def test_subphase_start_event(self):
+        """Subphase start events show role info."""
+        log = json.dumps({
+            "event": "subphase_start",
+            "metadata": {
+                "subphase": "role_Anthropic",
+                "role_title": "Solutions Engineer"
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "🔹" in result["message"]
+        assert "role_Anthropic" in result["message"]
+        assert "Solutions Engineer" in result["message"]
+        assert result["subphase"] == "role_Anthropic"
+
+    def test_subphase_complete_event(self):
+        """Subphase complete events show bullet count and duration."""
+        log = json.dumps({
+            "event": "subphase_complete",
+            "duration_ms": 3500,
+            "metadata": {
+                "subphase": "role_Anthropic",
+                "bullets_generated": 5
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✓" in result["message"]
+        assert "5 bullets" in result["message"]
+        assert "3500ms" in result["message"]
+
+    def test_decision_point_bullet_generation(self):
+        """Decision point for bullet generation shows count and persona."""
+        log = json.dumps({
+            "event": "decision_point",
+            "metadata": {
+                "decision": "bullet_generation",
+                "output": {
+                    "bullets_count": 5,
+                    "persona_used": "METRIC_MAESTRO"
+                }
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "📝" in result["message"]
+        assert "5 bullets" in result["message"]
+        assert "METRIC_MAESTRO" in result["message"]
+        assert result["decision"] == "bullet_generation"
+
+    def test_decision_point_cv_grade(self):
+        """Decision point for grading shows score and pass/fail."""
+        log = json.dumps({
+            "event": "decision_point",
+            "metadata": {
+                "decision": "cv_grade",
+                "composite_score": 8.7,
+                "passed": True
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "8.7" in result["message"]
+        assert result["decision"] == "cv_grade"
+
+    def test_decision_point_cv_grade_failed(self):
+        """Decision point for failed grading shows fail icon."""
+        log = json.dumps({
+            "event": "decision_point",
+            "metadata": {
+                "decision": "cv_grade",
+                "composite_score": 6.5,
+                "passed": False
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "❌" in result["message"]
+        assert "6.5" in result["message"]
+
+    def test_validation_result_ats_passed(self):
+        """Validation result for ATS coverage shows percentage."""
+        log = json.dumps({
+            "event": "validation_result",
+            "metadata": {
+                "validation": "ats_coverage",
+                "passed": True,
+                "coverage_pct": 87
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "ATS Coverage" in result["message"]
+        assert "87%" in result["message"]
+        assert result["validation"] == "ats_coverage"
+        assert result["validation_passed"] is True
+
+    def test_validation_result_keyword_failed(self):
+        """Validation result for keyword placement shows warning on fail."""
+        log = json.dumps({
+            "event": "validation_result",
+            "metadata": {
+                "validation": "keyword_placement",
+                "passed": False,
+                "top_third_pct": 35
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "⚠️" in result["message"]
+        assert "35%" in result["message"]
+        assert result["validation_passed"] is False
+
+    def test_retry_attempt_event(self):
+        """Retry attempt events show attempt number and error."""
+        log = json.dumps({
+            "event": "retry_attempt",
+            "metadata": {
+                "attempt": 2,
+                "error": "Pydantic validation failed: missing field 'composite_score'"
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "⚠️" in result["message"]
+        assert "Retry attempt 2" in result["message"]
+        assert "Pydantic" in result["message"]
+        assert result["level"] == "warning"
+
+    def test_grading_error_event(self):
+        """Grading error events show error type and message."""
+        log = json.dumps({
+            "event": "grading_error",
+            "metadata": {
+                "error_type": "pydantic_validation",
+                "error": "3 validation errors: missing composite_score"
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "❌" in result["message"]
+        assert "pydantic_validation" in result["message"]
+        assert result["level"] == "error"
+
+    def test_grading_parsed_success(self):
+        """Grading parsed event shows final score."""
+        log = json.dumps({
+            "event": "grading_parsed",
+            "metadata": {
+                "composite_score": 8.5,
+                "passed": True
+            }
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✅" in result["message"]
+        assert "8.5" in result["message"]
+        assert "Grading complete" in result["message"]
+
+    def test_cv_struct_llm_call_start(self):
+        """CV struct LLM call start events are formatted."""
+        log = json.dumps({
+            "event": "cv_struct_llm_call_start",
+            "step_name": "cv_grader",
+            "backend": "claude_cli"
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "🔄" in result["message"]
+        assert "cv_grader" in result["message"]
+        assert "claude_cli" in result["message"]
+
+    def test_cv_struct_llm_call_complete(self):
+        """CV struct LLM call complete events show duration."""
+        log = json.dumps({
+            "event": "cv_struct_llm_call_complete",
+            "step_name": "cv_grader",
+            "backend": "claude_cli",
+            "duration_ms": 2500
+        })
+
+        result = _parse_log_entry(log, 0)
+
+        assert "✓" in result["message"]
+        assert "2500ms" in result["message"]
