@@ -537,6 +537,14 @@ class ClaudeCLI:
                 input_tokens, output_tokens, cost_usd = None, None, None
             else:
                 # Return raw text result
+                self._emit_log(
+                    job_id, "info",
+                    message=f"CLI invocation complete",
+                    duration_ms=duration_ms,
+                    input_tokens=None,
+                    output_tokens=None,
+                    cost_usd=None
+                )
                 return CLIResult(
                     job_id=job_id,
                     success=True,
