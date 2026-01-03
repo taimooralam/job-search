@@ -549,13 +549,17 @@ async def poll_logs(
             if state:
                 # Return from in-memory state (also parse for structured data)
                 logs_slice = state.logs[since:since + limit]
+                total = len(state.logs)
+                # For in-memory state, expected_log_count = total when completed/failed
+                expected = total if state.status in {"completed", "failed"} else None
                 return {
                     "logs": [
                         _parse_log_entry(msg, since + i)
                         for i, msg in enumerate(logs_slice)
                     ],
                     "next_index": since + len(logs_slice),
-                    "total_count": len(state.logs),
+                    "total_count": total,
+                    "expected_log_count": expected,
                     "status": state.status,
                     "layer_status": state.layer_status or {},
                     "error": state.error,
@@ -582,7 +586,7 @@ async def poll_logs(
         log_obj = _parse_log_entry(log, since + i)
         logs.append(log_obj)
 
-    # Get total count
+    # Get total count from Redis
     total_count = await redis.llen(logs_key)
 
     # Get metadata
@@ -590,6 +594,18 @@ async def poll_logs(
     status = meta.get("status", "unknown") if meta else "unknown"
     error = meta.get("error") or None if meta else None
     langsmith_url = meta.get("langsmith_url") or None if meta else None
+
+    # Get expected_log_count from metadata (fixes race condition)
+    # When status is completed/failed, this tells the frontend how many logs
+    # to expect, even if they haven't all been persisted to Redis yet.
+    expected_log_count = None
+    if meta:
+        expected_str = meta.get("expected_log_count")
+        if expected_str:
+            try:
+                expected_log_count = int(expected_str)
+            except (ValueError, TypeError):
+                pass
 
     # Get layer status
     layers_json = await redis.get(layers_key)
@@ -604,6 +620,7 @@ async def poll_logs(
         "logs": logs,
         "next_index": since + len(logs),
         "total_count": total_count,
+        "expected_log_count": expected_log_count,  # May be None if not yet completed
         "status": status,
         "layer_status": layer_status,
         "error": error,

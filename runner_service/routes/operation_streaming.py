@@ -188,6 +188,12 @@ def update_operation_status(
 
     Thread-safe: Works from both the main event loop and worker threads.
 
+    IMPORTANT: When status is "completed" or "failed", we capture the current
+    in-memory log count as expected_log_count. This fixes a race condition where
+    Redis persistence is fire-and-forget, so the frontend might see status="completed"
+    before all logs are persisted to Redis. The frontend should use expected_log_count
+    (not Redis llen) to know when all logs have been fetched.
+
     Args:
         run_id: Operation run ID
         status: New status (running, completed, failed)
@@ -210,7 +216,9 @@ def update_operation_status(
     _signal_log_event(state)
 
     # Persist status update to Redis
-    _schedule_async_task(_persist_operation_meta_to_redis(run_id, state))
+    # Include expected_log_count when completing/failing to fix race condition
+    expected_log_count = len(state.logs) if status in {"completed", "failed"} else None
+    _schedule_async_task(_persist_operation_meta_to_redis(run_id, state, expected_log_count))
 
     # Set TTL on completion/failure (logs expire after 24 hours)
     if status in {"completed", "failed"}:
@@ -462,13 +470,21 @@ async def _persist_log_to_redis(run_id: str, message: str) -> None:
         logger.debug(f"[{run_id[:16]}] Redis log persist failed: {e}")
 
 
-async def _persist_operation_meta_to_redis(run_id: str, state: OperationState) -> None:
+async def _persist_operation_meta_to_redis(
+    run_id: str,
+    state: OperationState,
+    expected_log_count: Optional[int] = None,
+) -> None:
     """
     Persist operation metadata to Redis.
 
     Args:
         run_id: Operation run ID
         state: Operation state to persist
+        expected_log_count: Total number of logs expected (set on completion/failure).
+            This fixes a race condition where logs are persisted async, so the frontend
+            might poll before all logs are in Redis. By including the expected count
+            in metadata, the frontend knows to wait until it has fetched all logs.
     """
     try:
         redis = _get_redis_client()
@@ -485,6 +501,12 @@ async def _persist_operation_meta_to_redis(run_id: str, state: OperationState) -
             "error": state.error or "",
             "langsmith_url": state.langsmith_url or "",
         }
+
+        # Include expected_log_count when completing/failing
+        # This tells the frontend how many logs to expect before stopping
+        if expected_log_count is not None:
+            meta["expected_log_count"] = str(expected_log_count)
+
         await redis.hset(key, mapping=meta)
 
     except Exception as e:

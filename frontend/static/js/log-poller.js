@@ -228,18 +228,26 @@
                     // IMPORTANT: Don't stop until all logs are fetched, even if status is completed
                     // This prevents the race condition where pipeline finishes fast but we haven't
                     // fetched all logs yet (e.g., 150 logs but only fetched first 100)
+                    //
+                    // FIX: Use expected_log_count (from metadata) instead of total_count (from Redis llen)
+                    // when available. This fixes the race condition where logs are persisted to Redis
+                    // asynchronously, so total_count might be stale when status becomes "completed".
+                    // expected_log_count is captured at the moment of completion from in-memory state.
                     if (data.status === 'completed' || data.status === 'failed') {
-                        const allLogsFetched = this.nextIndex >= this.totalCount;
+                        // Use expected_log_count if available (set by backend on completion)
+                        // Otherwise fall back to total_count (may be stale due to async persistence)
+                        const targetCount = data.expected_log_count ?? this.totalCount;
+                        const allLogsFetched = this.nextIndex >= targetCount;
 
                         if (allLogsFetched) {
-                            this._log('Run completed with status:', data.status, `(${this.nextIndex}/${this.totalCount} logs)`);
+                            this._log('Run completed with status:', data.status, `(${this.nextIndex}/${targetCount} logs)`);
                             this._emitComplete(data.status, data.error);
                             this.stop();
                             break;
                         } else {
                             // Status is completed but we haven't fetched all logs yet
-                            // Continue polling until we have all logs
-                            this._log('Run completed but still fetching logs:', `${this.nextIndex}/${this.totalCount}`);
+                            // Continue polling until we have all expected logs
+                            this._log('Run completed but still fetching logs:', `${this.nextIndex}/${targetCount} (redis has ${this.totalCount})`);
                         }
                     }
 
