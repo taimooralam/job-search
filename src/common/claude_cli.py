@@ -208,11 +208,6 @@ class ClaudeCLI:
         All log events go through this method, making it easy to
         swap in Redis publishing later.
         """
-        # TEMPORARY DEBUG: Trace callback chain step 8
-        import sys
-        msg_preview = kwargs.get("message", "")[:50] if kwargs.get("message") else "None"
-        print(f"[CHAIN-08] ClaudeCLI._emit_log: level={level} msg={msg_preview}", file=sys.stderr, flush=True)
-
         self._log_callback(job_id, level, {
             "timestamp": datetime.utcnow().isoformat(),
             "invoker": "claude-code-cli",

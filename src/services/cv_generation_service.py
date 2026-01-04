@@ -477,22 +477,12 @@ class CVGenerationService(OperationService):
         # Create adapter to convert orchestrator's JSON logs to progress_callback format
         def log_callback_adapter(json_str: str) -> None:
             """Convert orchestrator JSON logs to layer progress callback format."""
-            # TEMPORARY DEBUG: Print to stderr to trace if this function is called
-            import sys
-            print(f"[CHAIN-17] log_callback_adapter ENTER", file=sys.stderr, flush=True)
-
             if not progress_callback:
-                print(f"[CHAIN-17] NO progress_callback - returning!", file=sys.stderr, flush=True)
                 return
             try:
                 data = json.loads(json_str)
                 event = data.get("event", "")
                 message = data.get("message", "")
-
-                # TEMPORARY DEBUG: Log every incoming event to trace callback chain
-                debug_preview = message[:50] if message else str(data)[:50]
-                print(f"[CHAIN-17] event={event} msg={debug_preview}", file=sys.stderr, flush=True)
-                progress_callback("DEBUG_STEP_17", "processing", f"[CHAIN-17] event={event} msg={debug_preview}")
                 phase = data.get("phase")
 
                 # Map orchestrator events to layer status updates

@@ -186,11 +186,6 @@ class UnifiedLLM:
         Routes ClaudeCLI logs through _emit_progress so they reach
         the browser console via Redis.
         """
-        # TEMPORARY DEBUG: Trace callback chain step 9
-        import sys
-        msg_preview = data.get("message", "CLI event")[:50] if data.get("message") else "CLI event"
-        print(f"[CHAIN-09] _cli_log_callback: level={level} msg={msg_preview}", file=sys.stderr, flush=True)
-
         message = data.pop("message", "CLI event")
         event = f"cli_{level}"  # e.g., cli_info, cli_error, cli_debug
         self._emit_progress(event, message, **data)
@@ -810,13 +805,7 @@ class UnifiedLLM:
             message: Human-readable message for the frontend
             **data: Additional data fields (backend, model, tier, cost_usd, etc.)
         """
-        # TEMPORARY DEBUG: Trace callback chain step 10-13
-        import sys
-        msg_preview = message[:50] if message else 'None'
-        print(f"[CHAIN-10] _emit_progress ENTER: event={event} msg={msg_preview}", file=sys.stderr, flush=True)
-
         if not self._progress_callback:
-            print(f"[CHAIN-11] _emit_progress: NO CALLBACK - returning early!", file=sys.stderr, flush=True)
             return
 
         try:
@@ -827,12 +816,9 @@ class UnifiedLLM:
                 "tier": self.config.tier,
                 **data,
             }
-            print(f"[CHAIN-12] _emit_progress: calling _progress_callback", file=sys.stderr, flush=True)
             self._progress_callback(event, message, event_data)
-            print(f"[CHAIN-13] _emit_progress: _progress_callback returned OK", file=sys.stderr, flush=True)
         except Exception as e:
-            # Don't break LLM calls on logging errors - just log to stderr
-            print(f"[CHAIN-13] _emit_progress EXCEPTION: {e}", file=sys.stderr, flush=True)
+            # Don't break LLM calls on logging errors
             logger.debug(f"[UnifiedLLM] Progress callback error (ignored): {e}")
 
     def check_cli_available(self) -> bool:

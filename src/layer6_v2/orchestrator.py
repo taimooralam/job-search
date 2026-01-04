@@ -267,14 +267,8 @@ class CVGeneratorV2:
                     "job_id": self._job_id,
                     **kwargs,
                 }
-                # TEMPORARY DEBUG: Trace callback chain step 16
-                import sys
-                print(f"[CHAIN-16] orchestrator._emit_log: event={event} msg={message[:50] if message else 'None'}", file=sys.stderr, flush=True)
                 self._log_callback(json.dumps(data))
-            except Exception as e:
-                # TEMPORARY DEBUG: Log exception
-                import sys
-                print(f"[CHAIN-16] orchestrator._emit_log EXCEPTION: {e}", file=sys.stderr, flush=True)
+            except Exception:
                 pass  # Don't let logging errors break the pipeline
 
     def _create_llm_progress_callback(self) -> Callable[[str, str, Dict[str, Any]], None]:
@@ -288,9 +282,6 @@ class CVGeneratorV2:
             Callback function compatible with UnifiedLLM.progress_callback
         """
         def callback(event: str, message: str, data: Dict[str, Any]) -> None:
-            # TEMPORARY DEBUG: Trace callback chain step 14
-            import sys
-            print(f"[CHAIN-14] llm_callback: event={event} msg={message[:50] if message else 'None'}", file=sys.stderr, flush=True)
             self._emit_log(event, message, **data)
         return callback
 
