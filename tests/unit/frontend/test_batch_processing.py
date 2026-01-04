@@ -335,11 +335,9 @@ class TestBatchJobRowsPartial:
         mock_collection = MagicMock()
         mock_get_collection.return_value = mock_collection
 
-        # Mock cursor with sort method
-        mock_cursor = MagicMock()
+        # Mock aggregate (default sort uses aggregation pipeline)
         under_processing_jobs = [j for j in sample_jobs if j["status"] == "under processing"]
-        mock_cursor.sort.return_value = under_processing_jobs
-        mock_collection.find.return_value = mock_cursor
+        mock_collection.aggregate.return_value = under_processing_jobs
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -349,41 +347,43 @@ class TestBatchJobRowsPartial:
         # Assert
         assert response.status_code == 200
 
-        # Verify find was called with correct filter
-        mock_collection.find.assert_called_once()
-        filter_arg = mock_collection.find.call_args[0][0]
-        assert filter_arg == {"status": "under processing"}
+        # Verify aggregate was called (default sort uses multi-criteria aggregation)
+        mock_collection.aggregate.assert_called_once()
+        pipeline = mock_collection.aggregate.call_args[0][0]
 
-        # Verify sort was called
-        mock_cursor.sort.assert_called_once()
+        # First stage should be $match for under processing jobs
+        assert pipeline[0] == {"$match": {"status": "under processing"}}
 
     @patch("frontend.app.get_collection")
     @patch("frontend.app.render_template")
-    def test_default_sort_by_batch_added_at_desc(
+    def test_default_uses_multi_criteria_sort(
         self, mock_render_template, mock_get_collection, authenticated_client
     ):
-        """Should default to sorting by batch_added_at in descending order."""
+        """Should default to multi-criteria sorting (location, role, score, recency)."""
         # Arrange
         mock_collection = MagicMock()
         mock_get_collection.return_value = mock_collection
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = []
-        mock_collection.find.return_value = mock_cursor
-
+        mock_collection.aggregate.return_value = []
         mock_render_template.return_value = "<tr>...</tr>"
 
         # Act
         authenticated_client.get("/partials/batch-job-rows")
 
         # Assert
-        mock_cursor.sort.assert_called_once()
-        sort_args = mock_cursor.sort.call_args[0]
+        mock_collection.aggregate.assert_called_once()
+        pipeline = mock_collection.aggregate.call_args[0][0]
 
-        # Should sort by batch_added_at field
-        assert sort_args[0] == "batch_added_at"
-        # Should sort descending (-1)
-        assert sort_args[1] == -1
+        # Find the $sort stage (should be last stage)
+        sort_stage = next((s for s in pipeline if "$sort" in s), None)
+        assert sort_stage is not None
+
+        # Should sort by location, seniority, score, then recency
+        sort_spec = sort_stage["$sort"]
+        assert "_locationPriority" in sort_spec  # Location priority tier
+        assert "_seniorityRank" in sort_spec     # Role priority tier
+        assert "score" in sort_spec              # Score
+        assert "createdAt" in sort_spec          # Recency
 
     @patch("frontend.app.get_collection")
     @patch("frontend.app.render_template")
@@ -582,10 +582,8 @@ class TestBatchProcessingWorkflow:
             {**sample_jobs[1], "status": "under processing", "batch_added_at": datetime.utcnow()},
         ]
 
-        # Step 2: Retrieve batch jobs
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = updated_jobs
-        mock_collection.find.return_value = mock_cursor
+        # Step 2: Retrieve batch jobs (default sort uses aggregation pipeline)
+        mock_collection.aggregate.return_value = updated_jobs
 
         with patch("frontend.app.render_template") as mock_render:
             mock_render.return_value = "<tr>2 jobs</tr>"
@@ -596,8 +594,10 @@ class TestBatchProcessingWorkflow:
             # Assert - Batch rows retrieved
             assert rows_response.status_code == 200
 
-            # Verify correct filter was used
-            mock_collection.find.assert_called_with({"status": "under processing"})
+            # Verify aggregate was called (default sort uses multi-criteria aggregation)
+            mock_collection.aggregate.assert_called_once()
+            pipeline = mock_collection.aggregate.call_args[0][0]
+            assert pipeline[0] == {"$match": {"status": "under processing"}}
 
 
 # ===== TESTS: Context Menu Actions =====
@@ -801,9 +801,8 @@ class TestScrapeAndFillUI:
             "application_url": "https://example.com/apply",
         }
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = [job_with_url]
-        mock_collection.find.return_value = mock_cursor
+        # Mock aggregate (default sort uses aggregation pipeline)
+        mock_collection.aggregate.return_value = [job_with_url]
 
         # Capture template call
         def capture_render(template_name, **context):
@@ -844,9 +843,8 @@ class TestScrapeAndFillUI:
             # No application_url field
         }
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = [job_without_url]
-        mock_collection.find.return_value = mock_cursor
+        # Mock aggregate (default sort uses aggregation pipeline)
+        mock_collection.aggregate.return_value = [job_without_url]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -886,9 +884,8 @@ class TestScrapeAndFillUI:
             # No application_url - template should use url as fallback
         }
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = [job_with_fallback]
-        mock_collection.find.return_value = mock_cursor
+        # Mock aggregate (default sort uses aggregation pipeline)
+        mock_collection.aggregate.return_value = [job_with_fallback]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -929,9 +926,8 @@ class TestScrapeAndFillUI:
             ],
         }
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = [job_with_answers]
-        mock_collection.find.return_value = mock_cursor
+        # Mock aggregate (default sort uses aggregation pipeline)
+        mock_collection.aggregate.return_value = [job_with_answers]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -984,7 +980,7 @@ class TestContextMenuBatchIntegration:
         move_data = move_response.get_json()
         assert move_data["success"] is True
 
-        # Step 2: Retrieve in batch view
+        # Step 2: Retrieve in batch view (default sort uses aggregation pipeline)
         batch_job = {
             "_id": ObjectId(job_id),
             "title": job_title,
@@ -993,9 +989,7 @@ class TestContextMenuBatchIntegration:
             "batch_added_at": datetime.utcnow(),
         }
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = [batch_job]
-        mock_collection.find.return_value = mock_cursor
+        mock_collection.aggregate.return_value = [batch_job]
         mock_render_template.return_value = "<tr>1 job</tr>"
 
         # Act - Get batch rows
@@ -1004,8 +998,10 @@ class TestContextMenuBatchIntegration:
         # Assert - Job appears in batch
         assert batch_response.status_code == 200
 
-        # Verify batch query was executed
-        mock_collection.find.assert_called_with({"status": "under processing"})
+        # Verify aggregate was called (default sort uses multi-criteria aggregation)
+        mock_collection.aggregate.assert_called_once()
+        pipeline = mock_collection.aggregate.call_args[0][0]
+        assert pipeline[0] == {"$match": {"status": "under processing"}}
 
         # Verify template received the job
         call_args = mock_render_template.call_args

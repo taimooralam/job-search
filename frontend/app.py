@@ -199,48 +199,94 @@ JOB_STATUSES = [
 ]
 
 # Default sorting configuration
-# Priority locations: Jobs in these locations appear first (case-insensitive substring match)
-PRIORITY_LOCATIONS = ["Saudi Arabia", "UAE", "United Arab Emirates", "Dubai", "Abu Dhabi", "Riyadh", "Jeddah"]
+# Location priority tiers (lower value = higher priority)
+# Tier 1: Saudi Arabia, Tier 2: UAE, Tier 3: Others (default)
+LOCATION_PRIORITY = {
+    # Tier 1: Saudi Arabia
+    "saudi arabia": 1,
+    "ksa": 1,
+    "kingdom of saudi arabia": 1,
+    "riyadh": 1,
+    "jeddah": 1,
+    "dammam": 1,
+    "mecca": 1,
+    "makkah": 1,
+    "medina": 1,
+    "madinah": 1,
+    "khobar": 1,
+    "dhahran": 1,
+    # Tier 2: UAE
+    "uae": 2,
+    "united arab emirates": 2,
+    "dubai": 2,
+    "abu dhabi": 2,
+    "sharjah": 2,
+    "ajman": 2,
+}
+DEFAULT_LOCATION_PRIORITY = 3  # Tier 3: All other locations
 
-# Seniority ranking: Higher index = more senior (used for descending sort)
-# Index 0 is lowest seniority, index 11 is highest
-SENIORITY_RANKING = [
-    "Senior Software Engineer",
-    "Lead Software Engineer",
-    "Staff Software Engineer",
-    "Principal Software Engineer",
-    "Engineering Manager",
-    "Tech Lead",
-    "Engineering Lead",
-    "Head of Technology",
-    "Director of Technology",
-    "Director of Software Engineering",
-    "Head of Engineering",
-    "CTO",
+# Role priority groups (lower index = higher priority)
+# Tier 0: CTO/Head, Tier 1: VP, Tier 2: Director, Tier 3: Tech Lead,
+# Tier 4: Staff/Principal, Tier 5: Engineering Manager, Tier 6: Software Engineer
+ROLE_PRIORITY = [
+    # Tier 0: C-level and Head positions (HIGHEST)
+    ["CTO", "Chief Technology Officer", "Head of Engineering"],
+    # Tier 1: VP level
+    ["VP Engineering", "VP of Engineering", "SVP Engineering", "Vice President"],
+    # Tier 2: Director level
+    ["Director of Engineering", "Director of Technology",
+     "Director of Software Engineering", "Engineering Director", "Director"],
+    # Tier 3: Tech Lead
+    ["Tech Lead", "Technical Lead", "Lead Engineer", "Engineering Lead", "Team Lead"],
+    # Tier 4: Staff/Principal (senior IC)
+    ["Principal Engineer", "Staff Engineer", "Principal Software Engineer",
+     "Staff Software Engineer", "Principal", "Staff"],
+    # Tier 5: Engineering Manager
+    ["Engineering Manager", "Software Engineering Manager", "Development Manager", "Manager"],
+    # Tier 6: Software Engineer (default - LOWEST)
+    ["Senior Software Engineer", "Software Engineer", "Senior Engineer", "Developer"],
 ]
+DEFAULT_ROLE_PRIORITY = len(ROLE_PRIORITY)  # Tier 7: Unknown roles
+
+
+def get_location_priority(location: str) -> int:
+    """
+    Get location priority tier for sorting.
+    Lower value = higher priority.
+    Returns: 1 (Saudi Arabia), 2 (UAE), 3 (Others)
+    """
+    if not location:
+        return DEFAULT_LOCATION_PRIORITY
+    location_lower = location.lower()
+    for keyword, priority in LOCATION_PRIORITY.items():
+        if keyword in location_lower:
+            return priority
+    return DEFAULT_LOCATION_PRIORITY
 
 
 def get_seniority_rank(title: str) -> int:
     """
-    Get seniority rank for a job title.
-    Higher value = more senior position.
-    Returns -1 if title doesn't match any known seniority level.
+    Get role priority tier for a job title.
+    Lower value = higher priority (leadership first).
+    Returns: 0-6 for known roles, 7 for unknown.
+    Uses word boundary matching to avoid partial matches (e.g., CTO in Director).
     """
+    import re
     if not title:
-        return -1
+        return DEFAULT_ROLE_PRIORITY
     title_lower = title.lower()
-    for rank, seniority_title in enumerate(SENIORITY_RANKING):
-        if seniority_title.lower() in title_lower:
-            return rank
-    return -1
+    for tier, role_keywords in enumerate(ROLE_PRIORITY):
+        for keyword in role_keywords:
+            # Use word boundary matching to prevent partial matches
+            pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
+            if re.search(pattern, title_lower):
+                return tier
+    return DEFAULT_ROLE_PRIORITY
 
 
 def is_priority_location(location: str) -> bool:
-    """Check if location matches any priority location (case-insensitive)."""
-    if not location:
-        return False
-    location_lower = location.lower()
-    return any(priority.lower() in location_lower for priority in PRIORITY_LOCATIONS)
+    """Check if location is Saudi Arabia or UAE (priority locations)."""
+    return get_location_priority(location) < DEFAULT_LOCATION_PRIORITY
 
 
 def get_db():
@@ -636,45 +682,53 @@ def list_jobs():
 
         # Add computed sort fields for default multi-criteria sorting
         if use_default_sort:
-            # Build regex pattern for priority locations (case-insensitive)
-            priority_regex = "|".join(PRIORITY_LOCATIONS)
-
-            # _isPriorityLocation: 1 if location matches priority, 0 otherwise
-            # Only add if no location filter is applied
+            # _locationPriority: tiered priority (1=Saudi, 2=UAE, 3=Others)
+            # Lower value = higher priority. Only add if no location filter is applied
             if not has_location_filter:
-                add_fields["_isPriorityLocation"] = {
-                    "$cond": {
-                        "if": {
+                # Build $switch branches for location priority
+                location_branches = []
+                for keyword, priority in LOCATION_PRIORITY.items():
+                    location_branches.append({
+                        "case": {
                             "$regexMatch": {
                                 "input": {"$ifNull": ["$location", ""]},
-                                "regex": priority_regex,
+                                "regex": keyword,
                                 "options": "i"
                             }
                         },
-                        "then": 1,
-                        "else": 0
+                        "then": priority
+                    })
+                add_fields["_locationPriority"] = {
+                    "$switch": {
+                        "branches": location_branches,
+                        "default": DEFAULT_LOCATION_PRIORITY
                     }
                 }
 
-            # _seniorityRank: numeric rank based on job title
-            # Build a nested $switch to map title to seniority rank
+            # _seniorityRank: tiered role priority (0=CTO/Head, 1=VP, ..., 6=SE, 7=unknown)
+            # Lower value = higher priority (leadership first)
+            # Use word boundaries (\b) to prevent partial matches (e.g., CTO in Director)
             seniority_branches = []
-            for rank, seniority_title in enumerate(SENIORITY_RANKING):
-                seniority_branches.append({
-                    "case": {
-                        "$regexMatch": {
-                            "input": {"$ifNull": ["$title", ""]},
-                            "regex": seniority_title,
-                            "options": "i"
-                        }
-                    },
-                    "then": rank
-                })
+            for tier, role_keywords in enumerate(ROLE_PRIORITY):
+                for keyword in role_keywords:
+                    # Escape special regex chars and wrap with word boundaries
+                    import re
+                    escaped_keyword = re.escape(keyword)
+                    seniority_branches.append({
+                        "case": {
+                            "$regexMatch": {
+                                "input": {"$ifNull": ["$title", ""]},
+                                "regex": f"\\b{escaped_keyword}\\b",
+                                "options": "i"
+                            }
+                        },
+                        "then": tier
+                    })
 
             add_fields["_seniorityRank"] = {
                 "$switch": {
                     "branches": seniority_branches,
-                    "default": -1  # Unknown titles get lowest rank
+                    "default": DEFAULT_ROLE_PRIORITY  # Unknown titles get lowest priority
                 }
             }
 
@@ -692,15 +746,17 @@ def list_jobs():
 
         # Build sort specification
         if use_default_sort:
-            # Multi-criteria sort:
-            # 1. Priority location first (desc) - only if no location filter
-            # 2. Score descending
-            # 3. Seniority rank descending
+            # Multi-criteria sort (lower values = higher priority for tiers):
+            # 1. Location priority: Saudi(1) → UAE(2) → Others(3) - only if no location filter
+            # 2. Role priority: CTO(0) → VP(1) → Director(2) → Tech Lead(3) → Staff(4) → EM(5) → SE(6)
+            # 3. Score: higher scores first
+            # 4. Recency: most recent first
             sort_spec: Dict[str, int] = {}
             if not has_location_filter:
-                sort_spec["_isPriorityLocation"] = -1  # Priority locations first
+                sort_spec["_locationPriority"] = 1  # Lower tier = higher priority
+            sort_spec["_seniorityRank"] = 1  # Lower tier = higher priority (leadership first)
             sort_spec["score"] = -1  # Higher scores first
-            sort_spec["_seniorityRank"] = -1  # More senior positions first
+            sort_spec["createdAt"] = -1  # Most recent first (tie-breaker)
         else:
             sort_spec = {mongo_sort_field: sort_order}
 
@@ -2428,11 +2484,16 @@ def batch_job_rows_partial():
     HTMX partial: Return table rows for batch processing view.
 
     Only returns jobs with status='under processing'.
+    Uses multi-criteria sorting by default (same as main page):
+    1. Location: Saudi Arabia → UAE → Others
+    2. Role: CTO → VP → Director → Tech Lead → Staff → EM → SE
+    3. Score: highest first
+    4. Recency: most recent first
     """
     collection = get_collection()
 
     # Get sort parameters
-    sort_field = request.args.get("sort", "batch_added_at")
+    sort_field = request.args.get("sort", "default")
     sort_direction = request.args.get("direction", "desc")
 
     # Map frontend field names to MongoDB field names
@@ -2444,13 +2505,86 @@ def batch_job_rows_partial():
         "score": "score",
     }
 
-    mongo_sort_field = field_mapping.get(sort_field, "batch_added_at")
-    mongo_sort_direction = -1 if sort_direction == "desc" else 1
+    # Determine if default multi-criteria sort should be used
+    use_default_sort = sort_field == "default"
 
-    # Query only jobs with 'under processing' status
-    jobs = list(collection.find(
-        {"status": "under processing"}
-    ).sort(mongo_sort_field, mongo_sort_direction))
+    if use_default_sort:
+        # Build aggregation pipeline for multi-criteria sorting
+        pipeline: List[Dict[str, Any]] = []
+
+        # Stage 1: Match only 'under processing' jobs
+        pipeline.append({"$match": {"status": "under processing"}})
+
+        # Stage 2: Add computed sort fields
+        add_fields: Dict[str, Any] = {}
+
+        # _locationPriority: tiered priority (1=Saudi, 2=UAE, 3=Others)
+        location_branches = []
+        for keyword, priority in LOCATION_PRIORITY.items():
+            location_branches.append({
+                "case": {
+                    "$regexMatch": {
+                        "input": {"$ifNull": ["$location", ""]},
+                        "regex": keyword,
+                        "options": "i"
+                    }
+                },
+                "then": priority
+            })
+        add_fields["_locationPriority"] = {
+            "$switch": {
+                "branches": location_branches,
+                "default": DEFAULT_LOCATION_PRIORITY
+            }
+        }
+
+        # _seniorityRank: tiered role priority
+        # Use word boundaries (\b) to prevent partial matches (e.g., CTO in Director)
+        seniority_branches = []
+        for tier, role_keywords in enumerate(ROLE_PRIORITY):
+            for keyword in role_keywords:
+                # Escape special regex chars and wrap with word boundaries
+                import re
+                escaped_keyword = re.escape(keyword)
+                seniority_branches.append({
+                    "case": {
+                        "$regexMatch": {
+                            "input": {"$ifNull": ["$title", ""]},
+                            "regex": f"\\b{escaped_keyword}\\b",
+                            "options": "i"
+                        }
+                    },
+                    "then": tier
+                })
+        add_fields["_seniorityRank"] = {
+            "$switch": {
+                "branches": seniority_branches,
+                "default": DEFAULT_ROLE_PRIORITY
+            }
+        }
+
+        pipeline.append({"$addFields": add_fields})
+
+        # Stage 3: Sort by multi-criteria
+        # Lower tier values = higher priority for location and role
+        sort_spec = {
+            "_locationPriority": 1,  # Saudi(1) → UAE(2) → Others(3)
+            "_seniorityRank": 1,     # CTO(0) → VP(1) → ... → SE(6)
+            "score": -1,             # Higher scores first
+            "createdAt": -1,         # Most recent first
+        }
+        pipeline.append({"$sort": sort_spec})
+
+        # Execute aggregation
+        jobs = list(collection.aggregate(pipeline))
+    else:
+        # Simple single-field sort when user clicks column headers
+        mongo_sort_field = field_mapping.get(sort_field, "batch_added_at")
+        mongo_sort_direction = -1 if sort_direction == "desc" else 1
+
+        jobs = list(collection.find(
+            {"status": "under processing"}
+        ).sort(mongo_sort_field, mongo_sort_direction))
 
     return render_template(
         "partials/batch_job_rows.html",
