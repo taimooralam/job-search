@@ -10,6 +10,120 @@
  * - Phase 5: Keyboard shortcuts, mobile responsiveness, WCAG 2.1 AA accessibility
  */
 
+/**
+ * UploadTracker - Global manager for background CV/Dossier uploads
+ *
+ * Allows uploads to continue running when the editor is closed (same-page scope).
+ * Provides visual feedback via purple flicker (batch) / gold flicker (detail).
+ */
+window.UploadTracker = window.UploadTracker || {
+    activeUploads: new Map(),  // jobId -> {type, startedAt, status, context}
+
+    /**
+     * Register an upload in progress
+     * @param {string} jobId - Job ID being uploaded
+     * @param {string} type - Upload type: 'cv' or 'dossier'
+     * @param {string} context - Context: 'batch' or 'detail'
+     */
+    register(jobId, type, context = 'batch') {
+        const entry = {
+            type,
+            context,
+            startedAt: Date.now(),
+            status: 'uploading'
+        };
+        this.activeUploads.set(jobId, entry);
+        this.startVisualFeedback(jobId, type, context);
+        console.log(`[UploadTracker] Registered ${type} upload for job ${jobId} (${context})`);
+        return entry;
+    },
+
+    /**
+     * Mark upload as complete
+     * @param {string} jobId - Job ID
+     * @param {boolean} success - Whether upload succeeded
+     */
+    complete(jobId, success) {
+        const entry = this.activeUploads.get(jobId);
+        if (!entry) return;
+
+        entry.status = success ? 'success' : 'error';
+        this.stopVisualFeedback(jobId, entry.type, entry.context, success);
+        console.log(`[UploadTracker] ${entry.type} upload ${success ? 'completed' : 'failed'} for job ${jobId}`);
+
+        // Keep in map briefly for UI state persistence, then remove
+        setTimeout(() => this.activeUploads.delete(jobId), 5000);
+    },
+
+    /**
+     * Check if a job is currently uploading
+     */
+    isUploading(jobId) {
+        const entry = this.activeUploads.get(jobId);
+        return entry?.status === 'uploading';
+    },
+
+    /**
+     * Start visual feedback for upload
+     */
+    startVisualFeedback(jobId, type, context) {
+        if (context === 'batch') {
+            // Batch page: CV badge flickers purple
+            const badge = document.querySelector(`[data-cv-badge="${jobId}"]`);
+            if (badge) {
+                badge.classList.add('upload-flickering-purple');
+                badge.classList.remove('upload-success-purple');
+            }
+            // Also update the Drive button in batch row
+            const driveBtn = document.querySelector(`[data-dossier-btn="${jobId}"]`);
+            if (driveBtn && type === 'dossier') {
+                driveBtn.classList.add('upload-flickering-purple');
+            }
+        } else if (context === 'detail') {
+            // Detail page: Header flickers gold
+            const header = document.querySelector('.job-detail-header-wrapper');
+            if (header) {
+                header.classList.add('upload-flickering-gold');
+                header.classList.remove('upload-success-gold');
+            }
+        }
+
+        // Dispatch event for custom handling
+        window.dispatchEvent(new CustomEvent('upload:started', {
+            detail: { jobId, type, context }
+        }));
+    },
+
+    /**
+     * Stop visual feedback and apply final state
+     */
+    stopVisualFeedback(jobId, type, context, success) {
+        if (context === 'batch') {
+            const badge = document.querySelector(`[data-cv-badge="${jobId}"]`);
+            if (badge) {
+                badge.classList.remove('upload-flickering-purple');
+                if (success) badge.classList.add('upload-success-purple');
+            }
+            const driveBtn = document.querySelector(`[data-dossier-btn="${jobId}"]`);
+            if (driveBtn && type === 'dossier') {
+                driveBtn.classList.remove('upload-flickering-purple');
+                if (success) driveBtn.classList.add('gdrive-uploaded');
+            }
+        } else if (context === 'detail') {
+            const header = document.querySelector('.job-detail-header-wrapper');
+            if (header) {
+                header.classList.remove('upload-flickering-gold');
+                if (success) header.classList.add('upload-success-gold');
+            }
+        }
+
+        // Dispatch completion event
+        window.dispatchEvent(new CustomEvent(success ? 'upload:completed' : 'upload:failed', {
+            detail: { jobId, type, context }
+        }));
+    }
+};
+
 class CVEditor {
     /**
      * Create a CV Editor instance
@@ -1450,12 +1564,14 @@ async function exportCVToPDF() {
  * This function:
  * 1. Saves the current CV state
  * 2. Calls the backend to generate PDF and upload to Google Drive
- * 3. Updates button state to show upload progress (orange pulse)
- * 4. On success, button turns green and stays green (persisted in MongoDB)
+ * 3. Uses UploadTracker for background execution (survives editor close)
+ * 4. Visual feedback: purple flicker (batch) / gold flicker (detail)
+ * 5. On success, permanent purple/gold color (persisted in MongoDB)
  *
  * @param {string} jobId - Optional job ID. If not provided, uses cvEditorInstance.jobId
+ * @param {string} context - 'batch' or 'detail' for visual feedback styling
  */
-async function uploadCVToGDrive(jobId = null) {
+async function uploadCVToGDrive(jobId = null, context = null) {
     // Get job ID from parameter or editor instance
     const targetJobId = jobId || (cvEditorInstance ? cvEditorInstance.jobId : null);
 
@@ -1464,67 +1580,86 @@ async function uploadCVToGDrive(jobId = null) {
         return;
     }
 
+    // Check if already uploading
+    if (window.UploadTracker?.isUploading(targetJobId)) {
+        notifyUser('Upload already in progress', 'info');
+        return;
+    }
+
+    // Detect context if not provided (batch = has batch sidebar, detail = has detail header)
+    const uploadContext = context ||
+        (document.getElementById('batch-cv-sidebar') ? 'batch' : 'detail');
+
+    // Register upload in tracker (starts visual feedback)
+    window.UploadTracker?.register(targetJobId, 'cv', uploadContext);
+
     // Find all Google Drive upload buttons to update state
     const buttons = document.querySelectorAll('.gdrive-btn');
+    buttons.forEach(btn => {
+        btn.classList.add('uploading');
+        btn.classList.remove('gdrive-uploaded', 'upload-error');
+        btn.disabled = true;
+        const textSpan = btn.querySelector('.gdrive-btn-text');
+        if (textSpan) textSpan.textContent = 'Uploading';
+    });
 
-    try {
-        // Update UI: uploading state (orange pulse)
-        buttons.forEach(btn => {
-            btn.classList.add('uploading');
-            btn.classList.remove('gdrive-uploaded', 'upload-error');
-            btn.disabled = true;
-            const textSpan = btn.querySelector('.gdrive-btn-text');
-            if (textSpan) textSpan.textContent = 'Uploading';
-        });
+    notifyUser('Uploading CV to Google Drive...', 'info');
 
-        notifyUser('Uploading CV to Google Drive...', 'info');
-
-        // Save CV first if editor is open
-        if (cvEditorInstance && cvEditorInstance.editor) {
+    // Save CV first if editor is open (awaited - quick operation)
+    if (cvEditorInstance && cvEditorInstance.editor) {
+        try {
             await cvEditorInstance.save();
+        } catch (e) {
+            console.warn('Could not save before upload:', e);
         }
+    }
 
-        // Call upload endpoint
-        const response = await fetch(`/api/jobs/${targetJobId}/cv/upload-drive`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin'
-        });
+    // Fire-and-forget upload - continues even if editor is closed
+    fetch(`/api/jobs/${targetJobId}/cv/upload-drive`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json().then(data => ({ ok: response.ok, data })))
+    .then(({ ok, data }) => {
+        // Re-query buttons (may have changed if editor closed/reopened)
+        const btns = document.querySelectorAll('.gdrive-btn');
 
-        const result = await response.json();
+        if (ok) {
+            // Success: notify tracker and update UI
+            window.UploadTracker?.complete(targetJobId, true);
 
-        if (!response.ok) {
-            throw new Error(result.error || 'Upload failed');
+            btns.forEach(btn => {
+                btn.classList.remove('uploading');
+                btn.classList.add('gdrive-uploaded');
+                btn.disabled = false;
+                const textSpan = btn.querySelector('.gdrive-btn-text');
+                if (textSpan) textSpan.textContent = 'Uploaded';
+            });
+
+            // Dispatch event to update CV badge
+            window.dispatchEvent(new CustomEvent('cv:uploaded-to-drive', {
+                detail: { jobId: targetJobId }
+            }));
+
+            notifyUser('CV uploaded to Google Drive!', 'success');
+        } else {
+            throw new Error(data.error || 'Upload failed');
         }
-
-        // Success: update UI to green (persists on page refresh via MongoDB)
-        buttons.forEach(btn => {
-            btn.classList.remove('uploading');
-            btn.classList.add('gdrive-uploaded');
-            btn.disabled = false;
-            const textSpan = btn.querySelector('.gdrive-btn-text');
-            if (textSpan) textSpan.textContent = 'Uploaded';
-        });
-
-        // Dispatch event to update CV badge to indigo
-        window.dispatchEvent(new CustomEvent('cv:uploaded-to-drive', {
-            detail: { jobId: targetJobId }
-        }));
-
-        notifyUser('CV uploaded to Google Drive!', 'success');
-
-    } catch (error) {
+    })
+    .catch(error => {
         console.error('Google Drive upload failed:', error);
+        window.UploadTracker?.complete(targetJobId, false);
 
-        // Error: show error state briefly, then reset
-        buttons.forEach(btn => {
+        // Re-query buttons
+        const btns = document.querySelectorAll('.gdrive-btn');
+        btns.forEach(btn => {
             btn.classList.remove('uploading');
             btn.classList.add('upload-error');
             btn.disabled = false;
             const textSpan = btn.querySelector('.gdrive-btn-text');
             if (textSpan) textSpan.textContent = 'Failed';
 
-            // Reset error state after animation
             setTimeout(() => {
                 btn.classList.remove('upload-error');
                 if (textSpan) textSpan.textContent = 'Upload to Drive';
@@ -1532,7 +1667,9 @@ async function uploadCVToGDrive(jobId = null) {
         });
 
         notifyUser(`Upload failed: ${error.message}`, 'error');
-    }
+    });
+
+    // Return immediately - upload continues in background
 }
 
 /**
