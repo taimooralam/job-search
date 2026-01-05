@@ -92,7 +92,17 @@
                 </button>
                 <!-- Application URL Quick Entry + Quick Open Link -->
                 <div class="relative no-navigate flex-shrink-0 flex items-center gap-0.5"
-                     x-data="{ showPopover: false, url: '{{ (app_url or '') | e }}', saving: false }"
+                     x-data="{
+                         showPopover: false,
+                         url: '{{ (app_url or '') | e }}',
+                         saving: false,
+                         openAbove: false,
+                         checkPosition() {
+                             const rect = this.$el.getBoundingClientRect();
+                             const spaceBelow = window.innerHeight - rect.bottom;
+                             this.openAbove = spaceBelow < 150;
+                         }
+                     }"
                      onclick="event.stopPropagation()">
                     <!-- Quick open link (if URL exists) -->
                     {% if app_url %}
@@ -106,7 +116,7 @@
                     </a>
                     {% endif %}
                     <!-- Edit button -->
-                    <button @click="showPopover = !showPopover; anyPopoverOpen = showPopover"
+                    <button @click="checkPosition(); showPopover = !showPopover; anyPopoverOpen = showPopover"
                             class="p-1 rounded transition-all
                                    {% if app_url %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover
                                    {% else %}opacity-0 group-hover:opacity-100 theme-text-tertiary hover:theme-text-primary hover:theme-bg-hover{% endif %}"
@@ -116,7 +126,7 @@
                                   d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                         </svg>
                     </button>
-                    <!-- Popover -->
+                    <!-- Popover with smart positioning (opens above if near bottom of viewport) -->
                     <div x-show="showPopover"
                          x-cloak
                          @click.away="showPopover = false; anyPopoverOpen = false"
@@ -126,7 +136,8 @@
                          x-transition:leave="transition ease-in duration-75"
                          x-transition:leave-start="transform opacity-100 scale-100"
                          x-transition:leave-end="transform opacity-0 scale-95"
-                         class="absolute left-0 top-full mt-1 w-72 p-3 rounded-lg shadow-xl theme-bg-card border theme-border z-50">
+                         :class="openAbove ? 'bottom-full mb-1' : 'top-full mt-1'"
+                         class="absolute left-0 w-72 p-3 rounded-lg shadow-xl theme-bg-card border theme-border z-50">
                         <label class="block text-xs font-medium theme-text-secondary mb-1.5">Application URL</label>
                         <div class="flex gap-2">
                             <input type="url"
@@ -241,6 +252,12 @@
         {% set has_cv_uploaded = job.gdrive_uploaded_at is defined and job.gdrive_uploaded_at %}
         {% set cv_state = 'indigo' if has_cv_uploaded else ('green' if has_cv_edited else ('orange' if has_cv_generated else 'gray')) %}
 
+        {# Persona state: gray = no JD annotations, orange = has JD but no persona, green = has persona #}
+        {% set has_jd_ann = job.jd_annotations is defined and job.jd_annotations %}
+        {% set synthesized_persona = job.jd_annotations.synthesized_persona if has_jd_ann and job.jd_annotations.synthesized_persona else none %}
+        {% set persona_statement = synthesized_persona.persona_statement if synthesized_persona else '' %}
+        {% set ps_state = 'green' if persona_statement else ('orange' if has_jd_ann else 'gray') %}
+
         <td class="px-2 sm:px-4 py-3 whitespace-nowrap no-navigate" onclick="event.stopPropagation()">
             <div class="flex items-center gap-1.5">
                 <!-- JD Badge - updates via annotations:updated event -->
@@ -273,6 +290,15 @@
                       title="CV: {{ 'Uploaded to Drive' if cv_state == 'indigo' else ('Edited' if cv_state == 'green' else ('Generated' if cv_state == 'orange' else 'Not generated')) }}"
                       {% if cv_state in ['indigo', 'green', 'orange'] %}onclick="openBatchCVEditor('{{ job._id }}')"{% endif %}>
                     CV
+                </span>
+                <!-- PS (Persona) Badge - orange if missing persona, green if generated -->
+                <span data-ps-badge="{{ job._id }}"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
+                             {% if ps_state == 'green' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300
+                             {% elif ps_state == 'orange' %}bg-orange-100 text-orange-600 dark:bg-orange-900/50 dark:text-orange-300
+                             {% else %}bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500{% endif %}"
+                      title="Persona: {{ 'Generated' if ps_state == 'green' else ('Missing - click JD to add' if ps_state == 'orange' else 'N/A') }}">
+                    PS
                 </span>
             </div>
         </td>
