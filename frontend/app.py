@@ -1121,19 +1121,46 @@ def move_to_batch():
         }}
     )
 
-    # NOTE: Pipeline auto-run has been moved to the batch page frontend.
-    # This allows the batch page to orchestrate pipeline runs directly via
-    # browser→runner calls, providing full visibility with progress panels
-    # and real-time log polling. The batch page detects recently added jobs
-    # by checking batch_added_at timestamps and auto-runs all-ops on them.
+    # Auto-queue analyze-job (full-extraction) for each job if auto_process is True
+    # This runs silently in the background without CLI console visibility
+    auto_queued = []
+    queue_errors = []
 
-    logger.info(f"Moved {result.modified_count} jobs to batch")
+    if auto_process:
+        runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
+        runner_secret = os.getenv("RUNNER_API_SECRET", "")
+        headers = {"Authorization": f"Bearer {runner_secret}"} if runner_secret else {}
+
+        for job_id in job_ids:
+            try:
+                response = requests.post(
+                    f"{runner_url}/api/jobs/{job_id}/operations/full-extraction/queue",
+                    json={"tier": tier},
+                    headers=headers,
+                    timeout=5.0  # Quick timeout - just queuing, not waiting for completion
+                )
+                if response.status_code == 200:
+                    auto_queued.append(job_id)
+                    logger.debug(f"Auto-queued analyze-job for job {job_id}")
+                else:
+                    queue_errors.append({"job_id": job_id, "error": f"Status {response.status_code}"})
+                    logger.warning(f"Failed to queue analyze-job for {job_id}: {response.status_code}")
+            except requests.exceptions.Timeout:
+                queue_errors.append({"job_id": job_id, "error": "Timeout"})
+                logger.warning(f"Timeout queuing analyze-job for {job_id}")
+            except Exception as e:
+                queue_errors.append({"job_id": job_id, "error": str(e)})
+                logger.warning(f"Error queuing analyze-job for {job_id}: {e}")
+
+    logger.info(f"Moved {result.modified_count} jobs to batch, auto-queued {len(auto_queued)} for analysis")
 
     return jsonify({
         "success": True,
         "updated_count": result.modified_count,
         "batch_added_at": batch_added_at.isoformat(),
-        "job_ids": job_ids  # Return job IDs for batch page to auto-run
+        "job_ids": job_ids,
+        "auto_queued": auto_queued,  # Jobs that were successfully queued for analysis
+        "queue_errors": queue_errors if queue_errors else None  # Any queue failures
     })
 
 
@@ -4212,12 +4239,12 @@ def get_cv_editor_state(job_id: str):
                 "fontSize": 11,  # 11pt body text (professional resume standard)
                 "lineHeight": 1.5,  # Improved readability spacing
                 "margins": {
-                    "top": 1.0,  # Standard 1-inch margins
-                    "right": 1.0,
-                    "bottom": 1.0,
-                    "left": 1.0
+                    "top": 0.5,  # Narrow margins (matches cv-editor.js defaults)
+                    "right": 0.5,
+                    "bottom": 0.5,
+                    "left": 0.5
                 },
-                "pageSize": "letter",
+                "pageSize": "a4",  # A4 size (matches cv-editor.js defaults)
                 "colorText": "#1f2a38",  # Near-black for better readability
                 "colorMuted": "#4b5563",  # Muted gray for metadata
                 "colorAccent": "#475569"  # slate-600 - professional dark blue-gray
@@ -4517,12 +4544,12 @@ def migrate_cv_text_to_editor_state(cv_text: str) -> dict:
             "fontSize": 11,  # 11pt body text (professional resume standard)
             "lineHeight": 1.5,  # Improved readability spacing
             "margins": {
-                "top": 1.0,  # Standard 1-inch margins
-                "right": 1.0,
-                "bottom": 1.0,
-                "left": 1.0
+                "top": 0.5,  # Narrow margins (matches cv-editor.js defaults)
+                "right": 0.5,
+                "bottom": 0.5,
+                "left": 0.5
             },
-            "pageSize": "letter",
+            "pageSize": "a4",  # A4 size (matches cv-editor.js defaults)
             "colorText": "#1f2a38",  # Near-black for better readability
             "colorMuted": "#4b5563",  # Muted gray for metadata
             "colorAccent": "#475569"  # slate-600 - professional dark blue-gray
