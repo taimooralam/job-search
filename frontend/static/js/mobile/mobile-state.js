@@ -489,6 +489,12 @@ window.mobileApp = function() {
                     console.log('[Mobile Annotation] processedJdHtml length:', this.annotation.processedJdHtml?.length || 0);
                     console.log('[Mobile Annotation] processedJdHtml preview:', this.annotation.processedJdHtml?.substring(0, 200));
 
+                    // If no processed JD HTML, auto-generate it
+                    if (!this.annotation.processedJdHtml) {
+                        console.log('[Mobile Annotation] No processed JD HTML, auto-generating...');
+                        await this.generateProcessedJdHtml();
+                    }
+
                     this.checkIdentityAnnotations();
                 } else {
                     console.warn('[Mobile Annotation] API returned non-OK status');
@@ -524,6 +530,36 @@ window.mobileApp = function() {
                     strengthLevels.includes(a.relevance)
                 )
             );
+        },
+
+        // Generate processed JD HTML by calling the structure-jd API
+        async generateProcessedJdHtml() {
+            if (!this.currentJob) return;
+
+            console.log('[Mobile Annotation] Calling process-jd API...');
+
+            try {
+                const response = await fetch(`/api/jobs/${this.currentJob._id}/process-jd`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ use_llm: true })
+                });
+
+                if (!response.ok) {
+                    console.warn('[Mobile Annotation] process-jd API failed:', response.status);
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('[Mobile Annotation] process-jd response:', data.success);
+
+                if (data.success && data.processed_jd?.html) {
+                    this.annotation.processedJdHtml = data.processed_jd.html;
+                    console.log('[Mobile Annotation] Generated processedJdHtml, length:', this.annotation.processedJdHtml.length);
+                }
+            } catch (error) {
+                console.error('[Mobile Annotation] Failed to generate processed JD:', error);
+            }
         },
 
         // Format JD text for annotation display
