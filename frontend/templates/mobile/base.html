@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="msapplication-navbutton-color" content="#8B5CF6">
+    <meta name="apple-mobile-web-app-title" content="JobPipe">
+
+    <title>{% block title %}JobPipe{% endblock %}</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js Collapse Plugin -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.8/dist/cdn.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Global Configuration -->
+    <script>
+        window.RUNNER_URL = "{{ runner_url }}";
+    </script>
+
+    <!-- Tailwind Configuration - Mobile PWA Theme -->
+    <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            // Mobile PWA color scheme
+            mobile: {
+              purple: {
+                50: '#faf5ff',
+                100: '#f3e8ff',
+                200: '#e9d5ff',
+                300: '#d8b4fe',
+                400: '#c084fc',
+                500: '#8B5CF6',  // Primary
+                600: '#7C3AED',  // Hover
+                700: '#6D28D9',  // Active
+                800: '#5B21B6',
+                900: '#4C1D95',
+              },
+              gold: {
+                300: '#FCD34D',
+                400: '#FBBF24',
+                500: '#F59E0B',  // Primary gold
+                600: '#D97706',
+                700: '#B45309',
+              },
+              orange: {
+                400: '#FB923C',
+                500: '#F97316',  // Accent orange
+                600: '#EA580C',
+              },
+              red: {
+                400: '#F87171',
+                500: '#EF4444',  // Discard red
+                600: '#DC2626',
+              },
+              dark: {
+                900: '#111827',  // Background
+                800: '#1F2937',  // Card background
+                700: '#374151',  // Borders
+                600: '#4B5563',  // Muted
+                500: '#6B7280',  // Text secondary
+              }
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'shimmer': 'shimmer 2s ease-in-out infinite',
+            'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+            'slide-up': 'slide-up 0.3s ease-out',
+            'slide-down': 'slide-down 0.3s ease-out',
+            'card-exit-left': 'card-exit-left 0.3s ease-out forwards',
+            'card-exit-right': 'card-exit-right 0.3s ease-out forwards',
+            'card-enter': 'card-enter 0.3s ease-out',
+          },
+          keyframes: {
+            shimmer: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+            },
+            'pulse-glow': {
+              '0%, 100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' },
+              '50%': { boxShadow: '0 0 40px rgba(139, 92, 246, 0.6)' },
+            },
+            'slide-up': {
+              '0%': { transform: 'translateY(100%)' },
+              '100%': { transform: 'translateY(0)' },
+            },
+            'slide-down': {
+              '0%': { transform: 'translateY(0)' },
+              '100%': { transform: 'translateY(100%)' },
+            },
+            'card-exit-left': {
+              '0%': { transform: 'translateX(0) rotate(0deg)', opacity: '1' },
+              '100%': { transform: 'translateX(-150%) rotate(-30deg)', opacity: '0' },
+            },
+            'card-exit-right': {
+              '0%': { transform: 'translateX(0) rotate(0deg)', opacity: '1' },
+              '100%': { transform: 'translateX(150%) rotate(30deg)', opacity: '0' },
+            },
+            'card-enter': {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+          },
+        }
+      }
+    }
+    </script>
+
+    <!-- Mobile CSS -->
+    <link rel="stylesheet" href="/static/css/mobile.css">
+
+    <!-- Mobile State Management -->
+    <script src="/static/js/mobile/mobile-state.js" defer></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full bg-mobile-dark-900 text-white overscroll-none" x-data>
+    <!-- iOS Safe Area Padding -->
+    <div class="fixed inset-0 flex flex-col safe-area-inset">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-20 left-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/static/sw.js')
+                .then(reg => console.log('SW registered:', reg.scope))
+                .catch(err => console.error('SW registration failed:', err));
+        });
+    }
+    </script>
+
+    <!-- Toast Utility -->
+    <script>
+    window.showToast = function(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+
+        const configs = {
+            success: { bg: 'bg-green-500', icon: '✓' },
+            error: { bg: 'bg-mobile-red-500', icon: '✕' },
+            info: { bg: 'bg-mobile-purple-500', icon: 'ℹ' },
+            warning: { bg: 'bg-mobile-gold-500 text-mobile-dark-900', icon: '⚠' }
+        };
+
+        const config = configs[type] || configs.info;
+
+        toast.className = `${config.bg} text-white px-4 py-3 rounded-xl shadow-lg pointer-events-auto flex items-center gap-3 transform transition-all duration-300 translate-y-4 opacity-0`;
+        toast.innerHTML = `
+            <span class="text-lg">${config.icon}</span>
+            <span class="flex-1 font-medium">${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-4', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+        });
+
+        // Animate out
+        setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    };
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
