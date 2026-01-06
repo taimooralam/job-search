@@ -5,8 +5,11 @@
  * Uses global function pattern for reliable Alpine.js integration
  */
 
+console.log('[mobile-state.js] Script loading...');
+
 // Global function pattern - more reliable than alpine:init event with CDN scripts
 window.mobileApp = function() {
+    console.log('[mobile-state.js] mobileApp() called');
     return {
         // State
         mode: 'main',           // 'main' or 'batch'
