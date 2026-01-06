@@ -110,6 +110,12 @@ window.mobileApp = function() {
 
         // Lifecycle
         init() {
+            // Ensure overlays are closed on init
+            this.cvViewer.show = false;
+            this.cvViewer.isLoading = false;
+            this.cvProgress = null;
+            this.annotationMode = false;
+
             // Check URL for mode
             const path = window.location.pathname;
             if (path.includes('/batch')) {
