@@ -2,10 +2,12 @@
  * Mobile PWA State Management
  *
  * Alpine.js application for mobile job swiping interface
+ * Uses global function pattern for reliable Alpine.js integration
  */
 
-document.addEventListener('alpine:init', () => {
-    Alpine.data('mobileApp', () => ({
+// Global function pattern - more reliable than alpine:init event with CDN scripts
+window.mobileApp = function() {
+    return {
         // State
         mode: 'main',           // 'main' or 'batch'
         timeFilter: '24h',      // Current time filter
@@ -702,5 +704,5 @@ document.addEventListener('alpine:init', () => {
                 window.open(`/job/${this.cvViewer.jobId}`, '_blank');
             }
         }
-    }));
-});
+    };
+};
