@@ -2476,10 +2476,10 @@ def mobile_jobs():
                 ]
             })
 
-        # Time filter (only for main mode - batch shows all "under processing" jobs)
+        # Time filter cutoff (only for main mode - batch shows all "under processing" jobs)
+        date_cutoff = None
         if mode == "main" and time_filter in MOBILE_TIME_FILTERS:
-            cutoff = datetime.utcnow() - MOBILE_TIME_FILTERS[time_filter]
-            and_conditions.append({"createdAt": {"$gte": cutoff}})
+            date_cutoff = datetime.utcnow() - MOBILE_TIME_FILTERS[time_filter]
 
         # Cursor-based pagination
         if cursor:
@@ -2488,7 +2488,7 @@ def mobile_jobs():
             except Exception:
                 pass  # Invalid cursor, ignore
 
-        # Build final query from conditions
+        # Build initial query from conditions (status filter only, not date)
         if len(and_conditions) == 1:
             query = and_conditions[0]
         else:
@@ -2496,6 +2496,24 @@ def mobile_jobs():
 
         # Build aggregation pipeline
         pipeline = [{"$match": query}]
+
+        # GAP-007 Fix: Normalize createdAt to handle mixed types (strings from n8n, Date objects from other sources)
+        # This must happen BEFORE date filtering
+        pipeline.append({
+            "$addFields": {
+                "_normalizedDate": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$createdAt"}, "string"]},
+                        "then": {"$toDate": "$createdAt"},
+                        "else": "$createdAt"
+                    }
+                }
+            }
+        })
+
+        # Apply date filter on normalized field (if main mode with time filter)
+        if date_cutoff:
+            pipeline.append({"$match": {"_normalizedDate": {"$gte": date_cutoff}}})
 
         # Add computed fields for sorting (location and seniority priority)
         pipeline.append({
