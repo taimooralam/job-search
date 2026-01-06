@@ -455,12 +455,19 @@ window.mobileApp = function() {
         async openAnnotationMode() {
             if (!this.currentJob) return;
 
+            console.log('[Mobile Annotation] Opening annotation mode for job:', this.currentJob._id);
+
             // Load existing annotations and processed JD HTML BEFORE showing panel
             // This ensures getAnnotationJdHtml() has the data when panel renders
             try {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
+                console.log('[Mobile Annotation] API response status:', response.status);
+
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('[Mobile Annotation] API response keys:', Object.keys(data));
+                    console.log('[Mobile Annotation] data.annotations keys:', data.annotations ? Object.keys(data.annotations) : 'null');
+
                     // API returns: { annotations: { processed_jd_html, annotations: [], ... }, ... }
                     const jdAnnotations = data.annotations || {};
                     // The actual annotations array is nested inside
@@ -469,19 +476,27 @@ window.mobileApp = function() {
                     this.annotation.personaStatement = jdAnnotations.synthesized_persona?.persona_statement || null;
                     // Store the LLM-processed JD HTML if available
                     this.annotation.processedJdHtml = jdAnnotations.processed_jd_html || null;
+
+                    console.log('[Mobile Annotation] Loaded annotations count:', this.annotation.annotations.length);
+                    console.log('[Mobile Annotation] processedJdHtml exists:', !!this.annotation.processedJdHtml);
+                    console.log('[Mobile Annotation] processedJdHtml length:', this.annotation.processedJdHtml?.length || 0);
+                    console.log('[Mobile Annotation] processedJdHtml preview:', this.annotation.processedJdHtml?.substring(0, 200));
+
                     this.checkIdentityAnnotations();
                 } else {
+                    console.warn('[Mobile Annotation] API returned non-OK status');
                     this.annotation.annotations = [];
                     this.annotation.processedJdHtml = null;
                 }
             } catch (error) {
-                console.error('Failed to load annotations:', error);
+                console.error('[Mobile Annotation] Failed to load annotations:', error);
                 this.annotation.annotations = [];
                 this.annotation.processedJdHtml = null;
             }
 
             // Show annotation panel AFTER data is loaded
             this.annotationMode = true;
+            console.log('[Mobile Annotation] Panel opened, processedJdHtml is:', !!this.annotation.processedJdHtml);
         },
 
         closeAnnotationMode() {
@@ -769,14 +784,21 @@ window.mobileApp = function() {
         // Get JD HTML for annotation panel - prefer LLM-processed HTML, fallback to JDFormatter
         // Also applies highlights for existing annotations
         getAnnotationJdHtml() {
+            console.log('[Mobile Annotation] getAnnotationJdHtml called');
+            console.log('[Mobile Annotation] processedJdHtml exists:', !!this.annotation.processedJdHtml);
+
             // Get base HTML
             let html;
             if (this.annotation.processedJdHtml) {
+                console.log('[Mobile Annotation] Using LLM-processed HTML');
                 html = this.annotation.processedJdHtml;
             } else {
+                console.log('[Mobile Annotation] Falling back to JDFormatter');
                 const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
                 html = this.formatJD(rawJd);
             }
+
+            console.log('[Mobile Annotation] HTML preview (first 300 chars):', html?.substring(0, 300));
 
             // Apply highlights for existing annotations
             return this.applyHighlightsToHtml(html);
