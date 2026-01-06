@@ -2457,26 +2457,42 @@ def mobile_jobs():
         # Get collection
         collection = get_collection()
 
-        # Build query
-        query = {}
+        # Build query with $and conditions
+        and_conditions = []
 
         # Mode-based status filter
         if mode == "batch":
-            query["status"] = "under processing"
+            and_conditions.append({"status": "under processing"})
         else:
-            query["status"] = {"$nin": ["discarded", "applied", "interview scheduled", "under processing"]}
+            # Match desktop behavior: include specific statuses OR null/missing/empty
+            # This is critical because many jobs have null/missing status (meaning "not processed")
+            main_statuses = ["not processed", "marked for applying", "ready for applying", "to be deleted", "rejected", "offer received"]
+            and_conditions.append({
+                "$or": [
+                    {"status": {"$in": main_statuses}},
+                    {"status": {"$exists": False}},
+                    {"status": None},
+                    {"status": ""}
+                ]
+            })
 
         # Time filter (only for main mode - batch shows all "under processing" jobs)
         if mode == "main" and time_filter in MOBILE_TIME_FILTERS:
             cutoff = datetime.utcnow() - MOBILE_TIME_FILTERS[time_filter]
-            query["createdAt"] = {"$gte": cutoff}
+            and_conditions.append({"createdAt": {"$gte": cutoff}})
 
         # Cursor-based pagination
         if cursor:
             try:
-                query["_id"] = {"$lt": ObjectId(cursor)}
+                and_conditions.append({"_id": {"$lt": ObjectId(cursor)}})
             except Exception:
                 pass  # Invalid cursor, ignore
+
+        # Build final query from conditions
+        if len(and_conditions) == 1:
+            query = and_conditions[0]
+        else:
+            query = {"$and": and_conditions}
 
         # Build aggregation pipeline
         pipeline = [{"$match": query}]
