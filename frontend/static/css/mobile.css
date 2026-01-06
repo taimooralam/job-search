@@ -157,19 +157,67 @@
    Annotation Highlights
    ============================================================================ */
 
-.annotation-highlight {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
-  border-radius: 2px;
-  padding: 0 2px;
-  margin: 0 -2px;
+/* Base mark element reset for dark theme */
+mark.annotation-highlight {
+  color: inherit;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: inline;
+  line-height: 1.6;
 }
 
+/* Default highlight (fallback) */
+.annotation-highlight {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+/* Core Strength - Green with left border */
+.annotation-highlight[data-relevance="core_strength"] {
+  background: rgba(34, 197, 94, 0.25);
+  border-left: 3px solid rgb(74, 222, 128);
+  padding-left: 6px;
+}
+
+/* Strong Fit / Extremely Relevant - Emerald */
+.annotation-highlight[data-relevance="extremely_relevant"] {
+  background: rgba(52, 211, 153, 0.2);
+  border-left: 3px solid rgb(52, 211, 153);
+  padding-left: 6px;
+}
+
+/* Relevant / Good - Blue */
+.annotation-highlight[data-relevance="relevant"] {
+  background: rgba(59, 130, 246, 0.2);
+  border-left: 3px solid rgb(96, 165, 250);
+  padding-left: 6px;
+}
+
+/* Tangential / Weak - Yellow */
+.annotation-highlight[data-relevance="tangential"] {
+  background: rgba(234, 179, 8, 0.15);
+  border-left: 3px solid rgb(250, 204, 21);
+  padding-left: 6px;
+}
+
+/* Gap - Red */
+.annotation-highlight[data-relevance="gap"] {
+  background: rgba(239, 68, 68, 0.2);
+  border-left: 3px solid rgb(248, 113, 113);
+  padding-left: 6px;
+}
+
+/* Legacy class-based selectors for backwards compatibility */
 .annotation-highlight.core-strength {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.1) 100%);
+  background: rgba(34, 197, 94, 0.25);
+  border-left: 3px solid rgb(74, 222, 128);
 }
 
 .annotation-highlight.gap {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%);
+  background: rgba(239, 68, 68, 0.2);
+  border-left: 3px solid rgb(248, 113, 113);
 }
 
 /* ============================================================================

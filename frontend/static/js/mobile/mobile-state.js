@@ -654,7 +654,8 @@ window.mobileApp = function() {
                     created_at: new Date().toISOString()
                 };
 
-                this.annotation.annotations.push(newAnnotation);
+                // Use array reassignment to trigger Alpine reactivity
+                this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
 
                 // Save to server
                 await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
@@ -764,14 +765,56 @@ window.mobileApp = function() {
         },
 
         // Get JD HTML for annotation panel - prefer LLM-processed HTML, fallback to JDFormatter
+        // Also applies highlights for existing annotations
         getAnnotationJdHtml() {
-            // If we have LLM-processed JD HTML, use it (matches desktop)
+            // Get base HTML
+            let html;
             if (this.annotation.processedJdHtml) {
-                return this.annotation.processedJdHtml;
+                html = this.annotation.processedJdHtml;
+            } else {
+                const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
+                html = this.formatJD(rawJd);
             }
-            // Otherwise, use JDFormatter for regex-based structuring
-            const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
-            return this.formatJD(rawJd);
+
+            // Apply highlights for existing annotations
+            return this.applyHighlightsToHtml(html);
+        },
+
+        // Apply annotation highlights to HTML string
+        applyHighlightsToHtml(html) {
+            if (!html) return html;
+
+            // Get active annotations
+            const annotations = Array.isArray(this.annotation.annotations)
+                ? this.annotation.annotations.filter(a => a.is_active !== false)
+                : [];
+
+            if (!annotations.length) return html;
+
+            // Apply highlights for each annotation
+            // Sort by text length (longest first) to avoid nested replacements
+            const sortedAnnotations = [...annotations].sort((a, b) =>
+                (b.target?.text?.length || 0) - (a.target?.text?.length || 0)
+            );
+
+            for (const annotation of sortedAnnotations) {
+                const targetText = annotation.target?.text;
+                if (!targetText || targetText.length < 5) continue;
+
+                const relevance = annotation.relevance || 'relevant';
+
+                // Escape special regex characters in target text
+                const escapedText = targetText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                // Create highlight mark - CSS handles colors via data-relevance attribute
+                const highlightMark = `<mark class="annotation-highlight" data-annotation-id="${annotation.id}" data-relevance="${relevance}">$&</mark>`;
+
+                // Replace first occurrence only (to avoid duplicates)
+                const regex = new RegExp(escapedText, 'i');
+                html = html.replace(regex, highlightMark);
+            }
+
+            return html;
         },
 
         async openCvViewer(jobId) {
