@@ -367,6 +367,10 @@ window.mobileApp = function() {
             if (card) {
                 card.classList.remove('snapping');
                 card.style.transform = '';
+
+                // Reset scroll position of JD content to top
+                const scrollableAreas = card.querySelectorAll('.overflow-y-auto');
+                scrollableAreas.forEach(el => el.scrollTop = 0);
             }
 
             // Load more if running low
