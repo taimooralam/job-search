@@ -433,7 +433,7 @@
     <!-- Annotation Mode Overlay -->
     <div x-show="annotationMode" x-transition class="fixed inset-0 z-40 flex flex-col bg-mobile-dark-900" style="display: none;">
         <!-- Annotation Header -->
-        <header class="flex-shrink-0 px-4 pt-safe pb-3 bg-mobile-dark-800 border-b border-mobile-dark-700">
+        <header class="flex-shrink-0 px-4 pt-safe pb-2 bg-mobile-dark-800 border-b border-mobile-dark-700">
             <div class="flex items-center justify-between">
                 <button @click="closeAnnotationMode()" class="text-mobile-dark-500 p-2 -ml-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,57 +441,56 @@
                     </svg>
                 </button>
                 <h2 class="text-lg font-semibold text-white">Annotate JD</h2>
-                <div class="w-10"></div>
+                <span class="text-xs text-mobile-dark-500 px-2 py-1 bg-mobile-dark-700 rounded-lg"
+                      x-text="`${annotation.annotations.length} saved`"></span>
             </div>
         </header>
 
-        <!-- Persona Status -->
-        <div x-show="annotation.personaStatement" class="px-4 py-3 bg-gradient-to-r from-mobile-purple-900/50 to-mobile-gold-900/50 border-b border-mobile-dark-700">
-            <div class="flex items-start gap-3">
-                <span class="text-2xl">🎭</span>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs text-mobile-purple-400 font-medium mb-1">Generated Persona</p>
-                    <p class="text-sm text-white line-clamp-2" x-text="annotation.personaStatement"></p>
-                </div>
+        <!-- Quick Add Toolbar (horizontal scroll) -->
+        <div class="flex-shrink-0 px-3 py-2 bg-mobile-dark-800/80 border-b border-mobile-dark-700 overflow-x-auto scrollbar-hide">
+            <div class="flex items-center gap-2 min-w-max">
+                <span class="text-[10px] text-mobile-dark-500 uppercase font-medium">Tap text:</span>
+                <!-- Relevance indicators -->
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-teal-500/20 text-teal-400 border border-teal-500/30">Core</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-green-500/20 text-green-400 border border-green-500/30">Strong</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">Medium</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">Weak</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30">Gap</span>
             </div>
         </div>
 
-        <!-- Generate Persona Button -->
-        <div x-show="annotation.hasIdentityAnnotations && !annotation.personaStatement" class="px-4 py-3 bg-mobile-dark-800 border-b border-mobile-dark-700">
+        <!-- Persona Status (compact) -->
+        <div x-show="annotation.personaStatement" class="px-4 py-2 bg-gradient-to-r from-mobile-purple-900/30 to-mobile-gold-900/30 border-b border-mobile-dark-700">
+            <div class="flex items-center gap-2">
+                <span class="text-lg">🎭</span>
+                <p class="text-xs text-white flex-1 line-clamp-1" x-text="annotation.personaStatement"></p>
+            </div>
+        </div>
+
+        <!-- Generate Persona Button (compact) -->
+        <div x-show="annotation.hasIdentityAnnotations && !annotation.personaStatement" class="px-4 py-2 bg-mobile-dark-800 border-b border-mobile-dark-700">
             <button @click="generatePersona()"
                     :disabled="annotation.personaLoading"
-                    class="w-full py-2.5 bg-gradient-to-r from-mobile-purple-600 to-mobile-gold-500 text-white font-medium rounded-lg flex items-center justify-center gap-2 disabled:opacity-50">
+                    class="w-full py-2 bg-gradient-to-r from-mobile-purple-600 to-mobile-gold-500 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 disabled:opacity-50">
                 <template x-if="annotation.personaLoading">
-                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                     </svg>
                 </template>
-                <template x-if="!annotation.personaLoading">
-                    <span>🎭 Generate Persona</span>
-                </template>
+                <span x-text="annotation.personaLoading ? 'Generating...' : '🎭 Generate Persona'"></span>
             </button>
         </div>
 
-        <!-- Annotation Stats -->
-        <div class="px-4 py-2 bg-mobile-dark-800/50 flex gap-4 text-xs border-b border-mobile-dark-700">
-            <span class="text-mobile-dark-500">
-                <span class="text-white font-medium" x-text="annotation.annotations.length"></span> annotations
-            </span>
-            <span x-show="annotation.hasIdentityAnnotations" class="text-mobile-purple-400">
-                ✓ Identity annotations
-            </span>
-        </div>
-
-        <!-- JD Content (Scrollable) -->
-        <div class="flex-1 overflow-y-auto p-4">
-            <div class="prose prose-invert prose-sm max-w-none"
+        <!-- JD Content (Scrollable) - Using JDFormatter -->
+        <div class="flex-1 overflow-y-auto p-4 bg-mobile-dark-900">
+            <div class="jd-formatted jd-mobile-dark"
                  @click="handleAnnotationTap($event)"
-                 x-html="formatJdForAnnotation(currentJob?.description || currentJob?.job_description || 'No description available')">
+                 x-html="formatJD(currentJob?.description || currentJob?.job_description || '')">
             </div>
         </div>
 
-        <!-- Annotation Count & Done Button -->
+        <!-- Done Button -->
         <div class="flex-shrink-0 px-4 py-3 pb-safe bg-mobile-dark-800 border-t border-mobile-dark-700">
             <button @click="closeAnnotationMode()"
                     class="w-full py-3 bg-mobile-purple-600 text-white font-semibold rounded-xl">
@@ -500,118 +499,115 @@
         </div>
     </div>
 
-    <!-- Annotation Bottom Sheet -->
-    <div x-show="annotationSheet.show" x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50" style="display: none;">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/60" @click="closeAnnotationSheet()"></div>
-
-        <!-- Sheet -->
-        <div class="absolute bottom-0 left-0 right-0 bg-mobile-dark-800 rounded-t-3xl max-h-[85vh] overflow-hidden"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="transform translate-y-full"
-             x-transition:enter-end="transform translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="transform translate-y-0"
-             x-transition:leave-end="transform translate-y-full">
-
-            <!-- Handle -->
-            <div class="flex justify-center py-3">
-                <div class="w-12 h-1 bg-mobile-dark-600 rounded-full"></div>
+    <!-- Annotation Full-Screen Selector -->
+    <div x-show="annotationSheet.show" x-transition class="fixed inset-0 z-50 flex flex-col bg-mobile-dark-900" style="display: none;">
+        <!-- Header -->
+        <header class="flex-shrink-0 px-4 pt-safe pb-3 bg-mobile-dark-800 border-b border-mobile-dark-700">
+            <div class="flex items-center justify-between">
+                <button @click="closeAnnotationSheet()" class="text-mobile-dark-500 p-2 -ml-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+                <h2 class="text-lg font-semibold text-white">Add Annotation</h2>
+                <div class="w-10"></div>
             </div>
+        </header>
 
-            <!-- Selected Text Preview -->
-            <div class="px-4 pb-3 border-b border-mobile-dark-700">
-                <p class="text-xs text-mobile-dark-500 mb-1">Selected text:</p>
-                <p class="text-sm text-white line-clamp-3" x-text="annotationSheet.selectedText"></p>
-            </div>
+        <!-- Selected Text Preview -->
+        <div class="px-4 py-3 bg-mobile-dark-800/50 border-b border-mobile-dark-700">
+            <p class="text-xs text-mobile-dark-500 mb-1">Selected:</p>
+            <p class="text-sm text-white line-clamp-3 italic" x-text="annotationSheet.selectedText"></p>
+        </div>
 
-            <!-- Annotation Options (Scrollable) -->
-            <div class="overflow-y-auto max-h-[60vh] p-4 space-y-4">
-                <!-- Relevance -->
-                <div>
-                    <label class="block text-xs text-mobile-dark-500 mb-2">Relevance</label>
-                    <div class="grid grid-cols-5 gap-2">
-                        <template x-for="opt in annotationOptions.relevance" :key="opt.value">
-                            <button @click="annotationSheet.relevance = opt.value"
-                                    :class="annotationSheet.relevance === opt.value
-                                        ? 'bg-mobile-purple-600 border-mobile-purple-400'
-                                        : 'bg-mobile-dark-900 border-mobile-dark-700'"
-                                    class="p-2 rounded-lg border text-center">
-                                <span class="text-xl block" x-text="opt.emoji"></span>
-                                <span class="text-[10px] block mt-1" :class="opt.color" x-text="opt.label"></span>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Requirement Type -->
-                <div>
-                    <label class="block text-xs text-mobile-dark-500 mb-2">Requirement</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <template x-for="opt in annotationOptions.requirement" :key="opt.value">
-                            <button @click="annotationSheet.requirement = opt.value"
-                                    :class="annotationSheet.requirement === opt.value
-                                        ? 'bg-mobile-purple-600 border-mobile-purple-400'
-                                        : 'bg-mobile-dark-900 border-mobile-dark-700'"
-                                    class="p-2 rounded-lg border text-center">
-                                <span class="text-lg block" x-text="opt.emoji"></span>
-                                <span class="text-[10px] block mt-1 text-mobile-dark-400" x-text="opt.label"></span>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Identity -->
-                <div>
-                    <label class="block text-xs text-mobile-dark-500 mb-2">Identity (for Persona)</label>
-                    <div class="grid grid-cols-5 gap-2">
-                        <template x-for="opt in annotationOptions.identity" :key="opt.value">
-                            <button @click="annotationSheet.identity = opt.value"
-                                    :class="annotationSheet.identity === opt.value
-                                        ? 'bg-mobile-gold-600 border-mobile-gold-400'
-                                        : 'bg-mobile-dark-900 border-mobile-dark-700'"
-                                    class="p-2 rounded-lg border text-center">
-                                <span class="text-lg block" x-text="opt.emoji"></span>
-                                <span class="text-[10px] block mt-1" :class="opt.color" x-text="opt.label"></span>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Passion -->
-                <div>
-                    <label class="block text-xs text-mobile-dark-500 mb-2">Passion</label>
-                    <div class="grid grid-cols-5 gap-2">
-                        <template x-for="opt in annotationOptions.passion" :key="opt.value">
-                            <button @click="annotationSheet.passion = opt.value"
-                                    :class="annotationSheet.passion === opt.value
-                                        ? 'bg-mobile-orange-500 border-mobile-orange-400'
-                                        : 'bg-mobile-dark-900 border-mobile-dark-700'"
-                                    class="p-2 rounded-lg border text-center">
-                                <span class="text-lg block" x-text="opt.emoji"></span>
-                                <span class="text-[10px] block mt-1" :class="opt.color" x-text="opt.label"></span>
-                            </button>
-                        </template>
-                    </div>
+        <!-- Annotation Options (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-5">
+            <!-- Relevance -->
+            <div>
+                <label class="block text-xs text-mobile-dark-500 uppercase tracking-wide mb-2">Relevance to My Skills</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <template x-for="opt in annotationOptions.relevance" :key="opt.value">
+                        <button @click="annotationSheet.relevance = opt.value"
+                                :class="annotationSheet.relevance === opt.value
+                                    ? 'bg-mobile-purple-600 border-mobile-purple-400 ring-2 ring-mobile-purple-400/50'
+                                    : 'bg-mobile-dark-800 border-mobile-dark-700'"
+                                class="p-3 rounded-xl border text-center transition-all">
+                            <span class="text-2xl block" x-text="opt.emoji"></span>
+                            <span class="text-xs block mt-1 font-medium" :class="opt.color" x-text="opt.label"></span>
+                        </button>
+                    </template>
                 </div>
             </div>
 
-            <!-- Save Button -->
-            <div class="p-4 pb-safe border-t border-mobile-dark-700">
+            <!-- Requirement Type -->
+            <div>
+                <label class="block text-xs text-mobile-dark-500 uppercase tracking-wide mb-2">Requirement Type</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <template x-for="opt in annotationOptions.requirement" :key="opt.value">
+                        <button @click="annotationSheet.requirement = opt.value"
+                                :class="annotationSheet.requirement === opt.value
+                                    ? 'bg-blue-600 border-blue-400 ring-2 ring-blue-400/50'
+                                    : 'bg-mobile-dark-800 border-mobile-dark-700'"
+                                class="p-3 rounded-xl border text-center transition-all">
+                            <span class="text-xl block" x-text="opt.emoji"></span>
+                            <span class="text-xs block mt-1 font-medium text-mobile-dark-300" x-text="opt.label"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Identity -->
+            <div>
+                <label class="block text-xs text-mobile-dark-500 uppercase tracking-wide mb-2">Identity (for Persona)</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <template x-for="opt in annotationOptions.identity" :key="opt.value">
+                        <button @click="annotationSheet.identity = opt.value"
+                                :class="annotationSheet.identity === opt.value
+                                    ? 'bg-mobile-gold-600 border-mobile-gold-400 ring-2 ring-mobile-gold-400/50'
+                                    : 'bg-mobile-dark-800 border-mobile-dark-700'"
+                                class="p-3 rounded-xl border text-center transition-all">
+                            <span class="text-xl block" x-text="opt.emoji"></span>
+                            <span class="text-xs block mt-1 font-medium" :class="opt.color" x-text="opt.label"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Passion -->
+            <div>
+                <label class="block text-xs text-mobile-dark-500 uppercase tracking-wide mb-2">Passion Level</label>
+                <div class="grid grid-cols-5 gap-2">
+                    <template x-for="opt in annotationOptions.passion" :key="opt.value">
+                        <button @click="annotationSheet.passion = opt.value"
+                                :class="annotationSheet.passion === opt.value
+                                    ? 'bg-mobile-orange-500 border-mobile-orange-400 ring-2 ring-mobile-orange-400/50'
+                                    : 'bg-mobile-dark-800 border-mobile-dark-700'"
+                                class="p-3 rounded-xl border text-center transition-all">
+                            <span class="text-xl block" x-text="opt.emoji"></span>
+                            <span class="text-xs block mt-1 font-medium" :class="opt.color" x-text="opt.label"></span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons (Save / Discard) -->
+        <div class="flex-shrink-0 px-4 py-3 pb-safe bg-mobile-dark-800 border-t border-mobile-dark-700">
+            <div class="flex gap-3">
+                <button @click="closeAnnotationSheet()"
+                        class="flex-1 py-3 bg-mobile-dark-700 text-mobile-dark-300 font-semibold rounded-xl">
+                    Discard
+                </button>
                 <button @click="saveAnnotation()"
                         :disabled="annotationSheet.saving"
-                        class="w-full py-3 bg-gradient-to-r from-mobile-purple-600 to-mobile-gold-500 text-white font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
+                        class="flex-1 py-3 bg-gradient-to-r from-mobile-purple-600 to-mobile-gold-500 text-white font-semibold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
                     <template x-if="annotationSheet.saving">
                         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
                     </template>
-                    <span x-text="annotationSheet.saving ? 'Saving...' : 'Save Annotation'"></span>
+                    <span x-text="annotationSheet.saving ? 'Saving...' : 'Save'"></span>
                 </button>
             </div>
         </div>

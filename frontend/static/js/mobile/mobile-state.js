@@ -521,8 +521,9 @@ window.mobileApp = function() {
 
             if (selectedText && selectedText.length > 10) {
                 this.annotationSheet.selectedText = selectedText;
-                this.annotationSheet.relevance = 'relevant';
-                this.annotationSheet.requirement = 'neutral';
+                // Default to Core Strength + Must Have (like desktop Quick Add)
+                this.annotationSheet.relevance = 'core_strength';
+                this.annotationSheet.requirement = 'must_have';
                 this.annotationSheet.identity = 'peripheral';
                 this.annotationSheet.passion = 'neutral';
                 this.annotationSheet.show = true;
