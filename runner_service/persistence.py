@@ -2,14 +2,15 @@
 Persistence Module
 
 Handles MongoDB and Redis persistence for run state and job status.
+
+Uses the repository pattern for MongoDB operations to enable
+future dual-write (Atlas + VPS) support.
 """
 
 import logging
 import os
 from datetime import datetime
 from typing import Dict, Optional
-
-from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,8 @@ def persist_run_to_mongo(
     """
     Update MongoDB with run status, artifact URLs, and pipeline results.
 
-    Persists to the level-2 collection for processed jobs.
+    Persists to the level-2 collection for processed jobs using the
+    repository pattern for future dual-write support.
 
     Args:
         job_id: Job identifier (MongoDB ObjectId as string)
@@ -37,16 +39,11 @@ def persist_run_to_mongo(
         artifacts: Dictionary of artifact URLs
         pipeline_state: Complete pipeline state with results (pain_points, fit_score, etc.)
     """
-    mongodb_uri = os.getenv("MONGODB_URI")
-    if not mongodb_uri:
-        # MongoDB not configured, skip persistence
-        return
-
     try:
         from bson import ObjectId
+        from src.common.repositories import get_job_repository
 
-        client = MongoClient(mongodb_uri)
-        db = client["jobs"]
+        repo = get_job_repository()
 
         # Convert job_id to ObjectId (new schema uses ObjectId _id)
         try:
@@ -133,8 +130,8 @@ def persist_run_to_mongo(
             if has_cv_data:
                 update_doc["$set"]["generated_cv"] = True
 
-        # Update level-2 collection (processed jobs) using _id
-        result = db["level-2"].update_one(
+        # Update using repository (handles Atlas, later dual-write)
+        result = repo.update_one(
             {"_id": object_id},
             update_doc,
             upsert=False  # Don't create if doesn't exist
@@ -144,6 +141,9 @@ def persist_run_to_mongo(
             # Job not found with ObjectId, log warning
             logger.warning(f"Job {job_id} not found in level-2 collection")
 
+    except ValueError as e:
+        # MONGODB_URI not configured - skip persistence
+        logger.debug(f"MongoDB not configured, skipping persistence: {e}")
     except Exception as e:
         # Log error but don't fail the run
         logger.exception(f"Failed to persist to MongoDB for job {job_id}: {e}")
@@ -224,21 +224,17 @@ def update_job_pipeline_failed(job_id: str, error: str) -> None:
     Update MongoDB job status to pipeline_failed.
 
     Called when a pipeline fails to persist the error state.
+    Uses the repository pattern for future dual-write support.
 
     Args:
         job_id: Job identifier (MongoDB ObjectId as string)
         error: Error message describing the failure
     """
-    mongodb_uri = os.getenv("MONGODB_URI")
-    if not mongodb_uri:
-        return
-
     try:
         from bson import ObjectId
-        from datetime import datetime
+        from src.common.repositories import get_job_repository
 
-        client = MongoClient(mongodb_uri)
-        db = client["jobs"]
+        repo = get_job_repository()
 
         # Convert job_id to ObjectId
         try:
@@ -246,8 +242,8 @@ def update_job_pipeline_failed(job_id: str, error: str) -> None:
         except Exception:
             object_id = job_id
 
-        # Update the job document
-        result = db["level-2"].update_one(
+        # Update the job document using repository
+        result = repo.update_one(
             {"_id": object_id},
             {
                 "$set": {
@@ -265,5 +261,8 @@ def update_job_pipeline_failed(job_id: str, error: str) -> None:
         else:
             logger.info(f"Updated job {job_id} to pipeline_failed: {error[:100]}")
 
+    except ValueError as e:
+        # MONGODB_URI not configured - skip persistence
+        logger.debug(f"MongoDB not configured, skipping pipeline_failed update: {e}")
     except Exception as e:
         logger.exception(f"Failed to update pipeline_failed status for job {job_id}: {e}")
