@@ -455,9 +455,8 @@ window.mobileApp = function() {
         async openAnnotationMode() {
             if (!this.currentJob) return;
 
-            this.annotationMode = true;
-
-            // Load existing annotations and processed JD HTML
+            // Load existing annotations and processed JD HTML BEFORE showing panel
+            // This ensures getAnnotationJdHtml() has the data when panel renders
             try {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
                 if (response.ok) {
@@ -480,6 +479,9 @@ window.mobileApp = function() {
                 this.annotation.annotations = [];
                 this.annotation.processedJdHtml = null;
             }
+
+            // Show annotation panel AFTER data is loaded
+            this.annotationMode = true;
         },
 
         closeAnnotationMode() {
