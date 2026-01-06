@@ -461,9 +461,13 @@ window.mobileApp = function() {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
                 if (response.ok) {
                     const data = await response.json();
-                    this.annotation.annotations = data.annotations || [];
+                    // Ensure annotations is always an array
+                    const annotations = data.annotations;
+                    this.annotation.annotations = Array.isArray(annotations) ? annotations : [];
                     this.annotation.personaStatement = data.synthesized_persona?.persona_statement || null;
                     this.checkIdentityAnnotations();
+                } else {
+                    this.annotation.annotations = [];
                 }
             } catch (error) {
                 console.error('Failed to load annotations:', error);
@@ -480,7 +484,9 @@ window.mobileApp = function() {
             const passionLevels = ['love_it', 'enjoy'];
             const strengthLevels = ['core_strength', 'extremely_relevant'];
 
-            this.annotation.hasIdentityAnnotations = this.annotation.annotations.some(a =>
+            // Ensure annotations is an array before calling .some()
+            const annotations = Array.isArray(this.annotation.annotations) ? this.annotation.annotations : [];
+            this.annotation.hasIdentityAnnotations = annotations.some(a =>
                 a.is_active !== false && (
                     identityLevels.includes(a.identity) ||
                     passionLevels.includes(a.passion) ||
