@@ -2454,6 +2454,9 @@ def mobile_jobs():
         cursor = request.args.get("cursor", "").strip()
         limit = min(int(request.args.get("limit", 20)), 50)
 
+        # Get collection
+        collection = get_collection()
+
         # Build query
         query = {}
 
@@ -2555,7 +2558,7 @@ def mobile_jobs():
         })
 
         # Execute
-        jobs = list(jobs_collection.aggregate(pipeline))
+        jobs = list(collection.aggregate(pipeline))
 
         # Serialize
         for job in jobs:
