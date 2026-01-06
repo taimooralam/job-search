@@ -482,11 +482,11 @@
             </button>
         </div>
 
-        <!-- JD Content (Scrollable) - Using JDFormatter -->
+        <!-- JD Content (Scrollable) - Using processed JD HTML or JDFormatter -->
         <div class="flex-1 overflow-y-auto p-4 bg-mobile-dark-900">
-            <div class="jd-formatted jd-mobile-dark"
+            <div class="jd-formatted jd-mobile-dark prose prose-invert prose-sm max-w-none"
                  @click="handleAnnotationTap($event)"
-                 x-html="formatJD(currentJob?.description || currentJob?.job_description || '')">
+                 x-html="getAnnotationJdHtml()">
             </div>
         </div>
 

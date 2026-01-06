@@ -31,7 +31,8 @@ window.mobileApp = function() {
             annotations: [],
             personaStatement: null,
             personaLoading: false,
-            hasIdentityAnnotations: false
+            hasIdentityAnnotations: false,
+            processedJdHtml: null  // LLM-structured JD HTML from backend
         },
         annotationSheet: {
             show: false,
@@ -456,7 +457,7 @@ window.mobileApp = function() {
 
             this.annotationMode = true;
 
-            // Load existing annotations
+            // Load existing annotations and processed JD HTML
             try {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
                 if (response.ok) {
@@ -465,13 +466,17 @@ window.mobileApp = function() {
                     const annotations = data.annotations;
                     this.annotation.annotations = Array.isArray(annotations) ? annotations : [];
                     this.annotation.personaStatement = data.synthesized_persona?.persona_statement || null;
+                    // Store the LLM-processed JD HTML if available
+                    this.annotation.processedJdHtml = data.processed_jd_html || null;
                     this.checkIdentityAnnotations();
                 } else {
                     this.annotation.annotations = [];
+                    this.annotation.processedJdHtml = null;
                 }
             } catch (error) {
                 console.error('Failed to load annotations:', error);
                 this.annotation.annotations = [];
+                this.annotation.processedJdHtml = null;
             }
         },
 
@@ -508,15 +513,18 @@ window.mobileApp = function() {
 
         // Handle tap on JD text
         handleAnnotationTap(event) {
-            // Get selected text or smart-select sentence
+            // Prevent if tapping on a link or button
+            if (event.target.closest('a, button')) return;
+
+            // Get selected text or smart-select from tapped element
             const selection = window.getSelection();
             let selectedText = '';
 
             if (selection && !selection.isCollapsed) {
                 selectedText = selection.toString().trim();
             } else {
-                // Try to get sentence at tap point
-                selectedText = this.getSentenceAtPoint(event);
+                // Try to get text from tapped element (list item, paragraph, etc.)
+                selectedText = this.getTextFromTappedElement(event);
             }
 
             if (selectedText && selectedText.length > 10) {
@@ -535,14 +543,59 @@ window.mobileApp = function() {
             }
         },
 
-        // Get sentence at tap point
-        getSentenceAtPoint(event) {
+        // Get text from tapped element - works better with structured HTML
+        getTextFromTappedElement(event) {
             try {
-                const range = document.caretRangeFromPoint(event.clientX, event.clientY);
-                if (!range) return '';
+                // First, try to get specific list item or paragraph
+                const target = event.target;
 
-                const text = range.startContainer.textContent || '';
-                const offset = range.startOffset;
+                // If tapped on a list item, get its text
+                const listItem = target.closest('li');
+                if (listItem) {
+                    return listItem.textContent?.trim() || '';
+                }
+
+                // If tapped on a paragraph, get its text
+                const paragraph = target.closest('p');
+                if (paragraph) {
+                    const text = paragraph.textContent?.trim() || '';
+                    // If paragraph is short enough, use whole thing
+                    if (text.length < 500) {
+                        return text;
+                    }
+                    // Otherwise, try to get sentence at tap point
+                    return this.getSentenceAtPoint(event, text);
+                }
+
+                // If tapped on a span (e.g., highlight), get parent text
+                if (target.tagName === 'SPAN') {
+                    return target.textContent?.trim() || '';
+                }
+
+                // Fallback: try caretRangeFromPoint
+                return this.getSentenceAtPoint(event);
+            } catch (e) {
+                console.error('Error getting tapped text:', e);
+                return '';
+            }
+        },
+
+        // Get sentence at tap point (fallback)
+        getSentenceAtPoint(event, providedText = null) {
+            try {
+                let text = providedText;
+                let offset = 0;
+
+                if (!text) {
+                    // Try to get position using caretRangeFromPoint
+                    const range = document.caretRangeFromPoint?.(event.clientX, event.clientY);
+                    if (!range) return '';
+                    text = range.startContainer.textContent || '';
+                    offset = range.startOffset;
+                } else {
+                    // For provided text, estimate offset from click position
+                    offset = Math.floor(text.length / 2);
+                }
 
                 // Find sentence boundaries
                 let start = 0;
@@ -706,6 +759,17 @@ window.mobileApp = function() {
             }
             // Fallback: basic formatting with line breaks
             return text.replace(/\n/g, '<br>');
+        },
+
+        // Get JD HTML for annotation panel - prefer LLM-processed HTML, fallback to JDFormatter
+        getAnnotationJdHtml() {
+            // If we have LLM-processed JD HTML, use it (matches desktop)
+            if (this.annotation.processedJdHtml) {
+                return this.annotation.processedJdHtml;
+            }
+            // Otherwise, use JDFormatter for regex-based structuring
+            const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
+            return this.formatJD(rawJd);
         },
 
         async openCvViewer(jobId) {
