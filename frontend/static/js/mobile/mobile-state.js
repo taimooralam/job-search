@@ -78,6 +78,8 @@ window.mobileApp = function() {
         isDragging: false,
         startX: 0,
         startY: 0,
+        touchInScrollable: false,  // True if touch started in scrollable area
+        swipeDecided: false,       // True once we've decided swipe vs scroll
         currentX: 0,
         swipeProgress: 0,       // -1 to 1 (negative = left, positive = right)
 
@@ -174,10 +176,16 @@ window.mobileApp = function() {
         onTouchStart(e) {
             if (!this.currentJob) return;
 
+            // Check if touch started inside a scrollable element
+            const target = e.target;
+            const scrollableParent = target.closest('.overflow-y-auto, .overflow-auto, [data-no-swipe]');
+            this.touchInScrollable = !!scrollableParent;
+
             this.isDragging = true;
             this.startX = e.touches[0].clientX;
             this.startY = e.touches[0].clientY;
             this.currentX = this.startX;
+            this.swipeDecided = false; // Haven't decided swipe vs scroll yet
 
             // Add dragging class
             this.$refs.currentCard?.classList.add('dragging');
@@ -190,7 +198,18 @@ window.mobileApp = function() {
             const deltaX = this.currentX - this.startX;
             const deltaY = e.touches[0].clientY - this.startY;
 
-            // If vertical movement is greater, allow scroll
+            // First significant movement decides: swipe or scroll
+            if (!this.swipeDecided && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+                this.swipeDecided = true;
+                // If inside scrollable and moving vertically, disable swipe entirely
+                if (this.touchInScrollable && Math.abs(deltaY) >= Math.abs(deltaX)) {
+                    this.isDragging = false;
+                    this.$refs.currentCard?.classList.remove('dragging');
+                    return;
+                }
+            }
+
+            // If vertical movement is greater and we haven't committed to swipe, allow scroll
             if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaX) < 20) {
                 return;
             }
