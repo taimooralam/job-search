@@ -155,7 +155,7 @@ window.mobileApp = function() {
                     mode: this.mode,
                     time_filter: this.timeFilter,
                     leadership_only: this.leadershipOnly.toString(),
-                    limit: '20'
+                    limit: '500'  // No practical limit for mobile - show all jobs
                 });
 
                 const response = await fetch(`/api/mobile/jobs?${params}`);

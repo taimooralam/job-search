@@ -2445,14 +2445,14 @@ def mobile_jobs():
         time_filter: Time period filter (1h, 2h, 3h, 4h, 6h, 12h, 24h, 1w, 2w, 1m, 2m)
         leadership_only: 'true' to filter only leadership roles (tiers 0-2)
         cursor: Last job ID for pagination
-        limit: Number of jobs to return (default: 20, max: 50)
+        limit: Number of jobs to return (default: 500, no max for mobile)
     """
     try:
         mode = request.args.get("mode", "main")
         time_filter = request.args.get("time_filter", "24h")
         leadership_only = request.args.get("leadership_only", "false").lower() == "true"
         cursor = request.args.get("cursor", "").strip()
-        limit = min(int(request.args.get("limit", 20)), 50)
+        limit = int(request.args.get("limit", 500))  # No cap for mobile - show all jobs
 
         # Get collection
         collection = get_collection()
