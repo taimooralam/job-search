@@ -1,0 +1,547 @@
+/**
+ * Mobile PWA Styles
+ *
+ * Color scheme: Purple, Gold, Orange, Red, Black
+ * Design: Mesmerizing gradients and glow effects
+ */
+
+/* ============================================================================
+   Safe Area Insets (iOS notch, Android gesture nav)
+   ============================================================================ */
+
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
+}
+
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+}
+
+/* ============================================================================
+   Hide Scrollbar
+   ============================================================================ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================================
+   Gradient Backgrounds
+   ============================================================================ */
+
+.gradient-purple-gold {
+  background: linear-gradient(135deg, #8B5CF6 0%, #F59E0B 100%);
+}
+
+.gradient-purple-gold-animated {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 25%, #F59E0B 50%, #7C3AED 75%, #8B5CF6 100%);
+  background-size: 400% 400%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.gradient-dark {
+  background: linear-gradient(180deg, #111827 0%, #1F2937 100%);
+}
+
+.gradient-accept-main {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+}
+
+.gradient-accept-batch {
+  background: linear-gradient(135deg, #8B5CF6 0%, #F59E0B 50%, #8B5CF6 100%);
+  background-size: 200% 200%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.gradient-reject {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+}
+
+/* ============================================================================
+   Glow Effects
+   ============================================================================ */
+
+.glow-purple {
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+}
+
+.glow-gold {
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+}
+
+.glow-purple-gold {
+  box-shadow:
+    0 0 20px rgba(139, 92, 246, 0.4),
+    0 0 40px rgba(245, 158, 11, 0.3);
+}
+
+/* ============================================================================
+   Card Styles
+   ============================================================================ */
+
+.swipe-card {
+  touch-action: pan-y;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.swipe-card.dragging {
+  transition: none !important;
+}
+
+.swipe-card.snapping {
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ============================================================================
+   Bottom Sheet
+   ============================================================================ */
+
+.bottom-sheet {
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.bottom-sheet-backdrop {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.bottom-sheet-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================================================================
+   Progress Ring
+   ============================================================================ */
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* ============================================================================
+   Touch Feedback
+   ============================================================================ */
+
+.touch-highlight {
+  -webkit-tap-highlight-color: rgba(139, 92, 246, 0.2);
+}
+
+.touch-scale:active {
+  transform: scale(0.98);
+}
+
+/* ============================================================================
+   Annotation Highlights
+   ============================================================================ */
+
+.annotation-highlight {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+}
+
+.annotation-highlight.core-strength {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.1) 100%);
+}
+
+.annotation-highlight.gap {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3) 0%, rgba(239, 68, 68, 0.1) 100%);
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes shimmer {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+/* ============================================================================
+   Selection Styles
+   ============================================================================ */
+
+::selection {
+  background: rgba(139, 92, 246, 0.4);
+  color: white;
+}
+
+/* ============================================================================
+   Input Styles
+   ============================================================================ */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  background: linear-gradient(to right, #8B5CF6, #F59E0B);
+  border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  margin-top: -8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   Button Styles
+   ============================================================================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+}
+
+.btn-secondary {
+  background: #1F2937;
+  color: #9CA3AF;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:active {
+  background: #374151;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #111827;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-gold:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+.text-gradient-purple-gold {
+  background: linear-gradient(135deg, #8B5CF6 0%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-gradient {
+  border: 2px solid transparent;
+  background: linear-gradient(#1F2937, #1F2937) padding-box,
+              linear-gradient(135deg, #8B5CF6, #F59E0B) border-box;
+}
+
+.glass {
+  background: rgba(31, 41, 55, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================================================
+   Loading Skeleton
+   ============================================================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1F2937 0%,
+    #374151 50%,
+    #1F2937 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================================================
+   Card Animations
+   ============================================================================ */
+
+@keyframes card-enter {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes card-exit-left {
+  0% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-150%) rotate(-30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes card-exit-right {
+  0% {
+    transform: translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(150%) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+.card-enter {
+  animation: card-enter 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card-exit-left {
+  animation: card-exit-left 0.3s ease-out forwards;
+}
+
+.card-exit-right {
+  animation: card-exit-right 0.3s ease-out forwards;
+}
+
+/* ============================================================================
+   CV Badge & Status Indicators
+   ============================================================================ */
+
+.cv-ready-badge {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+}
+
+.extraction-badge {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   Toast Animations
+   ============================================================================ */
+
+@keyframes toast-enter {
+  0% {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-exit {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: toast-enter 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: toast-exit 0.3s ease-in forwards;
+}
+
+/* ============================================================================
+   Swipe Feedback Enhancements
+   ============================================================================ */
+
+.swipe-left-active {
+  border-color: #EF4444;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+}
+
+.swipe-right-active {
+  border-color: #8B5CF6;
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.4),
+              0 0 60px rgba(245, 158, 11, 0.3);
+}
+
+/* ============================================================================
+   CV Viewer Styles
+   ============================================================================ */
+
+.cv-viewer-content {
+  background: #f3f4f6;
+  min-height: 100%;
+}
+
+.cv-viewer-content .bg-white {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f2937;
+  padding: 1.5rem;
+}
+
+/* ============================================================================
+   Action Button Enhancements
+   ============================================================================ */
+
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+/* Smooth button press feedback */
+button {
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* ============================================================================
+   Empty State Animation
+   ============================================================================ */
+
+@keyframes celebration {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+.animate-celebration {
+  animation: celebration 1s ease-in-out infinite;
+}
+
+/* ============================================================================
+   Ripple Effect (Material Design style)
+   ============================================================================ */
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.8s;
+}
+
+.ripple:active::after {
+  transform: scale(0, 0);
+  opacity: 0.2;
+  transition: 0s;
+}
