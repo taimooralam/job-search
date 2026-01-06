@@ -43,8 +43,8 @@
             </div>
         </div>
 
-        <!-- Time Filter -->
-        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <!-- Time Filter (only shown in main mode) -->
+        <div x-show="mode === 'main'" x-transition class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <template x-for="filter in timeFilters" :key="filter.value">
                 <button @click="setTimeFilter(filter.value)"
                         :class="timeFilter === filter.value
@@ -54,6 +54,11 @@
                         x-text="filter.label">
                 </button>
             </template>
+        </div>
+
+        <!-- Batch Mode Info -->
+        <div x-show="mode === 'batch'" x-transition class="text-center text-sm text-mobile-dark-500">
+            Showing all jobs ready for CV generation
         </div>
 
         <!-- Leadership Toggle -->

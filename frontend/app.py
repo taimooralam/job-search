@@ -2466,8 +2466,8 @@ def mobile_jobs():
         else:
             query["status"] = {"$nin": ["discarded", "applied", "interview scheduled", "under processing"]}
 
-        # Time filter
-        if time_filter in MOBILE_TIME_FILTERS:
+        # Time filter (only for main mode - batch shows all "under processing" jobs)
+        if mode == "main" and time_filter in MOBILE_TIME_FILTERS:
             cutoff = datetime.utcnow() - MOBILE_TIME_FILTERS[time_filter]
             query["createdAt"] = {"$gte": cutoff}
 
