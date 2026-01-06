@@ -14,7 +14,7 @@ Stack: Flask + HTMX + Tailwind CSS (CDN)
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
@@ -2390,6 +2390,184 @@ def openapi_spec():
 def index():
     """Render the main job table page."""
     return render_template("index.html", statuses=JOB_STATUSES)
+
+
+# ============================================================================
+# Mobile PWA Routes
+# ============================================================================
+
+# Time filter mapping for mobile
+MOBILE_TIME_FILTERS = {
+    '1h': timedelta(hours=1),
+    '2h': timedelta(hours=2),
+    '3h': timedelta(hours=3),
+    '4h': timedelta(hours=4),
+    '6h': timedelta(hours=6),
+    '12h': timedelta(hours=12),
+    '24h': timedelta(hours=24),
+    '1w': timedelta(weeks=1),
+    '2w': timedelta(weeks=2),
+    '1m': timedelta(days=30),
+    '2m': timedelta(days=60),
+}
+
+
+@app.route("/mobile")
+@app.route("/mobile/")
+@login_required
+def mobile_index():
+    """Mobile PWA landing page."""
+    return render_template("mobile/index.html")
+
+
+@app.route("/mobile/main")
+@login_required
+def mobile_main():
+    """Mobile main mode - triage new jobs."""
+    return render_template("mobile/index.html")
+
+
+@app.route("/mobile/batch")
+@login_required
+def mobile_batch():
+    """Mobile batch mode - process analyzed jobs."""
+    return render_template("mobile/index.html")
+
+
+@app.route("/api/mobile/jobs", methods=["GET"])
+@login_required
+def mobile_jobs():
+    """
+    Get jobs for mobile swipe interface.
+
+    Query params:
+        mode: 'main' or 'batch' (default: 'main')
+        time_filter: Time period filter (1h, 2h, 3h, 4h, 6h, 12h, 24h, 1w, 2w, 1m, 2m)
+        leadership_only: 'true' to filter only leadership roles (tiers 0-2)
+        cursor: Last job ID for pagination
+        limit: Number of jobs to return (default: 20, max: 50)
+    """
+    try:
+        mode = request.args.get("mode", "main")
+        time_filter = request.args.get("time_filter", "24h")
+        leadership_only = request.args.get("leadership_only", "false").lower() == "true"
+        cursor = request.args.get("cursor", "").strip()
+        limit = min(int(request.args.get("limit", 20)), 50)
+
+        # Build query
+        query = {}
+
+        # Mode-based status filter
+        if mode == "batch":
+            query["status"] = "under processing"
+        else:
+            query["status"] = {"$nin": ["discarded", "applied", "interview scheduled", "under processing"]}
+
+        # Time filter
+        if time_filter in MOBILE_TIME_FILTERS:
+            cutoff = datetime.utcnow() - MOBILE_TIME_FILTERS[time_filter]
+            query["createdAt"] = {"$gte": cutoff}
+
+        # Cursor-based pagination
+        if cursor:
+            try:
+                query["_id"] = {"$lt": ObjectId(cursor)}
+            except Exception:
+                pass  # Invalid cursor, ignore
+
+        # Build aggregation pipeline
+        pipeline = [{"$match": query}]
+
+        # Add computed fields for sorting (location and seniority priority)
+        pipeline.append({
+            "$addFields": {
+                # Location priority (Saudi Arabia = 1, UAE = 2, Others = 3)
+                "_locationPriority": {
+                    "$switch": {
+                        "branches": [
+                            {
+                                "case": {"$regexMatch": {"input": {"$ifNull": ["$location", ""]}, "regex": "riyadh|jeddah|saudi|ksa|dammam|mecca|medina", "options": "i"}},
+                                "then": 1
+                            },
+                            {
+                                "case": {"$regexMatch": {"input": {"$ifNull": ["$location", ""]}, "regex": "dubai|abu dhabi|uae|sharjah|ajman|emirates", "options": "i"}},
+                                "then": 2
+                            }
+                        ],
+                        "default": 3
+                    }
+                },
+                # Seniority rank (lower = more senior)
+                "_seniorityRank": {
+                    "$switch": {
+                        "branches": [
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(CTO|Chief Technology Officer|Head of Engineering)\\b", "options": "i"}}, "then": 0},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(VP|Vice President|SVP).*Engineering\\b", "options": "i"}}, "then": 1},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(Director).*Engineering\\b", "options": "i"}}, "then": 2},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(Tech Lead|Technical Lead|Lead Engineer|Engineering Lead)\\b", "options": "i"}}, "then": 3},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(Principal|Staff)\\b", "options": "i"}}, "then": 4},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(Engineering Manager|Manager)\\b", "options": "i"}}, "then": 5},
+                            {"case": {"$regexMatch": {"input": {"$ifNull": ["$title", ""]}, "regex": "\\b(Senior|Sr\\.?)\\b", "options": "i"}}, "then": 6},
+                        ],
+                        "default": 7
+                    }
+                }
+            }
+        })
+
+        # Leadership filter (only tiers 0-2)
+        if leadership_only:
+            pipeline.append({"$match": {"_seniorityRank": {"$lte": 2}}})
+
+        # Sort: location priority, seniority, score (desc), recency (desc)
+        pipeline.append({
+            "$sort": {
+                "_locationPriority": 1,
+                "_seniorityRank": 1,
+                "score": -1,
+                "createdAt": -1
+            }
+        })
+
+        # Limit
+        pipeline.append({"$limit": limit})
+
+        # Project fields
+        pipeline.append({
+            "$project": {
+                "_id": 1,
+                "title": 1,
+                "company": 1,
+                "location": 1,
+                "score": 1,
+                "status": 1,
+                "createdAt": 1,
+                "url": 1,
+                "jobUrl": 1,
+                "description": 1,
+                "job_description": 1,
+                "extracted_jd": 1,
+                "pipeline_status": 1,
+                "jd_annotations": 1,
+                "_locationPriority": 1,
+                "_seniorityRank": 1
+            }
+        })
+
+        # Execute
+        jobs = list(jobs_collection.aggregate(pipeline))
+
+        # Serialize
+        for job in jobs:
+            job["_id"] = str(job["_id"])
+            if isinstance(job.get("createdAt"), datetime):
+                job["createdAt"] = job["createdAt"].isoformat()
+
+        return jsonify({"jobs": jobs, "count": len(jobs)})
+
+    except Exception as e:
+        logger.error(f"mobile_jobs error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/partials/job-rows", methods=["GET"])
