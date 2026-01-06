@@ -217,8 +217,8 @@
                                 </svg>
                             </button>
                             <div x-show="expanded" x-collapse class="px-4 pb-4">
-                                <div class="text-sm text-mobile-dark-500 whitespace-pre-wrap max-h-64 overflow-y-auto"
-                                     x-text="(currentJob?.description || currentJob?.job_description || 'No description available').substring(0, 2000)">
+                                <div class="text-sm max-h-96 overflow-y-auto jd-formatted jd-mobile-dark"
+                                     x-html="formatJD(currentJob?.description || currentJob?.job_description || '')">
                                 </div>
                             </div>
                         </div>

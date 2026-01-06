@@ -545,3 +545,48 @@ button:active {
   opacity: 0.2;
   transition: 0s;
 }
+
+/* ============================================================================
+   JD Formatter Dark Mode (Mobile)
+   Override light mode styles from jd-preview.css for dark theme
+   ============================================================================ */
+
+.jd-mobile-dark.jd-formatted {
+  color: #d1d5db; /* text-gray-300 */
+}
+
+.jd-mobile-dark .jd-section-header {
+  color: #f3f4f6; /* text-gray-100 */
+  border-bottom-color: #374151; /* border-gray-700 */
+}
+
+.jd-mobile-dark .jd-paragraph {
+  color: #d1d5db; /* text-gray-300 */
+}
+
+.jd-mobile-dark .jd-list-item {
+  color: #d1d5db; /* text-gray-300 */
+}
+
+.jd-mobile-dark .jd-list-item::before {
+  background: #8B5CF6; /* mobile-purple-500 */
+}
+
+/* Highlighted terms - dark mode adjustments */
+.jd-mobile-dark .jd-highlight-experience {
+  background: rgba(251, 191, 36, 0.2); /* amber-400/20 */
+  color: #fcd34d; /* amber-300 */
+}
+
+.jd-mobile-dark .jd-highlight-salary {
+  background: rgba(52, 211, 153, 0.2); /* emerald-400/20 */
+  color: #6ee7b7; /* emerald-300 */
+}
+
+.jd-mobile-dark .jd-highlight-required {
+  color: #f87171; /* red-400 */
+}
+
+.jd-mobile-dark .jd-highlight-preferred {
+  color: #34d399; /* emerald-400 */
+}

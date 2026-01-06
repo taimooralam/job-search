@@ -667,6 +667,17 @@ window.mobileApp = function() {
             return !!(cvData?.html || cvData?.content);
         },
 
+        // Format JD using the JDFormatter (regex-based structuring)
+        formatJD(text) {
+            if (!text) return '<p class="text-mobile-dark-500 italic">No description available</p>';
+            // Use the global JDFormatter if available
+            if (window.JDFormatter && typeof window.JDFormatter.format === 'function') {
+                return window.JDFormatter.format(text);
+            }
+            // Fallback: basic formatting with line breaks
+            return text.replace(/\n/g, '<br>');
+        },
+
         async openCvViewer(jobId) {
             this.cvViewer.jobId = jobId || this.currentJob?._id;
             if (!this.cvViewer.jobId) return;
