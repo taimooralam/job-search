@@ -462,12 +462,14 @@ window.mobileApp = function() {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
                 if (response.ok) {
                     const data = await response.json();
-                    // Ensure annotations is always an array
-                    const annotations = data.annotations;
-                    this.annotation.annotations = Array.isArray(annotations) ? annotations : [];
-                    this.annotation.personaStatement = data.synthesized_persona?.persona_statement || null;
+                    // API returns: { annotations: { processed_jd_html, annotations: [], ... }, ... }
+                    const jdAnnotations = data.annotations || {};
+                    // The actual annotations array is nested inside
+                    const annotationsList = jdAnnotations.annotations;
+                    this.annotation.annotations = Array.isArray(annotationsList) ? annotationsList : [];
+                    this.annotation.personaStatement = jdAnnotations.synthesized_persona?.persona_statement || null;
                     // Store the LLM-processed JD HTML if available
-                    this.annotation.processedJdHtml = data.processed_jd_html || null;
+                    this.annotation.processedJdHtml = jdAnnotations.processed_jd_html || null;
                     this.checkIdentityAnnotations();
                 } else {
                     this.annotation.annotations = [];
