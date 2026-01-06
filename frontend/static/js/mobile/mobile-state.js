@@ -10,7 +10,7 @@ window.mobileApp = function() {
     return {
         // State
         mode: 'main',           // 'main' or 'batch'
-        timeFilter: '24h',      // Current time filter
+        timeFilter: '1h',       // Current time filter (default: 1 hour)
         leadershipOnly: false,  // Leadership toggle
         jobs: [],               // Current job stack
         currentIndex: 0,        // Current card index
