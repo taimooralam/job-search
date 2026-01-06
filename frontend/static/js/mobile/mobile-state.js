@@ -470,6 +470,13 @@ window.mobileApp = function() {
 
                     // API returns: { annotations: { processed_jd_html, annotations: [], ... }, ... }
                     const jdAnnotations = data.annotations || {};
+
+                    // DEBUG: Log the raw processed_jd_html value and type
+                    console.log('[Mobile Annotation] RAW processed_jd_html type:', typeof jdAnnotations.processed_jd_html);
+                    console.log('[Mobile Annotation] RAW processed_jd_html value:', jdAnnotations.processed_jd_html);
+                    console.log('[Mobile Annotation] RAW processed_jd_html is null:', jdAnnotations.processed_jd_html === null);
+                    console.log('[Mobile Annotation] RAW processed_jd_html is empty string:', jdAnnotations.processed_jd_html === '');
+
                     // The actual annotations array is nested inside
                     const annotationsList = jdAnnotations.annotations;
                     this.annotation.annotations = Array.isArray(annotationsList) ? annotationsList : [];
