@@ -706,12 +706,13 @@ window.mobileApp = function() {
                     a => a.id !== this.annotationSheet.editingId
                 );
 
-                // Save to server
+                // Save to server (include processed_jd_html to avoid overwriting)
                 await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         annotations: this.annotation.annotations,
+                        processed_jd_html: this.annotation.processedJdHtml,
                         annotation_version: 1
                     })
                 });
@@ -781,12 +782,13 @@ window.mobileApp = function() {
                     this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
                 }
 
-                // Save to server
+                // Save to server (include processed_jd_html to avoid overwriting)
                 await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         annotations: this.annotation.annotations,
+                        processed_jd_html: this.annotation.processedJdHtml,
                         annotation_version: 1
                     })
                 });
@@ -815,12 +817,13 @@ window.mobileApp = function() {
             this.annotation.personaLoading = true;
 
             try {
-                // Save annotations first
+                // Save annotations first (include processed_jd_html to avoid overwriting)
                 await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         annotations: this.annotation.annotations,
+                        processed_jd_html: this.annotation.processedJdHtml,
                         annotation_version: 1
                     })
                 });
