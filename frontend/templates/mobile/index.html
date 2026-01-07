@@ -461,11 +461,22 @@
             </div>
         </div>
 
-        <!-- Persona Status (compact) -->
-        <div x-show="annotation.personaStatement" class="px-4 py-2 bg-gradient-to-r from-mobile-purple-900/30 to-mobile-gold-900/30 border-b border-mobile-dark-700">
-            <div class="flex items-center gap-2">
-                <span class="text-lg">🎭</span>
-                <p class="text-xs text-white flex-1 line-clamp-1" x-text="annotation.personaStatement"></p>
+        <!-- Persona Display (full text, collapsible) -->
+        <div x-show="annotation.personaStatement"
+             x-data="{ expanded: true }"
+             class="px-4 py-3 bg-gradient-to-r from-mobile-purple-900/30 to-mobile-gold-900/30 border-b border-mobile-dark-700">
+            <div class="flex items-start gap-2">
+                <span class="text-lg flex-shrink-0">🎭</span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-white leading-relaxed"
+                       :class="expanded ? '' : 'line-clamp-2'"
+                       x-text="annotation.personaStatement"></p>
+                    <button x-show="annotation.personaStatement?.length > 150"
+                            @click="expanded = !expanded"
+                            class="text-[10px] text-mobile-purple-400 mt-1 hover:text-mobile-purple-300">
+                        <span x-text="expanded ? '▲ Collapse' : '▼ Show more'"></span>
+                    </button>
+                </div>
             </div>
         </div>
 
