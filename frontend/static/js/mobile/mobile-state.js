@@ -466,6 +466,13 @@ window.mobileApp = function() {
                     // API returns: { annotations: { processed_jd_html, annotations: [], ... }, ... }
                     const jdAnnotations = data.annotations || {};
 
+                    // Debug: Log what we received from API
+                    console.log('[Annotation] API response:', {
+                        hasProcessedJdHtml: !!jdAnnotations.processed_jd_html,
+                        processedJdHtmlLength: jdAnnotations.processed_jd_html?.length || 0,
+                        annotationsCount: jdAnnotations.annotations?.length || 0
+                    });
+
                     // The actual annotations array is nested inside
                     const annotationsList = jdAnnotations.annotations;
                     this.annotation.annotations = Array.isArray(annotationsList) ? annotationsList : [];
@@ -897,9 +904,11 @@ window.mobileApp = function() {
             // Get base HTML - prefer LLM-processed, fallback to regex formatter
             let html;
             if (this.annotation.processedJdHtml) {
+                console.log('[Annotation] Using LLM-processed JD HTML:', this.annotation.processedJdHtml.length, 'chars');
                 html = this.annotation.processedJdHtml;
             } else {
                 const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
+                console.log('[Annotation] Falling back to JDFormatter for raw JD:', rawJd.length, 'chars');
                 html = this.formatJD(rawJd);
             }
 

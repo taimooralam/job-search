@@ -431,7 +431,9 @@
     </div>
 
     <!-- Annotation Mode Overlay -->
-    <div x-show="annotationMode" x-transition class="fixed inset-0 z-40 flex flex-col bg-mobile-dark-900" style="display: none;">
+    <!-- Use x-if instead of x-show to force fresh evaluation of x-html when shown -->
+    <template x-if="annotationMode">
+    <div x-transition class="fixed inset-0 z-40 flex flex-col bg-mobile-dark-900">
         <!-- Annotation Header -->
         <header class="flex-shrink-0 px-4 pt-safe pb-2 bg-mobile-dark-800 border-b border-mobile-dark-700">
             <div class="flex items-center justify-between">
@@ -498,6 +500,7 @@
             </button>
         </div>
     </div>
+    </template>
 
     <!-- Annotation Full-Screen Selector -->
     <div x-show="annotationSheet.show" x-transition class="fixed inset-0 z-50 flex flex-col bg-mobile-dark-900" style="display: none;">
