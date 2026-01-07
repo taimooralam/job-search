@@ -455,27 +455,15 @@ window.mobileApp = function() {
         async openAnnotationMode() {
             if (!this.currentJob) return;
 
-            console.log('[Mobile Annotation] Opening annotation mode for job:', this.currentJob._id);
-
             // Load existing annotations and processed JD HTML BEFORE showing panel
             // This ensures getAnnotationJdHtml() has the data when panel renders
             try {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
-                console.log('[Mobile Annotation] API response status:', response.status);
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('[Mobile Annotation] API response keys:', Object.keys(data));
-                    console.log('[Mobile Annotation] data.annotations keys:', data.annotations ? Object.keys(data.annotations) : 'null');
-
                     // API returns: { annotations: { processed_jd_html, annotations: [], ... }, ... }
                     const jdAnnotations = data.annotations || {};
-
-                    // DEBUG: Log the raw processed_jd_html value and type
-                    console.log('[Mobile Annotation] RAW processed_jd_html type:', typeof jdAnnotations.processed_jd_html);
-                    console.log('[Mobile Annotation] RAW processed_jd_html value:', jdAnnotations.processed_jd_html);
-                    console.log('[Mobile Annotation] RAW processed_jd_html is null:', jdAnnotations.processed_jd_html === null);
-                    console.log('[Mobile Annotation] RAW processed_jd_html is empty string:', jdAnnotations.processed_jd_html === '');
 
                     // The actual annotations array is nested inside
                     const annotationsList = jdAnnotations.annotations;
@@ -484,32 +472,24 @@ window.mobileApp = function() {
                     // Store the LLM-processed JD HTML if available
                     this.annotation.processedJdHtml = jdAnnotations.processed_jd_html || null;
 
-                    console.log('[Mobile Annotation] Loaded annotations count:', this.annotation.annotations.length);
-                    console.log('[Mobile Annotation] processedJdHtml exists:', !!this.annotation.processedJdHtml);
-                    console.log('[Mobile Annotation] processedJdHtml length:', this.annotation.processedJdHtml?.length || 0);
-                    console.log('[Mobile Annotation] processedJdHtml preview:', this.annotation.processedJdHtml?.substring(0, 200));
-
-                    // If no processed JD HTML, auto-generate it
+                    // If no processed JD HTML, auto-generate it on-demand
                     if (!this.annotation.processedJdHtml) {
-                        console.log('[Mobile Annotation] No processed JD HTML, auto-generating...');
                         await this.generateProcessedJdHtml();
                     }
 
                     this.checkIdentityAnnotations();
                 } else {
-                    console.warn('[Mobile Annotation] API returned non-OK status');
                     this.annotation.annotations = [];
                     this.annotation.processedJdHtml = null;
                 }
             } catch (error) {
-                console.error('[Mobile Annotation] Failed to load annotations:', error);
+                console.error('Failed to load annotations:', error);
                 this.annotation.annotations = [];
                 this.annotation.processedJdHtml = null;
             }
 
             // Show annotation panel AFTER data is loaded
             this.annotationMode = true;
-            console.log('[Mobile Annotation] Panel opened, processedJdHtml is:', !!this.annotation.processedJdHtml);
         },
 
         closeAnnotationMode() {
@@ -532,11 +512,9 @@ window.mobileApp = function() {
             );
         },
 
-        // Generate processed JD HTML by calling the structure-jd API
+        // Generate processed JD HTML by calling the structure-jd API (on-demand)
         async generateProcessedJdHtml() {
             if (!this.currentJob) return;
-
-            console.log('[Mobile Annotation] Calling process-jd API...');
 
             try {
                 const response = await fetch(`/api/jobs/${this.currentJob._id}/process-jd`, {
@@ -545,20 +523,14 @@ window.mobileApp = function() {
                     body: JSON.stringify({ use_llm: true })
                 });
 
-                if (!response.ok) {
-                    console.warn('[Mobile Annotation] process-jd API failed:', response.status);
-                    return;
-                }
+                if (!response.ok) return;
 
                 const data = await response.json();
-                console.log('[Mobile Annotation] process-jd response:', data.success);
-
                 if (data.success && data.processed_jd?.html) {
                     this.annotation.processedJdHtml = data.processed_jd.html;
-                    console.log('[Mobile Annotation] Generated processedJdHtml, length:', this.annotation.processedJdHtml.length);
                 }
             } catch (error) {
-                console.error('[Mobile Annotation] Failed to generate processed JD:', error);
+                console.error('Failed to generate processed JD:', error);
             }
         },
 
