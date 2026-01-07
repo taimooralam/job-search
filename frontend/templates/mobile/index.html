@@ -509,8 +509,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
-                <h2 class="text-lg font-semibold text-white">Add Annotation</h2>
-                <div class="w-10"></div>
+                <h2 class="text-lg font-semibold text-white" x-text="annotationSheet.editingId ? 'Edit Annotation' : 'Add Annotation'"></h2>
+                <!-- Delete button (only when editing) -->
+                <button x-show="annotationSheet.editingId"
+                        @click="deleteAnnotation()"
+                        :disabled="annotationSheet.saving"
+                        class="text-mobile-red-400 p-2 -mr-2 disabled:opacity-50">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+                <div x-show="!annotationSheet.editingId" class="w-10"></div>
             </div>
         </header>
 
@@ -591,12 +600,12 @@
             </div>
         </div>
 
-        <!-- Action Buttons (Save / Discard) -->
+        <!-- Action Buttons (Save / Cancel) -->
         <div class="flex-shrink-0 px-4 py-3 pb-safe bg-mobile-dark-800 border-t border-mobile-dark-700">
             <div class="flex gap-3">
                 <button @click="closeAnnotationSheet()"
                         class="flex-1 py-3 bg-mobile-dark-700 text-mobile-dark-300 font-semibold rounded-xl">
-                    Discard
+                    Cancel
                 </button>
                 <button @click="saveAnnotation()"
                         :disabled="annotationSheet.saving"
@@ -607,7 +616,7 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
                     </template>
-                    <span x-text="annotationSheet.saving ? 'Saving...' : 'Save'"></span>
+                    <span x-text="annotationSheet.saving ? 'Saving...' : (annotationSheet.editingId ? 'Update' : 'Save')"></span>
                 </button>
             </div>
         </div>

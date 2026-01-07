@@ -41,7 +41,8 @@ window.mobileApp = function() {
             requirement: 'neutral',
             identity: 'peripheral',
             passion: 'neutral',
-            saving: false
+            saving: false,
+            editingId: null  // ID of annotation being edited (null = creating new)
         },
 
         // Annotation options
@@ -550,6 +551,16 @@ window.mobileApp = function() {
             // Prevent if tapping on a link or button
             if (event.target.closest('a, button')) return;
 
+            // Check if tapping on an existing annotation highlight
+            const annotationMark = event.target.closest('mark.annotation-highlight');
+            if (annotationMark) {
+                const annotationId = annotationMark.dataset.annotationId;
+                if (annotationId) {
+                    this.editAnnotation(annotationId);
+                    return;
+                }
+            }
+
             // Get selected text or smart-select from tapped element
             const selection = window.getSelection();
             let selectedText = '';
@@ -568,6 +579,7 @@ window.mobileApp = function() {
                 this.annotationSheet.requirement = 'must_have';
                 this.annotationSheet.identity = 'peripheral';
                 this.annotationSheet.passion = 'neutral';
+                this.annotationSheet.editingId = null;  // Creating new annotation
                 this.annotationSheet.show = true;
 
                 // Haptic
@@ -658,7 +670,68 @@ window.mobileApp = function() {
         closeAnnotationSheet() {
             this.annotationSheet.show = false;
             this.annotationSheet.selectedText = '';
+            this.annotationSheet.editingId = null;
             window.getSelection()?.removeAllRanges();
+        },
+
+        // Edit an existing annotation
+        editAnnotation(annotationId) {
+            const annotation = this.annotation.annotations.find(a => a.id === annotationId);
+            if (!annotation) return;
+
+            // Load annotation data into the sheet
+            this.annotationSheet.selectedText = annotation.target?.text || '';
+            this.annotationSheet.relevance = annotation.relevance || 'relevant';
+            this.annotationSheet.requirement = annotation.requirement_type || 'neutral';
+            this.annotationSheet.identity = annotation.identity || 'peripheral';
+            this.annotationSheet.passion = annotation.passion || 'neutral';
+            this.annotationSheet.editingId = annotationId;
+            this.annotationSheet.show = true;
+
+            // Haptic
+            if ('vibrate' in navigator) {
+                navigator.vibrate([30, 20, 30]);
+            }
+        },
+
+        // Delete an annotation
+        async deleteAnnotation() {
+            if (!this.annotationSheet.editingId || !this.currentJob) return;
+
+            this.annotationSheet.saving = true;
+
+            try {
+                // Remove from array
+                this.annotation.annotations = this.annotation.annotations.filter(
+                    a => a.id !== this.annotationSheet.editingId
+                );
+
+                // Save to server
+                await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        annotations: this.annotation.annotations,
+                        annotation_version: 1
+                    })
+                });
+
+                this.checkIdentityAnnotations();
+
+                // Haptic
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(50);
+                }
+
+                window.showToast?.('Annotation deleted', 'info');
+                this.closeAnnotationSheet();
+
+            } catch (error) {
+                console.error('Failed to delete annotation:', error);
+                window.showToast?.('Failed to delete', 'error');
+            } finally {
+                this.annotationSheet.saving = false;
+            }
         },
 
         async saveAnnotation() {
@@ -667,27 +740,46 @@ window.mobileApp = function() {
             this.annotationSheet.saving = true;
 
             try {
-                // Create annotation
-                const newAnnotation = {
-                    id: crypto.randomUUID(),
-                    target: {
-                        text: this.annotationSheet.selectedText,
-                        char_start: 0,
-                        char_end: this.annotationSheet.selectedText.length
-                    },
-                    annotation_type: 'skill_match',
-                    relevance: this.annotationSheet.relevance,
-                    requirement_type: this.annotationSheet.requirement,
-                    identity: this.annotationSheet.identity,
-                    passion: this.annotationSheet.passion,
-                    is_active: true,
-                    status: 'approved',
-                    source: 'human',
-                    created_at: new Date().toISOString()
-                };
+                const isEditing = !!this.annotationSheet.editingId;
 
-                // Use array reassignment to trigger Alpine reactivity
-                this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
+                if (isEditing) {
+                    // Update existing annotation
+                    this.annotation.annotations = this.annotation.annotations.map(a => {
+                        if (a.id === this.annotationSheet.editingId) {
+                            return {
+                                ...a,
+                                relevance: this.annotationSheet.relevance,
+                                requirement_type: this.annotationSheet.requirement,
+                                identity: this.annotationSheet.identity,
+                                passion: this.annotationSheet.passion,
+                                updated_at: new Date().toISOString()
+                            };
+                        }
+                        return a;
+                    });
+                } else {
+                    // Create new annotation
+                    const newAnnotation = {
+                        id: crypto.randomUUID(),
+                        target: {
+                            text: this.annotationSheet.selectedText,
+                            char_start: 0,
+                            char_end: this.annotationSheet.selectedText.length
+                        },
+                        annotation_type: 'skill_match',
+                        relevance: this.annotationSheet.relevance,
+                        requirement_type: this.annotationSheet.requirement,
+                        identity: this.annotationSheet.identity,
+                        passion: this.annotationSheet.passion,
+                        is_active: true,
+                        status: 'approved',
+                        source: 'human',
+                        created_at: new Date().toISOString()
+                    };
+
+                    // Use array reassignment to trigger Alpine reactivity
+                    this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
+                }
 
                 // Save to server
                 await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
@@ -706,7 +798,7 @@ window.mobileApp = function() {
                     navigator.vibrate([50, 30, 50]);
                 }
 
-                window.showToast?.('Annotation saved', 'success');
+                window.showToast?.(isEditing ? 'Annotation updated' : 'Annotation saved', 'success');
                 this.closeAnnotationSheet();
 
             } catch (error) {
@@ -799,21 +891,14 @@ window.mobileApp = function() {
         // Get JD HTML for annotation panel - prefer LLM-processed HTML, fallback to JDFormatter
         // Also applies highlights for existing annotations
         getAnnotationJdHtml() {
-            console.log('[Mobile Annotation] getAnnotationJdHtml called');
-            console.log('[Mobile Annotation] processedJdHtml exists:', !!this.annotation.processedJdHtml);
-
-            // Get base HTML
+            // Get base HTML - prefer LLM-processed, fallback to regex formatter
             let html;
             if (this.annotation.processedJdHtml) {
-                console.log('[Mobile Annotation] Using LLM-processed HTML');
                 html = this.annotation.processedJdHtml;
             } else {
-                console.log('[Mobile Annotation] Falling back to JDFormatter');
                 const rawJd = this.currentJob?.description || this.currentJob?.job_description || '';
                 html = this.formatJD(rawJd);
             }
-
-            console.log('[Mobile Annotation] HTML preview (first 300 chars):', html?.substring(0, 300));
 
             // Apply highlights for existing annotations
             return this.applyHighlightsToHtml(html);
