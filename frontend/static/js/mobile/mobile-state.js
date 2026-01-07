@@ -930,8 +930,8 @@ window.mobileApp = function() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            persona_statement: data.persona,
-                            is_user_edited: false
+                            persona: data.persona,  // API expects 'persona', not 'persona_statement'
+                            is_edited: false        // API expects 'is_edited', not 'is_user_edited'
                         })
                     });
 
