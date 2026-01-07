@@ -285,9 +285,12 @@ window.mobileApp = function() {
             setTimeout(() => this.nextCard(), 300);
         },
 
-        async commitSwipeRight() {
+        commitSwipeRight() {
             const job = this.currentJob;
             if (!job) return;
+
+            const jobId = job._id;
+            const mode = this.mode;
 
             // Animate out
             const card = this.$refs.currentCard;
@@ -296,65 +299,65 @@ window.mobileApp = function() {
                 card.style.transform = 'translateX(150%) rotate(30deg)';
             }
 
-            try {
-                if (this.mode === 'main') {
-                    // Move to batch
-                    const response = await fetch('/api/jobs/move-to-batch', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            job_ids: [job._id],
-                            auto_process: true
-                        })
-                    });
+            // Haptic feedback immediately
+            if ('vibrate' in navigator) {
+                navigator.vibrate(mode === 'main' ? [50, 30, 50] : [50, 30, 50, 30, 50]);
+            }
 
-                    if (!response.ok) throw new Error('Failed to move to batch');
+            // Move to next card immediately (optimistic)
+            setTimeout(() => this.nextCard(), 300);
 
-                    // Haptic feedback
-                    if ('vibrate' in navigator) {
-                        navigator.vibrate([50, 30, 50]);
+            // === FIRE AND FORGET: API calls in background ===
+            if (mode === 'main') {
+                // Move to batch (background)
+                fetch('/api/jobs/move-to-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_ids: [jobId],
+                        auto_process: true
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        window.showToast?.('Moved to batch & analyzing', 'success');
+                    } else {
+                        window.showToast?.('Failed to move to batch', 'error');
                     }
+                }).catch(error => {
+                    console.error('Move to batch failed:', error);
+                    window.showToast?.('Failed to move to batch', 'error');
+                });
 
-                    window.showToast?.('Moved to batch & analyzing', 'success');
-
-                } else {
-                    // Generate CV
-                    const response = await fetch(`/api/runner/jobs/${job._id}/operations/generate-cv/queue`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tier: 'quality' })
-                    });
-
-                    if (!response.ok) throw new Error('Failed to queue CV generation');
+            } else {
+                // Generate CV (background, but track progress)
+                fetch(`/api/runner/jobs/${jobId}/operations/generate-cv/queue`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tier: 'quality' })
+                }).then(async response => {
+                    if (!response.ok) {
+                        window.showToast?.('Failed to start CV generation', 'error');
+                        return;
+                    }
 
                     const data = await response.json();
-
-                    // Haptic feedback
-                    if ('vibrate' in navigator) {
-                        navigator.vibrate([50, 30, 50, 30, 50]);
-                    }
+                    window.showToast?.('CV generation started', 'success');
 
                     // Start polling progress
                     if (data.run_id) {
                         this.cvProgress = {
                             runId: data.run_id,
-                            jobId: job._id,  // Track the job ID for CV viewer
+                            jobId: jobId,
                             step: 'Starting...',
                             percent: 0
                         };
                         this.pollCvProgress(data.run_id);
                     }
-
-                    window.showToast?.('CV generation started', 'success');
-                }
-
-            } catch (error) {
-                console.error('Swipe right action failed:', error);
-                window.showToast?.(`Action failed: ${error.message}`, 'error');
+                }).catch(error => {
+                    console.error('CV generation failed:', error);
+                    window.showToast?.('Failed to start CV generation', 'error');
+                });
             }
-
-            // Move to next after animation
-            setTimeout(() => this.nextCard(), 300);
         },
 
         nextCard() {
