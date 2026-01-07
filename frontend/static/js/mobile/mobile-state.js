@@ -701,121 +701,129 @@ window.mobileApp = function() {
             }
         },
 
-        // Delete an annotation
-        async deleteAnnotation() {
+        // Delete an annotation (optimistic - instant UI, background save)
+        deleteAnnotation() {
             if (!this.annotationSheet.editingId || !this.currentJob) return;
 
-            this.annotationSheet.saving = true;
+            const jobId = this.currentJob._id;
 
-            try {
-                // Remove from array
-                this.annotation.annotations = this.annotation.annotations.filter(
-                    a => a.id !== this.annotationSheet.editingId
-                );
+            // === OPTIMISTIC UPDATE: Update UI immediately ===
+            this.annotation.annotations = this.annotation.annotations.filter(
+                a => a.id !== this.annotationSheet.editingId
+            );
 
-                // Save to server (include processed_jd_html to avoid overwriting)
-                await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        annotations: this.annotation.annotations,
-                        processed_jd_html: this.annotation.processedJdHtml,
-                        annotation_version: 1
-                    })
-                });
+            this.checkIdentityAnnotations();
 
-                this.checkIdentityAnnotations();
-
-                // Haptic
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(50);
-                }
-
-                window.showToast?.('Annotation deleted', 'info');
-                this.closeAnnotationSheet();
-
-            } catch (error) {
-                console.error('Failed to delete annotation:', error);
-                window.showToast?.('Failed to delete', 'error');
-            } finally {
-                this.annotationSheet.saving = false;
+            // Haptic feedback immediately
+            if ('vibrate' in navigator) {
+                navigator.vibrate(50);
             }
+
+            // Close sheet immediately
+            this.closeAnnotationSheet();
+
+            // === BACKGROUND SAVE ===
+            const annotationsToSave = [...this.annotation.annotations];
+            const processedJdHtml = this.annotation.processedJdHtml;
+
+            fetch(`/api/jobs/${jobId}/jd-annotations`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    annotations: annotationsToSave,
+                    processed_jd_html: processedJdHtml,
+                    annotation_version: 1
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Background delete save failed:', response.status);
+                    window.showToast?.('Delete failed - refresh to see actual state', 'error');
+                }
+            }).catch(error => {
+                console.error('Background delete save error:', error);
+                window.showToast?.('Delete failed - refresh to see actual state', 'error');
+            });
         },
 
         async saveAnnotation() {
             if (!this.annotationSheet.selectedText || !this.currentJob) return;
 
-            this.annotationSheet.saving = true;
+            const isEditing = !!this.annotationSheet.editingId;
+            const jobId = this.currentJob._id;
 
-            try {
-                const isEditing = !!this.annotationSheet.editingId;
-
-                if (isEditing) {
-                    // Update existing annotation
-                    this.annotation.annotations = this.annotation.annotations.map(a => {
-                        if (a.id === this.annotationSheet.editingId) {
-                            return {
-                                ...a,
-                                relevance: this.annotationSheet.relevance,
-                                requirement_type: this.annotationSheet.requirement,
-                                identity: this.annotationSheet.identity,
-                                passion: this.annotationSheet.passion,
-                                updated_at: new Date().toISOString()
-                            };
-                        }
-                        return a;
-                    });
-                } else {
-                    // Create new annotation
-                    const newAnnotation = {
-                        id: crypto.randomUUID(),
-                        target: {
-                            text: this.annotationSheet.selectedText,
-                            char_start: 0,
-                            char_end: this.annotationSheet.selectedText.length
-                        },
-                        annotation_type: 'skill_match',
-                        relevance: this.annotationSheet.relevance,
-                        requirement_type: this.annotationSheet.requirement,
-                        identity: this.annotationSheet.identity,
-                        passion: this.annotationSheet.passion,
-                        is_active: true,
-                        status: 'approved',
-                        source: 'human',
-                        created_at: new Date().toISOString()
-                    };
-
-                    // Use array reassignment to trigger Alpine reactivity
-                    this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
-                }
-
-                // Save to server (include processed_jd_html to avoid overwriting)
-                await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        annotations: this.annotation.annotations,
-                        processed_jd_html: this.annotation.processedJdHtml,
-                        annotation_version: 1
-                    })
+            // === OPTIMISTIC UPDATE: Update UI immediately ===
+            if (isEditing) {
+                // Update existing annotation
+                this.annotation.annotations = this.annotation.annotations.map(a => {
+                    if (a.id === this.annotationSheet.editingId) {
+                        return {
+                            ...a,
+                            relevance: this.annotationSheet.relevance,
+                            requirement_type: this.annotationSheet.requirement,
+                            identity: this.annotationSheet.identity,
+                            passion: this.annotationSheet.passion,
+                            updated_at: new Date().toISOString()
+                        };
+                    }
+                    return a;
                 });
+            } else {
+                // Create new annotation
+                const newAnnotation = {
+                    id: crypto.randomUUID(),
+                    target: {
+                        text: this.annotationSheet.selectedText,
+                        char_start: 0,
+                        char_end: this.annotationSheet.selectedText.length
+                    },
+                    annotation_type: 'skill_match',
+                    relevance: this.annotationSheet.relevance,
+                    requirement_type: this.annotationSheet.requirement,
+                    identity: this.annotationSheet.identity,
+                    passion: this.annotationSheet.passion,
+                    is_active: true,
+                    status: 'approved',
+                    source: 'human',
+                    created_at: new Date().toISOString()
+                };
 
-                this.checkIdentityAnnotations();
-
-                // Haptic
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([50, 30, 50]);
-                }
-
-                window.showToast?.(isEditing ? 'Annotation updated' : 'Annotation saved', 'success');
-                this.closeAnnotationSheet();
-
-            } catch (error) {
-                console.error('Failed to save annotation:', error);
-                window.showToast?.('Failed to save', 'error');
-            } finally {
-                this.annotationSheet.saving = false;
+                // Use array reassignment to trigger Alpine reactivity
+                this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
             }
+
+            this.checkIdentityAnnotations();
+
+            // Haptic feedback immediately
+            if ('vibrate' in navigator) {
+                navigator.vibrate([50, 30, 50]);
+            }
+
+            // Close sheet immediately (optimistic - don't wait for server)
+            this.closeAnnotationSheet();
+
+            // === BACKGROUND SAVE: Save to server without blocking UI ===
+            // Capture current state for background save
+            const annotationsToSave = [...this.annotation.annotations];
+            const processedJdHtml = this.annotation.processedJdHtml;
+
+            // Save in background (don't await)
+            fetch(`/api/jobs/${jobId}/jd-annotations`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    annotations: annotationsToSave,
+                    processed_jd_html: processedJdHtml,
+                    annotation_version: 1
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error('Background save failed:', response.status);
+                    window.showToast?.('Save failed - changes may be lost', 'error');
+                }
+            }).catch(error => {
+                console.error('Background save error:', error);
+                window.showToast?.('Save failed - changes may be lost', 'error');
+            });
         },
 
         async generatePersona() {
