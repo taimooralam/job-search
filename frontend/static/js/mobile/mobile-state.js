@@ -867,13 +867,24 @@ window.mobileApp = function() {
         },
 
         async generatePersona() {
-            if (!this.currentJob || this.annotation.personaLoading) return;
+            const jobId = this.currentJob?._id;
+            console.log('[Persona] Starting generation for job:', jobId);
+
+            if (!this.currentJob || this.annotation.personaLoading) {
+                console.log('[Persona] Aborted - no job or already loading');
+                return;
+            }
 
             this.annotation.personaLoading = true;
 
             try {
-                // Save annotations first (include processed_jd_html to avoid overwriting)
-                await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`, {
+                // Step 1: Save annotations first
+                console.log('[Persona] Step 1: Saving annotations...', {
+                    count: this.annotation.annotations?.length,
+                    hasProcessedJdHtml: !!this.annotation.processedJdHtml
+                });
+
+                const saveResponse = await fetch(`/api/jobs/${jobId}/jd-annotations`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -883,21 +894,39 @@ window.mobileApp = function() {
                     })
                 });
 
-                // Generate persona
-                const response = await fetch(`/api/jobs/${this.currentJob._id}/synthesize-persona`, {
+                console.log('[Persona] Step 1 result:', saveResponse.ok ? 'OK' : `FAILED (${saveResponse.status})`);
+                if (!saveResponse.ok) {
+                    const errText = await saveResponse.text();
+                    console.error('[Persona] Save annotations failed:', errText);
+                }
+
+                // Step 2: Generate persona
+                console.log('[Persona] Step 2: Calling synthesize-persona API...');
+                const response = await fetch(`/api/jobs/${jobId}/synthesize-persona`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
 
-                if (!response.ok) throw new Error('Synthesis failed');
+                console.log('[Persona] Step 2 response status:', response.status);
+                if (!response.ok) {
+                    const errText = await response.text();
+                    console.error('[Persona] Synthesis API failed:', errText);
+                    throw new Error(`Synthesis failed: ${response.status}`);
+                }
 
                 const data = await response.json();
+                console.log('[Persona] Step 2 result:', {
+                    success: data.success,
+                    hasPersona: !!data.persona,
+                    personaLength: data.persona?.length || 0
+                });
 
                 if (data.success && data.persona) {
                     this.annotation.personaStatement = data.persona;
 
-                    // Save persona
-                    await fetch(`/api/jobs/${this.currentJob._id}/save-persona`, {
+                    // Step 3: Save persona to database
+                    console.log('[Persona] Step 3: Saving persona to database...');
+                    const savePersonaResponse = await fetch(`/api/jobs/${jobId}/save-persona`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -906,21 +935,31 @@ window.mobileApp = function() {
                         })
                     });
 
+                    console.log('[Persona] Step 3 result:', savePersonaResponse.ok ? 'OK' : `FAILED (${savePersonaResponse.status})`);
+                    if (!savePersonaResponse.ok) {
+                        const errText = await savePersonaResponse.text();
+                        console.error('[Persona] Save persona failed:', errText);
+                        window.showToast?.('Persona generated but save failed!', 'warning');
+                    } else {
+                        console.log('[Persona] ✓ Complete! Persona saved successfully');
+                        window.showToast?.('Persona generated!', 'success');
+                    }
+
                     // Haptic
                     if ('vibrate' in navigator) {
                         navigator.vibrate([100, 50, 100, 50, 200]);
                     }
-
-                    window.showToast?.('Persona generated!', 'success');
                 } else {
+                    console.log('[Persona] No persona in response:', data);
                     window.showToast?.('Could not generate persona', 'warning');
                 }
 
             } catch (error) {
-                console.error('Failed to generate persona:', error);
+                console.error('[Persona] Failed:', error);
                 window.showToast?.('Persona generation failed', 'error');
             } finally {
                 this.annotation.personaLoading = false;
+                console.log('[Persona] Generation complete, loading state reset');
             }
         },
 
