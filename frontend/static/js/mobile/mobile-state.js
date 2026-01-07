@@ -329,35 +329,72 @@ window.mobileApp = function() {
                 });
 
             } else {
-                // Generate CV (background, but track progress)
-                fetch(`/api/runner/jobs/${jobId}/operations/generate-cv/queue`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tier: 'quality' })
-                }).then(async response => {
-                    if (!response.ok) {
-                        window.showToast?.('Failed to start CV generation', 'error');
-                        return;
-                    }
-
-                    const data = await response.json();
-                    window.showToast?.('CV generation started', 'success');
-
-                    // Start polling progress
-                    if (data.run_id) {
-                        this.cvProgress = {
-                            runId: data.run_id,
-                            jobId: jobId,
-                            step: 'Starting...',
-                            percent: 0
-                        };
-                        this.pollCvProgress(data.run_id);
-                    }
-                }).catch(error => {
-                    console.error('CV generation failed:', error);
-                    window.showToast?.('Failed to start CV generation', 'error');
-                });
+                // Batch mode: Check if CV already exists
+                if (this.hasGeneratedCv(job)) {
+                    // CV exists - just skip to next (already moving via nextCard above)
+                    window.showToast?.('CV exists - skipped', 'info');
+                } else {
+                    // No CV - generate it
+                    this.triggerCvGeneration(jobId);
+                }
             }
+        },
+
+        // Trigger CV generation (used by swipe and regenerate button)
+        triggerCvGeneration(jobId) {
+            fetch(`/api/runner/jobs/${jobId}/operations/generate-cv/queue`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier: 'quality' })
+            }).then(async response => {
+                if (!response.ok) {
+                    window.showToast?.('Failed to start CV generation', 'error');
+                    return;
+                }
+
+                const data = await response.json();
+                window.showToast?.('CV generation started', 'success');
+
+                // Start polling progress
+                if (data.run_id) {
+                    this.cvProgress = {
+                        runId: data.run_id,
+                        jobId: jobId,
+                        step: 'Starting...',
+                        percent: 0
+                    };
+                    this.pollCvProgress(data.run_id);
+                }
+            }).catch(error => {
+                console.error('CV generation failed:', error);
+                window.showToast?.('Failed to start CV generation', 'error');
+            });
+        },
+
+        // Regenerate CV and move to next card (for jobs that already have CV)
+        regenerateCvAndNext() {
+            const job = this.currentJob;
+            if (!job) return;
+
+            const jobId = job._id;
+
+            // Animate out
+            const card = this.$refs.currentCard;
+            if (card) {
+                card.classList.add('snapping');
+                card.style.transform = 'translateX(150%) rotate(30deg)';
+            }
+
+            // Haptic
+            if ('vibrate' in navigator) {
+                navigator.vibrate([50, 30, 50, 30, 50]);
+            }
+
+            // Move to next
+            setTimeout(() => this.nextCard(), 300);
+
+            // Trigger CV generation (will overwrite existing)
+            this.triggerCvGeneration(jobId);
         },
 
         nextCard() {

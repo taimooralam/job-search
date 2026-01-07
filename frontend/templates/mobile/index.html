@@ -339,14 +339,24 @@
                         <template x-if="mode === 'batch'">
                             <div class="space-y-2">
                                 <!-- View CV Button (if CV exists) -->
-                                <button x-show="hasGeneratedCv(currentJob)"
-                                        @click="openCvViewer(currentJob._id)"
-                                        class="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 active:scale-98 transition-transform">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    <span>View Generated CV</span>
-                                </button>
+                                <div x-show="hasGeneratedCv(currentJob)" class="flex gap-2">
+                                    <button @click="openCvViewer(currentJob._id)"
+                                            class="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 active:scale-98 transition-transform">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span>View CV</span>
+                                    </button>
+                                    <!-- Regenerate CV button -->
+                                    <button @click="regenerateCvAndNext()"
+                                            class="px-4 py-3 bg-mobile-dark-700 text-mobile-gold-400 font-medium rounded-xl flex items-center justify-center gap-1.5 active:scale-98 transition-transform border border-mobile-gold-500/30"
+                                            title="Regenerate CV and go to next job">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                        <span class="text-sm">Redo</span>
+                                    </button>
+                                </div>
 
                                 <!-- Annotate Button -->
                                 <button @click="openAnnotationMode()"
