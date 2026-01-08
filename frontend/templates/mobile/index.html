@@ -369,8 +369,8 @@
                             <span>←</span> Discard
                         </span>
                         <span class="text-mobile-dark-600">Swipe to act</span>
-                        <span :class="mode === 'main' ? 'text-green-400' : 'text-mobile-purple-400'" class="flex items-center gap-1">
-                            <span x-text="mode === 'main' ? 'Batch' : 'Generate CV'"></span>
+                        <span :class="mode === 'main' ? 'text-green-400' : (hasGeneratedCv(currentJob) ? 'text-emerald-400' : 'text-mobile-purple-400')" class="flex items-center gap-1">
+                            <span x-text="mode === 'main' ? 'Batch' : (hasGeneratedCv(currentJob) ? 'Next' : 'Generate CV')"></span>
                             <span>→</span>
                         </span>
                     </div>

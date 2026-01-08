@@ -2587,7 +2587,11 @@ def mobile_jobs():
                 "pipeline_status": 1,
                 "jd_annotations": 1,
                 "_locationPriority": 1,
-                "_seniorityRank": 1
+                "_seniorityRank": 1,
+                # CV fields for hasGeneratedCv() check and CV viewer
+                "generated_cv": 1,
+                "cv_text": 1,
+                "cv_editor_state": 1
             }
         })
 
