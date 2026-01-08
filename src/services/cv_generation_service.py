@@ -248,12 +248,37 @@ class CVGenerationService(OperationService):
                 persisted = self._persist_cv_result(
                     job_id, cv_text, cv_editor_state, cv_result, cover_letter
                 )
-                persist_msg = "Saved to database" if persisted else "Persistence failed"
+
+                if not persisted:
+                    # Persistence failure is a critical error - CV generation succeeded but wasn't saved
+                    persist_error_msg = "CV generated but failed to save to database"
+                    layer_status["persist"] = {
+                        "status": "failed",
+                        "message": persist_error_msg
+                    }
+                    await emit_progress("persist", "failed", persist_error_msg)
+                    logger.error(f"[{run_id[:16]}] {persist_error_msg}")
+
+                    # Return error result - don't mislead caller that everything succeeded
+                    return self.create_error_result(
+                        run_id=run_id,
+                        error=persist_error_msg,
+                        duration_ms=timer.duration_ms,
+                        # Include the generated CV in error data so it's not lost
+                        data={
+                            "cv_text": cv_text,
+                            "cv_editor_state": cv_editor_state,
+                            "cover_letter": cover_letter,
+                            "warning": "CV was generated but not persisted to database",
+                        },
+                    )
+
+                persist_msg = "Saved to database and verified"
                 layer_status["persist"] = {
-                    "status": "success" if persisted else "warning",
+                    "status": "success",
                     "message": persist_msg
                 }
-                await emit_progress("persist", "success" if persisted else "warning", persist_msg)
+                await emit_progress("persist", "success", persist_msg)
 
                 # Step 7: Calculate cost estimate
                 # Estimate tokens based on typical CV + cover letter generation
@@ -641,6 +666,8 @@ class CVGenerationService(OperationService):
                 "cv_reasoning": cv_result.get("cv_reasoning"),
                 "cv_generated_at": datetime.utcnow(),
                 "updatedAt": datetime.utcnow(),
+                # Mark CV as generated for consistency with full pipeline path
+                "generated_cv": True,
             }
 
             # Include cover_letter if generated
@@ -653,11 +680,42 @@ class CVGenerationService(OperationService):
                 {"$set": update_fields},
             )
             if result.modified_count > 0:
-                logger.info(f"Persisted CV result for job {job_id}")
-                return True
+                # Verify the CV was actually saved by reading back
+                saved_doc = db["level-2"].find_one(
+                    {"_id": object_id},
+                    {"cv_text": 1, "generated_cv": 1, "cv_generated_at": 1}
+                )
+                if saved_doc and saved_doc.get("cv_text"):
+                    logger.info(
+                        f"Persisted and verified CV result for job {job_id}. "
+                        f"generated_cv={saved_doc.get('generated_cv')}, "
+                        f"cv_text_length={len(saved_doc.get('cv_text', ''))}"
+                    )
+                    return True
+                else:
+                    logger.error(
+                        f"CV persistence verification failed for job {job_id}. "
+                        f"Document state: cv_text={bool(saved_doc.get('cv_text') if saved_doc else None)}, "
+                        f"generated_cv={saved_doc.get('generated_cv') if saved_doc else None}"
+                    )
+                    return False
             else:
-                logger.warning(f"No document updated for job {job_id}")
-                return False
+                # Check if document exists but wasn't modified (maybe same content?)
+                existing_doc = db["level-2"].find_one(
+                    {"_id": object_id},
+                    {"cv_text": 1, "generated_cv": 1}
+                )
+                if existing_doc:
+                    logger.warning(
+                        f"No document modified for job {job_id} - possibly same content. "
+                        f"Existing cv_text={bool(existing_doc.get('cv_text'))}, "
+                        f"generated_cv={existing_doc.get('generated_cv')}"
+                    )
+                    # If the document has cv_text, consider it a success (idempotent update)
+                    return bool(existing_doc.get("cv_text"))
+                else:
+                    logger.error(f"Job document not found for persistence: {job_id}")
+                    return False
         except Exception as e:
             logger.error(f"Failed to persist CV result: {e}")
             return False

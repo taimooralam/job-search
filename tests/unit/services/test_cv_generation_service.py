@@ -314,6 +314,12 @@ class TestCVGenerationServicePersistResult:
         """Should update job document with CV data."""
         mock_collection = MagicMock()
         mock_collection.update_one.return_value.modified_count = 1
+        # Mock verification read-back
+        mock_collection.find_one.return_value = {
+            "cv_text": "# CV Content",
+            "generated_cv": True,
+            "cv_generated_at": datetime.utcnow(),
+        }
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         job_id = "507f1f77bcf86cd799439011"
@@ -333,10 +339,111 @@ class TestCVGenerationServicePersistResult:
         assert update_doc["cv_editor_state"] == cv_editor_state
         assert update_doc["cv_path"] == "/path/to/cv.md"
 
+    def test_persist_result_sets_generated_cv_flag(self, service, mock_db_client):
+        """Should set generated_cv: True for button-triggered CV generation."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 1
+        mock_collection.find_one.return_value = {
+            "cv_text": "# CV Content",
+            "generated_cv": True,
+        }
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        job_id = "507f1f77bcf86cd799439011"
+        service._persist_cv_result(job_id, "# CV Content", {}, {})
+
+        call_args = mock_collection.update_one.call_args
+        update_doc = call_args[0][1]["$set"]
+        assert update_doc["generated_cv"] is True
+
+    def test_persist_result_verifies_cv_saved(self, service, mock_db_client):
+        """Should verify CV was actually saved by reading back."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 1
+        # Verification read-back shows cv_text was saved
+        mock_collection.find_one.return_value = {
+            "cv_text": "# CV Content",
+            "generated_cv": True,
+        }
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        result = service._persist_cv_result(
+            "507f1f77bcf86cd799439011",
+            "# CV Content",
+            {},
+            {},
+        )
+
+        assert result is True
+        # Verify find_one was called for verification
+        assert mock_collection.find_one.called
+
+    def test_persist_result_returns_false_when_verification_fails(self, service, mock_db_client):
+        """Should return False when verification read-back shows cv_text not saved."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 1
+        # Verification shows cv_text is empty - persistence failed silently
+        mock_collection.find_one.return_value = {
+            "cv_text": None,
+            "generated_cv": None,
+        }
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        result = service._persist_cv_result(
+            "507f1f77bcf86cd799439011",
+            "# CV Content",
+            {},
+            {},
+        )
+
+        assert result is False
+
     def test_persist_result_returns_false_on_no_update(self, service, mock_db_client):
-        """Should return False when no document updated."""
+        """Should return False when no document updated and no existing CV."""
         mock_collection = MagicMock()
         mock_collection.update_one.return_value.modified_count = 0
+        # No existing cv_text either
+        mock_collection.find_one.return_value = {
+            "cv_text": None,
+            "generated_cv": None,
+        }
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        result = service._persist_cv_result(
+            "507f1f77bcf86cd799439011",
+            "cv text",
+            {},
+            {},
+        )
+
+        assert result is False
+
+    def test_persist_result_returns_true_for_idempotent_update(self, service, mock_db_client):
+        """Should return True when document has existing cv_text (idempotent update)."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 0
+        # Document already has cv_text - same content was written
+        mock_collection.find_one.return_value = {
+            "cv_text": "# Same CV Content",
+            "generated_cv": True,
+        }
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        result = service._persist_cv_result(
+            "507f1f77bcf86cd799439011",
+            "# Same CV Content",
+            {},
+            {},
+        )
+
+        # Should succeed since cv_text exists (idempotent)
+        assert result is True
+
+    def test_persist_result_returns_false_when_doc_not_found(self, service, mock_db_client):
+        """Should return False when job document not found."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 0
+        mock_collection.find_one.return_value = None  # Document not found
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         result = service._persist_cv_result(
@@ -365,10 +472,10 @@ class TestCVGenerationServiceExecute:
         # Setup mocks
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,
@@ -385,10 +492,10 @@ class TestCVGenerationServiceExecute:
         """Should include cv_text in result data."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.BALANCED,
@@ -404,10 +511,10 @@ class TestCVGenerationServiceExecute:
         """Should include cv_editor_state in result data."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
@@ -485,10 +592,10 @@ class TestCVGenerationServiceExecute:
         """Should include model_used in result."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,
@@ -503,10 +610,10 @@ class TestCVGenerationServiceExecute:
         """Should include cost estimate in result."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
@@ -521,10 +628,10 @@ class TestCVGenerationServiceExecute:
         """Should include duration_ms in result."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
-        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
@@ -539,7 +646,6 @@ class TestCVGenerationServiceExecute:
         """Should pass annotations to generator when use_annotations=True."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         generated_state = None
@@ -549,7 +655,8 @@ class TestCVGenerationServiceExecute:
             generated_state = state
             return sample_cv_result
 
-        with patch.object(service, '_generate_cv', side_effect=capture_generate):
+        with patch.object(service, '_generate_cv', side_effect=capture_generate), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
@@ -565,7 +672,6 @@ class TestCVGenerationServiceExecute:
         """Should not pass annotations when use_annotations=False."""
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         generated_state = None
@@ -575,7 +681,8 @@ class TestCVGenerationServiceExecute:
             generated_state = state
             return sample_cv_result
 
-        with patch.object(service, '_generate_cv', side_effect=capture_generate):
+        with patch.object(service, '_generate_cv', side_effect=capture_generate), \
+             patch.object(service, '_persist_cv_result', return_value=True):
             await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.FAST,
@@ -601,6 +708,59 @@ class TestCVGenerationServiceExecute:
 
         assert result.success is False
         assert "Unexpected error" in result.error
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_error_when_persistence_fails(
+        self, service, mock_db_client, sample_job, sample_cv_result
+    ):
+        """Should return error when CV generation succeeds but persistence fails."""
+        mock_collection = MagicMock()
+        mock_collection.find_one.return_value = sample_job
+        # Persistence fails - update returns 0 modified and no existing cv_text
+        mock_collection.update_one.return_value.modified_count = 0
+        # Mock the verification to return None (no cv_text)
+        verification_response = MagicMock()
+        verification_response.get.return_value = None
+        mock_collection.find_one.side_effect = [
+            sample_job,  # First call: fetch job
+            {"cv_text": None, "generated_cv": None},  # Second call: verification in _persist_cv_result
+        ]
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+            result = await service.execute(
+                job_id=str(sample_job["_id"]),
+                tier=ModelTier.FAST,
+            )
+
+        assert result.success is False
+        assert "failed to save" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_execute_includes_cv_in_error_data_when_persistence_fails(
+        self, service, mock_db_client, sample_job, sample_cv_result
+    ):
+        """Should include generated CV in error data when persistence fails."""
+        mock_collection = MagicMock()
+        mock_collection.update_one.return_value.modified_count = 0
+        # First find_one returns job, second returns None for verification
+        mock_collection.find_one.side_effect = [
+            sample_job,
+            None,  # Document not found in verification
+        ]
+        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+
+        with patch.object(service, '_generate_cv', return_value=sample_cv_result):
+            result = await service.execute(
+                job_id=str(sample_job["_id"]),
+                tier=ModelTier.FAST,
+            )
+
+        assert result.success is False
+        # CV should be included in error data so it's not lost
+        assert "cv_text" in result.data
+        assert result.data["cv_text"] == sample_cv_result["cv_text"]
+        assert "warning" in result.data
 
 
 class TestCVGenerationServiceRunId:
@@ -743,6 +903,11 @@ class TestCVGenerationServicePersistWithCoverLetter:
         """Should include cover_letter in MongoDB update when provided."""
         mock_collection = MagicMock()
         mock_collection.update_one.return_value.modified_count = 1
+        # Mock verification read-back
+        mock_collection.find_one.return_value = {
+            "cv_text": "# CV Content",
+            "generated_cv": True,
+        }
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         job_id = "507f1f77bcf86cd799439011"
@@ -765,6 +930,11 @@ class TestCVGenerationServicePersistWithCoverLetter:
         """Should not include cover_letter in update when None."""
         mock_collection = MagicMock()
         mock_collection.update_one.return_value.modified_count = 1
+        # Mock verification read-back
+        mock_collection.find_one.return_value = {
+            "cv_text": "# CV Content",
+            "generated_cv": True,
+        }
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         job_id = "507f1f77bcf86cd799439011"
@@ -792,12 +962,12 @@ class TestCVGenerationServiceIntegration:
 
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         with patch.object(
             service, "_generate_cv", return_value=sample_cv_result
-        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"):
+        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"), \
+             patch.object(service, "_persist_cv_result", return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,
@@ -830,12 +1000,12 @@ class TestCVGenerationServiceIntegration:
 
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         with patch.object(
             service, "_generate_cv", return_value=sample_cv_result
-        ), patch.object(service, "_generate_cover_letter", return_value=None):
+        ), patch.object(service, "_generate_cover_letter", return_value=None), \
+             patch.object(service, "_persist_cv_result", return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,
@@ -857,12 +1027,12 @@ class TestCVGenerationServiceIntegration:
 
         mock_collection = MagicMock()
         mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value.modified_count = 1
         mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
 
         with patch.object(
             service, "_generate_cv", return_value=sample_cv_result
-        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"):
+        ), patch.object(service, "_generate_cover_letter", return_value="Cover letter text"), \
+             patch.object(service, "_persist_cv_result", return_value=True):
             result = await service.execute(
                 job_id=str(sample_job["_id"]),
                 tier=ModelTier.QUALITY,

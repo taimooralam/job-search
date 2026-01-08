@@ -164,6 +164,7 @@ class OperationService(ABC):
         cost_usd: float = 0.0,
         input_tokens: int = 0,
         output_tokens: int = 0,
+        data: Optional[Dict[str, Any]] = None,
     ) -> OperationResult:
         """
         Create a failed operation result.
@@ -175,6 +176,7 @@ class OperationService(ABC):
             cost_usd: Cost in USD (may be non-zero if error occurred after LLM call)
             input_tokens: Number of input tokens used before failure
             output_tokens: Number of output tokens used before failure
+            data: Optional data to include (e.g., partial results before failure)
 
         Returns:
             OperationResult with success=False
@@ -183,7 +185,7 @@ class OperationService(ABC):
             success=False,
             run_id=run_id,
             operation=self.operation_name,
-            data={},
+            data=data or {},
             cost_usd=cost_usd,
             duration_ms=duration_ms,
             error=error,

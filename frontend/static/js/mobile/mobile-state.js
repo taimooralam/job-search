@@ -968,10 +968,12 @@ window.mobileApp = function() {
         // =====================================================================
 
         // Check if a job has a generated CV
+        // The CV generation service saves: cv_text (markdown), cv_editor_state (TipTap JSON), generated_cv (boolean)
         hasGeneratedCv(job) {
             if (!job) return false;
-            const cvData = job.generated_cv || job.cv_data;
-            return !!(cvData?.html || cvData?.content);
+            // Check for generated_cv boolean flag (set by CV generation service)
+            // OR cv_text markdown content
+            return job.generated_cv === true || !!job.cv_text;
         },
 
         // Format JD using the JDFormatter (regex-based structuring)
@@ -1055,14 +1057,24 @@ window.mobileApp = function() {
 
                 const job = await response.json();
 
-                // Get CV HTML from job data
-                const cvData = job.generated_cv || job.cv_data;
-                if (cvData?.html) {
-                    this.cvViewer.cvHtml = cvData.html;
-                } else if (cvData?.content) {
-                    this.cvViewer.cvHtml = cvData.content;
+                // CV generation service saves: cv_text (markdown), cv_editor_state (TipTap JSON)
+                // Priority: cv_text (markdown) > cv_editor_state > legacy fields
+                if (job.cv_text) {
+                    // Convert markdown to HTML for display
+                    this.cvViewer.cvHtml = this.markdownToHtml(job.cv_text);
+                } else if (job.cv_editor_state?.content) {
+                    // Convert TipTap JSON to HTML
+                    this.cvViewer.cvHtml = this.prosemirrorToHtml(job.cv_editor_state);
                 } else {
-                    this.cvViewer.cvHtml = '<div class="text-center py-8 text-mobile-dark-500">No CV generated yet</div>';
+                    // Legacy fallback
+                    const cvData = job.generated_cv || job.cv_data;
+                    if (cvData?.html) {
+                        this.cvViewer.cvHtml = cvData.html;
+                    } else if (cvData?.content) {
+                        this.cvViewer.cvHtml = cvData.content;
+                    } else {
+                        this.cvViewer.cvHtml = '<div class="text-center py-8 text-mobile-dark-500">No CV generated yet</div>';
+                    }
                 }
 
             } catch (error) {
@@ -1071,6 +1083,84 @@ window.mobileApp = function() {
             } finally {
                 this.cvViewer.isLoading = false;
             }
+        },
+
+        // Convert markdown to HTML for CV display
+        markdownToHtml(markdown) {
+            if (!markdown) return '';
+
+            // Basic markdown to HTML conversion
+            let html = markdown
+                // Headers
+                .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-white mt-6 mb-3">$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-mobile-purple-400 mb-4">$1</h1>')
+                // Bold and italic
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                // Bullet lists
+                .replace(/^[\-\*] (.+)$/gm, '<li class="ml-4 text-gray-300">$1</li>')
+                // Line breaks and paragraphs
+                .replace(/\n\n/g, '</p><p class="mb-3 text-gray-200">')
+                .replace(/\n/g, '<br>');
+
+            // Wrap list items in ul
+            html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, '<ul class="list-disc mb-4">$&</ul>');
+
+            // Wrap in paragraph if not already wrapped
+            if (!html.startsWith('<')) {
+                html = `<p class="mb-3 text-gray-200">${html}</p>`;
+            }
+
+            return `<div class="cv-content prose prose-invert max-w-none p-4">${html}</div>`;
+        },
+
+        // Convert ProseMirror/TipTap JSON to HTML
+        prosemirrorToHtml(doc) {
+            if (!doc?.content) return '';
+
+            const renderNode = (node) => {
+                if (!node) return '';
+
+                switch (node.type) {
+                    case 'doc':
+                        return node.content?.map(renderNode).join('') || '';
+                    case 'paragraph':
+                        const pText = node.content?.map(renderNode).join('') || '';
+                        return `<p class="mb-3 text-gray-200">${pText}</p>`;
+                    case 'heading':
+                        const level = node.attrs?.level || 2;
+                        const hText = node.content?.map(renderNode).join('') || '';
+                        const hClasses = {
+                            1: 'text-2xl font-bold text-mobile-purple-400 mb-4',
+                            2: 'text-xl font-bold text-white mt-6 mb-3',
+                            3: 'text-lg font-semibold text-white mt-4 mb-2'
+                        };
+                        return `<h${level} class="${hClasses[level] || hClasses[2]}">${hText}</h${level}>`;
+                    case 'bulletList':
+                        return `<ul class="list-disc ml-4 mb-4">${node.content?.map(renderNode).join('') || ''}</ul>`;
+                    case 'orderedList':
+                        return `<ol class="list-decimal ml-4 mb-4">${node.content?.map(renderNode).join('') || ''}</ol>`;
+                    case 'listItem':
+                        return `<li class="text-gray-300">${node.content?.map(renderNode).join('') || ''}</li>`;
+                    case 'text':
+                        let text = node.text || '';
+                        // Apply marks
+                        if (node.marks) {
+                            for (const mark of node.marks) {
+                                if (mark.type === 'bold') text = `<strong class="font-semibold">${text}</strong>`;
+                                if (mark.type === 'italic') text = `<em>${text}</em>`;
+                            }
+                        }
+                        return text;
+                    case 'hardBreak':
+                        return '<br>';
+                    default:
+                        return node.content?.map(renderNode).join('') || '';
+                }
+            };
+
+            return `<div class="cv-content prose prose-invert max-w-none p-4">${renderNode(doc)}</div>`;
         },
 
         closeCvViewer() {
