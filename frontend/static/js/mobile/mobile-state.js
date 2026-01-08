@@ -1065,7 +1065,10 @@ window.mobileApp = function() {
                 const response = await fetch(`/api/jobs/${this.cvViewer.jobId}`);
                 if (!response.ok) throw new Error('Failed to fetch job');
 
-                const job = await response.json();
+                const data = await response.json();
+                const job = data.job;  // API returns {"job": {...}}
+
+                if (!job) throw new Error('Job not found in response');
 
                 // CV generation service saves: cv_text (markdown), cv_editor_state (TipTap JSON)
                 // Priority: cv_text (markdown) > cv_editor_state > legacy fields

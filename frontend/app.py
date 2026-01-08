@@ -2588,10 +2588,9 @@ def mobile_jobs():
                 "jd_annotations": 1,
                 "_locationPriority": 1,
                 "_seniorityRank": 1,
-                # CV fields for hasGeneratedCv() check and CV viewer
-                "generated_cv": 1,
-                "cv_text": 1,
-                "cv_editor_state": 1
+                # Only include boolean flag for hasGeneratedCv() check
+                # cv_text and cv_editor_state are fetched separately via /api/jobs/{id} when viewing
+                "generated_cv": 1
             }
         })
 
