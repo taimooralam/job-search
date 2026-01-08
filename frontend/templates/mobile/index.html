@@ -21,25 +21,24 @@
         </div>
     </header>
 
-    <!-- Filters Bar (Compact) -->
+    <!-- Filters Bar (Compact) - Mode is controlled by bottom nav -->
     <div class="flex-shrink-0 px-3 py-2 bg-mobile-dark-800 border-b border-mobile-dark-700 space-y-2">
-        <!-- Mode Toggle + Leadership in one row -->
+        <!-- Leadership Toggle + Mode Indicator -->
         <div class="flex items-center justify-between gap-3">
-            <div class="inline-flex bg-mobile-dark-900 rounded-lg p-0.5">
-                <button @click="setMode('main')"
-                        :class="mode === 'main'
-                            ? 'bg-gradient-to-r from-mobile-purple-600 to-mobile-purple-500 text-white shadow-lg'
-                            : 'text-mobile-dark-500 hover:text-white'"
-                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200">
-                    Main
-                </button>
-                <button @click="setMode('batch')"
-                        :class="mode === 'batch'
-                            ? 'bg-gradient-to-r from-mobile-gold-600 to-mobile-gold-500 text-mobile-dark-900 shadow-lg'
-                            : 'text-mobile-dark-500 hover:text-white'"
-                        class="px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200">
-                    Batch
-                </button>
+            <!-- Mode indicator (read-only, shows current mode) -->
+            <div class="flex items-center gap-2">
+                <span x-show="mode === 'main'" class="text-xs font-medium text-mobile-purple-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    New jobs to triage
+                </span>
+                <span x-show="mode === 'batch'" class="text-xs font-medium text-mobile-gold-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    Ready for CV generation
+                </span>
             </div>
             <!-- Leadership Toggle (inline) -->
             <div class="flex items-center gap-2">
@@ -67,11 +66,6 @@
                         x-text="filter.label">
                 </button>
             </template>
-        </div>
-
-        <!-- Batch Mode Info -->
-        <div x-show="mode === 'batch'" x-transition class="text-center text-xs text-mobile-dark-500">
-            All jobs ready for CV generation
         </div>
     </div>
 
