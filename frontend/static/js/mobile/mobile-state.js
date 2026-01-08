@@ -1029,7 +1029,17 @@ window.mobileApp = function() {
                 const relevance = annotation.relevance || 'relevant';
 
                 // Escape special regex characters in target text
-                const escapedText = targetText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                let escapedText = targetText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                // Handle HTML entity encoding: annotation stores plain text but HTML has entities
+                // Replace common characters with patterns that match both plain and encoded forms
+                // IMPORTANT: ampersand MUST be first to avoid replacing & in patterns we just added
+                escapedText = escapedText
+                    .replace(/&/g, '(?:&|&amp;)')         // ampersand - MUST BE FIRST
+                    .replace(/'/g, "(?:'|&#39;|&apos;)")  // apostrophe
+                    .replace(/"/g, '(?:"|&quot;|&#34;)')  // double quote
+                    .replace(/</g, '(?:<|&lt;)')          // less than
+                    .replace(/>/g, '(?:>|&gt;)');         // greater than
 
                 // Create highlight mark - CSS handles colors via data-relevance attribute
                 const highlightMark = `<mark class="annotation-highlight" data-annotation-id="${annotation.id}" data-relevance="${relevance}">$&</mark>`;
