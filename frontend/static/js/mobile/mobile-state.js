@@ -340,7 +340,7 @@ window.mobileApp = function() {
             }
         },
 
-        // Trigger CV generation (used by swipe and regenerate button)
+        // Trigger CV generation (fire-and-forget - no blocking, no progress overlay)
         triggerCvGeneration(jobId) {
             fetch(`/api/runner/jobs/${jobId}/operations/generate-cv/queue`, {
                 method: 'POST',
@@ -353,18 +353,9 @@ window.mobileApp = function() {
                 }
 
                 const data = await response.json();
-                window.showToast?.('CV generation started', 'success');
-
-                // Start polling progress
-                if (data.run_id) {
-                    this.cvProgress = {
-                        runId: data.run_id,
-                        jobId: jobId,
-                        step: 'Starting...',
-                        percent: 0
-                    };
-                    this.pollCvProgress(data.run_id);
-                }
+                // Show confirmation with run_id - fire and forget, no polling
+                const runIdShort = data.run_id ? data.run_id.slice(0, 8) : 'unknown';
+                window.showToast?.(`CV queued (${runIdShort})`, 'success');
             }).catch(error => {
                 console.error('CV generation failed:', error);
                 window.showToast?.('Failed to start CV generation', 'error');
