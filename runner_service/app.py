@@ -171,9 +171,9 @@ def _update_status(
     if artifacts:
         state.artifacts.update(artifacts)
 
-    # Persist to MongoDB asynchronously (best effort)
+    # Persist to MongoDB (best effort, but log failures for observability)
     try:
-        persist_run_to_mongo(
+        persisted = persist_run_to_mongo(
             job_id=state.job_id,
             run_id=run_id,
             status=status,
@@ -182,7 +182,16 @@ def _update_status(
             artifacts=state.artifacts,
             pipeline_state=pipeline_state,
         )
-        logger.debug(f"[{run_id[:8]}] Persisted state to MongoDB (status={status})")
+        if persisted:
+            logger.debug(f"[{run_id[:8]}] Persisted state to MongoDB (status={status})")
+        else:
+            # Log warning for completed pipelines where persistence failed
+            # This helps identify data loss issues without blocking the pipeline
+            if status == "completed":
+                logger.warning(
+                    f"[{run_id[:8]}] MongoDB persistence returned False for completed pipeline. "
+                    f"CV/results may not be saved. Check logs for details."
+                )
     except Exception as e:
         # Log but don't fail on persistence errors
         logger.error(f"[{run_id[:8]}] MongoDB persistence failed: {e}")

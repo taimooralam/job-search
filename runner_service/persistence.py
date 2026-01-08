@@ -23,7 +23,7 @@ def persist_run_to_mongo(
     updated_at: datetime,
     artifacts: Dict[str, str],
     pipeline_state: Optional[Dict] = None,
-) -> None:
+) -> bool:
     """
     Update MongoDB with run status, artifact URLs, and pipeline results.
 
@@ -38,6 +38,9 @@ def persist_run_to_mongo(
         updated_at: Last update timestamp
         artifacts: Dictionary of artifact URLs
         pipeline_state: Complete pipeline state with results (pain_points, fit_score, etc.)
+
+    Returns:
+        True if persistence succeeded, False otherwise
     """
     try:
         from bson import ObjectId
@@ -108,6 +111,7 @@ def persist_run_to_mongo(
         # These flags are set based on DATA PRESENCE, not just completion status.
         # This ensures the frontend indicators stay in sync with actual data,
         # even during intermediate pipeline states or partial completions.
+        has_cv_data = False
         if pipeline_state:
             # Check if JD was processed (Layer 1-4 outputs)
             has_jd_data = bool(
@@ -138,15 +142,53 @@ def persist_run_to_mongo(
         )
 
         if result.matched_count == 0:
-            # Job not found with ObjectId, log warning
-            logger.warning(f"Job {job_id} not found in level-2 collection")
+            # Job not found with ObjectId
+            logger.error(
+                f"[{run_id[:8]}] Job {job_id} not found in level-2 collection. "
+                f"Persistence failed - data may be lost."
+            )
+            return False
+
+        # Verification read-back for completed pipelines with CV data
+        # This ensures the CV was actually persisted (matching CVGenerationService behavior)
+        if status == "completed" and has_cv_data:
+            saved_doc = repo.find_one(
+                {"_id": object_id},
+                {"cv_text": 1, "generated_cv": 1, "pipeline_status": 1}
+            )
+            if saved_doc and saved_doc.get("cv_text"):
+                logger.info(
+                    f"[{run_id[:8]}] Persisted and verified pipeline result for job {job_id}. "
+                    f"generated_cv={saved_doc.get('generated_cv')}, "
+                    f"cv_text_length={len(saved_doc.get('cv_text', ''))}"
+                )
+                return True
+            else:
+                logger.error(
+                    f"[{run_id[:8]}] Pipeline persistence verification failed for job {job_id}. "
+                    f"CV data was in pipeline_state but not found after save. "
+                    f"Document state: cv_text={bool(saved_doc.get('cv_text') if saved_doc else None)}, "
+                    f"generated_cv={saved_doc.get('generated_cv') if saved_doc else None}"
+                )
+                return False
+
+        # For non-CV updates or intermediate statuses, just log success
+        logger.debug(
+            f"[{run_id[:8]}] Persisted pipeline state for job {job_id} "
+            f"(status={status}, modified={result.modified_count})"
+        )
+        return True
 
     except ValueError as e:
-        # MONGODB_URI not configured - skip persistence
+        # MONGODB_URI not configured - skip persistence (not a failure)
         logger.debug(f"MongoDB not configured, skipping persistence: {e}")
+        return True  # Return True since this is expected in dev environments
     except Exception as e:
-        # Log error but don't fail the run
-        logger.exception(f"Failed to persist to MongoDB for job {job_id}: {e}")
+        # Log error with full context
+        logger.exception(
+            f"[{run_id[:8]}] Failed to persist pipeline result to MongoDB for job {job_id}: {e}"
+        )
+        return False
 
 
 def get_redis_connection():

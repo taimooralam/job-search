@@ -301,21 +301,123 @@ class TestPersistRunToMongo:
         # Should still call update_one (with string job_id as fallback)
         mock_repository.update_one.assert_called_once()
 
-    def test_returns_write_result_with_match_count(self, mock_repository, base_args):
-        """Should handle WriteResult from repository."""
+    def test_returns_false_when_job_not_found(self, mock_repository, base_args):
+        """Should return False when job not found in MongoDB."""
         mock_repository.update_one.return_value = WriteResult(
             matched_count=0, modified_count=0
         )
 
         from runner_service.persistence import persist_run_to_mongo
 
-        # Should log warning but not raise
-        persist_run_to_mongo(
+        result = persist_run_to_mongo(
             **base_args,
             pipeline_state={},
         )
 
+        assert result is False
         mock_repository.update_one.assert_called_once()
+
+    def test_returns_true_on_successful_update(self, mock_repository, base_args):
+        """Should return True when update succeeds."""
+        mock_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1
+        )
+
+        from runner_service.persistence import persist_run_to_mongo
+
+        result = persist_run_to_mongo(
+            **base_args,
+            pipeline_state={},
+        )
+
+        assert result is True
+
+    def test_verification_readback_for_completed_cv(self, mock_repository, base_args):
+        """Should verify CV was saved by reading back for completed pipelines."""
+        base_args["status"] = "completed"
+        pipeline_state = {"cv_text": "# My CV content"}
+
+        # Mock find_one to return the saved document
+        mock_repository.find_one.return_value = {
+            "cv_text": "# My CV content",
+            "generated_cv": True,
+            "pipeline_status": "completed"
+        }
+
+        from runner_service.persistence import persist_run_to_mongo
+
+        result = persist_run_to_mongo(
+            **base_args,
+            pipeline_state=pipeline_state,
+        )
+
+        assert result is True
+        # Verify find_one was called for verification
+        mock_repository.find_one.assert_called_once()
+
+    def test_verification_fails_when_cv_not_saved(self, mock_repository, base_args):
+        """Should return False when verification shows CV was not saved."""
+        base_args["status"] = "completed"
+        pipeline_state = {"cv_text": "# My CV content"}
+
+        # Mock find_one to return document WITHOUT cv_text (simulating save failure)
+        mock_repository.find_one.return_value = {
+            "cv_text": None,
+            "generated_cv": None,
+            "pipeline_status": "completed"
+        }
+
+        from runner_service.persistence import persist_run_to_mongo
+
+        result = persist_run_to_mongo(
+            **base_args,
+            pipeline_state=pipeline_state,
+        )
+
+        assert result is False
+        mock_repository.find_one.assert_called_once()
+
+    def test_no_verification_for_running_status(self, mock_repository, base_args):
+        """Should not do verification read-back for running status (only completed)."""
+        base_args["status"] = "running"
+        pipeline_state = {"cv_text": "# My CV content"}
+
+        from runner_service.persistence import persist_run_to_mongo
+
+        result = persist_run_to_mongo(
+            **base_args,
+            pipeline_state=pipeline_state,
+        )
+
+        assert result is True
+        # find_one should NOT be called for running status
+        mock_repository.find_one.assert_not_called()
+
+    def test_returns_true_when_mongodb_not_configured(self, base_args):
+        """Should return True when MongoDB is not configured (dev environment)."""
+        with patch.dict("os.environ", {}, clear=True):
+            from runner_service.persistence import persist_run_to_mongo
+
+            result = persist_run_to_mongo(
+                **base_args,
+                pipeline_state={"cv_text": "test"},
+            )
+
+            # Returns True since this is expected in dev environments
+            assert result is True
+
+    def test_returns_false_on_exception(self, mock_repository, base_args):
+        """Should return False when an exception occurs during persistence."""
+        mock_repository.update_one.side_effect = Exception("Connection error")
+
+        from runner_service.persistence import persist_run_to_mongo
+
+        result = persist_run_to_mongo(
+            **base_args,
+            pipeline_state={},
+        )
+
+        assert result is False
 
 
 class TestUpdateJobPipelineFailed:
