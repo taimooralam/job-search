@@ -27,6 +27,7 @@ window.mobileApp = function() {
 
         // Annotation state
         annotationMode: false,
+        annotationVersion: 0,  // Version counter to force x-html re-evaluation
         annotation: {
             annotations: [],
             personaStatement: null,
@@ -743,6 +744,8 @@ window.mobileApp = function() {
                 a => a.id !== this.annotationSheet.editingId
             );
 
+            // Increment version to force x-html re-evaluation (remove highlight)
+            this.annotationVersion++;
             this.checkIdentityAnnotations();
 
             // Haptic feedback immediately
@@ -822,6 +825,8 @@ window.mobileApp = function() {
                 this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
             }
 
+            // Increment version to force x-html re-evaluation with new highlights
+            this.annotationVersion++;
             this.checkIdentityAnnotations();
 
             // Haptic feedback immediately
@@ -981,6 +986,10 @@ window.mobileApp = function() {
         // Get JD HTML for annotation panel - prefer LLM-processed HTML, fallback to JDFormatter
         // Also applies highlights for existing annotations
         getAnnotationJdHtml() {
+            // Reference annotationVersion to trigger Alpine re-evaluation when annotations change
+            // eslint-disable-next-line no-unused-vars
+            const _version = this.annotationVersion;
+
             // Get base HTML - prefer LLM-processed, fallback to regex formatter
             let html;
             if (this.annotation.processedJdHtml) {
