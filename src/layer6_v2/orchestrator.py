@@ -189,6 +189,7 @@ class CVGeneratorV2:
         self.header_generator = HeaderGenerator(
             model=self.model,
             log_callback=log_callback,
+            struct_logger=struct_logger,  # Phase 0 Extension: Enable Redis live-tail
         )  # Whitelist passed in generate()
         self.grader = CVGrader(
             model=self.model,
