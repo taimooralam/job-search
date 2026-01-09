@@ -2556,15 +2556,40 @@ def mobile_jobs():
         if leadership_only:
             pipeline.append({"$match": {"_seniorityRank": {"$lte": 2}}})
 
-        # Sort: location priority, seniority, score (desc), recency (desc)
-        pipeline.append({
-            "$sort": {
-                "_locationPriority": 1,
-                "_seniorityRank": 1,
-                "score": -1,
-                "createdAt": -1
-            }
-        })
+        # Batch mode: add computed field to push jobs with CVs to end of queue
+        # This lets users focus on jobs needing CV generation first
+        if mode == "batch":
+            pipeline.append({
+                "$addFields": {
+                    "_hasCv": {
+                        "$cond": {
+                            "if": {"$eq": ["$generated_cv", True]},
+                            "then": 1,  # Has CV -> sort to end
+                            "else": 0   # No CV -> sort to front
+                        }
+                    }
+                }
+            })
+            # Sort: CV status first, then standard order
+            pipeline.append({
+                "$sort": {
+                    "_hasCv": 1,  # Jobs without CV first
+                    "_locationPriority": 1,
+                    "_seniorityRank": 1,
+                    "score": -1,
+                    "createdAt": -1
+                }
+            })
+        else:
+            # Main mode: standard sort (no CV prioritization)
+            pipeline.append({
+                "$sort": {
+                    "_locationPriority": 1,
+                    "_seniorityRank": 1,
+                    "score": -1,
+                    "createdAt": -1
+                }
+            })
 
         # Limit
         pipeline.append({"$limit": limit})
