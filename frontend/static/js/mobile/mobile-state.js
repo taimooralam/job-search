@@ -1098,37 +1098,41 @@ window.mobileApp = function() {
             }
         },
 
-        // Convert markdown to HTML for CV display
+        // Convert markdown to HTML for CV display (light background)
         markdownToHtml(markdown) {
             if (!markdown) return '';
 
-            // Basic markdown to HTML conversion
+            // Basic markdown to HTML conversion - using dark text for light background
             let html = markdown
-                // Headers
-                .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold text-white mt-4 mb-2">$1</h3>')
-                .replace(/^## (.+)$/gm, '<h2 class="text-xl font-bold text-white mt-6 mb-3">$1</h2>')
-                .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-mobile-purple-400 mb-4">$1</h1>')
+                // Headers (order matters - ### before ## before #)
+                .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-700 mt-4 mb-2 uppercase tracking-wide">$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold text-gray-800 mt-5 mb-2">$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1 class="text-2xl font-bold text-purple-700 mb-1">$1</h1>')
                 // Bold and italic
-                .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-800">$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em class="text-gray-600">$1</em>')
                 // Bullet lists
-                .replace(/^[\-\*] (.+)$/gm, '<li class="ml-4 text-gray-300">$1</li>')
+                .replace(/^[\-\•] (.+)$/gm, '<li class="text-gray-700 mb-1">$1</li>')
                 // Line breaks and paragraphs
-                .replace(/\n\n/g, '</p><p class="mb-3 text-gray-200">')
+                .replace(/\n\n/g, '</p><p class="mb-3 text-gray-700">')
                 .replace(/\n/g, '<br>');
 
-            // Wrap list items in ul
-            html = html.replace(/(<li[^>]*>.*?<\/li>\s*)+/g, '<ul class="list-disc mb-4">$&</ul>');
+            // Wrap consecutive list items in ul
+            html = html.replace(/(<li[^>]*>.*?<\/li>(?:<br>)?)+/g, (match) => {
+                // Clean up any <br> between list items
+                const cleanedItems = match.replace(/<br>/g, '');
+                return `<ul class="list-disc ml-5 mb-4 space-y-1">${cleanedItems}</ul>`;
+            });
 
             // Wrap in paragraph if not already wrapped
             if (!html.startsWith('<')) {
-                html = `<p class="mb-3 text-gray-200">${html}</p>`;
+                html = `<p class="mb-3 text-gray-700">${html}</p>`;
             }
 
-            return `<div class="cv-content prose prose-invert max-w-none p-4">${html}</div>`;
+            return `<div class="cv-content max-w-none px-6 py-4 text-gray-800 leading-relaxed">${html}</div>`;
         },
 
-        // Convert ProseMirror/TipTap JSON to HTML
+        // Convert ProseMirror/TipTap JSON to HTML (light background)
         prosemirrorToHtml(doc) {
             if (!doc?.content) return '';
 
@@ -1140,29 +1144,29 @@ window.mobileApp = function() {
                         return node.content?.map(renderNode).join('') || '';
                     case 'paragraph':
                         const pText = node.content?.map(renderNode).join('') || '';
-                        return `<p class="mb-3 text-gray-200">${pText}</p>`;
+                        return `<p class="mb-3 text-gray-700">${pText}</p>`;
                     case 'heading':
                         const level = node.attrs?.level || 2;
                         const hText = node.content?.map(renderNode).join('') || '';
                         const hClasses = {
-                            1: 'text-2xl font-bold text-mobile-purple-400 mb-4',
-                            2: 'text-xl font-bold text-white mt-6 mb-3',
-                            3: 'text-lg font-semibold text-white mt-4 mb-2'
+                            1: 'text-2xl font-bold text-purple-700 mb-1',
+                            2: 'text-lg font-bold text-gray-800 mt-5 mb-2',
+                            3: 'text-base font-semibold text-gray-700 mt-4 mb-2 uppercase tracking-wide'
                         };
                         return `<h${level} class="${hClasses[level] || hClasses[2]}">${hText}</h${level}>`;
                     case 'bulletList':
-                        return `<ul class="list-disc ml-4 mb-4">${node.content?.map(renderNode).join('') || ''}</ul>`;
+                        return `<ul class="list-disc ml-5 mb-4 space-y-1">${node.content?.map(renderNode).join('') || ''}</ul>`;
                     case 'orderedList':
-                        return `<ol class="list-decimal ml-4 mb-4">${node.content?.map(renderNode).join('') || ''}</ol>`;
+                        return `<ol class="list-decimal ml-5 mb-4 space-y-1">${node.content?.map(renderNode).join('') || ''}</ol>`;
                     case 'listItem':
-                        return `<li class="text-gray-300">${node.content?.map(renderNode).join('') || ''}</li>`;
+                        return `<li class="text-gray-700">${node.content?.map(renderNode).join('') || ''}</li>`;
                     case 'text':
                         let text = node.text || '';
                         // Apply marks
                         if (node.marks) {
                             for (const mark of node.marks) {
-                                if (mark.type === 'bold') text = `<strong class="font-semibold">${text}</strong>`;
-                                if (mark.type === 'italic') text = `<em>${text}</em>`;
+                                if (mark.type === 'bold') text = `<strong class="font-semibold text-gray-800">${text}</strong>`;
+                                if (mark.type === 'italic') text = `<em class="text-gray-600">${text}</em>`;
                             }
                         }
                         return text;
@@ -1173,7 +1177,7 @@ window.mobileApp = function() {
                 }
             };
 
-            return `<div class="cv-content prose prose-invert max-w-none p-4">${renderNode(doc)}</div>`;
+            return `<div class="cv-content max-w-none px-6 py-4 text-gray-800 leading-relaxed">${renderNode(doc)}</div>`;
         },
 
         closeCvViewer() {
