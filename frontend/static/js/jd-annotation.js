@@ -235,6 +235,9 @@ class AnnotationManager {
                 // Render annotation list in sidebar and update stats
                 this.renderAnnotations();
                 this.updateStats();
+
+                // Render persona panel (shows Generate Persona button if identity annotations exist)
+                this.renderPersonaPanel();
             } else if (rawJd) {
                 // No annotations data but have raw JD - show it
                 this.showRawJd(rawJd);
