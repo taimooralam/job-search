@@ -231,6 +231,10 @@ class AnnotationManager {
                 if (this.annotations.length > 0) {
                     this.applyHighlights();
                 }
+
+                // Render annotation list in sidebar and update stats
+                this.renderAnnotations();
+                this.updateStats();
             } else if (rawJd) {
                 // No annotations data but have raw JD - show it
                 this.showRawJd(rawJd);
