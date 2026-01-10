@@ -5344,11 +5344,11 @@ def synthesize_persona(job_id: str):
 
     try:
         # Forward request to runner service
-        # Persona synthesis uses Claude CLI which can take 60-120 seconds
+        # Persona synthesis uses Claude CLI which can take 2-4 minutes
         response = requests.post(
             f"{RUNNER_URL}/api/jobs/{job_id}/synthesize-persona",
             headers=get_runner_headers(),
-            timeout=180,  # 3 minute timeout for persona synthesis (Claude CLI is slow)
+            timeout=300,  # 5 minute timeout for persona synthesis (Claude CLI is slow)
         )
 
         if response.status_code == 200:

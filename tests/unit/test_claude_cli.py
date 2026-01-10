@@ -83,7 +83,7 @@ class TestClaudeCLIInitialization:
         cli = ClaudeCLI()
         assert cli.tier == "middle"
         assert cli.model == CLAUDE_MODEL_TIERS["middle"]
-        assert cli.timeout == 180
+        assert cli.timeout == 300
 
     def test_init_with_low_tier(self):
         """Should initialize with low tier (Haiku)."""
@@ -189,10 +189,10 @@ class TestClaudeCLIInvoke:
     def test_invocation_handles_timeout(self, mock_subprocess_run):
         """Should handle subprocess timeout."""
         mock_subprocess_run.side_effect = subprocess.TimeoutExpired(
-            cmd=["claude"], timeout=180
+            cmd=["claude"], timeout=300
         )
 
-        cli = ClaudeCLI(timeout=180)
+        cli = ClaudeCLI(timeout=300)
         result = cli.invoke(prompt="test", job_id="test_004")
 
         assert result.success is False

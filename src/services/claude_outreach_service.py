@@ -120,7 +120,7 @@ class ClaudeOutreachService:
 
     def __init__(
         self,
-        timeout: int = 180,
+        timeout: int = 300,
         candidate_name: Optional[str] = None,
         calendly_link: Optional[str] = None,
     ):
@@ -128,7 +128,7 @@ class ClaudeOutreachService:
         Initialize the Claude outreach service.
 
         Args:
-            timeout: LLM timeout in seconds (default 180s)
+            timeout: LLM timeout in seconds (default 300s / 5 minutes)
             candidate_name: Override candidate name (default from constant)
             calendly_link: Override Calendly link (default from constant)
         """
@@ -482,7 +482,7 @@ class ClaudeOutreachService:
 async def generate_outreach_with_claude(
     contact: Dict[str, Any],
     job_context: Dict[str, Any],
-    timeout: int = 180,
+    timeout: int = 300,
 ) -> OutreachPackage:
     """
     Generate outreach for a single contact using Claude Opus 4.5.

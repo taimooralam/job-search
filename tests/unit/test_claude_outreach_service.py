@@ -132,7 +132,7 @@ class TestClaudeOutreachServiceInit:
         service = ClaudeOutreachService()
 
         assert service.tier == "high"
-        assert service.timeout == 180
+        assert service.timeout == 300
         assert service.candidate_name == CANDIDATE_NAME
         assert service.calendly_link == CANDIDATE_CALENDLY
 

@@ -158,7 +158,7 @@ class ClaudeCVService:
 
     def __init__(
         self,
-        timeout: int = 180,
+        timeout: int = 300,
         max_role_concurrent: int = 5,
         ats_threshold: int = 75,
         struct_logger: Optional["StructuredLogger"] = None,
@@ -167,7 +167,7 @@ class ClaudeCVService:
         Initialize the Claude CV service.
 
         Args:
-            timeout: CLI timeout in seconds (default 180s)
+            timeout: CLI timeout in seconds (default 300s / 5 minutes)
             max_role_concurrent: Max concurrent role generations (default 5)
             ats_threshold: ATS score threshold for fixes (default 75)
             struct_logger: Optional StructuredLogger for Redis live-tail visibility
@@ -720,7 +720,7 @@ class ClaudeCVService:
 async def generate_cv_with_claude(
     job_state: Dict[str, Any],
     candidate_data: Dict[str, Any],
-    timeout: int = 180,
+    timeout: int = 300,
 ) -> CVResult:
     """
     Generate CV using Claude multi-agent pipeline.

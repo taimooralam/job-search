@@ -144,7 +144,7 @@ class ClaudeCLI:
     def __init__(
         self,
         tier: TierType = "middle",
-        timeout: int = 180,
+        timeout: int = 300,
         log_callback: Optional[LogCallback] = None,
         model_override: Optional[str] = None,
     ):
@@ -153,7 +153,7 @@ class ClaudeCLI:
 
         Args:
             tier: Model tier - "low" (Haiku), "middle" (Sonnet), "high" (Opus)
-            timeout: CLI timeout in seconds (default 180s for complex operations)
+            timeout: CLI timeout in seconds (default 300s / 5 minutes for complex operations)
             log_callback: Optional callback for log events (for Redis live-tail)
             model_override: Override model selection (for testing or special cases)
         """
@@ -808,7 +808,7 @@ def invoke_claude(
     prompt: str,
     job_id: str,
     tier: TierType = "middle",
-    timeout: int = 180,
+    timeout: int = 300,
 ) -> CLIResult:
     """
     Convenience function for single Claude CLI invocation.
