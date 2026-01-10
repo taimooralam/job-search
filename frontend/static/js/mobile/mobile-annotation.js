@@ -306,6 +306,11 @@ document.addEventListener('alpine:init', () => {
                     annotation_id: annotation.id,
                     action: action,
                     original_values: annotation.original_values,
+                    // Include target info for context-aware deletion learning
+                    target: {
+                        section: annotation.target?.section || null,
+                        text: annotation.target?.text || null,
+                    },
                 };
 
                 if (action === 'save') {

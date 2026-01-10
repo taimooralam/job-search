@@ -46,6 +46,14 @@ SIMILARITY_THRESHOLD = 0.85
 # Confidence threshold for keyword prior matching
 KEYWORD_CONFIDENCE_THRESHOLD = 0.6
 
+# Sections to skip during annotation generation (not skill-related)
+SKIP_ANNOTATION_SECTIONS = frozenset({
+    "about_company",
+    "benefits",
+    "about_role",
+    "company_culture",
+})
+
 
 # ============================================================================
 # DATA CLASSES
@@ -242,6 +250,61 @@ def should_generate_annotation(
 
 
 # ============================================================================
+# REQUIREMENT TYPE INFERENCE
+# ============================================================================
+
+
+def _get_section_default_requirement(section_type: str) -> str:
+    """Section-based default requirement_type."""
+    section_defaults = {
+        "responsibilities": "must_have",
+        "requirements": "must_have",
+        "qualifications": "must_have",
+        "nice_to_have": "nice_to_have",
+        "technical_skills": "must_have",
+        "experience": "must_have",
+        "education": "nice_to_have",
+        "benefits": "nice_to_have",
+        "other": "neutral",
+    }
+    return section_defaults.get(section_type, "neutral")
+
+
+def infer_requirement_type(
+    jd_item: str,
+    section_type: str,
+    extracted_jd: Optional[Dict[str, Any]],
+) -> str:
+    """
+    Infer requirement_type from extracted_jd lists and section context.
+
+    Priority:
+    1. Match in extracted_jd.qualifications -> "must_have"
+    2. Match in extracted_jd.nice_to_haves -> "nice_to_have"
+    3. Section-based defaults
+    """
+    if not extracted_jd:
+        return _get_section_default_requirement(section_type)
+
+    jd_lower = jd_item.lower()
+    jd_words = set(jd_lower.split())
+
+    # Check qualifications list (>50% word overlap = match)
+    for qual in extracted_jd.get("qualifications") or []:
+        qual_words = set(qual.lower().split())
+        if qual_words and len(jd_words & qual_words) / len(qual_words) > 0.5:
+            return "must_have"
+
+    # Check nice_to_haves list
+    for nice in extracted_jd.get("nice_to_haves") or []:
+        nice_words = set(nice.lower().split())
+        if nice_words and len(jd_words & nice_words) / len(nice_words) > 0.5:
+            return "nice_to_have"
+
+    return _get_section_default_requirement(section_type)
+
+
+# ============================================================================
 # FIND BEST MATCH (Semantic Matching)
 # ============================================================================
 
@@ -366,19 +429,56 @@ def _extract_keywords(text: str) -> List[str]:
     return keywords
 
 
+def suggest_keywords_for_item(
+    jd_item: str,
+    extracted_jd: Optional[Dict[str, Any]],
+    max_keywords: int = 3,
+) -> List[str]:
+    """
+    Suggest ATS keywords from extracted_jd.top_keywords for a JD item.
+
+    Returns keywords that appear in the item text, prioritized by position
+    in the top_keywords list (earlier = more important).
+    """
+    if not extracted_jd:
+        return []
+
+    jd_lower = jd_item.lower()
+    top_keywords = extracted_jd.get("top_keywords") or []
+
+    matched = []
+    for keyword in top_keywords:
+        if keyword.lower() in jd_lower:
+            matched.append(keyword)
+            if len(matched) >= max_keywords:
+                break
+
+    return matched
+
+
 # ============================================================================
 # GENERATE ANNOTATIONS
 # ============================================================================
 
 
-def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
+def generate_annotations_for_job(
+    job_id: str,
+    extracted_jd: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
     Generate annotations for a job's structured JD.
 
     This is the main entry point called by the API endpoint.
 
+    Uses 4 sources for matching:
+    1. Master CV (skills I have)
+    2. Structured JD (where to annotate)
+    3. Extracted JD (what to look for, requirement type inference)
+    4. Priors (patterns I prefer)
+
     Args:
         job_id: MongoDB ObjectId string of the job
+        extracted_jd: Optional pre-loaded extracted_jd, loaded from job if None
 
     Returns:
         Dict with success, created, skipped, annotations, error
@@ -408,14 +508,12 @@ def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
         if not processed_sections:
             return {"success": False, "error": "No structured JD found. Please structure the JD first."}
 
-        # Convert list format to dict keyed by section_type for easier processing
-        structured = {}
-        for section in processed_sections:
-            section_type = section.get("section_type", "other")
-            items = section.get("items", [])
-            if section_type not in structured:
-                structured[section_type] = []
-            structured[section_type].extend(items)
+        # Load extracted_jd if not provided (Source 3)
+        if extracted_jd is None:
+            extracted_jd = job.get("extracted_jd") or {}
+        elif not isinstance(extracted_jd, dict):
+            logger.warning(f"Invalid extracted_jd type: {type(extracted_jd)}, using job document")
+            extracted_jd = job.get("extracted_jd") or {}
 
         # 3. Load priors (rebuild if needed)
         priors = load_priors()
@@ -444,20 +542,23 @@ def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
         }
 
         # 7. Generate annotations for each section
+        # Process sections directly from processed_jd_sections to preserve headers
         new_annotations = []
         skipped = 0
-        sections_to_process = [
-            ("responsibilities", structured.get("responsibilities", [])),
-            ("requirements", structured.get("requirements", [])),
-            ("qualifications", structured.get("qualifications", [])),
-            ("benefits", structured.get("benefits", [])),
-            ("nice_to_have", structured.get("nice_to_have", [])),
-            ("about_company", structured.get("about_company", [])),
-            ("about_role", structured.get("about_role", [])),
-            ("other", structured.get("other", [])),
-        ]
+        skipped_sections = 0
 
-        for section_name, items in sections_to_process:
+        for section in processed_sections:
+            section_type = section.get("section_type", "other")
+            section_header = section.get("header", "")  # Original header from JD
+            items = section.get("items") or []
+
+            # Skip non-skill sections (about_company, benefits, etc.)
+            if section_type in SKIP_ANNOTATION_SECTIONS:
+                logger.debug(f"Skipping section '{section_type}' (non-skill section)")
+                skipped_sections += 1
+                skipped += len(items)
+                continue
+
             for item in items:
                 item_text = item.get("text", "") if isinstance(item, dict) else str(item)
 
@@ -470,25 +571,46 @@ def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
                     skipped += 1
                     continue
 
-                # Check if should generate
+                # Check if should generate (uses master_cv + priors)
                 should_gen, match_ctx = should_generate_annotation(item_text, master_cv, priors)
                 if not should_gen:
                     skipped += 1
                     continue
 
-                # Find best match for annotation values
+                # Find best match for annotation values (uses priors/MiniLM)
                 match_result = find_best_match(item_text, priors, embedding_model)
 
-                # Create annotation
+                # Infer requirement_type from extracted_jd (Source 3)
+                inferred_requirement = infer_requirement_type(
+                    item_text, section_type, extracted_jd
+                )
+
+                # Suggest ATS keywords from extracted_jd (Source 3)
+                suggested_keywords = suggest_keywords_for_item(item_text, extracted_jd)
+
+                # Create annotation with section_header
                 annotation = _create_annotation(
                     item_text,
-                    section_name,
+                    section_type,
                     match_result,
                     match_ctx,
                     item if isinstance(item, dict) else None,
+                    section_header=section_header,
                 )
+
+                # Override requirement_type if inferred (when no match_result)
+                if match_result is None and inferred_requirement != "neutral":
+                    annotation["requirement_type"] = inferred_requirement
+                    annotation["original_values"]["requirement_type"] = inferred_requirement
+
+                # Add suggested keywords if any
+                if suggested_keywords:
+                    annotation["suggested_keywords"] = suggested_keywords
+
                 new_annotations.append(annotation)
                 existing_texts.add(item_text.lower())
+
+        logger.debug(f"Skipped {skipped_sections} non-skill sections")
 
         # 8. Save annotations to job
         if new_annotations:
@@ -537,9 +659,18 @@ def _create_annotation(
     match_result: Optional[MatchResult],
     match_ctx: Optional[MatchContext],
     item_dict: Optional[Dict[str, Any]],
+    section_header: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Create an annotation dict with original values for feedback tracking.
+
+    Args:
+        text: The JD item text
+        section: Section type (e.g., "requirements", "responsibilities")
+        match_result: Result from find_best_match if any
+        match_ctx: Context about why this was selected for annotation
+        item_dict: Original item dict with position info
+        section_header: Optional original section header from JD
     """
     now = datetime.now(timezone.utc).isoformat()
     ann_id = f"ann_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:8]}"
@@ -581,6 +712,9 @@ def _create_annotation(
         "original_text": text,
         "section": section,
     }
+    # Add section_header if provided
+    if section_header:
+        target["section_header"] = section_header
 
     # Add position info if available
     if item_dict:

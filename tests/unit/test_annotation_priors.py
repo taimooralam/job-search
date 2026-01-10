@@ -25,6 +25,11 @@ from src.services.annotation_priors import (
     _recompute_skill_priors,
     _extract_primary_skill,
     PRIORS_DOC_ID,
+    DeletionResponse,
+    determine_deletion_response,
+    get_owned_skills,
+    NO_LEARNING_SECTIONS,
+    SKILL_REQUIREMENT_SECTIONS,
 )
 
 
@@ -319,22 +324,50 @@ class TestCaptureFeedback:
         assert result == base_priors
         assert len(base_priors["skill_priors"]) == 0
 
-    def test_marks_skill_as_avoid_on_delete(self, base_priors, auto_annotation):
-        """Should mark skill as avoid when annotation is deleted."""
-        # Arrange
-        auto_annotation["original_values"]["matched_keyword"] = "python"
+    def test_marks_skill_as_avoid_on_delete_full_learning(self, base_priors, auto_annotation):
+        """Should mark skill as avoid when annotation deleted from requirements section and user doesn't own skill."""
+        # Arrange - use a skill the user doesn't own, in requirements section
+        auto_annotation["original_values"]["matched_keyword"] = "rust"
         auto_annotation["original_values"]["match_method"] = "keyword_prior"
+        auto_annotation["target"]["text"] = "Experience with Rust programming"
+        auto_annotation["target"]["section"] = "requirements"  # Triggers FULL_LEARNING for missing skills
 
         # Act
         result = capture_feedback(auto_annotation, "delete", base_priors)
 
-        # Assert
-        assert "python" in result["skill_priors"]
-        assert result["skill_priors"]["python"]["avoid"] is True
+        # Assert - FULL_LEARNING applies: avoid=True, 0.3x penalty
+        assert "rust" in result["skill_priors"]
+        assert result["skill_priors"]["rust"]["avoid"] is True
         assert result["stats"]["deleted"] == 1
+        assert result["stats"]["deleted_full"] == 1
 
-    def test_decreases_confidence_on_delete(self, base_priors, auto_annotation):
-        """Should decrease confidence for all dimensions on delete."""
+    def test_soft_penalty_on_delete_unknown_section(self, base_priors, auto_annotation):
+        """Should apply soft penalty (0.8x) when section is unknown."""
+        # Arrange - no section means unknown, defaults to SOFT_PENALTY
+        base_priors["skill_priors"]["python"] = {
+            "relevance": {"value": "relevant", "confidence": 0.8, "n": 5},
+            "passion": {"value": "moderate", "confidence": 0.7, "n": 3},
+            "identity": {"value": "core", "confidence": 0.9, "n": 4},
+            "requirement": {"value": "neutral", "confidence": 0.6, "n": 2},
+            "avoid": False,
+        }
+        auto_annotation["original_values"]["matched_keyword"] = "python"
+        auto_annotation["original_values"]["match_method"] = "keyword_prior"
+        # No section in target -> unknown section -> SOFT_PENALTY
+
+        # Act
+        result = capture_feedback(auto_annotation, "delete", base_priors)
+
+        # Assert - SOFT_PENALTY applies: avoid=False, 0.8x penalty
+        python_prior = result["skill_priors"]["python"]
+        assert python_prior["avoid"] is False  # Soft penalty doesn't set avoid
+        assert python_prior["relevance"]["confidence"] == 0.8 * 0.8
+        assert python_prior["passion"]["confidence"] == 0.7 * 0.8
+        assert python_prior["identity"]["confidence"] == 0.9 * 0.8
+        assert result["stats"]["deleted_soft"] == 1
+
+    def test_no_learning_on_delete_from_benefits_section(self, base_priors, auto_annotation):
+        """Should not learn when annotation deleted from non-skill sections like benefits."""
         # Arrange
         base_priors["skill_priors"]["python"] = {
             "relevance": {"value": "relevant", "confidence": 0.8, "n": 5},
@@ -345,15 +378,44 @@ class TestCaptureFeedback:
         }
         auto_annotation["original_values"]["matched_keyword"] = "python"
         auto_annotation["original_values"]["match_method"] = "keyword_prior"
+        auto_annotation["target"]["section"] = "benefits"  # NO_LEARNING section
 
         # Act
         result = capture_feedback(auto_annotation, "delete", base_priors)
 
-        # Assert
+        # Assert - NO_LEARNING: confidence unchanged
         python_prior = result["skill_priors"]["python"]
-        assert python_prior["relevance"]["confidence"] == 0.8 * 0.3
-        assert python_prior["passion"]["confidence"] == 0.7 * 0.3
-        assert python_prior["identity"]["confidence"] == 0.9 * 0.3
+        assert python_prior["avoid"] is False
+        assert python_prior["relevance"]["confidence"] == 0.8  # Unchanged
+        assert python_prior["passion"]["confidence"] == 0.7  # Unchanged
+        assert result["stats"]["deleted_no_learning"] == 1
+
+    def test_full_learning_on_delete_from_requirements(self, base_priors, auto_annotation):
+        """Should apply full learning (0.3x + avoid) when skill gap detected in requirements."""
+        # Arrange - Use confidence < 0.7 so golang is NOT treated as "owned"
+        # (get_owned_skills includes high-confidence priors >= 0.7 as owned)
+        base_priors["skill_priors"]["golang"] = {
+            "relevance": {"value": "relevant", "confidence": 0.6, "n": 5},
+            "passion": {"value": "moderate", "confidence": 0.5, "n": 3},
+            "identity": {"value": "core", "confidence": 0.6, "n": 4},
+            "requirement": {"value": "neutral", "confidence": 0.5, "n": 2},
+            "avoid": False,
+        }
+        auto_annotation["original_values"]["matched_keyword"] = "golang"
+        auto_annotation["original_values"]["match_method"] = "keyword_prior"
+        auto_annotation["target"]["text"] = "Experience with Golang"
+        auto_annotation["target"]["section"] = "requirements"  # FULL_LEARNING for unowned skills
+
+        # Act
+        result = capture_feedback(auto_annotation, "delete", base_priors)
+
+        # Assert - FULL_LEARNING applies: avoid=True, 0.3x penalty
+        golang_prior = result["skill_priors"]["golang"]
+        assert golang_prior["avoid"] is True
+        assert golang_prior["relevance"]["confidence"] == 0.6 * 0.3
+        assert golang_prior["passion"]["confidence"] == 0.5 * 0.3
+        assert golang_prior["identity"]["confidence"] == 0.6 * 0.3
+        assert result["stats"]["deleted_full"] == 1
 
     def test_adopts_new_value_when_confidence_low(self, base_priors, auto_annotation):
         """Should adopt new value when confidence drops below threshold."""
@@ -754,3 +816,192 @@ class TestRecomputeSkillPriors:
 
         # Assert
         assert len(result) == 0
+
+
+class TestDetermineDeleteResponse:
+    """Tests for determine_deletion_response function."""
+
+    def test_no_learning_for_about_company_section(self):
+        """Should return NO_LEARNING for about_company section."""
+        response, reason = determine_deletion_response("python", "about_company", {"python"})
+        assert response == DeletionResponse.NO_LEARNING
+        assert "non_skill_section" in reason
+
+    def test_no_learning_for_benefits_section(self):
+        """Should return NO_LEARNING for benefits section."""
+        response, reason = determine_deletion_response("python", "benefits", {"python"})
+        assert response == DeletionResponse.NO_LEARNING
+        assert "benefits" in reason
+
+    def test_no_learning_for_nice_to_have_section(self):
+        """Should return NO_LEARNING for nice_to_have section."""
+        response, reason = determine_deletion_response("any_skill", "nice_to_have", set())
+        assert response == DeletionResponse.NO_LEARNING
+
+    def test_full_learning_for_requirements_without_skill(self):
+        """Should return FULL_LEARNING when user doesn't own skill in requirements."""
+        response, reason = determine_deletion_response("rust", "requirements", {"python"})
+        assert response == DeletionResponse.FULL_LEARNING
+        assert reason == "skill_gap"
+
+    def test_soft_penalty_for_requirements_with_skill(self):
+        """Should return SOFT_PENALTY when user owns skill in requirements."""
+        response, reason = determine_deletion_response("python", "requirements", {"python"})
+        assert response == DeletionResponse.SOFT_PENALTY
+        assert reason == "has_skill_noise"
+
+    def test_full_learning_for_qualifications_without_skill(self):
+        """Should return FULL_LEARNING for qualifications when user doesn't own skill."""
+        response, reason = determine_deletion_response("golang", "qualifications", {"python"})
+        assert response == DeletionResponse.FULL_LEARNING
+        assert reason == "skill_gap"
+
+    def test_no_learning_for_responsibilities_with_skill(self):
+        """Should return NO_LEARNING for responsibilities when user owns skill."""
+        response, reason = determine_deletion_response("python", "responsibilities", {"python"})
+        assert response == DeletionResponse.NO_LEARNING
+        assert reason == "responsibility_has_skill"
+
+    def test_soft_penalty_for_responsibilities_without_skill(self):
+        """Should return SOFT_PENALTY for responsibilities when user doesn't own skill."""
+        response, reason = determine_deletion_response("rust", "responsibilities", {"python"})
+        assert response == DeletionResponse.SOFT_PENALTY
+        assert reason == "responsibility_uncertain"
+
+    def test_soft_penalty_for_unknown_section(self):
+        """Should return SOFT_PENALTY for unknown sections."""
+        response, reason = determine_deletion_response("python", "unknown_section", {"python"})
+        assert response == DeletionResponse.SOFT_PENALTY
+        assert "unknown_section" in reason
+
+    def test_handles_none_section(self):
+        """Should handle None section gracefully."""
+        response, reason = determine_deletion_response("python", None, {"python"})
+        assert response == DeletionResponse.SOFT_PENALTY
+
+    def test_handles_empty_skill(self):
+        """Should handle empty skill string."""
+        response, reason = determine_deletion_response("", "requirements", {"python"})
+        # Empty skill means no skill to check ownership, so SOFT_PENALTY
+        assert response == DeletionResponse.SOFT_PENALTY
+
+    def test_case_insensitive_section_matching(self):
+        """Should match sections case-insensitively."""
+        response, reason = determine_deletion_response("python", "BENEFITS", {"python"})
+        assert response == DeletionResponse.NO_LEARNING
+
+    def test_case_insensitive_skill_matching(self):
+        """Should match skills case-insensitively."""
+        response, reason = determine_deletion_response("Python", "requirements", {"python"})
+        assert response == DeletionResponse.SOFT_PENALTY  # User owns Python
+
+
+class TestGetOwnedSkills:
+    """Tests for get_owned_skills function."""
+
+    @pytest.fixture
+    def sample_priors(self):
+        """Sample priors with some high-confidence skills."""
+        return {
+            "skill_priors": {
+                "python": {
+                    "relevance": {"value": "core_strength", "confidence": 0.9, "n": 10},
+                    "avoid": False,
+                },
+                "java": {
+                    "relevance": {"value": "relevant", "confidence": 0.5, "n": 2},
+                    "avoid": False,
+                },
+                "rust": {
+                    "relevance": {"value": "core_strength", "confidence": 0.8, "n": 5},
+                    "avoid": True,  # Should be excluded
+                },
+            }
+        }
+
+    def test_includes_high_confidence_skills(self, sample_priors):
+        """Should include skills with confidence >= 0.7."""
+        with patch("src.common.master_cv_store.get_metadata", return_value=None):
+            # Clear cache to force reload
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            owned = get_owned_skills(sample_priors)
+
+            assert "python" in owned  # 0.9 >= 0.7
+            assert "java" not in owned  # 0.5 < 0.7
+
+    def test_excludes_avoided_skills(self, sample_priors):
+        """Should exclude skills marked as avoid even if high confidence."""
+        with patch("src.common.master_cv_store.get_metadata", return_value=None):
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            owned = get_owned_skills(sample_priors)
+
+            assert "rust" not in owned  # Has avoid=True
+
+    def test_includes_skills_from_master_cv(self, sample_priors):
+        """Should include skills from master CV metadata."""
+        mock_metadata = {
+            "roles": [
+                {
+                    "hard_skills": ["TypeScript", "React"],
+                    "soft_skills": ["Leadership"],
+                    "keywords": ["Full Stack"],
+                }
+            ]
+        }
+
+        with patch("src.common.master_cv_store.get_metadata", return_value=mock_metadata):
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            owned = get_owned_skills(sample_priors)
+
+            assert "typescript" in owned
+            assert "react" in owned
+            assert "leadership" in owned
+            assert "full stack" in owned
+
+    def test_handles_missing_metadata_gracefully(self, sample_priors):
+        """Should handle errors loading master CV gracefully."""
+        with patch("src.common.master_cv_store.get_metadata", side_effect=Exception("DB error")):
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            # Should not raise, should still return priors-based skills
+            owned = get_owned_skills(sample_priors)
+
+            assert "python" in owned
+
+    def test_caches_results(self, sample_priors):
+        """Should cache results for performance."""
+        with patch("src.common.master_cv_store.get_metadata", return_value=None) as mock_get:
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            # First call
+            owned1 = get_owned_skills(sample_priors)
+            # Second call should use cache
+            owned2 = get_owned_skills(sample_priors)
+
+            # Metadata should only be called once due to caching
+            assert mock_get.call_count == 1
+            assert owned1 == owned2
+
+    def test_returns_lowercase_skills(self, sample_priors):
+        """Should return all skills in lowercase."""
+        mock_metadata = {
+            "roles": [{"hard_skills": ["TypeScript", "PYTHON"], "soft_skills": [], "keywords": []}]
+        }
+
+        with patch("src.common.master_cv_store.get_metadata", return_value=mock_metadata):
+            import src.services.annotation_priors as priors_module
+            priors_module._owned_skills_cache = None
+
+            owned = get_owned_skills(sample_priors)
+
+            # All should be lowercase
+            for skill in owned:
+                assert skill == skill.lower()

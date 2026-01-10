@@ -32,8 +32,10 @@ Usage:
 """
 
 import logging
+import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TypedDict
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple, TypedDict
 
 import numpy as np
 
@@ -41,6 +43,31 @@ logger = logging.getLogger(__name__)
 
 # Priors document ID (singleton)
 PRIORS_DOC_ID = "user_annotation_priors"
+
+
+# ============================================================================
+# DELETION RESPONSE CLASSIFICATION
+# ============================================================================
+
+
+class DeletionResponse(Enum):
+    """Context-aware response to annotation deletion."""
+    NO_LEARNING = "no_learning"
+    SOFT_PENALTY = "soft_penalty"
+    FULL_LEARNING = "full_learning"
+
+
+# Section categories for deletion learning
+NO_LEARNING_SECTIONS = frozenset({
+    "about_company", "benefits", "nice_to_have", "about_role", "company_culture"
+})
+SKILL_REQUIREMENT_SECTIONS = frozenset({
+    "requirements", "qualifications"
+})
+
+# Module-level cache for owned skills
+_owned_skills_cache: Optional[Tuple[Set[str], float]] = None
+OWNED_SKILLS_CACHE_TTL = 300  # 5 minutes
 
 # Embedding model configuration
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
@@ -540,6 +567,103 @@ def rebuild_priors(priors: PriorsDocument) -> PriorsDocument:
 
 
 # ============================================================================
+# DELETION RESPONSE FUNCTIONS
+# ============================================================================
+
+
+def determine_deletion_response(
+    skill: str,
+    section: Optional[str],
+    owned_skills: Set[str],
+) -> Tuple[DeletionResponse, str]:
+    """
+    Determine appropriate learning response for a deleted annotation.
+
+    Args:
+        skill: The skill/keyword from the deleted annotation
+        section: The JD section the annotation was in
+        owned_skills: Set of skills the user owns (lowercase)
+
+    Returns:
+        Tuple of (response_level, reason)
+    """
+    skill_lower = skill.lower() if skill else ""
+    section_lower = (section or "").lower().strip()
+    user_owns = skill_lower in owned_skills if skill_lower else False
+
+    # Rule 1: Non-skill sections -> NO_LEARNING
+    if section_lower in NO_LEARNING_SECTIONS:
+        return (DeletionResponse.NO_LEARNING, f"non_skill_section:{section_lower}")
+
+    # Rule 2: Requirements/Qualifications
+    if section_lower in SKILL_REQUIREMENT_SECTIONS:
+        if not user_owns and skill_lower:
+            return (DeletionResponse.FULL_LEARNING, "skill_gap")
+        else:
+            return (DeletionResponse.SOFT_PENALTY, "has_skill_noise")
+
+    # Rule 3: Responsibilities
+    if section_lower == "responsibilities":
+        if user_owns:
+            return (DeletionResponse.NO_LEARNING, "responsibility_has_skill")
+        else:
+            return (DeletionResponse.SOFT_PENALTY, "responsibility_uncertain")
+
+    # Default: Conservative - soft penalty
+    return (DeletionResponse.SOFT_PENALTY, f"unknown_section:{section_lower}")
+
+
+def get_owned_skills(priors: Dict[str, Any]) -> Set[str]:
+    """
+    Load all skills the user 'owns' for ownership checking.
+
+    Sources:
+    1. Master CV: hard_skills, soft_skills, keywords
+    2. High-confidence priors (>0.7 relevance confidence)
+
+    Args:
+        priors: The priors document
+
+    Returns:
+        Set of owned skill names (lowercase)
+    """
+    global _owned_skills_cache
+
+    # Check cache
+    if _owned_skills_cache:
+        cached_skills, cached_time = _owned_skills_cache
+        if time.time() - cached_time < OWNED_SKILLS_CACHE_TTL:
+            return cached_skills
+
+    owned: Set[str] = set()
+
+    # Source 1: Master CV
+    try:
+        from src.common.master_cv_store import get_metadata
+        metadata = get_metadata()
+        if metadata:
+            for role in metadata.get("roles", []):
+                owned.update(s.lower() for s in role.get("hard_skills", []))
+                owned.update(s.lower() for s in role.get("soft_skills", []))
+                owned.update(s.lower() for s in role.get("keywords", []))
+    except Exception as e:
+        logger.warning(f"Failed to load master CV for owned skills: {e}")
+
+    # Source 2: High-confidence priors
+    OWNERSHIP_THRESHOLD = 0.7
+    for skill, data in priors.get("skill_priors", {}).items():
+        relevance_conf = data.get("relevance", {}).get("confidence", 0)
+        if relevance_conf >= OWNERSHIP_THRESHOLD and not data.get("avoid"):
+            owned.add(skill.lower())
+
+    # Update cache
+    _owned_skills_cache = (owned, time.time())
+    logger.debug(f"Loaded {len(owned)} owned skills")
+
+    return owned
+
+
+# ============================================================================
 # FEEDBACK FUNCTIONS
 # ============================================================================
 
@@ -601,13 +725,36 @@ def capture_feedback(
     prior = priors["skill_priors"][skill_lower]
 
     if action == "delete":
-        # === STRONG NEGATIVE SIGNAL ===
-        prior["avoid"] = True
-        for dim in ["relevance", "passion", "identity", "requirement"]:
-            prior[dim]["confidence"] *= 0.3  # Harsh penalty
+        # === CONTEXT-AWARE DELETION LEARNING ===
+        # Get section from annotation target
+        section = annotation.get("target", {}).get("section")
+
+        # Load owned skills
+        owned_skills = get_owned_skills(priors)
+
+        # Determine response based on context
+        response, reason = determine_deletion_response(skill_lower, section, owned_skills)
+
+        if response == DeletionResponse.NO_LEARNING:
+            priors["stats"]["deleted_no_learning"] = priors["stats"].get("deleted_no_learning", 0) + 1
+            logger.info(f"Deletion: NO_LEARNING for '{skill_lower}' ({reason})")
+
+        elif response == DeletionResponse.SOFT_PENALTY:
+            for dim in ["relevance", "passion", "identity", "requirement"]:
+                if dim in prior:
+                    prior[dim]["confidence"] *= 0.8
+            priors["stats"]["deleted_soft"] = priors["stats"].get("deleted_soft", 0) + 1
+            logger.info(f"Deletion: SOFT_PENALTY for '{skill_lower}' ({reason})")
+
+        elif response == DeletionResponse.FULL_LEARNING:
+            prior["avoid"] = True
+            for dim in ["relevance", "passion", "identity", "requirement"]:
+                if dim in prior:
+                    prior[dim]["confidence"] *= 0.3
+            priors["stats"]["deleted_full"] = priors["stats"].get("deleted_full", 0) + 1
+            logger.info(f"Deletion: FULL_LEARNING for '{skill_lower}' ({reason})")
 
         priors["stats"]["deleted"] = priors["stats"].get("deleted", 0) + 1
-        logger.info(f"Feedback: marked '{skill_lower}' as avoid (deleted)")
 
     elif action == "save":
         # === LEARN FROM EDITS ===

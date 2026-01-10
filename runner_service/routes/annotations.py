@@ -55,12 +55,19 @@ class RebuildPriorsResponse(BaseModel):
     error: Optional[str] = None
 
 
+class FeedbackTarget(BaseModel):
+    """Target info from annotation for context-aware feedback."""
+    section: Optional[str] = None
+    text: Optional[str] = None
+
+
 class FeedbackRequest(BaseModel):
     """Request body for annotation feedback."""
     annotation_id: str
     action: str  # "save" | "delete"
     original_values: Dict[str, Any] = Field(default_factory=dict)
     final_values: Optional[Dict[str, Any]] = None  # Only for "save"
+    target: Optional[FeedbackTarget] = None  # For context-aware deletion
 
 
 class FeedbackResponse(BaseModel):
@@ -235,6 +242,13 @@ async def capture_annotation_feedback(request: FeedbackRequest) -> FeedbackRespo
             "original_values": request.original_values,
             "feedback_captured": False,
         }
+
+        # Add target info for context-aware deletion learning
+        if request.target:
+            annotation["target"] = {
+                "section": request.target.section,
+                "text": request.target.text,
+            }
 
         # Add final values for save action
         if request.action == "save" and request.final_values:
