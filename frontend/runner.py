@@ -1290,3 +1290,129 @@ def get_ingest_history(source: str):
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# Annotation Suggestion System Routes
+# =============================================================================
+
+
+@runner_bp.route("/jobs/<job_id>/generate-annotations", methods=["POST"])
+def generate_annotations(job_id: str):
+    """
+    Generate annotation suggestions for a job's structured JD.
+
+    Uses sentence embeddings and skill priors to match JD items against
+    historical annotation patterns. Only generates annotations for items
+    that match the user's profile (skills, responsibilities, identity, passion).
+
+    Returns:
+        JSON with created/skipped counts and generated annotations
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/jobs/{job_id}/generate-annotations",
+            headers=get_headers(),
+            timeout=60,  # Longer timeout for embedding computation
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Annotation generation timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/user/annotation-priors", methods=["GET"])
+def get_annotation_priors():
+    """
+    Get statistics about annotation priors.
+
+    Returns accuracy, coverage, and health metrics for the
+    annotation suggestion system.
+    """
+    try:
+        response = requests.get(
+            f"{RUNNER_URL}/user/annotation-priors",
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/user/annotation-priors/rebuild", methods=["POST"])
+def rebuild_annotation_priors():
+    """
+    Rebuild annotation priors from all historical annotations.
+
+    Re-computes sentence embeddings and skill priors. Takes ~15-30 seconds
+    for 3000 annotations.
+
+    Returns:
+        JSON with rebuild status and metrics
+    """
+    try:
+        response = requests.post(
+            f"{RUNNER_URL}/user/annotation-priors/rebuild",
+            headers=get_headers(),
+            timeout=120,  # Longer timeout for full rebuild
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Priors rebuild timeout - may still be running"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@runner_bp.route("/user/annotation-feedback", methods=["POST"])
+def capture_annotation_feedback():
+    """
+    Capture feedback from user editing or deleting an auto-generated annotation.
+
+    This updates skill priors based on whether the user accepted,
+    edited, or deleted the suggestion.
+
+    Request Body:
+        annotation_id: ID of the annotation
+        action: "save" or "delete"
+        original_values: Original suggested values
+        final_values: Final values after user edit (only for "save")
+
+    Returns:
+        JSON with updated prior info
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+
+        response = requests.post(
+            f"{RUNNER_URL}/user/annotation-feedback",
+            json=data,
+            headers=get_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        return jsonify(response.json()), response.status_code
+
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Runner service timeout"}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({"error": "Cannot connect to runner service"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

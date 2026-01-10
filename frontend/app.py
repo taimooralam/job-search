@@ -5441,67 +5441,6 @@ def save_persona(job_id: str):
     })
 
 
-@app.route("/api/jobs/<job_id>/suggest-strengths", methods=["POST"])
-@login_required
-def suggest_strengths(job_id: str):
-    """
-    Proxy strength suggestions request to the VPS runner service.
-
-    Triggers StrengthSuggestionService on the VPS runner which has LangChain available.
-
-    Request Body:
-        include_identity: bool - Whether to suggest identity levels (default: True)
-        include_passion: bool - Whether to suggest passion levels (default: True)
-        include_defaults: bool - Whether to apply hardcoded defaults (default: True)
-        tier: str - Model tier: 'fast', 'balanced', or 'quality' (default: 'balanced')
-
-    Returns:
-        JSON with strength suggestions
-    """
-    import requests
-
-    try:
-        data = request.get_json() or {}
-
-        # Forward request to runner service
-        response = requests.post(
-            f"{RUNNER_URL}/api/jobs/{job_id}/suggest-strengths",
-            json=data,
-            headers=get_runner_headers(),
-            timeout=60,  # 60 second timeout for LLM processing
-        )
-
-        if response.status_code == 200:
-            return jsonify(response.json())
-        else:
-            # Forward error response
-            return jsonify(response.json()), response.status_code
-
-    except requests.exceptions.Timeout:
-        logger.error(f"Strength suggestion timed out for job {job_id}")
-        return jsonify({
-            "success": False,
-            "error": "Strength suggestion timed out. The runner service is taking too long.",
-            "suggestions": []
-        }), 504
-
-    except requests.exceptions.ConnectionError:
-        logger.error(f"Cannot connect to runner service for strength suggestions")
-        return jsonify({
-            "success": False,
-            "error": "Cannot connect to strength suggestion service. Please try again later.",
-            "suggestions": []
-        }), 503
-
-    except Exception as e:
-        logger.exception(f"Error proxying strength suggestions for job {job_id}")
-        return jsonify({
-            "success": False,
-            "error": f"Strength suggestion failed: {str(e)}",
-            "suggestions": []
-        }), 500
-
-
 def _process_jd_lightweight(jd_text: str) -> Dict[str, Any]:
     """
     Lightweight JD processor for Vercel deployment.

@@ -4,7 +4,7 @@
   This template includes the unified jd_annotation_editor component in sidebar mode.
   Sidebar mode provides:
   - No overlay (content loaded into existing sidebar)
-  - No header action buttons (Structure JD, Suggestions, Strengths)
+  - Header action buttons (Structure JD, Auto-Annotate, Suggestions, Strengths)
   - No view toggle
   - Compact button labels
   - Dark mode support via theme classes
@@ -14,5 +14,6 @@
 {% set mode = 'sidebar' %}
 {% set id_prefix = 'batch-' %}
 {% set compact_toolbar = true %}
+{% set show_header_actions = true %}
 
 {% include 'components/jd_annotation_editor.html' with context %}

@@ -51,3 +51,6 @@ pydantic-settings>=2.0.0
 redis>=5.0.0
 flask-sock>=0.7.0
 websocket-client>=1.6.0
+
+# Annotation suggestion system (local embeddings)
+sentence-transformers>=2.2.0  # ~80MB model download on first use

@@ -87,10 +87,11 @@ class AnnotationManager {
         this.popoverState = {
             selectedText: '',
             selectedRange: null,
-            relevance: null,
-            requirement: null,
-            passion: 'neutral',      // Default to neutral passion
-            identity: 'peripheral',  // Default to peripheral identity
+            // Optimistic defaults - most annotations are core strengths you must have
+            relevance: 'core_strength',
+            requirement: 'must_have',
+            passion: 'enjoy',
+            identity: 'strong_identity',
             starIds: [],
             reframeNote: '',
             keywords: '',
@@ -361,6 +362,16 @@ class AnnotationManager {
         this.updateSaveIndicator('saving');
 
         try {
+            // Capture feedback for any auto-generated annotations before saving
+            for (const annotation of this.annotations) {
+                if (annotation.source === 'auto_generated' &&
+                    annotation.original_values &&
+                    !annotation.feedback_captured) {
+                    // Fire and forget - don't block the save
+                    this.captureAnnotationFeedback(annotation, 'save');
+                }
+            }
+
             const response = await fetch(`/api/jobs/${this.jobId}/jd-annotations`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -668,30 +679,9 @@ class AnnotationManager {
         this.smartSelectionState.hasSentenceSelected = true;
         this.smartSelectionState.lastSelectedSentence = sentence;
 
-        // Get position for popover
-        const rect = sentenceRange.getBoundingClientRect();
-
-        // Store selection state
-        this.popoverState.selectedText = sentence;
-        this.popoverState.originalText = sentence;  // Original JD text for highlighting
-        this.popoverState.selectedRange = sentenceRange.cloneRange();
-
-        // Reset popover state
-        this.popoverState.relevance = null;
-        this.popoverState.requirement = null;
-        this.popoverState.passion = 'neutral';
-        this.popoverState.identity = 'peripheral';
-        this.popoverState.starIds = [];
-        this.popoverState.reframeNote = '';
-        this.popoverState.keywords = '';
-        this.popoverState.hasExplicitRelevance = false;
-        this.popoverState.hasExplicitRequirement = false;
-        this.popoverState.hasExplicitPassion = false;
-        this.popoverState.hasExplicitIdentity = false;
-
-        // Show popover
-        console.log('[SmartSelect] Showing popover for sentence');
-        this.showAnnotationPopover(rect, sentence);
+        // Auto-save immediately with optimistic defaults (no popover)
+        console.log('[SmartSelect] Auto-saving annotation for sentence');
+        this.autoSaveAnnotation(sentence);
     }
 
     /**
@@ -745,6 +735,7 @@ class AnnotationManager {
 
     /**
      * Handle text selection in JD viewer
+     * Auto-saves with optimistic defaults (no popover)
      */
     handleTextSelection(event) {
         const selection = window.getSelection();
@@ -754,31 +745,9 @@ class AnnotationManager {
             return; // Ignore very short selections
         }
 
-        // Get selection position for popover
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-
-        // Store selection state
-        this.popoverState.selectedText = selectedText;
-        this.popoverState.originalText = selectedText;  // Original JD text for highlighting
-        this.popoverState.selectedRange = range.cloneRange();
-
-        // Reset popover state
-        this.popoverState.relevance = null;
-        this.popoverState.requirement = null;
-        this.popoverState.passion = 'neutral';
-        this.popoverState.identity = 'peripheral';
-        this.popoverState.starIds = [];
-        this.popoverState.reframeNote = '';
-        this.popoverState.keywords = '';
-        // Reset explicit selection flags
-        this.popoverState.hasExplicitRelevance = false;
-        this.popoverState.hasExplicitRequirement = false;
-        this.popoverState.hasExplicitPassion = false;
-        this.popoverState.hasExplicitIdentity = false;
-
-        // Show popover
-        this.showAnnotationPopover(rect, selectedText);
+        // Auto-save immediately with optimistic defaults (no popover)
+        console.log('[TextSelection] Auto-saving annotation for selection');
+        this.autoSaveAnnotation(selectedText);
     }
 
     /**
@@ -1313,6 +1282,80 @@ class AnnotationManager {
     }
 
     /**
+     * Auto-save annotation immediately with optimistic defaults
+     * Called on text selection - no popover shown, just instant save with toast
+     * @param {string} text - The selected text to annotate
+     */
+    autoSaveAnnotation(text) {
+        if (!text || text.length < 3) return;
+
+        // Check if this text is already annotated
+        const existingAnnotation = this.annotations.find(
+            a => a.target?.text?.toLowerCase() === text.toLowerCase() ||
+                 a.target?.original_text?.toLowerCase() === text.toLowerCase()
+        );
+        if (existingAnnotation) {
+            // Already annotated - show edit mode instead
+            if (typeof showToast === 'function') {
+                showToast('Already annotated - tap highlight to edit', 'info');
+            }
+            window.getSelection().removeAllRanges();
+            return;
+        }
+
+        // Create annotation with optimistic defaults
+        const annotation = {
+            id: this.generateId(),
+            target: {
+                text: text,
+                original_text: text,
+                section: this.getSelectedSection(),
+                char_start: 0,
+                char_end: text.length
+            },
+            annotation_type: 'skill_match',
+            relevance: 'core_strength',  // Optimistic default
+            requirement_type: 'must_have',  // Optimistic default
+            passion: 'enjoy',  // Optimistic default
+            identity: 'strong_identity',  // Optimistic default
+            star_ids: [],
+            reframe_note: '',
+            strategic_note: '',
+            suggested_keywords: [],
+            is_active: true,
+            priority: 3,
+            source: 'manual',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // Add to annotations
+        this.annotations.push(annotation);
+        console.log('[autoSaveAnnotation] Created annotation:', annotation.id);
+
+        // Clear selection
+        window.getSelection().removeAllRanges();
+
+        // Render and highlight
+        this.renderAnnotations();
+        this.updateStats();
+
+        // Apply highlights with slight delay to ensure DOM is stable
+        requestAnimationFrame(() => {
+            this.applyHighlights();
+        });
+
+        // Schedule save to backend
+        this.scheduleSave();
+
+        // Show toast feedback with truncated text
+        const shortText = text.length > 30 ? text.substring(0, 30) + '...' : text;
+        if (typeof showToast === 'function') {
+            showToast(`✓ "${shortText}"`, 'success');
+        }
+    }
+
+    /**
      * Generate unique ID
      */
     generateId() {
@@ -1592,6 +1635,13 @@ class AnnotationManager {
     deleteAnnotation(annotationId) {
         const index = this.annotations.findIndex(a => a.id === annotationId);
         if (index !== -1) {
+            const annotation = this.annotations[index];
+
+            // Capture negative feedback for auto-generated annotations
+            if (annotation.source === 'auto_generated' && annotation.original_values) {
+                this.captureAnnotationFeedback(annotation, 'delete');
+            }
+
             this.annotations.splice(index, 1);
             this.renderAnnotations();
             this.updateStats();
@@ -1600,6 +1650,59 @@ class AnnotationManager {
                 this.applyHighlights();
             });
             this.scheduleSave();
+        }
+    }
+
+    /**
+     * Capture feedback for auto-generated annotations.
+     * Called when user saves (with potential edits) or deletes an annotation.
+     *
+     * @param {Object} annotation - The annotation object
+     * @param {string} action - "save" or "delete"
+     */
+    async captureAnnotationFeedback(annotation, action) {
+        // Only capture feedback for auto-generated annotations
+        if (annotation.source !== 'auto_generated') return;
+        if (!annotation.original_values) return;
+        // Skip if feedback was already captured for this annotation
+        if (annotation.feedback_captured && action === 'save') return;
+
+        try {
+            const payload = {
+                annotation_id: annotation.id,
+                action: action,
+                original_values: annotation.original_values,
+            };
+
+            // For save action, include final values for comparison
+            if (action === 'save') {
+                payload.final_values = {
+                    relevance: annotation.relevance,
+                    passion: annotation.passion,
+                    identity: annotation.identity,
+                    requirement_type: annotation.requirement_type,
+                };
+            }
+
+            const response = await fetch('/api/runner/user/annotation-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    // Mark feedback as captured (for save action)
+                    if (action === 'save') {
+                        annotation.feedback_captured = true;
+                    }
+                    console.log(`Feedback captured for ${action}:`, data);
+                }
+            }
+        } catch (error) {
+            // Don't block the user if feedback capture fails
+            console.warn('Failed to capture annotation feedback:', error);
         }
     }
 
@@ -2743,322 +2846,147 @@ function getActiveAnnotationManager() {
 window.getActiveAnnotationManager = getActiveAnnotationManager;
 
 // ============================================================================
-// Strength Suggestions Feature
+// Annotation Suggestion System
 // ============================================================================
 
 /**
- * Generate strength suggestions via LLM analysis
- * This identifies skills the candidate HAS that match the JD.
+ * Rebuild annotation priors from all historical annotations.
+ *
+ * This recomputes the sentence embeddings and skill priors used by
+ * the auto-annotation system. Typically takes 15-60 seconds depending
+ * on the number of historical annotations (~3000).
+ *
+ * Use this when:
+ * - You've made many new manual annotations
+ * - The auto-annotation accuracy seems off
+ * - After initial system setup
  */
-async function generateStrengthSuggestions() {
+async function rebuildPriors() {
+    // Support both panel mode (no prefix) and sidebar mode (batch- prefix)
+    const btn = document.getElementById('rebuild-priors-btn') ||
+                document.getElementById('batch-rebuild-priors-btn');
+    const originalContent = btn ? btn.innerHTML : '';
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `
+            <svg class="animate-spin w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="hidden sm:inline">Rebuilding...</span>
+        `;
+    }
+
+    try {
+        const response = await fetch('/api/runner/user/annotation-priors/rebuild', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast(`Rebuilt priors: ${data.annotations_indexed} annotations indexed`, 'success');
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error rebuilding priors:', error);
+        showToast(`Rebuild failed: ${error.message}`, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    }
+}
+
+// Export rebuild function to window
+window.rebuildPriors = rebuildPriors;
+
+/**
+ * Generate annotations automatically using the annotation suggestion system.
+ *
+ * This function calls the runner service to generate annotations based on:
+ * - Sentence embeddings matching against historical annotation patterns
+ * - Skill priors learned from user feedback
+ * - Master CV skills and responsibilities
+ *
+ * Only generates annotations for JD items that match the user's profile.
+ */
+async function generateAnnotations() {
     if (!annotationManager) {
         console.error('Annotation manager not initialized');
         return;
     }
 
-    const btn = document.getElementById('suggest-strengths-btn');
+    // Support both panel mode (no prefix) and sidebar mode (batch- prefix)
+    const btn = document.getElementById('generate-annotations-btn') ||
+                document.getElementById('batch-generate-annotations-btn');
+    const originalContent = btn ? btn.innerHTML : '';
+
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <svg class="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Analyzing...
+            <span class="hidden sm:inline">Generating...</span>
         `;
     }
 
     try {
-        const response = await fetch(
-            `/api/jobs/${annotationManager.jobId}/suggest-strengths`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    include_identity: true,
-                    include_passion: true,
-                    include_defaults: true,
-                    tier: 'balanced'
-                })
-            }
-        );
+        const response = await fetch(`/api/runner/jobs/${annotationManager.jobId}/generate-annotations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
 
         const data = await response.json();
 
-        if (data.unavailable) {
-            showToast('Strength suggestion requires the runner service.', 'info');
-            return;
-        }
+        if (data.success) {
+            // Reload annotations to show the newly created ones
+            await annotationManager.loadAnnotations();
 
-        if (!data.success) {
-            showToast(data.error || 'Failed to generate suggestions', 'error');
-            return;
-        }
+            // Show success message
+            const msg = `Created ${data.created} annotations (${data.skipped} JD items skipped - no match found)`;
+            console.log('Auto-annotation result:', data);
 
-        if (data.suggestions && data.suggestions.length > 0) {
-            showStrengthSuggestionsModal(data.suggestions);
+            // Show toast notification if available
+            if (window.showToast) {
+                window.showToast(msg, 'success');
+            } else {
+                alert(msg);
+            }
         } else {
-            showToast('No strength matches found. Your skills may already be annotated, or try manual annotation.', 'info');
+            throw new Error(data.error || 'Unknown error');
         }
     } catch (error) {
-        console.error('Error generating strength suggestions:', error);
-        showToast('Failed to generate suggestions', 'error');
+        console.error('Error generating annotations:', error);
+        if (window.showToast) {
+            window.showToast(`Failed to generate annotations: ${error.message}`, 'error');
+        } else {
+            alert(`Failed to generate annotations: ${error.message}`);
+        }
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = `
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Strengths
-            `;
+            btn.innerHTML = originalContent;
         }
     }
 }
-
-/**
- * Display strength suggestions in a modal for review and acceptance
- */
-function showStrengthSuggestionsModal(suggestions) {
-    // Remove any existing modal
-    const existingModal = document.getElementById('strength-suggestions-modal');
-    if (existingModal) existingModal.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'strength-suggestions-modal';
-    modal.className = 'fixed inset-0 z-50 overflow-y-auto';
-    modal.innerHTML = `
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeStrengthSuggestionsModal()"></div>
-
-            <div class="relative inline-block w-full max-w-3xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-xl">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        <span class="text-green-600">&#10003;</span> Strength Suggestions (${suggestions.length})
-                    </h3>
-                    <button onclick="closeStrengthSuggestionsModal()" class="text-gray-400 hover:text-gray-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <p class="text-sm text-gray-600 mb-4">
-                    These are skills you have that match the job description. Accept to create annotations.
-                </p>
-
-                <div class="space-y-3 max-h-96 overflow-y-auto" id="suggestions-list">
-                    ${suggestions.map((s, i) => renderSuggestionCard(s, i)).join('')}
-                </div>
-
-                <div class="mt-6 flex justify-between items-center">
-                    <span class="text-sm text-gray-500" id="accepted-count">0 accepted</span>
-                    <div class="space-x-3">
-                        <button onclick="closeStrengthSuggestionsModal()"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                            Close
-                        </button>
-                        <button onclick="acceptAllStrengthSuggestions()"
-                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">
-                            Accept All
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Store suggestions for later access
-    window._strengthSuggestions = suggestions;
-    window._acceptedSuggestions = new Set();
-}
-
-/**
- * Render a single suggestion card
- */
-function renderSuggestionCard(suggestion, index) {
-    const relevanceColors = {
-        'core_strength': 'bg-green-100 text-green-800',
-        'extremely_relevant': 'bg-teal-100 text-teal-800',
-        'relevant': 'bg-blue-100 text-blue-800',
-        'tangential': 'bg-yellow-100 text-yellow-800',
-    };
-
-    const relevanceColor = relevanceColors[suggestion.suggested_relevance] || 'bg-gray-100 text-gray-800';
-    const confidencePercent = Math.round(suggestion.confidence * 100);
-
-    return `
-        <div class="p-4 border rounded-lg hover:border-green-300 transition-colors" id="suggestion-card-${index}">
-            <div class="flex items-start justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="px-2 py-0.5 text-xs font-medium rounded ${relevanceColor}">
-                            ${(suggestion.suggested_relevance || '').replace('_', ' ')}
-                        </span>
-                        <span class="text-xs text-gray-500">${confidencePercent}% confidence</span>
-                        ${suggestion.source === 'hardcoded_default' ?
-                            '<span class="text-xs text-purple-600">Quick match</span>' :
-                            '<span class="text-xs text-blue-600">AI match</span>'}
-                    </div>
-                    <p class="text-sm text-gray-800 font-medium mb-1">${escapeHtmlForSuggestions(suggestion.matching_skill)}</p>
-                    <p class="text-xs text-gray-600 line-clamp-2">"${escapeHtmlForSuggestions(suggestion.target_text.substring(0, 150))}${suggestion.target_text.length > 150 ? '...' : ''}"</p>
-                    ${suggestion.suggested_keywords?.length > 0 ?
-                        `<div class="flex flex-wrap gap-1 mt-2">
-                            ${suggestion.suggested_keywords.slice(0, 4).map(kw =>
-                                `<span class="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">${escapeHtmlForSuggestions(kw)}</span>`
-                            ).join('')}
-                        </div>` : ''}
-                </div>
-                <div class="flex gap-2 ml-4">
-                    <button onclick="acceptStrengthSuggestion(${index})"
-                            class="p-2 text-green-600 hover:bg-green-50 rounded-md transition-colors"
-                            title="Accept">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </button>
-                    <button onclick="skipStrengthSuggestion(${index})"
-                            class="p-2 text-gray-400 hover:bg-gray-50 rounded-md transition-colors"
-                            title="Skip">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Accept a single strength suggestion and create annotation
- */
-function acceptStrengthSuggestion(index) {
-    const suggestion = window._strengthSuggestions[index];
-    if (!suggestion || !annotationManager) return;
-
-    // Create annotation from suggestion
-    const annotation = {
-        id: annotationManager.generateId(),
-        target: {
-            text: suggestion.target_text,
-            section: suggestion.target_section || 'unknown',
-            index: 0,
-            char_start: 0,
-            char_end: suggestion.target_text.length
-        },
-        annotation_type: 'skill_match',
-        relevance: suggestion.suggested_relevance,
-        requirement_type: suggestion.suggested_requirement || 'neutral',
-        passion: suggestion.suggested_passion || 'neutral',
-        identity: suggestion.suggested_identity || 'peripheral',
-        matching_skill: suggestion.matching_skill,
-        suggested_keywords: suggestion.suggested_keywords || [],
-        ats_variants: [],
-        reframe_note: suggestion.reframe_note || '',
-        has_reframe: !!suggestion.reframe_note,
-        star_ids: [],
-        evidence_summary: suggestion.evidence_summary || '',
-        is_active: true,
-        priority: 3,
-        confidence: suggestion.confidence,
-        created_by: 'pipeline_suggestion',
-        status: 'needs_review',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
-
-    annotationManager.annotations.push(annotation);
-    window._acceptedSuggestions.add(index);
-
-    // Update UI
-    const card = document.getElementById(`suggestion-card-${index}`);
-    if (card) {
-        card.classList.add('bg-green-50', 'border-green-300');
-        const acceptBtn = card.querySelector('button[title="Accept"]');
-        if (acceptBtn) {
-            acceptBtn.disabled = true;
-            acceptBtn.classList.add('opacity-50');
-        }
-    }
-
-    // Update count
-    const countEl = document.getElementById('accepted-count');
-    if (countEl) {
-        countEl.textContent = `${window._acceptedSuggestions.size} accepted`;
-    }
-
-    showToast(`Added: ${suggestion.matching_skill}`, 'success');
-}
-
-/**
- * Skip a suggestion (just hide the card)
- */
-function skipStrengthSuggestion(index) {
-    const card = document.getElementById(`suggestion-card-${index}`);
-    if (card) {
-        card.style.display = 'none';
-    }
-}
-
-/**
- * Accept all suggestions at once
- */
-function acceptAllStrengthSuggestions() {
-    if (!window._strengthSuggestions) return;
-
-    window._strengthSuggestions.forEach((_, index) => {
-        if (!window._acceptedSuggestions.has(index)) {
-            acceptStrengthSuggestion(index);
-        }
-    });
-
-    // Close modal and save
-    closeStrengthSuggestionsModal();
-}
-
-/**
- * Close the suggestions modal and save annotations
- */
-function closeStrengthSuggestionsModal() {
-    const modal = document.getElementById('strength-suggestions-modal');
-    if (modal) {
-        modal.remove();
-    }
-
-    // Save and refresh if any suggestions were accepted
-    if (window._acceptedSuggestions && window._acceptedSuggestions.size > 0) {
-        annotationManager.renderAnnotations();
-        annotationManager.applyHighlights();
-        annotationManager.updateStats();
-        annotationManager.scheduleSave();
-        showToast(`${window._acceptedSuggestions.size} annotations added`, 'success');
-    }
-
-    // Cleanup
-    window._strengthSuggestions = null;
-    window._acceptedSuggestions = null;
-}
-
-/**
- * Helper to escape HTML for suggestion rendering
- */
-function escapeHtmlForSuggestions(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Export strength suggestion functions to window
-window.generateStrengthSuggestions = generateStrengthSuggestions;
-window.showStrengthSuggestionsModal = showStrengthSuggestionsModal;
-window.acceptStrengthSuggestion = acceptStrengthSuggestion;
-window.skipStrengthSuggestion = skipStrengthSuggestion;
-window.acceptAllStrengthSuggestions = acceptAllStrengthSuggestions;
-window.closeStrengthSuggestionsModal = closeStrengthSuggestionsModal;
+window.generateAnnotations = generateAnnotations;
 
 /**
  * Filter annotations

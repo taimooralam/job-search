@@ -462,6 +462,22 @@
                 <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-400 border border-amber-500/30">Medium</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">Weak</span>
                 <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/20 text-rose-400 border border-rose-500/30">Gap</span>
+                <!-- Auto-Annotate button -->
+                <span class="mx-1 text-mobile-dark-600">|</span>
+                <button @click="autoAnnotate()"
+                        :disabled="annotation.autoGenerating"
+                        class="px-2.5 py-0.5 rounded text-[10px] font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center gap-1 disabled:opacity-50">
+                    <template x-if="annotation.autoGenerating">
+                        <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </template>
+                    <svg x-show="!annotation.autoGenerating" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span x-text="annotation.autoGenerating ? 'Generating...' : 'Auto'"></span>
+                </button>
             </div>
         </div>
 

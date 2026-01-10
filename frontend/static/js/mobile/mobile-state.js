@@ -38,10 +38,11 @@ window.mobileApp = function() {
         annotationSheet: {
             show: false,
             selectedText: '',
-            relevance: 'relevant',
-            requirement: 'neutral',
-            identity: 'peripheral',
-            passion: 'neutral',
+            // Optimistic defaults - most annotations are strengths you must have
+            relevance: 'core_strength',
+            requirement: 'must_have',
+            identity: 'strong_identity',
+            passion: 'enjoy',
             saving: false,
             editingId: null  // ID of annotation being edited (null = creating new)
         },
@@ -613,17 +614,19 @@ window.mobileApp = function() {
 
             if (selectedText && selectedText.length > 10) {
                 this.annotationSheet.selectedText = selectedText;
-                // Default to Core Strength + Must Have (like desktop Quick Add)
+                // Optimistic defaults - auto-save immediately, user can edit if needed
                 this.annotationSheet.relevance = 'core_strength';
                 this.annotationSheet.requirement = 'must_have';
-                this.annotationSheet.identity = 'peripheral';
-                this.annotationSheet.passion = 'neutral';
+                this.annotationSheet.identity = 'strong_identity';
+                this.annotationSheet.passion = 'enjoy';
                 this.annotationSheet.editingId = null;  // Creating new annotation
-                this.annotationSheet.show = true;
 
-                // Haptic
+                // AUTO-SAVE: Save immediately with defaults, show sheet for optional adjustment
+                this.autoSaveAnnotation();
+
+                // Haptic feedback for auto-save
                 if ('vibrate' in navigator) {
-                    navigator.vibrate(30);
+                    navigator.vibrate([20, 10, 20]);  // Double tap feel
                 }
             }
         },
@@ -776,6 +779,65 @@ window.mobileApp = function() {
             }).catch(error => {
                 console.error('Background delete save error:', error);
                 window.showToast?.('Delete failed - refresh to see actual state', 'error');
+            });
+        },
+
+        // Auto-save annotation with defaults (no sheet shown, just toast)
+        // User can tap highlight to edit if defaults aren't right
+        autoSaveAnnotation() {
+            if (!this.annotationSheet.selectedText || !this.currentJob) return;
+
+            const jobId = this.currentJob._id;
+            const selectedText = this.annotationSheet.selectedText;
+
+            // Create new annotation with optimistic defaults
+            const newAnnotation = {
+                id: crypto.randomUUID(),
+                target: {
+                    text: selectedText,
+                    char_start: 0,
+                    char_end: selectedText.length
+                },
+                annotation_type: 'skill_match',
+                relevance: this.annotationSheet.relevance,
+                requirement_type: this.annotationSheet.requirement,
+                identity: this.annotationSheet.identity,
+                passion: this.annotationSheet.passion,
+                is_active: true,
+                status: 'approved',
+                source: 'human',
+                created_at: new Date().toISOString()
+            };
+
+            // === OPTIMISTIC UPDATE: Update UI immediately ===
+            this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
+            this.annotationVersion++;
+            this.checkIdentityAnnotations();
+
+            // Show brief toast (not the full sheet)
+            const shortText = selectedText.length > 30
+                ? selectedText.substring(0, 30) + '...'
+                : selectedText;
+            window.showToast?.(`✓ "${shortText}"`, 'success');
+
+            // Clear selection
+            window.getSelection()?.removeAllRanges();
+
+            // === BACKGROUND SAVE ===
+            const annotationsToSave = [...this.annotation.annotations];
+            const processedJdHtml = this.annotation.processedJdHtml;
+
+            fetch(`/api/jobs/${jobId}/jd-annotations`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    annotations: annotationsToSave,
+                    processed_jd_html: processedJdHtml,
+                    annotation_version: 1
+                })
+            }).catch(error => {
+                console.error('Auto-save failed:', error);
+                window.showToast?.('Save failed - tap to retry', 'error');
             });
         },
 

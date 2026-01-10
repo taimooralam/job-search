@@ -764,6 +764,9 @@ class TestCompanyResearchServicePeopleResearch:
     """Test people research integration in company research service."""
 
     @pytest.mark.asyncio
+    @patch('src.services.company_research_service.CompanyResearcher')
+    @patch('src.services.company_research_service.RoleResearcher')
+    @patch('src.services.company_research_service.PeopleMapper')
     @patch.object(CompanyResearchService, "_fetch_job")
     @patch.object(CompanyResearchService, "_check_cache")
     @patch.object(CompanyResearchService, "_persist_research")
@@ -774,6 +777,9 @@ class TestCompanyResearchServicePeopleResearch:
         mock_persist_research,
         mock_cache,
         mock_fetch,
+        mock_people_mapper_class,
+        mock_role_researcher_class,
+        mock_company_researcher_class,
         sample_job_doc,
         sample_company_research,
         sample_role_research,
@@ -782,27 +788,29 @@ class TestCompanyResearchServicePeopleResearch:
         mock_fetch.return_value = sample_job_doc
         mock_cache.return_value = None
 
-        # Create mock researchers
+        # Configure mock company researcher (returned by class constructor)
         mock_company_researcher = MagicMock()
         mock_company_researcher.research_company.return_value = {
             "company_research": sample_company_research,
         }
+        mock_company_researcher_class.return_value = mock_company_researcher
 
+        # Configure mock role researcher (accessed via property)
         mock_role_researcher = MagicMock()
         mock_role_researcher.research_role.return_value = {
             "role_research": sample_role_research,
         }
+        mock_role_researcher_class.return_value = mock_role_researcher
 
+        # Configure mock people mapper
         mock_people_mapper = MagicMock()
         mock_people_mapper.map_people.return_value = {
             "primary_contacts": [{"name": "Test", "role": "Manager"}],
             "secondary_contacts": [],
         }
+        mock_people_mapper_class.return_value = mock_people_mapper
 
         service = CompanyResearchService()
-        service._company_researcher = mock_company_researcher
-        service._role_researcher = mock_role_researcher
-        service._people_mapper = mock_people_mapper
 
         result = await service.execute(
             job_id="507f1f77bcf86cd799439011",
@@ -816,6 +824,9 @@ class TestCompanyResearchServicePeopleResearch:
         assert call_args[1].get("skip_outreach") is True or call_args[0][1] is True
 
     @pytest.mark.asyncio
+    @patch('src.services.company_research_service.CompanyResearcher')
+    @patch('src.services.company_research_service.RoleResearcher')
+    @patch('src.services.company_research_service.PeopleMapper')
     @patch.object(CompanyResearchService, "_fetch_job")
     @patch.object(CompanyResearchService, "_check_cache")
     @patch.object(CompanyResearchService, "_persist_research")
@@ -826,6 +837,9 @@ class TestCompanyResearchServicePeopleResearch:
         mock_persist_research,
         mock_cache,
         mock_fetch,
+        mock_people_mapper_class,
+        mock_role_researcher_class,
+        mock_company_researcher_class,
         sample_job_doc,
         sample_company_research,
         sample_role_research,
@@ -842,27 +856,29 @@ class TestCompanyResearchServicePeopleResearch:
             {"name": "CTO", "role": "Chief Technology Officer", "why_relevant": "Test"},
         ]
 
-        # Create mock researchers
+        # Configure mock company researcher (returned by class constructor)
         mock_company_researcher = MagicMock()
         mock_company_researcher.research_company.return_value = {
             "company_research": sample_company_research,
         }
+        mock_company_researcher_class.return_value = mock_company_researcher
 
+        # Configure mock role researcher (accessed via property)
         mock_role_researcher = MagicMock()
         mock_role_researcher.research_role.return_value = {
             "role_research": sample_role_research,
         }
+        mock_role_researcher_class.return_value = mock_role_researcher
 
+        # Configure mock people mapper
         mock_people_mapper = MagicMock()
         mock_people_mapper.map_people.return_value = {
             "primary_contacts": primary_contacts,
             "secondary_contacts": secondary_contacts,
         }
+        mock_people_mapper_class.return_value = mock_people_mapper
 
         service = CompanyResearchService()
-        service._company_researcher = mock_company_researcher
-        service._role_researcher = mock_role_researcher
-        service._people_mapper = mock_people_mapper
 
         await service.execute(
             job_id="507f1f77bcf86cd799439011",
@@ -876,6 +892,9 @@ class TestCompanyResearchServicePeopleResearch:
         assert call_kwargs.get("secondary_contacts") == secondary_contacts
 
     @pytest.mark.asyncio
+    @patch('src.services.company_research_service.CompanyResearcher')
+    @patch('src.services.company_research_service.RoleResearcher')
+    @patch('src.services.company_research_service.PeopleMapper')
     @patch.object(CompanyResearchService, "_fetch_job")
     @patch.object(CompanyResearchService, "_check_cache")
     @patch.object(CompanyResearchService, "_persist_research")
@@ -886,6 +905,9 @@ class TestCompanyResearchServicePeopleResearch:
         mock_persist_research,
         mock_cache,
         mock_fetch,
+        mock_people_mapper_class,
+        mock_role_researcher_class,
+        mock_company_researcher_class,
         sample_job_doc,
         sample_company_research,
         sample_role_research,
@@ -894,27 +916,29 @@ class TestCompanyResearchServicePeopleResearch:
         mock_fetch.return_value = sample_job_doc
         mock_cache.return_value = None
 
-        # Create mock researchers
+        # Configure mock company researcher (returned by class constructor)
         mock_company_researcher = MagicMock()
         mock_company_researcher.research_company.return_value = {
             "company_research": sample_company_research,
         }
+        mock_company_researcher_class.return_value = mock_company_researcher
 
+        # Configure mock role researcher (accessed via property)
         mock_role_researcher = MagicMock()
         mock_role_researcher.research_role.return_value = {
             "role_research": sample_role_research,
         }
+        mock_role_researcher_class.return_value = mock_role_researcher
 
+        # Configure mock people mapper
         mock_people_mapper = MagicMock()
         mock_people_mapper.map_people.return_value = {
             "primary_contacts": [{"name": "Test1"}, {"name": "Test2"}],
             "secondary_contacts": [{"name": "Test3"}],
         }
+        mock_people_mapper_class.return_value = mock_people_mapper
 
         service = CompanyResearchService()
-        service._company_researcher = mock_company_researcher
-        service._role_researcher = mock_role_researcher
-        service._people_mapper = mock_people_mapper
 
         result = await service.execute(
             job_id="507f1f77bcf86cd799439011",

@@ -51,7 +51,7 @@ from .executor import execute_pipeline
 from .persistence import persist_run_to_mongo
 from .auth import verify_token
 from .config import settings, validate_config_on_startup
-from .routes import operations_router, contacts_router, master_cv_router, log_polling_router, job_ingest_router, job_search_router
+from .routes import operations_router, contacts_router, master_cv_router, log_polling_router, job_ingest_router, job_search_router, annotations_router
 
 # Configure logging
 logging.basicConfig(
@@ -107,6 +107,7 @@ app.include_router(master_cv_router)
 app.include_router(log_polling_router)
 app.include_router(job_ingest_router)
 app.include_router(job_search_router)
+app.include_router(annotations_router)
 
 
 @dataclass

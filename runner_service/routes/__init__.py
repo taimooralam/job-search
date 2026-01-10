@@ -11,6 +11,7 @@ from .master_cv import router as master_cv_router
 from .log_polling import router as log_polling_router
 from .job_ingest import router as job_ingest_router
 from .job_search import router as job_search_router
+from .annotations import router as annotations_router
 
 __all__ = [
     "operations_router",
@@ -19,4 +20,5 @@ __all__ = [
     "log_polling_router",
     "job_ingest_router",
     "job_search_router",
+    "annotations_router",
 ]

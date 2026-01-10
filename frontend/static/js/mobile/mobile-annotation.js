@@ -33,6 +33,9 @@ document.addEventListener('alpine:init', () => {
         personaLoading: false,
         hasIdentityAnnotations: false,
 
+        // Auto-generate state
+        autoGenerating: false,
+
         // Options
         relevanceOptions: [
             { value: 'core_strength', label: 'Core Strength', emoji: '💪', color: 'text-green-400' },
@@ -265,6 +268,16 @@ document.addEventListener('alpine:init', () => {
 
         // Save annotations to server
         async saveAnnotationsToServer() {
+            // Capture feedback for auto-generated annotations before saving
+            for (const annotation of this.annotations) {
+                if (annotation.source === 'auto_generated' &&
+                    annotation.original_values &&
+                    !annotation.feedback_captured) {
+                    // Fire and forget - don't block the save
+                    this.captureAnnotationFeedback(annotation, 'save');
+                }
+            }
+
             const response = await fetch(`/api/jobs/${this.jobId}/jd-annotations`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -276,6 +289,48 @@ document.addEventListener('alpine:init', () => {
 
             if (!response.ok) {
                 throw new Error('Failed to save annotations');
+            }
+        },
+
+        /**
+         * Capture feedback for auto-generated annotations.
+         * Called when user saves or deletes an annotation.
+         */
+        async captureAnnotationFeedback(annotation, action) {
+            if (annotation.source !== 'auto_generated') return;
+            if (!annotation.original_values) return;
+            if (annotation.feedback_captured && action === 'save') return;
+
+            try {
+                const payload = {
+                    annotation_id: annotation.id,
+                    action: action,
+                    original_values: annotation.original_values,
+                };
+
+                if (action === 'save') {
+                    payload.final_values = {
+                        relevance: annotation.relevance,
+                        passion: annotation.passion,
+                        identity: annotation.identity,
+                        requirement_type: annotation.requirement_type,
+                    };
+                }
+
+                const response = await fetch('/api/runner/user/annotation-feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && action === 'save') {
+                        annotation.feedback_captured = true;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to capture annotation feedback:', error);
             }
         },
 
@@ -330,6 +385,51 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        /**
+         * Auto-generate annotations using the suggestion system.
+         * Calls the runner service to generate annotations based on
+         * sentence embeddings and skill priors.
+         */
+        async autoAnnotate() {
+            if (!this.jobId || this.autoGenerating) return;
+
+            this.autoGenerating = true;
+
+            try {
+                const response = await fetch(`/api/runner/jobs/${this.jobId}/generate-annotations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload annotations to show the newly created ones
+                    await this.loadAnnotations(this.jobId, this.jdContent);
+
+                    // Haptic feedback
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
+
+                    window.showToast?.(`Created ${data.created} annotations`, 'success');
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                console.error('Failed to auto-generate annotations:', error);
+                window.showToast?.(`Auto-annotate failed: ${error.message}`, 'error');
+            } finally {
+                this.autoGenerating = false;
+            }
+        },
+
         // Show details for existing annotation
         showAnnotationDetails(annotationId) {
             const annotation = this.annotations.find(a => a.id === annotationId);
@@ -341,6 +441,14 @@ document.addEventListener('alpine:init', () => {
 
         // Delete annotation
         async deleteAnnotation(annotationId) {
+            // Find annotation before deleting to capture feedback
+            const annotation = this.annotations.find(a => a.id === annotationId);
+
+            // Capture negative feedback for auto-generated annotations
+            if (annotation?.source === 'auto_generated' && annotation?.original_values) {
+                this.captureAnnotationFeedback(annotation, 'delete');
+            }
+
             this.annotations = this.annotations.filter(a => a.id !== annotationId);
             await this.saveAnnotationsToServer();
             this.checkIdentityAnnotations();
