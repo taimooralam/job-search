@@ -31,13 +31,23 @@ from src.services.annotation_priors import (
 class TestLoadPriors:
     """Tests for load_priors function."""
 
-    @pytest.fixture
-    def mock_collection(self):
-        """Mock MongoDB collection."""
-        with patch("src.services.annotation_priors._get_collection") as mock:
-            yield mock.return_value
+    @pytest.fixture(autouse=True)
+    def reset_repo(self):
+        """Reset repository singleton before each test."""
+        from src.common.repositories import reset_priors_repository
+        reset_priors_repository()
+        yield
+        reset_priors_repository()
 
-    def test_loads_existing_priors(self, mock_collection):
+    @pytest.fixture
+    def mock_repo(self):
+        """Mock priors repository."""
+        mock_repository = MagicMock()
+        # Patch at the source module since the import happens inside the function
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_repository):
+            yield mock_repository
+
+    def test_loads_existing_priors(self, mock_repo):
         """Should load priors document from MongoDB when it exists."""
         # Arrange
         existing_priors = {
@@ -47,38 +57,38 @@ class TestLoadPriors:
             "skill_priors": {"python": {}},
             "stats": {"total_annotations_at_build": 100},
         }
-        mock_collection.find_one.return_value = existing_priors
+        mock_repo.find_one.return_value = existing_priors
 
         # Act
         result = load_priors()
 
         # Assert
-        mock_collection.find_one.assert_called_once_with({"_id": PRIORS_DOC_ID})
+        mock_repo.find_one.assert_called_once_with({"_id": PRIORS_DOC_ID})
         assert result["_id"] == PRIORS_DOC_ID
         assert result["version"] == 2
         assert result["sentence_index"]["count"] == 100
 
-    def test_creates_empty_priors_when_not_exists(self, mock_collection):
+    def test_creates_empty_priors_when_not_exists(self, mock_repo):
         """Should create and insert empty priors when none exists."""
         # Arrange
-        mock_collection.find_one.return_value = None
+        mock_repo.find_one.return_value = None
 
         # Act
         result = load_priors()
 
         # Assert
-        mock_collection.find_one.assert_called_once_with({"_id": PRIORS_DOC_ID})
-        mock_collection.insert_one.assert_called_once()
+        mock_repo.find_one.assert_called_once_with({"_id": PRIORS_DOC_ID})
+        mock_repo.insert_one.assert_called_once()
         assert result["_id"] == PRIORS_DOC_ID
         assert result["version"] == 1
         assert result["sentence_index"]["count"] == 0
         assert result["skill_priors"] == {}
         assert result["stats"]["total_annotations_at_build"] == 0
 
-    def test_handles_mongodb_error_gracefully(self, mock_collection):
+    def test_handles_mongodb_error_gracefully(self, mock_repo):
         """Should return empty priors on MongoDB error."""
         # Arrange
-        mock_collection.find_one.side_effect = Exception("Connection failed")
+        mock_repo.find_one.side_effect = Exception("Connection failed")
 
         # Act
         result = load_priors()
@@ -92,39 +102,45 @@ class TestLoadPriors:
 class TestSavePriors:
     """Tests for save_priors function."""
 
+    @pytest.fixture(autouse=True)
+    def reset_repo(self):
+        """Reset repository singleton before each test."""
+        from src.common.repositories import reset_priors_repository
+        reset_priors_repository()
+        yield
+        reset_priors_repository()
+
     @pytest.fixture
-    def mock_collection(self):
-        """Mock MongoDB collection."""
-        with patch("src.services.annotation_priors._get_collection") as mock:
-            yield mock.return_value
+    def mock_repo(self):
+        """Mock priors repository."""
+        from src.common.repositories import WriteResult
+        mock_repository = MagicMock()
+        # Default return value for replace_one
+        mock_repository.replace_one.return_value = WriteResult(matched_count=1, modified_count=1)
+        # Patch at the source module since the import happens inside the function
+        with patch("src.common.repositories.get_priors_repository", return_value=mock_repository):
+            yield mock_repository
 
     @pytest.fixture
     def sample_priors(self):
         """Sample priors document."""
         return _empty_priors()
 
-    def test_saves_priors_with_upsert(self, mock_collection, sample_priors):
+    def test_saves_priors_with_upsert(self, mock_repo, sample_priors):
         """Should save priors using replace_one with upsert=True."""
-        # Arrange
-        mock_result = MagicMock()
-        mock_result.matched_count = 1
-        mock_result.modified_count = 1
-        mock_collection.replace_one.return_value = mock_result
-
         # Act
         result = save_priors(sample_priors)
 
         # Assert
-        mock_collection.replace_one.assert_called_once()
-        call_args = mock_collection.replace_one.call_args
+        mock_repo.replace_one.assert_called_once()
+        call_args = mock_repo.replace_one.call_args
         assert call_args[0][0] == {"_id": PRIORS_DOC_ID}
         assert call_args[1]["upsert"] is True
         assert result is True
 
-    def test_updates_timestamp_on_save(self, mock_collection, sample_priors):
+    def test_updates_timestamp_on_save(self, mock_repo, sample_priors):
         """Should update updated_at timestamp when saving."""
         # Arrange
-        mock_collection.replace_one.return_value = MagicMock()
         original_timestamp = sample_priors["updated_at"]
 
         # Act
@@ -135,10 +151,10 @@ class TestSavePriors:
         # Verify it's a valid ISO timestamp
         datetime.fromisoformat(sample_priors["updated_at"].replace("Z", "+00:00"))
 
-    def test_handles_mongodb_error_on_save(self, mock_collection, sample_priors):
+    def test_handles_mongodb_error_on_save(self, mock_repo, sample_priors):
         """Should return False on MongoDB error."""
         # Arrange
-        mock_collection.replace_one.side_effect = Exception("Write failed")
+        mock_repo.replace_one.side_effect = Exception("Write failed")
 
         # Act
         result = save_priors(sample_priors)

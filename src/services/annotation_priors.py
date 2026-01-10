@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 
 # Priors document ID (singleton)
 PRIORS_DOC_ID = "user_annotation_priors"
-PRIORS_COLLECTION = "annotation_priors"
 
 # Embedding model configuration
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
@@ -123,12 +122,6 @@ class PriorsDocument(TypedDict):
 # ============================================================================
 
 
-def _get_collection():
-    """Get the priors collection from MongoDB."""
-    from src.common.database import db as database_client
-    return database_client.db[PRIORS_COLLECTION]
-
-
 def _empty_priors() -> PriorsDocument:
     """Create an empty priors document."""
     now = datetime.now(timezone.utc).isoformat()
@@ -163,13 +156,16 @@ def load_priors() -> PriorsDocument:
     Load the priors document from MongoDB.
 
     Creates an empty priors document if none exists.
+    Uses repository pattern for future dual-write support.
 
     Returns:
         PriorsDocument dict
     """
     try:
-        collection = _get_collection()
-        doc = collection.find_one({"_id": PRIORS_DOC_ID})
+        from src.common.repositories import get_priors_repository
+
+        repo = get_priors_repository()
+        doc = repo.find_one({"_id": PRIORS_DOC_ID})
 
         if doc:
             logger.debug(f"Loaded priors: {doc.get('stats', {}).get('total_annotations_at_build', 0)} annotations indexed")
@@ -178,9 +174,13 @@ def load_priors() -> PriorsDocument:
         # Create empty priors if not exists
         logger.info("No priors document found, creating empty one")
         empty = _empty_priors()
-        collection.insert_one(empty)
+        repo.insert_one(empty)
         return empty
 
+    except ValueError as e:
+        # MONGODB_URI not configured - return empty priors for dev
+        logger.debug(f"MongoDB not configured, using empty priors: {e}")
+        return _empty_priors()
     except Exception as e:
         logger.warning(f"Failed to load priors from MongoDB: {e}")
         return _empty_priors()
@@ -190,6 +190,8 @@ def save_priors(priors: PriorsDocument) -> bool:
     """
     Save the priors document to MongoDB.
 
+    Uses repository pattern for future dual-write support.
+
     Args:
         priors: PriorsDocument to save
 
@@ -197,10 +199,12 @@ def save_priors(priors: PriorsDocument) -> bool:
         True if successful, False otherwise
     """
     try:
-        collection = _get_collection()
+        from src.common.repositories import get_priors_repository
+
+        repo = get_priors_repository()
         priors["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        result = collection.replace_one(
+        result = repo.replace_one(
             {"_id": PRIORS_DOC_ID},
             priors,
             upsert=True
@@ -209,6 +213,10 @@ def save_priors(priors: PriorsDocument) -> bool:
         logger.debug(f"Saved priors: matched={result.matched_count}, modified={result.modified_count}")
         return True
 
+    except ValueError as e:
+        # MONGODB_URI not configured - skip save in dev
+        logger.debug(f"MongoDB not configured, skipping priors save: {e}")
+        return True  # Return True since this is expected in dev
     except Exception as e:
         logger.error(f"Failed to save priors: {e}")
         return False
