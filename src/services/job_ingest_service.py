@@ -32,6 +32,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.services.job_sources import JobData
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,7 @@ class IngestService:
         db: Database,
         use_claude_scorer: bool = True,
         log_callback: Optional[LogCallback] = None,
+        repository: Optional[JobRepositoryInterface] = None,
     ):
         """
         Initialize the ingest service.
@@ -103,13 +105,20 @@ class IngestService:
             use_claude_scorer: If True, use Claude CLI for scoring (free).
                                If False, use OpenRouter (paid per token).
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
+            repository: Optional job repository. If provided, uses repository for level-2 ops.
         """
         self.db = db
-        self.level2 = db["level-2"]
+        self._repository = repository
         self.system_state = db["system_state"]
         self.use_claude_scorer = use_claude_scorer
         self._log_callback = log_callback
         self._scorer = None  # Lazy init
+
+    def _get_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._repository is not None:
+            return self._repository
+        return get_job_repository()
 
     def _log(self, message: str) -> None:
         """Emit a log message via callback if available."""
@@ -334,9 +343,10 @@ class IngestService:
             for job in filtered_jobs:
                 job_index += 1
                 try:
-                    # Check for duplicates
+                    # Check for duplicates using repository
+                    repo = self._get_repository()
                     dedupe_key = self.generate_dedupe_key(job, source_name)
-                    if self.level2.find_one({"dedupeKey": dedupe_key}):
+                    if repo.find_one({"dedupeKey": dedupe_key}):
                         result.duplicates_skipped += 1
                         self._log(f"[dedupe_skip] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} - duplicate")
                         continue
@@ -360,9 +370,9 @@ class IngestService:
                         self._log(f"[score_reject] ({job_index}/{len(filtered_jobs)}) {job.company} | {job.title} | Score: {score} ({tier}) - below threshold")
                         continue
 
-                    # Create and insert document
+                    # Create and insert document using repository
                     doc = self.create_job_document(job, source_name, score, rationale or "")
-                    insert_result = self.level2.insert_one(doc)
+                    insert_result = repo.insert_one(doc)
 
                     logger.info(
                         f"Ingested: {job.company} - {job.title} "
@@ -372,7 +382,7 @@ class IngestService:
 
                     result.ingested += 1
                     result.ingested_jobs.append({
-                        "job_id": str(insert_result.inserted_id),
+                        "job_id": str(insert_result.upserted_id),
                         "title": job.title,
                         "company": job.company,
                         "score": score,

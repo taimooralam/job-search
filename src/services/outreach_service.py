@@ -21,9 +21,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
 
 from bson import ObjectId
-from pymongo import MongoClient
 
 from src.common.unified_llm import invoke_unified_sync
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
 from src.services.operation_base import OperationResult, OperationService
@@ -244,18 +244,18 @@ class OutreachGenerationService(OperationService):
 
     def __init__(
         self,
-        db_client: Optional[MongoClient] = None,
+        repository: Optional[JobRepositoryInterface] = None,
         use_claude_cli: bool = False,
     ):
         """
         Initialize the outreach generation service.
 
         Args:
-            db_client: Optional MongoDB client. If None, creates one from env.
+            repository: Optional job repository. If None, uses default factory.
             use_claude_cli: If True, use Claude Code CLI (Opus 4.5) instead of LangChain.
                            Provides higher quality with MENA cultural awareness.
         """
-        self._db_client = db_client
+        self._repository = repository
         self._use_claude_cli = use_claude_cli
         self._claude_service = None
 
@@ -264,21 +264,11 @@ class OutreachGenerationService(OperationService):
             from src.services.claude_outreach_service import ClaudeOutreachService
             self._claude_service = ClaudeOutreachService()
 
-    def _get_db(self) -> MongoClient:
-        """Get or create MongoDB client."""
-        if self._db_client is not None:
-            return self._db_client
-
-        mongo_uri = (
-            os.getenv("MONGODB_URI")
-            or os.getenv("MONGO_URI")
-            or "mongodb://localhost:27017"
-        )
-        return MongoClient(mongo_uri)
-
-    def _get_db_name(self) -> str:
-        """Get database name from environment."""
-        return os.getenv("MONGO_DB_NAME", "jobs")
+    def _get_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._repository is not None:
+            return self._repository
+        return get_job_repository()
 
     def _load_candidate_profile(self) -> Optional[str]:
         """
@@ -451,13 +441,8 @@ class OutreachGenerationService(OperationService):
             logger.error(f"Invalid job ID format: {job_id} - {e}")
             return None
 
-        client = self._get_db()
-        try:
-            db = client[self._get_db_name()]
-            return db["level-2"].find_one({"_id": object_id})
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_repository()
+        return repo.find_one({"_id": object_id})
 
     def _get_contact(
         self,
@@ -936,10 +921,9 @@ class OutreachGenerationService(OperationService):
             if subject:
                 update_doc[f"{field_prefix}.linkedin_inmail_subject"] = subject
 
-        client = self._get_db()
+        repo = self._get_repository()
         try:
-            db = client[self._get_db_name()]
-            result = db["level-2"].update_one(
+            result = repo.update_one(
                 {"_id": object_id},
                 {"$set": update_doc},
             )
@@ -955,9 +939,6 @@ class OutreachGenerationService(OperationService):
         except Exception as e:
             logger.error(f"Failed to persist outreach: {e}")
             return False
-        finally:
-            if self._db_client is None:
-                client.close()
 
 
 # Convenience function for direct usage
@@ -967,7 +948,7 @@ async def generate_outreach(
     contact_type: ContactTypeField = "primary",
     tier: ModelTier = ModelTier.BALANCED,
     message_type: MessageType = "connection",
-    db_client: Optional[MongoClient] = None,
+    repository: Optional[JobRepositoryInterface] = None,
     use_claude_cli: bool = False,
 ) -> OperationResult:
     """
@@ -981,13 +962,13 @@ async def generate_outreach(
         contact_type: "primary" or "secondary"
         tier: Model tier (FAST, BALANCED, QUALITY)
         message_type: "connection" or "inmail"
-        db_client: Optional MongoDB client
+        repository: Optional job repository
         use_claude_cli: If True, use Claude Code CLI (Opus 4.5) for higher quality
 
     Returns:
         OperationResult with generated message
     """
-    service = OutreachGenerationService(db_client=db_client, use_claude_cli=use_claude_cli)
+    service = OutreachGenerationService(repository=repository, use_claude_cli=use_claude_cli)
     return await service.execute(
         job_id=job_id,
         contact_index=contact_index,

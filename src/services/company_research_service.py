@@ -26,6 +26,7 @@ from src.common.model_tiers import (
     get_model_for_operation,
     get_tier_cost_estimate,
 )
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.common.state import JobState, CompanyResearch, RoleResearch
 from src.layer3.company_researcher import CompanyResearcher
 from src.layer3.role_researcher import RoleResearcher
@@ -48,16 +49,23 @@ class CompanyResearchService(OperationService):
 
     operation_name: str = "research-company"
 
-    def __init__(self):
-        """Initialize the service with MongoDB client."""
+    def __init__(self, repository: Optional[JobRepositoryInterface] = None):
+        """Initialize the service with optional repository."""
+        self._repository = repository
         self._mongo_client: Optional[MongoClient] = None
         self._company_researcher: Optional[CompanyResearcher] = None
         self._role_researcher: Optional[RoleResearcher] = None
         self._people_mapper: Optional[PeopleMapper] = None
 
+    def _get_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._repository is not None:
+            return self._repository
+        return get_job_repository()
+
     @property
     def mongo_client(self) -> MongoClient:
-        """Lazy-initialize MongoDB client."""
+        """Lazy-initialize MongoDB client (for company_cache collection only)."""
         if self._mongo_client is None:
             mongo_uri = (
                 os.getenv("MONGODB_URI")
@@ -88,17 +96,8 @@ class CompanyResearchService(OperationService):
             self._people_mapper = PeopleMapper()
         return self._people_mapper
 
-    def _get_db(self):
-        """Get database instance."""
-        db_name = os.getenv("MONGO_DB_NAME", "jobs")
-        return self.mongo_client[db_name]
-
-    def _get_jobs_collection(self):
-        """Get jobs collection."""
-        return self._get_db()["level-2"]
-
     def _get_cache_collection(self):
-        """Get company cache collection."""
+        """Get company cache collection (uses direct MongoClient)."""
         return self.mongo_client["jobs"]["company_cache"]
 
     def _fetch_job(self, job_id: str) -> Optional[Dict[str, Any]]:
@@ -113,8 +112,8 @@ class CompanyResearchService(OperationService):
         """
         try:
             object_id = ObjectId(job_id)
-            job = self._get_jobs_collection().find_one({"_id": object_id})
-            return job
+            repo = self._get_repository()
+            return repo.find_one({"_id": object_id})
         except Exception as e:
             logger.error(f"Failed to fetch job {job_id}: {e}")
             return None
@@ -282,7 +281,8 @@ class CompanyResearchService(OperationService):
             if secondary_contacts is not None:
                 update_doc["secondary_contacts"] = secondary_contacts
 
-            result = self._get_jobs_collection().update_one(
+            repo = self._get_repository()
+            result = repo.update_one(
                 {"_id": object_id},
                 {"$set": update_doc}
             )

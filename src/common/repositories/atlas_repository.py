@@ -167,6 +167,19 @@ class AtlasJobRepository(JobRepositoryInterface):
             vps_success=None,
         )
 
+    def insert_one(self, document: Dict[str, Any]) -> WriteResult:
+        """Insert a single document."""
+        collection = self._get_collection()
+        result = collection.insert_one(document)
+
+        return WriteResult(
+            matched_count=0,
+            modified_count=0,
+            upserted_id=str(result.inserted_id) if result.inserted_id else None,
+            atlas_success=True,
+            vps_success=None,
+        )
+
     @classmethod
     def reset_connection(cls) -> None:
         """

@@ -523,16 +523,14 @@ class TestCompanyResearchServiceExecute:
 class TestCompanyResearchServicePersistence:
     """Test MongoDB persistence."""
 
-    @patch.object(CompanyResearchService, "_get_jobs_collection")
     def test_persist_research_updates_mongodb(
-        self, mock_get_collection, sample_company_research, sample_role_research
+        self, sample_company_research, sample_role_research
     ):
         """Persist research updates MongoDB document."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.return_value = MagicMock(modified_count=1)
-        mock_get_collection.return_value = mock_collection
+        mock_repository = MagicMock()
+        mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
-        service = CompanyResearchService()
+        service = CompanyResearchService(repository=mock_repository)
         result = service._persist_research(
             job_id="507f1f77bcf86cd799439011",
             company_research=sample_company_research,
@@ -541,24 +539,22 @@ class TestCompanyResearchServicePersistence:
         )
 
         assert result is True
-        mock_collection.update_one.assert_called_once()
+        mock_repository.update_one.assert_called_once()
 
         # Verify update document contains expected fields
-        call_args = mock_collection.update_one.call_args
+        call_args = mock_repository.update_one.call_args
         update_doc = call_args[0][1]["$set"]
         assert "company_research" in update_doc
         assert "role_research" in update_doc
         assert "company_summary" in update_doc  # Legacy field
         assert "scraped_job_posting" in update_doc
 
-    @patch.object(CompanyResearchService, "_get_jobs_collection")
-    def test_persist_research_handles_exception(self, mock_get_collection):
+    def test_persist_research_handles_exception(self):
         """Persist research handles exceptions gracefully."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.side_effect = Exception("MongoDB error")
-        mock_get_collection.return_value = mock_collection
+        mock_repository = MagicMock()
+        mock_repository.update_one.side_effect = Exception("MongoDB error")
 
-        service = CompanyResearchService()
+        service = CompanyResearchService(repository=mock_repository)
         result = service._persist_research(
             job_id="507f1f77bcf86cd799439011",
             company_research={"summary": "test"},
@@ -674,7 +670,6 @@ class TestCompanyResearchServiceIntegration:
     """Integration-style tests with mocked external dependencies."""
 
     @pytest.mark.asyncio
-    @patch.object(CompanyResearchService, "mongo_client", new_callable=lambda: MagicMock())
     @patch("src.services.company_research_service.CompanyResearcher")
     @patch("src.services.company_research_service.RoleResearcher")
     @patch("src.services.company_research_service.PeopleMapper")
@@ -683,17 +678,17 @@ class TestCompanyResearchServiceIntegration:
         MockPeopleMapper,
         MockRoleResearcher,
         MockCompanyResearcher,
-        mock_mongo,
         sample_job_doc,
         sample_company_research,
         sample_role_research,
     ):
         """Test full research flow with mocked dependencies."""
-        # Setup MongoDB mocks
-        mock_jobs_collection = MagicMock()
-        mock_jobs_collection.find_one.return_value = sample_job_doc
-        mock_jobs_collection.update_one.return_value = MagicMock(modified_count=1)
+        # Setup repository mock
+        mock_repository = MagicMock()
+        mock_repository.find_one.return_value = sample_job_doc
+        mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
+        # Setup cache collection mock (for company_cache)
         mock_cache_collection = MagicMock()
         mock_cache_collection.find_one.return_value = None  # Cache miss
 
@@ -702,12 +697,12 @@ class TestCompanyResearchServiceIntegration:
         mock_db = MagicMock()
         mock_db.__getitem__ = MagicMock(
             side_effect=lambda key: {
-                "level-2": mock_jobs_collection,
                 "company_cache": mock_cache_collection,
                 "operation_runs": mock_operation_runs,
             }.get(key, MagicMock())
         )
 
+        mock_mongo = MagicMock()
         mock_mongo.__getitem__ = MagicMock(return_value=mock_db)
 
         # Setup researcher mocks
@@ -737,7 +732,7 @@ class TestCompanyResearchServiceIntegration:
         MockPeopleMapper.return_value = mock_people_mapper
 
         # Execute
-        service = CompanyResearchService()
+        service = CompanyResearchService(repository=mock_repository)
         service._mongo_client = mock_mongo
 
         result = await service.execute(

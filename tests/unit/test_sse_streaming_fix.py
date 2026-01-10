@@ -172,7 +172,11 @@ class TestAsyncEmitProgress:
     @pytest.mark.asyncio
     async def test_company_research_emit_progress_is_async(self, mock_job_doc, mock_progress_callback):
         """CompanyResearchService.execute calls progress callback asynchronously."""
-        service = CompanyResearchService()
+        # Create mock repository
+        mock_repository = MagicMock()
+        mock_repository.find_one.return_value = mock_job_doc
+
+        service = CompanyResearchService(repository=mock_repository)
 
         # Mock dependencies using property attributes
         mock_company_researcher = MagicMock()
@@ -194,18 +198,12 @@ class TestAsyncEmitProgress:
             "decision_makers": []
         }
 
-        with patch.object(service, '_get_jobs_collection') as mock_jobs, \
-             patch.object(service, '_check_cache', return_value=None), \
+        with patch.object(service, '_check_cache', return_value=None), \
              patch.object(type(service), 'company_researcher', new_callable=lambda: mock_company_researcher, create=True), \
              patch.object(type(service), 'role_researcher', new_callable=lambda: mock_role_researcher, create=True), \
              patch.object(type(service), 'people_mapper', new_callable=lambda: mock_people_mapper, create=True), \
              patch.object(service, '_persist_research', return_value=True), \
              patch.object(service, '_get_cache_collection') as mock_cache:
-
-            # Mock collection
-            mock_collection = MagicMock()
-            mock_collection.find_one.return_value = mock_job_doc
-            mock_jobs.return_value = mock_collection
 
             # Mock cache collection (for saving)
             mock_cache.return_value = MagicMock()

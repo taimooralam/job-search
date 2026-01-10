@@ -22,9 +22,9 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from pymongo import MongoClient
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.services.operation_base import OperationResult, OperationService
 
 logger = logging.getLogger(__name__)
@@ -54,30 +54,20 @@ class CVGenerationService(OperationService):
 
     operation_name = "generate-cv"
 
-    def __init__(self, db_client: Optional[MongoClient] = None):
+    def __init__(self, repository: Optional[JobRepositoryInterface] = None):
         """
         Initialize the CV generation service.
 
         Args:
-            db_client: Optional MongoDB client. If None, creates one from env.
+            repository: Optional job repository. If None, uses default from factory.
         """
-        self._db_client = db_client
+        self._repository = repository
 
-    def _get_db(self) -> MongoClient:
-        """Get or create MongoDB client."""
-        if self._db_client is not None:
-            return self._db_client
-
-        mongo_uri = (
-            os.getenv("MONGODB_URI")
-            or os.getenv("MONGO_URI")
-            or "mongodb://localhost:27017"
-        )
-        return MongoClient(mongo_uri)
-
-    def _get_db_name(self) -> str:
-        """Get database name from environment."""
-        return os.getenv("MONGO_DB_NAME", "jobs")
+    def _get_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._repository is not None:
+            return self._repository
+        return get_job_repository()
 
     async def execute(
         self,
@@ -338,13 +328,8 @@ class CVGenerationService(OperationService):
             logger.error(f"Invalid job ID format: {job_id} - {e}")
             return None
 
-        client = self._get_db()
-        try:
-            db = client[self._get_db_name()]
-            return db["level-2"].find_one({"_id": object_id})
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_repository()
+        return repo.find_one({"_id": object_id})
 
     def _validate_job_data(self, job: Dict[str, Any]) -> Optional[str]:
         """
@@ -654,10 +639,8 @@ class CVGenerationService(OperationService):
             logger.error(f"Invalid job ID for persistence: {job_id}")
             return False
 
-        client = self._get_db()
+        repo = self._get_repository()
         try:
-            db = client[self._get_db_name()]
-
             # Build update document
             update_fields = {
                 "cv_text": cv_text,
@@ -675,16 +658,13 @@ class CVGenerationService(OperationService):
                 update_fields["cover_letter"] = cover_letter
                 update_fields["cover_letter_generated_at"] = datetime.utcnow()
 
-            result = db["level-2"].update_one(
+            result = repo.update_one(
                 {"_id": object_id},
                 {"$set": update_fields},
             )
             if result.modified_count > 0:
                 # Verify the CV was actually saved by reading back
-                saved_doc = db["level-2"].find_one(
-                    {"_id": object_id},
-                    {"cv_text": 1, "generated_cv": 1, "cv_generated_at": 1}
-                )
+                saved_doc = repo.find_one({"_id": object_id})
                 if saved_doc and saved_doc.get("cv_text"):
                     logger.info(
                         f"Persisted and verified CV result for job {job_id}. "
@@ -701,10 +681,7 @@ class CVGenerationService(OperationService):
                     return False
             else:
                 # Check if document exists but wasn't modified (maybe same content?)
-                existing_doc = db["level-2"].find_one(
-                    {"_id": object_id},
-                    {"cv_text": 1, "generated_cv": 1}
-                )
+                existing_doc = repo.find_one({"_id": object_id})
                 if existing_doc:
                     logger.warning(
                         f"No document modified for job {job_id} - possibly same content. "
@@ -719,6 +696,3 @@ class CVGenerationService(OperationService):
         except Exception as e:
             logger.error(f"Failed to persist CV result: {e}")
             return False
-        finally:
-            if self._db_client is None:
-                client.close()

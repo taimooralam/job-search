@@ -163,3 +163,16 @@ class JobRepositoryInterface(ABC):
             WriteResult with delete count
         """
         pass
+
+    @abstractmethod
+    def insert_one(self, document: Dict[str, Any]) -> WriteResult:
+        """
+        Insert a single document.
+
+        Args:
+            document: Document to insert
+
+        Returns:
+            WriteResult with upserted_id set to the new document's _id
+        """
+        pass

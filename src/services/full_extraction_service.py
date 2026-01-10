@@ -22,9 +22,9 @@ from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
 from bson import ObjectId
-from pymongo import MongoClient
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.common.state import JobState
 from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
 from src.layer1_4.claude_jd_extractor import JDExtractor
@@ -42,26 +42,20 @@ class FullExtractionService(OperationService):
 
     operation_name = "full-extraction"
 
-    def __init__(self, db_client: Optional[MongoClient] = None):
+    def __init__(self, repository: Optional[JobRepositoryInterface] = None):
         """
         Initialize the service.
 
         Args:
-            db_client: Optional MongoDB client. If not provided, creates one.
+            repository: Optional job repository. If not provided, uses default factory.
         """
-        self._db_client = db_client
+        self._repository = repository
 
-    def _get_db_client(self) -> MongoClient:
-        """Get or create MongoDB client."""
-        if self._db_client is not None:
-            return self._db_client
-
-        mongo_uri = (
-            os.getenv("MONGODB_URI")
-            or os.getenv("MONGO_URI")
-            or "mongodb://localhost:27017"
-        )
-        return MongoClient(mongo_uri)
+    def _get_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._repository is not None:
+            return self._repository
+        return get_job_repository()
 
     def _get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Fetch job from MongoDB by ID."""
@@ -70,13 +64,8 @@ class FullExtractionService(OperationService):
         except Exception as e:
             raise ValueError(f"Invalid job ID format: {job_id}") from e
 
-        client = self._get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            return db["level-2"].find_one({"_id": object_id})
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_repository()
+        return repo.find_one({"_id": object_id})
 
     def _get_jd_text(self, job: Dict[str, Any]) -> str:
         """Extract JD text from job document."""
@@ -420,16 +409,10 @@ class FullExtractionService(OperationService):
             logger.error(f"Invalid job ID for persistence: {job_id}")
             return False
 
-        client = self._get_db_client()
+        repo = self._get_repository()
         try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            collection = db["level-2"]
-
             # Get existing annotations and URL fields to preserve/normalize them
-            job = collection.find_one(
-                {"_id": object_id},
-                {"jd_annotations": 1, "job_url": 1, "jobUrl": 1},
-            )
+            job = repo.find_one({"_id": object_id})
             existing_annotations = job.get("jd_annotations", {}) if job else {}
 
             # Update with processed JD (for annotation UI)
@@ -481,7 +464,7 @@ class FullExtractionService(OperationService):
                 update_doc["job_url"] = normalized_url
                 update_doc["jobUrl"] = normalized_url
 
-            result = collection.update_one(
+            result = repo.update_one(
                 {"_id": object_id},
                 {"$set": update_doc},
             )
@@ -491,9 +474,6 @@ class FullExtractionService(OperationService):
         except Exception as e:
             logger.error(f"Failed to persist extraction results: {e}")
             return False
-        finally:
-            if self._db_client is None:
-                client.close()
 
     async def execute(
         self,
@@ -768,7 +748,7 @@ async def full_extraction(
     job_id: str,
     tier: ModelTier = ModelTier.BALANCED,
     use_llm: bool = True,
-    db_client: Optional[MongoClient] = None,
+    repository: Optional[JobRepositoryInterface] = None,
 ) -> OperationResult:
     """
     Convenience function for full JD extraction.
@@ -777,10 +757,10 @@ async def full_extraction(
         job_id: MongoDB ObjectId of the job
         tier: Model tier (default: BALANCED)
         use_llm: Whether to use LLM (default: True)
-        db_client: Optional MongoDB client
+        repository: Optional job repository for MongoDB operations
 
     Returns:
         OperationResult with extraction data
     """
-    service = FullExtractionService(db_client=db_client)
+    service = FullExtractionService(repository=repository)
     return await service.execute(job_id=job_id, tier=tier, use_llm=use_llm)

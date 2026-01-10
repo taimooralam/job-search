@@ -122,8 +122,8 @@ def sample_job_document(sample_job_id, sample_contact):
 
 
 @pytest.fixture
-def mock_db_client():
-    """Mock MongoDB client."""
+def mock_repository():
+    """Mock job repository."""
     mock = MagicMock()
     return mock
 
@@ -205,15 +205,15 @@ class TestOutreachGenerationServiceInit:
         service = OutreachGenerationService()
         assert service.operation_name == "generate-outreach"
 
-    def test_accepts_db_client(self, mock_db_client):
-        """Should accept optional db_client."""
-        service = OutreachGenerationService(db_client=mock_db_client)
-        assert service._db_client is mock_db_client
+    def test_accepts_repository(self, mock_repository):
+        """Should accept optional repository."""
+        service = OutreachGenerationService(repository=mock_repository)
+        assert service._repository is mock_repository
 
-    def test_db_client_defaults_to_none(self):
-        """Should default db_client to None."""
+    def test_repository_defaults_to_none(self):
+        """Should default repository to None."""
         service = OutreachGenerationService()
-        assert service._db_client is None
+        assert service._repository is None
 
 
 # =============================================================================
@@ -909,91 +909,67 @@ class TestOutreachGenerationServiceExecuteErrors:
 class TestOutreachGenerationServicePersistOutreach:
     """Tests for _persist_outreach method."""
 
-    def test_updates_connection_message(self, sample_job_id):
+    def test_updates_connection_message(self, sample_job_id, mock_repository):
         """Should update connection message in correct contact."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.return_value = MagicMock(modified_count=1)
+        mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
+        service = OutreachGenerationService(repository=mock_repository)
 
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = OutreachGenerationService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._persist_outreach(
-                job_id=sample_job_id,
-                contact_type="primary",
-                contact_index=0,
-                message_type="connection",
-                message="Test message",
-            )
+        result = service._persist_outreach(
+            job_id=sample_job_id,
+            contact_type="primary",
+            contact_index=0,
+            message_type="connection",
+            message="Test message",
+        )
 
         assert result is True
-        mock_collection.update_one.assert_called_once()
+        mock_repository.update_one.assert_called_once()
 
         # Check update document
-        call_args = mock_collection.update_one.call_args[0][1]
+        call_args = mock_repository.update_one.call_args[0][1]
         assert "primary_contacts.0.linkedin_connection_message" in call_args["$set"]
 
-    def test_updates_inmail_with_subject(self, sample_job_id):
+    def test_updates_inmail_with_subject(self, sample_job_id, mock_repository):
         """Should update InMail message and subject."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.return_value = MagicMock(modified_count=1)
+        mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
+        service = OutreachGenerationService(repository=mock_repository)
 
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = OutreachGenerationService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._persist_outreach(
-                job_id=sample_job_id,
-                contact_type="primary",
-                contact_index=0,
-                message_type="inmail",
-                message="InMail body",
-                subject="InMail subject",
-            )
+        result = service._persist_outreach(
+            job_id=sample_job_id,
+            contact_type="primary",
+            contact_index=0,
+            message_type="inmail",
+            message="InMail body",
+            subject="InMail subject",
+        )
 
         assert result is True
 
         # Check update document includes both message and subject
-        call_args = mock_collection.update_one.call_args[0][1]
+        call_args = mock_repository.update_one.call_args[0][1]
         assert "primary_contacts.0.linkedin_inmail" in call_args["$set"]
         assert "primary_contacts.0.linkedin_inmail_subject" in call_args["$set"]
 
-    def test_updates_secondary_contact(self, sample_job_id):
+    def test_updates_secondary_contact(self, sample_job_id, mock_repository):
         """Should update secondary contact correctly."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.return_value = MagicMock(modified_count=1)
+        mock_repository.update_one.return_value = MagicMock(modified_count=1)
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
+        service = OutreachGenerationService(repository=mock_repository)
 
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = OutreachGenerationService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._persist_outreach(
-                job_id=sample_job_id,
-                contact_type="secondary",
-                contact_index=2,
-                message_type="connection",
-                message="Test message",
-            )
+        result = service._persist_outreach(
+            job_id=sample_job_id,
+            contact_type="secondary",
+            contact_index=2,
+            message_type="connection",
+            message="Test message",
+        )
 
         assert result is True
 
         # Check correct path used
-        call_args = mock_collection.update_one.call_args[0][1]
+        call_args = mock_repository.update_one.call_args[0][1]
         assert "secondary_contacts.2.linkedin_connection_message" in call_args["$set"]
 
     def test_returns_false_on_invalid_job_id(self):
@@ -1010,27 +986,19 @@ class TestOutreachGenerationServicePersistOutreach:
 
         assert result is False
 
-    def test_returns_false_on_db_error(self, sample_job_id):
+    def test_returns_false_on_db_error(self, sample_job_id, mock_repository):
         """Should return False on database error."""
-        mock_collection = MagicMock()
-        mock_collection.update_one.side_effect = Exception("DB error")
+        mock_repository.update_one.side_effect = Exception("DB error")
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
+        service = OutreachGenerationService(repository=mock_repository)
 
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = OutreachGenerationService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._persist_outreach(
-                job_id=sample_job_id,
-                contact_type="primary",
-                contact_index=0,
-                message_type="connection",
-                message="Test",
-            )
+        result = service._persist_outreach(
+            job_id=sample_job_id,
+            contact_type="primary",
+            contact_index=0,
+            message_type="connection",
+            message="Test",
+        )
 
         assert result is False
 
@@ -1151,8 +1119,8 @@ class TestGenerateOutreachConvenienceFunction:
         assert call_kwargs["message_type"] == "connection"
 
     @pytest.mark.asyncio
-    async def test_passes_db_client_to_service(self, sample_job_id, mock_db_client):
-        """generate_outreach should pass db_client to service."""
+    async def test_passes_repository_to_service(self, sample_job_id, mock_repository):
+        """generate_outreach should pass repository to service."""
         with patch.object(
             OutreachGenerationService, "__init__", return_value=None
         ) as mock_init, patch.object(
@@ -1170,10 +1138,10 @@ class TestGenerateOutreachConvenienceFunction:
             await generate_outreach(
                 job_id=sample_job_id,
                 contact_index=0,
-                db_client=mock_db_client,
+                repository=mock_repository,
             )
 
-        mock_init.assert_called_once_with(db_client=mock_db_client, use_claude_cli=False)
+        mock_init.assert_called_once_with(repository=mock_repository, use_claude_cli=False)
 
 
 # =============================================================================

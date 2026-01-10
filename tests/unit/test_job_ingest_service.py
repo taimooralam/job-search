@@ -26,20 +26,26 @@ from src.services.job_sources import JobData
 @pytest.fixture
 def mock_db():
     """Mock MongoDB database with collections."""
-    mock_level2 = MagicMock()
     mock_system_state = MagicMock()
 
     mock_db_instance = MagicMock()
     mock_db_instance.__getitem__.side_effect = lambda name: {
-        "level-2": mock_level2,
         "system_state": mock_system_state,
-    }[name]
+    }.get(name, MagicMock())
 
     return {
         "db": mock_db_instance,
-        "level2": mock_level2,
         "system_state": mock_system_state,
     }
+
+
+@pytest.fixture
+def mock_repository():
+    """Mock job repository for level-2 operations."""
+    mock_repo = MagicMock()
+    mock_repo.find_one.return_value = None  # Default: no duplicates
+    mock_repo.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
+    return mock_repo
 
 
 @pytest.fixture
@@ -320,19 +326,17 @@ class TestIngestServiceIngestion:
     """Tests for the main ingest_jobs method."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_success(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_success(self, mock_db, mock_repository, sample_jobs):
         """Should ingest jobs successfully with scoring."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
+        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
 
-        # Mock find_one to return None (no duplicates)
-        mock_db["level2"].find_one.return_value = None
+        # Mock repository to return None (no duplicates)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None  # No previous state
 
         # Mock insert_one to return inserted ID
-        mock_result = MagicMock()
-        mock_result.inserted_id = ObjectId()
-        mock_db["level2"].insert_one.return_value = mock_result
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Mock quick_score_job at the right path
         with patch("src.services.quick_scorer.quick_score_job") as mock_scorer:
@@ -357,13 +361,13 @@ class TestIngestServiceIngestion:
         assert len(result.ingested_jobs) == 3
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_skip_scoring(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_skip_scoring(self, mock_db, mock_repository, sample_jobs):
         """Should skip LLM scoring when skip_scoring=True."""
         # Arrange
-        service = IngestService(mock_db["db"])
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None  # No previous state
-        mock_db["level2"].insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Act
         result = await service.ingest_jobs(
@@ -381,24 +385,21 @@ class TestIngestServiceIngestion:
             assert job["score"] == 75
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_skips_duplicates(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_skips_duplicates(self, mock_db, mock_repository, sample_jobs):
         """Should skip jobs that already exist (duplicate dedupeKey)."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db["db"], repository=mock_repository)
 
-        # Mock find_one to return existing job for first job
+        # Mock repository find_one to return existing job for first job
         def find_one_side_effect(query):
-            # system_state queries return None
-            if "_id" in query and query["_id"].startswith("ingest_"):
-                return None
             # level2 queries - first job is duplicate
             if "techcorp" in query.get("dedupeKey", "").lower():
                 return {"_id": ObjectId()}  # Duplicate found
             return None
 
-        mock_db["level2"].find_one.side_effect = find_one_side_effect
-        mock_db["system_state"].find_one.side_effect = find_one_side_effect
-        mock_db["level2"].insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_repository.find_one.side_effect = find_one_side_effect
+        mock_db["system_state"].find_one.return_value = None
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Act
         result = await service.ingest_jobs(
@@ -413,13 +414,13 @@ class TestIngestServiceIngestion:
         assert result.ingested == 2  # Only 2 inserted
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_filters_below_threshold(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_filters_below_threshold(self, mock_db, mock_repository, sample_jobs):
         """Should skip jobs below score threshold."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None
-        mock_db["level2"].insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Mock scorer to return varying scores
         scores = [85, 65, 75]  # Second job below threshold
@@ -439,10 +440,10 @@ class TestIngestServiceIngestion:
         assert result.ingested == 2
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_incremental_filtering(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_incremental_filtering(self, mock_db, mock_repository, sample_jobs):
         """Should filter jobs by posted_date in incremental mode."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db["db"], repository=mock_repository)
         last_fetch = datetime.utcnow() - timedelta(days=1)
 
         # Set posted_date on jobs (one old, two new)
@@ -454,8 +455,8 @@ class TestIngestServiceIngestion:
             "_id": "ingest_test",
             "last_fetch_at": last_fetch,
         }
-        mock_db["level2"].find_one.return_value = None
-        mock_db["level2"].insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_repository.find_one.return_value = None
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Act
         result = await service.ingest_jobs(
@@ -479,21 +480,21 @@ class TestIngestServiceErrorHandling:
     """Tests for error handling in ingestion."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_handles_insert_error(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_handles_insert_error(self, mock_db, mock_repository, sample_jobs):
         """Should continue processing when one job fails to insert."""
         # Arrange
-        service = IngestService(mock_db["db"])
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None
 
         # First insert succeeds, second fails, third succeeds
         insert_results = [
-            MagicMock(inserted_id=ObjectId()),
+            MagicMock(upserted_id=str(ObjectId())),
             Exception("Insert failed"),
-            MagicMock(inserted_id=ObjectId()),
+            MagicMock(upserted_id=str(ObjectId())),
         ]
 
-        mock_db["level2"].insert_one.side_effect = insert_results
+        mock_repository.insert_one.side_effect = insert_results
 
         # Act
         result = await service.ingest_jobs(
@@ -508,13 +509,13 @@ class TestIngestServiceErrorHandling:
         assert result.errors == 1  # 1 failed
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_handles_scoring_error(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_handles_scoring_error(self, mock_db, mock_repository, sample_jobs):
         """Should skip job when scoring fails."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None
-        mock_db["level2"].insert_one.return_value = MagicMock(inserted_id=ObjectId())
+        mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Mock scorer to fail on second job
         with patch("src.services.quick_scorer.quick_score_job") as mock_scorer:
@@ -545,10 +546,10 @@ class TestIngestServiceEdgeCases:
     """Tests for edge cases in ingestion."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_empty_list(self, mock_db):
+    async def test_ingest_jobs_empty_list(self, mock_db, mock_repository):
         """Should handle empty job list gracefully."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db["db"], repository=mock_repository)
 
         # Act
         result = await service.ingest_jobs(
@@ -562,13 +563,13 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_all_duplicates(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_all_duplicates(self, mock_db, mock_repository, sample_jobs):
         """Should handle case where all jobs are duplicates."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db["db"], repository=mock_repository)
 
         # All jobs already exist
-        mock_db["level2"].find_one.return_value = {"_id": ObjectId()}
+        mock_repository.find_one.return_value = {"_id": ObjectId()}
         mock_db["system_state"].find_one.return_value = None
 
         # Act
@@ -584,11 +585,11 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_all_below_threshold(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_all_below_threshold(self, mock_db, mock_repository, sample_jobs):
         """Should handle case where all jobs score below threshold."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None
 
         # All jobs score low
@@ -608,11 +609,11 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_none_score(self, mock_db, sample_jobs):
+    async def test_ingest_jobs_none_score(self, mock_db, mock_repository, sample_jobs):
         """Should handle None score from scorer."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
-        mock_db["level2"].find_one.return_value = None
+        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        mock_repository.find_one.return_value = None
         mock_db["system_state"].find_one.return_value = None
 
         # Scorer returns None
