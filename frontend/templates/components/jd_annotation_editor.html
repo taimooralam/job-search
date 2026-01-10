@@ -9,7 +9,7 @@
   - mode: 'panel' (default) or 'sidebar'
   - id_prefix: Element ID prefix ('' for detail, 'batch-' for batch)
   - job: The job object
-  - show_header_actions: Show Structure JD, Suggestions, Strengths buttons
+  - show_header_actions: Show Auto-Annotate button
   - show_view_toggle: Show JD View / List View toggle
   - show_coverage: Show coverage bar in header
   - show_save_indicator: Show save indicator in header
@@ -117,19 +117,6 @@
             {% endif %}
 
             {% if show_header_actions %}
-            {# Structure JD Button #}
-            <button onclick="processJDForAnnotation()"
-                    id="{{ id_prefix }}process-jd-btn"
-                    class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium
-                           rounded-md text-white bg-purple-600 hover:bg-purple-700 transition
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                    title="Structure JD into sections for easier annotation">
-                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
-                </svg>
-                <span class="hidden sm:inline">Structure JD</span>
-            </button>
-
             {# Auto-Generate Annotations Button #}
             <button onclick="generateAnnotations()"
                     id="{{ id_prefix }}generate-annotations-btn"
@@ -141,32 +128,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
                 <span class="hidden sm:inline">Auto-Annotate</span>
-            </button>
-
-            {# Generate Suggestions Button #}
-            <button onclick="generateSuggestions()"
-                    id="{{ id_prefix }}generate-suggestions-btn"
-                    class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium
-                           rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    title="Generate improvement suggestions for gaps">
-                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                </svg>
-                <span class="hidden sm:inline">Suggestions</span>
-            </button>
-
-            {# Rebuild Priors Button #}
-            <button onclick="rebuildPriors()"
-                    id="{{ id_prefix }}rebuild-priors-btn"
-                    class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium
-                           rounded-md text-white bg-amber-600 hover:bg-amber-700 transition
-                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                    title="Rebuild annotation priors from all historical annotations">
-                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                <span class="hidden sm:inline">Rebuild</span>
             </button>
             {% endif %}
         </div>
@@ -368,13 +329,9 @@
                     <svg class="h-12 w-12 mx-auto {{ theme_text_tertiary }} mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="{{ theme_text_secondary }}">Job description not {% if mode == 'panel' %}structured{% else %}available{% endif %} yet</p>
+                    <p class="{{ theme_text_secondary }}">Job description not analyzed yet</p>
                     <p class="text-xs {{ theme_text_tertiary }} mt-2">
-                        {% if mode == 'panel' %}
-                        Click <strong>"Structure JD"</strong> button above to parse into annotatable sections
-                        {% else %}
-                        Process the JD from the job detail page first
-                        {% endif %}
+                        Run <strong>"Analyze Job"</strong> from the pipeline menu to process the JD
                     </p>
                 </div>
 
