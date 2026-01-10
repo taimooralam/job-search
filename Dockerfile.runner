@@ -5,6 +5,9 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
+# Pre-download sentence-transformers model to this location during build
+ENV SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence_transformers
+
 WORKDIR /app
 
 # System deps for Playwright/Chromium + Node.js for Claude Code CLI
@@ -49,6 +52,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir playwright \
     && python -m playwright install --with-deps chromium
+
+# Pre-download sentence-transformers model (~80MB) to eliminate first-run latency
+# Model is used by annotation suggestion system for semantic matching
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY . .
 
