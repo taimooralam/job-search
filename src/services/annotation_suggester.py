@@ -596,6 +596,7 @@ def _create_annotation(
         "requirement_type": requirement_type,
         "passion": passion,
         "identity": identity,
+        "matching_skill": match_ctx.match if match_ctx else None,
         "original_values": {
             "relevance": relevance,
             "requirement_type": requirement_type,
