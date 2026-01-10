@@ -401,11 +401,21 @@ def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
             return {"success": False, "error": "Job not found"}
 
         # 2. Get structured JD sections
+        # The JD structuring saves to 'processed_jd_sections' as a list of section objects
         jd_annotations = job.get("jd_annotations", {})
-        structured = jd_annotations.get("structured", {})
+        processed_sections = jd_annotations.get("processed_jd_sections", [])
 
-        if not structured:
+        if not processed_sections:
             return {"success": False, "error": "No structured JD found. Please structure the JD first."}
+
+        # Convert list format to dict keyed by section_type for easier processing
+        structured = {}
+        for section in processed_sections:
+            section_type = section.get("section_type", "other")
+            items = section.get("items", [])
+            if section_type not in structured:
+                structured[section_type] = []
+            structured[section_type].extend(items)
 
         # 3. Load priors (rebuild if needed)
         priors = load_priors()
@@ -443,6 +453,7 @@ def generate_annotations_for_job(job_id: str) -> Dict[str, Any]:
             ("benefits", structured.get("benefits", [])),
             ("nice_to_have", structured.get("nice_to_have", [])),
             ("about_company", structured.get("about_company", [])),
+            ("about_role", structured.get("about_role", [])),
             ("other", structured.get("other", [])),
         ]
 
