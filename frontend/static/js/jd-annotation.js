@@ -2921,7 +2921,9 @@ window.rebuildPriors = rebuildPriors;
  * Only generates annotations for JD items that match the user's profile.
  */
 async function generateAnnotations() {
-    if (!annotationManager) {
+    // Use getActiveAnnotationManager to work in both detail page and batch page contexts
+    const manager = getActiveAnnotationManager();
+    if (!manager) {
         console.error('Annotation manager not initialized');
         return;
     }
@@ -2943,7 +2945,7 @@ async function generateAnnotations() {
     }
 
     try {
-        const response = await fetch(`/api/runner/jobs/${annotationManager.jobId}/generate-annotations`, {
+        const response = await fetch(`/api/runner/jobs/${manager.jobId}/generate-annotations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -2957,7 +2959,7 @@ async function generateAnnotations() {
 
         if (data.success) {
             // Reload annotations to show the newly created ones
-            await annotationManager.loadAnnotations();
+            await manager.loadAnnotations();
 
             // Show success message
             const msg = `Created ${data.created} annotations (${data.skipped} JD items skipped - no match found)`;
