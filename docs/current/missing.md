@@ -1,8 +1,8 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-12-26 (GAP-106 enhanced + GAP-113 COMPLETE - emit callbacks for frontend streaming visibility in pain point extraction)
+**Last Updated**: 2025-01-10 (Repository Pattern Audit - Phase 1 complete for level-2 and annotation_priors collections)
 
-> **See also**: `plans/architecture.md` | `plans/next-steps.md` | `bugs.md`
+> **See also**: `docs/current/architecture.md` | `bugs.md`
 
 ---
 
@@ -17,6 +17,38 @@
 | **Total** | **93** (74 fixed/documented, 15 open) | All identified gaps |
 
 **Test Coverage**: 1562 tests passing (1521 before + 41 new MENA detector tests), 35 skipped, E2E tests pending
+
+---
+
+### Repository Pattern Migration Audit (2025-01-10)
+
+**Status**: Phase 1 COMPLETE (Atlas-only), dual-write pending for VPS migration
+
+#### Migrated Collections
+
+| Collection | Repository | Commit |
+|------------|------------|--------|
+| `level-2` (jobs) | `JobRepositoryInterface` | `5e0c613e` |
+| `annotation_priors` | `PriorsRepositoryInterface` | `147e8c97` |
+
+#### Pending Migration (12+ collections)
+
+| Collection | Files Using Direct Access | Priority |
+|------------|---------------------------|----------|
+| **level-2** (additional) | 9 service/layer files | HIGH |
+| `master_cv_metadata` | `src/services/master_cv_store.py` | MEDIUM |
+| `master_cv_taxonomy` | `src/services/master_cv_store.py` | MEDIUM |
+| `master_cv_roles` | `src/services/master_cv_store.py` | MEDIUM |
+| `master_cv_history` | `src/services/master_cv_store.py` | MEDIUM |
+| `annotation_tracking` | `src/services/annotation_tracking_service.py` | LOW |
+| `operation_runs` | `runner_service/routes/operations.py` | LOW |
+| `job_search_cache` | `src/services/job_search_service.py` | LOW |
+| `job_search_index` | `src/services/job_search_service.py` | LOW |
+| `system_state` | Various scripts | LOW |
+
+**Next**: Complete level-2 migration (9 service files still use direct MongoClient)
+
+See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
 
 ---
 
