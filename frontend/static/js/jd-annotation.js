@@ -771,9 +771,6 @@ class AnnotationManager {
         const popover = document.getElementById(this.config.popoverId);
         if (!popover) return;
 
-        // Store editing state
-        this.editingAnnotationId = editingAnnotation?.id || null;
-
         // Update header text based on mode
         const titleEl = document.getElementById('popover-title');
         if (titleEl) {
@@ -806,8 +803,12 @@ class AnnotationManager {
             };
         }
 
-        // Reset form state first
+        // Reset form state first (this clears editingAnnotationId)
         this.resetPopoverForm();
+
+        // Store editing state AFTER resetPopoverForm() to avoid being cleared
+        // This is critical: resetPopoverForm() sets editingAnnotationId = null
+        this.editingAnnotationId = editingAnnotation?.id || null;
 
         // Auto-select defaults for new annotations (smoother UX)
         if (!editingAnnotation) {
@@ -1210,6 +1211,7 @@ class AnnotationManager {
         const originalText = this.popoverState.originalText || this.popoverState.selectedText;
 
         const isEditing = !!this.editingAnnotationId;
+        console.log('[createAnnotationFromPopover] isEditing:', isEditing, 'editingAnnotationId:', this.editingAnnotationId);
 
         if (isEditing) {
             // Update existing annotation
