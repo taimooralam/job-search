@@ -47,6 +47,23 @@ def mock_db(mocker):
 
 
 @pytest.fixture
+def mock_system_state_repository(mocker):
+    """Mock SystemStateRepository for state management operations."""
+    mock_repo = MagicMock()
+    mock_repo.get_state.return_value = None
+    mock_repo.set_state.return_value = True
+    mock_repo.delete_state.return_value = True
+    mock_repo.push_to_array.return_value = True
+
+    mocker.patch(
+        "runner_service.routes.job_ingest.get_system_state_repository",
+        return_value=mock_repo,
+    )
+
+    return mock_repo
+
+
+@pytest.fixture
 def mock_himalaya_source(mocker):
     """Mock HimalayasSource for job fetching."""
     mock_source = MagicMock()
@@ -448,10 +465,10 @@ class TestIngestResultEndpoint:
 class TestGetIngestState:
     """Tests for getting ingestion state."""
 
-    def test_get_ingest_state_success(self, client, auth_headers, mock_db):
+    def test_get_ingest_state_success(self, client, auth_headers, mock_system_state_repository):
         """Should return ingestion state for a source."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "last_fetch_at": datetime(2025, 1, 15, 10, 0, 0),
             "updated_at": datetime(2025, 1, 15, 10, 5, 0),
@@ -475,14 +492,12 @@ class TestGetIngestState:
         assert data["source"] == "himalayas_auto"
         assert data["last_fetch_at"] is not None
         assert data["last_run_stats"]["ingested"] == 25
-        mock_db["system_state"].find_one.assert_called_once_with(
-            {"_id": "ingest_himalayas_auto"}
-        )
+        mock_system_state_repository.get_state.assert_called_once_with("ingest_himalayas_auto")
 
-    def test_get_ingest_state_no_history(self, client, auth_headers, mock_db):
+    def test_get_ingest_state_no_history(self, client, auth_headers, mock_system_state_repository):
         """Should return message when no history exists."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # Act
         response = client.get(
@@ -497,10 +512,10 @@ class TestGetIngestState:
         assert data["last_fetch_at"] is None
         assert "No ingestion history" in data["message"]
 
-    def test_get_ingest_state_mongodb_error(self, client, auth_headers, mock_db):
+    def test_get_ingest_state_mongodb_error(self, client, auth_headers, mock_system_state_repository):
         """Should return 500 on database error."""
         # Arrange
-        mock_db["system_state"].find_one.side_effect = Exception("DB error")
+        mock_system_state_repository.get_state.side_effect = Exception("DB error")
 
         # Act
         response = client.get(
@@ -520,12 +535,10 @@ class TestGetIngestState:
 class TestResetIngestState:
     """Tests for resetting ingestion state."""
 
-    def test_reset_ingest_state_success(self, client, auth_headers, mock_db):
+    def test_reset_ingest_state_success(self, client, auth_headers, mock_system_state_repository):
         """Should delete ingestion state successfully."""
         # Arrange
-        mock_result = MagicMock()
-        mock_result.deleted_count = 1
-        mock_db["system_state"].delete_one.return_value = mock_result
+        mock_system_state_repository.delete_state.return_value = True
 
         # Act
         response = client.delete(
@@ -538,16 +551,12 @@ class TestResetIngestState:
         data = response.json()
         assert data["success"] is True
         assert "Reset" in data["message"]
-        mock_db["system_state"].delete_one.assert_called_once_with(
-            {"_id": "ingest_himalayas_auto"}
-        )
+        mock_system_state_repository.delete_state.assert_called_once_with("ingest_himalayas_auto")
 
-    def test_reset_ingest_state_no_state_found(self, client, auth_headers, mock_db):
+    def test_reset_ingest_state_no_state_found(self, client, auth_headers, mock_system_state_repository):
         """Should return success even if no state exists."""
         # Arrange
-        mock_result = MagicMock()
-        mock_result.deleted_count = 0
-        mock_db["system_state"].delete_one.return_value = mock_result
+        mock_system_state_repository.delete_state.return_value = False
 
         # Act
         response = client.delete(
@@ -561,10 +570,10 @@ class TestResetIngestState:
         assert data["success"] is True
         assert "No state found" in data["message"]
 
-    def test_reset_ingest_state_mongodb_error(self, client, auth_headers, mock_db):
+    def test_reset_ingest_state_mongodb_error(self, client, auth_headers, mock_system_state_repository):
         """Should return 500 on database error."""
         # Arrange
-        mock_db["system_state"].delete_one.side_effect = Exception("DB error")
+        mock_system_state_repository.delete_state.side_effect = Exception("DB error")
 
         # Act
         response = client.delete(
@@ -584,10 +593,10 @@ class TestResetIngestState:
 class TestGetIngestHistory:
     """Tests for getting ingestion run history."""
 
-    def test_get_ingest_history_success(self, client, auth_headers, mock_db):
+    def test_get_ingest_history_success(self, client, auth_headers, mock_system_state_repository):
         """Should return ingestion history with default limit."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "run_history": [
                 {
@@ -620,7 +629,7 @@ class TestGetIngestHistory:
         # Verify sorted by timestamp descending
         assert data["runs"][0]["timestamp"] > data["runs"][1]["timestamp"]
 
-    def test_get_ingest_history_with_limit(self, client, auth_headers, mock_db):
+    def test_get_ingest_history_with_limit(self, client, auth_headers, mock_system_state_repository):
         """Should respect limit parameter."""
         # Arrange
         runs = [
@@ -630,7 +639,7 @@ class TestGetIngestHistory:
             }
             for i in range(1, 26)  # 25 runs
         ]
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "run_history": runs,
         }
@@ -647,10 +656,10 @@ class TestGetIngestHistory:
         assert len(data["runs"]) == 10
         assert data["total_runs"] == 25
 
-    def test_get_ingest_history_limit_max(self, client, auth_headers, mock_db):
+    def test_get_ingest_history_limit_max(self, client, auth_headers, mock_system_state_repository):
         """Should enforce maximum limit of 50."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "run_history": [],
         }
@@ -664,10 +673,10 @@ class TestGetIngestHistory:
         # Assert - Should reject limit > 50
         assert response.status_code == 422
 
-    def test_get_ingest_history_no_history(self, client, auth_headers, mock_db):
+    def test_get_ingest_history_no_history(self, client, auth_headers, mock_system_state_repository):
         """Should return empty list when no history exists."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # Act
         response = client.get(
@@ -682,10 +691,10 @@ class TestGetIngestHistory:
         assert data["runs"] == []
         assert "No ingestion history" in data["message"]
 
-    def test_get_ingest_history_empty_run_history(self, client, auth_headers, mock_db):
+    def test_get_ingest_history_empty_run_history(self, client, auth_headers, mock_system_state_repository):
         """Should handle state with empty run_history array."""
         # Arrange
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "run_history": [],
         }
