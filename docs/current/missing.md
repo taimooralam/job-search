@@ -20,33 +20,34 @@
 
 ---
 
-### Repository Pattern Migration Audit (2025-01-10)
+### Repository Pattern Migration Audit (2025-01-11)
 
-**Status**: Phase 1 COMPLETE (Atlas-only), dual-write pending for VPS migration
+**Status**: Phases 1, 4-6 COMPLETE. Phase 2 (level-2 remaining) and Phase 3 (master_cv_*) pending.
 
 #### Migrated Collections
 
-| Collection | Repository | Commit |
-|------------|------------|--------|
-| `level-2` (jobs) | `JobRepositoryInterface` | `5e0c613e` |
-| `annotation_priors` | `PriorsRepositoryInterface` | `147e8c97` |
+| Collection | Repository | Commit | Phase |
+|------------|------------|--------|-------|
+| `level-2` (jobs) | `JobRepositoryInterface` | `5e0c613e` | 1 |
+| `annotation_priors` | `PriorsRepositoryInterface` | `147e8c97` | 1 |
+| `system_state` | `SystemStateRepositoryInterface` | `9554b9c7` | 4 |
+| `operation_runs` | `OperationRunsRepositoryInterface` | `e6afc170` | 4 |
+| `job_search_cache` | `JobSearchRepositoryInterface` | `bbb98e76` | 5 |
+| `job_search_index` | `JobSearchRepositoryInterface` | `bbb98e76` | 5 |
+| `annotation_tracking` | `AnnotationTrackingRepositoryInterface` | `18866616` | 6 |
+| `company_cache` | `CompanyCacheRepositoryInterface` | `034507ce` | 6 |
 
-#### Pending Migration (12+ collections)
+#### Pending Migration
 
-| Collection | Files Using Direct Access | Priority |
-|------------|---------------------------|----------|
-| **level-2** (additional) | 9 service/layer files | HIGH |
-| `master_cv_metadata` | `src/services/master_cv_store.py` | MEDIUM |
-| `master_cv_taxonomy` | `src/services/master_cv_store.py` | MEDIUM |
-| `master_cv_roles` | `src/services/master_cv_store.py` | MEDIUM |
-| `master_cv_history` | `src/services/master_cv_store.py` | MEDIUM |
-| `annotation_tracking` | `src/services/annotation_tracking_service.py` | LOW |
-| `operation_runs` | `runner_service/routes/operations.py` | LOW |
-| `job_search_cache` | `src/services/job_search_service.py` | LOW |
-| `job_search_index` | `src/services/job_search_service.py` | LOW |
-| `system_state` | Various scripts | LOW |
+| Collection | Files Using Direct Access | Priority | Phase |
+|------------|---------------------------|----------|-------|
+| **level-2** (additional) | 9 service/layer files | HIGH | 2 |
+| `master_cv_metadata` | `src/services/master_cv_store.py` | MEDIUM | 3 |
+| `master_cv_taxonomy` | `src/services/master_cv_store.py` | MEDIUM | 3 |
+| `master_cv_roles` | `src/services/master_cv_store.py` | MEDIUM | 3 |
+| `master_cv_history` | `src/services/master_cv_store.py` | MEDIUM | 3 |
 
-**Next**: Complete level-2 migration (9 service files still use direct MongoClient)
+**Next**: Phase 2 - Complete level-2 migration (9 service files still use direct MongoClient)
 
 See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
 
