@@ -1,0 +1,1177 @@
+# Achievement Review Tracker
+# Async CV bullet point review system
+# Usage: "Review next" or "Review [ID]" to start a review session
+
+version: "1.0"
+last_updated: "2026-01-01"
+
+summary:
+  total: 44
+  reviewed: 0
+  pending: 44
+  in_progress: null
+
+# Achievements sorted by priority score (lowest first = highest priority)
+achievements:
+
+  # ===========================================================================
+  # CRITICAL PRIORITY (Score 0.0) - 12 achievements
+  # These bullets are not resonating with ANY target role
+  # ===========================================================================
+
+  - id: "01_seven_one_entertainment_2"
+    title: "Architectural Runway & Technical Debt Strategy"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "0% leadership (needs 45%), 60% architecture (needs 10%)"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_6"
+    title: "Technical Vision & Business Alignment"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "All competencies at 0% - needs reframing"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_4"
+    title: "API Design & Documentation"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "0% leadership (needs 45%), 67% architecture (needs 10%)"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_8"
+    title: "Scalability Architecture"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "25% leadership (needs 45%), 75% architecture (needs 10%)"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "03_ki_labs_3"
+    title: "API Documentation & Developer Experience"
+    role_file: "03_ki_labs"
+    company: "KI Labs"
+    period: "2018-2019"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "0% leadership (needs 45%), 50% architecture + 50% process"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "03_ki_labs_4"
+    title: "MongoDB Optimization"
+    role_file: "03_ki_labs"
+    company: "KI Labs"
+    period: "2018-2019"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% delivery only - needs leadership + architecture"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "04_fortis_3"
+    title: "API Standards & Documentation"
+    role_file: "04_fortis"
+    company: "Fortis (Research)"
+    period: "2018"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "25% leadership (needs 45%), 50% process (too high)"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_3"
+    title: "CoAP Security Enhancement (OSCOAP)"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% delivery only - needs leadership context"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_5"
+    title: "Legacy Device Integration"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% architecture, 50% delivery - needs leadership"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "06_clary_icon_4"
+    title: "Interactive Onboarding Tutorial System"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 0.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% architecture - needs leadership + delivery"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  # ===========================================================================
+  # HIGH PRIORITY (Score 0.1-10.0) - 15 achievements
+  # ===========================================================================
+
+  - id: "06_clary_icon_1"
+    title: "WebRTC Video Recording System"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 2.9
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% delivery - needs leadership + architecture"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_2"
+    title: "CoAP-to-UDP Integration Middleware"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 2.9
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% architecture, 50% delivery - needs leadership"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "06_clary_icon_2"
+    title: "Real-Time Video Playback Service"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 3.1
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "All competencies at 0% - needs complete reframing"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "06_clary_icon_3"
+    title: "SIP Client Enhancement (Qt/C++)"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 3.1
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "67% delivery, 33% process - needs leadership"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "03_ki_labs_1"
+    title: "REST API Development (Large-Scale Data Pipeline)"
+    role_file: "03_ki_labs"
+    company: "KI Labs"
+    period: "2018-2019"
+    priority_score: 3.1
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% delivery, 50% process - needs leadership"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_11"
+    title: "Hiring & Team Building"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 3.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% leadership (too narrow) - needs delivery context"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "06_clary_icon_5"
+    title: "Client Delivery & Communication"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 4.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% leadership - needs delivery context"
+      recommended_variant: "communication"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_3"
+    title: "Real-Time Observability Pipeline"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 5.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% architecture, 25% leadership, 25% process - needs delivery"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_1"
+    title: "Event-Sourced CRM Platform (0->1)"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 5.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "75% architecture, 25% delivery - needs leadership"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "03_ki_labs_2"
+    title: "Comprehensive Testing Strategy"
+    role_file: "03_ki_labs"
+    company: "KI Labs"
+    period: "2018-2019"
+    priority_score: 5.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% delivery, 50% process - needs leadership"
+      recommended_variant: "quality"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_14"
+    title: "Risk Management & Strategic Communication"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 6.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% architecture - needs delivery"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "04_fortis_2"
+    title: "RabbitMQ Pub/Sub Messaging"
+    role_file: "04_fortis"
+    company: "Fortis (Research)"
+    period: "2018"
+    priority_score: 6.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% architecture - needs delivery"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_3"
+    title: "Engineering Standards & Quality"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 6.2
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["postgresql", "ci/cd", "team leadership", "kubernetes", "node.js"]
+      competency_gap: "33% leadership, 67% process - needs delivery"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "06_clary_icon_6"
+    title: "Cross-Platform Development Experience"
+    role_file: "06_clary_icon"
+    company: "Clary Icon"
+    period: "2014-2016"
+    priority_score: 6.2
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% architecture - needs leadership + delivery"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  # ===========================================================================
+  # MEDIUM PRIORITY (Score 6.3-15.0) - 10 achievements
+  # ===========================================================================
+
+  - id: "01_seven_one_entertainment_1"
+    title: "Legacy Modernization & Platform Transformation"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 6.7
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "71% architecture, 14% leadership - needs more leadership"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_6"
+    title: "Mentorship & Talent Development"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 6.7
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% leadership - needs delivery context"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_7"
+    title: "CI/CD Pipeline & Release Automation"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 7.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "team leadership", "kubernetes", "node.js"]
+      competency_gap: "75% process, 25% delivery - needs leadership"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "04_fortis_4"
+    title: "Agile Client Collaboration"
+    role_file: "04_fortis"
+    company: "Fortis (Research)"
+    period: "2018"
+    priority_score: 7.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% process - needs leadership + delivery"
+      recommended_variant: "process"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "04_fortis_1"
+    title: "Node.js Microservices Architecture"
+    role_file: "04_fortis"
+    company: "Fortis (Research)"
+    period: "2018"
+    priority_score: 8.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "100% architecture - needs leadership + delivery"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_7"
+    title: "Scalability & Performance Optimization"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 9.1
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% architecture - needs delivery"
+      recommended_variant: "architecture"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_12"
+    title: "CI/CD & Deployment Excellence"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 11.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "team leadership", "kubernetes", "node.js"]
+      competency_gap: "60% process, 40% leadership - needs delivery"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_6"
+    title: "Technical Documentation"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 12.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% process - needs delivery"
+      recommended_variant: "process"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_8"
+    title: "Monitoring & Incident Management"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 12.4
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "33% architecture, 33% process, 17% leadership - balanced but low"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_1"
+    title: "Cross-Platform IoT Control Application"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 14.7
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% architecture, 25% leadership, 25% delivery"
+      recommended_variant: "technical"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  # ===========================================================================
+  # LOW PRIORITY (Score 15.1-36.0) - 7 achievements
+  # These are performing better but still have room for improvement
+  # ===========================================================================
+
+  - id: "03_ki_labs_5"
+    title: "Agile Delivery"
+    role_file: "03_ki_labs"
+    company: "KI Labs"
+    period: "2018-2019"
+    priority_score: 17.6
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% process, 33% delivery, 17% leadership - needs more leadership"
+      recommended_variant: "process"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_9"
+    title: "Engineering Team Development & Mentorship"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 21.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "83% leadership - too narrow, needs delivery context"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_7"
+    title: "SCRUM Team Collaboration"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 24.2
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% process, 25% leadership, 25% delivery"
+      recommended_variant: "process"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_5"
+    title: "GDPR/TCF Compliance & Regulatory Success"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 28.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "33% each for leadership, architecture, delivery - balanced"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_10"
+    title: "Innovation Culture (Lean Friday)"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 30.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% delivery - close to ideal"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_13"
+    title: "Subject Matter Expertise & Stakeholder Collaboration"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 30.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "67% leadership, 33% delivery - good but needs keywords"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "01_seven_one_entertainment_4"
+    title: "DDD & Engineering Excellence Standards"
+    role_file: "01_seven_one_entertainment"
+    company: "Seven.One Entertainment"
+    period: "2020-Present"
+    priority_score: 32.9
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "33% each for leadership, architecture, delivery, process - balanced"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "05_osram_4"
+    title: "OpenAIS-Compliant CoAP Server Template"
+    role_file: "05_osram"
+    company: "OSRAM"
+    period: "2016-2018"
+    priority_score: 33.3
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 50% delivery - good balance"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_5"
+    title: "Team Leadership & Agile Delivery"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 35.6
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "kubernetes", "node.js"]
+      competency_gap: "43% delivery, 29% leadership, 29% process - needs more leadership"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
+
+  - id: "02_samdock_daypaio_2"
+    title: "Event Storming & Domain Discovery"
+    role_file: "02_samdock_daypaio"
+    company: "Samdock (Daypaio)"
+    period: "2019-2020"
+    priority_score: 36.0
+    status: pending
+    review_session: null
+    last_reviewed: null
+    gaps:
+      missing_keywords: ["angular", "postgresql", "ci/cd", "team leadership", "kubernetes"]
+      competency_gap: "50% leadership, 25% architecture, 25% delivery - best performer!"
+      recommended_variant: "leadership"
+      recommended_format: "ARIS"
+    interview_notes:
+      context: null
+      challenge: null
+      actions: null
+      metrics_verified: null
+      story_arc: null
+    enhancements:
+      core_fact_updated: false
+      variants_updated: false
+      keywords_added: []
+      skills_whitelisted: []
