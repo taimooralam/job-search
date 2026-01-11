@@ -481,6 +481,20 @@
             </div>
         </div>
 
+        <!-- Review Banner for Pending AI Suggestions -->
+        <div x-show="annotation.pendingSuggestions?.length > 0"
+             class="px-3 py-2 bg-purple-900/30 border-b border-purple-700/30 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-purple-400">&#10024;</span>
+                <span class="text-xs font-medium text-purple-200"
+                      x-text="`${annotation.pendingSuggestions?.length || 0} suggestions to review`"></span>
+            </div>
+            <button @click="annotation.acceptAllSuggestions()"
+                    class="px-3 py-1 text-[10px] font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                Accept All
+            </button>
+        </div>
+
         <!-- Persona Display (full text, collapsible) -->
         <div x-show="annotation.personaStatement"
              x-data="{ expanded: true }"

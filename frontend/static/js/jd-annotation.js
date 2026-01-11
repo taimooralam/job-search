@@ -36,6 +36,125 @@ const REQUIREMENT_COLORS = {
 const AUTOSAVE_DELAY = 1000; // 1 second (reduced for smoother UX)
 
 // ============================================================================
+// Undo Manager Class
+// ============================================================================
+
+/**
+ * UndoManager - Transaction history system for annotation actions.
+ *
+ * Supports undo/redo for:
+ * - add: Adding new annotations
+ * - delete: Deleting annotations
+ * - update: Modifying existing annotations
+ *
+ * Usage:
+ *   undoManager.push({ type: 'add', annotation: {...} });
+ *   undoManager.push({ type: 'delete', annotation: {...} });
+ *   undoManager.push({ type: 'update', annotation: {...}, previousState: {...} });
+ */
+class UndoManager {
+    /**
+     * Create an UndoManager instance
+     * @param {number} maxHistory - Maximum number of actions to keep in history (default: 50)
+     */
+    constructor(maxHistory = 50) {
+        this.undoStack = [];
+        this.redoStack = [];
+        this.maxHistory = maxHistory;
+    }
+
+    /**
+     * Record an action for undo capability
+     * @param {Object} action - The action to record
+     * @param {string} action.type - 'add' | 'delete' | 'update'
+     * @param {Object} action.annotation - The annotation object (cloned)
+     * @param {Object} [action.previousState] - For 'update' type, the previous annotation state
+     */
+    push(action) {
+        // Deep clone annotation to preserve state at this point in time
+        const clonedAction = {
+            type: action.type,
+            annotation: JSON.parse(JSON.stringify(action.annotation)),
+        };
+        if (action.previousState) {
+            clonedAction.previousState = JSON.parse(JSON.stringify(action.previousState));
+        }
+
+        this.undoStack.push(clonedAction);
+
+        // Limit history size
+        if (this.undoStack.length > this.maxHistory) {
+            this.undoStack.shift();
+        }
+
+        // Clear redo stack when new action is performed
+        this.redoStack = [];
+    }
+
+    /**
+     * Undo the last action
+     * @returns {Object|null} The action that was undone, or null if nothing to undo
+     */
+    undo() {
+        if (this.undoStack.length === 0) return null;
+        const action = this.undoStack.pop();
+        this.redoStack.push(action);
+        return action;
+    }
+
+    /**
+     * Redo the last undone action
+     * @returns {Object|null} The action that was redone, or null if nothing to redo
+     */
+    redo() {
+        if (this.redoStack.length === 0) return null;
+        const action = this.redoStack.pop();
+        this.undoStack.push(action);
+        return action;
+    }
+
+    /**
+     * Check if undo is available
+     * @returns {boolean} True if there are actions to undo
+     */
+    canUndo() {
+        return this.undoStack.length > 0;
+    }
+
+    /**
+     * Check if redo is available
+     * @returns {boolean} True if there are actions to redo
+     */
+    canRedo() {
+        return this.redoStack.length > 0;
+    }
+
+    /**
+     * Clear all history
+     */
+    clear() {
+        this.undoStack = [];
+        this.redoStack = [];
+    }
+
+    /**
+     * Get the count of actions that can be undone
+     * @returns {number} Number of actions in undo stack
+     */
+    get undoCount() {
+        return this.undoStack.length;
+    }
+
+    /**
+     * Get the count of actions that can be redone
+     * @returns {number} Number of actions in redo stack
+     */
+    get redoCount() {
+        return this.redoStack.length;
+    }
+}
+
+// ============================================================================
 // Annotation Manager Class
 // ============================================================================
 
@@ -72,9 +191,19 @@ class AnnotationManager {
             coverageBarId: config.coverageBarId || 'annotation-coverage-bar',
             coveragePctId: config.coveragePctId || 'annotation-coverage-pct',
             boostValueId: config.boostValueId || 'total-boost-value',
-            personaPanelId: config.personaPanelId || 'persona-panel-container'
+            personaPanelId: config.personaPanelId || 'persona-panel-container',
+            // Batch suggestion review banner IDs
+            reviewBannerId: config.reviewBannerId || 'review-banner',
+            pendingCountId: config.pendingCountId || 'pending-count',
+            // Undo/Redo button IDs
+            undoBtnId: config.undoBtnId || 'undo-btn',
+            redoBtnId: config.redoBtnId || 'redo-btn',
+            // ID prefix for batch mode (empty string for detail page, 'batch-' for batch)
+            idPrefix: config.idPrefix || ''
         };
         this.annotations = [];
+        // Initialize undo manager for transaction history
+        this.undoManager = new UndoManager();
         this.processedJdHtml = null;
         this.settings = {
             auto_highlight: true,
@@ -148,6 +277,40 @@ class AnnotationManager {
     }
 
     /**
+     * Set up keyboard shortcuts for undo/redo
+     * Ctrl+Z (Cmd+Z on Mac): Undo
+     * Ctrl+Y or Ctrl+Shift+Z (Cmd+Shift+Z on Mac): Redo
+     */
+    setupKeyboardShortcuts() {
+        this._undoRedoHandler = (e) => {
+            if (this._destroyed) return;
+
+            // Only handle if this manager is active (container is visible)
+            const container = document.getElementById(this.config.panelId);
+            if (!container || container.offsetParent === null) {
+                // For batch mode, check if the content container is visible instead
+                const contentContainer = document.getElementById(this.config.contentId);
+                if (!contentContainer || contentContainer.offsetParent === null) {
+                    return;
+                }
+            }
+
+            // Check for Ctrl+Z (undo) - not Shift
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            }
+            // Check for Ctrl+Y or Ctrl+Shift+Z (redo)
+            else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey) || (e.key === 'Z' && e.shiftKey))) {
+                e.preventDefault();
+                this.redo();
+            }
+        };
+
+        document.addEventListener('keydown', this._undoRedoHandler);
+    }
+
+    /**
      * Initialize the annotation manager
      */
     async init() {
@@ -162,9 +325,15 @@ class AnnotationManager {
         // Set up event listeners
         this.setupEventListeners();
 
+        // Set up keyboard shortcuts for undo/redo
+        this.setupKeyboardShortcuts();
+
         // Render initial state
         this.renderAnnotations();
         this.updateStats();
+
+        // Update undo/redo button states
+        this.updateUndoRedoButtons();
     }
 
     /**
@@ -925,6 +1094,9 @@ class AnnotationManager {
             this.expandPopoverField('keywords');
         }
 
+        // Show AI suggestion section for auto-generated annotations
+        this.populateAISuggestionSection(annotation);
+
         // Store state
         this.popoverState.selectedText = annotation.target?.text || '';
         this.popoverState.relevance = annotation.relevance;
@@ -934,6 +1106,55 @@ class AnnotationManager {
         this.popoverState.reframeNote = annotation.reframe_note || '';
         this.popoverState.strategicNote = annotation.strategic_note || '';
         this.popoverState.keywords = annotation.suggested_keywords?.join(', ') || '';
+    }
+
+    /**
+     * Populate the AI suggestion section for auto-generated annotations
+     * Shows confidence badge and match explanation in the popover
+     * @param {Object} annotation - The annotation object
+     */
+    populateAISuggestionSection(annotation) {
+        const container = document.getElementById('popover-ai-suggestion-container');
+        const confidenceBadge = document.getElementById('popover-confidence-badge');
+        const matchExplanation = document.getElementById('popover-match-explanation');
+
+        if (!container) return;
+
+        // Only show for auto-generated annotations
+        if (annotation.source !== 'auto_generated' || !annotation.original_values?.confidence) {
+            container.classList.add('hidden');
+            return;
+        }
+
+        // Show the container
+        container.classList.remove('hidden');
+
+        // Get confidence data
+        const conf = annotation.original_values.confidence;
+        const pct = Math.round(conf * 100);
+
+        // Set confidence badge with appropriate color
+        if (confidenceBadge) {
+            let colorClass;
+            if (pct >= 85) {
+                colorClass = 'confidence-high bg-green-100 text-green-700 border-green-200';
+            } else if (pct >= 70) {
+                colorClass = 'confidence-medium bg-amber-100 text-amber-700 border-amber-200';
+            } else {
+                colorClass = 'confidence-low bg-gray-100 text-gray-600 border-gray-200';
+            }
+            confidenceBadge.className = `confidence-badge px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}`;
+            confidenceBadge.innerHTML = `${pct}% confidence <span class="ai-indicator">&#10024;</span>`;
+        }
+
+        // Set match explanation
+        if (matchExplanation) {
+            const explanation = this.getMatchExplanation(annotation);
+            matchExplanation.textContent = explanation || '';
+        }
+
+        // Auto-expand the section since it's relevant
+        this.expandPopoverField('ai-suggestion');
     }
 
     /**
@@ -1001,6 +1222,11 @@ class AnnotationManager {
         this.collapsePopoverField('reframe');
         this.collapsePopoverField('strategic');
         this.collapsePopoverField('keywords');
+        this.collapsePopoverField('ai-suggestion');
+
+        // Hide AI suggestion section (only shown for auto-generated annotations)
+        const aiSuggestionContainer = document.getElementById('popover-ai-suggestion-container');
+        if (aiSuggestionContainer) aiSuggestionContainer.classList.add('hidden');
 
         // Reset editing state
         this.editingAnnotationId = null;
@@ -1217,10 +1443,13 @@ class AnnotationManager {
             // Update existing annotation
             const index = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
             if (index !== -1) {
+                // Record previous state for undo
+                const previousState = this.annotations[index];
+
                 // Preserve original_text for highlighting if it exists, otherwise use current target.text
                 const existingOriginalText = this.annotations[index].target?.original_text ||
                                               this.annotations[index].target?.text;
-                this.annotations[index] = {
+                const updatedAnnotation = {
                     ...this.annotations[index],
                     target: {
                         ...this.annotations[index].target,
@@ -1238,6 +1467,15 @@ class AnnotationManager {
                     suggested_keywords: keywordsEl?.value.split(',').map(k => k.trim()).filter(k => k) || [],
                     updated_at: new Date().toISOString()
                 };
+
+                // Record for undo
+                this.undoManager.push({
+                    type: 'update',
+                    annotation: updatedAnnotation,
+                    previousState: previousState
+                });
+
+                this.annotations[index] = updatedAnnotation;
                 console.log('Updated annotation:', this.annotations[index]);
             }
         } else {
@@ -1267,6 +1505,12 @@ class AnnotationManager {
                 updated_at: new Date().toISOString()
             };
 
+            // Record for undo
+            this.undoManager.push({
+                type: 'add',
+                annotation: annotation
+            });
+
             // Add to annotations
             this.annotations.push(annotation);
             console.log('Created annotation:', annotation);
@@ -1286,6 +1530,9 @@ class AnnotationManager {
 
         // Schedule save
         this.scheduleSave();
+
+        // Update undo/redo button states
+        this.updateUndoRedoButtons();
 
         // Show toast feedback
         if (typeof showToast === 'function') {
@@ -1345,6 +1592,12 @@ class AnnotationManager {
             updated_at: new Date().toISOString()
         };
 
+        // Record for undo
+        this.undoManager.push({
+            type: 'add',
+            annotation: annotation
+        });
+
         // Add to annotations
         this.annotations.push(annotation);
         console.log('[autoSaveAnnotation] Created annotation:', annotation.id);
@@ -1363,6 +1616,9 @@ class AnnotationManager {
 
         // Schedule save to backend
         this.scheduleSave();
+
+        // Update undo/redo button states
+        this.updateUndoRedoButtons();
 
         // Show toast feedback with truncated text
         const shortText = text.length > 30 ? text.substring(0, 30) + '...' : text;
@@ -1468,6 +1724,9 @@ class AnnotationManager {
             countElValue: countEl?.textContent,
             emptyStateHidden: emptyState?.classList.contains('hidden')
         });
+
+        // Update the review banner for pending suggestions
+        this.updateReviewBanner();
     }
 
     /**
@@ -1528,6 +1787,10 @@ class AnnotationManager {
         const passionBadge = this.getPassionBadge(annotation.passion);
         // Identity badge (only show for non-peripheral)
         const identityBadge = this.getIdentityBadge(annotation.identity);
+        // Confidence badge (only for auto-generated annotations)
+        const confidenceBadge = this.getConfidenceBadge(annotation);
+        // Match explanation (only for auto-generated annotations)
+        const matchExplanation = this.getMatchExplanation(annotation);
 
         // Relevance badge - only show if relevance is set (avoid showing "null")
         const relevanceBadge = annotation.relevance
@@ -1536,8 +1799,21 @@ class AnnotationManager {
                </span>`
             : '';
 
+        // Quick action buttons for pending AI suggestions
+        const isPendingSuggestion = annotation.source === 'auto_generated' &&
+                                    annotation.status !== 'approved' &&
+                                    annotation.status !== 'rejected';
+        const quickActions = isPendingSuggestion
+            ? `<div class="quick-actions flex gap-1 mr-1">
+                <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.quickAcceptSuggestion('${annotation.id}')"
+                        class="quick-action-btn accept" title="Accept suggestion">&#10003;</button>
+                <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.quickRejectSuggestion('${annotation.id}')"
+                        class="quick-action-btn reject" title="Reject suggestion">&#10005;</button>
+               </div>`
+            : '';
+
         return `
-            <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''}"
+            <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''} ${isPendingSuggestion ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}"
                  data-annotation-id="${annotation.id}"
                  onclick="getActiveAnnotationManager()?.selectAnnotation('${annotation.id}')">
                 <div class="flex items-start justify-between gap-2">
@@ -1547,13 +1823,16 @@ class AnnotationManager {
                             <span class="px-1.5 py-0.5 rounded text-xs font-medium ${reqColors.bg} ${reqColors.text}">
                                 ${this.formatRequirement(annotation.requirement_type)}
                             </span>
+                            ${confidenceBadge}
                             ${passionBadge}
                             ${identityBadge}
                         </div>
                         <p class="text-sm text-gray-800 line-clamp-2">${annotation.target?.text || ''}</p>
+                        ${matchExplanation ? `<p class="text-xs text-gray-400 mt-1 match-explanation">${matchExplanation}</p>` : ''}
                         ${annotation.reframe_note ? `<p class="text-xs text-gray-500 mt-1 italic line-clamp-1">${annotation.reframe_note}</p>` : ''}
                     </div>
                     <div class="flex items-center gap-1">
+                        ${quickActions}
                         <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.toggleActive('${annotation.id}')"
                                 class="p-1 rounded hover:bg-gray-200"
                                 title="${annotation.is_active ? 'Deactivate' : 'Activate'}">
@@ -1598,6 +1877,70 @@ class AnnotationManager {
             not_identity: '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600" title="Not Me">✗</span>'
         };
         return badges[identity] || '';
+    }
+
+    /**
+     * Get confidence badge HTML for auto-generated annotations
+     * Shows AI confidence percentage with color coding based on confidence level
+     * @param {Object} annotation - The annotation object
+     * @returns {string} HTML string for the confidence badge, or empty string if not applicable
+     */
+    getConfidenceBadge(annotation) {
+        // Only show for auto-generated annotations
+        if (annotation.source !== 'auto_generated') return '';
+
+        // Get confidence from original_values (set during auto-generation)
+        const conf = annotation.original_values?.confidence;
+        if (!conf && conf !== 0) return '';
+
+        // Calculate percentage
+        const pct = Math.round(conf * 100);
+
+        // Color coding based on confidence level
+        // >= 85%: green (high confidence)
+        // >= 70%: amber (medium confidence)
+        // < 70%: gray (low confidence)
+        let colorClass;
+        if (pct >= 85) {
+            colorClass = 'confidence-high bg-green-100 text-green-700 border-green-200';
+        } else if (pct >= 70) {
+            colorClass = 'confidence-medium bg-amber-100 text-amber-700 border-amber-200';
+        } else {
+            colorClass = 'confidence-low bg-gray-100 text-gray-600 border-gray-200';
+        }
+
+        return `<span class="confidence-badge px-1.5 py-0.5 rounded text-xs font-medium border ${colorClass}" title="AI confidence: ${pct}%">
+            ${pct}% <span class="ai-indicator">&#10024;</span>
+        </span>`;
+    }
+
+    /**
+     * Get match explanation text for auto-generated annotations
+     * Describes why the AI made this suggestion based on match_method and matched_keyword
+     * @param {Object} annotation - The annotation object
+     * @returns {string|null} Match explanation text, or null if not applicable
+     */
+    getMatchExplanation(annotation) {
+        // Only show for auto-generated annotations
+        if (annotation.source !== 'auto_generated') return null;
+
+        const matchMethod = annotation.original_values?.match_method || 'semantic similarity';
+        const matchedKeyword = annotation.original_values?.matched_keyword;
+
+        // Format match method for display
+        const methodLabels = {
+            'sentence_embedding': 'sentence similarity',
+            'keyword_match': 'keyword match',
+            'skill_prior': 'skill prior',
+            'semantic_similarity': 'semantic similarity',
+            'exact_match': 'exact match'
+        };
+        const displayMethod = methodLabels[matchMethod] || matchMethod;
+
+        if (matchedKeyword) {
+            return `Matched: "${matchedKeyword}" (${displayMethod})`;
+        }
+        return `Matched via ${displayMethod}`;
     }
 
     /**
@@ -1647,11 +1990,22 @@ class AnnotationManager {
 
     /**
      * Delete annotation
+     * @param {string} annotationId - ID of the annotation to delete
+     * @param {boolean} [skipHistory=false] - If true, don't record in undo history (used by undo/redo)
      */
-    deleteAnnotation(annotationId) {
+    deleteAnnotation(annotationId, skipHistory = false) {
         const index = this.annotations.findIndex(a => a.id === annotationId);
         if (index !== -1) {
             const annotation = this.annotations[index];
+
+            // Record for undo (before deletion)
+            if (!skipHistory) {
+                this.undoManager.push({
+                    type: 'delete',
+                    annotation: annotation
+                });
+                this.updateUndoRedoButtons();
+            }
 
             // Capture negative feedback for auto-generated annotations
             if (annotation.source === 'auto_generated' && annotation.original_values) {
@@ -1666,6 +2020,117 @@ class AnnotationManager {
                 this.applyHighlights();
             });
             this.scheduleSave();
+        }
+    }
+
+    /**
+     * Undo the last annotation action.
+     * Supports undoing add, delete, and update operations.
+     */
+    undo() {
+        const action = this.undoManager.undo();
+        if (!action) {
+            if (typeof showToast === 'function') {
+                showToast('Nothing to undo', 'info');
+            }
+            return;
+        }
+
+        switch (action.type) {
+            case 'delete':
+                // Restore deleted annotation
+                this.annotations.push(action.annotation);
+                break;
+            case 'add':
+                // Remove added annotation (use skipHistory=true to avoid recording)
+                this.annotations = this.annotations.filter(a => a.id !== action.annotation.id);
+                break;
+            case 'update':
+                // Restore previous state
+                const idx = this.annotations.findIndex(a => a.id === action.annotation.id);
+                if (idx !== -1) {
+                    this.annotations[idx] = JSON.parse(JSON.stringify(action.previousState));
+                }
+                break;
+        }
+
+        this.renderAnnotations();
+        this.updateStats();
+        requestAnimationFrame(() => {
+            this.applyHighlights();
+        });
+        this.scheduleSave();
+        this.updateUndoRedoButtons();
+
+        if (typeof showToast === 'function') {
+            showToast('Undone', 'info');
+        }
+    }
+
+    /**
+     * Redo the last undone annotation action.
+     * Supports redoing add, delete, and update operations.
+     */
+    redo() {
+        const action = this.undoManager.redo();
+        if (!action) {
+            if (typeof showToast === 'function') {
+                showToast('Nothing to redo', 'info');
+            }
+            return;
+        }
+
+        switch (action.type) {
+            case 'delete':
+                // Re-delete the annotation
+                this.annotations = this.annotations.filter(a => a.id !== action.annotation.id);
+                break;
+            case 'add':
+                // Re-add the annotation
+                this.annotations.push(action.annotation);
+                break;
+            case 'update':
+                // Re-apply the update
+                const idx = this.annotations.findIndex(a => a.id === action.annotation.id);
+                if (idx !== -1) {
+                    this.annotations[idx] = JSON.parse(JSON.stringify(action.annotation));
+                }
+                break;
+        }
+
+        this.renderAnnotations();
+        this.updateStats();
+        requestAnimationFrame(() => {
+            this.applyHighlights();
+        });
+        this.scheduleSave();
+        this.updateUndoRedoButtons();
+
+        if (typeof showToast === 'function') {
+            showToast('Redone', 'info');
+        }
+    }
+
+    /**
+     * Update undo/redo button states based on history availability.
+     * Uses ID prefix for batch mode support.
+     */
+    updateUndoRedoButtons() {
+        const prefix = this.config.idPrefix || '';
+        const undoBtn = document.getElementById(`${prefix}undo-btn`);
+        const redoBtn = document.getElementById(`${prefix}redo-btn`);
+
+        if (undoBtn) {
+            const canUndo = this.undoManager.canUndo();
+            undoBtn.disabled = !canUndo;
+            undoBtn.classList.toggle('opacity-50', !canUndo);
+            undoBtn.classList.toggle('cursor-not-allowed', !canUndo);
+        }
+        if (redoBtn) {
+            const canRedo = this.undoManager.canRedo();
+            redoBtn.disabled = !canRedo;
+            redoBtn.classList.toggle('opacity-50', !canRedo);
+            redoBtn.classList.toggle('cursor-not-allowed', !canRedo);
         }
     }
 
@@ -2682,6 +3147,132 @@ class AnnotationManager {
         });
 
         this.renderAnnotations();
+    }
+
+    // ============================================================================
+    // Batch Suggestion Review (Phase 2)
+    // ============================================================================
+
+    /**
+     * Get pending AI-generated suggestions that haven't been approved or rejected.
+     * These are auto_generated annotations without approved/rejected status.
+     * @returns {Array} Annotations pending review
+     */
+    getPendingSuggestions() {
+        return this.annotations.filter(a =>
+            a.source === 'auto_generated' &&
+            a.status !== 'approved' &&
+            a.status !== 'rejected'
+        );
+    }
+
+    /**
+     * Accept all pending AI suggestions at once.
+     * Marks each suggestion as approved and triggers re-render.
+     */
+    acceptAllSuggestions() {
+        const pending = this.getPendingSuggestions();
+        if (pending.length === 0) return;
+
+        pending.forEach(a => {
+            a.status = 'approved';
+            a.reviewed_at = new Date().toISOString();
+        });
+
+        this.renderAnnotations();
+        this.updateStats();
+        this.scheduleSave();
+
+        if (typeof showToast === 'function') {
+            showToast(`Accepted ${pending.length} suggestions`, 'success');
+        }
+    }
+
+    /**
+     * Quickly accept a single AI suggestion.
+     * @param {string} annotationId - ID of the annotation to accept
+     */
+    quickAcceptSuggestion(annotationId) {
+        const ann = this.annotations.find(a => a.id === annotationId);
+        if (ann) {
+            // Record previous state for undo
+            const previousState = JSON.parse(JSON.stringify(ann));
+
+            ann.status = 'approved';
+            ann.reviewed_at = new Date().toISOString();
+
+            // Record for undo
+            this.undoManager.push({
+                type: 'update',
+                annotation: ann,
+                previousState: previousState
+            });
+
+            this.renderAnnotations();
+            this.updateStats();
+            this.scheduleSave();
+            this.updateUndoRedoButtons();
+
+            if (typeof showToast === 'function') {
+                showToast('Suggestion accepted', 'success');
+            }
+        }
+    }
+
+    /**
+     * Quickly reject (delete) a single AI suggestion.
+     * Captures feedback before removing for learning purposes.
+     * @param {string} annotationId - ID of the annotation to reject
+     */
+    quickRejectSuggestion(annotationId) {
+        const ann = this.annotations.find(a => a.id === annotationId);
+        if (!ann) return;
+
+        // Record for undo (before deletion)
+        this.undoManager.push({
+            type: 'delete',
+            annotation: ann
+        });
+
+        // Capture feedback for auto-generated annotations before removing
+        if (ann.source === 'auto_generated' && ann.original_values) {
+            this.captureAnnotationFeedback(ann, 'delete');
+        }
+
+        // Remove the annotation
+        this.annotations = this.annotations.filter(a => a.id !== annotationId);
+        this.renderAnnotations();
+        this.updateStats();
+        requestAnimationFrame(() => {
+            this.applyHighlights();
+        });
+        this.scheduleSave();
+        this.updateUndoRedoButtons();
+
+        if (typeof showToast === 'function') {
+            showToast('Suggestion rejected', 'info');
+        }
+    }
+
+    /**
+     * Update the review banner visibility based on pending suggestions count.
+     * Called after renderAnnotations to show/hide the banner.
+     */
+    updateReviewBanner() {
+        const pending = this.getPendingSuggestions();
+
+        // Get the banner using configured ID
+        const banner = document.getElementById(this.config.reviewBannerId);
+        const countEl = document.getElementById(this.config.pendingCountId);
+
+        if (banner) {
+            if (pending.length > 0) {
+                banner.classList.remove('hidden');
+                if (countEl) countEl.textContent = pending.length;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
     }
 }
 

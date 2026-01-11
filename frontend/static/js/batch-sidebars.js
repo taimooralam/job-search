@@ -686,7 +686,10 @@ async function initBatchAnnotationManager(jobId) {
             coverageBarId: 'batch-annotation-coverage-bar',
             coveragePctId: 'batch-annotation-coverage-pct',
             boostValueId: 'batch-total-boost-value',
-            personaPanelId: 'batch-persona-panel-container'
+            personaPanelId: 'batch-persona-panel-container',
+            // Batch suggestion review banner IDs
+            reviewBannerId: 'batch-review-banner',
+            pendingCountId: 'batch-pending-count'
         });
 
         // Initialize the manager

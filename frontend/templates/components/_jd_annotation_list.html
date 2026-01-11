@@ -13,6 +13,24 @@
 #}
 
 <div class="flex flex-col h-full">
+    {# Review Banner for Pending AI Suggestions #}
+    <div id="{{ id_prefix }}review-banner" class="review-banner hidden mx-3 mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-purple-600 dark:text-purple-400">&#10024;</span>
+                <span class="text-sm font-medium text-purple-800 dark:text-purple-200">
+                    <span id="{{ id_prefix }}pending-count">0</span> suggestions ready for review
+                </span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="getActiveAnnotationManager()?.acceptAllSuggestions()"
+                        class="px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                    Accept All
+                </button>
+            </div>
+        </div>
+    </div>
+
     {# Header #}
     <div class="px-4 py-3 border-b {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
         <div class="flex items-center justify-between mb-2">

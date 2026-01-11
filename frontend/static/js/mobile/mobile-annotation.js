@@ -36,6 +36,9 @@ document.addEventListener('alpine:init', () => {
         // Auto-generate state
         autoGenerating: false,
 
+        // Undo state (single-level undo for mobile)
+        lastDeletedAnnotation: null,
+
         // Options
         relevanceOptions: [
             { value: 'core_strength', label: 'Core Strength', emoji: '💪', color: 'text-green-400' },
@@ -503,20 +506,52 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Delete annotation
+        // Delete annotation with undo support
         async deleteAnnotation(annotationId) {
             // Find annotation before deleting to capture feedback
             const annotation = this.annotations.find(a => a.id === annotationId);
+            if (!annotation) return;
+
+            // Store for undo (before deletion)
+            this.lastDeletedAnnotation = JSON.parse(JSON.stringify(annotation));
 
             // Capture negative feedback for auto-generated annotations
-            if (annotation?.source === 'auto_generated' && annotation?.original_values) {
+            if (annotation.source === 'auto_generated' && annotation.original_values) {
                 this.captureAnnotationFeedback(annotation, 'delete');
             }
 
             this.annotations = this.annotations.filter(a => a.id !== annotationId);
             await this.saveAnnotationsToServer();
             this.checkIdentityAnnotations();
-            window.showToast?.('Annotation deleted', 'info');
+
+            // Show toast with undo action (5 second timeout)
+            if (typeof window.showToastWithAction === 'function') {
+                window.showToastWithAction('Annotation deleted', 'info', 5000, 'Undo', () => this.undoDelete());
+            } else {
+                // Fallback: regular toast with a hint about undo
+                window.showToast?.('Annotation deleted', 'info');
+            }
+        },
+
+        // Undo the last deleted annotation
+        async undoDelete() {
+            if (!this.lastDeletedAnnotation) {
+                window.showToast?.('Nothing to undo', 'info');
+                return;
+            }
+
+            // Restore the annotation
+            this.annotations.push(this.lastDeletedAnnotation);
+            await this.saveAnnotationsToServer();
+            this.checkIdentityAnnotations();
+
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate([30, 20, 30]);
+            }
+
+            window.showToast?.('Annotation restored', 'success');
+            this.lastDeletedAnnotation = null;
         },
 
         // Get highlight class for annotation
@@ -524,6 +559,149 @@ document.addEventListener('alpine:init', () => {
             if (annotation.relevance === 'core_strength') return 'annotation-highlight core-strength';
             if (annotation.relevance === 'gap') return 'annotation-highlight gap';
             return 'annotation-highlight';
+        },
+
+        /**
+         * Get confidence display data for auto-generated annotations
+         * @param {Object} annotation - The annotation object
+         * @returns {Object|null} Object with pct and method, or null if not applicable
+         */
+        getConfidenceDisplay(annotation) {
+            // Only show for auto-generated annotations
+            if (annotation.source !== 'auto_generated') return null;
+
+            // Get confidence from original_values
+            const conf = annotation.original_values?.confidence;
+            if (!conf && conf !== 0) return null;
+
+            const pct = Math.round(conf * 100);
+            const matchMethod = annotation.original_values?.match_method || 'semantic similarity';
+
+            // Format match method for display
+            const methodLabels = {
+                'sentence_embedding': 'sentence similarity',
+                'keyword_match': 'keyword match',
+                'skill_prior': 'skill prior',
+                'semantic_similarity': 'semantic similarity',
+                'exact_match': 'exact match'
+            };
+            const displayMethod = methodLabels[matchMethod] || matchMethod;
+
+            return {
+                pct: pct,
+                method: displayMethod,
+                matchedKeyword: annotation.original_values?.matched_keyword || null,
+                // Color class based on confidence level
+                colorClass: pct >= 85 ? 'text-green-600 bg-green-100'
+                          : pct >= 70 ? 'text-amber-600 bg-amber-100'
+                          : 'text-gray-600 bg-gray-100'
+            };
+        },
+
+        /**
+         * Get match explanation text for auto-generated annotations
+         * @param {Object} annotation - The annotation object
+         * @returns {string|null} Match explanation text, or null if not applicable
+         */
+        getMatchExplanation(annotation) {
+            const display = this.getConfidenceDisplay(annotation);
+            if (!display) return null;
+
+            if (display.matchedKeyword) {
+                return `Matched: "${display.matchedKeyword}" (${display.method})`;
+            }
+            return `Matched via ${display.method}`;
+        },
+
+        // ============================================================================
+        // Batch Suggestion Review (Phase 2)
+        // ============================================================================
+
+        /**
+         * Get pending AI-generated suggestions that haven't been approved or rejected.
+         * Computed property for reactive updates.
+         */
+        get pendingSuggestions() {
+            return this.annotations.filter(a =>
+                a.source === 'auto_generated' &&
+                a.status !== 'approved' &&
+                a.status !== 'rejected'
+            );
+        },
+
+        /**
+         * Accept all pending AI suggestions at once.
+         */
+        async acceptAllSuggestions() {
+            const pending = this.pendingSuggestions;
+            if (pending.length === 0) return;
+
+            pending.forEach(a => {
+                a.status = 'approved';
+                a.reviewed_at = new Date().toISOString();
+            });
+
+            await this.saveAnnotationsToServer();
+
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate([50, 30, 50]);
+            }
+
+            window.showToast?.(`Accepted ${pending.length} suggestions`, 'success');
+        },
+
+        /**
+         * Quickly accept a single AI suggestion.
+         * @param {string} annotationId - ID of the annotation to accept
+         */
+        async quickAcceptSuggestion(annotationId) {
+            const ann = this.annotations.find(a => a.id === annotationId);
+            if (ann) {
+                ann.status = 'approved';
+                ann.reviewed_at = new Date().toISOString();
+                await this.saveAnnotationsToServer();
+
+                // Haptic feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(30);
+                }
+
+                window.showToast?.('Suggestion accepted', 'success');
+            }
+        },
+
+        /**
+         * Quickly reject (delete) a single AI suggestion.
+         * @param {string} annotationId - ID of the annotation to reject
+         */
+        async quickRejectSuggestion(annotationId) {
+            const ann = this.annotations.find(a => a.id === annotationId);
+            if (!ann) return;
+
+            // Store for undo (before deletion)
+            this.lastDeletedAnnotation = JSON.parse(JSON.stringify(ann));
+
+            // Capture feedback before removing
+            if (ann.source === 'auto_generated' && ann.original_values) {
+                this.captureAnnotationFeedback(ann, 'delete');
+            }
+
+            // Remove the annotation
+            this.annotations = this.annotations.filter(a => a.id !== annotationId);
+            await this.saveAnnotationsToServer();
+
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate(30);
+            }
+
+            // Show toast with undo action (5 second timeout)
+            if (typeof window.showToastWithAction === 'function') {
+                window.showToastWithAction('Suggestion rejected', 'info', 5000, 'Undo', () => this.undoDelete());
+            } else {
+                window.showToast?.('Suggestion rejected', 'info');
+            }
         }
     }));
 });

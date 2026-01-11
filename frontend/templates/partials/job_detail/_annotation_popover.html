@@ -251,6 +251,26 @@
         </div>
     </div>
 
+    {# Why This Suggestion - Only shown for auto-generated annotations #}
+    <div class="mb-2 hidden" id="popover-ai-suggestion-container">
+        <button type="button"
+                onclick="togglePopoverField('ai-suggestion')"
+                class="w-full flex items-center justify-between text-xs font-medium text-gray-500 uppercase py-1.5 hover:text-gray-700 hover:bg-gray-50 rounded transition">
+            <span class="flex items-center gap-1">
+                <svg class="w-3 h-3 transition-transform duration-200" id="ai-suggestion-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                Why This Suggestion <span class="text-gray-400 font-normal ai-indicator">(&#10024; AI)</span>
+            </span>
+        </button>
+        <div id="ai-suggestion-content" class="hidden mt-1 p-2 bg-gray-50 rounded-md border border-gray-200">
+            <div class="flex items-center gap-2 mb-1">
+                <span id="popover-confidence-badge" class="confidence-badge px-1.5 py-0.5 rounded text-xs font-medium border"></span>
+            </div>
+            <p id="popover-match-explanation" class="text-xs text-gray-600 mt-1"></p>
+        </div>
+    </div>
+
     {# ATS Keywords (collapsible) #}
     <div class="mb-2" id="popover-keywords-container">
         <button type="button"
