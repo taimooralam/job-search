@@ -219,6 +219,13 @@ Claude: *immediately reads code files*  ← WRONG! Delegate first!
 
 ---
 
+## Useful Commands
+
+**YouTube video transcripts:**
+```bash
+yt-dlp --write-auto-sub --skip-download "https://youtube.com/watch?v=VIDEO_ID"
+```
+
 ## Project Context
 
 - Goal: Complete the Job Intelligence Pipeline (7-layer LangGraph) with professional CV editor
