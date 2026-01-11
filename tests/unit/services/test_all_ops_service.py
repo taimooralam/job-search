@@ -520,18 +520,21 @@ class TestAllOpsServiceLogCallback:
 class TestAllOpsServiceClose:
     """Tests for resource cleanup."""
 
-    def test_close_cleans_up_research_service(self):
-        """Close should cleanup research service."""
+    def test_close_clears_service_references(self):
+        """Close should clear service references (repos handle connection pooling)."""
         service = AllOpsService()
 
-        # Initialize research service
+        # Initialize services
         mock_research = MagicMock()
+        mock_extraction = MagicMock()
         service._research_service = mock_research
+        service._extraction_service = mock_extraction
 
         service.close()
 
-        mock_research.close.assert_called_once()
+        # Services should be cleared (no close() call - repos handle connections)
         assert service._research_service is None
+        assert service._extraction_service is None
 
     def test_close_handles_no_services(self):
         """Close should handle case when services not initialized."""

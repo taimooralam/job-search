@@ -100,10 +100,10 @@ class TestCompanyResearchServiceInit:
         service = CompanyResearchService()
         assert service.operation_name == "research-company"
 
-    def test_service_lazy_initializes_mongo_client(self):
-        """MongoDB client is not created until accessed."""
+    def test_service_lazy_initializes_cache_repository(self):
+        """Cache repository is not created until accessed."""
         service = CompanyResearchService()
-        assert service._mongo_client is None
+        assert service._cache_repository is None
 
     def test_service_lazy_initializes_researchers(self):
         """Researchers are not created until accessed."""
@@ -118,32 +118,34 @@ class TestCompanyResearchServiceInit:
 class TestCompanyResearchServiceCache:
     """Test cache functionality."""
 
-    @patch.object(CompanyResearchService, "mongo_client", new_callable=lambda: MagicMock())
-    def test_check_cache_returns_none_when_force_refresh(self, mock_mongo):
+    @patch.object(CompanyResearchService, "_get_cache_repository")
+    def test_check_cache_returns_none_when_force_refresh(self, mock_get_repo):
         """Cache check returns None when force_refresh=True."""
         service = CompanyResearchService()
         result = service._check_cache("TechCorp", force_refresh=True)
         assert result is None
+        # Repository should not be called when force_refresh=True
+        mock_get_repo.assert_not_called()
 
-    @patch.object(CompanyResearchService, "_get_cache_collection")
+    @patch.object(CompanyResearchService, "_get_cache_repository")
     def test_check_cache_returns_cached_data_when_valid(
-        self, mock_get_collection, cached_research_doc
+        self, mock_get_repo, cached_research_doc
     ):
         """Cache check returns data when cache is valid."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = cached_research_doc
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = cached_research_doc
+        mock_get_repo.return_value = mock_repo
 
         service = CompanyResearchService()
         result = service._check_cache("TechCorp", force_refresh=False)
 
         assert result is not None
         assert result["company_research"]["summary"] == cached_research_doc["company_research"]["summary"]
-        mock_collection.find_one.assert_called_once_with({"company_key": "techcorp"})
+        mock_repo.find_by_company_key.assert_called_once_with("techcorp")
 
-    @patch.object(CompanyResearchService, "_get_cache_collection")
+    @patch.object(CompanyResearchService, "_get_cache_repository")
     def test_check_cache_returns_none_when_expired(
-        self, mock_get_collection, cached_research_doc
+        self, mock_get_repo, cached_research_doc
     ):
         """Cache check returns None when cache is expired."""
         # Set cached_at to be older than TTL
@@ -151,21 +153,21 @@ class TestCompanyResearchServiceCache:
             days=COMPANY_CACHE_TTL_DAYS + 1
         )
 
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = cached_research_doc
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = cached_research_doc
+        mock_get_repo.return_value = mock_repo
 
         service = CompanyResearchService()
         result = service._check_cache("TechCorp", force_refresh=False)
 
         assert result is None
 
-    @patch.object(CompanyResearchService, "_get_cache_collection")
-    def test_check_cache_returns_none_when_not_found(self, mock_get_collection):
+    @patch.object(CompanyResearchService, "_get_cache_repository")
+    def test_check_cache_returns_none_when_not_found(self, mock_get_repo):
         """Cache check returns None when no cache entry exists."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_get_repo.return_value = mock_repo
 
         service = CompanyResearchService()
         result = service._check_cache("NewCompany", force_refresh=False)

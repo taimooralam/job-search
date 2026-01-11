@@ -32,7 +32,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
-from src.common.repositories import get_job_repository
+from src.common.repositories import get_job_repository, get_operation_runs_repository
 
 # Thread pool for running sync MongoDB operations without blocking the event loop
 # Increased from 4 to 8 workers to handle concurrent streaming operations
@@ -2263,6 +2263,8 @@ async def _get_last_operation_run(job_id: str, operation: str) -> Optional[Dict[
     This is used as a fallback when no queue item exists (after queue cleanup).
     Allows viewing logs from previously completed/failed operations.
 
+    Uses the operation_runs repository for connection pooling and abstraction.
+
     Args:
         job_id: MongoDB job ID
         operation: Operation type (full-extraction, research-company, etc.)
@@ -2271,19 +2273,16 @@ async def _get_last_operation_run(job_id: str, operation: str) -> Optional[Dict[
         Dict with run details or None if no runs found
     """
     try:
-        client = _get_mongo_client()
-        if not client:
-            return None
-
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        collection = db["operation_runs"]
+        repo = get_operation_runs_repository()
 
         # Find the most recent run for this job+operation
         def sync_find():
-            return collection.find_one(
-                {"job_id": job_id, "operation": operation},
+            results = repo.find(
+                filter={"job_id": job_id, "operation": operation},
                 sort=[("timestamp", -1)],  # Most recent first
+                limit=1,
             )
+            return results[0] if results else None
 
         result = await asyncio.get_event_loop().run_in_executor(
             _db_executor, sync_find

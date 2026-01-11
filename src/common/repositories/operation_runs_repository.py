@@ -28,6 +28,46 @@ class OperationRunsRepositoryInterface(ABC):
     """
 
     @abstractmethod
+    def find_one(
+        self, filter: Dict[str, Any], projection: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Find a single operation run document.
+
+        Args:
+            filter: MongoDB query filter
+            projection: Fields to include/exclude (optional)
+
+        Returns:
+            Document dict if found, None otherwise
+        """
+        pass
+
+    @abstractmethod
+    def find(
+        self,
+        filter: Dict[str, Any],
+        projection: Optional[Dict[str, Any]] = None,
+        sort: Optional[List[tuple]] = None,
+        limit: int = 0,
+        skip: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """
+        Find multiple operation run documents.
+
+        Args:
+            filter: MongoDB query filter
+            projection: Fields to include/exclude
+            sort: Sort order as list of (field, direction) tuples
+            limit: Maximum documents to return (0 = no limit)
+            skip: Number of documents to skip
+
+        Returns:
+            List of matching documents
+        """
+        pass
+
+    @abstractmethod
     def insert_one(self, document: Dict[str, Any]) -> WriteResult:
         """
         Insert a new operation run record.
@@ -37,6 +77,39 @@ class OperationRunsRepositoryInterface(ABC):
 
         Returns:
             WriteResult with insert status
+        """
+        pass
+
+    @abstractmethod
+    def update_one(
+        self,
+        filter: Dict[str, Any],
+        update: Dict[str, Any],
+        upsert: bool = False,
+    ) -> WriteResult:
+        """
+        Update a single document.
+
+        Args:
+            filter: MongoDB query filter
+            update: Update operations (e.g., {"$set": {...}})
+            upsert: Create document if not found
+
+        Returns:
+            WriteResult with match/modify counts
+        """
+        pass
+
+    @abstractmethod
+    def count_documents(self, filter: Dict[str, Any]) -> int:
+        """
+        Count documents matching the filter.
+
+        Args:
+            filter: MongoDB query filter
+
+        Returns:
+            Count of matching documents
         """
         pass
 
@@ -117,6 +190,34 @@ class AtlasOperationRunsRepository(OperationRunsRepositoryInterface):
             cls._client = None
             logger.info("Operation runs repository connection reset")
 
+    def find_one(
+        self, filter: Dict[str, Any], projection: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Find a single operation run document."""
+        collection = self._get_collection()
+        return collection.find_one(filter, projection)
+
+    def find(
+        self,
+        filter: Dict[str, Any],
+        projection: Optional[Dict[str, Any]] = None,
+        sort: Optional[List[tuple]] = None,
+        limit: int = 0,
+        skip: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Find multiple operation run documents."""
+        collection = self._get_collection()
+        cursor = collection.find(filter, projection)
+
+        if sort:
+            cursor = cursor.sort(sort)
+        if skip > 0:
+            cursor = cursor.skip(skip)
+        if limit > 0:
+            cursor = cursor.limit(limit)
+
+        return list(cursor)
+
     def insert_one(self, document: Dict[str, Any]) -> WriteResult:
         """Insert a new operation run record."""
         try:
@@ -131,18 +232,40 @@ class AtlasOperationRunsRepository(OperationRunsRepositoryInterface):
             logger.error(f"Error inserting operation run: {e}")
             raise
 
+    def update_one(
+        self,
+        filter: Dict[str, Any],
+        update: Dict[str, Any],
+        upsert: bool = False,
+    ) -> WriteResult:
+        """Update a single document."""
+        collection = self._get_collection()
+        result = collection.update_one(filter, update, upsert=upsert)
+
+        return WriteResult(
+            matched_count=result.matched_count,
+            modified_count=result.modified_count,
+            upserted_id=str(result.upserted_id) if result.upserted_id else None,
+            atlas_success=True,
+            vps_success=None,
+        )
+
+    def count_documents(self, filter: Dict[str, Any]) -> int:
+        """Count documents matching the filter."""
+        collection = self._get_collection()
+        return collection.count_documents(filter)
+
     def find_by_job_id(self, job_id: str, limit: int = 50) -> List[Dict[str, Any]]:
         """Find operation runs for a specific job."""
-        collection = self._get_collection()
-        cursor = collection.find(
-            {"job_id": job_id}
-        ).sort("timestamp", -1).limit(limit)
-        return list(cursor)
+        return self.find(
+            filter={"job_id": job_id},
+            sort=[("timestamp", -1)],
+            limit=limit,
+        )
 
     def find_by_run_id(self, run_id: str) -> Optional[Dict[str, Any]]:
         """Find a specific operation run by run ID."""
-        collection = self._get_collection()
-        return collection.find_one({"run_id": run_id})
+        return self.find_one({"run_id": run_id})
 
 
 # Singleton instance

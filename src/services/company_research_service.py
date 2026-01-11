@@ -19,14 +19,18 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from pymongo import MongoClient
 
 from src.common.model_tiers import (
     ModelTier,
     get_model_for_operation,
     get_tier_cost_estimate,
 )
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.repositories import (
+    get_job_repository,
+    JobRepositoryInterface,
+    get_company_cache_repository,
+    CompanyCacheRepositoryInterface,
+)
 from src.common.state import JobState, CompanyResearch, RoleResearch
 from src.layer3.company_researcher import CompanyResearcher
 from src.layer3.role_researcher import RoleResearcher
@@ -49,10 +53,14 @@ class CompanyResearchService(OperationService):
 
     operation_name: str = "research-company"
 
-    def __init__(self, repository: Optional[JobRepositoryInterface] = None):
-        """Initialize the service with optional repository."""
+    def __init__(
+        self,
+        repository: Optional[JobRepositoryInterface] = None,
+        cache_repository: Optional[CompanyCacheRepositoryInterface] = None,
+    ):
+        """Initialize the service with optional repositories."""
         self._repository = repository
-        self._mongo_client: Optional[MongoClient] = None
+        self._cache_repository = cache_repository
         self._company_researcher: Optional[CompanyResearcher] = None
         self._role_researcher: Optional[RoleResearcher] = None
         self._people_mapper: Optional[PeopleMapper] = None
@@ -63,17 +71,11 @@ class CompanyResearchService(OperationService):
             return self._repository
         return get_job_repository()
 
-    @property
-    def mongo_client(self) -> MongoClient:
-        """Lazy-initialize MongoDB client (for company_cache collection only)."""
-        if self._mongo_client is None:
-            mongo_uri = (
-                os.getenv("MONGODB_URI")
-                or os.getenv("MONGO_URI")
-                or "mongodb://localhost:27017"
-            )
-            self._mongo_client = MongoClient(mongo_uri)
-        return self._mongo_client
+    def _get_cache_repository(self) -> CompanyCacheRepositoryInterface:
+        """Get the company cache repository instance."""
+        if self._cache_repository is not None:
+            return self._cache_repository
+        return get_company_cache_repository()
 
     @property
     def company_researcher(self) -> CompanyResearcher:
@@ -95,10 +97,6 @@ class CompanyResearchService(OperationService):
         if self._people_mapper is None:
             self._people_mapper = PeopleMapper()
         return self._people_mapper
-
-    def _get_cache_collection(self):
-        """Get company cache collection (uses direct MongoClient)."""
-        return self.mongo_client["jobs"]["company_cache"]
 
     def _fetch_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -136,9 +134,9 @@ class CompanyResearchService(OperationService):
             return None
 
         cache_key = company_name.lower().strip()
-        cache_collection = self._get_cache_collection()
+        cache_repo = self._get_cache_repository()
 
-        cached = cache_collection.find_one({"company_key": cache_key})
+        cached = cache_repo.find_by_company_key(cache_key)
 
         if cached:
             # Check if cache is still valid (within TTL)
@@ -680,9 +678,3 @@ class CompanyResearchService(OperationService):
                 )
                 self.persist_run(error_result, job_id, tier)
                 return error_result
-
-    def close(self):
-        """Clean up MongoDB connection."""
-        if self._mongo_client:
-            self._mongo_client.close()
-            self._mongo_client = None

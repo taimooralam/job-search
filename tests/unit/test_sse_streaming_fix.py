@@ -202,11 +202,7 @@ class TestAsyncEmitProgress:
              patch.object(type(service), 'company_researcher', new_callable=lambda: mock_company_researcher, create=True), \
              patch.object(type(service), 'role_researcher', new_callable=lambda: mock_role_researcher, create=True), \
              patch.object(type(service), 'people_mapper', new_callable=lambda: mock_people_mapper, create=True), \
-             patch.object(service, '_persist_research', return_value=True), \
-             patch.object(service, '_get_cache_collection') as mock_cache:
-
-            # Mock cache collection (for saving)
-            mock_cache.return_value = MagicMock()
+             patch.object(service, '_persist_research', return_value=True):
 
             # Execute with progress callback
             result = await service.execute(

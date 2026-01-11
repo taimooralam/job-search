@@ -15,7 +15,6 @@ Usage:
 
 import json
 import logging
-import os
 import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -23,12 +22,16 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from firecrawl import FirecrawlApp
 from pydantic import BaseModel, Field, ValidationError
-from pymongo import MongoClient
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.repositories import (
+    get_job_repository,
+    JobRepositoryInterface,
+    get_form_cache_repository,
+    FormCacheRepositoryInterface,
+)
 from src.common.types import FormField
 
 logger = logging.getLogger(__name__)
@@ -141,18 +144,18 @@ class FormScraperService:
 
     def __init__(
         self,
-        db_client: Optional[MongoClient] = None,
         job_repository: Optional[JobRepositoryInterface] = None,
+        form_cache_repository: Optional[FormCacheRepositoryInterface] = None,
     ):
         """
         Initialize the service.
 
         Args:
-            db_client: Optional MongoDB client (deprecated, use job_repository).
             job_repository: Optional job repository for level-2 operations.
+            form_cache_repository: Optional form cache repository.
         """
-        self._db_client = db_client
         self._job_repository = job_repository
+        self._form_cache_repository = form_cache_repository
         self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
         self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
@@ -166,17 +169,11 @@ class FormScraperService:
             return self._job_repository
         return get_job_repository()
 
-    def _get_db_client(self) -> MongoClient:
-        """Get or create MongoDB client."""
-        if self._db_client is not None:
-            return self._db_client
-
-        mongo_uri = (
-            os.getenv("MONGODB_URI")
-            or os.getenv("MONGO_URI")
-            or "mongodb://localhost:27017"
-        )
-        return MongoClient(mongo_uri)
+    def _get_form_cache_repository(self) -> FormCacheRepositoryInterface:
+        """Get form cache repository, using singleton if not provided."""
+        if self._form_cache_repository is not None:
+            return self._form_cache_repository
+        return get_form_cache_repository()
 
     def _get_cached_form_fields(
         self, application_url: str
@@ -190,24 +187,17 @@ class FormScraperService:
         Returns:
             Cached form data if found, None otherwise
         """
-        client = self._get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            cache = db["application_form_cache"]
-
-            cached = cache.find_one({"url": application_url})
-            if cached:
-                logger.info(f"Cache HIT for form: {application_url[:50]}...")
-                return {
-                    "fields": cached.get("fields", []),
-                    "form_type": cached.get("form_type", "unknown"),
-                    "form_title": cached.get("form_title"),
-                    "scraped_at": cached.get("scraped_at"),
-                }
-            return None
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_form_cache_repository()
+        cached = repo.find_by_url(application_url)
+        if cached:
+            logger.info(f"Cache HIT for form: {application_url[:50]}...")
+            return {
+                "fields": cached.get("fields", []),
+                "form_type": cached.get("form_type", "unknown"),
+                "form_title": cached.get("form_title"),
+                "scraped_at": cached.get("scraped_at"),
+            }
+        return None
 
     def _cache_form_fields(
         self,
@@ -228,30 +218,13 @@ class FormScraperService:
         Returns:
             True if cached successfully
         """
-        client = self._get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            cache = db["application_form_cache"]
-
-            doc = {
-                "url": application_url,
-                "fields": fields,
-                "form_type": form_type,
-                "form_title": form_title,
-                "scraped_at": datetime.utcnow(),
-            }
-
-            cache.update_one(
-                {"url": application_url}, {"$set": doc}, upsert=True
-            )
-            logger.info(f"Cached {len(fields)} form fields for: {application_url[:50]}...")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to cache form fields: {e}")
-            return False
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_form_cache_repository()
+        return repo.upsert_cache(
+            url=application_url,
+            fields=fields,
+            form_type=form_type,
+            form_title=form_title,
+        )
 
     @retry(
         stop=stop_after_attempt(2),

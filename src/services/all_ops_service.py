@@ -368,9 +368,9 @@ class AllOpsService(OperationService):
 
     def close(self):
         """Clean up resources from sub-services."""
-        if self._research_service:
-            self._research_service.close()
-            self._research_service = None
+        # Repository pattern handles connection pooling, no explicit cleanup needed
+        self._extraction_service = None
+        self._research_service = None
 
 
 # Convenience function

@@ -41,6 +41,7 @@ from .system_state_repository import (
 )
 from .operation_runs_repository import (
     OperationRunsRepositoryInterface,
+    AtlasOperationRunsRepository,
     get_operation_runs_repository,
     reset_operation_runs_repository,
 )
@@ -58,6 +59,11 @@ from .company_cache_repository import (
     CompanyCacheRepositoryInterface,
     get_company_cache_repository,
     reset_company_cache_repository,
+)
+from .form_cache_repository import (
+    FormCacheRepositoryInterface,
+    get_form_cache_repository,
+    reset_form_cache_repository,
 )
 from .config import (
     get_job_repository,
@@ -85,6 +91,7 @@ __all__ = [
     "get_operation_runs_repository",
     "reset_operation_runs_repository",
     "OperationRunsRepositoryInterface",
+    "AtlasOperationRunsRepository",
     # Job search repository
     "get_job_search_repository",
     "reset_job_search_repository",
@@ -97,6 +104,10 @@ __all__ = [
     "get_company_cache_repository",
     "reset_company_cache_repository",
     "CompanyCacheRepositoryInterface",
+    # Form cache repository
+    "get_form_cache_repository",
+    "reset_form_cache_repository",
+    "FormCacheRepositoryInterface",
     # Shared
     "WriteResult",
     "RepositoryConfig",
