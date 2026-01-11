@@ -176,3 +176,16 @@ class JobRepositoryInterface(ABC):
             WriteResult with upserted_id set to the new document's _id
         """
         pass
+
+    @abstractmethod
+    def aggregate(self, pipeline: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Run an aggregation pipeline.
+
+        Args:
+            pipeline: MongoDB aggregation pipeline stages
+
+        Returns:
+            List of aggregation result documents
+        """
+        pass

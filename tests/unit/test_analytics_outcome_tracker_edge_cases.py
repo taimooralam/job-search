@@ -16,9 +16,22 @@ from src.analytics.outcome_tracker import (
     VALID_STATUSES,
     STATUS_TIMESTAMP_MAP,
 )
+from src.common.repositories.base import WriteResult
 
 
 # ===== FIXTURES =====
+
+
+@pytest.fixture
+def mock_job_repository():
+    """Mock job repository for level-2 operations."""
+    mock_repo = MagicMock()
+    mock_repo.find_one.return_value = None
+    mock_repo.update_one.return_value = WriteResult(
+        matched_count=1, modified_count=1, atlas_success=True
+    )
+    mock_repo.aggregate.return_value = []
+    return mock_repo
 
 
 @pytest.fixture
@@ -59,10 +72,9 @@ def sample_job_with_timezone_dates():
 class TestDateTimeEdgeCases:
     """Test date and time handling edge cases."""
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_invalid_date_format(self, mock_mongo):
+    def test_calculate_metrics_invalid_date_format(self, mock_job_repository):
         """Should handle invalid date formats gracefully."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "invalid-date",
@@ -74,10 +86,9 @@ class TestDateTimeEdgeCases:
         # Should not crash, metrics should be None
         assert result.get("days_to_response") is None
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_timezone_aware(self, mock_mongo):
+    def test_calculate_metrics_timezone_aware(self, mock_job_repository):
         """Should handle timezone-aware dates."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2024-01-15T10:00:00+00:00",
@@ -88,10 +99,9 @@ class TestDateTimeEdgeCases:
 
         assert result["days_to_response"] == 5
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_with_z_suffix(self, mock_mongo):
+    def test_calculate_metrics_with_z_suffix(self, mock_job_repository):
         """Should handle dates with Z suffix (UTC)."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2024-01-15T10:00:00Z",
@@ -102,10 +112,9 @@ class TestDateTimeEdgeCases:
 
         assert result["days_to_response"] == 5
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_same_day_application_response(self, mock_mongo):
+    def test_calculate_metrics_same_day_application_response(self, mock_job_repository):
         """Should handle same-day application and response."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2024-01-15T10:00:00",
@@ -117,10 +126,9 @@ class TestDateTimeEdgeCases:
         # Same day should be 0 days
         assert result["days_to_response"] == 0
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_negative_duration(self, mock_mongo):
+    def test_calculate_metrics_negative_duration(self, mock_job_repository):
         """Should handle response_at before applied_at (data error)."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2024-01-20T10:00:00",
@@ -132,10 +140,9 @@ class TestDateTimeEdgeCases:
         # Should calculate negative days (indicates data issue)
         assert result["days_to_response"] == -5
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_very_long_duration(self, mock_mongo):
+    def test_calculate_metrics_very_long_duration(self, mock_job_repository):
         """Should handle very long durations."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2023-01-01T10:00:00",
@@ -147,10 +154,9 @@ class TestDateTimeEdgeCases:
         # Should calculate large number of days
         assert result["days_to_offer"] > 700
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_missing_applied_at(self, mock_mongo):
+    def test_calculate_metrics_missing_applied_at(self, mock_job_repository):
         """Should handle missing applied_at."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": None,
@@ -164,10 +170,9 @@ class TestDateTimeEdgeCases:
         assert result.get("days_to_response") is None
         assert result.get("days_to_interview") is None
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_calculate_metrics_partial_timestamps(self, mock_mongo):
+    def test_calculate_metrics_partial_timestamps(self, mock_job_repository):
         """Should handle partial timestamp data."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         outcome = {
             "applied_at": "2024-01-15T10:00:00",
@@ -189,24 +194,15 @@ class TestDateTimeEdgeCases:
 class TestMongoDBErrorHandling:
     """Test MongoDB error handling."""
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_init_connection_failure(self, mock_mongo):
-        """Should handle MongoDB connection failure."""
-        mock_mongo.side_effect = Exception("Connection failed")
+    def test_init_connection_failure(self, mock_job_repository):
+        """Should not fail on init - repository is lazy-loaded."""
+        # With repository pattern, init doesn't connect immediately
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
+        assert tracker._job_repository is mock_job_repository
 
-        with pytest.raises(Exception):
-            OutcomeTracker(mongodb_uri="mongodb://invalid")
-
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_get_job_outcome_invalid_objectid(self, mock_mongo):
+    def test_get_job_outcome_invalid_objectid(self, mock_job_repository):
         """Should handle invalid ObjectId format."""
-        mock_collection = MagicMock()
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
-
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         # Invalid ObjectId
         result = tracker.get_job_outcome("invalid-id-format")
@@ -214,49 +210,28 @@ class TestMongoDBErrorHandling:
         # Should return None or handle gracefully
         assert result is None or isinstance(result, dict)
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_outcome_invalid_objectid(self, mock_mongo):
+    def test_update_outcome_invalid_objectid(self, mock_job_repository):
         """Should handle invalid ObjectId on update."""
-        mock_collection = MagicMock()
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
-
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         result = tracker.update_outcome("invalid-id", status="applied")
 
         assert result is None
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_outcome_database_error(self, mock_mongo):
+    def test_update_outcome_database_error(self, mock_job_repository):
         """Should handle database errors during update."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.side_effect = Exception("Database error")
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_job_repository.find_one.side_effect = Exception("Database error")
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
         result = tracker.update_outcome("507f1f77bcf86cd799439011", status="applied")
 
         assert result is None
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_get_effectiveness_report_aggregation_error(self, mock_mongo):
+    def test_get_effectiveness_report_aggregation_error(self, mock_job_repository):
         """Should handle aggregation pipeline errors."""
-        mock_collection = MagicMock()
-        mock_collection.aggregate.side_effect = Exception("Aggregation failed")
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_job_repository.aggregate.side_effect = Exception("Aggregation failed")
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
         result = tracker.get_effectiveness_report()
 
         assert result["success"] is False
@@ -270,9 +245,9 @@ class TestStatusTransitions:
     """Test status transition edge cases."""
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_same_status_twice(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_same_status_twice(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle updating to same status."""
-        mock_collection = MagicMock()
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "application_outcome": {
@@ -280,17 +255,15 @@ class TestStatusTransitions:
                 "applied_at": "2024-01-15T10:00:00",
             },
         }
-        mock_collection.find_one.return_value = job
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_config.return_value.get.return_value = "mongodb://test"
+        mock_analytics = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-        tracker.db = {"annotation_analytics": MagicMock()}
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         # Update to same status
         result = tracker.update_outcome("507f1f77bcf86cd799439011", status="applied")
@@ -300,9 +273,9 @@ class TestStatusTransitions:
         assert result["applied_at"] == "2024-01-15T10:00:00"
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_backwards_status_transition(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_backwards_status_transition(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should allow backwards status transitions (data corrections)."""
-        mock_collection = MagicMock()
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "application_outcome": {
@@ -311,17 +284,15 @@ class TestStatusTransitions:
                 "interview_at": "2024-01-25T10:00:00",
             },
         }
-        mock_collection.find_one.return_value = job
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_config.return_value.get.return_value = "mongodb://test"
+        mock_analytics = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-        tracker.db = {"annotation_analytics": MagicMock()}
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         # Revert to earlier status
         result = tracker.update_outcome(
@@ -331,24 +302,22 @@ class TestStatusTransitions:
         assert result["status"] == "response_received"
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_all_terminal_statuses(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_all_terminal_statuses(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle all terminal statuses."""
-        mock_collection = MagicMock()
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
             "application_outcome": None,
         }
-        mock_collection.find_one.return_value = job
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_config.return_value.get.return_value = "mongodb://test"
+        mock_analytics = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-        tracker.db = {"annotation_analytics": MagicMock()}
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         terminal_statuses = ["offer_accepted", "rejected", "withdrawn"]
 
@@ -367,15 +336,14 @@ class TestAnnotationProfileEdgeCases:
     """Test annotation profile calculation edge cases."""
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_analytics_missing_annotations(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_analytics_missing_annotations(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle missing jd_annotations field."""
+        mock_config.return_value.get.return_value = "mongodb://test"
         mock_analytics = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_analytics
-        mock_mongo.return_value.__getitem__.return_value = mock_db
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.db = mock_db
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -392,15 +360,14 @@ class TestAnnotationProfileEdgeCases:
         mock_analytics.update_one.assert_called_once()
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_analytics_empty_annotations(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_analytics_empty_annotations(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle empty annotations list."""
+        mock_config.return_value.get.return_value = "mongodb://test"
         mock_analytics = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_analytics
-        mock_mongo.return_value.__getitem__.return_value = mock_db
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.db = mock_db
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -418,15 +385,14 @@ class TestAnnotationProfileEdgeCases:
         assert doc["annotation_profile"]["core_strength_count"] == 0
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_analytics_malformed_annotations(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_analytics_malformed_annotations(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle malformed annotation objects."""
+        mock_config.return_value.get.return_value = "mongodb://test"
         mock_analytics = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_analytics
-        mock_mongo.return_value.__getitem__.return_value = mock_db
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.db = mock_db
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -445,15 +411,14 @@ class TestAnnotationProfileEdgeCases:
         tracker._update_analytics("test_id", job, outcome)
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_analytics_no_section_summaries(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_analytics_no_section_summaries(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle missing section_summaries."""
+        mock_config.return_value.get.return_value = "mongodb://test"
         mock_analytics = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_analytics
-        mock_mongo.return_value.__getitem__.return_value = mock_db
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.db = mock_db
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -474,16 +439,15 @@ class TestAnnotationProfileEdgeCases:
         assert doc["annotation_profile"]["section_coverage"] == 0
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_analytics_error_does_not_propagate(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_analytics_error_does_not_propagate(self, mock_config, mock_mongo_client, mock_job_repository):
         """Analytics update error should not fail main operation."""
+        mock_config.return_value.get.return_value = "mongodb://test"
         mock_analytics = MagicMock()
         mock_analytics.update_one.side_effect = Exception("Analytics failed")
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_analytics
-        mock_mongo.return_value.__getitem__.return_value = mock_db
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.db = mock_db
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         job = {"_id": ObjectId("507f1f77bcf86cd799439011")}
         outcome = {"status": "applied"}
@@ -498,11 +462,9 @@ class TestAnnotationProfileEdgeCases:
 class TestReportGenerationEdgeCases:
     """Test effectiveness report generation edge cases."""
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_report_single_bucket(self, mock_mongo):
+    def test_report_single_bucket(self, mock_job_repository):
         """Should handle report with only one bucket."""
-        mock_collection = MagicMock()
-        mock_collection.aggregate.return_value = [
+        mock_job_repository.aggregate.return_value = [
             {
                 "_id": {"annotation_bucket": "high"},
                 "total": 10,
@@ -511,24 +473,17 @@ class TestReportGenerationEdgeCases:
                 "offers": 1,
             }
         ]
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
         result = tracker.get_effectiveness_report()
 
         assert result["success"] is True
         assert "high" in result["by_annotation_density"]
         assert len(result["by_annotation_density"]) == 1
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_report_zero_totals(self, mock_mongo):
+    def test_report_zero_totals(self, mock_job_repository):
         """Should handle buckets with zero applications."""
-        mock_collection = MagicMock()
-        mock_collection.aggregate.return_value = [
+        mock_job_repository.aggregate.return_value = [
             {
                 "_id": {"annotation_bucket": "high"},
                 "total": 0,  # Zero
@@ -537,22 +492,16 @@ class TestReportGenerationEdgeCases:
                 "offers": 0,
             }
         ]
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
         result = tracker.get_effectiveness_report()
 
         # Should handle division by zero
         assert result["by_annotation_density"]["high"]["response_rate"] == 0
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_generate_recommendation_equal_rates(self, mock_mongo):
+    def test_generate_recommendation_equal_rates(self, mock_job_repository):
         """Should handle equal response rates."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         by_bucket = {
             "high": {"response_rate": 30.0},
@@ -563,10 +512,9 @@ class TestReportGenerationEdgeCases:
 
         assert "no significant correlation" in recommendation.lower()
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_generate_recommendation_only_high(self, mock_mongo):
+    def test_generate_recommendation_only_high(self, mock_job_repository):
         """Should handle when only high bucket has data."""
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         by_bucket = {
             "high": {"response_rate": 50.0},
@@ -577,11 +525,9 @@ class TestReportGenerationEdgeCases:
 
         assert isinstance(recommendation, str)
 
-    @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_funnel_single_application(self, mock_mongo):
+    def test_funnel_single_application(self, mock_job_repository):
         """Should handle funnel with single application."""
-        mock_collection = MagicMock()
-        mock_collection.aggregate.return_value = [
+        mock_job_repository.aggregate.return_value = [
             {
                 "_id": None,
                 "applied": 1,
@@ -592,13 +538,8 @@ class TestReportGenerationEdgeCases:
                 "avg_days_to_interview": None,
             }
         ]
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
         result = tracker.get_conversion_funnel()
 
         assert result["funnel"]["applied"] == 1
@@ -612,21 +553,19 @@ class TestFieldValidation:
     """Test field validation and sanitization."""
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_with_disallowed_fields(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_with_disallowed_fields(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should ignore disallowed fields in update."""
-        mock_collection = MagicMock()
         job = {"_id": ObjectId("507f1f77bcf86cd799439011"), "application_outcome": None}
-        mock_collection.find_one.return_value = job
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_config.return_value.get.return_value = "mongodb://test"
+        mock_analytics = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-        tracker.db = {"annotation_analytics": MagicMock()}
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         # Try to pass disallowed fields
         result = tracker.update_outcome(
@@ -642,21 +581,19 @@ class TestFieldValidation:
         assert "_id" not in result
 
     @patch("src.analytics.outcome_tracker.MongoClient")
-    def test_update_with_none_values(self, mock_mongo):
+    @patch("src.analytics.outcome_tracker.Config")
+    def test_update_with_none_values(self, mock_config, mock_mongo_client, mock_job_repository):
         """Should handle None values in update."""
-        mock_collection = MagicMock()
         job = {"_id": ObjectId("507f1f77bcf86cd799439011"), "application_outcome": None}
-        mock_collection.find_one.return_value = job
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
-        mock_mongo.return_value.__getitem__.return_value.__getitem__.return_value = (
-            mock_collection
-        )
+        mock_config.return_value.get.return_value = "mongodb://test"
+        mock_analytics = MagicMock()
+        mock_mongo_client.return_value.__getitem__.return_value.__getitem__.return_value = mock_analytics
 
-        tracker = OutcomeTracker(mongodb_uri="mongodb://test")
-        tracker.collection = mock_collection
-        tracker.db = {"annotation_analytics": MagicMock()}
+        tracker = OutcomeTracker(job_repository=mock_job_repository)
 
         result = tracker.update_outcome(
             "507f1f77bcf86cd799439011",

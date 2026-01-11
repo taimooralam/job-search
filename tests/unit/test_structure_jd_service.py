@@ -113,6 +113,18 @@ def mock_db_client():
 
 
 @pytest.fixture
+def mock_job_repository():
+    """Mock job repository for level-2 operations."""
+    from src.common.repositories.base import WriteResult
+    mock_repo = MagicMock()
+    mock_repo.find_one.return_value = None
+    mock_repo.update_one.return_value = WriteResult(
+        matched_count=1, modified_count=1, atlas_success=True
+    )
+    return mock_repo
+
+
+@pytest.fixture
 def sample_llm_metadata():
     """Sample LLMMetadata for mocking."""
     return LLMMetadata(
@@ -179,17 +191,12 @@ class TestStructureJDServiceGetJob:
 
         assert "Invalid job ID format" in str(exc_info.value)
 
-    def test_returns_job_document(self, sample_job_id, sample_job_document, mock_db_client):
+    def test_returns_job_document(self, sample_job_id, sample_job_document, mock_job_repository):
         """Should return job document for valid ID."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = sample_job_document
-        mock_db_client.__getitem__ = MagicMock(return_value=MagicMock())
-        mock_db_client.__getitem__.return_value.__getitem__.return_value = mock_collection
+        mock_job_repository.find_one.return_value = sample_job_document
 
-        service = StructureJDService(db_client=mock_db_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._get_job(sample_job_id)
+        service = StructureJDService(job_repository=mock_job_repository)
+        result = service._get_job(sample_job_id)
 
         assert result == sample_job_document
 
@@ -905,54 +912,38 @@ class TestStructureJDServiceExecuteErrors:
 class TestStructureJDServicePersistResult:
     """Tests for _persist_result method."""
 
-    def test_updates_job_document(self, sample_job_id, mock_processed_jd):
+    def test_updates_job_document(self, sample_job_id, mock_processed_jd, mock_job_repository):
         """Should update job document with processed JD."""
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = {"jd_annotations": {}}
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        from src.common.repositories.base import WriteResult
+        mock_job_repository.find_one.return_value = {"jd_annotations": {}}
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = StructureJDService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            result = service._persist_result(sample_job_id, mock_processed_jd)
+        service = StructureJDService(job_repository=mock_job_repository)
+        result = service._persist_result(sample_job_id, mock_processed_jd)
 
         assert result is True
-        mock_collection.update_one.assert_called_once()
+        mock_job_repository.update_one.assert_called_once()
 
-    def test_preserves_existing_annotations(self, sample_job_id, mock_processed_jd):
+    def test_preserves_existing_annotations(self, sample_job_id, mock_processed_jd, mock_job_repository):
         """Should preserve existing annotations when updating."""
+        from src.common.repositories.base import WriteResult
         existing_annotations = {
             "highlight_0": {"type": "highlight", "text": "important"},
             "annotation_version": 2,
         }
 
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = {"jd_annotations": existing_annotations}
-        mock_collection.update_one.return_value = MagicMock(
-            modified_count=1, matched_count=1
+        mock_job_repository.find_one.return_value = {"jd_annotations": existing_annotations}
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
         )
 
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-
-        mock_client = MagicMock()
-        mock_client.__getitem__.return_value = mock_db
-
-        service = StructureJDService(db_client=mock_client)
-
-        with patch.dict("os.environ", {"MONGO_DB_NAME": "jobs"}):
-            service._persist_result(sample_job_id, mock_processed_jd)
+        service = StructureJDService(job_repository=mock_job_repository)
+        service._persist_result(sample_job_id, mock_processed_jd)
 
         # Check that update preserved existing highlight
-        call_args = mock_collection.update_one.call_args[0][1]
+        call_args = mock_job_repository.update_one.call_args[0][1]
         updated_annotations = call_args["$set"]["jd_annotations"]
         assert "highlight_0" in updated_annotations
         # Version should be incremented from 2 to 3

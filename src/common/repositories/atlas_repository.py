@@ -180,6 +180,11 @@ class AtlasJobRepository(JobRepositoryInterface):
             vps_success=None,
         )
 
+    def aggregate(self, pipeline: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Run an aggregation pipeline."""
+        collection = self._get_collection()
+        return list(collection.aggregate(pipeline))
+
     @classmethod
     def reset_connection(cls) -> None:
         """

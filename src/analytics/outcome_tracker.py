@@ -30,6 +30,7 @@ from pymongo.database import Database
 
 from src.common.annotation_types import ApplicationOutcome
 from src.common.config import Config
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 
 logger = logging.getLogger(__name__)
 
@@ -69,21 +70,27 @@ class OutcomeTracker:
     - Offer rate by core_strength count
     """
 
-    def __init__(self, mongodb_uri: Optional[str] = None, db_name: str = "jobs"):
+    def __init__(
+        self,
+        mongodb_uri: Optional[str] = None,
+        db_name: str = "jobs",
+        job_repository: Optional[JobRepositoryInterface] = None,
+    ):
         """
         Initialize the outcome tracker.
 
         Args:
-            mongodb_uri: MongoDB connection URI (defaults to Config.MONGODB_URI)
-            db_name: Database name (defaults to "jobs")
+            mongodb_uri: MongoDB connection URI (deprecated, use job_repository)
+            db_name: Database name (deprecated, use job_repository)
+            job_repository: Optional job repository for level-2 operations
         """
-        uri = mongodb_uri or Config.MONGODB_URI
-        if not uri:
-            raise ValueError("MONGODB_URI not configured")
+        self._job_repository = job_repository
 
-        self.client = MongoClient(uri)
-        self.db: Database = self.client[db_name]
-        self.collection = self.db["level-2"]
+    def _get_job_repository(self) -> JobRepositoryInterface:
+        """Get job repository, using singleton if not provided."""
+        if self._job_repository is not None:
+            return self._job_repository
+        return get_job_repository()
 
     def get_job_outcome(self, job_id: str) -> Optional[ApplicationOutcome]:
         """
@@ -97,9 +104,8 @@ class OutcomeTracker:
         """
         try:
             object_id = ObjectId(job_id)
-            job = self.collection.find_one(
-                {"_id": object_id}, {"application_outcome": 1}
-            )
+            repo = self._get_job_repository()
+            job = repo.find_one({"_id": object_id})
             if not job:
                 return None
 
@@ -133,9 +139,10 @@ class OutcomeTracker:
         """
         try:
             object_id = ObjectId(job_id)
+            repo = self._get_job_repository()
 
             # Get current job
-            job = self.collection.find_one({"_id": object_id})
+            job = repo.find_one({"_id": object_id})
             if not job:
                 logger.error(f"Job {job_id} not found")
                 return None
@@ -177,7 +184,7 @@ class OutcomeTracker:
             outcome = self._calculate_metrics(outcome)
 
             # Save to database
-            result = self.collection.update_one(
+            result = repo.update_one(
                 {"_id": object_id},
                 {"$set": {"application_outcome": outcome}},
             )
@@ -291,7 +298,8 @@ class OutcomeTracker:
                 },
             ]
 
-            results = list(self.collection.aggregate(pipeline))
+            repo = self._get_job_repository()
+            results = repo.aggregate(pipeline)
             return self._format_effectiveness_report(results, date_range_days)
 
         except Exception as e:
@@ -360,7 +368,8 @@ class OutcomeTracker:
                 },
             ]
 
-            results = list(self.collection.aggregate(pipeline))
+            repo = self._get_job_repository()
+            results = repo.aggregate(pipeline)
 
             if not results:
                 return {
@@ -523,8 +532,12 @@ class OutcomeTracker:
                 "computed_at": datetime.utcnow().isoformat(),
             }
 
-            # Upsert to analytics collection
-            analytics_collection = self.db["annotation_analytics"]
+            # Upsert to analytics collection (separate from level-2)
+            # Uses direct MongoDB access since annotation_analytics is a separate utility collection
+            config = Config()
+            client = MongoClient(config.get("MONGODB_URI"))
+            db = client["jobs"]
+            analytics_collection = db["annotation_analytics"]
             analytics_collection.update_one(
                 {"_id": job_id},
                 {"$set": analytics_doc},

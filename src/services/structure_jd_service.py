@@ -21,6 +21,7 @@ from bson import ObjectId
 from pymongo import MongoClient
 
 from src.common.model_tiers import ModelTier, get_model_for_operation
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.common.structured_logger import StructuredLogger
 from src.common.token_tracker import TokenTracker, get_global_tracker
 from src.layer1_4 import process_jd, process_jd_sync, processed_jd_to_dict, LLMMetadata
@@ -39,27 +40,27 @@ class StructureJDService(OperationService):
 
     operation_name = "structure-jd"
 
-    def __init__(self, db_client: Optional[MongoClient] = None):
+    def __init__(
+        self,
+        db_client: Optional[MongoClient] = None,
+        job_repository: Optional[JobRepositoryInterface] = None,
+    ):
         """
         Initialize the service.
 
         Args:
-            db_client: Optional MongoDB client. If not provided, creates one.
+            db_client: Optional MongoDB client (deprecated, use job_repository).
+            job_repository: Optional job repository for level-2 operations.
         """
         self._db_client = db_client
+        self._job_repository = job_repository
         self._tracker: Optional[TokenTracker] = None
 
-    def _get_db_client(self) -> MongoClient:
-        """Get or create MongoDB client."""
-        if self._db_client is not None:
-            return self._db_client
-
-        mongo_uri = (
-            os.getenv("MONGODB_URI")
-            or os.getenv("MONGO_URI")
-            or "mongodb://localhost:27017"
-        )
-        return MongoClient(mongo_uri)
+    def _get_job_repository(self) -> JobRepositoryInterface:
+        """Get job repository, using singleton if not provided."""
+        if self._job_repository is not None:
+            return self._job_repository
+        return get_job_repository()
 
     def _get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -79,13 +80,8 @@ class StructureJDService(OperationService):
         except Exception as e:
             raise ValueError(f"Invalid job ID format: {job_id}") from e
 
-        client = self._get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            return db["level-2"].find_one({"_id": object_id})
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_job_repository()
+        return repo.find_one({"_id": object_id})
 
     def _get_jd_text(self, job: Dict[str, Any]) -> str:
         """
@@ -138,13 +134,11 @@ class StructureJDService(OperationService):
             logger.error(f"Invalid job ID for persistence: {job_id}")
             return False
 
-        client = self._get_db_client()
         try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            collection = db["level-2"]
+            repo = self._get_job_repository()
 
             # Get existing annotations to preserve them
-            job = collection.find_one({"_id": object_id}, {"jd_annotations": 1})
+            job = repo.find_one({"_id": object_id})
             existing_annotations = job.get("jd_annotations", {}) if job else {}
 
             # Update with new processed JD
@@ -157,7 +151,7 @@ class StructureJDService(OperationService):
                 existing_annotations.get("annotation_version", 0) + 1
             )
 
-            result = collection.update_one(
+            result = repo.update_one(
                 {"_id": object_id},
                 {
                     "$set": {
@@ -173,9 +167,6 @@ class StructureJDService(OperationService):
         except Exception as e:
             logger.error(f"Failed to persist structured JD: {e}")
             return False
-        finally:
-            if self._db_client is None:
-                client.close()
 
     async def execute(
         self,

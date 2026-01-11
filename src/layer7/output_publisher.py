@@ -21,6 +21,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from pymongo import MongoClient
 
 from src.common.config import Config
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.common.state import JobState
 from src.common.utils import sanitize_path_component
 from src.common.logger import get_logger
@@ -33,7 +34,7 @@ class OutputPublisher:
     Publishes job application outputs to local disk, MongoDB, Google Drive and Sheets.
     """
 
-    def __init__(self):
+    def __init__(self, job_repository: Optional[JobRepositoryInterface] = None):
         """Initialize Google API clients and MongoDB connection."""
         # Logger for internal operations
         self.logger = logging.getLogger(__name__)
@@ -62,12 +63,17 @@ class OutputPublisher:
             self.drive_service = None
             self.sheets_client = None
 
-        # Initialize MongoDB client
-        self.mongo_client = MongoClient(Config.MONGODB_URI)
-        self.db = self.mongo_client['jobs']
+        # Initialize job repository for level-2 operations
+        self._job_repository = job_repository
 
         # Initialize dossier generator
         self.dossier_gen = DossierGenerator()
+
+    def _get_job_repository(self) -> JobRepositoryInterface:
+        """Get job repository, using singleton if not provided."""
+        if self._job_repository is not None:
+            return self._job_repository
+        return get_job_repository()
 
     def _find_or_create_folder(self, folder_name: str, parent_folder_id: Optional[str] = None) -> str:
         """
@@ -262,14 +268,14 @@ class OutputPublisher:
             job_id = state['job_id']
             self.logger.info(f"Persisting to MongoDB for job_id: {job_id}")
 
-            # Find the job record - try multiple strategies
-            collection = self.db['level-2']
+            # Get job repository
+            repo = self._get_job_repository()
             job_record = None
 
             # Strategy 1: Try as ObjectId (_id field) - most common case
             try:
                 object_id = ObjectId(job_id)
-                job_record = collection.find_one({"_id": object_id})
+                job_record = repo.find_one({"_id": object_id})
                 if job_record:
                     self.logger.info(f"[MongoDB] Found job by _id (ObjectId): {job_id}")
                 else:
@@ -281,7 +287,7 @@ class OutputPublisher:
             if not job_record:
                 try:
                     job_id_int = int(job_id)
-                    job_record = collection.find_one({"jobId": job_id_int})
+                    job_record = repo.find_one({"jobId": job_id_int})
                     if job_record:
                         self.logger.info(f"[MongoDB] Found job by jobId (int): {job_id_int}")
                     else:
@@ -291,7 +297,7 @@ class OutputPublisher:
 
             # Strategy 3: Try as string jobId field
             if not job_record:
-                job_record = collection.find_one({"jobId": job_id})
+                job_record = repo.find_one({"jobId": job_id})
                 if job_record:
                     self.logger.info(f"Found job by jobId (string): {job_id}")
 
@@ -401,7 +407,7 @@ class OutputPublisher:
             }
 
             # Perform update with $set and $push for pipeline_runs array
-            result = collection.update_one(
+            result = repo.update_one(
                 {"_id": job_record['_id']},
                 {
                     "$set": update_data,

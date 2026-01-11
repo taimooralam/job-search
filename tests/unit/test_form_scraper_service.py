@@ -386,6 +386,8 @@ class TestFormScraperServiceAnswerGeneration:
         sample_job,
     ):
         """Test successful form scraping and answer generation."""
+        from src.common.repositories.base import WriteResult
+
         # Setup scraping mocks
         mock_result = MagicMock()
         mock_result.markdown = sample_form_html
@@ -396,10 +398,12 @@ class TestFormScraperServiceAnswerGeneration:
         mock_extraction_response.content = json.dumps(sample_extraction_output)
         mock_llm.invoke.return_value = mock_extraction_response
 
-        # Setup MongoDB mocks
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = sample_job
-        mock_collection.update_one.return_value = MagicMock(modified_count=1)
+        # Setup mock job repository
+        mock_job_repository = MagicMock()
+        mock_job_repository.find_one.return_value = sample_job
+        mock_job_repository.update_one.return_value = WriteResult(
+            matched_count=1, modified_count=1, atlas_success=True
+        )
 
         # Mock answer service
         mock_answer_service_instance = MagicMock()
@@ -415,33 +419,26 @@ class TestFormScraperServiceAnswerGeneration:
 
         with patch.object(FormScraperService, "_get_cached_form_fields", return_value=None):
             with patch.object(FormScraperService, "_cache_form_fields", return_value=True):
-                with patch.object(FormScraperService, "_get_db_client") as mock_get_db:
-                    mock_client = MagicMock()
-                    mock_db = MagicMock()
-                    mock_client.__getitem__ = MagicMock(return_value=mock_db)
-                    mock_db.__getitem__ = MagicMock(return_value=mock_collection)
-                    mock_get_db.return_value = mock_client
+                service = FormScraperService(job_repository=mock_job_repository)
+                service.firecrawl = mock_firecrawl
+                service.llm = mock_llm
 
-                    service = FormScraperService(db_client=mock_client)
-                    service.firecrawl = mock_firecrawl
-                    service.llm = mock_llm
-
-                    # Patch the import inside the method
-                    with patch.dict(
-                        "sys.modules",
-                        {
-                            "src.services.answer_generator_service": MagicMock(
-                                AnswerGeneratorService=MagicMock(
-                                    return_value=mock_answer_service_instance
-                                )
+                # Patch the import inside the method
+                with patch.dict(
+                    "sys.modules",
+                    {
+                        "src.services.answer_generator_service": MagicMock(
+                            AnswerGeneratorService=MagicMock(
+                                return_value=mock_answer_service_instance
                             )
-                        },
-                    ):
-                        result = await service.scrape_and_generate_answers(
-                            job_id="507f1f77bcf86cd799439011",
-                            application_url="https://example.com/apply",
-                            force_refresh=False,
                         )
+                    },
+                ):
+                    result = await service.scrape_and_generate_answers(
+                        job_id="507f1f77bcf86cd799439011",
+                        application_url="https://example.com/apply",
+                        force_refresh=False,
+                    )
 
         assert result["success"] is True
         assert "fields" in result

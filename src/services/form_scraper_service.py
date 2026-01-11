@@ -28,6 +28,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.common.config import Config
 from src.common.llm_factory import create_tracked_llm
+from src.common.repositories import get_job_repository, JobRepositoryInterface
 from src.common.types import FormField
 
 logger = logging.getLogger(__name__)
@@ -138,20 +139,32 @@ class FormScraperService:
     Caches results in MongoDB to avoid redundant scraping.
     """
 
-    def __init__(self, db_client: Optional[MongoClient] = None):
+    def __init__(
+        self,
+        db_client: Optional[MongoClient] = None,
+        job_repository: Optional[JobRepositoryInterface] = None,
+    ):
         """
         Initialize the service.
 
         Args:
-            db_client: Optional MongoDB client. If not provided, creates one.
+            db_client: Optional MongoDB client (deprecated, use job_repository).
+            job_repository: Optional job repository for level-2 operations.
         """
         self._db_client = db_client
+        self._job_repository = job_repository
         self.firecrawl = FirecrawlApp(api_key=Config.FIRECRAWL_API_KEY)
         self.llm = create_tracked_llm(
             model=Config.DEFAULT_MODEL,
             temperature=Config.ANALYTICAL_TEMPERATURE,
             layer="form_scraper",
         )
+
+    def _get_job_repository(self) -> JobRepositoryInterface:
+        """Get job repository, using singleton if not provided."""
+        if self._job_repository is not None:
+            return self._job_repository
+        return get_job_repository()
 
     def _get_db_client(self) -> MongoClient:
         """Get or create MongoDB client."""
@@ -511,21 +524,16 @@ class FormScraperService:
 
         # Step 2: Load job from MongoDB for context
         emit_progress("load_job", "processing", "Loading job context...")
-        client = self._get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            job = db["level-2"].find_one({"_id": ObjectId(job_id)})
-            if not job:
-                emit_progress("load_job", "failed", "Job not found")
-                return {
-                    "success": False,
-                    "error": f"Job not found: {job_id}",
-                    "fields": fields,
-                }
-            emit_progress("load_job", "success", "Job context loaded")
-        finally:
-            if self._db_client is None:
-                client.close()
+        repo = self._get_job_repository()
+        job = repo.find_one({"_id": ObjectId(job_id)})
+        if not job:
+            emit_progress("load_job", "failed", "Job not found")
+            return {
+                "success": False,
+                "error": f"Job not found: {job_id}",
+                "fields": fields,
+            }
+        emit_progress("load_job", "success", "Job context loaded")
 
         # Step 3: Generate answers
         emit_progress("generate_answers", "processing", "Generating personalized answers...")
@@ -547,10 +555,9 @@ class FormScraperService:
 
         # Step 4: Save to MongoDB
         emit_progress("save_results", "processing", "Saving to database...")
-        client = self._get_db_client()
         try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            db["level-2"].update_one(
+            repo = self._get_job_repository()
+            repo.update_one(
                 {"_id": ObjectId(job_id)},
                 {
                     "$set": {
@@ -565,9 +572,6 @@ class FormScraperService:
         except Exception as e:
             logger.error(f"Failed to save form results: {e}")
             emit_progress("save_results", "failed", f"Save failed: {str(e)}")
-        finally:
-            if self._db_client is None:
-                client.close()
 
         return {
             "success": True,
