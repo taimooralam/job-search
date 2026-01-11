@@ -26,6 +26,7 @@ from .operation_streaming import (
     update_operation_status,
     get_operation_state,
 )
+from src.common.repositories import get_system_state_repository
 
 logger = logging.getLogger(__name__)
 
@@ -600,8 +601,8 @@ async def get_ingest_state(source: str) -> dict:
     Returns last fetch timestamp and stats from previous run.
     """
     try:
-        db = get_db()
-        state = db["system_state"].find_one({"_id": f"ingest_{source}"})
+        state_repo = get_system_state_repository()
+        state = state_repo.get_state(f"ingest_{source}")
 
         if not state:
             return {
@@ -631,10 +632,10 @@ async def reset_ingest_state(source: str) -> dict:
     Use this to force a full (non-incremental) fetch on next run.
     """
     try:
-        db = get_db()
-        result = db["system_state"].delete_one({"_id": f"ingest_{source}"})
+        state_repo = get_system_state_repository()
+        deleted = state_repo.delete_state(f"ingest_{source}")
 
-        if result.deleted_count > 0:
+        if deleted:
             return {"success": True, "message": f"Reset ingestion state for {source}"}
         else:
             return {"success": True, "message": f"No state found for {source}"}
@@ -655,8 +656,8 @@ async def get_ingest_history(
     Returns the last N runs with timestamps and stats.
     """
     try:
-        db = get_db()
-        state = db["system_state"].find_one({"_id": f"ingest_{source}"})
+        state_repo = get_system_state_repository()
+        state = state_repo.get_state(f"ingest_{source}")
 
         if not state:
             return {

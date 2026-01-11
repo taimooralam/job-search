@@ -25,18 +25,19 @@ from src.services.job_sources import JobData
 
 @pytest.fixture
 def mock_db():
-    """Mock MongoDB database with collections."""
-    mock_system_state = MagicMock()
-
+    """Mock MongoDB database (for level-2 collection access via repository)."""
     mock_db_instance = MagicMock()
-    mock_db_instance.__getitem__.side_effect = lambda name: {
-        "system_state": mock_system_state,
-    }.get(name, MagicMock())
+    return mock_db_instance
 
-    return {
-        "db": mock_db_instance,
-        "system_state": mock_system_state,
-    }
+
+@pytest.fixture
+def mock_system_state_repository():
+    """Mock system state repository for ingestion state operations."""
+    mock_repo = MagicMock()
+    mock_repo.get_state.return_value = None  # Default: no previous state
+    mock_repo.set_state.return_value = True
+    mock_repo.push_to_array.return_value = True
+    return mock_repo
 
 
 @pytest.fixture
@@ -99,17 +100,17 @@ class TestIngestServiceInitialization:
     def test_init_with_claude_scorer(self, mock_db):
         """Should initialize with Claude scorer by default."""
         # Act
-        service = IngestService(mock_db["db"], use_claude_scorer=True)
+        service = IngestService(mock_db, use_claude_scorer=True)
 
         # Assert
-        assert service.db == mock_db["db"]
+        assert service.db == mock_db
         assert service.use_claude_scorer is True
         assert service._scorer is None  # Lazy init
 
     def test_init_with_openrouter_scorer(self, mock_db):
         """Should initialize with OpenRouter scorer."""
         # Act
-        service = IngestService(mock_db["db"], use_claude_scorer=False)
+        service = IngestService(mock_db, use_claude_scorer=False)
 
         # Assert
         assert service.use_claude_scorer is False
@@ -123,12 +124,12 @@ class TestIngestServiceInitialization:
 class TestIngestServiceStateManagement:
     """Tests for ingestion state management."""
 
-    def test_get_last_fetch_timestamp_exists(self, mock_db):
+    def test_get_last_fetch_timestamp_exists(self, mock_db, mock_system_state_repository):
         """Should retrieve last fetch timestamp when state exists."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db, system_state_repository=mock_system_state_repository)
         last_fetch = datetime(2025, 1, 15, 10, 0, 0)
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_himalayas_auto",
             "last_fetch_at": last_fetch,
         }
@@ -138,15 +139,13 @@ class TestIngestServiceStateManagement:
 
         # Assert
         assert result == last_fetch
-        mock_db["system_state"].find_one.assert_called_once_with(
-            {"_id": "ingest_himalayas_auto"}
-        )
+        mock_system_state_repository.get_state.assert_called_once_with("ingest_himalayas_auto")
 
-    def test_get_last_fetch_timestamp_not_exists(self, mock_db):
+    def test_get_last_fetch_timestamp_not_exists(self, mock_db, mock_system_state_repository):
         """Should return None when no state exists."""
         # Arrange
-        service = IngestService(mock_db["db"])
-        mock_db["system_state"].find_one.return_value = None
+        service = IngestService(mock_db, system_state_repository=mock_system_state_repository)
+        mock_system_state_repository.get_state.return_value = None
 
         # Act
         result = service.get_last_fetch_timestamp("new_source")
@@ -154,10 +153,10 @@ class TestIngestServiceStateManagement:
         # Assert
         assert result is None
 
-    def test_update_last_fetch_timestamp(self, mock_db):
+    def test_update_last_fetch_timestamp(self, mock_db, mock_system_state_repository):
         """Should update last fetch timestamp and stats."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db, system_state_repository=mock_system_state_repository)
         timestamp = datetime.utcnow()
         stats = {
             "fetched": 50,
@@ -173,20 +172,18 @@ class TestIngestServiceStateManagement:
             stats=stats,
         )
 
-        # Assert
-        mock_db["system_state"].update_one.assert_called()
-        call_args = mock_db["system_state"].update_one.call_args_list
-
-        # First call: update timestamp and stats
-        assert call_args[0][0][0] == {"_id": "ingest_himalayas_auto"}
-        update_doc = call_args[0][0][1]["$set"]
+        # Assert - set_state should be called with update doc
+        mock_system_state_repository.set_state.assert_called_once()
+        call_args = mock_system_state_repository.set_state.call_args
+        assert call_args[0][0] == "ingest_himalayas_auto"  # state_id
+        update_doc = call_args[0][1]
         assert update_doc["last_fetch_at"] == timestamp
         assert update_doc["last_run_stats"] == stats
 
-    def test_update_adds_to_run_history(self, mock_db):
-        """Should add run to history with $slice to keep last 50."""
+    def test_update_adds_to_run_history(self, mock_db, mock_system_state_repository):
+        """Should add run to history with max_size=50."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db, system_state_repository=mock_system_state_repository)
         timestamp = datetime.utcnow()
         stats = {"fetched": 10, "ingested": 5}
 
@@ -197,15 +194,15 @@ class TestIngestServiceStateManagement:
             stats=stats,
         )
 
-        # Assert - Second call should be for run_history
-        call_args = mock_db["system_state"].update_one.call_args_list
-        assert len(call_args) == 2
-
-        # Verify run_history update
-        history_update = call_args[1][0][1]["$push"]["run_history"]
-        assert history_update["$slice"] == -50  # Keep last 50 runs
-        assert len(history_update["$each"]) == 1
-        assert history_update["$each"][0]["stats"] == stats
+        # Assert - push_to_array should be called for run_history
+        mock_system_state_repository.push_to_array.assert_called_once()
+        call_args = mock_system_state_repository.push_to_array.call_args
+        assert call_args[0][0] == "ingest_himalayas_auto"  # state_id
+        assert call_args[0][1] == "run_history"  # array_field
+        run_record = call_args[0][2]  # value
+        assert run_record["stats"] == stats
+        assert run_record["timestamp"] == timestamp
+        assert call_args[1]["max_size"] == 50  # Keep last 50 runs
 
 
 # =============================================================================
@@ -219,7 +216,7 @@ class TestIngestServiceDeduplication:
     def test_generate_dedupe_key(self, mock_db, sample_jobs):
         """Should generate consistent dedupe key."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db)
         job = sample_jobs[0]
 
         # Act
@@ -232,7 +229,7 @@ class TestIngestServiceDeduplication:
     def test_generate_dedupe_key_handles_special_chars(self, mock_db):
         """Should normalize special characters in dedupe key."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db)
         job = JobData(
             company="Tech, Inc.",
             title="Senior Engineer / Manager",
@@ -262,7 +259,7 @@ class TestIngestServiceDocumentCreation:
     def test_create_job_document(self, mock_db, sample_jobs):
         """Should create properly formatted job document."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db)
         job = sample_jobs[0]
 
         # Act
@@ -291,7 +288,7 @@ class TestIngestServiceDocumentCreation:
     def test_create_job_document_derives_tier_from_score(self, mock_db, sample_jobs):
         """Should derive correct tier based on score."""
         # Arrange
-        service = IngestService(mock_db["db"])
+        service = IngestService(mock_db)
         job = sample_jobs[0]
 
         # Test different score tiers (based on actual derive_tier_from_score function)
@@ -326,14 +323,17 @@ class TestIngestServiceIngestion:
     """Tests for the main ingest_jobs method."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_success(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_success(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should ingest jobs successfully with scoring."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        service = IngestService(
+            mock_db, use_claude_scorer=False, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
 
         # Mock repository to return None (no duplicates)
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None  # No previous state
+        mock_system_state_repository.get_state.return_value = None  # No previous state
 
         # Mock insert_one to return inserted ID
         mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
@@ -361,12 +361,15 @@ class TestIngestServiceIngestion:
         assert len(result.ingested_jobs) == 3
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_skip_scoring(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_skip_scoring(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should skip LLM scoring when skip_scoring=True."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None  # No previous state
+        mock_system_state_repository.get_state.return_value = None  # No previous state
         mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Act
@@ -385,10 +388,13 @@ class TestIngestServiceIngestion:
             assert job["score"] == 75
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_skips_duplicates(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_skips_duplicates(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should skip jobs that already exist (duplicate dedupeKey)."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
 
         # Mock repository find_one to return existing job for first job
         def find_one_side_effect(query):
@@ -398,7 +404,7 @@ class TestIngestServiceIngestion:
             return None
 
         mock_repository.find_one.side_effect = find_one_side_effect
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
         mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Act
@@ -414,12 +420,15 @@ class TestIngestServiceIngestion:
         assert result.ingested == 2  # Only 2 inserted
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_filters_below_threshold(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_filters_below_threshold(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should skip jobs below score threshold."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        service = IngestService(
+            mock_db, use_claude_scorer=False, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
         mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Mock scorer to return varying scores
@@ -440,10 +449,13 @@ class TestIngestServiceIngestion:
         assert result.ingested == 2
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_incremental_filtering(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_incremental_filtering(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should filter jobs by posted_date in incremental mode."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         last_fetch = datetime.utcnow() - timedelta(days=1)
 
         # Set posted_date on jobs (one old, two new)
@@ -451,7 +463,7 @@ class TestIngestServiceIngestion:
         sample_jobs[1].posted_date = datetime.utcnow()  # New
         sample_jobs[2].posted_date = datetime.utcnow()  # New
 
-        mock_db["system_state"].find_one.return_value = {
+        mock_system_state_repository.get_state.return_value = {
             "_id": "ingest_test",
             "last_fetch_at": last_fetch,
         }
@@ -480,12 +492,15 @@ class TestIngestServiceErrorHandling:
     """Tests for error handling in ingestion."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_handles_insert_error(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_handles_insert_error(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should continue processing when one job fails to insert."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # First insert succeeds, second fails, third succeeds
         insert_results = [
@@ -509,12 +524,15 @@ class TestIngestServiceErrorHandling:
         assert result.errors == 1  # 1 failed
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_handles_scoring_error(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_handles_scoring_error(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should skip job when scoring fails."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        service = IngestService(
+            mock_db, use_claude_scorer=False, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
         mock_repository.insert_one.return_value = MagicMock(upserted_id=str(ObjectId()))
 
         # Mock scorer to fail on second job
@@ -546,10 +564,13 @@ class TestIngestServiceEdgeCases:
     """Tests for edge cases in ingestion."""
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_empty_list(self, mock_db, mock_repository):
+    async def test_ingest_jobs_empty_list(self, mock_db, mock_repository, mock_system_state_repository):
         """Should handle empty job list gracefully."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
 
         # Act
         result = await service.ingest_jobs(
@@ -563,14 +584,17 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_all_duplicates(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_all_duplicates(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should handle case where all jobs are duplicates."""
         # Arrange
-        service = IngestService(mock_db["db"], repository=mock_repository)
+        service = IngestService(
+            mock_db, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
 
         # All jobs already exist
         mock_repository.find_one.return_value = {"_id": ObjectId()}
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # Act
         result = await service.ingest_jobs(
@@ -585,12 +609,15 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_all_below_threshold(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_all_below_threshold(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should handle case where all jobs score below threshold."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        service = IngestService(
+            mock_db, use_claude_scorer=False, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # All jobs score low
         with patch("src.services.quick_scorer.quick_score_job") as mock_scorer:
@@ -609,12 +636,15 @@ class TestIngestServiceEdgeCases:
         assert result.ingested == 0
 
     @pytest.mark.asyncio
-    async def test_ingest_jobs_none_score(self, mock_db, mock_repository, sample_jobs):
+    async def test_ingest_jobs_none_score(self, mock_db, mock_repository, mock_system_state_repository, sample_jobs):
         """Should handle None score from scorer."""
         # Arrange
-        service = IngestService(mock_db["db"], use_claude_scorer=False, repository=mock_repository)
+        service = IngestService(
+            mock_db, use_claude_scorer=False, repository=mock_repository,
+            system_state_repository=mock_system_state_repository
+        )
         mock_repository.find_one.return_value = None
-        mock_db["system_state"].find_one.return_value = None
+        mock_system_state_repository.get_state.return_value = None
 
         # Scorer returns None
         with patch("src.services.quick_scorer.quick_score_job") as mock_scorer:

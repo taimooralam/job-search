@@ -32,7 +32,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
-from src.common.repositories import get_job_repository, JobRepositoryInterface
+from src.common.repositories import (
+    get_job_repository,
+    JobRepositoryInterface,
+    get_system_state_repository,
+    SystemStateRepositoryInterface,
+)
 from src.services.job_sources import JobData
 
 logger = logging.getLogger(__name__)
@@ -96,6 +101,7 @@ class IngestService:
         use_claude_scorer: bool = True,
         log_callback: Optional[LogCallback] = None,
         repository: Optional[JobRepositoryInterface] = None,
+        system_state_repository: Optional[SystemStateRepositoryInterface] = None,
     ):
         """
         Initialize the ingest service.
@@ -106,10 +112,11 @@ class IngestService:
                                If False, use OpenRouter (paid per token).
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
             repository: Optional job repository. If provided, uses repository for level-2 ops.
+            system_state_repository: Optional system state repository for ingestion state.
         """
         self.db = db
         self._repository = repository
-        self.system_state = db["system_state"]
+        self._system_state_repository = system_state_repository
         self.use_claude_scorer = use_claude_scorer
         self._log_callback = log_callback
         self._scorer = None  # Lazy init
@@ -119,6 +126,12 @@ class IngestService:
         if self._repository is not None:
             return self._repository
         return get_job_repository()
+
+    def _get_system_state_repository(self) -> SystemStateRepositoryInterface:
+        """Get the system state repository instance."""
+        if self._system_state_repository is not None:
+            return self._system_state_repository
+        return get_system_state_repository()
 
     def _log(self, message: str) -> None:
         """Emit a log message via callback if available."""
@@ -150,7 +163,8 @@ class IngestService:
         Returns:
             Datetime of last fetch, or None if never fetched
         """
-        state = self.system_state.find_one({"_id": f"ingest_{source}"})
+        state_repo = self._get_system_state_repository()
+        state = state_repo.get_state(f"ingest_{source}")
         if state:
             return state.get("last_fetch_at")
         return None
@@ -169,6 +183,9 @@ class IngestService:
             timestamp: Timestamp to record
             stats: Optional stats to store
         """
+        state_repo = self._get_system_state_repository()
+        state_id = f"ingest_{source}"
+
         update_doc = {
             "last_fetch_at": timestamp,
             "updated_at": datetime.utcnow(),
@@ -176,11 +193,7 @@ class IngestService:
         if stats:
             update_doc["last_run_stats"] = stats
 
-        self.system_state.update_one(
-            {"_id": f"ingest_{source}"},
-            {"$set": update_doc},
-            upsert=True,
-        )
+        state_repo.set_state(state_id, update_doc, upsert=True)
         logger.info(f"Updated ingest state for {source}: last_fetch_at={timestamp}")
 
         # Store run in history (keep last 50 runs)
@@ -190,17 +203,7 @@ class IngestService:
                 "stats": stats,
                 "source": source,
             }
-            self.system_state.update_one(
-                {"_id": f"ingest_{source}"},
-                {
-                    "$push": {
-                        "run_history": {
-                            "$each": [run_record],
-                            "$slice": -50,  # Keep last 50 runs
-                        }
-                    }
-                },
-            )
+            state_repo.push_to_array(state_id, "run_history", run_record, max_size=50)
             logger.info(f"Added run to history for {source}")
 
     def generate_dedupe_key(self, job: JobData, source_name: str) -> str:
