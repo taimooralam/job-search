@@ -198,7 +198,7 @@ class OperationService(ABC):
         result: OperationResult,
         job_id: str,
         tier: ModelTier,
-        db_client: Optional[Any] = None,
+        repository: Optional[Any] = None,
     ) -> bool:
         """
         Persist operation run details to MongoDB for tracking.
@@ -210,18 +210,16 @@ class OperationService(ABC):
             result: The OperationResult from execution
             job_id: The job ID that was processed
             tier: The model tier that was used
-            db_client: Optional database client. If not provided,
-                       uses the global DatabaseClient singleton.
+            repository: Optional operation runs repository. If not provided,
+                        uses the global repository singleton.
 
         Returns:
             True if persisted successfully, False otherwise
         """
         try:
-            # Import here to avoid circular dependency
-            from src.common.database import DatabaseClient
+            from src.common.repositories import get_operation_runs_repository
 
-            client = db_client if db_client else DatabaseClient()
-            collection = client.db["operation_runs"]
+            repo = repository if repository else get_operation_runs_repository()
 
             doc = {
                 "run_id": result.run_id,
@@ -239,7 +237,7 @@ class OperationService(ABC):
                 "created_at": datetime.utcnow(),
             }
 
-            collection.insert_one(doc)
+            repo.insert_one(doc)
             logger.info(
                 f"Persisted operation run: {result.run_id} "
                 f"({result.operation}, success={result.success})"

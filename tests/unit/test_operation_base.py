@@ -332,14 +332,13 @@ class TestOperationServicePersistRun:
         return ConcreteOperationService()
 
     @pytest.fixture
-    def mock_db_client(self):
-        """Create a mock database client."""
+    def mock_repository(self):
+        """Create a mock operation runs repository."""
         mock = MagicMock()
-        mock.db = MagicMock()
-        mock.db.__getitem__ = MagicMock(return_value=MagicMock())
+        mock.insert_one.return_value = MagicMock(upserted_id="mock_id")
         return mock
 
-    def test_persist_run_inserts_document(self, service, mock_db_client):
+    def test_persist_run_inserts_document(self, service, mock_repository):
         """persist_run should insert document to operation_runs collection."""
         result = OperationResult(
             success=True,
@@ -353,22 +352,18 @@ class TestOperationServicePersistRun:
             model_used="gpt-4o",
         )
 
-        mock_collection = MagicMock()
-        mock_db_client.db.__getitem__.return_value = mock_collection
-
         success = service.persist_run(
             result=result,
             job_id="job_123",
             tier=ModelTier.BALANCED,
-            db_client=mock_db_client,
+            repository=mock_repository,
         )
 
         assert success is True
-        mock_db_client.db.__getitem__.assert_called_with("operation_runs")
-        mock_collection.insert_one.assert_called_once()
+        mock_repository.insert_one.assert_called_once()
 
         # Verify document structure
-        call_args = mock_collection.insert_one.call_args[0][0]
+        call_args = mock_repository.insert_one.call_args[0][0]
         assert call_args["run_id"] == "op_test_abc123"
         assert call_args["operation"] == "test-operation"
         assert call_args["job_id"] == "job_123"
@@ -381,7 +376,7 @@ class TestOperationServicePersistRun:
         assert call_args["model_used"] == "gpt-4o"
         assert call_args["error"] is None
 
-    def test_persist_run_stores_error_for_failed_ops(self, service, mock_db_client):
+    def test_persist_run_stores_error_for_failed_ops(self, service, mock_repository):
         """persist_run should store error message for failed operations."""
         result = OperationResult(
             success=False,
@@ -393,21 +388,18 @@ class TestOperationServicePersistRun:
             error="Test error message",
         )
 
-        mock_collection = MagicMock()
-        mock_db_client.db.__getitem__.return_value = mock_collection
-
         service.persist_run(
             result=result,
             job_id="job_123",
             tier=ModelTier.FAST,
-            db_client=mock_db_client,
+            repository=mock_repository,
         )
 
-        call_args = mock_collection.insert_one.call_args[0][0]
+        call_args = mock_repository.insert_one.call_args[0][0]
         assert call_args["success"] is False
         assert call_args["error"] == "Test error message"
 
-    def test_persist_run_returns_false_on_db_error(self, service, mock_db_client):
+    def test_persist_run_returns_false_on_db_error(self, service, mock_repository):
         """persist_run should return False on database error."""
         result = OperationResult(
             success=True,
@@ -418,21 +410,19 @@ class TestOperationServicePersistRun:
             duration_ms=0,
         )
 
-        mock_collection = MagicMock()
-        mock_collection.insert_one.side_effect = Exception("DB connection failed")
-        mock_db_client.db.__getitem__.return_value = mock_collection
+        mock_repository.insert_one.side_effect = Exception("DB connection failed")
 
         success = service.persist_run(
             result=result,
             job_id="job_123",
             tier=ModelTier.FAST,
-            db_client=mock_db_client,
+            repository=mock_repository,
         )
 
         assert success is False
 
-    def test_persist_run_uses_global_client_when_none_provided(self, service):
-        """persist_run should use global DatabaseClient when none provided."""
+    def test_persist_run_uses_global_repository_when_none_provided(self, service):
+        """persist_run should use global repository when none provided."""
         result = OperationResult(
             success=True,
             run_id="op_test_abc123",
@@ -442,21 +432,19 @@ class TestOperationServicePersistRun:
             duration_ms=0,
         )
 
-        with patch("src.common.database.DatabaseClient") as mock_db_class:
-            mock_client = MagicMock()
-            mock_collection = MagicMock()
-            mock_client.db.__getitem__.return_value = mock_collection
-            mock_db_class.return_value = mock_client
+        with patch("src.common.repositories.get_operation_runs_repository") as mock_get_repo:
+            mock_repo = MagicMock()
+            mock_get_repo.return_value = mock_repo
 
             service.persist_run(
                 result=result,
                 job_id="job_123",
                 tier=ModelTier.FAST,
-                db_client=None,
+                repository=None,
             )
 
-            mock_db_class.assert_called_once()
-            mock_collection.insert_one.assert_called_once()
+            mock_get_repo.assert_called_once()
+            mock_repo.insert_one.assert_called_once()
 
 
 class TestOperationServiceTimedExecution:
