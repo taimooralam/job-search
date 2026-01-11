@@ -82,6 +82,23 @@ See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
 | Priors feedback not captured on frontend | Learning disabled | Hook deletion/edit to `capture_feedback()` |
 | No rebuild schedule | Embeddings stale | Add weekly rebuild job to runner_service |
 
+#### Completed (Recent Features)
+
+**UI/Frontend - Annotation Polish (2026-01-11)**:
+- [x] Suggestion confidence badges with explanations ✅ **COMPLETED 2026-01-11**
+  - Color-coded thresholds (green ≥85%, amber ≥70%, gray <70%)
+  - Sparkle icon (✨) distinguishes AI from manual annotations
+  - "Why This Suggestion" expandable section shows match method and matched keyword
+- [x] Batch suggestion review UI - accept/reject all ✅ **COMPLETED 2026-01-11**
+  - Purple-themed banner with count display
+  - "Accept All" button for bulk acceptance
+  - Quick accept (✓) and reject (✗) buttons on each row
+  - Works across desktop detail, batch sidebar, and mobile
+- [x] Undo/redo for annotation actions ✅ **COMPLETED 2026-01-11**
+  - Desktop/Batch: Multi-level undo/redo (50 action history)
+  - Keyboard shortcuts: Ctrl+Z (undo), Ctrl+Shift+Z / Ctrl+Y (redo)
+  - Mobile: Single-level undo with toast notification
+
 #### Remaining Gaps
 
 **CV Generation & Pipeline**:
@@ -91,8 +108,6 @@ See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
 
 **UI/Frontend**:
 - [ ] Suggestion popover in job detail view
-- [ ] Batch suggestion UI
-- [ ] Suggestion confidence badges
 
 **Monitoring**:
 - [ ] Dashboard: suggestion accuracy over time

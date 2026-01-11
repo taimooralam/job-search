@@ -27,6 +27,13 @@ The 7-layer LangGraph pipeline is **fully implemented**:
 - Frontend: Complete (Flask/HTMX, process buttons, SSE logs)
 - CI/CD: Complete (GitHub Actions for runner + frontend)
 
+**Annotation System**:
+- Suggestion Engine: Complete (4-source architecture, 240+ tests)
+- Annotation UI Polish: Complete (2026-01-11)
+  - Confidence badges with color-coding and explanations
+  - Batch review UI with bulk accept and quick buttons
+  - Undo/redo system (50-action history on desktop, single-level on mobile)
+
 ---
 
 ## LinkedIn Outreach Generation Specification

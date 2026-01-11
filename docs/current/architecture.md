@@ -4358,6 +4358,268 @@ AFTER:  "Architected microservices migration from monolith, reducing deployment 
 
 ---
 
+## Annotation UI Polish (2026-01-11)
+
+### Overview
+
+Three major UX enhancements to the annotation system that improve user feedback, batch workflows, and content management:
+
+1. **Confidence Badges**: Visual confidence indicators on AI-generated suggestions with explanations
+2. **Batch Review UI**: Streamlined interface for reviewing and accepting multiple suggestions at once
+3. **Undo/Redo System**: Multi-level transaction history for all annotation actions (desktop/batch) and single-level undo for mobile
+
+---
+
+### Feature 1: Confidence Badges
+
+**Problem**: Users couldn't distinguish high-confidence AI suggestions from low-confidence ones, or understand why a suggestion was made.
+
+**Solution**: Added visual confidence indicators with expandable explanations showing the match methodology.
+
+**Architecture**:
+
+```
+Annotation Row (Desktop Detail or Batch Sidebar)
+    ├─ Text content
+    ├─ Sparkle icon (✨) if AI-generated
+    ├─ Confidence Badge with percentage
+    │   ├─ Green: ≥85% (high confidence)
+    │   ├─ Amber: ≥70% (medium confidence)
+    │   └─ Gray: <70% (low confidence)
+    └─ "Why This Suggestion" expandable section
+        ├─ Match method (e.g., "Keyword match from JD")
+        ├─ Matched keyword displayed
+        └─ Expanded on click with smooth animation
+```
+
+**Implementation Details**:
+
+- **Confidence Calculation**: Based on source and semantic similarity score
+  - `source_human_annotation`: No badge (manual entry)
+  - `source_preset_template`: 95% confidence (trusted presets)
+  - `source_pipeline_suggestion`: Calculated from LLM semantic match (60-90%)
+- **Badge Styling**: TailwindCSS classes with theme colors
+  - Green: `bg-green-100 text-green-700`
+  - Amber: `bg-amber-100 text-amber-700`
+  - Gray: `bg-gray-100 text-gray-600`
+- **Why Section Data**: Stored in annotation metadata
+  ```python
+  annotation.metadata = {
+      "suggestion_reason": "Keyword match",
+      "matched_keyword": "Kubernetes",
+      "confidence_score": 0.87,
+      "is_ai_generated": True
+  }
+  ```
+
+**Files Modified**:
+- `frontend/templates/partials/annotation/_annotation_row.html` - Added badge and why section
+- `frontend/static/css/annotation.css` - Badge styling and animations
+- `frontend/static/js/annotation-editor.js` - Why section toggle logic
+
+**Platform Coverage**:
+- Desktop Detail View: Full badges + expandable why section
+- Batch Sidebar: Full badges + expandable why section
+- Mobile: Badge color coding (expandable why section fits mobile UX)
+
+**User Impact**:
+- Users can quickly scan suggestion quality at a glance (color coding)
+- Sparkle icon distinguishes human work from AI suggestions
+- "Why" section builds trust by explaining the AI reasoning
+- Reduces decision fatigue: high-confidence suggestions can be accepted quickly
+
+---
+
+### Feature 2: Batch Suggestion Review UI
+
+**Problem**: Users had to review and accept annotations one at a time, making it tedious to process multiple job suggestions in batch view.
+
+**Solution**: Added a batch review banner with "Accept All" bulk action and per-row quick accept/reject buttons.
+
+**Architecture**:
+
+```
+Batch Page with Pending Suggestions
+    ├─ Purple banner appears at top when suggestions_pending > 0
+    │   ├─ Text: "N suggestions ready for review"
+    │   └─ "Accept All" button (bulk action, purple theme)
+    │
+    └─ Annotation rows (existing style)
+        ├─ Quick Accept button (✓ checkmark, green on hover)
+        ├─ Quick Reject button (✗ cross, red on hover)
+        ├─ Confidence badge
+        └─ Row data (skill, relevance, etc.)
+```
+
+**Implementation Details**:
+
+- **Banner Logic**: Displayed when `pending_annotations.count() > 0`
+- **Accept All Flow**:
+  1. Banner "Accept All" button clicked
+  2. Sends API request: `POST /api/annotations/batch-accept`
+  3. All pending suggestions moved to accepted state
+  4. Banner disappears, rows show checkmarks
+  5. Toast notification: "N annotations accepted"
+- **Quick Accept/Reject**: Per-row buttons trigger individual acceptance/rejection
+  - Accept: `POST /api/annotations/{id}/accept`
+  - Reject: `POST /api/annotations/{id}/reject`
+  - Row animates out with fade-out transition
+- **Visual Feedback**:
+  - Accepted rows show green checkmark (✓)
+  - Rejected rows removed with slide-out animation
+  - Toast notifications confirm each action
+
+**Files Created/Modified**:
+- `frontend/templates/partials/batch/_suggestion_banner.html` - New purple banner component
+- `frontend/static/js/batch-suggestions.js` - Banner and per-row button handlers
+- `frontend/app.py` - Added `/api/annotations/batch-accept` endpoint
+- `frontend/app.py` - Added `/api/annotations/{id}/accept` and `//{id}/reject` endpoints
+
+**Platform Coverage**:
+- Desktop Detail: Per-row quick accept/reject only (no batch actions)
+- Batch Sidebar: Full banner with "Accept All" + per-row buttons
+- Mobile: Simplified UI - per-row accept/reject, banner stacks vertically
+
+**User Impact**:
+- Batch processing workflow: scan → identify gaps → act → move on
+- "Accept All" saves ~5 clicks per job when reviewing complete suggestions
+- Quick buttons provide immediate feedback (green checkmark/slide out)
+- Purple theme maintains visual consistency with annotation system
+
+---
+
+### Feature 3: Undo/Redo System
+
+**Problem**: Users couldn't recover from accidental deletions or changes to annotations, creating anxiety and reducing willingness to experiment.
+
+**Solution**: Full multi-level undo/redo for desktop/batch views with keyboard shortcuts, and single-level undo for mobile with toast notification.
+
+**Architecture**:
+
+```
+Desktop/Batch Undo/Redo
+    ├─ TransactionHistory manager (max 50 actions)
+    │   ├─ Stores complete state snapshots
+    │   ├─ Tracks: add, delete, update operations
+    │   └─ Supports branching (redo list clears on new action)
+    │
+    ├─ Keyboard Shortcuts
+    │   ├─ Ctrl+Z (Windows/Linux): Undo
+    │   ├─ Cmd+Z (Mac): Undo
+    │   ├─ Ctrl+Shift+Z (Windows/Linux): Redo
+    │   ├─ Ctrl+Y (Windows/Linux): Redo (alternate)
+    │   └─ Cmd+Shift+Z (Mac): Redo
+    │
+    └─ UI Elements
+        ├─ Undo button (arrow-back icon, disabled if history empty)
+        ├─ Redo button (arrow-forward icon, disabled if no redo available)
+        └─ Tooltip on hover: "Undo (Ctrl+Z)" / "Redo (Ctrl+Shift+Z)"
+
+Mobile Undo/Redo
+    ├─ Single-level undo (only deletions)
+    │
+    └─ Toast notification
+        ├─ Message: "Annotation deleted"
+        ├─ "Undo" action button (5s timeout)
+        └─ Auto-dismisses after timeout
+```
+
+**Implementation Details**:
+
+- **Desktop/Batch**: Full Transaction History
+  ```python
+  class TransactionHistory:
+      def __init__(self, max_size=50):
+          self.history = []      # List of states
+          self.current_index = 0
+          self.max_size = 50
+
+      def record(self, action, state):
+          # Clear redo list on new action (branching)
+          self.history = self.history[:self.current_index + 1]
+          # Record new state
+          self.history.append((action, state))
+          self.current_index += 1
+          # Trim to max size
+          if len(self.history) > self.max_size:
+              self.history.pop(0)
+              self.current_index -= 1
+
+      def undo(self):
+          if self.current_index > 0:
+              self.current_index -= 1
+              return self.history[self.current_index][1]
+
+      def redo(self):
+          if self.current_index < len(self.history) - 1:
+              self.current_index += 1
+              return self.history[self.current_index][1]
+  ```
+- **Recorded Actions**: add, delete, edit (with before/after state)
+- **Keyboard Handlers**: Global event listeners in `annotation-editor.js`
+- **Button States**: Disabled when no undo/redo available
+- **Mobile Single-Level**: Toast with "Undo" button, stores only last deletion
+  ```python
+  # Mobile stores only last deletion in session
+  session['last_deleted_annotation'] = {
+      'id': annotation_id,
+      'data': annotation_data,
+      'timestamp': now()
+  }
+  ```
+
+**Files Created/Modified**:
+- `frontend/static/js/transaction-history.js` - New TransactionHistory class (100+ lines)
+- `frontend/static/js/annotation-editor.js` - Undo/redo keyboard handlers + UI updates
+- `frontend/static/js/mobile-annotation.js` - Single-level undo toast for mobile
+- `frontend/templates/partials/annotation/_editor_toolbar.html` - Undo/Redo buttons
+- `frontend/app.py` - Mobile undo endpoint: `POST /api/annotations/{id}/restore`
+
+**Platform Coverage**:
+
+| Feature | Desktop | Batch Sidebar | Mobile |
+|---------|---------|---------------|--------|
+| Multi-level undo | Yes | Yes | No |
+| Multi-level redo | Yes | Yes | No |
+| Keyboard shortcuts | Ctrl+Z / Ctrl+Shift+Z | Ctrl+Z / Ctrl+Shift+Z | N/A |
+| Toolbar buttons | Yes | Yes | No |
+| Toast notification | No | No | Yes (single-level) |
+| Transaction history | 50 actions | 50 actions | 1 action |
+
+**User Impact**:
+- Desktop power users can use keyboard shortcuts for rapid workflow
+- Undo button always visible (disabled if nothing to undo)
+- 50-action history provides safety net for extended editing sessions
+- Mobile users get simple toast-based undo (single action) without cognitive overload
+- Reduces fear of experimentation: users can freely edit and revert if needed
+
+---
+
+### Test Coverage (Annotation UI Polish)
+
+**Confidence Badges**:
+- Confidence score calculation and thresholding
+- Badge color assignment (green/amber/gray)
+- Why section data rendering
+- Sparkle icon display for AI suggestions
+
+**Batch Review UI**:
+- Pending suggestion count calculation
+- Banner display logic
+- Accept All button request/response handling
+- Per-row accept/reject button handlers
+- Toast notification display
+
+**Undo/Redo System**:
+- TransactionHistory state recording and branching
+- Undo/redo navigation (first/last/middle positions)
+- History size capping (50 actions max)
+- Keyboard shortcut detection and dispatch
+- Button enable/disable state
+- Mobile single-level undo with timeout
+
+---
+
 ## Pipeline Overhaul - Independent Operations (Phase 1-5 Complete - 2025-12-10)
 
 ### Overview
