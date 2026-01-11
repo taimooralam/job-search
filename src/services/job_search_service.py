@@ -33,6 +33,12 @@ from pymongo import ASCENDING, DESCENDING, TEXT
 
 from src.services.job_sources import IndeedSource, HimalayasSource, BaytSource, JobData
 from src.common.job_search_config import JobSearchConfig
+from src.common.repositories import (
+    get_job_search_repository,
+    get_job_repository,
+    JobSearchRepositoryInterface,
+    JobRepositoryInterface,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,23 +73,26 @@ class JobSearchService:
 
     def __init__(
         self,
-        db: Database,
-        config: Optional[JobSearchConfig] = None
+        db: Optional[Database] = None,
+        config: Optional[JobSearchConfig] = None,
+        search_repository: Optional[JobSearchRepositoryInterface] = None,
+        job_repository: Optional[JobRepositoryInterface] = None,
     ):
         """
         Initialize the job search service.
 
         Args:
-            db: MongoDB database instance
+            db: MongoDB database instance (deprecated, use repositories)
             config: Optional configuration (loads from env if not provided)
+            search_repository: Optional job search repository for cache/index ops
+            job_repository: Optional job repository for level-2 ops
         """
         self.db = db
         self.config = config or JobSearchConfig.from_env()
 
-        # Get collections
-        self.cache = db[self.CACHE_COLLECTION]
-        self.index = db[self.INDEX_COLLECTION]
-        self.level2 = db[self.LEVEL2_COLLECTION]
+        # Store repositories for lazy initialization
+        self._search_repository = search_repository
+        self._job_repository = job_repository
 
         # Initialize sources
         self.sources = {
@@ -95,45 +104,24 @@ class JobSearchService:
         # Ensure indexes exist
         self._ensure_indexes()
 
+    def _get_search_repository(self) -> JobSearchRepositoryInterface:
+        """Get the job search repository instance."""
+        if self._search_repository is not None:
+            return self._search_repository
+        return get_job_search_repository()
+
+    def _get_job_repository(self) -> JobRepositoryInterface:
+        """Get the job repository instance."""
+        if self._job_repository is not None:
+            return self._job_repository
+        return get_job_repository()
+
     def _ensure_indexes(self) -> None:
         """Create required MongoDB indexes if they don't exist."""
         try:
-            # Cache collection indexes
-            # TTL index for automatic expiration
-            self.cache.create_index(
-                "expires_at",
-                expireAfterSeconds=0,
-                background=True
-            )
-            # Unique cache key lookup
-            self.cache.create_index(
-                "cache_key",
-                unique=True,
-                background=True
-            )
-
-            # Index collection indexes
-            # Unique deduplication key
-            self.index.create_index(
-                "dedupeKey",
-                unique=True,
-                background=True
-            )
-            # Compound index for filtering
-            self.index.create_index(
-                [("source", ASCENDING), ("region", ASCENDING), ("discovered_at", DESCENDING)],
-                background=True
-            )
-            # Text index for full-text search
-            self.index.create_index(
-                [("title", TEXT), ("company", TEXT), ("description", TEXT)],
-                background=True
-            )
-            # Filter indexes
-            self.index.create_index("promoted_to_level2", background=True)
-            self.index.create_index("hidden", background=True)
-            self.index.create_index("quick_score", background=True)
-
+            repo = self._get_search_repository()
+            repo.cache_ensure_indexes()
+            repo.index_ensure_indexes()
             logger.info("Job search indexes ensured")
         except Exception as e:
             logger.warning(f"Error creating indexes (may already exist): {e}")
@@ -157,7 +145,8 @@ class JobSearchService:
 
     def _check_cache(self, cache_key: str) -> Optional[dict]:
         """Check if valid cache entry exists."""
-        entry = self.cache.find_one({
+        repo = self._get_search_repository()
+        entry = repo.cache_find_one({
             "cache_key": cache_key,
             "expires_at": {"$gt": datetime.utcnow()}
         })
@@ -208,10 +197,11 @@ class JobSearchService:
             cache_entry = self._check_cache(cache_key)
             if cache_entry:
                 logger.info(f"Cache hit for key {cache_key[:8]}...")
-                jobs = list(self.index.find(
-                    {"_id": {"$in": cache_entry.get("job_ids", [])}},
+                repo = self._get_search_repository()
+                jobs = repo.index_find_by_ids(
+                    cache_entry.get("job_ids", []),
                     {"description": 0}  # Exclude large description field for list view
-                ))
+                )
 
                 # Convert ObjectId to string for JSON serialization
                 for job in jobs:
@@ -264,10 +254,8 @@ class JobSearchService:
             )
 
             # Fetch jobs from index for response
-            jobs = list(self.index.find(
-                {"_id": {"$in": job_ids}},
-                {"description": 0}
-            ))
+            repo = self._get_search_repository()
+            jobs = repo.index_find_by_ids(job_ids, {"description": 0})
 
             # Convert ObjectId to string
             for job in jobs:
@@ -398,46 +386,45 @@ class JobSearchService:
         """
         job_ids = []
         now = datetime.utcnow()
+        repo = self._get_search_repository()
 
         for job in jobs:
             dedupe_key = self._generate_dedupe_key(job, job.get("source", "unknown"))
 
             try:
-                result = self.index.find_one_and_update(
-                    {"dedupeKey": dedupe_key},
-                    {
-                        "$set": {
-                            "title": job.get("title"),
-                            "company": job.get("company"),
-                            "location": job.get("location"),
-                            "description": job.get("description"),
-                            "url": job.get("url"),
-                            "salary": job.get("salary"),
-                            "job_type": job.get("job_type"),
-                            "posted_date": job.get("posted_date"),
-                            "source_id": job.get("source_id"),
-                            "source": job.get("source"),
-                            "region": job.get("region"),
-                            "is_remote": job.get("is_remote", False),
-                            "last_seen_at": now,
-                        },
-                        "$setOnInsert": {
-                            "dedupeKey": dedupe_key,
-                            "discovered_at": now,
-                            "search_hits": 0,
-                            "promoted_to_level2": False,
-                            "promoted_at": None,
-                            "promoted_job_id": None,
-                            "hidden": False,
-                            "hidden_at": None,
-                            "quick_score": None,
-                            "quick_score_rationale": None,
-                            "scored_at": None,
-                        },
-                        "$inc": {"search_hits": 1},
-                    },
-                    upsert=True,
-                    return_document=True,
+                set_fields = {
+                    "title": job.get("title"),
+                    "company": job.get("company"),
+                    "location": job.get("location"),
+                    "description": job.get("description"),
+                    "url": job.get("url"),
+                    "salary": job.get("salary"),
+                    "job_type": job.get("job_type"),
+                    "posted_date": job.get("posted_date"),
+                    "source_id": job.get("source_id"),
+                    "source": job.get("source"),
+                    "region": job.get("region"),
+                    "is_remote": job.get("is_remote", False),
+                    "last_seen_at": now,
+                }
+                set_on_insert = {
+                    "dedupeKey": dedupe_key,
+                    "discovered_at": now,
+                    "search_hits": 0,
+                    "promoted_to_level2": False,
+                    "promoted_at": None,
+                    "promoted_job_id": None,
+                    "hidden": False,
+                    "hidden_at": None,
+                    "quick_score": None,
+                    "quick_score_rationale": None,
+                    "scored_at": None,
+                }
+                result = repo.index_upsert(
+                    dedupe_key=dedupe_key,
+                    set_fields=set_fields,
+                    set_on_insert=set_on_insert,
+                    inc_fields={"search_hits": 1},
                 )
                 if result:
                     job_ids.append(result["_id"])
@@ -460,22 +447,17 @@ class JobSearchService:
         expires_at = now + timedelta(hours=self.config.cache_ttl_hours)
 
         try:
-            self.cache.update_one(
-                {"cache_key": cache_key},
-                {
-                    "$set": {
-                        "cache_key": cache_key,
-                        "search_params": params,
-                        "job_ids": job_ids,
-                        "results_count": len(job_ids),
-                        "results_by_source": results_by_source,
-                        "created_at": now,
-                        "expires_at": expires_at,
-                        "search_duration_ms": duration_ms,
-                    }
-                },
-                upsert=True,
-            )
+            repo = self._get_search_repository()
+            repo.cache_upsert(cache_key, {
+                "cache_key": cache_key,
+                "search_params": params,
+                "job_ids": job_ids,
+                "results_count": len(job_ids),
+                "results_by_source": results_by_source,
+                "created_at": now,
+                "expires_at": expires_at,
+                "search_duration_ms": duration_ms,
+            })
         except Exception as e:
             logger.warning(f"Error creating cache entry: {e}")
 
@@ -547,11 +529,13 @@ class JobSearchService:
         # Execute query
         limit = min(limit, 100)  # Cap at 100
 
-        jobs = list(
-            self.index.find(filter_query, {"description": 0})
-            .sort(sort_spec)
-            .skip(offset)
-            .limit(limit)
+        repo = self._get_search_repository()
+        jobs = repo.index_find(
+            filter_query,
+            projection={"description": 0},
+            sort=sort_spec,
+            skip=offset,
+            limit=limit,
         )
 
         # Convert ObjectIds
@@ -559,7 +543,7 @@ class JobSearchService:
             job["job_id"] = str(job.pop("_id"))
 
         # Get total count
-        total = self.index.count_documents(filter_query)
+        total = repo.index_count(filter_query)
 
         # Get facets
         facets = self._get_facets(filter_query)
@@ -578,12 +562,14 @@ class JobSearchService:
     def _get_facets(self, base_filter: dict) -> Dict[str, Dict[str, int]]:
         """Get facet counts for filtering."""
         try:
+            repo = self._get_search_repository()
+
             # Source facets
             source_pipeline = [
                 {"$match": base_filter},
                 {"$group": {"_id": "$source", "count": {"$sum": 1}}},
             ]
-            source_results = list(self.index.aggregate(source_pipeline))
+            source_results = repo.index_aggregate(source_pipeline)
             by_source = {r["_id"]: r["count"] for r in source_results if r["_id"]}
 
             # Region facets
@@ -591,7 +577,7 @@ class JobSearchService:
                 {"$match": base_filter},
                 {"$group": {"_id": "$region", "count": {"$sum": 1}}},
             ]
-            region_results = list(self.index.aggregate(region_pipeline))
+            region_results = repo.index_aggregate(region_pipeline)
             by_region = {r["_id"]: r["count"] for r in region_results if r["_id"]}
 
             # Remote facets
@@ -599,7 +585,7 @@ class JobSearchService:
                 {"$match": base_filter},
                 {"$group": {"_id": "$is_remote", "count": {"$sum": 1}}},
             ]
-            remote_results = list(self.index.aggregate(remote_pipeline))
+            remote_results = repo.index_aggregate(remote_pipeline)
             by_remote = {}
             for r in remote_results:
                 key = "remote" if r["_id"] else "onsite"
@@ -621,7 +607,8 @@ class JobSearchService:
     def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
         """Get a single job by ID with full details."""
         try:
-            job = self.index.find_one({"_id": ObjectId(job_id)})
+            repo = self._get_search_repository()
+            job = repo.index_find_one({"_id": ObjectId(job_id)})
             if job:
                 job["job_id"] = str(job.pop("_id"))
             return job
@@ -641,8 +628,11 @@ class JobSearchService:
             Dictionary with promotion result
         """
         try:
+            search_repo = self._get_search_repository()
+            job_repo = self._get_job_repository()
+
             # Get job from index
-            job = self.index.find_one({"_id": ObjectId(job_id)})
+            job = search_repo.index_find_one({"_id": ObjectId(job_id)})
             if not job:
                 return {"success": False, "error": "Job not found"}
 
@@ -677,12 +667,12 @@ class JobSearchService:
                 "index_job_id": ObjectId(job_id),
             }
 
-            # Insert into level-2
-            result = self.level2.insert_one(level2_doc)
-            level2_id = result.inserted_id
+            # Insert into level-2 using job repository
+            result = job_repo.insert_one(level2_doc)
+            level2_id = result.upserted_id
 
             # Update index job
-            self.index.update_one(
+            search_repo.index_update_one(
                 {"_id": ObjectId(job_id)},
                 {
                     "$set": {
@@ -707,7 +697,8 @@ class JobSearchService:
     def hide_job(self, job_id: str) -> Dict[str, Any]:
         """Hide a job from future search results."""
         try:
-            result = self.index.update_one(
+            repo = self._get_search_repository()
+            modified_count = repo.index_update_one(
                 {"_id": ObjectId(job_id)},
                 {
                     "$set": {
@@ -717,7 +708,7 @@ class JobSearchService:
                 },
             )
 
-            if result.modified_count > 0:
+            if modified_count > 0:
                 return {"success": True, "job_id": job_id, "hidden": True}
             else:
                 return {"success": False, "error": "Job not found or already hidden"}
@@ -729,7 +720,8 @@ class JobSearchService:
     def unhide_job(self, job_id: str) -> Dict[str, Any]:
         """Unhide a previously hidden job."""
         try:
-            result = self.index.update_one(
+            repo = self._get_search_repository()
+            modified_count = repo.index_update_one(
                 {"_id": ObjectId(job_id)},
                 {
                     "$set": {
@@ -739,7 +731,7 @@ class JobSearchService:
                 },
             )
 
-            if result.modified_count > 0:
+            if modified_count > 0:
                 return {"success": True, "job_id": job_id, "hidden": False}
             else:
                 return {"success": False, "error": "Job not found"}
@@ -767,10 +759,11 @@ class JobSearchService:
     def clear_cache(self) -> Dict[str, Any]:
         """Clear all cache entries."""
         try:
-            result = self.cache.delete_many({})
+            repo = self._get_search_repository()
+            deleted_count = repo.cache_delete_all()
             return {
                 "success": True,
-                "cleared_count": result.deleted_count,
+                "cleared_count": deleted_count,
             }
         except Exception as e:
             logger.error(f"Error clearing cache: {e}")
@@ -779,8 +772,9 @@ class JobSearchService:
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         try:
-            total = self.cache.count_documents({})
-            active = self.cache.count_documents({"expires_at": {"$gt": datetime.utcnow()}})
+            repo = self._get_search_repository()
+            total = repo.cache_count({})
+            active = repo.cache_count({"expires_at": {"$gt": datetime.utcnow()}})
 
             return {
                 "total_entries": total,
@@ -794,10 +788,11 @@ class JobSearchService:
     def get_index_stats(self) -> Dict[str, Any]:
         """Get index statistics."""
         try:
-            total = self.index.count_documents({})
-            promoted = self.index.count_documents({"promoted_to_level2": True})
-            hidden = self.index.count_documents({"hidden": True})
-            scored = self.index.count_documents({"quick_score": {"$ne": None}})
+            repo = self._get_search_repository()
+            total = repo.index_count({})
+            promoted = repo.index_count({"promoted_to_level2": True})
+            hidden = repo.index_count({"hidden": True})
+            scored = repo.index_count({"quick_score": {"$ne": None}})
 
             return {
                 "total_jobs": total,
