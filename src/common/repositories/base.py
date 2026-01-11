@@ -45,12 +45,15 @@ class JobRepositoryInterface(ABC):
     """
 
     @abstractmethod
-    def find_one(self, filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def find_one(
+        self, filter: Dict[str, Any], projection: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Find a single job document.
 
         Args:
             filter: MongoDB query filter (e.g., {"_id": ObjectId(...)})
+            projection: Fields to include/exclude (optional)
 
         Returns:
             Document dict if found, None otherwise

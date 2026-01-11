@@ -378,12 +378,7 @@ async def _get_job_details(job_id: str) -> tuple:
     """
     try:
         from bson import ObjectId
-        from pymongo import MongoClient
-
-        mongodb_uri = os.getenv("MONGODB_URI")
-        if not mongodb_uri:
-            logger.warning("MONGODB_URI not set, cannot fetch job details")
-            return ("Unknown Job", "Unknown Company")
+        from src.common.repositories import get_job_repository
 
         # Validate job_id format (must be 24 character hex string)
         if not job_id or len(job_id) != 24:
@@ -396,12 +391,10 @@ async def _get_job_details(job_id: str) -> tuple:
             logger.warning(f"Failed to convert job_id to ObjectId: {job_id} - {e}")
             return ("Unknown Job", "Unknown Company")
 
-        client = MongoClient(mongodb_uri)
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-
-        job = db["level-2"].find_one(
+        repo = get_job_repository()
+        job = repo.find_one(
             {"_id": object_id},
-            {"title": 1, "company_name": 1, "company": 1}  # Include both company fields
+            projection={"title": 1, "company_name": 1, "company": 1}
         )
 
         if job:
@@ -491,7 +484,9 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
         # Convert to MongoDB document
         mongo_doc = linkedin_job_to_mongodb_doc(linkedin_data)
 
-        # Connect to MongoDB
+        # Connect to MongoDB for level-1, use repository for level-2
+        from src.common.repositories import get_job_repository
+
         mongo_uri = os.getenv("MONGODB_URI")
         if not mongo_uri:
             raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
@@ -499,10 +494,10 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
         client = MongoClient(mongo_uri)
         db = client[os.getenv("MONGODB_DATABASE", "jobs")]
         level1_collection = db["level-1"]
-        level2_collection = db["level-2"]
+        job_repo = get_job_repository()
 
         # Check for duplicates
-        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        existing_level2 = job_repo.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
         if existing_level2:
             logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
             return LinkedInImportResponse(
@@ -560,8 +555,8 @@ async def import_linkedin_job(request: LinkedInImportRequest) -> LinkedInImportR
         level1_collection.insert_one(level1_doc)
 
         level2_doc = mongo_doc.copy()
-        level2_result = level2_collection.insert_one(level2_doc)
-        job_id = str(level2_result.inserted_id)
+        level2_result = job_repo.insert_one(level2_doc)
+        job_id = level2_result.upserted_id
 
         logger.info(f"Imported LinkedIn job {job_id}: {linkedin_data.title} at {linkedin_data.company}")
 
@@ -629,7 +624,9 @@ async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportRespons
         # Convert to MongoDB document
         mongo_doc = indeed_job_to_mongodb_doc(indeed_data)
 
-        # Connect to MongoDB
+        # Connect to MongoDB for level-1, use repository for level-2
+        from src.common.repositories import get_job_repository
+
         mongo_uri = os.getenv("MONGODB_URI")
         if not mongo_uri:
             raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
@@ -637,10 +634,10 @@ async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportRespons
         client = MongoClient(mongo_uri)
         db = client[os.getenv("MONGODB_DATABASE", "jobs")]
         level1_collection = db["level-1"]
-        level2_collection = db["level-2"]
+        job_repo = get_job_repository()
 
         # Check for duplicates
-        existing_level2 = level2_collection.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
+        existing_level2 = job_repo.find_one({"dedupeKey": mongo_doc["dedupeKey"]})
         if existing_level2:
             logger.info(f"Job already exists in level-2: {existing_level2['_id']}")
             return IndeedImportResponse(
@@ -698,8 +695,8 @@ async def import_indeed_job(request: IndeedImportRequest) -> IndeedImportRespons
         level1_collection.insert_one(level1_doc)
 
         level2_doc = mongo_doc.copy()
-        level2_result = level2_collection.insert_one(level2_doc)
-        job_id = str(level2_result.inserted_id)
+        level2_result = job_repo.insert_one(level2_doc)
+        job_id = level2_result.upserted_id
 
         logger.info(f"Imported Indeed job {job_id}: {indeed_data.title} at {indeed_data.company}")
 
@@ -755,8 +752,8 @@ async def extract_jd(job_id: str) -> Dict[str, Any]:
         JSON with extraction result and metadata
     """
     from bson import ObjectId
-    from pymongo import MongoClient
     from dataclasses import asdict
+    from src.common.repositories import get_job_repository
 
     # Validate job_id format
     try:
@@ -764,21 +761,13 @@ async def extract_jd(job_id: str) -> Dict[str, Any]:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
-    # Get MongoDB connection
-    mongo_uri = os.getenv("MONGODB_URI")
-    if not mongo_uri:
-        raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
-
-    client = None
     try:
-        client = MongoClient(mongo_uri)
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        collection = db["level-2"]
+        repo = get_job_repository()
 
         # Fetch job details
-        job = collection.find_one(
+        job = repo.find_one(
             {"_id": object_id},
-            {"title": 1, "company": 1, "company_name": 1, "job_description": 1, "description": 1}
+            projection={"title": 1, "company": 1, "company_name": 1, "job_description": 1, "description": 1}
         )
 
         if not job:
@@ -865,12 +854,6 @@ async def extract_jd(job_id: str) -> Dict[str, Any]:
     except Exception as e:
         logger.exception(f"Claude extraction error for job {job_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Extraction error: {str(e)}")
-    finally:
-        if client:
-            try:
-                client.close()
-            except Exception:
-                pass
 
 
 @app.get("/api/claude/status")
@@ -2119,7 +2102,7 @@ async def generate_cv_pdf(job_id: str):
     """
     import httpx
     from bson import ObjectId
-    from pymongo import MongoClient
+    from src.common.repositories import get_job_repository
 
     # Get PDF service URL from environment
     pdf_service_url = os.getenv("PDF_SERVICE_URL", "http://pdf-service:8001")
@@ -2130,28 +2113,9 @@ async def generate_cv_pdf(job_id: str):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
-    # Get MongoDB connection
-    # IMPORTANT: Use MONGODB_URI to match persistence.py and frontend
-    # Provide sensible default for local/test environments
-    mongo_uri = (
-        os.getenv("MONGODB_URI")
-        or os.getenv("MONGO_URI")
-        or "mongodb://localhost:27017"
-    )
-    if not os.getenv("MONGODB_URI"):
-        logger.debug(
-            "MONGODB_URI not set; defaulting to mongodb://localhost:27017 for CV PDF generation"
-        )
-
-    client = None
-
     try:
-        client = MongoClient(mongo_uri)
-        # Use "jobs" database to match persistence.py (not "job_search")
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        collection = db["level-2"]
-
-        job = collection.find_one({"_id": object_id})
+        repo = get_job_repository()
+        job = repo.find_one({"_id": object_id})
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
 
@@ -2269,12 +2233,6 @@ async def generate_cv_pdf(job_id: str):
     except Exception as e:
         logger.error(f"PDF generation failed for job {job_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
-    finally:
-        if client:
-            try:
-                client.close()
-            except Exception:
-                pass
 
 
 # ============================================================================

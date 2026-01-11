@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Literal, Optional
 from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
-from pymongo import MongoClient
 
 from src.common.model_tiers import (
     ModelTier,
@@ -28,6 +27,7 @@ from src.common.model_tiers import (
     get_tier_from_string,
     TIER_CONFIGS,
 )
+from src.common.repositories import get_job_repository
 
 from ..auth import verify_token
 from .operation_streaming import (
@@ -166,21 +166,6 @@ class OutreachResponse(BaseModel):
 # =============================================================================
 
 
-def _get_db_client() -> MongoClient:
-    """
-    Get MongoDB client for job operations.
-
-    Returns:
-        MongoClient instance
-    """
-    mongo_uri = (
-        os.getenv("MONGODB_URI")
-        or os.getenv("MONGO_URI")
-        or "mongodb://localhost:27017"
-    )
-    return MongoClient(mongo_uri)
-
-
 def _validate_job_exists(job_id: str) -> dict:
     """
     Validate that a job exists in MongoDB.
@@ -200,16 +185,12 @@ def _validate_job_exists(job_id: str) -> dict:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
-    # Check job exists
-    client = _get_db_client()
-    try:
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        job = db["level-2"].find_one({"_id": object_id})
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-        return job
-    finally:
-        client.close()
+    # Check job exists using repository
+    repo = get_job_repository()
+    job = repo.find_one({"_id": object_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 def _get_contact(
@@ -269,10 +250,9 @@ def _update_contacts(
 
     field_name = f"{contact_type}_contacts"
 
-    client = _get_db_client()
     try:
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        result = db["level-2"].update_one(
+        repo = get_job_repository()
+        result = repo.update_one(
             {"_id": ObjectId(job_id)},
             {
                 "$set": {
@@ -285,8 +265,6 @@ def _update_contacts(
     except Exception as e:
         logger.error(f"Failed to update contacts for job {job_id}: {e}")
         return False
-    finally:
-        client.close()
 
 
 def _validate_tier(tier_str: str) -> ModelTier:
@@ -457,27 +435,22 @@ async def add_contacts(
             except Exception as e:
                 errors.append(f"Contact {i}: {str(e)}")
 
-        # Update MongoDB
-        client = _get_db_client()
-        try:
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            result = db["level-2"].update_one(
-                {"_id": ObjectId(job_id)},
-                {
-                    "$set": {
-                        "primary_contacts": primary,
-                        "secondary_contacts": secondary,
-                        "updatedAt": datetime.utcnow(),
-                    }
-                },
-            )
+        # Update MongoDB using repository
+        repo = get_job_repository()
+        result = repo.update_one(
+            {"_id": ObjectId(job_id)},
+            {
+                "$set": {
+                    "primary_contacts": primary,
+                    "secondary_contacts": secondary,
+                    "updatedAt": datetime.utcnow(),
+                }
+            },
+        )
 
-            if result.modified_count == 0 and (primary_added + secondary_added) > 0:
-                # Document may not have changed if contacts were identical
-                logger.warning(f"No documents modified when adding contacts to job {job_id}")
-
-        finally:
-            client.close()
+        if result.modified_count == 0 and (primary_added + secondary_added) > 0:
+            # Document may not have changed if contacts were identical
+            logger.warning(f"No documents modified when adding contacts to job {job_id}")
 
         added_count = primary_added + secondary_added
         logger.info(

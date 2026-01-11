@@ -295,13 +295,14 @@ class TestClaudeCLIBatch:
     @patch('subprocess.run')
     async def test_batch_handles_failures(self, mock_subprocess_run):
         """Should handle individual failures in batch."""
-        # First call succeeds, second fails
+        # job_001 succeeds, job_002 fails (based on prompt content, not call order)
         def side_effect(*args, **kwargs):
-            if not hasattr(side_effect, 'call_count'):
-                side_effect.call_count = 0
-            side_effect.call_count += 1
+            # Check the command args to determine which job this is
+            cmd_args = args[0] if args else kwargs.get('args', [])
+            cmd_str = ' '.join(cmd_args) if isinstance(cmd_args, list) else str(cmd_args)
 
-            if side_effect.call_count == 1:
+            # Prompt 1 (job_001) succeeds, Prompt 2 (job_002) fails
+            if "Prompt 1" in cmd_str:
                 mock_result = MagicMock()
                 mock_result.returncode = 0
                 mock_result.stdout = json.dumps({

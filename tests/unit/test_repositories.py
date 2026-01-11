@@ -123,7 +123,8 @@ class TestAtlasJobRepository:
         repo = AtlasJobRepository("mongodb://test")
         result = repo.find_one({"_id": "123"})
 
-        mock_collection.find_one.assert_called_once_with({"_id": "123"})
+        # projection parameter defaults to None
+        mock_collection.find_one.assert_called_once_with({"_id": "123"}, None)
         assert result == {"_id": "123", "title": "Test"}
 
     def test_find_one_not_found(self, mock_collection):

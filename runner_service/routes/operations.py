@@ -32,6 +32,8 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from pymongo import MongoClient
 
+from src.common.repositories import get_job_repository
+
 # Thread pool for running sync MongoDB operations without blocking the event loop
 # Increased from 4 to 8 workers to handle concurrent streaming operations
 _db_executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="mongo_")
@@ -374,7 +376,7 @@ def _validate_job_exists_sync(job_id: str) -> dict:
     """
     Synchronous validation that a job exists in MongoDB.
 
-    Uses singleton client for connection pooling.
+    Uses repository pattern for connection pooling.
 
     Args:
         job_id: MongoDB ObjectId as string
@@ -391,10 +393,9 @@ def _validate_job_exists_sync(job_id: str) -> dict:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid job ID format")
 
-    # Check job exists using pooled client
-    client = _get_mongo_client()
-    db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-    job = db["level-2"].find_one({"_id": object_id})
+    # Check job exists using repository
+    repo = get_job_repository()
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -2158,12 +2159,10 @@ async def _execute_queued_operation(
                 )
 
                 if extraction_result.success and extraction_result.extracted_jd:
-                    # Save to MongoDB
+                    # Save to MongoDB using repository
                     log_cb("Saving extraction to MongoDB...")
-                    client = _get_mongo_client()
-                    db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-                    collection = db["level-2"]
-                    collection.update_one(
+                    repo = get_job_repository()
+                    repo.update_one(
                         {"_id": ObjectId(job_id)},
                         {
                             "$set": {
@@ -2388,19 +2387,14 @@ async def _get_job_details_for_bulk(job_id: str) -> tuple:
             logger.warning(f"Failed to convert job_id to ObjectId: {job_id} - {e}")
             return ("Unknown Job", "Unknown Company")
 
-        client = _get_mongo_client()
-        if not client:
-            logger.error("MongoDB client not available for bulk job lookup")
-            return ("Unknown Job", "Unknown Company")
-
-        db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-        collection = db["level-2"]
+        # Use repository pattern for job lookup
+        repo = get_job_repository()
 
         # Use asyncio.to_thread for modern async pattern (Python 3.9+)
         def sync_find():
-            return collection.find_one(
+            return repo.find_one(
                 {"_id": oid},
-                {"title": 1, "company_name": 1, "company": 1}
+                projection={"title": 1, "company_name": 1, "company": 1}
             )
 
         job = await asyncio.to_thread(sync_find)
@@ -3224,9 +3218,8 @@ async def upload_cv_to_gdrive(job_id: str) -> GDriveUploadResponse:
 
             # Step 3: Update MongoDB with upload timestamp
             uploaded_at = datetime.utcnow()
-            client = _get_mongo_client()
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            db["level-2"].update_one(
+            repo = get_job_repository()
+            repo.update_one(
                 {"_id": ObjectId(job_id)},
                 {"$set": {"gdrive_uploaded_at": uploaded_at}},
             )
@@ -3403,9 +3396,8 @@ async def upload_dossier_to_gdrive(job_id: str) -> GDriveUploadResponse:
 
             # Step 3: Update MongoDB with upload timestamp
             uploaded_at = datetime.utcnow()
-            client = _get_mongo_client()
-            db = client[os.getenv("MONGO_DB_NAME", "jobs")]
-            db["level-2"].update_one(
+            repo = get_job_repository()
+            repo.update_one(
                 {"_id": ObjectId(job_id)},
                 {"$set": {"dossier_gdrive_uploaded_at": uploaded_at}},
             )
