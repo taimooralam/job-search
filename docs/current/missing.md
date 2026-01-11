@@ -1,6 +1,6 @@
 # Implementation Gaps
 
-**Last Updated**: 2025-01-10 (Repository Pattern Audit - Phase 1 complete for level-2 and annotation_priors collections)
+**Last Updated**: 2025-01-11 (Annotation Suggestion System backend complete, Repository Migration phases 1,4-6 done)
 
 > **See also**: `docs/current/architecture.md` | `bugs.md`
 
@@ -50,6 +50,55 @@
 **Next**: Phase 2 - Complete level-2 migration (9 service files still use direct MongoClient)
 
 See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
+
+---
+
+### Annotation Suggestion System (2025-01-11)
+
+**Status**: Backend COMPLETE (240+ tests passing). Frontend integration pending.
+
+#### Completed
+
+- [x] **4-source architecture** for intelligent annotation suggestions
+  - Master CV Source (hard skills, soft skills, JD signals)
+  - Structured JD Source (role-parsed sections)
+  - Extracted JD Source (web scraping content)
+  - Priors Source (user feedback history with skill confidence)
+- [x] **Smart deletion feedback** with context-aware learning
+  - `NO_LEARNING`: Skill irrelevant to role type
+  - `SOFT_PENALTY`: Skill noise (0.8x multiplier)
+  - `FULL_LEARNING`: Skill gap (0.3x multiplier, avoid flag)
+- [x] **Configurable thresholds** for tuning suggestion accuracy
+- [x] **Repository pattern** for priors storage
+- [x] **240+ unit tests** passing
+
+**Key Files**: `src/services/annotation_suggester.py`, `src/services/annotation_priors.py`, `src/common/repositories/priors_repository.py`
+
+#### Current Blockers
+
+| Issue | Impact | Fix |
+|-------|--------|-----|
+| Suggestion UI not wired to backend | Users can't see suggestions | Frontend integration to editor |
+| Priors feedback not captured on frontend | Learning disabled | Hook deletion/edit to `capture_feedback()` |
+| No rebuild schedule | Embeddings stale | Add weekly rebuild job to runner_service |
+
+#### Remaining Gaps
+
+**CV Generation & Pipeline**:
+- [ ] Bridge suggestion results into CV generation pipeline
+- [ ] Auto-update master CV from accepted annotations
+- [ ] Annotation influence scoring
+
+**UI/Frontend**:
+- [ ] Suggestion popover in job detail view
+- [ ] Batch suggestion UI
+- [ ] Suggestion confidence badges
+
+**Monitoring**:
+- [ ] Dashboard: suggestion accuracy over time
+- [ ] Metrics: acceptance rate, soft vs hard deletion ratio
+
+See detailed plan: `.claude/plans/graceful-discovering-sparrow.md`
 
 ---
 
