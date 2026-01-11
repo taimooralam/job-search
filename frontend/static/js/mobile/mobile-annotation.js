@@ -210,6 +210,7 @@ document.addEventListener('alpine:init', () => {
             this.showSheet = false;
             this.selectedText = '';
             this.selectedRange = null;
+            this.editingAnnotationId = null;  // Clear editing state
             window.getSelection()?.removeAllRanges();
         },
 
@@ -220,29 +221,53 @@ document.addEventListener('alpine:init', () => {
             this.isSaving = true;
 
             try {
-                // Create new annotation
-                const newAnnotation = {
-                    id: crypto.randomUUID(),
-                    target: {
-                        text: this.selectedText,
-                        char_start: 0,
-                        char_end: this.selectedText.length
-                    },
-                    annotation_type: 'skill_match',
-                    relevance: this.currentAnnotation.relevance,
-                    requirement_type: this.currentAnnotation.requirement_type,
-                    identity: this.currentAnnotation.identity,
-                    passion: this.currentAnnotation.passion,
-                    has_reframe: !!this.currentAnnotation.reframe_note,
-                    reframe_note: this.currentAnnotation.reframe_note || null,
-                    is_active: true,
-                    status: 'approved',
-                    source: 'human',
-                    created_at: new Date().toISOString()
-                };
+                // Check if we're editing an existing annotation
+                if (this.editingAnnotationId) {
+                    // Find and update existing annotation
+                    const existingIndex = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
+                    if (existingIndex !== -1) {
+                        const existing = this.annotations[existingIndex];
 
-                // Add to local array
-                this.annotations.push(newAnnotation);
+                        // Update the annotation values
+                        existing.relevance = this.currentAnnotation.relevance;
+                        existing.requirement_type = this.currentAnnotation.requirement_type;
+                        existing.identity = this.currentAnnotation.identity;
+                        existing.passion = this.currentAnnotation.passion;
+                        existing.has_reframe = !!this.currentAnnotation.reframe_note;
+                        existing.reframe_note = this.currentAnnotation.reframe_note || null;
+                        existing.updated_at = new Date().toISOString();
+
+                        // Replace in array to trigger reactivity
+                        this.annotations[existingIndex] = { ...existing };
+                    }
+
+                    // Clear editing state
+                    this.editingAnnotationId = null;
+                } else {
+                    // Create new annotation
+                    const newAnnotation = {
+                        id: crypto.randomUUID(),
+                        target: {
+                            text: this.selectedText,
+                            char_start: 0,
+                            char_end: this.selectedText.length
+                        },
+                        annotation_type: 'skill_match',
+                        relevance: this.currentAnnotation.relevance,
+                        requirement_type: this.currentAnnotation.requirement_type,
+                        identity: this.currentAnnotation.identity,
+                        passion: this.currentAnnotation.passion,
+                        has_reframe: !!this.currentAnnotation.reframe_note,
+                        reframe_note: this.currentAnnotation.reframe_note || null,
+                        is_active: true,
+                        status: 'approved',
+                        source: 'human',
+                        created_at: new Date().toISOString()
+                    };
+
+                    // Add to local array
+                    this.annotations.push(newAnnotation);
+                }
 
                 // Save to server
                 await this.saveAnnotationsToServer();
@@ -435,13 +460,31 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        // Show details for existing annotation
+        // Show details for existing annotation - open sheet for editing
         showAnnotationDetails(annotationId) {
             const annotation = this.annotations.find(a => a.id === annotationId);
             if (!annotation) return;
 
-            // TODO: Show edit sheet with existing values
-            console.log('Show annotation:', annotation);
+            // Store editing annotation ID
+            this.editingAnnotationId = annotationId;
+
+            // Pre-fill the sheet with existing values
+            this.selectedText = annotation.target?.text || '';
+            this.currentAnnotation = {
+                relevance: annotation.relevance || 'relevant',
+                requirement_type: annotation.requirement_type || 'neutral',
+                identity: annotation.identity || 'peripheral',
+                passion: annotation.passion || 'neutral',
+                reframe_note: annotation.reframe_note || ''
+            };
+
+            // Open the sheet
+            this.showSheet = true;
+
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate(30);
+            }
         },
 
         // Delete annotation

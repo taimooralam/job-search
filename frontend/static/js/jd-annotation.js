@@ -516,8 +516,15 @@ class AnnotationManager {
             });
 
             jdViewer.addEventListener('mouseup', (e) => {
-                if (e.target.closest('.annotation-highlight')) {
+                // Handle click on existing annotation - open for editing
+                const highlightEl = e.target.closest('.annotation-highlight');
+                if (highlightEl) {
                     mouseDownPos = null;
+                    isDragging = false;
+                    const annotationId = highlightEl.dataset.annotationId;
+                    if (annotationId) {
+                        this.editAnnotationFromHighlight(annotationId, highlightEl);
+                    }
                     return;
                 }
 
