@@ -28,6 +28,8 @@
         // Runner URL for direct API calls (queue polling, etc.)
         // Used by queue-poller.js to bypass Flask proxy
         window.RUNNER_URL = "{{ runner_url }}";
+        // Runner API token for direct VPS calls (bypasses Vercel timeout)
+        window.RUNNER_TOKEN = "{{ runner_token }}";
         // Runner WebSocket URL for real-time queue updates
         // On Vercel, this connects directly to runner service
         // On Flask/VPS, this is used as fallback (Flask proxy is preferred)

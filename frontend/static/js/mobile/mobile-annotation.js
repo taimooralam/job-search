@@ -320,11 +320,15 @@ document.addEventListener('alpine:init', () => {
         /**
          * Capture feedback for auto-generated annotations.
          * Called when user saves or deletes an annotation.
+         * Uses direct VPS call to bypass Vercel timeout.
          */
         async captureAnnotationFeedback(annotation, action) {
             if (annotation.source !== 'auto_generated') return;
             if (!annotation.original_values) return;
             if (annotation.feedback_captured && action === 'save') return;
+
+            // Show subtle syncing toast (very brief)
+            window.showToast?.('Syncing feedback...', 'info', 1000);
 
             try {
                 const payload = {
@@ -347,19 +351,31 @@ document.addEventListener('alpine:init', () => {
                     };
                 }
 
-                const response = await fetch('/api/runner/user/annotation-feedback', {
+                // Direct VPS call to bypass Vercel timeout (10s limit)
+                const runnerUrl = window.RUNNER_URL || '';
+                const runnerToken = window.RUNNER_TOKEN || '';
+
+                const response = await fetch(`${runnerUrl}/user/annotation-feedback`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${runnerToken}`,
+                    },
                     body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success && action === 'save') {
-                        annotation.feedback_captured = true;
+                    if (data.success) {
+                        if (action === 'save') {
+                            annotation.feedback_captured = true;
+                        }
+                        // Brief success indicator
+                        window.showToast?.('Feedback synced', 'success', 800);
                     }
                 }
             } catch (error) {
+                // Silent failure - don't block user
                 console.warn('Failed to capture annotation feedback:', error);
             }
         },

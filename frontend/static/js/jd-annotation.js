@@ -1670,6 +1670,7 @@ class AnnotationManager {
     /**
      * Capture feedback for auto-generated annotations.
      * Called when user saves (with potential edits) or deletes an annotation.
+     * Uses direct VPS call to bypass Vercel timeout.
      *
      * @param {Object} annotation - The annotation object
      * @param {string} action - "save" or "delete"
@@ -1680,6 +1681,9 @@ class AnnotationManager {
         if (!annotation.original_values) return;
         // Skip if feedback was already captured for this annotation
         if (annotation.feedback_captured && action === 'save') return;
+
+        // Show subtle syncing indicator
+        this.showFeedbackSyncing();
 
         try {
             const payload = {
@@ -1703,9 +1707,16 @@ class AnnotationManager {
                 };
             }
 
-            const response = await fetch('/api/runner/user/annotation-feedback', {
+            // Direct VPS call to bypass Vercel timeout (10s limit)
+            const runnerUrl = window.RUNNER_URL || '';
+            const runnerToken = window.RUNNER_TOKEN || '';
+
+            const response = await fetch(`${runnerUrl}/user/annotation-feedback`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${runnerToken}`,
+                },
                 body: JSON.stringify(payload)
             });
 
@@ -1717,11 +1728,69 @@ class AnnotationManager {
                         annotation.feedback_captured = true;
                     }
                     console.log(`Feedback captured for ${action}:`, data);
+                    this.showFeedbackSuccess();
                 }
             }
         } catch (error) {
-            // Don't block the user if feedback capture fails
+            // Don't block the user if feedback capture fails - silent failure
             console.warn('Failed to capture annotation feedback:', error);
+        } finally {
+            this.hideFeedbackSyncing();
+        }
+    }
+
+    /**
+     * Show subtle syncing indicator for feedback capture
+     */
+    showFeedbackSyncing() {
+        // Use save indicator if available, otherwise just log
+        const saveIndicator = document.getElementById(this.config.saveIndicatorId);
+        if (saveIndicator) {
+            this._previousIndicatorContent = saveIndicator.innerHTML;
+            saveIndicator.innerHTML = `
+                <span class="text-blue-500 flex items-center gap-1">
+                    <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-xs">Syncing...</span>
+                </span>
+            `;
+        }
+    }
+
+    /**
+     * Hide feedback syncing indicator
+     */
+    hideFeedbackSyncing() {
+        const saveIndicator = document.getElementById(this.config.saveIndicatorId);
+        if (saveIndicator && this._previousIndicatorContent) {
+            saveIndicator.innerHTML = this._previousIndicatorContent;
+            this._previousIndicatorContent = null;
+        }
+    }
+
+    /**
+     * Show brief success indicator for feedback capture
+     */
+    showFeedbackSuccess() {
+        const saveIndicator = document.getElementById(this.config.saveIndicatorId);
+        if (saveIndicator) {
+            const previousContent = saveIndicator.innerHTML;
+            saveIndicator.innerHTML = `
+                <span class="text-green-500 flex items-center gap-1">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span class="text-xs">Synced</span>
+                </span>
+            `;
+            // Revert after 1 second
+            setTimeout(() => {
+                if (saveIndicator.innerHTML.includes('Synced')) {
+                    saveIndicator.innerHTML = previousContent;
+                }
+            }, 1000);
         }
     }
 

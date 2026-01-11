@@ -158,6 +158,7 @@ def inject_globals():
     return {
         "version": APP_VERSION,
         "runner_url": runner_url,
+        "runner_token": runner_token,
         "runner_ws_url": runner_ws_url,
     }
 
