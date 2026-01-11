@@ -363,15 +363,25 @@ class AnnotationTrackingService:
     4. Compare persona variants
     """
 
-    def __init__(self, db=None):
+    def __init__(self, db=None, repository=None):
         """
         Initialize the tracking service.
 
         Args:
-            db: MongoDB database instance (optional, for persistence)
+            db: MongoDB database instance (deprecated, use repository)
+            repository: Optional annotation tracking repository
         """
         self._db = db
+        self._repository = repository
         self._logger = logging.getLogger(self.__class__.__name__)
+
+    def _get_repository(self):
+        """Get the annotation tracking repository instance."""
+        if self._repository is not None:
+            return self._repository
+        # Import here to avoid circular dependency
+        from src.common.repositories import get_annotation_tracking_repository
+        return get_annotation_tracking_repository()
 
     def create_tracking_record(
         self,
@@ -741,31 +751,29 @@ class AnnotationTrackingService:
 
     def _save_tracking(self, tracking: ApplicationTracking) -> None:
         """Save tracking record to database."""
-        if not self._db:
-            return
-
-        collection = self._db["annotation_tracking"]
-        collection.update_one(
-            {"job_id": tracking.job_id},
-            {"$set": tracking.to_dict()},
-            upsert=True,
-        )
+        try:
+            repo = self._get_repository()
+            repo.upsert_tracking(tracking.job_id, tracking.to_dict())
+        except Exception as e:
+            self._logger.warning(f"Error saving tracking (no repository?): {e}")
 
     def _load_tracking(self, job_id: str) -> Optional[ApplicationTracking]:
         """Load tracking record from database."""
-        if not self._db:
+        try:
+            repo = self._get_repository()
+            doc = repo.find_by_job_id(job_id)
+            if doc:
+                return ApplicationTracking.from_dict(doc)
             return None
-
-        collection = self._db["annotation_tracking"]
-        doc = collection.find_one({"job_id": job_id})
-        if doc:
-            return ApplicationTracking.from_dict(doc)
-        return None
+        except Exception as e:
+            self._logger.warning(f"Error loading tracking (no repository?): {e}")
+            return None
 
     def _load_all_tracking(self) -> List[ApplicationTracking]:
         """Load all tracking records from database."""
-        if not self._db:
+        try:
+            repo = self._get_repository()
+            return [ApplicationTracking.from_dict(doc) for doc in repo.find_all()]
+        except Exception as e:
+            self._logger.warning(f"Error loading all tracking (no repository?): {e}")
             return []
-
-        collection = self._db["annotation_tracking"]
-        return [ApplicationTracking.from_dict(doc) for doc in collection.find()]
