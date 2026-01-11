@@ -17,6 +17,8 @@ from src.services.annotation_suggester import (
     _cosine_similarity,
     _extract_keywords,
     _create_annotation,
+    infer_requirement_type,
+    suggest_keywords_for_item,
     MatchResult,
     MatchContext,
     SIMILARITY_THRESHOLD,
@@ -533,3 +535,442 @@ class TestCreateAnnotation:
         # Assert
         assert result1["id"] != result2["id"]
         assert result1["id"].startswith("ann_")
+
+
+class TestInferRequirementType:
+    """Tests for infer_requirement_type function."""
+
+    def test_matches_qualifications_list_must_have(self):
+        """Should return must_have when item matches qualifications list."""
+        # Arrange
+        jd_item = "5+ years of Python development experience"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": [
+                "5+ years of Python development experience",
+                "Bachelor's degree in Computer Science",
+            ],
+            "nice_to_haves": ["AWS certification"],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_matches_qualifications_with_partial_overlap(self):
+        """Should return must_have when >50% word overlap with qualifications."""
+        # Arrange
+        jd_item = "Python programming experience required"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": [
+                "Strong Python programming and development skills",
+            ],
+            "nice_to_haves": [],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_matches_nice_to_haves_list(self):
+        """Should return nice_to_have when item matches nice_to_haves list."""
+        # Arrange
+        jd_item = "AWS certification preferred"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": ["5+ years experience"],
+            "nice_to_haves": ["AWS certification preferred", "Startup experience"],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "nice_to_have"
+
+    def test_matches_nice_to_haves_with_partial_overlap(self):
+        """Should return nice_to_have when >50% word overlap with nice_to_haves."""
+        # Arrange
+        jd_item = "Startup experience preferred"  # 3 words
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": [],
+            "nice_to_haves": ["Startup experience"],  # 2 words, 2/2 = 100% overlap > 50%
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "nice_to_have"
+
+    def test_falls_back_to_section_default_requirements(self):
+        """Should use section default when no match in extracted_jd."""
+        # Arrange
+        jd_item = "Database design skills"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": ["Python experience"],
+            "nice_to_haves": ["AWS knowledge"],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"  # requirements section default
+
+    def test_falls_back_to_section_default_nice_to_have(self):
+        """Should use section default for nice_to_have section."""
+        # Arrange
+        jd_item = "Some skill mentioned"
+        section_type = "nice_to_have"
+        extracted_jd = {
+            "qualifications": ["Other skill"],
+            "nice_to_haves": ["Different skill"],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "nice_to_have"  # nice_to_have section default
+
+    def test_falls_back_to_section_default_responsibilities(self):
+        """Should use must_have for responsibilities section."""
+        # Arrange
+        jd_item = "Lead technical architecture decisions"
+        section_type = "responsibilities"
+        extracted_jd = None
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_handles_none_extracted_jd(self):
+        """Should use section default when extracted_jd is None."""
+        # Arrange
+        jd_item = "Any requirement"
+        section_type = "requirements"
+        extracted_jd = None
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_handles_empty_extracted_jd(self):
+        """Should use section default when extracted_jd is empty dict."""
+        # Arrange
+        jd_item = "Any requirement"
+        section_type = "requirements"
+        extracted_jd = {}
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_handles_none_qualifications_list(self):
+        """Should handle None qualifications list gracefully."""
+        # Arrange
+        jd_item = "Python skills"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": None,
+            "nice_to_haves": None,
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_returns_neutral_for_unknown_section(self):
+        """Should return neutral for unknown section types."""
+        # Arrange
+        jd_item = "Some text"
+        section_type = "unknown_section"
+        extracted_jd = None
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "neutral"
+
+    def test_prioritizes_qualifications_over_nice_to_haves(self):
+        """Should prioritize qualifications when item appears in both lists."""
+        # Arrange
+        jd_item = "Python experience"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": ["Python experience required"],
+            "nice_to_haves": ["Python experience a plus"],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"  # Qualifications checked first
+
+    def test_case_insensitive_matching(self):
+        """Should perform case-insensitive matching."""
+        # Arrange
+        jd_item = "PYTHON PROGRAMMING"
+        section_type = "requirements"
+        extracted_jd = {
+            "qualifications": ["python programming experience"],
+            "nice_to_haves": [],
+        }
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "must_have"
+
+    def test_handles_benefits_section(self):
+        """Should return nice_to_have for benefits section."""
+        # Arrange
+        jd_item = "Health insurance"
+        section_type = "benefits"
+        extracted_jd = None
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "nice_to_have"
+
+    def test_handles_education_section(self):
+        """Should return nice_to_have for education section."""
+        # Arrange
+        jd_item = "Bachelor's degree"
+        section_type = "education"
+        extracted_jd = None
+
+        # Act
+        result = infer_requirement_type(jd_item, section_type, extracted_jd)
+
+        # Assert
+        assert result == "nice_to_have"
+
+
+class TestSuggestKeywordsForItem:
+    """Tests for suggest_keywords_for_item function."""
+
+    def test_returns_matching_keywords_from_top_keywords(self):
+        """Should return keywords that appear in the item text."""
+        # Arrange
+        jd_item = "Experience with Python, Docker, and Kubernetes required"
+        extracted_jd = {
+            "top_keywords": ["Python", "Docker", "Kubernetes", "AWS", "Terraform"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert "Python" in result
+        assert "Docker" in result
+        assert "Kubernetes" in result
+        assert "AWS" not in result  # Not in item text
+        assert "Terraform" not in result
+
+    def test_respects_max_keywords_limit(self):
+        """Should respect max_keywords limit."""
+        # Arrange
+        jd_item = "Python AWS Docker Kubernetes Terraform experience"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS", "Docker", "Kubernetes", "Terraform"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd, max_keywords=3)
+
+        # Assert
+        assert len(result) == 3
+        # Should return first 3 matches in order
+        assert result == ["Python", "AWS", "Docker"]
+
+    def test_preserves_top_keywords_order(self):
+        """Should preserve order from top_keywords (earlier = more important)."""
+        # Arrange
+        jd_item = "Kubernetes Docker Python"  # Different order in text
+        extracted_jd = {
+            "top_keywords": ["Python", "Docker", "Kubernetes"],  # Priority order
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        # Should match top_keywords order, not text order
+        assert result == ["Python", "Docker", "Kubernetes"]
+
+    def test_case_insensitive_matching(self):
+        """Should perform case-insensitive matching."""
+        # Arrange
+        jd_item = "PYTHON and docker experience"
+        extracted_jd = {
+            "top_keywords": ["Python", "Docker", "AWS"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert "Python" in result
+        assert "Docker" in result
+
+    def test_returns_empty_list_when_no_matches(self):
+        """Should return empty list when no keywords match."""
+        # Arrange
+        jd_item = "General office duties"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS", "Docker"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert result == []
+
+    def test_returns_empty_list_when_extracted_jd_none(self):
+        """Should return empty list when extracted_jd is None."""
+        # Arrange
+        jd_item = "Python experience"
+        extracted_jd = None
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert result == []
+
+    def test_returns_empty_list_when_extracted_jd_empty(self):
+        """Should return empty list when extracted_jd is empty dict."""
+        # Arrange
+        jd_item = "Python experience"
+        extracted_jd = {}
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert result == []
+
+    def test_handles_none_top_keywords(self):
+        """Should handle None top_keywords gracefully."""
+        # Arrange
+        jd_item = "Python experience"
+        extracted_jd = {
+            "top_keywords": None,
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert result == []
+
+    def test_handles_empty_top_keywords_list(self):
+        """Should handle empty top_keywords list."""
+        # Arrange
+        jd_item = "Python experience"
+        extracted_jd = {
+            "top_keywords": [],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert result == []
+
+    def test_partial_keyword_matching(self):
+        """Should match keywords that are substrings in text."""
+        # Arrange
+        jd_item = "Experienced Python programmer with AWS expertise"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert "Python" in result
+        assert "AWS" in result
+
+    def test_stops_at_max_keywords_even_if_more_matches(self):
+        """Should stop at max_keywords even if more matches exist."""
+        # Arrange
+        jd_item = "Python AWS Docker Kubernetes Terraform"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS", "Docker", "Kubernetes", "Terraform"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd, max_keywords=2)
+
+        # Assert
+        assert len(result) == 2
+        assert result == ["Python", "AWS"]
+
+    def test_returns_less_than_max_if_fewer_matches(self):
+        """Should return fewer than max_keywords if fewer matches exist."""
+        # Arrange
+        jd_item = "Python experience"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS", "Docker"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd, max_keywords=5)
+
+        # Assert
+        assert len(result) == 1
+        assert result == ["Python"]
+
+    def test_handles_multi_word_keywords(self):
+        """Should match multi-word keywords."""
+        # Arrange
+        jd_item = "Machine learning and data science expertise"
+        extracted_jd = {
+            "top_keywords": ["machine learning", "data science", "Python"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)
+
+        # Assert
+        assert "machine learning" in result
+        assert "data science" in result
+
+    def test_default_max_keywords_is_three(self):
+        """Should use max_keywords=3 as default."""
+        # Arrange
+        jd_item = "Python AWS Docker Kubernetes Terraform experience"
+        extracted_jd = {
+            "top_keywords": ["Python", "AWS", "Docker", "Kubernetes", "Terraform"],
+        }
+
+        # Act
+        result = suggest_keywords_for_item(jd_item, extracted_jd)  # No max_keywords param
+
+        # Assert
+        assert len(result) == 3

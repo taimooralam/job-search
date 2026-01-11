@@ -41,8 +41,177 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# Priors document ID (singleton)
+
+# ============================================================================
+# LEARNING CONFIGURATION
+# ============================================================================
+#
+# These parameters control how the system learns from user feedback.
+# They affect how quickly the system adapts to user preferences and
+# how strongly it responds to deletions.
+#
+# To tune these values:
+# - Monitor priors stats (accuracy, deleted_full vs deleted_soft)
+# - If system over-corrects (avoids skills user actually wants): reduce penalties
+# - If system is slow to learn: increase adjustment rates
+# - If suggestions are unstable: increase MIN_OBSERVATIONS_FOR_STABILITY
+# ============================================================================
+
+# --- Deletion Learning Penalties ---
+# These multipliers reduce confidence when user deletes an annotation.
+# Applied to all dimension confidences (relevance, passion, identity, requirement).
+
+# Soft penalty multiplier for uncertain deletions (0.0-1.0)
+# Applied when skill might just be noise (e.g., user has the skill but
+# it wasn't relevant in this context).
+# - Higher (0.9): Gentle confidence reduction, slow adaptation
+# - Lower (0.5): Aggressive reduction, fast adaptation
+# - Default: 0.8 provides conservative learning
+SOFT_PENALTY_MULTIPLIER = 0.8
+
+# Full penalty multiplier for confirmed skill gaps (0.0-1.0)
+# Applied when user clearly doesn't have the skill (deletion in
+# requirements/qualifications section for non-owned skill).
+# Also marks the skill with "avoid" flag.
+# - Higher (0.5): Moderate penalty, can still suggest later
+# - Lower (0.2): Strong penalty, skill nearly blocked
+# - Default: 0.3 strongly discourages future suggestions
+FULL_PENALTY_MULTIPLIER = 0.3
+
+# --- Confidence Adjustment Rates ---
+# These control how confidence changes on correct/wrong predictions.
+
+# Confidence boost for correct predictions (additive, 0.0-0.2)
+# Added to confidence when user accepts annotation unchanged.
+# - Higher: Faster confidence growth
+# - Lower: More conservative, requires more validation
+# - Default: 0.05 requires ~10 correct predictions to reach high confidence
+CORRECT_PREDICTION_BOOST = 0.05
+
+# Maximum confidence value (cap for correct prediction boosts)
+MAX_CONFIDENCE = 0.99
+
+# Confidence decay for wrong predictions (multiplicative, 0.0-1.0)
+# Multiplied with confidence when user edits the predicted value.
+# - Higher (0.9): Slow decay, tolerates some variance
+# - Lower (0.5): Fast decay, quickly adopts new patterns
+# - Default: 0.7 provides moderate adaptation speed
+WRONG_PREDICTION_DECAY = 0.7
+
+# Minimum confidence floor (prevents confidence from going to zero)
+MIN_CONFIDENCE = 0.2
+
+# --- Value Adoption Thresholds ---
+# These control when the system switches to a new predicted value
+# after observing different values from the user.
+
+# Confidence threshold for adopting new value (0.0-1.0)
+# If confidence drops below this after wrong predictions,
+# adopt the user's value as the new prediction.
+# - Higher: Requires more evidence before switching
+# - Lower: Switches more eagerly
+# - Default: 0.4 switches after ~2-3 wrong predictions
+VALUE_ADOPTION_THRESHOLD = 0.4
+
+# Minimum observations before value is considered stable
+# If we have fewer observations than this, always adopt new value on correction.
+# - Higher: Requires more history before trusting current value
+# - Lower: Sticks with current value earlier
+# - Default: 3 observations before value is "stable"
+MIN_OBSERVATIONS_FOR_STABILITY = 3
+
+# Neutral confidence value for newly adopted values
+NEUTRAL_CONFIDENCE = 0.5
+
+
+# ============================================================================
+# CACHE CONFIGURATION
+# ============================================================================
+#
+# Controls caching behavior for performance optimization.
+# ============================================================================
+
+# Owned skills cache TTL in seconds
+# How long to cache the list of skills user "owns" (from master CV + priors).
+# - Higher: Better performance, may miss recent changes
+# - Lower: More responsive to changes, more DB queries
+# - Default: 300 (5 minutes) balances freshness vs performance
+OWNED_SKILLS_CACHE_TTL = 300
+
+# Ownership confidence threshold (0.0-1.0)
+# Minimum prior relevance confidence to consider a skill "owned".
+# Used for deletion response classification (skill gap vs noise).
+# - Higher: More conservative, requires strong evidence of ownership
+# - Lower: More lenient, considers weakly-associated skills as owned
+# - Default: 0.7 requires moderate-to-high confidence
+OWNERSHIP_CONFIDENCE_THRESHOLD = 0.7
+
+
+# ============================================================================
+# REBUILD CONFIGURATION
+# ============================================================================
+#
+# Controls when the sentence embedding index should be rebuilt.
+# Rebuilding is expensive (~15-30s for 3000 annotations) but necessary
+# to incorporate new annotations into semantic matching.
+# ============================================================================
+
+# Hours threshold for staleness check
+# Rebuild if index is older than this AND has new annotations.
+REBUILD_AGE_HOURS = 24
+
+# Minimum new annotations to trigger age-based rebuild
+# Only rebuild old indexes if this many new annotations exist.
+REBUILD_MIN_NEW_ANNOTATIONS = 20
+
+# Maximum new annotations before forced rebuild
+# Rebuild regardless of age if this many new annotations exist.
+REBUILD_MAX_NEW_ANNOTATIONS = 100
+
+
+# ============================================================================
+# EMBEDDING MODEL CONFIGURATION
+# ============================================================================
+
+# Sentence transformer model for semantic matching
+# all-MiniLM-L6-v2 is fast and good for sentence similarity.
+# Changing this requires rebuilding the entire index.
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+# Embedding dimension (must match the model above)
+EMBEDDING_DIM = 384
+
+# Batch size for computing embeddings during rebuild
+EMBEDDING_BATCH_SIZE = 64
+
+
+# ============================================================================
+# PRIORS DOCUMENT CONFIGURATION
+# ============================================================================
+
+# Priors document ID (singleton per user)
 PRIORS_DOC_ID = "user_annotation_priors"
+
+
+# ============================================================================
+# SECTION CATEGORIES
+# ============================================================================
+#
+# Categorize JD sections for deletion learning behavior.
+# ============================================================================
+
+# Sections where deletion should NOT trigger learning
+# These sections often contain contextual info, not skill requirements.
+NO_LEARNING_SECTIONS = frozenset({
+    "about_company", "benefits", "nice_to_have", "about_role", "company_culture"
+})
+
+# Sections where deletion should trigger full learning for skill gaps
+# These sections contain hard requirements where deletion indicates
+# user doesn't have the skill.
+SKILL_REQUIREMENT_SECTIONS = frozenset({
+    "requirements", "qualifications"
+})
 
 
 # ============================================================================
@@ -57,21 +226,8 @@ class DeletionResponse(Enum):
     FULL_LEARNING = "full_learning"
 
 
-# Section categories for deletion learning
-NO_LEARNING_SECTIONS = frozenset({
-    "about_company", "benefits", "nice_to_have", "about_role", "company_culture"
-})
-SKILL_REQUIREMENT_SECTIONS = frozenset({
-    "requirements", "qualifications"
-})
-
 # Module-level cache for owned skills
 _owned_skills_cache: Optional[Tuple[Set[str], float]] = None
-OWNED_SKILLS_CACHE_TTL = 300  # 5 minutes
-
-# Embedding model configuration
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384  # Dimension of all-MiniLM-L6-v2 embeddings
 
 
 # ============================================================================
@@ -293,11 +449,11 @@ def should_rebuild_priors(priors: PriorsDocument) -> bool:
     new_annotations = stats.get("annotations_since_build", 0)
 
     # Rebuild conditions
-    if hours_since_build > 24 and new_annotations > 20:
+    if hours_since_build > REBUILD_AGE_HOURS and new_annotations > REBUILD_MIN_NEW_ANNOTATIONS:
         logger.info(f"Rebuild needed: {hours_since_build:.1f}h old with {new_annotations} new annotations")
         return True
 
-    if new_annotations > 100:
+    if new_annotations > REBUILD_MAX_NEW_ANNOTATIONS:
         logger.info(f"Rebuild needed: {new_annotations} new annotations")
         return True
 
@@ -369,7 +525,7 @@ def _compute_embeddings(texts: List[str]) -> np.ndarray:
     model = SentenceTransformer(EMBEDDING_MODEL)
 
     logger.info(f"Computing embeddings for {len(texts)} texts...")
-    embeddings = model.encode(texts, show_progress_bar=True, batch_size=64)
+    embeddings = model.encode(texts, show_progress_bar=True, batch_size=EMBEDDING_BATCH_SIZE)
 
     return embeddings
 
@@ -485,7 +641,7 @@ def _aggregate_dimension(values: List[str]) -> DimensionPrior:
     Uses majority voting with confidence based on agreement.
     """
     if not values:
-        return {"value": None, "confidence": 0.5, "n": 0}
+        return {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0}
 
     # Count occurrences
     from collections import Counter
@@ -650,10 +806,9 @@ def get_owned_skills(priors: Dict[str, Any]) -> Set[str]:
         logger.warning(f"Failed to load master CV for owned skills: {e}")
 
     # Source 2: High-confidence priors
-    OWNERSHIP_THRESHOLD = 0.7
     for skill, data in priors.get("skill_priors", {}).items():
         relevance_conf = data.get("relevance", {}).get("confidence", 0)
-        if relevance_conf >= OWNERSHIP_THRESHOLD and not data.get("avoid"):
+        if relevance_conf >= OWNERSHIP_CONFIDENCE_THRESHOLD and not data.get("avoid"):
             owned.add(skill.lower())
 
     # Update cache
@@ -715,10 +870,10 @@ def capture_feedback(
     # Initialize skill prior if new
     if skill_lower not in priors["skill_priors"]:
         priors["skill_priors"][skill_lower] = {
-            "relevance": {"value": None, "confidence": 0.5, "n": 0},
-            "passion": {"value": None, "confidence": 0.5, "n": 0},
-            "identity": {"value": None, "confidence": 0.5, "n": 0},
-            "requirement": {"value": None, "confidence": 0.5, "n": 0},
+            "relevance": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "passion": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "identity": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "requirement": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
             "avoid": False,
         }
 
@@ -742,7 +897,7 @@ def capture_feedback(
         elif response == DeletionResponse.SOFT_PENALTY:
             for dim in ["relevance", "passion", "identity", "requirement"]:
                 if dim in prior:
-                    prior[dim]["confidence"] *= 0.8
+                    prior[dim]["confidence"] *= SOFT_PENALTY_MULTIPLIER
             priors["stats"]["deleted_soft"] = priors["stats"].get("deleted_soft", 0) + 1
             logger.info(f"Deletion: SOFT_PENALTY for '{skill_lower}' ({reason})")
 
@@ -750,7 +905,7 @@ def capture_feedback(
             prior["avoid"] = True
             for dim in ["relevance", "passion", "identity", "requirement"]:
                 if dim in prior:
-                    prior[dim]["confidence"] *= 0.3
+                    prior[dim]["confidence"] *= FULL_PENALTY_MULTIPLIER
             priors["stats"]["deleted_full"] = priors["stats"].get("deleted_full", 0) + 1
             logger.info(f"Deletion: FULL_LEARNING for '{skill_lower}' ({reason})")
 
@@ -772,16 +927,16 @@ def capture_feedback(
 
             if original_val == final_val:
                 # Correct prediction - increase confidence
-                prior[dim]["confidence"] = min(0.99, prior[dim]["confidence"] + 0.05)
+                prior[dim]["confidence"] = min(MAX_CONFIDENCE, prior[dim]["confidence"] + CORRECT_PREDICTION_BOOST)
             else:
                 # Wrong prediction - decrease confidence, maybe change value
                 any_change = True
-                prior[dim]["confidence"] = max(0.2, prior[dim]["confidence"] * 0.7)
+                prior[dim]["confidence"] = max(MIN_CONFIDENCE, prior[dim]["confidence"] * WRONG_PREDICTION_DECAY)
 
                 # If confidence drops below threshold, adopt new value
-                if prior[dim]["confidence"] < 0.4 or prior[dim]["n"] < 3:
+                if prior[dim]["confidence"] < VALUE_ADOPTION_THRESHOLD or prior[dim]["n"] < MIN_OBSERVATIONS_FOR_STABILITY:
                     prior[dim]["value"] = final_val
-                    prior[dim]["confidence"] = 0.5  # Reset to neutral
+                    prior[dim]["confidence"] = NEUTRAL_CONFIDENCE  # Reset to neutral
 
         # Update stats
         if any_change:

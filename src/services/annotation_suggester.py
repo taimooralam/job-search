@@ -40,11 +40,71 @@ from .annotation_priors import (
 
 logger = logging.getLogger(__name__)
 
-# Similarity threshold for sentence matching
+
+# ============================================================================
+# MATCHING CONFIGURATION
+# ============================================================================
+#
+# These thresholds control how aggressively the system suggests annotations.
+# Higher values = more strict matching = fewer but higher-quality suggestions.
+# Lower values = more lenient matching = more suggestions but may include noise.
+#
+# To tune these values:
+# - Monitor the priors stats (accepted_unchanged vs edited vs deleted)
+# - If many suggestions are deleted: increase thresholds
+# - If too few suggestions are made: decrease thresholds
+# - Target ~80% acceptance rate for good user experience
+# ============================================================================
+
+# Sentence embedding similarity threshold (0.0-1.0)
+# Controls semantic matching against historical annotations.
+# - Higher (0.90+): Only very similar sentences match, fewer suggestions
+# - Lower (0.75-0.80): More lenient matching, more suggestions
+# - Recommended range: 0.80-0.90
+# - Default: 0.85 balances precision vs recall
 SIMILARITY_THRESHOLD = 0.85
 
-# Confidence threshold for keyword prior matching
+# Keyword prior confidence threshold for fallback matching (0.0-1.0)
+# Only uses keyword priors with confidence above this value.
+# - Higher: Only well-established priors are used
+# - Lower: Uses priors with less historical evidence
+# - Recommended range: 0.5-0.7
+# - Default: 0.6 requires moderate confidence from past annotations
 KEYWORD_CONFIDENCE_THRESHOLD = 0.6
+
+# Confidence discount for keyword-based matches (0.0-1.0)
+# Applied to keyword prior confidence when generating suggestions.
+# Keyword matches are less precise than sentence similarity, so we discount.
+# - Higher: Trust keyword priors more
+# - Lower: Be more conservative with keyword-based suggestions
+# - Default: 0.8 applies 20% discount to keyword confidence
+KEYWORD_CONFIDENCE_DISCOUNT = 0.8
+
+# Minimum prior relevance confidence to trigger generation (0.0-1.0)
+# For learned priors (skills not in master CV), only suggest if
+# the prior has accumulated enough confidence.
+# - Higher: Requires more evidence before suggesting learned skills
+# - Lower: Suggests learned skills with less evidence
+# - Default: 0.5 requires weak-to-moderate confidence
+LEARNED_PRIOR_RELEVANCE_THRESHOLD = 0.5
+
+# Minimum text length for annotation generation
+# Very short texts are usually not meaningful requirements.
+# - Default: 10 characters filters out noise
+MIN_TEXT_LENGTH = 10
+
+# Minimum word overlap for requirement type inference (0.0-1.0)
+# When matching JD items to extracted qualifications/nice-to-haves,
+# require this proportion of words to match.
+# - Higher: More exact matching required
+# - Lower: Fuzzy matching allowed
+# - Default: 0.5 requires half the words to match
+WORD_OVERLAP_THRESHOLD = 0.5
+
+# Maximum keywords to suggest per annotation
+# Limits ATS keyword suggestions from extracted_jd.top_keywords.
+# - Default: 3 provides focused keyword guidance
+MAX_SUGGESTED_KEYWORDS = 3
 
 # Sections to skip during annotation generation (not skill-related)
 SKIP_ANNOTATION_SECTIONS = frozenset({
@@ -238,7 +298,7 @@ def should_generate_annotation(
     for skill, data in skill_priors.items():
         if skill in jd_lower and not data.get("avoid"):
             relevance_conf = data.get("relevance", {}).get("confidence", 0)
-            if relevance_conf > 0.5:
+            if relevance_conf > LEARNED_PRIOR_RELEVANCE_THRESHOLD:
                 return (True, MatchContext(
                     type="prior",
                     match=skill,
@@ -289,16 +349,16 @@ def infer_requirement_type(
     jd_lower = jd_item.lower()
     jd_words = set(jd_lower.split())
 
-    # Check qualifications list (>50% word overlap = match)
+    # Check qualifications list (word overlap above threshold = match)
     for qual in extracted_jd.get("qualifications") or []:
         qual_words = set(qual.lower().split())
-        if qual_words and len(jd_words & qual_words) / len(qual_words) > 0.5:
+        if qual_words and len(jd_words & qual_words) / len(qual_words) > WORD_OVERLAP_THRESHOLD:
             return "must_have"
 
     # Check nice_to_haves list
     for nice in extracted_jd.get("nice_to_haves") or []:
         nice_words = set(nice.lower().split())
-        if nice_words and len(jd_words & nice_words) / len(nice_words) > 0.5:
+        if nice_words and len(jd_words & nice_words) / len(nice_words) > WORD_OVERLAP_THRESHOLD:
             return "nice_to_have"
 
     return _get_section_default_requirement(section_type)
@@ -381,7 +441,7 @@ def find_best_match(
                     requirement=skill_prior.get("requirement", {}).get("value") or "neutral",
                     passion=skill_prior.get("passion", {}).get("value") or "neutral",
                     identity=skill_prior.get("identity", {}).get("value") or "peripheral",
-                    confidence=relevance_data.get("confidence", 0.6) * 0.8,  # Discount
+                    confidence=relevance_data.get("confidence", 0.6) * KEYWORD_CONFIDENCE_DISCOUNT,
                     method="keyword_prior",
                     matched_keyword=keyword,
                 )
@@ -432,7 +492,7 @@ def _extract_keywords(text: str) -> List[str]:
 def suggest_keywords_for_item(
     jd_item: str,
     extracted_jd: Optional[Dict[str, Any]],
-    max_keywords: int = 3,
+    max_keywords: int = MAX_SUGGESTED_KEYWORDS,
 ) -> List[str]:
     """
     Suggest ATS keywords from extracted_jd.top_keywords for a JD item.
@@ -562,7 +622,7 @@ def generate_annotations_for_job(
             for item in items:
                 item_text = item.get("text", "") if isinstance(item, dict) else str(item)
 
-                if not item_text or len(item_text) < 10:
+                if not item_text or len(item_text) < MIN_TEXT_LENGTH:
                     skipped += 1
                     continue
 
