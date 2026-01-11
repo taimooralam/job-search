@@ -34,6 +34,31 @@ Phase Migration:
 
 from .base import JobRepositoryInterface, WriteResult
 from .priors_repository import PriorsRepositoryInterface
+from .system_state_repository import (
+    SystemStateRepositoryInterface,
+    get_system_state_repository,
+    reset_system_state_repository,
+)
+from .operation_runs_repository import (
+    OperationRunsRepositoryInterface,
+    get_operation_runs_repository,
+    reset_operation_runs_repository,
+)
+from .job_search_repository import (
+    JobSearchRepositoryInterface,
+    get_job_search_repository,
+    reset_job_search_repository,
+)
+from .annotation_tracking_repository import (
+    AnnotationTrackingRepositoryInterface,
+    get_annotation_tracking_repository,
+    reset_annotation_tracking_repository,
+)
+from .company_cache_repository import (
+    CompanyCacheRepositoryInterface,
+    get_company_cache_repository,
+    reset_company_cache_repository,
+)
 from .config import (
     get_job_repository,
     reset_repository,
@@ -52,6 +77,26 @@ __all__ = [
     "get_priors_repository",
     "reset_priors_repository",
     "PriorsRepositoryInterface",
+    # System state repository
+    "get_system_state_repository",
+    "reset_system_state_repository",
+    "SystemStateRepositoryInterface",
+    # Operation runs repository
+    "get_operation_runs_repository",
+    "reset_operation_runs_repository",
+    "OperationRunsRepositoryInterface",
+    # Job search repository
+    "get_job_search_repository",
+    "reset_job_search_repository",
+    "JobSearchRepositoryInterface",
+    # Annotation tracking repository
+    "get_annotation_tracking_repository",
+    "reset_annotation_tracking_repository",
+    "AnnotationTrackingRepositoryInterface",
+    # Company cache repository
+    "get_company_cache_repository",
+    "reset_company_cache_repository",
+    "CompanyCacheRepositoryInterface",
     # Shared
     "WriteResult",
     "RepositoryConfig",
