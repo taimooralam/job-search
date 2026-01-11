@@ -76,3 +76,6 @@ GEMINI.md
 # Claude Code CLI auth (never commit - contains subscription tokens!)
 claude-auth/
 .claude/
+
+# VPS MongoDB secrets
+vps/mongodb/mongodb-keyfile

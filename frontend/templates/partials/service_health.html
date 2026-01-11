@@ -101,6 +101,34 @@
     </div>
     {% endif %}
 
+    <!-- MongoDB VPS Status (Green environment - standby for migration) -->
+    {% if health.mongodb_vps %}
+    <div class="group relative flex items-center gap-1.5 px-2 py-1 rounded-md hover:theme-bg-hover cursor-help transition-colors">
+        {% if health.mongodb_vps.status == 'healthy' %}
+            <span class="inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            <span class="theme-text-secondary">VPS DB</span>
+            <span class="text-xs text-blue-500">({{ health.mongodb_vps.role }})</span>
+        {% elif health.mongodb_vps.status == 'degraded' %}
+            <span class="inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+            <span class="text-yellow-600">VPS DB</span>
+        {% else %}
+            <span class="inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            <span class="text-red-600">VPS DB</span>
+        {% endif %}
+        <!-- Tooltip -->
+        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+            <div class="bg-dark-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                {% if health.mongodb_vps.status == 'healthy' %}
+                    {{ health.mongodb_vps.uri }} ({{ health.mongodb_vps.collections }} collections)
+                {% else %}
+                    Error: {{ health.mongodb_vps.error|default('Connection failed')|truncate(50, True) }}
+                {% endif %}
+            </div>
+            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-dark-900"></div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Last Updated -->
     <div class="ml-auto text-xs theme-text-muted">
         Updated: {{ health.timestamp[:19]|replace('T', ' ') }} UTC

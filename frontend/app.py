@@ -1759,6 +1759,31 @@ def get_health():
             }
             has_degraded = True
 
+    # Check MongoDB VPS (Green environment for migration) - non-critical until cutover
+    mongodb_vps_uri = os.getenv("MONGODB_VPS_URI", "")
+    if mongodb_vps_uri:
+        try:
+            vps_client = MongoClient(mongodb_vps_uri, serverSelectionTimeoutMS=3000)
+            vps_client.admin.command("ping")
+            # Get basic stats
+            vps_db = vps_client.get_database("jobs")
+            collection_count = len(vps_db.list_collection_names())
+            health_data["mongodb_vps"] = {
+                "status": "healthy",
+                "uri": mongodb_vps_uri.split("@")[-1].split("?")[0] if "@" in mongodb_vps_uri else "configured",
+                "collections": collection_count,
+                "role": "standby"  # Will be "primary" after cutover
+            }
+            vps_client.close()
+        except Exception as e:
+            health_data["mongodb_vps"] = {
+                "status": "degraded",
+                "error": str(e)[:100],
+                "role": "standby"
+            }
+            # VPS MongoDB is non-critical until cutover, just log degraded state
+            has_degraded = True
+
     # Determine overall status
     if has_critical_failure:
         health_data["overall"] = "unhealthy"
@@ -3048,6 +3073,27 @@ def get_diagnostics_data():
 
         if response.status_code == 200:
             data = response.json()
+            # Add MongoDB VPS health check (separate from runner's MongoDB)
+            mongodb_vps_uri = os.getenv("MONGODB_VPS_URI", "")
+            if mongodb_vps_uri:
+                try:
+                    vps_client = MongoClient(mongodb_vps_uri, serverSelectionTimeoutMS=3000)
+                    vps_client.admin.command("ping")
+                    vps_db = vps_client.get_database("jobs")
+                    collection_count = len(vps_db.list_collection_names())
+                    data["mongodb_vps"] = {
+                        "status": "healthy",
+                        "uri": mongodb_vps_uri.split("@")[-1].split("?")[0] if "@" in mongodb_vps_uri else "configured",
+                        "collections": collection_count,
+                        "role": "standby"
+                    }
+                    vps_client.close()
+                except Exception as e:
+                    data["mongodb_vps"] = {
+                        "status": "degraded",
+                        "error": str(e)[:100],
+                        "role": "standby"
+                    }
             return render_template(
                 "partials/diagnostics_data.html",
                 diagnostics=data,

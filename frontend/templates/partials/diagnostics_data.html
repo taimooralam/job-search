@@ -81,6 +81,37 @@
             {% endif %}
         </div>
 
+        <!-- MongoDB VPS (Green Environment) -->
+        {% if diagnostics.mongodb_vps %}
+        {% set mongo_vps = diagnostics.mongodb_vps %}
+        <div class="panel p-4 border-l-2 border-blue-400">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold theme-text-secondary">MongoDB VPS</h3>
+                <span class="flex items-center gap-1.5">
+                    {% if mongo_vps.status == 'healthy' %}
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span class="text-xs text-blue-600 dark:text-blue-400">{{ mongo_vps.role }}</span>
+                    {% elif mongo_vps.status == 'degraded' %}
+                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    <span class="text-xs text-yellow-600 dark:text-yellow-400">{{ mongo_vps.role }}</span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span class="text-xs text-red-600 dark:text-red-400">unavailable</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if mongo_vps.uri %}
+            <p class="text-xs theme-text-tertiary">Host: {{ mongo_vps.uri }}</p>
+            {% endif %}
+            {% if mongo_vps.collections is defined %}
+            <p class="text-xs theme-text-muted">Collections: {{ mongo_vps.collections }}</p>
+            {% endif %}
+            {% if mongo_vps.error %}
+            <p class="text-xs text-red-500 mt-1 truncate" title="{{ mongo_vps.error }}">{{ mongo_vps.error[:40] }}{% if mongo_vps.error|length > 40 %}...{% endif %}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Redis -->
         {% set redis = diagnostics.redis %}
         <div class="panel p-4">
