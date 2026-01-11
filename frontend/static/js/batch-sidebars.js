@@ -612,6 +612,37 @@ function applyBatchDocumentStyle(property) {
 // ============================================================================
 
 /**
+ * Wait for an element to appear in the DOM
+ * @param {string} elementId - The element ID to wait for
+ * @param {number} maxWait - Maximum time to wait in ms (default 2000)
+ * @param {number} checkInterval - Interval between checks in ms (default 50)
+ * @returns {Promise<Element|null>} The element or null if not found
+ */
+function waitForElement(elementId, maxWait = 2000, checkInterval = 50) {
+    return new Promise((resolve) => {
+        // Check immediately first
+        const element = document.getElementById(elementId);
+        if (element) {
+            resolve(element);
+            return;
+        }
+
+        const startTime = Date.now();
+        const interval = setInterval(() => {
+            const el = document.getElementById(elementId);
+            if (el) {
+                clearInterval(interval);
+                resolve(el);
+            } else if (Date.now() - startTime > maxWait) {
+                clearInterval(interval);
+                console.warn(`[waitForElement] Element "${elementId}" not found after ${maxWait}ms`);
+                resolve(null);
+            }
+        }, checkInterval);
+    });
+}
+
+/**
  * Initialize batch annotation manager for the annotation sidebar
  * Uses batch-specific element IDs to avoid conflicts with job detail page
  * @param {string} jobId - The job ID to load annotations for
@@ -626,6 +657,15 @@ async function initBatchAnnotationManager(jobId) {
 
     // Clean up any existing instance
     cleanupBatchAnnotationManager();
+
+    // Wait for critical container elements to be available in the DOM
+    // This handles race conditions between innerHTML assignment and DOM parsing
+    const annotationItemsContainer = await waitForElement('batch-annotation-items', 2000, 50);
+    if (!annotationItemsContainer) {
+        console.error('[initBatchAnnotationManager] Critical element "batch-annotation-items" not found in DOM');
+        showBatchAnnotationError('Annotation panel failed to load. Please try again.');
+        return;
+    }
 
     try {
         // Create annotation manager with batch-specific element IDs
