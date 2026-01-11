@@ -32,13 +32,39 @@ def runner_client():
 
 @pytest.fixture
 def mock_mongodb():
-    """Mock MongoDB connection for tests."""
-    with patch("pymongo.MongoClient") as mock_client:
+    """Mock MongoDB connection for tests.
+
+    IMPORTANT: Must patch MongoClient where it's USED (atlas_repository),
+    not where it's DEFINED (pymongo). Python's `from X import Y` copies
+    the name into the module's namespace, so patching the original has
+    no effect on the copy.
+
+    Also must reset the repository singleton before mocking, otherwise
+    the class-level cached _collection will be used instead of creating
+    a new (mocked) MongoClient.
+    """
+    from src.common.repositories import reset_repository
+    from src.common.repositories.atlas_repository import AtlasJobRepository
+
+    # Clear class-level singletons
+    AtlasJobRepository._client = None
+    AtlasJobRepository._db = None
+    AtlasJobRepository._collection = None
+    reset_repository()
+
+    # Patch where MongoClient is USED, not where it's defined
+    with patch("src.common.repositories.atlas_repository.MongoClient") as mock_client:
         mock_db = MagicMock()
         mock_collection = MagicMock()
         mock_client.return_value.__getitem__.return_value = mock_db
         mock_db.__getitem__.return_value = mock_collection
         yield mock_collection
+
+    # Clean up after test
+    AtlasJobRepository._client = None
+    AtlasJobRepository._db = None
+    AtlasJobRepository._collection = None
+    reset_repository()
 
 
 class TestRunnerPDFProxyIntegration:
