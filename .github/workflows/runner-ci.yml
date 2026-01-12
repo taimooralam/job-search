@@ -163,11 +163,10 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies (using uv, CPU-only torch)
+      - name: Install dependencies (using uv)
         run: |
-          # Install CPU-only PyTorch first (avoids ~3GB NVIDIA downloads)
-          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
-          # Then install remaining requirements
+          # Install core requirements only (ML deps in requirements-ml.txt)
+          # Tests mock sentence-transformers, so we don't need torch at all
           uv pip install -r requirements.txt
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
@@ -265,11 +264,10 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies (using uv, CPU-only torch)
+      - name: Install dependencies (using uv)
         run: |
-          # Install CPU-only PyTorch first (avoids ~3GB NVIDIA downloads)
-          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
-          # Then install remaining requirements
+          # Install core requirements only (ML deps in requirements-ml.txt)
+          # Tests mock sentence-transformers, so we don't need torch at all
           uv pip install -r requirements.txt
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .

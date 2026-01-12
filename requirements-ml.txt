@@ -1,0 +1,8 @@
+# ML/Embedding dependencies
+# These are heavy (torch ~200MB CPU, ~3GB with CUDA)
+# Only needed for annotation suggestion system (embeddings)
+#
+# Production: Install with `pip install -r requirements-ml.txt`
+# CI/Tests: Skip this - tests mock the ML functionality
+
+sentence-transformers>=2.2.0  # Requires torch, ~80MB model download on first use

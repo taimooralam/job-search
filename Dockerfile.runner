@@ -48,14 +48,16 @@ RUN useradd -m -u 1000 runner \
     && mkdir -p /home/runner/.claude \
     && chown -R runner:runner /home/runner
 
-COPY requirements.txt .
+COPY requirements.txt requirements-ml.txt ./
 
 # Install CPU-only PyTorch FIRST to prevent CUDA version from being pulled
 # This saves ~3GB of unnecessary NVIDIA CUDA libraries since VPS has no GPU
 # CPU PyTorch: ~200MB vs CUDA PyTorch: ~900MB + ~2.6GB CUDA libs
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
+# Install core requirements + ML requirements (sentence-transformers for annotation embeddings)
 RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir -r requirements-ml.txt \
     && pip install --no-cache-dir playwright \
     && python -m playwright install --with-deps chromium
 

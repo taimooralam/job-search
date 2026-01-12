@@ -52,5 +52,7 @@ redis>=5.0.0
 flask-sock>=0.7.0
 websocket-client>=1.6.0
 
-# Annotation suggestion system (local embeddings)
-sentence-transformers>=2.2.0  # ~80MB model download on first use
+# Annotation suggestion system - heavy ML deps in requirements-ml.txt
+# sentence-transformers moved to requirements-ml.txt (pulls torch ~200MB+)
+# Tests mock the embedding functionality, production installs both files
+numpy>=1.24.0  # Used directly by annotation_priors.py, annotation_suggester.py
