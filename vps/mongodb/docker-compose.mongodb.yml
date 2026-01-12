@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mongodb:
     image: mongo:7.0
@@ -45,9 +43,10 @@ services:
       mongosh --host mongodb:27017 -u ${MONGO_ROOT_USER} -p ${MONGO_ROOT_PASSWORD} --authenticationDatabase admin --eval '
         rs.initiate({
           _id: "rs0",
-          members: [{ _id: 0, host: "mongodb:27017" }]
+          members: [{ _id: 0, host: "72.61.92.76:27018" }]
         })
       '
+    # NOTE: Use external IP:port so replica set is accessible from outside Docker
     restart: "no"
 
 volumes:
