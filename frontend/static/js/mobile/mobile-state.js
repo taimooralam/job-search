@@ -9,7 +9,7 @@
 window.mobileApp = function() {
     return {
         // State
-        mode: 'main',           // 'main' or 'batch'
+        mode: 'batch',          // 'main' or 'batch' - default to batch for CV generation workflow
         timeFilter: '1h',       // Current time filter (default: 1 hour)
         leadershipOnly: false,  // Leadership toggle
         jobs: [],               // Current job stack
