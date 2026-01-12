@@ -109,6 +109,9 @@ See full audit details in plan file: `.claude/plans/snuggly-snacking-summit.md`
 **UI/Frontend**:
 - [ ] Suggestion popover in job detail view
 
+**Backend/Data Integrity**:
+- [ ] Annotation feedback endpoint idempotency - server-side deduplication to prevent double-counting on retry (edge case: request succeeds but response lost, client retries)
+
 **Monitoring**:
 - [ ] Dashboard: suggestion accuracy over time
 - [ ] Metrics: acceptance rate, soft vs hard deletion ratio
