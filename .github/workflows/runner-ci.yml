@@ -150,21 +150,24 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Cache pip packages (saves ~30-60s)
-      - name: Cache pip packages
+      # Cache uv packages (saves ~30-60s)
+      - name: Cache uv packages
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-uv-
 
       # Use uv for 10-100x faster installs
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies (using uv)
+      - name: Install dependencies (using uv, CPU-only torch)
         run: |
+          # Install CPU-only PyTorch first (avoids ~3GB NVIDIA downloads)
+          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+          # Then install remaining requirements
           uv pip install -r requirements.txt
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
@@ -251,19 +254,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Cache pip packages
+      - name: Cache uv packages
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-uv-
 
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies (using uv)
+      - name: Install dependencies (using uv, CPU-only torch)
         run: |
+          # Install CPU-only PyTorch first (avoids ~3GB NVIDIA downloads)
+          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
+          # Then install remaining requirements
           uv pip install -r requirements.txt
           uv pip install pytest pytest-asyncio pytest-xdist httpx
           uv pip install -e .
