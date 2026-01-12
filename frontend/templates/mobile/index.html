@@ -207,11 +207,8 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Technical Skills</h4>
                                             <div class="flex flex-wrap gap-1">
-                                                <template x-for="skill in currentJob.extracted_jd.technical_skills.slice(0, 12)" :key="skill">
+                                                <template x-for="skill in currentJob.extracted_jd.technical_skills" :key="skill">
                                                     <span class="px-2 py-0.5 bg-mobile-purple-500/20 text-mobile-purple-400 rounded text-xs" x-text="skill"></span>
-                                                </template>
-                                                <template x-if="currentJob.extracted_jd.technical_skills.length > 12">
-                                                    <span class="px-2 py-0.5 bg-mobile-dark-700 text-mobile-dark-400 rounded text-xs" x-text="`+${currentJob.extracted_jd.technical_skills.length - 12} more`"></span>
                                                 </template>
                                             </div>
                                         </div>
@@ -222,7 +219,7 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Top Keywords</h4>
                                             <div class="flex flex-wrap gap-1">
-                                                <template x-for="keyword in currentJob.extracted_jd.top_keywords.slice(0, 10)" :key="keyword">
+                                                <template x-for="keyword in currentJob.extracted_jd.top_keywords" :key="keyword">
                                                     <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs" x-text="keyword"></span>
                                                 </template>
                                             </div>
@@ -234,7 +231,7 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Implied Pain Points</h4>
                                             <ul class="text-sm text-mobile-dark-300 space-y-1.5">
-                                                <template x-for="point in currentJob.extracted_jd.implied_pain_points.slice(0, 5)" :key="point">
+                                                <template x-for="point in currentJob.extracted_jd.implied_pain_points" :key="point">
                                                     <li class="flex items-start gap-2">
                                                         <span class="text-mobile-orange-500 mt-0.5">⚠</span>
                                                         <span x-text="typeof point === 'string' ? point : point.text"></span>
@@ -249,7 +246,7 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Success Metrics</h4>
                                             <ul class="text-sm text-mobile-dark-300 space-y-1.5">
-                                                <template x-for="metric in currentJob.extracted_jd.success_metrics.slice(0, 5)" :key="metric">
+                                                <template x-for="metric in currentJob.extracted_jd.success_metrics" :key="metric">
                                                     <li class="flex items-start gap-2">
                                                         <span class="text-green-500 mt-0.5">✓</span>
                                                         <span x-text="metric"></span>
@@ -264,14 +261,11 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Key Responsibilities</h4>
                                             <ul class="text-sm text-mobile-dark-300 space-y-1.5">
-                                                <template x-for="resp in currentJob.extracted_jd.responsibilities.slice(0, 6)" :key="resp">
+                                                <template x-for="resp in currentJob.extracted_jd.responsibilities" :key="resp">
                                                     <li class="flex items-start gap-2">
                                                         <span class="text-mobile-purple-400 mt-0.5">›</span>
                                                         <span x-text="resp"></span>
                                                     </li>
-                                                </template>
-                                                <template x-if="currentJob.extracted_jd.responsibilities.length > 6">
-                                                    <li class="text-xs text-mobile-dark-500 pl-4" x-text="`+${currentJob.extracted_jd.responsibilities.length - 6} more...`"></li>
                                                 </template>
                                             </ul>
                                         </div>
@@ -282,14 +276,11 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Required Qualifications</h4>
                                             <ul class="text-sm text-mobile-dark-300 space-y-1.5">
-                                                <template x-for="qual in currentJob.extracted_jd.required_qualifications.slice(0, 5)" :key="qual">
+                                                <template x-for="qual in currentJob.extracted_jd.required_qualifications" :key="qual">
                                                     <li class="flex items-start gap-2">
                                                         <span class="text-blue-400 mt-0.5">✓</span>
                                                         <span x-text="qual"></span>
                                                     </li>
-                                                </template>
-                                                <template x-if="currentJob.extracted_jd.required_qualifications.length > 5">
-                                                    <li class="text-xs text-mobile-dark-500 pl-4" x-text="`+${currentJob.extracted_jd.required_qualifications.length - 5} more...`"></li>
                                                 </template>
                                             </ul>
                                         </div>
@@ -300,7 +291,7 @@
                                         <div>
                                             <h4 class="text-xs text-mobile-dark-500 uppercase tracking-wide mb-1">Soft Skills</h4>
                                             <div class="flex flex-wrap gap-1">
-                                                <template x-for="skill in currentJob.extracted_jd.soft_skills.slice(0, 8)" :key="skill">
+                                                <template x-for="skill in currentJob.extracted_jd.soft_skills" :key="skill">
                                                     <span class="px-2 py-0.5 bg-pink-500/20 text-pink-400 rounded text-xs" x-text="skill"></span>
                                                 </template>
                                             </div>

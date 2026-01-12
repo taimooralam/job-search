@@ -157,15 +157,15 @@
     </div>
     {% endif %}
 
-    {# Job Metadata Section #}
-    <details class="px-4 sm:px-6 py-2 border-b {{ theme_border }} {{ theme_bg_secondary }}" {% if mode == 'sidebar' %}open{% endif %}>
-        <summary class="cursor-pointer text-xs font-medium {{ theme_text_tertiary }} uppercase flex items-center gap-2 select-none list-none">
-            <svg class="h-3 w-3 transition-transform duration-200 details-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {# Job Metadata Section - Compact #}
+    <details class="px-3 py-1.5 border-b {{ theme_border }} {{ theme_bg_secondary }}" {% if mode == 'sidebar' %}open{% endif %}>
+        <summary class="cursor-pointer text-[10px] font-medium {{ theme_text_tertiary }} uppercase flex items-center gap-1.5 select-none list-none">
+            <svg class="h-2.5 w-2.5 transition-transform duration-200 details-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
             Job Details
         </summary>
-        <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        <div class="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
             {# Title & Company #}
             <div>
                 <span class="{{ theme_text_tertiary }} text-xs">Title</span>
