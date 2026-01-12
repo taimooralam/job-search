@@ -124,7 +124,7 @@ class TestJobSearchService:
         assert key1 == key2
 
     def test_generate_dedupe_key(self, service):
-        """Test deduplication key generation."""
+        """Test deduplication key generation - new format: source|normalized_fields."""
         job = {
             "company": "Acme Corp",
             "title": "Software Engineer",
@@ -133,7 +133,8 @@ class TestJobSearchService:
 
         key = service._generate_dedupe_key(job, "indeed")
 
-        assert key == "acme corp|software engineer|dubai, uae|indeed"
+        # New format: source|company|title|location (all normalized - no special chars)
+        assert key == "indeed|acmecorp|softwareengineer|dubaiuae"
 
     def test_check_cache_found(self, service, mock_search_repository):
         """Test cache lookup when entry exists."""
