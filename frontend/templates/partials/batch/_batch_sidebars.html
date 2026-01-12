@@ -20,36 +20,63 @@
      aria-modal="true"
      data-sidebar-type="annotation">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b theme-border theme-bg-secondary flex-shrink-0">
-        <div class="flex items-center space-x-2 sm:space-x-4">
+    <!-- Compact Header - Single Row -->
+    <div class="flex items-center justify-between px-3 py-2 border-b theme-border theme-bg-secondary flex-shrink-0">
+        {# Left side: Close + Title + Separator + Job Info #}
+        <div class="flex items-center gap-2 min-w-0 flex-1">
             <button onclick="closeBatchSidebar()"
-                    class="theme-text-tertiary hover:theme-text-primary transition p-2 -ml-2 rounded-lg hover:theme-bg-hover"
+                    class="theme-text-tertiary hover:theme-text-primary transition p-1.5 -ml-1 rounded hover:theme-bg-hover flex-shrink-0"
                     aria-label="Close annotation panel (Escape key)"
                     title="Close (Esc)">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
-            <div>
-                <h2 id="batch-annotation-title" class="text-base sm:text-lg font-semibold theme-text-primary">
-                    JD Annotations
-                </h2>
-                <span id="batch-annotation-job-info" class="text-xs theme-text-tertiary"></span>
-            </div>
+            <h2 id="batch-annotation-title" class="text-sm font-semibold theme-text-primary whitespace-nowrap">
+                Annotate JD
+            </h2>
+            <span class="theme-text-tertiary">|</span>
+            <span id="batch-annotation-job-info" class="text-xs theme-text-secondary truncate"></span>
         </div>
-        <div class="flex items-center gap-4">
-            {# Save Indicator #}
+
+        {# Right side: Undo/Redo + Save + Open Full #}
+        <div class="flex items-center gap-2 flex-shrink-0">
+            {# Undo/Redo Buttons #}
+            <div class="flex items-center gap-0.5">
+                <button id="batch-header-undo-btn"
+                        onclick="getActiveAnnotationManager()?.undo()"
+                        disabled
+                        class="undo-redo-btn p-1 rounded hover:theme-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition theme-text-tertiary"
+                        title="Undo (Ctrl+Z)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                </button>
+                <button id="batch-header-redo-btn"
+                        onclick="getActiveAnnotationManager()?.redo()"
+                        disabled
+                        class="undo-redo-btn p-1 rounded hover:theme-bg-hover disabled:opacity-40 disabled:cursor-not-allowed transition theme-text-tertiary"
+                        title="Redo (Ctrl+Shift+Z)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"/>
+                    </svg>
+                </button>
+            </div>
+
+            {# Save Indicator - Compact #}
             <span id="batch-annotation-save-indicator"
-                  class="text-xs sm:text-sm theme-text-tertiary"
+                  class="text-xs theme-text-tertiary"
                   role="status"
                   aria-live="polite">
-                <span class="text-green-500">Saved</span>
+                <span class="text-green-500 dark:text-green-400">Saved</span>
             </span>
+
+            {# Open Full Link #}
             <a id="batch-annotation-detail-link" href="#"
-               class="text-sm text-accent-500 hover:text-accent-400 flex items-center gap-1">
-                <span class="hidden sm:inline">Open Full View</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="text-xs text-accent-500 hover:text-accent-400 flex items-center gap-1 whitespace-nowrap"
+               title="Open in full page view">
+                <span class="hidden sm:inline">Open Full</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                 </svg>
             </a>

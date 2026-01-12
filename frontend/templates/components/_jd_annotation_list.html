@@ -13,87 +13,83 @@
 #}
 
 <div class="flex flex-col h-full">
-    {# Review Banner for Pending AI Suggestions #}
-    <div id="{{ id_prefix }}review-banner" class="review-banner hidden mx-3 mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg flex-shrink-0">
+    {# Review Banner for Pending AI Suggestions - Compact #}
+    <div id="{{ id_prefix }}review-banner" class="review-banner hidden mx-2 mt-2 p-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded flex-shrink-0">
         <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-purple-600 dark:text-purple-400">&#10024;</span>
-                <span class="text-sm font-medium text-purple-800 dark:text-purple-200">
-                    <span id="{{ id_prefix }}pending-count">0</span> suggestions ready for review
+            <div class="flex items-center gap-1.5">
+                <span class="text-purple-600 dark:text-purple-400 text-xs">&#10024;</span>
+                <span class="text-xs font-medium text-purple-800 dark:text-purple-200">
+                    <span id="{{ id_prefix }}pending-count">0</span> suggestions
                 </span>
             </div>
-            <div class="flex gap-2">
-                <button onclick="getActiveAnnotationManager()?.acceptAllSuggestions()"
-                        class="px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
-                    Accept All
-                </button>
-            </div>
+            <button onclick="getActiveAnnotationManager()?.acceptAllSuggestions()"
+                    class="px-2 py-0.5 text-[10px] font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors">
+                Accept All
+            </button>
         </div>
     </div>
 
-    {# Header #}
-    <div class="px-4 py-3 border-b {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
-        <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-semibold {{ theme_text_primary }}">Annotations</h3>
-            <span id="{{ id_prefix }}annotation-list-count" class="text-xs {{ theme_text_tertiary }} bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">{{ annotations | length }}</span>
+    {# Header - Compact #}
+    <div class="px-2 py-2 border-b {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
+        <div class="flex items-center justify-between mb-1.5">
+            <h3 class="text-xs font-semibold {{ theme_text_primary }}">Annotations</h3>
+            <span id="{{ id_prefix }}annotation-list-count" class="text-[10px] {{ theme_text_tertiary }} bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">{{ annotations | length }}</span>
         </div>
 
-        {# Filter Controls #}
-        <div class="flex flex-wrap gap-1 mb-2">
+        {# Filter Controls - Compact #}
+        <div class="flex flex-wrap gap-0.5 mb-1.5">
             <button onclick="filterAnnotations('all')"
                     data-filter="all"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-accent-900/50 dark:text-accent-300 transition">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 dark:bg-accent-900/50 dark:text-accent-300 transition">
                 All
             </button>
             <button onclick="filterAnnotations('core_strength')"
                     data-filter="core_strength"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-teal-50 hover:text-teal-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-teal-900/30 transition">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-teal-50 hover:text-teal-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-teal-900/30 transition">
                 Core
             </button>
             <button onclick="filterAnnotations('gap')"
                     data-filter="gap"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-rose-50 hover:text-rose-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-rose-900/30 transition">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-rose-50 hover:text-rose-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-rose-900/30 transition">
                 Gaps
             </button>
             <button onclick="filterAnnotations('must_have')"
                     data-filter="must_have"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30 transition">
-                Must-Have
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30 transition">
+                Must
             </button>
             <button onclick="filterAnnotations('active')"
                     data-filter="active"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-900/30 transition">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-900/30 transition">
                 Active
             </button>
         </div>
 
-        {# Passion & Identity Filters #}
-        <div class="flex flex-wrap gap-1">
-            <span class="text-xs {{ theme_text_tertiary }} mr-1">Passion:</span>
+        {# Passion & Identity Filters - Compact #}
+        <div class="flex flex-wrap items-center gap-0.5">
             <button onclick="filterAnnotations('love_it')"
                     data-filter="love_it"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-pink-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-pink-900/30 transition"
-                    title="Filter by 'Love it' passion">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-pink-50 hover:text-pink-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-pink-900/30 transition"
+                    title="Love it">
                 &#128293;
             </button>
             <button onclick="filterAnnotations('avoid')"
                     data-filter="avoid"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-stone-50 hover:text-stone-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-stone-900/30 transition"
-                    title="Filter by 'Avoid' passion">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-stone-50 hover:text-stone-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-stone-900/30 transition"
+                    title="Avoid">
                 &#128683;
             </button>
-            <span class="text-xs {{ theme_text_tertiary }} mx-1">|</span>
-            <span class="text-xs {{ theme_text_tertiary }} mr-1">Identity:</span>
+            <span class="text-[10px] {{ theme_text_tertiary }} mx-0.5">|</span>
             <button onclick="filterAnnotations('core_identity')"
                     data-filter="core_identity"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-900/30 transition"
-                    title="Filter by 'Core Identity'">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-indigo-900/30 transition"
+                    title="Core Identity">
                 &#11088;
             </button>
             <button onclick="filterAnnotations('not_identity')"
                     data-filter="not_identity"
-                    class="annotation-filter-btn px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-zinc-50 hover:text-zinc-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-zinc-900/30 transition"
-                    title="Filter by 'Not Me'">
+                    class="annotation-filter-btn px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 hover:bg-zinc-50 hover:text-zinc-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-zinc-900/30 transition"
+                    title="Not Me">
                 &#10007;
             </button>
         </div>
@@ -116,22 +112,18 @@
         </div>
     </div>
 
-    {# Footer Stats #}
-    <div class="px-4 py-3 border-t {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
-        <div class="flex items-center justify-between text-xs {{ theme_text_tertiary }}">
-            <span id="{{ id_prefix }}annotation-count">{{ annotations | length }} annotations</span>
-            <span id="{{ id_prefix }}active-annotation-count">{{ annotations | selectattr('is_active', 'true') | list | length if annotations else 0 }} active</span>
-        </div>
-    </div>
-
-    {# Boost Preview #}
-    <div class="border-t {{ theme_border }} {{ theme_bg }} px-4 py-3 flex-shrink-0">
+    {# Footer Stats - Compact Combined #}
+    <div class="px-2 py-1.5 border-t {{ theme_border }} {{ theme_bg_secondary }} flex-shrink-0">
         <div class="flex items-center justify-between">
-            <span class="text-xs font-medium {{ theme_text_tertiary }} uppercase">Total Boost</span>
-            <span id="{{ id_prefix }}total-boost-value" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">1.0x</span>
-        </div>
-        <div class="mt-1 text-xs {{ theme_text_tertiary }}">
-            Combined multiplier for CV bullet prioritization
+            <div class="flex items-center gap-2 text-[10px] {{ theme_text_tertiary }}">
+                <span id="{{ id_prefix }}annotation-count">{{ annotations | length }}</span>
+                <span>|</span>
+                <span id="{{ id_prefix }}active-annotation-count">{{ annotations | selectattr('is_active', 'true') | list | length if annotations else 0 }} active</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <span class="text-[10px] font-medium {{ theme_text_tertiary }}">Boost:</span>
+                <span id="{{ id_prefix }}total-boost-value" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">1.0x</span>
+            </div>
         </div>
     </div>
 </div>

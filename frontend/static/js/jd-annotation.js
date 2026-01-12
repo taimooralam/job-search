@@ -213,6 +213,8 @@ class AnnotationManager {
         this.saveTimeout = null;
         this.currentFilter = 'all';
         this.starStories = [];
+        // Track the last annotation ID that was edited/created for save pulse animation
+        this._lastEditedAnnotationId = null;
         this.popoverState = {
             selectedText: '',
             selectedRange: null,
@@ -237,7 +239,8 @@ class AnnotationManager {
             isEditing: false,
             hasIdentityAnnotations: false,
             isUserEdited: false,
-            unavailable: false  // True when on Vercel (LangChain not available)
+            unavailable: false,  // True when on Vercel (LangChain not available)
+            isExpanded: false    // Collapsible state - collapsed by default
         };
         // Track if destroyed
         this._destroyed = false;
@@ -575,6 +578,9 @@ class AnnotationManager {
             this.updateSaveIndicator('saved');
             console.log('Annotations saved successfully');
 
+            // Show save pulse animation on the last edited annotation
+            this.showSavePulseAnimation();
+
             // Dispatch event to update JD badge in job rows (turns green when annotations exist)
             window.dispatchEvent(new CustomEvent('annotations:updated', {
                 detail: {
@@ -587,6 +593,31 @@ class AnnotationManager {
             console.error('Error saving annotations:', error);
             this.updateSaveIndicator('error');
         }
+    }
+
+    /**
+     * Show save success pulse animation on the last edited annotation highlight.
+     * Adds a brief green shimmer effect to indicate successful save.
+     */
+    showSavePulseAnimation() {
+        if (!this._lastEditedAnnotationId) return;
+
+        const highlightEl = document.querySelector(
+            `.annotation-highlight[data-annotation-id="${this._lastEditedAnnotationId}"]`
+        );
+
+        if (highlightEl) {
+            // Add the pulse class
+            highlightEl.classList.add('save-pulse');
+
+            // Remove the class after animation completes (1 second)
+            setTimeout(() => {
+                highlightEl.classList.remove('save-pulse');
+            }, 1000);
+        }
+
+        // Clear the tracked annotation ID
+        this._lastEditedAnnotationId = null;
     }
 
     /**
@@ -1540,6 +1571,15 @@ class AnnotationManager {
             this.applyHighlights({ force: true });
         });
 
+        // Track the annotation ID for save pulse animation
+        if (isEditing) {
+            this._lastEditedAnnotationId = this.editingAnnotationId;
+        } else {
+            // For new annotations, get the ID of the just-added annotation
+            const newAnnotation = this.annotations[this.annotations.length - 1];
+            this._lastEditedAnnotationId = newAnnotation?.id || null;
+        }
+
         // Schedule save
         this.scheduleSave();
 
@@ -1658,6 +1698,9 @@ class AnnotationManager {
                 this.showAnnotationPopover(selectionRect, text, annotation);
             }
         });
+
+        // Track the annotation ID for save pulse animation
+        this._lastEditedAnnotationId = annotation.id;
 
         // Schedule save to backend
         this.scheduleSave();
@@ -2854,7 +2897,15 @@ class AnnotationManager {
     }
 
     /**
-     * Render the persona panel UI
+     * Toggle persona panel expanded/collapsed state
+     */
+    togglePersonaExpanded() {
+        this.personaState.isExpanded = !this.personaState.isExpanded;
+        this.renderPersonaPanel();
+    }
+
+    /**
+     * Render the persona panel UI - Compact, collapsible design
      */
     renderPersonaPanel() {
         const container = document.getElementById(this.config.personaPanelId);
@@ -2863,83 +2914,74 @@ class AnnotationManager {
         // Check for identity annotations
         this.checkIdentityAnnotations();
 
-        // Hide if no identity annotations
+        // Hide completely if no identity annotations
         if (!this.personaState.hasIdentityAnnotations) {
             container.innerHTML = '';
+            container.classList.add('hidden');
             return;
         }
 
-        const { statement, isLoading, isEditing, isUserEdited, unavailable } = this.personaState;
+        container.classList.remove('hidden');
+        const { statement, isLoading, isEditing, isUserEdited, unavailable, isExpanded } = this.personaState;
 
-        // Loading state
+        // Loading state - compact inline
         if (isLoading) {
             container.innerHTML = `
-                <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <h4 class="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
-                        <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Synthesizing Persona...
-                    </h4>
-                    <p class="text-sm text-indigo-700">Analyzing identity annotations to create your professional positioning...</p>
+                <div class="flex items-center gap-2 py-1.5 px-2 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-200 dark:border-indigo-800">
+                    <svg class="animate-spin h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-xs text-indigo-700 dark:text-indigo-300">Synthesizing persona...</span>
                 </div>
             `;
             return;
         }
 
-        // Unavailable on Vercel - show manual entry option
+        // Unavailable on Vercel - compact button
         if (unavailable && !statement) {
             container.innerHTML = `
-                <div class="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                    <h4 class="font-semibold text-amber-800 mb-2">Professional Persona</h4>
-                    <p class="text-sm text-amber-700 mb-3">
-                        AI-powered persona synthesis is not available on this deployment.
-                        You can enter your persona statement manually.
-                    </p>
-                    <button onclick="getActiveAnnotationManager()?.startManualPersonaEntry()"
-                            class="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm font-medium">
-                        Enter Persona Manually
-                    </button>
-                </div>
+                <button onclick="getActiveAnnotationManager()?.startManualPersonaEntry()"
+                        class="persona-generate-btn bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-700">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    Enter Persona Manually
+                </button>
             `;
             return;
         }
 
-        // No persona yet - show generate button
+        // No persona yet - compact generate button
         if (!statement) {
             container.innerHTML = `
-                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h4 class="font-semibold text-gray-700 mb-2">Professional Persona</h4>
-                    <p class="text-sm text-gray-600 mb-3">
-                        You have identity annotations. Generate a synthesized persona to use in CV, cover letter, and outreach.
-                    </p>
-                    <button onclick="getActiveAnnotationManager()?.synthesizePersona()"
-                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
-                        Generate Persona
-                    </button>
-                </div>
+                <button onclick="getActiveAnnotationManager()?.synthesizePersona()"
+                        class="persona-generate-btn bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50 border border-indigo-300 dark:border-indigo-700">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                    </svg>
+                    Generate Persona
+                </button>
             `;
             return;
         }
 
-        // Edit mode
+        // Edit mode - compact
         if (isEditing) {
             container.innerHTML = `
-                <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <h4 class="font-semibold text-indigo-900 mb-2">Edit Persona</h4>
+                <div class="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-200 dark:border-indigo-800">
                     <textarea id="persona-edit-textarea"
-                              class="w-full p-3 border border-indigo-300 rounded-md text-sm"
-                              rows="3"
+                              class="w-full p-2 border border-indigo-300 dark:border-indigo-600 rounded text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                              rows="2"
                               oninput="getActiveAnnotationManager()?.updatePersonaText(this.value)"
                     >${statement}</textarea>
-                    <div class="flex gap-2 mt-3">
+                    <div class="flex gap-1.5 mt-1.5">
                         <button onclick="getActiveAnnotationManager()?.savePersona()"
-                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">
+                                class="px-2 py-1 bg-indigo-600 text-white rounded text-xs font-medium hover:bg-indigo-700">
                             Save
                         </button>
                         <button onclick="getActiveAnnotationManager()?.cancelEditingPersona()"
-                                class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-sm font-medium">
+                                class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-600">
                             Cancel
                         </button>
                     </div>
@@ -2948,34 +2990,60 @@ class AnnotationManager {
             return;
         }
 
-        // Display mode
+        // Display mode - collapsible card
+        const expandedClass = isExpanded ? 'persona-panel-expanded' : 'persona-panel-collapsed';
         const editedBadge = isUserEdited
-            ? '<span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full ml-2">edited</span>'
+            ? '<span class="text-[10px] bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full">edited</span>'
             : '';
+        const chevronRotation = isExpanded ? 'rotate-180' : '';
 
         container.innerHTML = `
-            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="font-semibold text-indigo-900 flex items-center">
-                        Synthesized Persona ${editedBadge}
-                    </h4>
-                    <div class="flex gap-2">
-                        <button onclick="getActiveAnnotationManager()?.startEditingPersona()"
-                                class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
-                            Edit
+            <div class="persona-panel ${expandedClass} bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-200 dark:border-indigo-800">
+                <!-- Collapsed header - always visible -->
+                <div class="flex items-center justify-between py-1.5 px-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-t transition"
+                     onclick="getActiveAnnotationManager()?.togglePersonaExpanded()">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        <span class="text-xs font-medium text-indigo-900 dark:text-indigo-200">Persona</span>
+                        ${editedBadge}
+                        ${!isExpanded ? `<span class="text-xs text-indigo-600 dark:text-indigo-400 truncate ml-1 italic">"${this.truncateText(statement, 40)}"</span>` : ''}
+                    </div>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.startEditingPersona()"
+                                class="p-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                                title="Edit persona">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                            </svg>
                         </button>
-                        <button onclick="getActiveAnnotationManager()?.synthesizePersona()"
-                                class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline">
-                            Regenerate
+                        <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.synthesizePersona()"
+                                class="p-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800"
+                                title="Regenerate persona">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
                         </button>
+                        <svg class="persona-toggle-btn w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 ${chevronRotation} transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </div>
                 </div>
-                <p class="text-indigo-800 italic">"${statement}"</p>
-                <p class="text-xs text-indigo-600 mt-2">
-                    This persona will be used to frame your CV profile, cover letter opening, and outreach messages.
-                </p>
+                <!-- Expanded content -->
+                <div class="persona-content ${isExpanded ? 'px-2 pb-2 pt-1' : ''}">
+                    <p class="text-xs text-indigo-800 dark:text-indigo-200 italic leading-relaxed">"${statement}"</p>
+                </div>
             </div>
         `;
+    }
+
+    /**
+     * Helper to truncate text for collapsed state preview
+     */
+    truncateText(text, maxLength) {
+        if (!text || text.length <= maxLength) return text || '';
+        return text.substring(0, maxLength).trim() + '...';
     }
 
     /**

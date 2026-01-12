@@ -39,6 +39,9 @@ document.addEventListener('alpine:init', () => {
         // Undo state (single-level undo for mobile)
         lastDeletedAnnotation: null,
 
+        // Track last edited annotation ID for save pulse animation
+        _lastEditedAnnotationId: null,
+
         // Options
         relevanceOptions: [
             { value: 'core_strength', label: 'Core Strength', emoji: '💪', color: 'text-green-400' },
@@ -231,6 +234,9 @@ document.addEventListener('alpine:init', () => {
             try {
                 // Check if we're editing an existing annotation
                 if (this.editingAnnotationId) {
+                    // Track the annotation ID for save pulse animation
+                    this._lastEditedAnnotationId = this.editingAnnotationId;
+
                     // Find and update existing annotation
                     const existingIndex = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
                     if (existingIndex !== -1) {
@@ -273,6 +279,9 @@ document.addEventListener('alpine:init', () => {
                         created_at: new Date().toISOString()
                     };
 
+                    // Track the annotation ID for save pulse animation
+                    this._lastEditedAnnotationId = newAnnotation.id;
+
                     // Add to local array
                     this.annotations.push(newAnnotation);
 
@@ -282,6 +291,9 @@ document.addEventListener('alpine:init', () => {
 
                 // Save to server
                 await this.saveAnnotationsToServer();
+
+                // Show save pulse animation on the annotation highlight
+                this.showSavePulseAnimation();
 
                 // Check for persona eligibility
                 this.checkIdentityAnnotations();
@@ -664,6 +676,31 @@ document.addEventListener('alpine:init', () => {
             if (annotation.relevance === 'core_strength') return 'annotation-highlight core-strength';
             if (annotation.relevance === 'gap') return 'annotation-highlight gap';
             return 'annotation-highlight';
+        },
+
+        /**
+         * Show save success pulse animation on the last edited annotation highlight.
+         * Adds a brief green shimmer effect to indicate successful save.
+         */
+        showSavePulseAnimation() {
+            if (!this._lastEditedAnnotationId) return;
+
+            const highlightEl = document.querySelector(
+                `.annotation-highlight[data-annotation-id="${this._lastEditedAnnotationId}"]`
+            );
+
+            if (highlightEl) {
+                // Add the pulse class
+                highlightEl.classList.add('save-pulse');
+
+                // Remove the class after animation completes (1 second)
+                setTimeout(() => {
+                    highlightEl.classList.remove('save-pulse');
+                }, 1000);
+            }
+
+            // Clear the tracked annotation ID
+            this._lastEditedAnnotationId = null;
         },
 
         /**
