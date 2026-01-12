@@ -26,16 +26,21 @@ def client():
 
 @pytest.fixture
 def mock_db():
-    """Mock the repository pattern.
+    """Mock the repository pattern and legacy get_db().
 
     After the repository migration, frontend/app.py uses _get_repo()
-    instead of get_db(). This fixture mocks _get_repo() and provides
-    a mock repository with all necessary methods.
+    instead of get_db(). However, some endpoints like /api/stats still
+    use get_db() for level-1 collection access.
+
+    This fixture mocks both:
+    - _get_repo() for level-2 operations (repository pattern)
+    - get_db() for level-1 operations (legacy, will be migrated)
 
     Returns a tuple of (mock_repo, mock_repo) for backwards compatibility
     with tests that unpack as (mock_database, mock_collection).
     """
-    with patch('frontend.app._get_repo') as mock_get_repo:
+    with patch('frontend.app._get_repo') as mock_get_repo, \
+         patch('frontend.app.get_db') as mock_get_db:
         mock_repo = MagicMock()
 
         # Default return values for read operations
@@ -51,6 +56,13 @@ def mock_db():
         mock_repo.insert_one.return_value = WriteResult(matched_count=0, modified_count=0, upserted_id="test_id")
 
         mock_get_repo.return_value = mock_repo
+
+        # Mock get_db() for legacy code that still uses it (e.g., level-1 access in /api/stats)
+        mock_db_instance = MagicMock()
+        mock_level1_collection = MagicMock()
+        mock_level1_collection.count_documents.return_value = 0
+        mock_db_instance.__getitem__ = MagicMock(return_value=mock_level1_collection)
+        mock_get_db.return_value = mock_db_instance
 
         # Return tuple for compatibility with existing tests that unpack
         # as (mock_database, mock_collection) or (mock_repo, _)
