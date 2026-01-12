@@ -55,25 +55,23 @@ def authenticated_client(client):
 
 
 @pytest.fixture
-def mock_db_collection(mocker):
+def mock_db_repo(mocker):
     """
-    Mock MongoDB collection with common operations.
+    Mock MongoDB repository with common operations.
 
-    Returns a MagicMock that simulates pymongo collection behavior.
+    Returns a MagicMock that simulates repository behavior.
     """
-    mock_collection = MagicMock()
+    from src.common.repositories.base import WriteResult
+
+    mock_repo = MagicMock()
 
     # Mock update_many result
-    mock_update_result = MagicMock()
-    mock_update_result.modified_count = 0
-    mock_collection.update_many.return_value = mock_update_result
+    mock_repo.update_many.return_value = WriteResult(matched_count=0, modified_count=0)
 
-    # Mock find result (returns mock cursor)
-    mock_cursor = MagicMock()
-    mock_cursor.sort.return_value = []
-    mock_collection.find.return_value = mock_cursor
+    # Mock find result (returns list directly, not cursor)
+    mock_repo.find.return_value = []
 
-    return mock_collection
+    return mock_repo
 
 
 @pytest.fixture
@@ -114,18 +112,20 @@ def sample_jobs():
 class TestMoveToBatch:
     """Tests for POST /api/jobs/move-to-batch endpoint."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_moves_jobs_to_batch_successfully(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_repo, authenticated_client, mock_db_repo
     ):
         """Should update status to 'under processing' and return job IDs for batch page auto-run.
 
         Note: Pipeline orchestration has moved to the batch page frontend (browser → runner calls).
         Flask endpoint now only updates MongoDB status and returns job IDs for frontend to trigger.
         """
+        from src.common.repositories.base import WriteResult
+
         # Arrange
-        mock_get_collection.return_value = mock_db_collection
-        mock_db_collection.update_many.return_value.modified_count = 2
+        mock_get_repo.return_value = mock_db_repo
+        mock_db_repo.update_many.return_value = WriteResult(matched_count=2, modified_count=2)
 
         job_ids = ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
 
@@ -144,8 +144,8 @@ class TestMoveToBatch:
         assert data["job_ids"] == job_ids  # Returned for batch page auto-run
 
         # Verify MongoDB update was called correctly
-        mock_db_collection.update_many.assert_called_once()
-        call_args = mock_db_collection.update_many.call_args
+        mock_db_repo.update_many.assert_called_once()
+        call_args = mock_db_repo.update_many.call_args
 
         # Check filter (should convert string IDs to ObjectId)
         filter_arg = call_args[0][0]
@@ -160,9 +160,9 @@ class TestMoveToBatch:
         assert "batch_added_at" in update_arg["$set"]
         assert isinstance(update_arg["$set"]["batch_added_at"], datetime)
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_error_when_no_job_ids_provided(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 400 error when job_ids array is empty."""
         # Act
@@ -177,9 +177,9 @@ class TestMoveToBatch:
         assert "error" in data
         assert "No job_ids provided" in data["error"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_error_when_job_ids_missing(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 400 error when job_ids key is missing."""
         # Act
@@ -193,13 +193,13 @@ class TestMoveToBatch:
         data = response.get_json()
         assert "error" in data
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_error_for_invalid_objectid_format(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 400 error when job_id is not a valid ObjectId."""
         # Arrange
-        mock_get_collection.return_value = MagicMock()
+        mock_get_repo.return_value = MagicMock()
 
         # Act
         response = authenticated_client.post(
@@ -227,14 +227,14 @@ class TestMoveToBatch:
         assert "error" in data
         assert "authenticated" in data["error"].lower()
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_handles_zero_updates_gracefully(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_repo, authenticated_client, mock_db_repo
     ):
         """Should handle case where no jobs are actually updated (e.g., already in batch)."""
         # Arrange
-        mock_get_collection.return_value = mock_db_collection
-        mock_db_collection.update_many.return_value.modified_count = 0
+        mock_get_repo.return_value = mock_db_repo
+        mock_db_repo.update_many.return_value.modified_count = 0
 
         # Act
         response = authenticated_client.post(
@@ -248,14 +248,14 @@ class TestMoveToBatch:
         assert data["success"] is True
         assert data["updated_count"] == 0
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_batch_added_at_is_recent_timestamp(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_repo, authenticated_client, mock_db_repo
     ):
         """Should set batch_added_at to current UTC time."""
         # Arrange
-        mock_get_collection.return_value = mock_db_collection
-        mock_db_collection.update_many.return_value.modified_count = 1
+        mock_get_repo.return_value = mock_db_repo
+        mock_db_repo.update_many.return_value.modified_count = 1
 
         before_time = datetime.utcnow()
 
@@ -325,19 +325,19 @@ class TestBatchProcessingPage:
 class TestBatchJobRowsPartial:
     """Tests for GET /partials/batch-job-rows HTMX partial."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_only_under_processing_jobs(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_jobs
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_jobs
     ):
         """Should query only jobs with status='under processing'."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Mock aggregate (default sort uses aggregation pipeline)
         under_processing_jobs = [j for j in sample_jobs if j["status"] == "under processing"]
-        mock_collection.aggregate.return_value = under_processing_jobs
+        mock_repo.aggregate.return_value = under_processing_jobs
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -348,31 +348,31 @@ class TestBatchJobRowsPartial:
         assert response.status_code == 200
 
         # Verify aggregate was called (default sort uses multi-criteria aggregation)
-        mock_collection.aggregate.assert_called_once()
-        pipeline = mock_collection.aggregate.call_args[0][0]
+        mock_repo.aggregate.assert_called_once()
+        pipeline = mock_repo.aggregate.call_args[0][0]
 
         # First stage should be $match for under processing jobs
         assert pipeline[0] == {"$match": {"status": "under processing"}}
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_default_uses_multi_criteria_sort(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should default to multi-criteria sorting (location, role, score, recency)."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
-        mock_collection.aggregate.return_value = []
+        mock_repo.aggregate.return_value = []
         mock_render_template.return_value = "<tr>...</tr>"
 
         # Act
         authenticated_client.get("/partials/batch-job-rows")
 
         # Assert
-        mock_collection.aggregate.assert_called_once()
-        pipeline = mock_collection.aggregate.call_args[0][0]
+        mock_repo.aggregate.assert_called_once()
+        pipeline = mock_repo.aggregate.call_args[0][0]
 
         # Find the $sort stage (should be last stage)
         sort_stage = next((s for s in pipeline if "$sort" in s), None)
@@ -385,19 +385,18 @@ class TestBatchJobRowsPartial:
         assert "score" in sort_spec              # Score
         assert "createdAt" in sort_spec          # Recency
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_supports_custom_sort_field(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should support sorting by different fields via query params."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = []
-        mock_collection.find.return_value = mock_cursor
+        # Repository's find() returns list directly
+        mock_repo.find.return_value = []
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -405,27 +404,25 @@ class TestBatchJobRowsPartial:
         authenticated_client.get("/partials/batch-job-rows?sort=company&direction=asc")
 
         # Assert
-        mock_cursor.sort.assert_called_once()
-        sort_args = mock_cursor.sort.call_args[0]
+        # Verify find was called with correct sort parameter
+        mock_repo.find.assert_called_once()
+        call_kwargs = mock_repo.find.call_args[1]
 
-        # Should sort by company field
-        assert sort_args[0] == "company"
-        # Should sort ascending (1)
-        assert sort_args[1] == 1
+        # Should sort by company field, ascending (1)
+        assert call_kwargs["sort"] == [("company", 1)]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_supports_sort_by_score_desc(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should support sorting by score in descending order."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = []
-        mock_collection.find.return_value = mock_cursor
+        # Repository's find() returns list directly
+        mock_repo.find.return_value = []
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -433,26 +430,25 @@ class TestBatchJobRowsPartial:
         authenticated_client.get("/partials/batch-job-rows?sort=score&direction=desc")
 
         # Assert
-        mock_cursor.sort.assert_called_once()
-        sort_args = mock_cursor.sort.call_args[0]
+        # Verify find was called with correct sort parameter
+        mock_repo.find.assert_called_once()
+        call_kwargs = mock_repo.find.call_args[1]
 
-        assert sort_args[0] == "score"
-        assert sort_args[1] == -1
+        assert call_kwargs["sort"] == [("score", -1)]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_renders_batch_job_rows_template(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_jobs
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_jobs
     ):
         """Should render batch_job_rows.html with correct context."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         under_processing_jobs = [j for j in sample_jobs if j["status"] == "under processing"]
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = under_processing_jobs
-        mock_collection.find.return_value = mock_cursor
+        # Repository's find() returns list directly
+        mock_repo.find.return_value = under_processing_jobs
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -493,19 +489,18 @@ class TestBatchJobRowsPartial:
         # Let's check for either redirect or JSON error
         assert response.status_code in [302, 401]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_handles_invalid_sort_field_gracefully(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should fallback to default sort when invalid field is provided."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = []
-        mock_collection.find.return_value = mock_cursor
+        # Repository's find() returns list directly
+        mock_repo.find.return_value = []
 
         mock_render_template.return_value = "<tr>...</tr>"
 
@@ -514,23 +509,22 @@ class TestBatchJobRowsPartial:
 
         # Assert
         # Should fallback to batch_added_at (default)
-        mock_cursor.sort.assert_called_once()
-        sort_args = mock_cursor.sort.call_args[0]
-        assert sort_args[0] == "batch_added_at"
+        mock_repo.find.assert_called_once()
+        call_kwargs = mock_repo.find.call_args[1]
+        assert call_kwargs["sort"] == [("batch_added_at", -1)]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_empty_list_when_no_jobs_in_batch(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should handle case where no jobs have 'under processing' status."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = []  # No jobs
-        mock_collection.find.return_value = mock_cursor
+        # Repository's find() returns list directly
+        mock_repo.find.return_value = []  # No jobs
 
         mock_render_template.return_value = ""
 
@@ -551,17 +545,17 @@ class TestBatchJobRowsPartial:
 class TestBatchProcessingWorkflow:
     """Integration tests for complete batch processing workflow."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_full_workflow_move_to_batch_then_view(
-        self, mock_get_collection, authenticated_client, sample_jobs
+        self, mock_get_repo, authenticated_client, sample_jobs
     ):
         """Should move jobs to batch and then retrieve them in batch view."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Step 1: Move jobs to batch
-        mock_collection.update_many.return_value.modified_count = 2
+        mock_repo.update_many.return_value.modified_count = 2
         job_ids = [str(sample_jobs[0]["_id"]), str(sample_jobs[1]["_id"])]
 
         # Act - Move to batch
@@ -583,7 +577,7 @@ class TestBatchProcessingWorkflow:
         ]
 
         # Step 2: Retrieve batch jobs (default sort uses aggregation pipeline)
-        mock_collection.aggregate.return_value = updated_jobs
+        mock_repo.aggregate.return_value = updated_jobs
 
         with patch("frontend.app.render_template") as mock_render:
             mock_render.return_value = "<tr>2 jobs</tr>"
@@ -595,8 +589,8 @@ class TestBatchProcessingWorkflow:
             assert rows_response.status_code == 200
 
             # Verify aggregate was called (default sort uses multi-criteria aggregation)
-            mock_collection.aggregate.assert_called_once()
-            pipeline = mock_collection.aggregate.call_args[0][0]
+            mock_repo.aggregate.assert_called_once()
+            pipeline = mock_repo.aggregate.call_args[0][0]
             assert pipeline[0] == {"$match": {"status": "under processing"}}
 
 
@@ -605,14 +599,14 @@ class TestBatchProcessingWorkflow:
 class TestContextMenuActions:
     """Tests for context menu actions on main job rows."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_move_single_job_to_batch_via_context_menu(
-        self, mock_get_collection, authenticated_client, mock_db_collection
+        self, mock_get_repo, authenticated_client, mock_db_repo
     ):
         """Should move single job to batch when called from context menu."""
         # Arrange
-        mock_get_collection.return_value = mock_db_collection
-        mock_db_collection.update_many.return_value.modified_count = 1
+        mock_get_repo.return_value = mock_db_repo
+        mock_db_repo.update_many.return_value.modified_count = 1
 
         job_id = "507f1f77bcf86cd799439011"
 
@@ -629,25 +623,23 @@ class TestContextMenuActions:
         assert data["updated_count"] == 1
 
         # Verify MongoDB was called with the single job ID
-        mock_db_collection.update_many.assert_called_once()
-        call_args = mock_db_collection.update_many.call_args
+        mock_db_repo.update_many.assert_called_once()
+        call_args = mock_db_repo.update_many.call_args
         filter_arg = call_args[0][0]
         assert len(filter_arg["_id"]["$in"]) == 1
 
-    @patch("frontend.app.get_db")
+    @patch("frontend.app._get_repo")
     def test_context_menu_applied_action_updates_status(
-        self, mock_get_db, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should update job status to 'applied' when applied action is selected."""
-        # Arrange
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_get_db.return_value = mock_db
+        from src.common.repositories.base import WriteResult
 
-        mock_update_result = MagicMock()
-        mock_update_result.matched_count = 1
-        mock_collection.update_one.return_value = mock_update_result
+        # Arrange
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+
+        mock_repo.update_one.return_value = WriteResult(matched_count=1, modified_count=1)
 
         job_id = "507f1f77bcf86cd799439011"
 
@@ -661,8 +653,8 @@ class TestContextMenuActions:
         assert response.status_code == 200
 
         # Verify MongoDB update was called
-        mock_collection.update_one.assert_called_once()
-        call_args = mock_collection.update_one.call_args
+        mock_repo.update_one.assert_called_once()
+        call_args = mock_repo.update_one.call_args
 
         # Verify filter uses correct job ID
         filter_arg = call_args[0][0]
@@ -677,20 +669,18 @@ class TestContextMenuActions:
         assert "appliedOn" in update_arg["$set"]
         assert isinstance(update_arg["$set"]["appliedOn"], datetime)
 
-    @patch("frontend.app.get_db")
+    @patch("frontend.app._get_repo")
     def test_context_menu_discard_action_updates_status(
-        self, mock_get_db, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should update job status to 'discarded' when discard action is selected."""
-        # Arrange
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_get_db.return_value = mock_db
+        from src.common.repositories.base import WriteResult
 
-        mock_update_result = MagicMock()
-        mock_update_result.matched_count = 1
-        mock_collection.update_one.return_value = mock_update_result
+        # Arrange
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+
+        mock_repo.update_one.return_value = WriteResult(matched_count=1, modified_count=1)
 
         job_id = "507f1f77bcf86cd799439012"
 
@@ -704,8 +694,8 @@ class TestContextMenuActions:
         assert response.status_code == 200
 
         # Verify MongoDB update was called
-        mock_collection.update_one.assert_called_once()
-        call_args = mock_collection.update_one.call_args
+        mock_repo.update_one.assert_called_once()
+        call_args = mock_repo.update_one.call_args
 
         # Verify status is set to 'discarded'
         update_arg = call_args[0][1]
@@ -715,13 +705,13 @@ class TestContextMenuActions:
         # Verify appliedOn is cleared (not 'applied' status)
         assert update_arg["$set"]["appliedOn"] is None
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_context_menu_rejects_invalid_status(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should reject invalid status values from context menu."""
         # Arrange
-        mock_get_collection.return_value = MagicMock()
+        mock_get_repo.return_value = MagicMock()
         job_id = "507f1f77bcf86cd799439011"
 
         # Act
@@ -736,9 +726,9 @@ class TestContextMenuActions:
         assert "error" in data
         assert "Invalid status" in data["error"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_context_menu_requires_job_id(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should require job_id parameter for status update."""
         # Act
@@ -753,9 +743,9 @@ class TestContextMenuActions:
         assert "error" in data
         assert "job_id is required" in data["error"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_context_menu_requires_status(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should require status parameter for status update."""
         # Act
@@ -781,15 +771,15 @@ class TestScrapeAndFillUI:
     once /api/runner/operations/{job_id}/scrape-form-answers/stream is implemented.
     """
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_scrape_button_enabled_when_application_url_exists(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should render scrape button as enabled when job has application_url."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Job with application_url
         job_with_url = {
@@ -802,7 +792,7 @@ class TestScrapeAndFillUI:
         }
 
         # Mock aggregate (default sort uses aggregation pipeline)
-        mock_collection.aggregate.return_value = [job_with_url]
+        mock_repo.aggregate.return_value = [job_with_url]
 
         # Capture template call
         def capture_render(template_name, **context):
@@ -823,15 +813,15 @@ class TestScrapeAndFillUI:
         assert len(jobs) == 1
         assert jobs[0]["application_url"] == "https://example.com/apply"
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_scrape_button_disabled_when_no_application_url(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should render scrape button as disabled when job has no application_url."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Job without application_url
         job_without_url = {
@@ -844,7 +834,7 @@ class TestScrapeAndFillUI:
         }
 
         # Mock aggregate (default sort uses aggregation pipeline)
-        mock_collection.aggregate.return_value = [job_without_url]
+        mock_repo.aggregate.return_value = [job_without_url]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -863,15 +853,15 @@ class TestScrapeAndFillUI:
         # Verify job has no application_url (button should be disabled in template)
         assert "application_url" not in jobs[0]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_scrape_button_uses_job_url_as_fallback(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should use job.url in button logic when application_url is not set."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Job with url but no application_url
         job_with_fallback = {
@@ -885,7 +875,7 @@ class TestScrapeAndFillUI:
         }
 
         # Mock aggregate (default sort uses aggregation pipeline)
-        mock_collection.aggregate.return_value = [job_with_fallback]
+        mock_repo.aggregate.return_value = [job_with_fallback]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -904,15 +894,15 @@ class TestScrapeAndFillUI:
         # Template should have access to job.url for fallback logic
         assert jobs[0]["url"] == "https://example.com/job-posting"
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_batch_rows_show_planned_answers_count(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should display count of planned_answers in expandable row."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         job_with_answers = {
             "_id": ObjectId("507f1f77bcf86cd799439014"),
@@ -927,7 +917,7 @@ class TestScrapeAndFillUI:
         }
 
         # Mock aggregate (default sort uses aggregation pipeline)
-        mock_collection.aggregate.return_value = [job_with_answers]
+        mock_repo.aggregate.return_value = [job_with_answers]
 
         def capture_render(template_name, **context):
             capture_render.last_context = context
@@ -953,21 +943,21 @@ class TestScrapeAndFillUI:
 class TestContextMenuBatchIntegration:
     """Integration tests for context menu to batch processing workflow."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_context_menu_to_batch_view_workflow(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should move job via context menu and see it in batch view."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         job_id = "507f1f77bcf86cd799439011"
         job_title = "Senior Backend Engineer"
 
         # Step 1: Move to batch via context menu
-        mock_collection.update_many.return_value.modified_count = 1
+        mock_repo.update_many.return_value.modified_count = 1
 
         # Act - Move via context menu
         move_response = authenticated_client.post(
@@ -989,7 +979,7 @@ class TestContextMenuBatchIntegration:
             "batch_added_at": datetime.utcnow(),
         }
 
-        mock_collection.aggregate.return_value = [batch_job]
+        mock_repo.aggregate.return_value = [batch_job]
         mock_render_template.return_value = "<tr>1 job</tr>"
 
         # Act - Get batch rows
@@ -999,8 +989,8 @@ class TestContextMenuBatchIntegration:
         assert batch_response.status_code == 200
 
         # Verify aggregate was called (default sort uses multi-criteria aggregation)
-        mock_collection.aggregate.assert_called_once()
-        pipeline = mock_collection.aggregate.call_args[0][0]
+        mock_repo.aggregate.assert_called_once()
+        pipeline = mock_repo.aggregate.call_args[0][0]
         assert pipeline[0] == {"$match": {"status": "under processing"}}
 
         # Verify template received the job
@@ -1015,15 +1005,15 @@ class TestContextMenuBatchIntegration:
 class TestBatchJobRowSinglePartial:
     """Tests for GET /partials/batch-job-row/<job_id> HTMX partial."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_single_job_row(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should return single job row partial for HTMX refresh."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         job = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
@@ -1036,7 +1026,7 @@ class TestBatchJobRowSinglePartial:
             "generated_cv": "<html>CV</html>",  # CV generated
         }
 
-        mock_collection.find_one.return_value = job
+        mock_repo.find_one.return_value = job
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         # Act
@@ -1044,7 +1034,7 @@ class TestBatchJobRowSinglePartial:
 
         # Assert
         assert response.status_code == 200
-        mock_collection.find_one.assert_called_once()
+        mock_repo.find_one.assert_called_once()
         mock_render_template.assert_called_once()
 
         # Verify correct template is rendered
@@ -1058,15 +1048,15 @@ class TestBatchJobRowSinglePartial:
         assert context["job"]["_id"] == job["_id"]
         assert "statuses" in context
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_when_job_not_found(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 when job doesn't exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = None
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = None
 
         # Act
         response = authenticated_client.get("/partials/batch-job-row/507f1f77bcf86cd799439011")
@@ -1074,14 +1064,14 @@ class TestBatchJobRowSinglePartial:
         # Assert
         assert response.status_code == 404
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_for_invalid_objectid(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 for invalid ObjectId format."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Act
         response = authenticated_client.get("/partials/batch-job-row/invalid-id")
@@ -1097,15 +1087,15 @@ class TestBatchJobRowSinglePartial:
         # Assert
         assert response.status_code in [302, 401]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_renders_progress_badges_correctly(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should pass job with progress data to template for badge rendering."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Job with all pipeline stages completed
         job = {
@@ -1119,7 +1109,7 @@ class TestBatchJobRowSinglePartial:
             "generated_cv": "<html>CV content</html>",
         }
 
-        mock_collection.find_one.return_value = job
+        mock_repo.find_one.return_value = job
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         # Act

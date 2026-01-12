@@ -23,6 +23,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
@@ -32,6 +33,7 @@ from pymongo.database import Database
 from pymongo import ASCENDING, DESCENDING, TEXT
 
 from src.services.job_sources import IndeedSource, HimalayasSource, BaytSource, JobData
+from src.common.dedupe import generate_dedupe_key as _unified_dedupe_key, extract_source_id_from_url
 from src.common.job_search_config import JobSearchConfig
 from src.common.repositories import (
     get_job_search_repository,
@@ -87,6 +89,13 @@ class JobSearchService:
             search_repository: Optional job search repository for cache/index ops
             job_repository: Optional job repository for level-2 ops
         """
+        if db is not None:
+            warnings.warn(
+                "db parameter is deprecated and will be removed. "
+                "JobSearchService now uses repository pattern internally.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.db = db
         self.config = config or JobSearchConfig.from_env()
 
@@ -153,11 +162,26 @@ class JobSearchService:
         return entry
 
     def _generate_dedupe_key(self, job: Dict[str, Any], source: str) -> str:
-        """Generate deduplication key for a job."""
-        company = (job.get("company") or "").lower().strip()
-        title = (job.get("title") or "").lower().strip()
-        location = (job.get("location") or "").lower().strip()
-        return f"{company}|{title}|{location}|{source}"
+        """
+        Generate deduplication key for a job.
+
+        Uses unified dedupe module with source_id priority:
+        - If source_id exists (in job or extracted from URL): robust key
+        - Fallback: normalized text-based key
+        """
+        # Try to get source_id from job dict or extract from URL
+        source_id = job.get("source_id") or job.get("sourceId")
+        if not source_id:
+            url = job.get("url") or job.get("jobUrl") or ""
+            source_id = extract_source_id_from_url(url, source)
+
+        return _unified_dedupe_key(
+            source=source,
+            source_id=source_id,
+            company=job.get("company"),
+            title=job.get("title"),
+            location=job.get("location"),
+        )
 
     async def search(
         self,

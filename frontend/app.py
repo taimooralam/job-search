@@ -102,6 +102,18 @@ except ImportError:
         def get_country_code_sync(location: str) -> str:
             return "??"
 
+# Import job repository for MongoDB operations (repository pattern)
+try:
+    from src.common.repositories import get_job_repository
+except ImportError:
+    try:
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from src.common.repositories import get_job_repository
+    except ImportError:
+        # Fallback: no repository available (will use direct collection access)
+        get_job_repository = None
+
 # Session configuration
 flask_secret_key = os.getenv("FLASK_SECRET_KEY")
 
@@ -363,6 +375,21 @@ def get_collection():
     return get_db()["level-2"]
 
 
+def _get_repo():
+    """
+    Get job repository singleton for MongoDB operations.
+
+    Uses the repository pattern for abstraction over direct MongoDB access.
+    Falls back to None if repository module is not available (Vercel deployment).
+
+    Returns:
+        JobRepositoryInterface instance or None
+    """
+    if get_job_repository is None:
+        return None
+    return get_job_repository()
+
+
 def serialize_job(job: Dict[str, Any]) -> Dict[str, Any]:
     """
     Serialize a MongoDB job document for JSON response.
@@ -506,8 +533,7 @@ def list_jobs():
     Returns:
         JSON with jobs array and pagination metadata
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     # Parse query parameters
     search_query = request.args.get("query", "").strip()
@@ -779,7 +805,7 @@ def list_jobs():
 
         # Execute aggregation with error handling
         try:
-            result = list(collection.aggregate(pipeline))
+            result = list(repo.aggregate(pipeline))
             if result:
                 metadata = result[0].get("metadata", [])
                 total_count = metadata[0]["total"] if metadata else 0
@@ -799,14 +825,18 @@ def list_jobs():
         jobs = [serialize_job(job) for job in jobs_raw]
     else:
         # No date filtering and explicit column sort - use simpler find() query
-        total_count = collection.count_documents(mongo_query)
+        total_count = repo.count_documents(mongo_query)
 
-        skip = (page - 1) * page_size
-        cursor = collection.find(mongo_query, projection)
-        cursor = cursor.sort(mongo_sort_field, mongo_direction)
-        cursor = cursor.skip(skip).limit(page_size)
+        skip_count = (page - 1) * page_size
+        jobs_raw = repo.find(
+            mongo_query,
+            projection,
+            sort=[(mongo_sort_field, mongo_direction)],
+            skip=skip_count,
+            limit=page_size
+        )
 
-        jobs = [serialize_job(job) for job in cursor]
+        jobs = [serialize_job(job) for job in jobs_raw]
 
     # Calculate pagination
     total_pages = max(1, (total_count + page_size - 1) // page_size)
@@ -836,8 +866,7 @@ def delete_jobs():
     Returns:
         JSON with deleted_count
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     data = request.get_json()
     job_ids = data.get("job_ids", [])
@@ -858,11 +887,11 @@ def delete_jobs():
         return jsonify({"error": "No valid job_ids provided"}), 400
 
     # Delete the jobs
-    result = collection.delete_many({"_id": {"$in": object_ids}})
+    result = repo.delete_many({"_id": {"$in": object_ids}})
 
     return jsonify({
         "success": True,
-        "deleted_count": result.deleted_count,
+        "deleted_count": result.modified_count,
     })
 
 
@@ -879,8 +908,7 @@ def update_job_status():
     Returns:
         JSON with updated job or error
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     data = request.get_json()
     job_id = data.get("job_id")
@@ -924,7 +952,7 @@ def update_job_status():
         update_data["appliedOn"] = None
 
     # Update the job
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {"$set": update_data}
     )
@@ -953,8 +981,7 @@ def update_job_score():
     Returns:
         JSON with updated job or error
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     data = request.get_json()
     job_id = data.get("job_id")
@@ -978,7 +1005,7 @@ def update_job_score():
         return jsonify({"error": "Invalid job_id format"}), 400
 
     # Update the job score
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {"$set": {"score": new_score}}
     )
@@ -1006,8 +1033,7 @@ def update_jobs_status_bulk():
     Returns:
         JSON with count of updated jobs or error
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     data = request.get_json()
     job_ids = data.get("job_ids", [])
@@ -1041,7 +1067,7 @@ def update_jobs_status_bulk():
         update_data["appliedOn"] = None
 
     # Bulk update
-    result = collection.update_many(
+    result = repo.update_many(
         {"_id": {"$in": object_ids}},
         {"$set": update_data}
     )
@@ -1065,8 +1091,8 @@ def get_statuses():
 @login_required
 def get_batch_count():
     """Return the count of jobs in batch processing queue (status='under processing')."""
-    collection = get_collection()
-    count = collection.count_documents({"status": "under processing"})
+    repo = _get_repo()
+    count = repo.count_documents({"status": "under processing"})
     return jsonify({"count": count})
 
 
@@ -1074,8 +1100,8 @@ def get_batch_count():
 @login_required
 def get_job_count():
     """Return the total count of jobs in level-2 collection."""
-    collection = get_collection()
-    count = collection.count_documents({})
+    repo = _get_repo()
+    count = repo.count_documents({})
     return jsonify({"count": count})
 
 
@@ -1104,7 +1130,7 @@ def move_to_batch():
     if not job_ids:
         return jsonify({"error": "No job_ids provided"}), 400
 
-    collection = get_collection()
+    repo = _get_repo()
 
     # Convert string IDs to ObjectId
     try:
@@ -1114,7 +1140,7 @@ def move_to_batch():
 
     # Update status and set batch_added_at timestamp
     batch_added_at = datetime.utcnow()
-    result = collection.update_many(
+    result = repo.update_many(
         {"_id": {"$in": object_ids}},
         {"$set": {
             "status": "under processing",
@@ -1302,15 +1328,14 @@ def get_job(job_id: str):
     Returns:
         JSON with full job document
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job_id format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -1330,8 +1355,7 @@ def update_job(job_id: str):
     Returns:
         JSON with updated job
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
@@ -1378,7 +1402,7 @@ def update_job(job_id: str):
     update_data["updatedAt"] = datetime.utcnow()
 
     # Update the job
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {"$set": update_data}
     )
@@ -1387,7 +1411,7 @@ def update_job(job_id: str):
         return jsonify({"error": "Job not found"}), 404
 
     # Return updated job
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     return jsonify({
         "success": True,
         "job": serialize_job(job)
@@ -1403,15 +1427,14 @@ def generate_planned_answers(job_id: str):
     Uses job description, annotations, extractions, pain points, and master CV
     to generate personalized answers for common application questions.
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job_id format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -1421,7 +1444,7 @@ def generate_planned_answers(job_id: str):
         planned_answers = service.generate_answers(job)
 
         # Persist to MongoDB
-        collection.update_one(
+        repo.update_one(
             {"_id": object_id},
             {"$set": {
                 "planned_answers": planned_answers,
@@ -1460,8 +1483,7 @@ def get_locations():
         GET /api/locations?datetime_to=2025-12-12T16:00 - Locations from jobs before this time
         GET /api/locations?datetime_from=X&datetime_to=Y - Locations from jobs in range
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     # Parse optional date filter parameters
     datetime_from = request.args.get("datetime_from", "").strip()
@@ -1515,7 +1537,7 @@ def get_locations():
     # Stage 6: Project final output format
     pipeline.append({"$project": {"location": "$_id", "count": 1, "_id": 0}})
 
-    locations = list(collection.aggregate(pipeline))
+    locations = list(repo.aggregate(pipeline))
 
     return jsonify({"locations": locations})
 
@@ -1525,19 +1547,20 @@ def get_locations():
 def get_stats():
     """Get database statistics."""
     db = get_db()
+    repo = _get_repo()
 
     level1_count = db["level-1"].count_documents({})
-    level2_count = db["level-2"].count_documents({})
+    level2_count = repo.count_documents({})
 
     # Count by status
     status_counts = {}
     for status in JOB_STATUSES:
-        count = db["level-2"].count_documents({"status": status})
+        count = repo.count_documents({"status": status})
         if count > 0:
             status_counts[status] = count
 
     # Count jobs without status
-    no_status_count = db["level-2"].count_documents({
+    no_status_count = repo.count_documents({
         "$or": [
             {"status": {"$exists": False}},
             {"status": None},
@@ -1569,8 +1592,7 @@ def get_application_stats():
     Returns:
         JSON with application counts
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     from datetime import datetime, timedelta
 
@@ -1593,19 +1615,19 @@ def get_application_stats():
 
     # Count jobs applied today
     today_query = {**base_query, "appliedOn": {"$gte": today_start}}
-    today_count = collection.count_documents(today_query)
+    today_count = repo.count_documents(today_query)
 
     # Count jobs applied this week (last 7 days)
     week_query = {**base_query, "appliedOn": {"$gte": week_start}}
-    week_count = collection.count_documents(week_query)
+    week_count = repo.count_documents(week_query)
 
     # Count jobs applied this month (last 30 days)
     month_query = {**base_query, "appliedOn": {"$gte": month_start}}
-    month_count = collection.count_documents(month_query)
+    month_count = repo.count_documents(month_query)
 
     # Fallback: Count jobs that were marked applied BEFORE this fix (no appliedOn)
     # These are legacy records - show them in total but not in time-based counts
-    legacy_applied = collection.count_documents({
+    legacy_applied = repo.count_documents({
         "status": "applied",
         "$or": [
             {"appliedOn": {"$exists": False}},
@@ -1614,7 +1636,7 @@ def get_application_stats():
     })
 
     # Count total jobs applied (all time)
-    total_count = collection.count_documents({"status": "applied"})
+    total_count = repo.count_documents({"status": "applied"})
 
     return jsonify({
         "success": True,
@@ -2480,8 +2502,8 @@ def mobile_jobs():
         cursor = request.args.get("cursor", "").strip()
         limit = int(request.args.get("limit", 500))  # No cap for mobile - show all jobs
 
-        # Get collection
-        collection = get_collection()
+        # Get repository
+        repo = _get_repo()
 
         # Build query with $and conditions
         and_conditions = []
@@ -2646,7 +2668,7 @@ def mobile_jobs():
         })
 
         # Execute
-        jobs = list(collection.aggregate(pipeline))
+        jobs = list(repo.aggregate(pipeline))
 
         # Serialize
         for job in jobs:
@@ -2786,7 +2808,7 @@ def batch_job_rows_partial():
     3. Score: highest first
     4. Recency: most recent first
     """
-    collection = get_collection()
+    repo = _get_repo()
 
     # Get sort parameters
     sort_field = request.args.get("sort", "default")
@@ -2872,15 +2894,16 @@ def batch_job_rows_partial():
         pipeline.append({"$sort": sort_spec})
 
         # Execute aggregation
-        jobs = list(collection.aggregate(pipeline))
+        jobs = list(repo.aggregate(pipeline))
     else:
         # Simple single-field sort when user clicks column headers
         mongo_sort_field = field_mapping.get(sort_field, "batch_added_at")
         mongo_sort_direction = -1 if sort_direction == "desc" else 1
 
-        jobs = list(collection.find(
-            {"status": "under processing"}
-        ).sort(mongo_sort_field, mongo_sort_direction))
+        jobs = repo.find(
+            {"status": "under processing"},
+            sort=[(mongo_sort_field, mongo_sort_direction)]
+        )
 
     return render_template(
         "partials/batch_job_rows.html",
@@ -2900,9 +2923,9 @@ def batch_job_row_partial(job_id: str):
     Used when queue:job-completed event fires to update JD/RS/CV badges
     without refreshing the entire table.
     """
-    collection = get_collection()
+    repo = _get_repo()
     try:
-        job = collection.find_one({"_id": ObjectId(job_id)})
+        job = repo.find_one({"_id": ObjectId(job_id)})
     except Exception:
         abort(404)
 
@@ -2925,9 +2948,9 @@ def batch_annotation_partial(job_id: str):
     Displays the JD with annotation highlights and a list of annotations
     in a read-only view within the batch page sidebar.
     """
-    collection = get_collection()
+    repo = _get_repo()
     try:
-        job = collection.find_one({"_id": ObjectId(job_id)})
+        job = repo.find_one({"_id": ObjectId(job_id)})
     except Exception:
         abort(404)
 
@@ -2949,9 +2972,9 @@ def batch_contacts_partial(job_id: str):
     Displays primary and secondary contacts with action buttons
     for generating outreach messages.
     """
-    collection = get_collection()
+    repo = _get_repo()
     try:
-        job = collection.find_one({"_id": ObjectId(job_id)})
+        job = repo.find_one({"_id": ObjectId(job_id)})
     except Exception:
         abort(404)
 
@@ -2973,9 +2996,9 @@ def batch_cv_partial(job_id: str):
     Displays the generated/edited CV with export options.
     If TipTap editor state exists, it can be used for editing.
     """
-    collection = get_collection()
+    repo = _get_repo()
     try:
-        job = collection.find_one({"_id": ObjectId(job_id)})
+        job = repo.find_one({"_id": ObjectId(job_id)})
     except Exception:
         abort(404)
 
@@ -2997,9 +3020,9 @@ def jd_preview_partial(job_id: str):
     Displays extracted JD info (role, seniority, skills, responsibilities,
     qualifications) and raw job description in a readable format.
     """
-    collection = get_collection()
+    repo = _get_repo()
     try:
-        job = collection.find_one({"_id": ObjectId(job_id)})
+        job = repo.find_one({"_id": ObjectId(job_id)})
     except Exception:
         abort(404)
 
@@ -3130,15 +3153,14 @@ def get_diagnostics_data():
 @login_required
 def job_detail(job_id: str):
     """Render the job detail page."""
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return render_template("error.html", error="Invalid job ID format"), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return render_template("error.html", error="Job not found"), 404
@@ -3177,15 +3199,14 @@ def get_job_cv(job_id: str):
     from flask import send_file
     from pathlib import Path
 
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -3208,15 +3229,14 @@ def get_job_cv(job_id: str):
 @login_required
 def update_job_cv(job_id: str):
     """Update the Markdown CV content after editing."""
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -3230,7 +3250,7 @@ def update_job_cv(job_id: str):
 
     # Save to MongoDB
     try:
-        collection.update_one(
+        repo.update_one(
             {"_id": object_id},
             {"$set": {"cv_text": cv_text, "updatedAt": datetime.utcnow()}}
         )
@@ -3644,13 +3664,11 @@ def export_dossier_pdf(job_id: str):
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    # Get MongoDB collection
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         # 1. Fetch job state from MongoDB
-        job_doc = collection.find_one({"_id": ObjectId(job_id)})
+        job_doc = repo.find_one({"_id": ObjectId(job_id)})
         if not job_doc:
             return jsonify({"error": "Job not found"}), 404
 
@@ -3727,10 +3745,8 @@ def get_meta_prompt(job_id: str):
         JSON with the meta prompt string
     """
     try:
-        # Fetch job state from MongoDB
-        db = get_db()
-        collection = db["level-2"]
-        job_doc = collection.find_one({"_id": ObjectId(job_id)})
+        repo = _get_repo()
+        job_doc = repo.find_one({"_id": ObjectId(job_id)})
         if not job_doc:
             return jsonify({"error": "Job not found"}), 404
 
@@ -4182,15 +4198,14 @@ def download_cv_pdf(job_id: str):
     from flask import send_file
     from pathlib import Path
 
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -4227,15 +4242,14 @@ def generate_cover_letter_pdf(job_id: str):
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.enums import TA_LEFT
 
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -4320,15 +4334,14 @@ def download_cover_letter_pdf(job_id: str):
     from flask import send_file
     from pathlib import Path
 
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -4471,15 +4484,14 @@ def get_cv_editor_state(job_id: str):
     Returns:
         JSON with editor_state containing TipTap JSON document
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
 
     if not job:
         return jsonify({"error": "Job not found"}), 404
@@ -4561,8 +4573,7 @@ def save_cv_editor_state(job_id: str):
     Returns:
         JSON with success status and savedAt timestamp
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
@@ -4581,7 +4592,7 @@ def save_cv_editor_state(job_id: str):
     cv_html = tiptap_json_to_html(data["content"])
 
     # Update job document with both editor state and HTML representation
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {
             "$set": {
@@ -4865,8 +4876,7 @@ def delete_contact(job_id: str, contact_type: str, contact_index: int):
     Returns:
         JSON with success status
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     # Validate contact_type
     if contact_type not in ["primary", "secondary"]:
@@ -4878,7 +4888,7 @@ def delete_contact(job_id: str, contact_type: str, contact_index: int):
         return jsonify({"error": "Invalid job ID format"}), 400
 
     # Get the job first to validate the contact exists
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -4894,20 +4904,20 @@ def delete_contact(job_id: str, contact_type: str, contact_index: int):
 
     # Remove the contact using MongoDB $unset + $pull pattern
     # First, set the element to null, then pull all nulls
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {"$unset": {f"{field_name}.{contact_index}": 1}}
     )
 
     if result.modified_count > 0:
         # Now pull the null value
-        collection.update_one(
+        repo.update_one(
             {"_id": object_id},
             {"$pull": {field_name: None}}
         )
 
         # Update timestamp
-        collection.update_one(
+        repo.update_one(
             {"_id": object_id},
             {"$set": {"updatedAt": datetime.utcnow()}}
         )
@@ -4941,8 +4951,7 @@ def import_contacts(job_id: str):
     Returns:
         JSON with success status and import count
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
@@ -4995,14 +5004,14 @@ def import_contacts(job_id: str):
         return jsonify({"error": "No valid contacts found. Each contact requires name, title/role, and linkedin_url"}), 400
 
     # Get job to verify it exists
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
     # Append to existing contacts using $push with $each
     field_name = f"{contact_type}_contacts"
 
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {
             "$push": {field_name: {"$each": valid_contacts}},
@@ -5030,15 +5039,14 @@ def get_contact_discovery_prompt(job_id: str):
     Returns:
         JSON with the generated prompt
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -5098,15 +5106,14 @@ def generate_contact_message(job_id: str):
     Returns:
         JSON with the generated message
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -5284,15 +5291,14 @@ def get_jd_annotations(job_id: str):
     Returns:
         JSON with processed JD HTML and annotations
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -5353,12 +5359,11 @@ def update_jd_annotations(job_id: str):
         "updated_at": datetime.utcnow().isoformat()
     }
 
-    # Update the job (get_db() and update_one can fail)
+    # Update the job
     try:
-        db = get_db()
-        collection = db["level-2"]
+        repo = _get_repo()
 
-        result = collection.update_one(
+        result = repo.update_one(
             {"_id": object_id},
             {
                 "$set": {
@@ -5454,8 +5459,7 @@ def save_persona(job_id: str):
     Returns:
         JSON with success status
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
@@ -5470,7 +5474,7 @@ def save_persona(job_id: str):
     is_edited = data.get("is_edited", False)
 
     # Save to jd_annotations.synthesized_persona
-    result = collection.update_one(
+    result = repo.update_one(
         {"_id": object_id},
         {
             "$set": {
@@ -5709,15 +5713,14 @@ def process_job_description(job_id: str):
     """
     import asyncio
 
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -5777,7 +5780,7 @@ def process_job_description(job_id: str):
         existing_annotations["processed_jd_html"] = result.get("html")
         existing_annotations["annotation_version"] = existing_annotations.get("annotation_version", 0) + 1
 
-        collection.update_one(
+        repo.update_one(
             {"_id": object_id},
             {
                 "$set": {
@@ -5989,15 +5992,14 @@ def generate_improvement_suggestions(job_id: str):
     Returns:
         JSON with improvement suggestions
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID format"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -6026,7 +6028,7 @@ def generate_improvement_suggestions(job_id: str):
     }
 
     # Store suggestions in job
-    collection.update_one(
+    repo.update_one(
         {"_id": object_id},
         {
             "$set": {
@@ -6260,15 +6262,14 @@ def get_interview_prep(job_id: str):
     Returns:
         JSON with interview_prep data and has_prep flag
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID"}), 400
 
-    job = collection.find_one({"_id": object_id}, {"interview_prep": 1})
+    job = repo.find_one({"_id": object_id}, {"interview_prep": 1})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -6292,15 +6293,14 @@ def generate_interview_prep(job_id: str):
     Returns:
         JSON with generated interview_prep data
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID"}), 400
 
-    job = collection.find_one({"_id": object_id})
+    job = repo.find_one({"_id": object_id})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 
@@ -6337,7 +6337,7 @@ def generate_interview_prep(job_id: str):
         return jsonify({"error": f"Generation failed: {str(e)}"}), 500
 
     # Save to database
-    collection.update_one(
+    repo.update_one(
         {"_id": object_id},
         {"$set": {
             "interview_prep": interview_prep,
@@ -6364,8 +6364,7 @@ def update_interview_question(job_id: str, question_id: str):
     Returns:
         JSON with success status
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
@@ -6386,7 +6385,7 @@ def update_interview_question(job_id: str, question_id: str):
     set_fields = {f"interview_prep.predicted_questions.$.{k}": v for k, v in updates.items()}
     set_fields["updatedAt"] = datetime.utcnow()
 
-    result = collection.update_one(
+    result = repo.update_one(
         {
             "_id": object_id,
             "interview_prep.predicted_questions.question_id": question_id
@@ -6412,15 +6411,14 @@ def get_job_outcome(job_id: str):
     Returns:
         JSON with outcome data
     """
-    db = get_db()
-    collection = db["level-2"]
+    repo = _get_repo()
 
     try:
         object_id = ObjectId(job_id)
     except Exception:
         return jsonify({"error": "Invalid job ID"}), 400
 
-    job = collection.find_one({"_id": object_id}, {"application_outcome": 1})
+    job = repo.find_one({"_id": object_id}, {"application_outcome": 1})
     if not job:
         return jsonify({"error": "Job not found"}), 404
 

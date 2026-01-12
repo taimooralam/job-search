@@ -21,9 +21,11 @@ from pydantic import BaseModel, Field, ValidationError
 from firecrawl import FirecrawlApp
 from langchain_core.messages import HumanMessage, SystemMessage
 from tenacity import retry, stop_after_attempt, wait_exponential
-from pymongo import MongoClient
-
 from src.common.config import Config
+from src.common.repositories import (
+    CompanyCacheRepositoryInterface,
+    get_company_cache_repository,
+)
 from src.common.llm_factory import create_tracked_llm
 from src.common.state import JobState, CompanySignal, CompanyResearch, ProgressCallback
 from src.common.logger import get_logger
@@ -432,6 +434,7 @@ class CompanyResearcher:
         use_claude_api: bool = True,
         log_callback: Optional[LogCallback] = None,
         progress_callback: Optional[ProgressCallback] = None,
+        company_cache_repository: Optional[CompanyCacheRepositoryInterface] = None,
     ):
         """
         Initialize the company researcher.
@@ -444,6 +447,8 @@ class CompanyResearcher:
             log_callback: Optional callback for log streaming (Redis live-tail).
                 Signature: (json_string: str) -> None
             progress_callback: Optional callback for granular LLM progress events.
+            company_cache_repository: Optional repository for company cache operations.
+                If None, uses the default singleton via get_company_cache_repository().
         """
         # Logger for internal operations (no run_id context yet)
         self.logger = logging.getLogger(__name__)
@@ -451,6 +456,7 @@ class CompanyResearcher:
         self.use_claude_api = use_claude_api
         self._log_callback = log_callback
         self._progress_callback = progress_callback
+        self._company_cache_repository = company_cache_repository
 
         if use_claude_api:
             # Claude API with WebSearch for research
@@ -469,12 +475,6 @@ class CompanyResearcher:
                 layer="layer3_company",
             )
 
-        # MongoDB for caching (Phase 1.3) - always enabled
-        self.mongo_client = MongoClient(Config.MONGODB_URI)
-        self.cache_collection = self.mongo_client["jobs"]["company_cache"]
-        # Create TTL index on cached_at field (7 days)
-        self.cache_collection.create_index("cached_at", expireAfterSeconds=7*24*60*60)
-
     def _emit_log(self, data: Dict[str, Any]) -> None:
         """Emit a log event via log_callback if configured."""
         if self._log_callback:
@@ -482,6 +482,16 @@ class CompanyResearcher:
                 self._log_callback(json.dumps(data))
             except Exception:
                 pass  # Don't let logging errors break the pipeline
+
+    def _get_cache_repository(self) -> CompanyCacheRepositoryInterface:
+        """
+        Get the company cache repository (lazy initialization).
+
+        Returns the injected repository if provided, otherwise uses the singleton.
+        """
+        if self._company_cache_repository is not None:
+            return self._company_cache_repository
+        return get_company_cache_repository()
 
     def _classify_company_type(self, state: JobState) -> str:
         """
@@ -1025,7 +1035,8 @@ class CompanyResearcher:
         """
         cache_key = self._get_cache_key(company_name)
 
-        cached = self.cache_collection.find_one({"company_key": cache_key})
+        repo = self._get_cache_repository()
+        cached = repo.find_by_company_key(cache_key)
 
         if cached:
             self.logger.info(f"Cache HIT for {company_name}")
@@ -1092,12 +1103,9 @@ class CompanyResearcher:
             cache_doc["company_summary"] = summary
             cache_doc["company_url"] = url
 
-        # Upsert (insert or update)
-        self.cache_collection.update_one(
-            {"company_key": cache_key},
-            {"$set": cache_doc},
-            upsert=True
-        )
+        # Upsert (insert or update) via repository
+        repo = self._get_cache_repository()
+        repo.upsert_cache(cache_key, cache_doc)
 
         self.logger.info(f"Cached research for {company_name}")
 

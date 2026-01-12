@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup
 
+from src.common.dedupe import generate_dedupe_key as _unified_dedupe_key
+
 logger = logging.getLogger(__name__)
 
 # LinkedIn public guest API base URL
@@ -422,28 +424,36 @@ def _extract_job_criteria(soup: BeautifulSoup) -> Dict[str, Any]:
     return criteria
 
 
-def _generate_dedupe_key(company: str, title: str, location: str, source: str = "linkedin_import") -> str:
+def _generate_dedupe_key(
+    company: str,
+    title: str,
+    location: str,
+    source: str = "linkedin_import",
+    job_id: str = None,
+) -> str:
     """
-    Generate a dedupeKey following the project's pattern.
+    Generate a dedupeKey using unified dedupe module.
 
-    Format: company|title|location|source (all lowercase)
-    Example: testcorp|senior software engineer|san francisco, ca|linkedin_import
+    Uses job_id (LinkedIn's unique ID) if available, otherwise falls back
+    to normalized text-based key.
 
     Args:
         company: Company name
         title: Job title
         location: Job location
         source: Job source (defaults to "linkedin_import")
+        job_id: LinkedIn's unique job ID
 
     Returns:
         Dedupe key string
     """
-    company_lower = (company or '').lower()
-    title_lower = (title or '').lower()
-    location_lower = (location or '').lower()
-    source_lower = (source or '').lower()
-
-    return f"{company_lower}|{title_lower}|{location_lower}|{source_lower}"
+    return _unified_dedupe_key(
+        source=source,
+        source_id=job_id,
+        company=company,
+        title=title,
+        location=location,
+    )
 
 
 def linkedin_job_to_mongodb_doc(job_data: LinkedInJobData) -> Dict[str, Any]:
@@ -460,7 +470,8 @@ def linkedin_job_to_mongodb_doc(job_data: LinkedInJobData) -> Dict[str, Any]:
         job_data.company,
         job_data.title,
         job_data.location,
-        "linkedin_import"
+        "linkedin_import",
+        job_id=job_data.job_id,  # Use LinkedIn's unique ID for robust deduplication
     )
 
     return {

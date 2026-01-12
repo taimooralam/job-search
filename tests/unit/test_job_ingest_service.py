@@ -214,20 +214,19 @@ class TestIngestServiceDeduplication:
     """Tests for job deduplication logic."""
 
     def test_generate_dedupe_key(self, mock_db, sample_jobs):
-        """Should generate consistent dedupe key."""
+        """Should generate consistent dedupe key using source_id."""
         # Arrange
         service = IngestService(mock_db)
-        job = sample_jobs[0]
+        job = sample_jobs[0]  # Has source_id="job_001"
 
         # Act
         key = service.generate_dedupe_key(job, "himalayas_auto")
 
-        # Assert
-        assert key == "techcorp|senior python developer|remote|himalayas_auto"
-        assert key.islower()  # Normalized to lowercase
+        # Assert - uses source_id when available: source|source_id
+        assert key == "himalayas_auto|job_001"
 
     def test_generate_dedupe_key_handles_special_chars(self, mock_db):
-        """Should normalize special characters in dedupe key."""
+        """Should normalize special characters in dedupe key fallback."""
         # Arrange
         service = IngestService(mock_db)
         job = JobData(
@@ -237,15 +236,15 @@ class TestIngestServiceDeduplication:
             url="https://example.com/job",
             description="Test",
             posted_date=datetime.utcnow(),
+            # No source_id - will use text-based fallback
         )
 
         # Act
         key = service.generate_dedupe_key(job, "test_source")
 
-        # Assert
-        assert "tech, inc." in key
-        assert "senior engineer / manager" in key
-        assert "san francisco, ca" in key
+        # Assert - fallback: source|normalized_company|normalized_title|normalized_location
+        # All non-alphanumeric chars are stripped
+        assert key == "test_source|techinc|seniorengineermanager|sanfranciscoca"
 
 
 # =============================================================================
@@ -397,9 +396,11 @@ class TestIngestServiceIngestion:
         )
 
         # Mock repository find_one to return existing job for first job
+        # New dedupe format: source|source_id (e.g., "test|job_001")
         def find_one_side_effect(query):
-            # level2 queries - first job is duplicate
-            if "techcorp" in query.get("dedupeKey", "").lower():
+            # level2 queries - first job (source_id=job_001) is duplicate
+            dedupe_key = query.get("dedupeKey", "")
+            if "job_001" in dedupe_key:
                 return {"_id": ObjectId()}  # Duplicate found
             return None
 

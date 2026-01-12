@@ -17,12 +17,10 @@ Endpoints:
 """
 
 import logging
-import os
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
-from pymongo import MongoClient
 
 from ..auth import verify_token
 
@@ -129,23 +127,12 @@ class PresetsResponse(BaseModel):
 # Dependencies
 # =============================================================================
 
-def get_db():
-    """Get MongoDB database connection."""
-    mongo_uri = os.getenv("MONGODB_URI")
-    if not mongo_uri:
-        raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
-
-    client = MongoClient(mongo_uri)
-    return client[os.getenv("MONGO_DB_NAME", "jobs")]
-
-
 def get_search_service():
-    """Get JobSearchService instance."""
+    """Get JobSearchService instance (uses repository pattern internally)."""
     # Import here to avoid circular imports
     from src.services.job_search_service import JobSearchService
 
-    db = get_db()
-    return JobSearchService(db)
+    return JobSearchService()
 
 
 # =============================================================================

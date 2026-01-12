@@ -25,25 +25,18 @@ from bson import ObjectId
 
 
 @pytest.fixture
-def mock_db(mocker):
-    """Mock MongoDB database and collections."""
-    mock_collection = MagicMock()
-    mock_system_state = MagicMock()
+def mock_job_repository(mocker):
+    """Mock JobRepository for level-2 operations (used by IngestService)."""
+    mock_repo = MagicMock()
+    mock_repo.find_one.return_value = None  # No duplicates by default
+    mock_repo.insert_one.return_value = MagicMock(upserted_id="test_id")
 
-    mock_db_instance = MagicMock()
-    mock_db_instance.__getitem__.side_effect = lambda name: {
-        "level-2": mock_collection,
-        "system_state": mock_system_state,
-    }[name]
+    mocker.patch(
+        "src.common.repositories.get_job_repository",
+        return_value=mock_repo,
+    )
 
-    # Mock MongoClient
-    mocker.patch("runner_service.routes.job_ingest.get_db", return_value=mock_db_instance)
-
-    return {
-        "db": mock_db_instance,
-        "level2": mock_collection,
-        "system_state": mock_system_state,
-    }
+    return mock_repo
 
 
 @pytest.fixture
@@ -173,7 +166,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_returns_run_id(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should return run_id and queued status immediately."""
         # Act
@@ -188,7 +181,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_with_custom_keywords(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept custom keywords and return run_id."""
         # Act
@@ -206,7 +199,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_with_max_results(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept max_results parameter and return run_id."""
         # Act
@@ -223,7 +216,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_skip_scoring(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept skip_scoring parameter and return run_id."""
         # Act

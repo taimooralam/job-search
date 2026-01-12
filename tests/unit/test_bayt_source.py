@@ -22,7 +22,7 @@ class TestBaytSource:
         assert source.get_source_name() == "bayt"
 
     def test_generate_dedupe_key(self):
-        """Test deduplication key generation."""
+        """Test deduplication key generation - new format: source|normalized_fields."""
         source = BaytSource()
         job = JobData(
             title="Senior Engineer",
@@ -33,10 +33,11 @@ class TestBaytSource:
         )
 
         key = source.generate_dedupe_key(job)
-        assert key == "gulf tech|senior engineer|dubai, uae|bayt"
+        # New format: source|company|title|location (all normalized - no special chars)
+        assert key == "bayt|gulftech|seniorengineer|dubaiuae"
 
     def test_generate_dedupe_key_normalizes(self):
-        """Test that dedupe key normalizes whitespace and case."""
+        """Test that dedupe key normalizes to alphanumeric only."""
         source = BaytSource()
         job = JobData(
             title="  SENIOR Engineer  ",
@@ -47,7 +48,8 @@ class TestBaytSource:
         )
 
         key = source.generate_dedupe_key(job)
-        assert key == "gulf tech co|senior engineer|dubai, uae|bayt"
+        # All non-alphanumeric chars removed
+        assert key == "bayt|gulftechco|seniorengineer|dubaiuae"
 
     @patch("jobspy.scrape_jobs")
     def test_fetch_jobs_success(self, mock_scrape):

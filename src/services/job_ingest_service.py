@@ -26,12 +26,14 @@ Usage:
 
 import asyncio
 import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pymongo.database import Database
 
+from src.common.dedupe import generate_dedupe_key as _generate_dedupe_key
 from src.common.repositories import (
     get_job_repository,
     JobRepositoryInterface,
@@ -97,7 +99,7 @@ class IngestService:
 
     def __init__(
         self,
-        db: Database,
+        db: Optional[Database] = None,
         use_claude_scorer: bool = True,
         log_callback: Optional[LogCallback] = None,
         repository: Optional[JobRepositoryInterface] = None,
@@ -107,14 +109,21 @@ class IngestService:
         Initialize the ingest service.
 
         Args:
-            db: MongoDB database instance
+            db: MongoDB database instance (deprecated, no longer used - kept for backward compat)
             use_claude_scorer: If True, use Claude CLI for scoring (free).
                                If False, use OpenRouter (paid per token).
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
             repository: Optional job repository. If provided, uses repository for level-2 ops.
             system_state_repository: Optional system state repository for ingestion state.
         """
-        self.db = db
+        if db is not None:
+            warnings.warn(
+                "db parameter is deprecated and will be removed. "
+                "IngestService now uses repository pattern internally.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self.db = db  # Deprecated: kept for backward compatibility, use repositories instead
         self._repository = repository
         self._system_state_repository = system_state_repository
         self.use_claude_scorer = use_claude_scorer
@@ -210,13 +219,17 @@ class IngestService:
         """
         Generate a deduplication key for a job.
 
-        Format: company|title|location|source (lowercase, normalized)
+        Uses unified dedupe module with source_id priority:
+        - If job.source_id exists: "{source}|{source_id}" (robust)
+        - Fallback: "{source}|{company}|{title}|{location}" (normalized)
         """
-        company = (job.company or "").lower().strip()
-        title = (job.title or "").lower().strip()
-        location = (job.location or "").lower().strip()
-
-        return f"{company}|{title}|{location}|{source_name}"
+        return _generate_dedupe_key(
+            source=source_name,
+            source_id=job.source_id,
+            company=job.company,
+            title=job.title,
+            location=job.location,
+        )
 
     def create_job_document(
         self,

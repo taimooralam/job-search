@@ -201,16 +201,16 @@ def sample_job_with_cv_edited():
 class TestBatchAnnotationPartial:
     """Tests for GET /partials/batch-annotation/<job_id> endpoint."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_annotation_sidebar_for_valid_job(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_annotations
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_annotations
     ):
         """Should render annotation sidebar template with job data."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_annotations
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_annotations
         mock_render_template.return_value = "<div>Annotation sidebar</div>"
 
         job_id = str(sample_job_with_annotations["_id"])
@@ -220,7 +220,7 @@ class TestBatchAnnotationPartial:
 
         # Assert
         assert response.status_code == 200
-        mock_collection.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
+        mock_repo.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
         mock_render_template.assert_called_once()
 
         # Verify correct template
@@ -233,14 +233,14 @@ class TestBatchAnnotationPartial:
         assert "job" in context
         assert context["job"]["_id"] == sample_job_with_annotations["_id"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_for_invalid_objectid(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 for invalid ObjectId format."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Act
         response = authenticated_client.get("/partials/batch-annotation/invalid-id")
@@ -248,15 +248,15 @@ class TestBatchAnnotationPartial:
         # Assert
         assert response.status_code == 404
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_when_job_not_found(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 when job doesn't exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = None
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = None
 
         # Act
         response = authenticated_client.get("/partials/batch-annotation/507f1f77bcf86cd799439011")
@@ -272,16 +272,16 @@ class TestBatchAnnotationPartial:
         # Assert
         assert response.status_code in [302, 401]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_displays_annotations_list(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_annotations
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_annotations
     ):
         """Should pass annotations data to template for rendering."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_annotations
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_annotations
         mock_render_template.return_value = "<div>Annotations</div>"
 
         job_id = str(sample_job_with_annotations["_id"])
@@ -299,16 +299,16 @@ class TestBatchAnnotationPartial:
         assert "jd_annotations" in context["job"]
         assert len(context["job"]["jd_annotations"]["annotations"]) == 2
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_handles_job_with_no_annotations(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """Should handle job with no annotations gracefully."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<div>Empty state</div>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -331,16 +331,16 @@ class TestBatchAnnotationPartial:
 class TestBatchContactsPartial:
     """Tests for GET /partials/batch-contacts/<job_id> endpoint."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_contacts_sidebar_for_valid_job(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_contacts
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_contacts
     ):
         """Should render contacts sidebar template with job data."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_contacts
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_contacts
         mock_render_template.return_value = "<div>Contacts sidebar</div>"
 
         job_id = str(sample_job_with_contacts["_id"])
@@ -350,7 +350,7 @@ class TestBatchContactsPartial:
 
         # Assert
         assert response.status_code == 200
-        mock_collection.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
+        mock_repo.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
         mock_render_template.assert_called_once()
 
         # Verify correct template
@@ -363,14 +363,14 @@ class TestBatchContactsPartial:
         assert "job" in context
         assert context["job"]["_id"] == sample_job_with_contacts["_id"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_for_invalid_objectid(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 for invalid ObjectId format."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Act
         response = authenticated_client.get("/partials/batch-contacts/not-an-objectid")
@@ -378,15 +378,15 @@ class TestBatchContactsPartial:
         # Assert
         assert response.status_code == 404
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_when_job_not_found(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 when job doesn't exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = None
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = None
 
         # Act
         response = authenticated_client.get("/partials/batch-contacts/507f1f77bcf86cd799439011")
@@ -402,16 +402,16 @@ class TestBatchContactsPartial:
         # Assert
         assert response.status_code in [302, 401]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_displays_primary_contacts(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_contacts
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_contacts
     ):
         """Should pass primary contacts to template."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_contacts
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_contacts
         mock_render_template.return_value = "<div>Primary contacts</div>"
 
         job_id = str(sample_job_with_contacts["_id"])
@@ -429,16 +429,16 @@ class TestBatchContactsPartial:
         assert len(context["job"]["primary_contacts"]) == 1
         assert context["job"]["primary_contacts"][0]["name"] == "Jane Smith"
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_displays_secondary_contacts(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_contacts
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_contacts
     ):
         """Should pass secondary contacts to template."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_contacts
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_contacts
         mock_render_template.return_value = "<div>Secondary contacts</div>"
 
         job_id = str(sample_job_with_contacts["_id"])
@@ -455,16 +455,16 @@ class TestBatchContactsPartial:
         assert "secondary_contacts" in context["job"]
         assert len(context["job"]["secondary_contacts"]) == 1
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_contact_cards_have_correct_structure(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_contacts
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_contacts
     ):
         """Should pass contact with name, role, LinkedIn, and email."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_contacts
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_contacts
         mock_render_template.return_value = "<div>Contact card</div>"
 
         job_id = str(sample_job_with_contacts["_id"])
@@ -482,16 +482,16 @@ class TestBatchContactsPartial:
         assert primary_contact["linkedin_url"] == "https://linkedin.com/in/janesmith"
         assert primary_contact["email"] == "jane@cloudco.com"
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_handles_job_with_no_contacts(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """Should show empty state when no contacts exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<div>No contacts</div>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -514,16 +514,16 @@ class TestBatchContactsPartial:
 class TestBatchCVPartial:
     """Tests for GET /partials/batch-cv/<job_id> endpoint."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_returns_cv_sidebar_for_valid_job(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_cv_edited
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_cv_edited
     ):
         """Should render CV sidebar template with job data."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_cv_edited
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_cv_edited
         mock_render_template.return_value = "<div>CV editor</div>"
 
         job_id = str(sample_job_with_cv_edited["_id"])
@@ -533,7 +533,7 @@ class TestBatchCVPartial:
 
         # Assert
         assert response.status_code == 200
-        mock_collection.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
+        mock_repo.find_one.assert_called_once_with({"_id": ObjectId(job_id)})
         mock_render_template.assert_called_once()
 
         # Verify correct template
@@ -546,14 +546,14 @@ class TestBatchCVPartial:
         assert "job" in context
         assert context["job"]["_id"] == sample_job_with_cv_edited["_id"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_for_invalid_objectid(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 for invalid ObjectId format."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         # Act
         response = authenticated_client.get("/partials/batch-cv/bad-id-format")
@@ -561,15 +561,15 @@ class TestBatchCVPartial:
         # Assert
         assert response.status_code == 404
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     def test_returns_404_when_job_not_found(
-        self, mock_get_collection, authenticated_client
+        self, mock_get_repo, authenticated_client
     ):
         """Should return 404 when job doesn't exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = None
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = None
 
         # Act
         response = authenticated_client.get("/partials/batch-cv/507f1f77bcf86cd799439011")
@@ -585,16 +585,16 @@ class TestBatchCVPartial:
         # Assert
         assert response.status_code in [302, 401]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_displays_cv_editor_state(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_cv_edited
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_cv_edited
     ):
         """Should pass cv_editor_state to template for TipTap rendering."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_cv_edited
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_cv_edited
         mock_render_template.return_value = "<div>CV with editor state</div>"
 
         job_id = str(sample_job_with_cv_edited["_id"])
@@ -611,16 +611,16 @@ class TestBatchCVPartial:
         assert "cv_editor_state" in context["job"]
         assert "cv_reasoning" in context["job"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_displays_cv_text_fallback(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_cv_generated
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_cv_generated
     ):
         """Should use cv_text as fallback when cv_editor_state doesn't exist."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_cv_generated
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_cv_generated
         mock_render_template.return_value = "<div>CV text</div>"
 
         job_id = str(sample_job_with_cv_generated["_id"])
@@ -639,16 +639,16 @@ class TestBatchCVPartial:
         assert "cv_text" in context["job"]
         assert "cv_editor_state" not in context["job"]
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_shows_empty_state_when_no_cv(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """Should show empty state when no CV exists."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<div>No CV</div>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -682,16 +682,16 @@ class TestTriStateBadgeLogic:
     to render the appropriate badge states.
     """
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_jd_badge_gray_when_no_extraction(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """JD badge should be gray when no extracted_jd exists."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -711,16 +711,16 @@ class TestTriStateBadgeLogic:
         assert "processed_jd" not in job
         assert "jd_annotations" not in job
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_jd_badge_orange_when_extracted_no_annotations(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_extraction
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_extraction
     ):
         """JD badge should be orange when extracted_jd exists but no annotations."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_extraction
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_extraction
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_extraction["_id"])
@@ -740,16 +740,16 @@ class TestTriStateBadgeLogic:
         assert job["extracted_jd"] is not None
         assert "jd_annotations" not in job or not job.get("jd_annotations", {}).get("annotations")
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_jd_badge_green_when_has_annotations(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_annotations
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_annotations
     ):
         """JD badge should be green when jd_annotations.annotations has items."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_annotations
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_annotations
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_annotations["_id"])
@@ -769,16 +769,16 @@ class TestTriStateBadgeLogic:
         assert "annotations" in job["jd_annotations"]
         assert len(job["jd_annotations"]["annotations"]) > 0
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_rs_badge_gray_when_no_research(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """RS badge should be gray when no company_research exists."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -799,16 +799,16 @@ class TestTriStateBadgeLogic:
         assert "primary_contacts" not in job
         assert "secondary_contacts" not in job
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_rs_badge_orange_when_research_no_contacts(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_research
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_research
     ):
         """RS badge should be orange when has research but no contacts."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_research
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_research
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_research["_id"])
@@ -828,16 +828,16 @@ class TestTriStateBadgeLogic:
         assert "primary_contacts" not in job or len(job.get("primary_contacts", [])) == 0
         assert "secondary_contacts" not in job or len(job.get("secondary_contacts", [])) == 0
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_rs_badge_green_when_has_contacts(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_contacts
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_contacts
     ):
         """RS badge should be green when has primary or secondary contacts."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_contacts
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_contacts
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_contacts["_id"])
@@ -857,16 +857,16 @@ class TestTriStateBadgeLogic:
         has_secondary = "secondary_contacts" in job and len(job["secondary_contacts"]) > 0
         assert has_primary or has_secondary
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_cv_badge_gray_when_no_cv(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """CV badge should be gray when no CV exists."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_minimal["_id"])
@@ -887,16 +887,16 @@ class TestTriStateBadgeLogic:
         assert "cv_text" not in job
         assert "cv_editor_state" not in job
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_cv_badge_orange_when_generated_not_edited(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_cv_generated
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_cv_generated
     ):
         """CV badge should be orange when CV generated but not edited."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_cv_generated
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_cv_generated
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_cv_generated["_id"])
@@ -916,16 +916,16 @@ class TestTriStateBadgeLogic:
         assert has_cv
         assert "cv_editor_state" not in job or not job.get("cv_editor_state")
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_cv_badge_green_when_edited(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_with_cv_edited
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_with_cv_edited
     ):
         """CV badge should be green when cv_editor_state exists."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_with_cv_edited
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_with_cv_edited
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_with_cv_edited["_id"])
@@ -951,15 +951,15 @@ class TestTriStateBadgeLogic:
 class TestApplicationURLQuickEntry:
     """Tests for inline application URL popover in batch_job_single_row.html."""
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_row_template_includes_application_url(
-        self, mock_render_template, mock_get_collection, authenticated_client
+        self, mock_render_template, mock_get_repo, authenticated_client
     ):
         """Should pass application_url to template for quick entry popover."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
 
         job_with_url = {
             "_id": ObjectId("507f1f77bcf86cd799439018"),
@@ -971,7 +971,7 @@ class TestApplicationURLQuickEntry:
             "application_url": "https://example.com/apply",
         }
 
-        mock_collection.find_one.return_value = job_with_url
+        mock_repo.find_one.return_value = job_with_url
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(job_with_url["_id"])
@@ -991,16 +991,16 @@ class TestApplicationURLQuickEntry:
         assert "application_url" in job
         assert job["application_url"] == "https://example.com/apply"
 
-    @patch("frontend.app.get_collection")
+    @patch("frontend.app._get_repo")
     @patch("frontend.app.render_template")
     def test_row_template_handles_missing_application_url(
-        self, mock_render_template, mock_get_collection, authenticated_client, sample_job_minimal
+        self, mock_render_template, mock_get_repo, authenticated_client, sample_job_minimal
     ):
         """Should handle job without application_url (popover shows as not set)."""
         # Arrange
-        mock_collection = MagicMock()
-        mock_get_collection.return_value = mock_collection
-        mock_collection.find_one.return_value = sample_job_minimal
+        mock_repo = MagicMock()
+        mock_get_repo.return_value = mock_repo
+        mock_repo.find_one.return_value = sample_job_minimal
         mock_render_template.return_value = "<tbody>...</tbody>"
 
         job_id = str(sample_job_minimal["_id"])

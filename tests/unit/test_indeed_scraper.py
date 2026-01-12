@@ -86,24 +86,32 @@ class TestGenerateDedupeKey:
     """Tests for dedupe key generation."""
 
     def test_basic_dedupe_key(self):
-        """Test basic dedupe key generation following project pattern: company|title|location|source."""
+        """Test basic dedupe key generation - new format: source|normalized_fields."""
         key = _generate_dedupe_key("TestCorp", "Senior Software Engineer", "San Francisco, CA", "indeed_import")
-        assert key == "testcorp|senior software engineer|san francisco, ca|indeed_import"
+        # Without job_key, uses fallback: source|company|title|location (normalized)
+        assert key == "indeed_import|testcorp|seniorsoftwareengineer|sanfranciscoca"
+
+    def test_dedupe_key_with_job_key(self):
+        """Test dedupe key uses job_key when provided (robust deduplication)."""
+        key = _generate_dedupe_key("TestCorp", "Engineer", "NYC", "indeed_import", job_key="abc123def4567890")
+        # With job_key: source|job_key (preferred)
+        assert key == "indeed_import|abc123def4567890"
 
     def test_dedupe_key_with_special_chars(self):
-        """Test dedupe key preserves special chars (just lowercased)."""
+        """Test dedupe key strips special chars (normalized alphanumeric)."""
         key = _generate_dedupe_key("Test Corp, Inc.", "Senior (Cloud) Engineer!", "Remote", "indeed_import")
-        assert key == "test corp, inc.|senior (cloud) engineer!|remote|indeed_import"
+        # All non-alphanumeric chars removed
+        assert key == "indeed_import|testcorpinc|seniorcloudengineer|remote"
 
     def test_dedupe_key_with_empty_values(self):
         """Test dedupe key handles empty/None values."""
         key = _generate_dedupe_key("", "Engineer", None, "indeed_import")
-        assert key == "|engineer||indeed_import"
+        assert key == "indeed_import||engineer|"
 
     def test_dedupe_key_default_source(self):
         """Test dedupe key uses default source if not specified."""
         key = _generate_dedupe_key("Company", "Title", "Location")
-        assert key == "company|title|location|indeed_import"
+        assert key == "indeed_import|company|title|location"
 
 
 class TestIndeedJobToMongoDoc:
@@ -134,8 +142,8 @@ class TestIndeedJobToMongoDoc:
         assert doc["description"] == "A great job opportunity..."
         assert doc["jobUrl"] == "https://www.indeed.com/viewjob?jk=abc123def4567890"
 
-        # dedupeKey follows the pattern: company|title|location|source (all lowercase)
-        assert doc["dedupeKey"] == "testcorp|senior software engineer|san francisco, ca|indeed_import"
+        # dedupeKey uses job_key for robust deduplication: source|job_key
+        assert doc["dedupeKey"] == "indeed_import|abc123def4567890"
 
         assert doc["status"] == "under processing"  # Ready for batch processing
         assert "batch_added_at" in doc  # For batch table sorting
@@ -163,7 +171,8 @@ class TestIndeedJobToMongoDoc:
 
         assert doc["jobId"] == "1234567890abcdef"
         assert doc["title"] == "Engineer"
-        assert doc["dedupeKey"] == "co|engineer|remote|indeed_import"
+        # Uses job_key for deduplication
+        assert doc["dedupeKey"] == "indeed_import|1234567890abcdef"
         assert doc["indeed_metadata"]["salary"] is None
         assert doc["indeed_metadata"]["job_type"] is None
 

@@ -17,7 +17,6 @@ from typing import Callable, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
-from pymongo import MongoClient
 
 from ..auth import verify_token
 from .operation_streaming import (
@@ -73,16 +72,6 @@ def _store_ingest_result(run_id: str, result: "IngestResponse") -> None:
 def _get_stored_ingest_result(run_id: str) -> Optional["IngestResponse"]:
     """Retrieve stored ingestion result."""
     return _ingest_results.get(run_id)
-
-
-def get_db():
-    """Get MongoDB database connection."""
-    mongo_uri = os.getenv("MONGODB_URI")
-    if not mongo_uri:
-        raise HTTPException(status_code=500, detail="MONGODB_URI not configured")
-
-    client = MongoClient(mongo_uri)
-    return client[os.getenv("MONGO_DB_NAME", "jobs")]
 
 
 def get_default_keywords() -> List[str]:
@@ -201,9 +190,6 @@ async def _run_himalaya_ingestion(
         update_operation_status(run_id, "running")
         log_callback(f"[ingest_start] source=himalayas, keywords={keywords}, incremental={incremental}")
 
-        # Get MongoDB connection
-        db = get_db()
-
         # Import and initialize services
         from src.services.job_sources import HimalayasSource
         from src.services.job_ingest_service import IngestService
@@ -238,8 +224,8 @@ async def _run_himalaya_ingestion(
             log_callback("[ingest_complete] No jobs to ingest")
             return
 
-        # Initialize ingest service with Claude scorer and logging
-        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
+        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
         log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
@@ -373,9 +359,6 @@ async def _run_indeed_ingestion(
             f"location='{search_config.get('location')}', incremental={incremental}"
         )
 
-        # Get MongoDB connection
-        db = get_db()
-
         # Import and initialize services
         from src.services.job_sources import IndeedSource
         from src.services.job_ingest_service import IngestService
@@ -406,8 +389,8 @@ async def _run_indeed_ingestion(
             log_callback("[ingest_complete] No jobs to ingest")
             return
 
-        # Initialize ingest service with Claude scorer and logging
-        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
+        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
         log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
@@ -527,9 +510,6 @@ async def _run_bayt_ingestion(
             f"incremental={incremental}"
         )
 
-        # Get MongoDB connection
-        db = get_db()
-
         # Import and initialize services
         from src.services.job_sources import BaytSource
         from src.services.job_ingest_service import IngestService
@@ -560,8 +540,8 @@ async def _run_bayt_ingestion(
             log_callback("[ingest_complete] No jobs to ingest")
             return
 
-        # Initialize ingest service with Claude scorer and logging
-        ingest_service = IngestService(db, use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
+        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
 
         # Run ingestion
         log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")

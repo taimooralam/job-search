@@ -24,6 +24,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup
 
+from src.common.dedupe import generate_dedupe_key as _unified_dedupe_key
+
 logger = logging.getLogger(__name__)
 
 # Indeed job URL format
@@ -470,28 +472,36 @@ def _clean_description(elem) -> str:
     return "\n".join(cleaned_lines).strip()
 
 
-def _generate_dedupe_key(company: str, title: str, location: str, source: str = "indeed_import") -> str:
+def _generate_dedupe_key(
+    company: str,
+    title: str,
+    location: str,
+    source: str = "indeed_import",
+    job_key: str = None,
+) -> str:
     """
-    Generate a dedupeKey following the project's pattern.
+    Generate a dedupeKey using unified dedupe module.
 
-    Format: company|title|location|source (all lowercase)
-    Example: acmecorp|senior engineer|new york, ny|indeed_import
+    Uses job_key (Indeed's unique ID) if available, otherwise falls back
+    to normalized text-based key.
 
     Args:
         company: Company name
         title: Job title
         location: Job location
         source: Job source (defaults to "indeed_import")
+        job_key: Indeed's unique job key (16-char hex)
 
     Returns:
         Dedupe key string
     """
-    company_lower = (company or '').lower()
-    title_lower = (title or '').lower()
-    location_lower = (location or '').lower()
-    source_lower = (source or '').lower()
-
-    return f"{company_lower}|{title_lower}|{location_lower}|{source_lower}"
+    return _unified_dedupe_key(
+        source=source,
+        source_id=job_key,
+        company=company,
+        title=title,
+        location=location,
+    )
 
 
 def indeed_job_to_mongodb_doc(job_data: IndeedJobData) -> Dict[str, Any]:
@@ -508,7 +518,8 @@ def indeed_job_to_mongodb_doc(job_data: IndeedJobData) -> Dict[str, Any]:
         job_data.company,
         job_data.title,
         job_data.location,
-        "indeed_import"
+        "indeed_import",
+        job_key=job_data.job_key,  # Use Indeed's unique ID for robust deduplication
     )
 
     return {

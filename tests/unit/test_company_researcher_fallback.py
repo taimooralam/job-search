@@ -21,6 +21,19 @@ from datetime import datetime
 from src.layer3.company_researcher import CompanyResearcher, CompanyResearchOutput
 
 
+# ===== MOCK REPOSITORY FIXTURE =====
+
+
+@pytest.fixture
+def mock_cache_repository():
+    """Mock CompanyCacheRepository for testing."""
+    mock = MagicMock()
+    mock.find_by_company_key.return_value = None  # Default cache miss
+    mock.upsert_cache.return_value = True
+    mock.ensure_indexes.return_value = None
+    return mock
+
+
 # ===== FIXTURES =====
 
 
@@ -113,39 +126,45 @@ def mock_firecrawl():
 class TestNormalizeCompanyName:
     """Test company name normalization generates correct variations."""
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_generates_variations_for_all_caps_name(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Generate variations for all-caps company name like DLOCAL."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("DLOCAL")
 
         # Should include: DLOCAL, dLocal, DLocal, dlocal, Dlocal
         assert "DLOCAL" in variations  # Original
         assert "dlocal" in variations  # All lowercase
         assert "Dlocal" in variations  # Title case
-        assert len(variations) <= 5  # Max 5 variations
+        assert len(variations) <= 8  # Max 8 variations (updated for suffix removal)
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_includes_original_company_name(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Variations always include original company name."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("TechCorp")
 
         assert "TechCorp" in variations
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_handles_mixed_case_company_name(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Handle mixed-case names like PayPal, GitHub."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("PayPal")
 
         assert "PayPal" in variations  # Original
@@ -153,35 +172,41 @@ class TestNormalizeCompanyName:
         assert "paypal" in variations  # All lowercase
         assert "Paypal" in variations  # Title case
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
-    def test_limits_to_5_variations(self, mock_firecrawl_class, mock_mongo_class):
-        """Limit variations to maximum of 5."""
-        researcher = CompanyResearcher(use_claude_api=True)
+    def test_limits_to_8_variations(self, mock_firecrawl_class, mock_cache_repository):
+        """Limit variations to maximum of 8."""
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("MultiWordCompanyName")
 
-        assert len(variations) <= 5
+        assert len(variations) <= 8
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_handles_single_word_lowercase(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Handle single-word lowercase name like 'stripe'."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("stripe")
 
         assert "stripe" in variations  # Original
         assert "STRIPE" in variations  # All uppercase
         assert "Stripe" in variations  # Title case
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_removes_duplicate_variations(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Remove duplicate variations (e.g., 'Stripe' appears once)."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("Stripe")
 
         # Count how many times "Stripe" appears
@@ -196,14 +221,16 @@ class TestResearchWithLLMKnowledge:
     """Test LLM knowledge fallback (training data, no web search)."""
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_low_confidence_result(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge fallback returns result with low confidence markers."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API client (anthropic.messages.create)
         mock_response = Mock()
@@ -239,14 +266,16 @@ class TestResearchWithLLMKnowledge:
         assert "[Based on training knowledge]" in result["company_research"]["summary"]
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_none_on_api_failure(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge fallback returns None on API failure."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API client to raise exception
         mock_client = Mock()
@@ -263,14 +292,16 @@ class TestResearchWithLLMKnowledge:
         assert result is None
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_adds_training_knowledge_prefix(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge adds '[Based on training knowledge]' prefix to summary."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API response WITHOUT prefix
         mock_response = Mock()
@@ -298,14 +329,16 @@ class TestResearchWithLLMKnowledge:
         assert result["company_research"]["summary"].startswith("[Based on training knowledge]")
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_does_not_cache_results(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge results are NOT cached (may be stale)."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API response
         mock_response = Mock()
@@ -334,14 +367,16 @@ class TestResearchWithLLMKnowledge:
             mock_store.assert_not_called()
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_returns_empty_signals(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge returns empty signals (unreliable without sources)."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API response with signals
         mock_response = Mock()
@@ -375,17 +410,19 @@ class TestResearchWithLLMKnowledge:
 class TestFallbackChainIntegration:
     """Test the full fallback chain in _research_company_with_claude_api()."""
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_primary_research_success_skips_fallbacks(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_success_response,
     ):
         """Primary research success skips all fallbacks."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock cache miss
         with patch.object(researcher, "_check_cache", return_value=None):
@@ -404,18 +441,20 @@ class TestFallbackChainIntegration:
             # Verify only called once (no fallbacks)
             assert researcher.claude_researcher.research_company.call_count == 1
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_2a_name_variations_triggered_on_primary_failure(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
         mock_claude_success_response,
     ):
         """Fallback 2a (name variations) triggered when primary fails."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock cache miss
         with patch.object(researcher, "_check_cache", return_value=None):
@@ -437,12 +476,11 @@ class TestFallbackChainIntegration:
             # Verify called twice (primary + 1 variation)
             assert researcher.claude_researcher.research_company.call_count == 2
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_2b_firecrawl_triggered_when_variations_fail(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
         mock_firecrawl,
@@ -451,7 +489,10 @@ class TestFallbackChainIntegration:
         # Setup FireCrawl mock
         mock_firecrawl_class.return_value = mock_firecrawl
 
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         # Ensure FireCrawl is available for fallback 2b
         researcher.firecrawl = mock_firecrawl
 
@@ -482,17 +523,19 @@ class TestFallbackChainIntegration:
                     assert result["company_research"] is not None
                     assert "dLocal" in result["company_research"]["summary"]
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_2b_skipped_when_firecrawl_unavailable(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
     ):
         """Fallback 2b skipped when FireCrawl not initialized."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         researcher.firecrawl = None  # FireCrawl not available
 
         # Mock cache miss
@@ -524,17 +567,19 @@ class TestFallbackChainIntegration:
                 assert result["company_research"] is not None
                 assert result["company_research"]["_source"] == "llm_knowledge"
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_2c_llm_knowledge_triggered_when_firecrawl_fails(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
     ):
         """Fallback 2c (LLM knowledge) triggered when FireCrawl fails."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock cache miss
         with patch.object(researcher, "_check_cache", return_value=None):
@@ -570,17 +615,19 @@ class TestFallbackChainIntegration:
                     assert result["company_research"]["_source"] == "llm_knowledge"
                     assert result["company_research"]["_confidence"] == "low"
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_all_fallbacks_fail_returns_company_research_none(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
     ):
         """All fallbacks fail -> returns company_research: None with errors."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         researcher.firecrawl = None  # FireCrawl not available
 
         # Mock cache miss
@@ -606,16 +653,18 @@ class TestFallbackChainIntegration:
                 assert len(result["errors"]) > 0
                 assert "failed after all fallbacks" in result["errors"][-1].lower()
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_cache_hit_skips_all_fallbacks(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
     ):
         """Cache hit skips all fallback attempts."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock cache hit
         cached_result = {
@@ -639,18 +688,20 @@ class TestFallbackChainIntegration:
             # Verify Claude API was NOT called
             researcher.claude_researcher.research_company.assert_not_called()
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_tries_up_to_4_name_variations(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
         mock_claude_success_response,
     ):
         """Fallback 2a tries up to 4 name variations (excluding original)."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         # Disable FireCrawl to skip fallback 2b and go straight to 2c
         researcher.firecrawl = None
 
@@ -672,17 +723,19 @@ class TestFallbackChainIntegration:
             assert researcher.claude_researcher.research_company.call_count == 2
             assert result["company_research"] is not None
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_error_message_includes_primary_failure_reason(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
         mock_claude_failure_response,
     ):
         """Final error message includes primary failure reason."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         researcher.firecrawl = None
 
         # Mock cache miss
@@ -712,38 +765,44 @@ class TestFallbackChainIntegration:
 class TestFallbackEdgeCases:
     """Test edge cases in fallback chain."""
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_handles_empty_company_name(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Handle empty company name gracefully."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("")
 
         # Should return empty list (empty strings are discarded)
         assert len(variations) == 0
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_handles_company_name_with_special_characters(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Handle company names with special characters."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name("AT&T")
 
         assert "AT&T" in variations
         assert len(variations) <= 8  # Increased from 5 to support suffix removal
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_handles_very_long_company_name(
-        self, mock_firecrawl_class, mock_mongo_class
+        self, mock_firecrawl_class, mock_cache_repository
     ):
         """Handle very long company names."""
         long_name = "International Business Machines Corporation Limited"
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
         variations = researcher._normalize_company_name(long_name)
 
         # Check if original name (with title case) or exact original appears in variations
@@ -753,14 +812,16 @@ class TestFallbackEdgeCases:
         assert len(variations) <= 8  # Increased from 5 to support suffix removal
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_handles_invalid_json_response(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge handles invalid JSON gracefully."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API response with invalid JSON
         mock_response = Mock()
@@ -783,14 +844,16 @@ class TestFallbackEdgeCases:
         assert result is None
 
     @pytest.mark.asyncio
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     @patch("anthropic.Anthropic")
     async def test_llm_knowledge_handles_empty_response_content(
-        self, mock_anthropic_class, mock_firecrawl_class, mock_mongo_class
+        self, mock_anthropic_class, mock_firecrawl_class, mock_cache_repository
     ):
         """LLM knowledge handles empty response content."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock Claude API response with no text content
         mock_response = Mock()
@@ -807,16 +870,18 @@ class TestFallbackEdgeCases:
 
         assert result is None
 
-    @patch("src.layer3.company_researcher.MongoClient")
     @patch("src.layer3.company_researcher.FirecrawlApp")
     def test_fallback_chain_exception_handling(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repository,
         sample_job_state,
     ):
         """Fallback chain handles exceptions gracefully."""
-        researcher = CompanyResearcher(use_claude_api=True)
+        researcher = CompanyResearcher(
+            use_claude_api=True,
+            company_cache_repository=mock_cache_repository,
+        )
 
         # Mock cache miss
         with patch.object(researcher, "_check_cache", return_value=None):

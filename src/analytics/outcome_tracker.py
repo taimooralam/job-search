@@ -21,6 +21,7 @@ Usage:
 """
 
 import logging
+import warnings
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -84,6 +85,13 @@ class OutcomeTracker:
             db_name: Database name (deprecated, use job_repository)
             job_repository: Optional job repository for level-2 operations
         """
+        if mongodb_uri is not None or db_name != "jobs":
+            warnings.warn(
+                "mongodb_uri and db_name parameters are deprecated. "
+                "OutcomeTracker now uses repository pattern internally.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self._job_repository = job_repository
 
     def _get_job_repository(self) -> JobRepositoryInterface:

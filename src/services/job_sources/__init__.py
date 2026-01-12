@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
+from src.common.dedupe import generate_dedupe_key as _generate_dedupe_key
+
 
 @dataclass
 class JobData:
@@ -59,7 +61,9 @@ class JobSource(ABC):
         """
         Generate a deduplication key for a job.
 
-        Format: company|title|location|source (lowercase, normalized)
+        Uses unified dedupe module with source_id priority:
+        - If job.source_id exists: "{source}|{source_id}" (robust)
+        - Fallback: "{source}|{company}|{title}|{location}" (normalized)
 
         Args:
             job: JobData object
@@ -67,12 +71,13 @@ class JobSource(ABC):
         Returns:
             Deduplication key string
         """
-        company = (job.company or "").lower().strip()
-        title = (job.title or "").lower().strip()
-        location = (job.location or "").lower().strip()
-        source = self.get_source_name()
-
-        return f"{company}|{title}|{location}|{source}"
+        return _generate_dedupe_key(
+            source=self.get_source_name(),
+            source_id=job.source_id,
+            company=job.company,
+            title=job.title,
+            location=job.location,
+        )
 
 
 # Import concrete implementations for convenience
