@@ -3,6 +3,8 @@ API smoke tests for the Job Search UI.
 
 These tests verify the basic functionality of the Flask API endpoints.
 Uses mocked MongoDB to avoid requiring a real database connection.
+
+Note: client and mock_db fixtures are provided by conftest.py
 """
 
 import pytest
@@ -16,28 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from frontend.app import app, JOB_STATUSES, serialize_job
+from src.common.repositories.base import WriteResult
 
 
-@pytest.fixture
-def client():
-    """Create an authenticated test client for the Flask app."""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        # Set up authenticated session
-        with client.session_transaction() as sess:
-            sess['authenticated'] = True
-        yield client
-
-
-@pytest.fixture
-def mock_db():
-    """Mock the MongoDB database."""
-    with patch('frontend.app.get_db') as mock_get_db:
-        mock_database = MagicMock()
-        mock_collection = MagicMock()
-        mock_database.__getitem__ = MagicMock(return_value=mock_collection)
-        mock_get_db.return_value = mock_database
-        yield mock_database, mock_collection
+# client and mock_db fixtures are provided by conftest.py
 
 
 class TestSerializeJob:
@@ -75,18 +59,13 @@ class TestListJobsAPI:
 
     def test_list_jobs_default_params(self, client, mock_db):
         """Test listing jobs with default parameters."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        # Setup mock cursor
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([
+        # Repository find() returns list directly
+        mock_repo.find.return_value = [
             {"_id": ObjectId(), "title": "Engineer", "company": "Acme"}
-        ])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 1
+        ]
+        mock_repo.count_documents.return_value = 1
 
         response = client.get('/api/jobs')
 
@@ -104,22 +83,18 @@ class TestListJobsAPI:
         which uses aggregation. This allows us to test the find() path
         and verify the search query is correctly constructed.
         """
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         # Use sort=title to bypass default aggregation path
         response = client.get('/api/jobs?query=google&sort=title')
 
         assert response.status_code == 200
         # Verify the find was called with search query (now nested in $and)
-        call_args = mock_collection.find.call_args
+        call_args = mock_repo.find.call_args
         query = call_args[0][0]
         assert "$and" in query
         # Check that one of the $and conditions contains the search $or
@@ -134,15 +109,11 @@ class TestListJobsAPI:
         which uses aggregation. This allows us to test the find() path
         and verify pagination parameters are correctly applied.
         """
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 100
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 100
 
         # Use sort=title to bypass default aggregation path
         response = client.get('/api/jobs?page=3&page_size=50&sort=title')
@@ -155,15 +126,11 @@ class TestListJobsAPI:
 
     def test_list_jobs_invalid_page_size(self, client, mock_db):
         """Test that invalid page_size falls back to default."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/api/jobs?page_size=999')
 
@@ -177,11 +144,9 @@ class TestDeleteJobsAPI:
 
     def test_delete_jobs_success(self, client, mock_db):
         """Test successful job deletion."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_result = MagicMock()
-        mock_result.deleted_count = 2
-        mock_collection.delete_many.return_value = mock_result
+        mock_repo.delete_many.return_value = WriteResult(matched_count=2, modified_count=2)
 
         job_ids = [str(ObjectId()), str(ObjectId())]
         response = client.post('/api/jobs/delete',
@@ -219,11 +184,9 @@ class TestUpdateStatusAPI:
 
     def test_update_status_success(self, client, mock_db):
         """Test successful status update."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_result = MagicMock()
-        mock_result.matched_count = 1
-        mock_collection.update_one.return_value = mock_result
+        mock_repo.update_one.return_value = WriteResult(matched_count=1, modified_count=1)
 
         job_id = str(ObjectId())
         response = client.post('/api/jobs/status',
@@ -259,11 +222,9 @@ class TestUpdateStatusAPI:
 
     def test_update_status_job_not_found(self, client, mock_db):
         """Test update for non-existent job."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_result = MagicMock()
-        mock_result.matched_count = 0
-        mock_collection.update_one.return_value = mock_result
+        mock_repo.update_one.return_value = WriteResult(matched_count=0, modified_count=0)
 
         job_id = str(ObjectId())
         response = client.post('/api/jobs/status',
@@ -293,13 +254,13 @@ class TestGetStatsAPI:
 
     def test_get_stats(self, client, mock_db):
         """Test getting database statistics."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         # Mock count_documents for different calls
         # 10 statuses: not processed, marked for applying, under processing,
         # ready for applying, to be deleted, discarded, applied, interview scheduled,
         # rejected, offer received
-        mock_collection.count_documents.side_effect = [
+        mock_repo.count_documents.side_effect = [
             1000,  # level-1 count
             150,   # level-2 count
             100, 30, 20, 15, 5, 8, 10, 3, 2, 0,  # status counts (10 statuses)
@@ -320,10 +281,10 @@ class TestGetJobAPI:
 
     def test_get_job_success(self, client, mock_db):
         """Test getting a single job."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         job_id = ObjectId()
-        mock_collection.find_one.return_value = {
+        mock_repo.find_one.return_value = {
             "_id": job_id,
             "title": "Engineer",
             "company": "Acme"
@@ -338,8 +299,8 @@ class TestGetJobAPI:
 
     def test_get_job_not_found(self, client, mock_db):
         """Test getting a non-existent job."""
-        mock_database, mock_collection = mock_db
-        mock_collection.find_one.return_value = None
+        mock_repo, _ = mock_db
+        mock_repo.find_one.return_value = None
 
         job_id = ObjectId()
         response = client.get(f'/api/jobs/{str(job_id)}')
@@ -358,13 +319,12 @@ class TestUpdateJobAPI:
 
     def test_update_job_success(self, client, mock_db):
         """Test updating a job."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
+        from src.common.repositories.base import WriteResult
 
         job_id = ObjectId()
-        mock_result = MagicMock()
-        mock_result.matched_count = 1
-        mock_collection.update_one.return_value = mock_result
-        mock_collection.find_one.return_value = {
+        mock_repo.update_one.return_value = WriteResult(matched_count=1, modified_count=1)
+        mock_repo.find_one.return_value = {
             "_id": job_id,
             "title": "Engineer",
             "remarks": "Great job"
@@ -398,11 +358,10 @@ class TestUpdateJobAPI:
 
     def test_update_job_not_found(self, client, mock_db):
         """Test updating non-existent job."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
+        from src.common.repositories.base import WriteResult
 
-        mock_result = MagicMock()
-        mock_result.matched_count = 0
-        mock_collection.update_one.return_value = mock_result
+        mock_repo.update_one.return_value = WriteResult(matched_count=0, modified_count=0)
 
         job_id = ObjectId()
         response = client.put(f'/api/jobs/{str(job_id)}',
@@ -424,15 +383,11 @@ class TestHTMLRoutes:
 
     def test_job_rows_partial(self, client, mock_db):
         """Test the HTMX partial for job rows."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows')
 
@@ -442,10 +397,10 @@ class TestHTMLRoutes:
 
     def test_job_detail_page(self, client, mock_db):
         """Test that the job detail page renders."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         job_id = ObjectId()
-        mock_collection.find_one.return_value = {
+        mock_repo.find_one.return_value = {
             "_id": job_id,
             "title": "Software Engineer",
             "company": "Acme Corp",
@@ -463,8 +418,8 @@ class TestHTMLRoutes:
 
     def test_job_detail_page_not_found(self, client, mock_db):
         """Test job detail page for non-existent job."""
-        mock_database, mock_collection = mock_db
-        mock_collection.find_one.return_value = None
+        mock_repo, _ = mock_db
+        mock_repo.find_one.return_value = None
 
         job_id = ObjectId()
         response = client.get(f'/job/{str(job_id)}')
@@ -477,10 +432,10 @@ class TestGetLocationsAPI:
 
     def test_get_locations_success(self, client, mock_db):
         """Test getting unique locations with counts."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         # Mock aggregation result
-        mock_collection.aggregate.return_value = [
+        mock_repo.aggregate.return_value = [
             {"location": "Remote", "count": 50},
             {"location": "New York, NY", "count": 30},
             {"location": "San Francisco, CA", "count": 20},
@@ -497,8 +452,8 @@ class TestGetLocationsAPI:
 
     def test_get_locations_empty(self, client, mock_db):
         """Test getting locations when none exist."""
-        mock_database, mock_collection = mock_db
-        mock_collection.aggregate.return_value = []
+        mock_repo, _ = mock_db
+        mock_repo.aggregate.return_value = []
 
         response = client.get('/api/locations')
 

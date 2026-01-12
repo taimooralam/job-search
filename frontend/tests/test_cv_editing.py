@@ -9,6 +9,8 @@ Tests the following routes:
 
 Note: These are basic smoke tests. Full integration tests with file I/O
 should be run separately in integration test suites.
+
+Note: client and mock_db fixtures are provided by conftest.py
 """
 
 import pytest
@@ -22,26 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from frontend.app import app
 
 
-@pytest.fixture
-def client():
-    """Create an authenticated test client for the Flask app."""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        # Set up authenticated session
-        with client.session_transaction() as sess:
-            sess['authenticated'] = True
-        yield client
-
-
-@pytest.fixture
-def mock_db():
-    """Mock the MongoDB database."""
-    with patch('frontend.app.get_db') as mock_get_db:
-        mock_database = MagicMock()
-        mock_collection = MagicMock()
-        mock_database.__getitem__ = MagicMock(return_value=mock_collection)
-        mock_get_db.return_value = mock_database
-        yield mock_database
+# client and mock_db fixtures are provided by conftest.py
 
 
 class TestGetJobCV:
@@ -56,7 +39,8 @@ class TestGetJobCV:
 
     def test_get_cv_job_not_found(self, client, mock_db):
         """Get CV for non-existent job returns 404."""
-        mock_db["level-2"].find_one.return_value = None
+        mock_repo, _ = mock_db
+        mock_repo.find_one.return_value = None
 
         job_id = ObjectId()
         response = client.get(f"/api/jobs/{job_id}/cv")
@@ -66,8 +50,9 @@ class TestGetJobCV:
 
     def test_get_cv_missing_company_or_title(self, client, mock_db):
         """Get CV for job missing company/title returns 400."""
+        mock_repo, _ = mock_db
         job_id = ObjectId()
-        mock_db["level-2"].find_one.return_value = {
+        mock_repo.find_one.return_value = {
             "_id": job_id,
             "company": "TechCorp"
             # Missing title
@@ -94,7 +79,8 @@ class TestUpdateJobCV:
 
     def test_update_cv_job_not_found(self, client, mock_db):
         """Update CV for non-existent job returns 404."""
-        mock_db["level-2"].find_one.return_value = None
+        mock_repo, _ = mock_db
+        mock_repo.find_one.return_value = None
 
         job_id = ObjectId()
         response = client.put(
@@ -107,8 +93,9 @@ class TestUpdateJobCV:
 
     def test_update_cv_missing_content(self, client, mock_db):
         """Update CV without html_content returns 400."""
+        mock_repo, _ = mock_db
         job_id = ObjectId()
-        mock_db["level-2"].find_one.return_value = {
+        mock_repo.find_one.return_value = {
             "_id": job_id,
             "company": "TechCorp",
             "title": "Senior Engineer"
@@ -132,7 +119,8 @@ class TestDownloadCVPDF:
 
     def test_download_pdf_job_not_found(self, client, mock_db):
         """Download PDF for non-existent job returns 404."""
-        mock_db["level-2"].find_one.return_value = None
+        mock_repo, _ = mock_db
+        mock_repo.find_one.return_value = None
 
         job_id = ObjectId()
         response = client.get(f"/api/jobs/{job_id}/cv/download")

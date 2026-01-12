@@ -233,7 +233,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_non_incremental(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept incremental=false parameter and return run_id."""
         # Act
@@ -250,7 +250,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_custom_threshold(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept custom score threshold and return run_id."""
         # Act
@@ -267,7 +267,7 @@ class TestIngestHimalayaJobs:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_worldwide_only_false(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should accept worldwide_only=false parameter and return run_id."""
         # Act
@@ -293,7 +293,7 @@ class TestIngestHimalayaValidation:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_max_results_exceeds_limit(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should reject max_results > 100."""
         # Act
@@ -307,7 +307,7 @@ class TestIngestHimalayaValidation:
 
     @pytest.mark.asyncio
     async def test_ingest_himalaya_invalid_score_threshold(
-        self, client, auth_headers, mock_db, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
+        self, client, auth_headers, mock_job_repository, mock_himalaya_source, mock_ingest_service, mock_operation_streaming
     ):
         """Should reject score_threshold outside 0-100 range."""
         # Act

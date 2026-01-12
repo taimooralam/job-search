@@ -9,6 +9,8 @@ Tests the following features:
 
 These tests verify template rendering and correct display of data.
 JavaScript functionality is validated through DOM structure and attributes.
+
+Note: client and mock_db fixtures are provided by conftest.py
 """
 
 import pytest
@@ -22,26 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from frontend.app import app
 
 
-@pytest.fixture
-def client():
-    """Create an authenticated test client for the Flask app."""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        # Set up authenticated session
-        with client.session_transaction() as sess:
-            sess['authenticated'] = True
-        yield client
-
-
-@pytest.fixture
-def mock_db():
-    """Mock the MongoDB database."""
-    with patch('frontend.app.get_db') as mock_get_db:
-        mock_database = MagicMock()
-        mock_collection = MagicMock()
-        mock_database.__getitem__ = MagicMock(return_value=mock_collection)
-        mock_get_db.return_value = mock_database
-        yield mock_database
+# client and mock_db fixtures are provided by conftest.py
 
 
 @pytest.fixture
@@ -116,8 +99,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_section_renders_when_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should render extracted_jd section when data is present."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -131,8 +115,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_role_category_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display role category with proper formatting."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -143,8 +128,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_seniority_level_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display seniority level with proper formatting."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -153,8 +139,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_top_keywords_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display top keywords as tags."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -166,8 +153,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_technical_skills_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display technical skills list."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -178,8 +166,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_soft_skills_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display soft skills list."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -190,8 +179,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_pain_points_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display implied pain points."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -201,8 +191,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_success_metrics_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display success metrics."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -212,8 +203,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_competency_weights_displayed(self, client, mock_db, sample_job_with_extracted_jd):
         """Should display competency weights with percentages."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -226,8 +218,9 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_section_hidden_when_missing(self, client, mock_db, sample_job_without_extracted_jd):
         """Should not render extracted_jd section when data is missing."""
+        mock_repo, _ = mock_db
         job_id = sample_job_without_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_without_extracted_jd
+        mock_repo.find_one.return_value = sample_job_without_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -239,6 +232,7 @@ class TestExtractedJDFieldsDisplay:
 
     def test_extracted_jd_partial_fields(self, client, mock_db):
         """Should handle jobs with only some extracted_jd fields."""
+        mock_repo, _ = mock_db
         partial_job = {
             "_id": ObjectId(),
             "title": "Engineer",
@@ -264,7 +258,7 @@ class TestExtractedJDFieldsDisplay:
         }
 
         job_id = partial_job["_id"]
-        mock_db["level-2"].find_one.return_value = partial_job
+        mock_repo.find_one.return_value = partial_job
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -280,8 +274,9 @@ class TestCollapsibleJobDescription:
 
     def test_job_description_details_element_renders(self, client, mock_db, sample_job_with_extracted_jd):
         """Should render job description in a details/summary element."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -294,8 +289,9 @@ class TestCollapsibleJobDescription:
 
     def test_job_description_summary_is_clickable(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have cursor-pointer styling on summary for clickability."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -305,8 +301,9 @@ class TestCollapsibleJobDescription:
 
     def test_job_description_content_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include the full job description content."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -316,8 +313,9 @@ class TestCollapsibleJobDescription:
 
     def test_short_description_renders(self, client, mock_db, sample_job_without_extracted_jd):
         """Should render short descriptions correctly."""
+        mock_repo, _ = mock_db
         job_id = sample_job_without_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_without_extracted_jd
+        mock_repo.find_one.return_value = sample_job_without_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -327,6 +325,7 @@ class TestCollapsibleJobDescription:
 
     def test_missing_description_no_section(self, client, mock_db):
         """Should not render description section when missing."""
+        mock_repo, _ = mock_db
         job_no_desc = {
             "_id": ObjectId(),
             "title": "Engineer",
@@ -347,7 +346,7 @@ class TestCollapsibleJobDescription:
         }
 
         job_id = job_no_desc["_id"]
-        mock_db["level-2"].find_one.return_value = job_no_desc
+        mock_repo.find_one.return_value = job_no_desc
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -364,8 +363,9 @@ class TestIframeViewer:
 
     def test_iframe_viewer_renders_when_job_url_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should render iframe viewer when jobUrl is present."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -377,8 +377,9 @@ class TestIframeViewer:
 
     def test_iframe_loading_state_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include loading state UI."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -389,8 +390,9 @@ class TestIframeViewer:
 
     def test_iframe_error_state_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include error state UI for blocked iframes."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -402,8 +404,9 @@ class TestIframeViewer:
 
     def test_iframe_security_attributes(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have correct security attributes (sandbox, referrerpolicy)."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -416,8 +419,9 @@ class TestIframeViewer:
 
     def test_iframe_lazy_loading(self, client, mock_db, sample_job_with_extracted_jd):
         """Should use lazy loading for iframe."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -427,8 +431,9 @@ class TestIframeViewer:
 
     def test_iframe_viewer_collapsible(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have collapsible container with toggle functionality."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -440,8 +445,9 @@ class TestIframeViewer:
 
     def test_iframe_fallback_link_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should provide fallback link to open in new tab."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -453,6 +459,7 @@ class TestIframeViewer:
 
     def test_iframe_viewer_hidden_when_no_url(self, client, mock_db):
         """Should not render iframe viewer when jobUrl is missing."""
+        mock_repo, _ = mock_db
         job_no_url = {
             "_id": ObjectId(),
             "title": "Engineer",
@@ -472,7 +479,7 @@ class TestIframeViewer:
         }
 
         job_id = job_no_url["_id"]
-        mock_db["level-2"].find_one.return_value = job_no_url
+        mock_repo.find_one.return_value = job_no_url
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -488,8 +495,9 @@ class TestPDFExportEnhancements:
 
     def test_export_pdf_function_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have exportCVToPDF JavaScript function."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -499,8 +507,9 @@ class TestPDFExportEnhancements:
 
     def test_export_pdf_button_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have Export PDF button with onclick handler."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -512,8 +521,9 @@ class TestPDFExportEnhancements:
 
     def test_export_pdf_error_logging(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include console logging for debugging."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -524,8 +534,9 @@ class TestPDFExportEnhancements:
 
     def test_export_pdf_toast_notifications(self, client, mock_db, sample_job_with_extracted_jd):
         """Should show toast notifications for PDF export status."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -544,8 +555,9 @@ class TestJavaScriptFunctions:
 
     def test_job_detail_js_script_included(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include the external job-detail.js script."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -556,8 +568,9 @@ class TestJavaScriptFunctions:
 
     def test_job_config_object_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should define JOB_DETAIL_CONFIG with jobId."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -573,8 +586,9 @@ class TestJavaScriptFunctions:
         Note: Actual timeout logic is in job-detail.js (10000ms).
         This test verifies the HTML structure supports iframe handling.
         """
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -590,8 +604,9 @@ class TestJavaScriptFunctions:
         Note: Uses native HTML5 details element instead of JavaScript toggle,
         which provides better accessibility and works without JS.
         """
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -609,8 +624,9 @@ class TestAccessibility:
 
     def test_aria_labels_present(self, client, mock_db, sample_job_with_extracted_jd):
         """Should include aria-labels for accessibility."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -621,8 +637,9 @@ class TestAccessibility:
 
     def test_iframe_title_attribute(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have title attribute on iframe for screen readers."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 
@@ -632,8 +649,9 @@ class TestAccessibility:
 
     def test_button_labels_descriptive(self, client, mock_db, sample_job_with_extracted_jd):
         """Should have descriptive button labels."""
+        mock_repo, _ = mock_db
         job_id = sample_job_with_extracted_jd["_id"]
-        mock_db["level-2"].find_one.return_value = sample_job_with_extracted_jd
+        mock_repo.find_one.return_value = sample_job_with_extracted_jd
 
         response = client.get(f'/job/{str(job_id)}')
 

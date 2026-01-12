@@ -10,6 +10,8 @@ The filter:
 Files tested:
 - frontend/app.py: job_rows_partial() lines 385-396, 2013
 - frontend/templates/partials/job_rows.html: filter_params line 7
+
+Note: client and mock_db fixtures are provided by conftest.py
 """
 
 import pytest
@@ -25,26 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from frontend.app import app
 
 
-@pytest.fixture
-def client():
-    """Create an authenticated test client for the Flask app."""
-    app.config['TESTING'] = True
-    with app.test_client() as client:
-        # Set up authenticated session
-        with client.session_transaction() as sess:
-            sess['authenticated'] = True
-        yield client
-
-
-@pytest.fixture
-def mock_db():
-    """Mock the MongoDB database."""
-    with patch('frontend.app.get_db') as mock_get_db:
-        mock_database = MagicMock()
-        mock_collection = MagicMock()
-        mock_database.__getitem__ = MagicMock(return_value=mock_collection)
-        mock_get_db.return_value = mock_database
-        yield mock_database, mock_collection
+# client and mock_db fixtures are provided by conftest.py
 
 
 @pytest.fixture
@@ -100,13 +83,7 @@ class TestAppliedOnlyFilterBackendLogic:
 
     def test_applied_only_true_returns_only_applied_jobs(self, client, mock_db):
         """Should return only jobs with status 'applied' when applied_only=true."""
-        mock_database, mock_collection = mock_db
-
-        # Mock cursor with applied jobs only
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
+        mock_repo, _ = mock_db
 
         applied_job = {
             "_id": ObjectId(),
@@ -118,16 +95,16 @@ class TestAppliedOnlyFilterBackendLogic:
             "url": "https://example.com/job1",
             "score": 85
         }
-        mock_cursor.__iter__ = lambda self: iter([applied_job])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 1
+        # Repository find() returns list directly
+        mock_repo.find.return_value = [applied_job]
+        mock_repo.count_documents.return_value = 1
 
         response = client.get('/partials/job-rows?applied_only=true')
 
         assert response.status_code == 200
 
         # Verify MongoDB query was called with status filter for "applied"
-        find_call = mock_collection.find.call_args
+        find_call = mock_repo.find.call_args
         if find_call:
             query = find_call[0][0] if find_call[0] else find_call[1].get('filter', {})
             # The query should filter for status: applied
@@ -135,39 +112,28 @@ class TestAppliedOnlyFilterBackendLogic:
 
     def test_applied_only_false_uses_default_status_exclusions(self, client, mock_db):
         """Should use default status exclusions when applied_only=false."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=false')
 
         assert response.status_code == 200
 
         # Verify MongoDB query excludes default statuses (discarded, applied, interview scheduled)
-        find_call = mock_collection.find.call_args
+        find_call = mock_repo.find.call_args
         if find_call:
             query = find_call[0][0] if find_call[0] else find_call[1].get('filter', {})
             # Default behavior excludes discarded, applied, interview scheduled
-            # So status should not be "applied"
             assert 'status' in query or '$and' in query
 
     def test_applied_only_absent_uses_default_status_exclusions(self, client, mock_db):
         """Should use default status exclusions when applied_only param is absent."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows')
 
@@ -175,15 +141,10 @@ class TestAppliedOnlyFilterBackendLogic:
 
     def test_applied_only_overrides_status_checkboxes(self, client, mock_db):
         """Should override status checkboxes when applied_only=true."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         # Request with status checkboxes selected, but applied_only=true should override
         response = client.get('/partials/job-rows?applied_only=true&statuses=not+processed&statuses=discarded')
@@ -191,7 +152,7 @@ class TestAppliedOnlyFilterBackendLogic:
         assert response.status_code == 200
 
         # Verify query filters for "applied" status, not the checkbox selections
-        find_call = mock_collection.find.call_args
+        find_call = mock_repo.find.call_args
         if find_call:
             query = find_call[0][0] if find_call[0] else find_call[1].get('filter', {})
             # Should query for applied, ignoring checkbox statuses
@@ -199,15 +160,10 @@ class TestAppliedOnlyFilterBackendLogic:
 
     def test_applied_only_case_insensitive_true(self, client, mock_db):
         """Should handle applied_only=TRUE (uppercase)."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=TRUE')
 
@@ -216,15 +172,10 @@ class TestAppliedOnlyFilterBackendLogic:
 
     def test_applied_only_case_insensitive_mixed(self, client, mock_db):
         """Should handle applied_only=True (mixed case)."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=True')
 
@@ -237,15 +188,11 @@ class TestAppliedOnlyFilterPersistence:
 
     def test_current_applied_only_passed_to_template_context(self, client, mock_db):
         """Should pass current_applied_only to template context."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true')
 
@@ -255,15 +202,9 @@ class TestAppliedOnlyFilterPersistence:
 
     def test_applied_only_persists_in_pagination_links(self, client, mock_db):
         """Should preserve applied_only filter in pagination links."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        # Mock multiple pages of data
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-
-        # Return 50 jobs to ensure multiple pages
+        # Return 10 jobs to ensure multiple pages exist
         jobs = [
             {
                 "_id": ObjectId(),
@@ -277,9 +218,9 @@ class TestAppliedOnlyFilterPersistence:
             }
             for i in range(10)
         ]
-        mock_cursor.__iter__ = lambda self: iter(jobs)
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 50  # 5 pages
+        # Repository find() returns list directly
+        mock_repo.find.return_value = jobs
+        mock_repo.count_documents.return_value = 50  # 5 pages
 
         response = client.get('/partials/job-rows?applied_only=true&page=2')
 
@@ -289,15 +230,11 @@ class TestAppliedOnlyFilterPersistence:
 
     def test_applied_only_persists_in_sort_links(self, client, mock_db):
         """Should preserve applied_only filter in sort header links."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true&sort=company&direction=asc')
 
@@ -309,15 +246,11 @@ class TestAppliedOnlyFilterPersistence:
 
     def test_applied_only_persists_with_page_size_changes(self, client, mock_db):
         """Should preserve applied_only filter when page size changes."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true&page_size=50')
 
@@ -330,15 +263,11 @@ class TestAppliedOnlyWithOtherFilters:
 
     def test_applied_only_with_query_search(self, client, mock_db):
         """Should preserve both applied_only and query search."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true&query=engineer')
 
@@ -348,15 +277,11 @@ class TestAppliedOnlyWithOtherFilters:
 
     def test_applied_only_with_location_filter(self, client, mock_db):
         """Should preserve both applied_only and location filter."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true&locations=Remote')
 
@@ -366,13 +291,13 @@ class TestAppliedOnlyWithOtherFilters:
 
     def test_applied_only_with_datetime_filters(self, client, mock_db):
         """Should preserve applied_only with datetime filters."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         # When datetime filters are active, backend uses aggregation
-        mock_collection.aggregate.return_value = iter([{
+        mock_repo.aggregate.return_value = [{
             "metadata": [{"total": 0}],
             "data": []
-        }])
+        }]
 
         response = client.get(
             '/partials/job-rows?applied_only=true&datetime_from=2025-01-01T00:00:00&datetime_to=2025-01-31T23:59:59'
@@ -385,10 +310,10 @@ class TestAppliedOnlyWithOtherFilters:
 
     def test_applied_only_with_all_filters_combined(self, client, mock_db):
         """Should preserve applied_only with all other filters combined."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
         # When datetime filters are active, backend uses aggregation
-        mock_collection.aggregate.return_value = iter([{
+        mock_repo.aggregate.return_value = [{
             "metadata": [{"total": 5}],
             "data": [
                 {
@@ -402,7 +327,7 @@ class TestAppliedOnlyWithOtherFilters:
                     "score": 85
                 }
             ]
-        }])
+        }]
 
         response = client.get(
             '/partials/job-rows?'
@@ -432,15 +357,11 @@ class TestAppliedOnlyEdgeCases:
 
     def test_applied_only_empty_string(self, client, mock_db):
         """Should treat empty applied_only as false."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=')
 
@@ -449,15 +370,11 @@ class TestAppliedOnlyEdgeCases:
 
     def test_applied_only_invalid_value(self, client, mock_db):
         """Should treat invalid applied_only value as false."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=invalid')
 
@@ -466,15 +383,11 @@ class TestAppliedOnlyEdgeCases:
 
     def test_applied_only_with_no_applied_jobs(self, client, mock_db):
         """Should handle case where no applied jobs exist."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])  # No jobs
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []  # No jobs
+        mock_repo.count_documents.return_value = 0
 
         response = client.get('/partials/job-rows?applied_only=true')
 
@@ -483,15 +396,11 @@ class TestAppliedOnlyEdgeCases:
 
     def test_applied_only_multiple_times_in_url(self, client, mock_db):
         """Should handle applied_only appearing multiple times in URL."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         # Flask takes the last value when param appears multiple times
         response = client.get('/partials/job-rows?applied_only=false&applied_only=true')
@@ -505,15 +414,11 @@ class TestAppliedOnlyHTMXIntegration:
 
     def test_htmx_request_with_applied_only_gets_cache_busting_headers(self, client, mock_db):
         """HTMX requests with applied_only should receive cache-busting headers."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         response = client.get(
             '/partials/job-rows?applied_only=true',
@@ -528,15 +433,11 @@ class TestAppliedOnlyHTMXIntegration:
 
     def test_htmx_swap_preserves_applied_only_on_sort(self, client, mock_db):
         """HTMX sort operations should preserve applied_only filter."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         # Simulate HTMX sort request
         response = client.get(
@@ -550,15 +451,11 @@ class TestAppliedOnlyHTMXIntegration:
 
     def test_htmx_swap_preserves_applied_only_on_pagination(self, client, mock_db):
         """HTMX pagination should preserve applied_only filter."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 50  # Multiple pages
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 50  # Multiple pages
 
         # Simulate HTMX pagination request
         response = client.get(
@@ -576,13 +473,10 @@ class TestAppliedOnlyAPIEndpoint:
 
     def test_api_endpoint_respects_applied_only_filter(self, client, mock_db):
         """API endpoint should respect applied_only filter."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([
+        # Repository find() returns list directly
+        mock_repo.find.return_value = [
             {
                 "_id": ObjectId(),
                 "title": "Applied Job",
@@ -593,9 +487,8 @@ class TestAppliedOnlyAPIEndpoint:
                 "url": "https://example.com/job1",
                 "score": 85
             }
-        ])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 1
+        ]
+        mock_repo.count_documents.return_value = 1
 
         response = client.get('/api/jobs?applied_only=true')
 
@@ -608,15 +501,11 @@ class TestAppliedOnlyAPIEndpoint:
 
     def test_api_endpoint_applied_only_overrides_status_param(self, client, mock_db):
         """API endpoint should override status param when applied_only=true."""
-        mock_database, mock_collection = mock_db
+        mock_repo, _ = mock_db
 
-        mock_cursor = MagicMock()
-        mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.skip.return_value = mock_cursor
-        mock_cursor.limit.return_value = mock_cursor
-        mock_cursor.__iter__ = lambda self: iter([])
-        mock_collection.find.return_value = mock_cursor
-        mock_collection.count_documents.return_value = 0
+        # Repository find() returns list directly
+        mock_repo.find.return_value = []
+        mock_repo.count_documents.return_value = 0
 
         # Request with status param, but applied_only should override
         response = client.get('/api/jobs?applied_only=true&statuses=not+processed&statuses=discarded')
