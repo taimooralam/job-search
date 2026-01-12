@@ -1083,9 +1083,17 @@ class AnnotationManager {
     }
 
     /**
-     * Populate popover with existing annotation data for editing
+     * Populate popover with existing annotation data for editing.
+     *
+     * IMPORTANT: Sets _isPopulating flag to prevent checkAutoDeleteAnnotation()
+     * from being triggered during population. This flag is checked in each
+     * setPopover* method to avoid accidental deletion when loading existing
+     * annotation values.
      */
     populatePopoverWithAnnotation(annotation) {
+        // Set flag to prevent checkAutoDeleteAnnotation during population
+        this._isPopulating = true;
+
         // Set relevance
         if (annotation.relevance) {
             this.setPopoverRelevance(annotation.relevance);
@@ -1105,6 +1113,9 @@ class AnnotationManager {
         if (annotation.identity) {
             this.setPopoverIdentity(annotation.identity);
         }
+
+        // Clear populating flag
+        this._isPopulating = false;
 
         // Set STAR stories
         if (annotation.star_ids && annotation.star_ids.length > 0) {
@@ -1139,12 +1150,8 @@ class AnnotationManager {
         // Show AI suggestion section for auto-generated annotations
         this.populateAISuggestionSection(annotation);
 
-        // Store state
+        // Store state (ensure all values are set after setPopover* calls)
         this.popoverState.selectedText = annotation.target?.text || '';
-        this.popoverState.relevance = annotation.relevance;
-        this.popoverState.requirement = annotation.requirement_type;
-        this.popoverState.passion = annotation.passion || 'neutral';
-        this.popoverState.identity = annotation.identity || 'peripheral';
         this.popoverState.reframeNote = annotation.reframe_note || '';
         this.popoverState.strategicNote = annotation.strategic_note || '';
         this.popoverState.keywords = annotation.suggested_keywords?.join(', ') || '';
@@ -1273,6 +1280,27 @@ class AnnotationManager {
         // Reset editing state
         this.editingAnnotationId = null;
 
+        // CRITICAL: Reset popoverState to avoid stale values from previous edit sessions.
+        // This fixes the bug where editing annotation B after annotation A would
+        // trigger auto-delete because the toggle logic detected the same relevance
+        // value as "selected" and toggled it off.
+        this.popoverState = {
+            selectedText: '',
+            selectedRange: null,
+            relevance: null,
+            requirement: null,
+            passion: null,
+            identity: null,
+            starIds: [],
+            reframeNote: '',
+            keywords: '',
+            // Reset explicit selection flags - these track user interactions
+            hasExplicitRelevance: false,
+            hasExplicitRequirement: false,
+            hasExplicitPassion: false,
+            hasExplicitIdentity: false
+        };
+
         // Disable save button
         const saveBtn = document.getElementById('popover-save-btn');
         if (saveBtn) saveBtn.disabled = true;
@@ -1391,10 +1419,18 @@ class AnnotationManager {
     }
 
     /**
-     * Check if all dimensions are unselected and auto-delete the annotation if editing
-     * Called after each dimension toggle to clean up annotations with no dimensions
+     * Check if all dimensions are unselected and auto-delete the annotation if editing.
+     * Called after each dimension toggle to clean up annotations with no dimensions.
+     *
+     * IMPORTANT: Skipped during population (_isPopulating flag) to prevent
+     * accidental deletion when loading existing annotation values.
      */
     checkAutoDeleteAnnotation() {
+        // Skip during population - we're just loading existing values
+        if (this._isPopulating) {
+            return;
+        }
+
         // Only auto-delete when editing an existing annotation
         if (!this.editingAnnotationId) {
             return;
