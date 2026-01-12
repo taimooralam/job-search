@@ -568,6 +568,23 @@
             <p class="text-sm text-white line-clamp-3 italic" x-text="annotationSheet.selectedText"></p>
         </div>
 
+        <!-- AI Suggestion Info (only when editing auto-generated annotation) -->
+        <template x-if="annotationSheet.aiInfo">
+            <div class="px-4 py-2 bg-indigo-900/30 border-b border-indigo-800/50">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs px-1.5 py-0.5 rounded font-medium"
+                          :class="annotationSheet.aiInfo.colorClass"
+                          x-text="`${annotationSheet.aiInfo.pct}% ✨`"></span>
+                    <span class="text-xs text-indigo-300" x-text="`Matched via ${annotationSheet.aiInfo.method}`"></span>
+                </div>
+                <template x-if="annotationSheet.aiInfo.matchedKeyword">
+                    <p class="text-xs text-indigo-400 mt-1">
+                        Keyword: "<span x-text="annotationSheet.aiInfo.matchedKeyword"></span>"
+                    </p>
+                </template>
+            </div>
+        </template>
+
         <!-- Annotation Options (Scrollable) -->
         <div class="flex-1 overflow-y-auto p-4 space-y-5">
             <!-- Relevance -->

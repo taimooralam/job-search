@@ -44,7 +44,8 @@ window.mobileApp = function() {
             identity: 'strong_identity',
             passion: 'enjoy',
             saving: false,
-            editingId: null  // ID of annotation being edited (null = creating new)
+            editingId: null,  // ID of annotation being edited (null = creating new)
+            aiInfo: null  // AI suggestion metadata (confidence, match method) when editing
         },
 
         // Annotation options
@@ -624,6 +625,7 @@ window.mobileApp = function() {
                 this.annotationSheet.identity = 'strong_identity';
                 this.annotationSheet.passion = 'enjoy';
                 this.annotationSheet.editingId = null;  // Creating new annotation
+                this.annotationSheet.aiInfo = null;  // Clear AI info for new annotations
 
                 // AUTO-SAVE: Save immediately with defaults, show sheet for optional adjustment
                 this.autoSaveAnnotation();
@@ -717,6 +719,7 @@ window.mobileApp = function() {
             this.annotationSheet.show = false;
             this.annotationSheet.selectedText = '';
             this.annotationSheet.editingId = null;
+            this.annotationSheet.aiInfo = null;
             window.getSelection()?.removeAllRanges();
         },
 
@@ -732,6 +735,31 @@ window.mobileApp = function() {
             this.annotationSheet.identity = annotation.identity || 'peripheral';
             this.annotationSheet.passion = annotation.passion || 'neutral';
             this.annotationSheet.editingId = annotationId;
+
+            // Load AI suggestion metadata if auto-generated
+            if (annotation.source === 'auto_generated' && annotation.original_values?.confidence) {
+                const conf = annotation.original_values.confidence;
+                const pct = Math.round(conf * 100);
+                const matchMethod = annotation.original_values.match_method || 'semantic similarity';
+                const methodLabels = {
+                    'sentence_embedding': 'sentence similarity',
+                    'keyword_match': 'keyword match',
+                    'skill_prior': 'skill prior',
+                    'semantic_similarity': 'semantic similarity',
+                    'exact_match': 'exact match'
+                };
+                this.annotationSheet.aiInfo = {
+                    pct: pct,
+                    method: methodLabels[matchMethod] || matchMethod,
+                    matchedKeyword: annotation.original_values.matched_keyword || null,
+                    colorClass: pct >= 85 ? 'text-green-600 bg-green-900/50'
+                              : pct >= 70 ? 'text-amber-600 bg-amber-900/50'
+                              : 'text-gray-400 bg-gray-800/50'
+                };
+            } else {
+                this.annotationSheet.aiInfo = null;
+            }
+
             this.annotationSheet.show = true;
 
             // Haptic
