@@ -61,13 +61,22 @@ class FeedbackTarget(BaseModel):
     text: Optional[str] = None
 
 
+class ManualAnnotationValues(BaseModel):
+    """Values for manually created annotations."""
+    relevance: Optional[str] = None
+    passion: Optional[str] = None
+    identity: Optional[str] = None
+    requirement_type: Optional[str] = None
+
+
 class FeedbackRequest(BaseModel):
     """Request body for annotation feedback."""
     annotation_id: str
-    action: str  # "save" | "delete"
+    action: str  # "save" | "delete" | "manual_create"
     original_values: Dict[str, Any] = Field(default_factory=dict)
     final_values: Optional[Dict[str, Any]] = None  # Only for "save"
     target: Optional[FeedbackTarget] = None  # For context-aware deletion
+    values: Optional[ManualAnnotationValues] = None  # For "manual_create"
 
 
 class FeedbackResponse(BaseModel):
@@ -229,13 +238,47 @@ async def capture_annotation_feedback(request: FeedbackRequest) -> FeedbackRespo
             save_priors,
         )
 
-        if request.action not in ("save", "delete"):
+        if request.action not in ("save", "delete", "manual_create"):
             raise HTTPException(
                 status_code=400,
-                detail="action must be 'save' or 'delete'"
+                detail="action must be 'save', 'delete', or 'manual_create'"
             )
 
-        # Build annotation dict from request
+        # Load priors
+        priors = load_priors()
+        old_priors = dict(priors)  # Shallow copy for comparison
+
+        # Handle manual_create action (positive signal from user-created annotation)
+        if request.action == "manual_create":
+            from src.services.annotation_priors import capture_manual_annotation
+
+            # Build manual annotation dict
+            manual_annotation = {
+                "id": request.annotation_id,
+                "source": "manual",
+                "target": {
+                    "section": request.target.section if request.target else None,
+                    "text": request.target.text if request.target else None,
+                },
+            }
+            # Add user's chosen values
+            if request.values:
+                manual_annotation.update({
+                    "relevance": request.values.relevance,
+                    "passion": request.values.passion,
+                    "identity": request.values.identity,
+                    "requirement_type": request.values.requirement_type,
+                })
+
+            priors = capture_manual_annotation(manual_annotation, priors)
+            save_priors(priors)
+
+            return FeedbackResponse(
+                success=True,
+                prior_updated=f"manual:{request.target.text[:30] if request.target and request.target.text else 'unknown'}...",
+            )
+
+        # Build annotation dict from request (for save/delete actions)
         annotation = {
             "id": request.annotation_id,
             "source": "auto_generated",
@@ -253,10 +296,6 @@ async def capture_annotation_feedback(request: FeedbackRequest) -> FeedbackRespo
         # Add final values for save action
         if request.action == "save" and request.final_values:
             annotation.update(request.final_values)
-
-        # Load priors and capture feedback
-        priors = load_priors()
-        old_priors = dict(priors)  # Shallow copy for comparison
 
         priors = capture_feedback(annotation, request.action, priors)
         save_priors(priors)

@@ -973,6 +973,96 @@ def _extract_primary_skill(text: str) -> Optional[str]:
     return None
 
 
+def capture_manual_annotation(
+    annotation: Dict[str, Any],
+    priors: PriorsDocument,
+) -> PriorsDocument:
+    """
+    Capture positive learning signal from manually created annotations.
+
+    Manual annotations represent explicit user interest - the user took the time
+    to manually highlight and annotate text, indicating it's relevant to them.
+
+    Args:
+        annotation: The manual annotation dict with target.text and values
+        priors: Current priors document (will be mutated)
+
+    Returns:
+        Updated priors document
+    """
+    # Extract skill from the annotated text
+    target_text = annotation.get("target", {}).get("text", "")
+    skill = _extract_primary_skill(target_text)
+
+    if not skill:
+        logger.debug(f"No skill extracted from manual annotation: {target_text[:50]}...")
+        # Still count it in stats
+        priors["stats"]["manual_annotations"] = priors["stats"].get("manual_annotations", 0) + 1
+        return priors
+
+    skill_lower = skill.lower()
+
+    # Initialize skill prior if new
+    if skill_lower not in priors["skill_priors"]:
+        priors["skill_priors"][skill_lower] = {
+            "relevance": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "passion": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "identity": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "requirement": {"value": None, "confidence": NEUTRAL_CONFIDENCE, "n": 0},
+            "avoid": False,
+        }
+
+    prior = priors["skill_priors"][skill_lower]
+
+    # Clear avoid flag if user manually annotated this skill
+    if prior.get("avoid"):
+        prior["avoid"] = False
+        logger.info(f"Manual annotation cleared 'avoid' flag for '{skill_lower}'")
+
+    # Boost confidence for dimensions that match user's values
+    # Manual annotation = strong positive signal
+    MANUAL_BOOST = 0.15  # Strong boost for explicit user action
+
+    for dim in ["relevance", "passion", "identity"]:
+        user_value = annotation.get(dim)
+        if user_value:
+            prior[dim]["n"] += 1
+
+            # If prior has no value yet, adopt user's value
+            if prior[dim]["value"] is None:
+                prior[dim]["value"] = user_value
+                prior[dim]["confidence"] = NEUTRAL_CONFIDENCE + MANUAL_BOOST
+
+            # If prior matches user's value, boost confidence
+            elif prior[dim]["value"] == user_value:
+                prior[dim]["confidence"] = min(MAX_CONFIDENCE, prior[dim]["confidence"] + MANUAL_BOOST)
+
+            # If prior differs from user's value, reduce confidence and maybe adopt
+            else:
+                prior[dim]["confidence"] = max(MIN_CONFIDENCE, prior[dim]["confidence"] * 0.9)
+                if prior[dim]["confidence"] < VALUE_ADOPTION_THRESHOLD:
+                    prior[dim]["value"] = user_value
+                    prior[dim]["confidence"] = NEUTRAL_CONFIDENCE
+
+    # Handle requirement_type
+    req_type = annotation.get("requirement_type")
+    if req_type:
+        prior["requirement"]["n"] += 1
+        if prior["requirement"]["value"] is None:
+            prior["requirement"]["value"] = req_type
+            prior["requirement"]["confidence"] = NEUTRAL_CONFIDENCE + MANUAL_BOOST
+        elif prior["requirement"]["value"] == req_type:
+            prior["requirement"]["confidence"] = min(MAX_CONFIDENCE, prior["requirement"]["confidence"] + MANUAL_BOOST)
+
+    # Update stats
+    priors["stats"]["manual_annotations"] = priors["stats"].get("manual_annotations", 0) + 1
+    priors["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+    logger.info(f"Manual annotation captured for '{skill_lower}': relevance={annotation.get('relevance')}")
+
+    return priors
+
+
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
