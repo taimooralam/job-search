@@ -160,9 +160,11 @@ class TestBatchReviewUI:
         assert match, "Could not find getPendingSuggestions method/getter body"
 
         method_body = match.group(1)
-        # Should filter by auto_generated source
-        assert "auto_generated" in method_body, \
-            "getPendingSuggestions does not filter by auto_generated source"
+        # After Issue 1 (auto-apply UX), getPendingSuggestions returns empty array
+        # because AI suggestions are auto-approved on load. The method should either
+        # filter by auto_generated OR return empty array for backward compatibility.
+        assert "auto_generated" in method_body or "return []" in method_body, \
+            "getPendingSuggestions should filter by auto_generated or return empty array"
 
     def test_get_pending_suggestions_returns_array(self):
         """Verify getPendingSuggestions returns filtered array."""

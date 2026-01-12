@@ -368,9 +368,12 @@ class AnnotationManager {
             if (data.success && data.annotations) {
                 // Normalize annotations to ensure is_active defaults to true
                 // (for backward compatibility with older annotations)
+                // Also auto-approve AI suggestions (Issue 1: auto-apply UX)
                 this.annotations = (data.annotations.annotations || []).map(ann => ({
                     ...ann,
-                    is_active: ann.is_active !== false  // Default to true unless explicitly false
+                    is_active: ann.is_active !== false,  // Default to true unless explicitly false
+                    // Auto-approve auto_generated annotations (user can delete/edit if wrong)
+                    status: ann.source === 'auto_generated' && !ann.status ? 'approved' : ann.status
                 }));
                 this.processedJdHtml = data.annotations.processed_jd_html;
                 this.settings = data.annotations.settings || this.settings;
@@ -1534,6 +1537,27 @@ class AnnotationManager {
         // Update undo/redo button states
         this.updateUndoRedoButtons();
 
+        // Issue 3: Capture learning signal for manual annotations
+        // Both new creations and edits represent positive user signals
+        if (!isEditing) {
+            // New annotation created via popover
+            const newAnnotation = this.annotations[this.annotations.length - 1];
+            if (newAnnotation?.source === 'manual') {
+                this.captureManualAnnotationLearning(newAnnotation);
+            }
+        } else {
+            // Edited annotation - capture updated values as positive signal
+            const editedIndex = this.annotations.findIndex(a => a.id === this.editingAnnotationId);
+            if (editedIndex !== -1) {
+                const editedAnnotation = this.annotations[editedIndex];
+                if (editedAnnotation?.source === 'manual') {
+                    // Reset learning_captured to re-capture with new values
+                    editedAnnotation.learning_captured = false;
+                    this.captureManualAnnotationLearning(editedAnnotation);
+                }
+            }
+        }
+
         // Show toast feedback
         if (typeof showToast === 'function') {
             showToast(isEditing ? 'Annotation updated' : 'Annotation saved', 'success');
@@ -1546,10 +1570,12 @@ class AnnotationManager {
 
     /**
      * Auto-save annotation immediately with optimistic defaults
-     * Called on text selection - no popover shown, just instant save with toast
+     * Called on text selection - creates annotation and shows popover for editing
+     * (Issue 2: Panel stays open on non-annotated text click)
      * @param {string} text - The selected text to annotate
+     * @param {DOMRect} [selectionRect] - Optional rect for positioning popover
      */
-    autoSaveAnnotation(text) {
+    autoSaveAnnotation(text, selectionRect = null) {
         if (!text || text.length < 3) return;
 
         // Check if this text is already annotated
@@ -1566,7 +1592,7 @@ class AnnotationManager {
             return;
         }
 
-        // Create annotation with optimistic defaults
+        // Create annotation with optimistic defaults (Issue 2: use specified defaults)
         const annotation = {
             id: this.generateId(),
             target: {
@@ -1577,10 +1603,10 @@ class AnnotationManager {
                 char_end: text.length
             },
             annotation_type: 'skill_match',
-            relevance: 'core_strength',  // Optimistic default
-            requirement_type: 'must_have',  // Optimistic default
-            passion: 'enjoy',  // Optimistic default
-            identity: 'strong_identity',  // Optimistic default
+            relevance: 'core_strength',  // Default per Issue 2
+            requirement_type: 'must_have',  // Default per Issue 2
+            passion: 'neutral',  // Default per Issue 2 (changed from 'enjoy')
+            identity: 'peripheral',  // Default per Issue 2 (changed from 'strong_identity')
             star_ids: [],
             reframe_note: '',
             strategic_note: '',
@@ -1602,16 +1628,25 @@ class AnnotationManager {
         this.annotations.push(annotation);
         console.log('[autoSaveAnnotation] Created annotation:', annotation.id);
 
-        // Clear selection
-        window.getSelection().removeAllRanges();
-
-        // Render and highlight
+        // Render and highlight (before showing popover so highlight exists)
         this.renderAnnotations();
         this.updateStats();
 
         // Apply highlights with slight delay to ensure DOM is stable
         requestAnimationFrame(() => {
             this.applyHighlights();
+
+            // Issue 2: Show popover for the newly created annotation
+            // Find the highlight element that was just created
+            const highlightEl = document.querySelector(`.annotation-highlight[data-annotation-id="${annotation.id}"]`);
+            if (highlightEl) {
+                const rect = highlightEl.getBoundingClientRect();
+                this.showAnnotationPopover(rect, text, annotation);
+                this.scrollToAnnotation(annotation.id);
+            } else if (selectionRect) {
+                // Fallback: use selection rect if highlight not found
+                this.showAnnotationPopover(selectionRect, text, annotation);
+            }
         });
 
         // Schedule save to backend
@@ -1620,10 +1655,13 @@ class AnnotationManager {
         // Update undo/redo button states
         this.updateUndoRedoButtons();
 
+        // Issue 3: Capture learning signal from manual annotations
+        this.captureManualAnnotationLearning(annotation);
+
         // Show toast feedback with truncated text
         const shortText = text.length > 30 ? text.substring(0, 30) + '...' : text;
         if (typeof showToast === 'function') {
-            showToast(`✓ "${shortText}"`, 'success');
+            showToast(`Created - edit below`, 'success');
         }
     }
 
@@ -1799,21 +1837,14 @@ class AnnotationManager {
                </span>`
             : '';
 
-        // Quick action buttons for pending AI suggestions
-        const isPendingSuggestion = annotation.source === 'auto_generated' &&
-                                    annotation.status !== 'approved' &&
-                                    annotation.status !== 'rejected';
-        const quickActions = isPendingSuggestion
-            ? `<div class="quick-actions flex gap-1 mr-1">
-                <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.quickAcceptSuggestion('${annotation.id}')"
-                        class="quick-action-btn accept" title="Accept suggestion">&#10003;</button>
-                <button onclick="event.stopPropagation(); getActiveAnnotationManager()?.quickRejectSuggestion('${annotation.id}')"
-                        class="quick-action-btn reject" title="Reject suggestion">&#10005;</button>
-               </div>`
-            : '';
+        // Quick action buttons for AI suggestions
+        // Since AI suggestions are now auto-approved (Issue 1: auto-apply UX),
+        // we only show the reject/delete button - no accept button needed
+        const isAutoGenerated = annotation.source === 'auto_generated';
+        const quickActions = '';
 
         return `
-            <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''} ${isPendingSuggestion ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}"
+            <div class="annotation-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition ${!annotation.is_active ? 'opacity-50' : ''} ${isAutoGenerated ? 'border-l-2 border-l-purple-300' : ''}"
                  data-annotation-id="${annotation.id}"
                  onclick="getActiveAnnotationManager()?.selectAnnotation('${annotation.id}')">
                 <div class="flex items-start justify-between gap-2">
@@ -2232,6 +2263,77 @@ class AnnotationManager {
             // Only hide indicator after all retries exhausted or success
             if (retryCount >= MAX_RETRIES || annotation.feedback_captured) {
                 this.hideFeedbackSyncing();
+            }
+        }
+    }
+
+    /**
+     * Capture learning signal from manual annotations (Issue 3: Learn from manual annotations)
+     * Manual annotations represent positive signals - the user explicitly marked this text as relevant.
+     * This helps improve future AI suggestions.
+     *
+     * @param {Object} annotation - The manual annotation object
+     * @param {number} retryCount - Internal retry counter (default: 0)
+     */
+    async captureManualAnnotationLearning(annotation, retryCount = 0) {
+        const MAX_RETRIES = 3;
+        const BASE_DELAY = 1000;
+
+        // Only capture for manual annotations
+        if (annotation.source !== 'manual') return;
+        // Skip if already captured
+        if (annotation.learning_captured) return;
+
+        try {
+            const payload = {
+                annotation_id: annotation.id,
+                action: 'manual_create',  // Distinct action type for manual annotations
+                target: {
+                    section: annotation.target?.section || null,
+                    text: annotation.target?.text || null,
+                },
+                // Positive signal: user explicitly chose these values
+                values: {
+                    relevance: annotation.relevance,
+                    passion: annotation.passion,
+                    identity: annotation.identity,
+                    requirement_type: annotation.requirement_type,
+                },
+            };
+
+            const runnerUrl = window.RUNNER_URL || '';
+            const runnerToken = window.RUNNER_TOKEN || '';
+
+            const response = await fetch(`${runnerUrl}/user/annotation-feedback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${runnerToken}`,
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    annotation.learning_captured = true;
+                    console.log('[ManualLearning] Captured positive signal:', annotation.target?.text?.substring(0, 50));
+                    return;
+                }
+            }
+
+            // Retry on failure
+            if (retryCount < MAX_RETRIES) {
+                const delay = BASE_DELAY * Math.pow(2, retryCount);
+                console.warn(`[ManualLearning] Retry ${retryCount + 1}/${MAX_RETRIES} in ${delay}ms`);
+                setTimeout(() => this.captureManualAnnotationLearning(annotation, retryCount + 1), delay);
+            }
+        } catch (error) {
+            if (retryCount < MAX_RETRIES) {
+                const delay = BASE_DELAY * Math.pow(2, retryCount);
+                setTimeout(() => this.captureManualAnnotationLearning(annotation, retryCount + 1), delay);
+            } else {
+                console.error('[ManualLearning] Failed after retries:', error);
             }
         }
     }
@@ -3185,15 +3287,14 @@ class AnnotationManager {
 
     /**
      * Get pending AI-generated suggestions that haven't been approved or rejected.
-     * These are auto_generated annotations without approved/rejected status.
-     * @returns {Array} Annotations pending review
+     * NOTE: Since Issue 1 auto-apply UX change, AI suggestions are auto-approved on load.
+     * This function now returns an empty array for backward compatibility.
+     * @returns {Array} Always returns empty array (pending suggestions are auto-approved)
      */
     getPendingSuggestions() {
-        return this.annotations.filter(a =>
-            a.source === 'auto_generated' &&
-            a.status !== 'approved' &&
-            a.status !== 'rejected'
-        );
+        // AI suggestions are now auto-approved on load (Issue 1: auto-apply UX)
+        // Return empty array for backward compatibility with review banner
+        return [];
     }
 
     /**

@@ -86,7 +86,12 @@ document.addEventListener('alpine:init', () => {
                 if (!response.ok) throw new Error('Failed to load annotations');
 
                 const data = await response.json();
-                this.annotations = data.annotations || [];
+                // Issue 1: Auto-approve AI suggestions (auto-apply UX)
+                this.annotations = (data.annotations || []).map(ann => ({
+                    ...ann,
+                    // Auto-approve auto_generated annotations on load
+                    status: ann.source === 'auto_generated' && !ann.status ? 'approved' : ann.status
+                }));
                 this.personaStatement = data.synthesized_persona?.persona_statement || null;
 
                 this.checkIdentityAnnotations();
@@ -192,12 +197,12 @@ document.addEventListener('alpine:init', () => {
 
         // Open annotation bottom sheet
         openAnnotationSheet() {
-            // Reset to defaults
+            // Reset to defaults (Issue 2: use specified defaults)
             this.currentAnnotation = {
-                relevance: 'relevant',
-                requirement_type: 'neutral',
-                identity: 'peripheral',
-                passion: 'neutral',
+                relevance: 'core_strength',  // Default per Issue 2
+                requirement_type: 'must_have',  // Default per Issue 2
+                identity: 'peripheral',  // Default per Issue 2
+                passion: 'neutral',  // Default per Issue 2
                 reframe_note: ''
             };
             this.showSheet = true;
@@ -264,12 +269,15 @@ document.addEventListener('alpine:init', () => {
                         reframe_note: this.currentAnnotation.reframe_note || null,
                         is_active: true,
                         status: 'approved',
-                        source: 'human',
+                        source: 'manual',  // Changed from 'human' for consistency
                         created_at: new Date().toISOString()
                     };
 
                     // Add to local array
                     this.annotations.push(newAnnotation);
+
+                    // Issue 3: Capture learning signal for manual annotations
+                    this.captureManualAnnotationLearning(newAnnotation);
                 }
 
                 // Save to server
@@ -410,6 +418,73 @@ document.addEventListener('alpine:init', () => {
 
                 // All retries exhausted - silent failure
                 console.error(`Feedback capture failed after ${MAX_RETRIES} retries:`, error);
+            }
+        },
+
+        /**
+         * Capture learning signal from manual annotations (Issue 3: Learn from manual annotations)
+         * Manual annotations represent positive signals - the user explicitly marked this text as relevant.
+         * @param {Object} annotation - The manual annotation object
+         * @param {number} retryCount - Internal retry counter (default: 0)
+         */
+        async captureManualAnnotationLearning(annotation, retryCount = 0) {
+            const MAX_RETRIES = 3;
+            const BASE_DELAY = 1000;
+
+            // Only capture for manual annotations
+            if (annotation.source !== 'manual') return;
+            // Skip if already captured
+            if (annotation.learning_captured) return;
+
+            try {
+                const payload = {
+                    annotation_id: annotation.id,
+                    action: 'manual_create',
+                    target: {
+                        section: annotation.target?.section || null,
+                        text: annotation.target?.text || null,
+                    },
+                    values: {
+                        relevance: annotation.relevance,
+                        passion: annotation.passion,
+                        identity: annotation.identity,
+                        requirement_type: annotation.requirement_type,
+                    },
+                };
+
+                const runnerUrl = window.RUNNER_URL || '';
+                const runnerToken = window.RUNNER_TOKEN || '';
+
+                const response = await fetch(`${runnerUrl}/user/annotation-feedback`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${runnerToken}`,
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        annotation.learning_captured = true;
+                        console.log('[ManualLearning] Captured positive signal:', annotation.target?.text?.substring(0, 50));
+                        return;
+                    }
+                }
+
+                // Retry on failure
+                if (retryCount < MAX_RETRIES) {
+                    const delay = BASE_DELAY * Math.pow(2, retryCount);
+                    setTimeout(() => this.captureManualAnnotationLearning(annotation, retryCount + 1), delay);
+                }
+            } catch (error) {
+                if (retryCount < MAX_RETRIES) {
+                    const delay = BASE_DELAY * Math.pow(2, retryCount);
+                    setTimeout(() => this.captureManualAnnotationLearning(annotation, retryCount + 1), delay);
+                } else {
+                    console.error('[ManualLearning] Failed after retries:', error);
+                }
             }
         },
 
@@ -649,14 +724,12 @@ document.addEventListener('alpine:init', () => {
 
         /**
          * Get pending AI-generated suggestions that haven't been approved or rejected.
-         * Computed property for reactive updates.
+         * NOTE: Since Issue 1 auto-apply UX change, AI suggestions are auto-approved on load.
+         * This getter now returns an empty array for backward compatibility.
          */
         get pendingSuggestions() {
-            return this.annotations.filter(a =>
-                a.source === 'auto_generated' &&
-                a.status !== 'approved' &&
-                a.status !== 'rejected'
-            );
+            // AI suggestions are now auto-approved on load (Issue 1: auto-apply UX)
+            return [];
         },
 
         /**
