@@ -562,7 +562,15 @@ class AnnotationManager {
                 })
             });
 
-            if (!response.ok) throw new Error('Failed to save annotations');
+            if (!response.ok) {
+                // Try to extract actual error message from response
+                let errorMsg = 'Failed to save annotations';
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData?.error || errorMsg;
+                } catch (e) { /* ignore json parse error */ }
+                throw new Error(errorMsg);
+            }
 
             this.updateSaveIndicator('saved');
             console.log('Annotations saved successfully');
@@ -1527,8 +1535,9 @@ class AnnotationManager {
 
         // Apply highlights with slight delay to ensure DOM is stable after list re-render
         // This fixes color not updating when changing relevance (e.g., core -> medium)
+        // Use force=true since we're saving changes that may affect highlight colors
         requestAnimationFrame(() => {
-            this.applyHighlights();
+            this.applyHighlights({ force: true });
         });
 
         // Schedule save
@@ -1633,8 +1642,9 @@ class AnnotationManager {
         this.updateStats();
 
         // Apply highlights with slight delay to ensure DOM is stable
+        // Use force=true since we just created a new annotation
         requestAnimationFrame(() => {
-            this.applyHighlights();
+            this.applyHighlights({ force: true });
 
             // Issue 2: Show popover for the newly created annotation
             // Find the highlight element that was just created
@@ -2012,8 +2022,9 @@ class AnnotationManager {
             this.renderAnnotations();
             this.updateStats();
             // Apply highlights with slight delay to ensure DOM is stable
+            // Use force=true since we're modifying annotation state
             requestAnimationFrame(() => {
-                this.applyHighlights();
+                this.applyHighlights({ force: true });
             });
             this.scheduleSave();
         }
@@ -2047,8 +2058,9 @@ class AnnotationManager {
             this.renderAnnotations();
             this.updateStats();
             // Apply highlights with slight delay to ensure DOM is stable
+            // Use force=true since we're modifying annotation list
             requestAnimationFrame(() => {
-                this.applyHighlights();
+                this.applyHighlights({ force: true });
             });
             this.scheduleSave();
         }
@@ -2087,8 +2099,9 @@ class AnnotationManager {
 
         this.renderAnnotations();
         this.updateStats();
+        // Use force=true since undo modifies annotation state
         requestAnimationFrame(() => {
-            this.applyHighlights();
+            this.applyHighlights({ force: true });
         });
         this.scheduleSave();
         this.updateUndoRedoButtons();
@@ -2131,8 +2144,9 @@ class AnnotationManager {
 
         this.renderAnnotations();
         this.updateStats();
+        // Use force=true since redo modifies annotation state
         requestAnimationFrame(() => {
-            this.applyHighlights();
+            this.applyHighlights({ force: true });
         });
         this.scheduleSave();
         this.updateUndoRedoButtons();
@@ -2426,13 +2440,34 @@ class AnnotationManager {
     }
 
     /**
-     * Apply highlights to JD content based on active annotations
+     * Apply highlights to JD content based on active annotations.
+     *
+     * IMPORTANT: When editing an existing annotation (popover is open for edit),
+     * we should NOT clear and recreate highlights as this would destroy the
+     * highlight the user just clicked on, causing a jarring UX.
+     *
+     * @param {Object} options - Options for highlight application
+     * @param {boolean} options.force - Force re-application even during edit mode (default: false)
      */
-    applyHighlights() {
+    applyHighlights(options = {}) {
+        const { force = false } = options;
+
         const contentEl = document.getElementById(this.config.contentId);
         if (!contentEl) {
             console.warn('applyHighlights: Content element not found');
             return;
+        }
+
+        // Skip if we're currently editing an annotation (popover is open for edit)
+        // This prevents destroying the highlight the user just clicked on
+        // Use force=true to override this guard (e.g., when relevance color changes)
+        if (!force && this.editingAnnotationId) {
+            const popover = document.getElementById(this.config.popoverId);
+            const isPopoverVisible = popover && !popover.classList.contains('hidden');
+            if (isPopoverVisible) {
+                console.log('applyHighlights: Skipping - edit popover is open for annotation:', this.editingAnnotationId);
+                return;
+            }
         }
 
         // Clear existing highlights first
@@ -2560,10 +2595,21 @@ class AnnotationManager {
     }
 
     /**
-     * Edit annotation from highlight click
+     * Edit annotation from highlight click.
+     *
+     * Guards against:
+     * - Duplicate calls (from both mouseup and onclick handlers)
+     * - Calling applyHighlights while popover is open for edit
      */
     editAnnotationFromHighlight(annotationId, highlightEl) {
         if (!annotationId) return;
+
+        // Guard: If already editing this annotation, don't re-trigger
+        // This prevents issues from duplicate event handlers (mouseup + onclick)
+        if (this.editingAnnotationId === annotationId) {
+            console.log('editAnnotationFromHighlight: Already editing this annotation, skipping');
+            return;
+        }
 
         // Find the annotation data
         const annotation = this.annotations.find(a => a.id === annotationId);
@@ -2576,6 +2622,7 @@ class AnnotationManager {
         const rect = highlightEl.getBoundingClientRect();
 
         // Show popover in edit mode
+        // This sets editingAnnotationId which guards applyHighlights from clearing this highlight
         this.showAnnotationPopover(rect, annotation.target?.text || '', annotation);
 
         // Also highlight in the list
@@ -3086,7 +3133,8 @@ class AnnotationManager {
             annotation.reviewed_at = new Date().toISOString();
             console.log(`Annotation ${annotationId} rejected${note ? ': ' + note : ''}`);
             this.renderAnnotations();
-            this.applyHighlights();
+            // Use force=true since we're modifying annotation state
+            this.applyHighlights({ force: true });
             this.updateStats();
             this.scheduleSave();
         }
@@ -3123,7 +3171,8 @@ class AnnotationManager {
         });
         console.log(`Bulk rejected ${pending.length} annotations`);
         this.renderAnnotations();
-        this.applyHighlights();
+        // Use force=true since we're modifying annotation state
+        this.applyHighlights({ force: true });
         this.updateStats();
         this.scheduleSave();
     }
@@ -3374,8 +3423,9 @@ class AnnotationManager {
         this.annotations = this.annotations.filter(a => a.id !== annotationId);
         this.renderAnnotations();
         this.updateStats();
+        // Use force=true since we're modifying annotation list
         requestAnimationFrame(() => {
-            this.applyHighlights();
+            this.applyHighlights({ force: true });
         });
         this.scheduleSave();
         this.updateUndoRedoButtons();

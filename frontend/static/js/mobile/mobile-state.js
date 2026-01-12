@@ -163,9 +163,13 @@ window.mobileApp = function() {
                 });
 
                 const response = await fetch(`/api/mobile/jobs?${params}`);
-                if (!response.ok) throw new Error('Failed to load jobs');
-
                 const data = await response.json();
+
+                if (!response.ok) {
+                    // Extract actual error message from response
+                    const errorMsg = data?.error || `Server error ${response.status}`;
+                    throw new Error(errorMsg);
+                }
                 this.jobs = data.jobs || [];
 
             } catch (error) {

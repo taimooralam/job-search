@@ -5330,9 +5330,6 @@ def update_jd_annotations(job_id: str):
     Returns:
         JSON with success status
     """
-    db = get_db()
-    collection = db["level-2"]
-
     try:
         object_id = ObjectId(job_id)
     except Exception:
@@ -5356,24 +5353,31 @@ def update_jd_annotations(job_id: str):
         "updated_at": datetime.utcnow().isoformat()
     }
 
-    # Update the job
-    result = collection.update_one(
-        {"_id": object_id},
-        {
-            "$set": {
-                "jd_annotations": annotations_doc,
-                "updatedAt": datetime.utcnow()
+    # Update the job (get_db() and update_one can fail)
+    try:
+        db = get_db()
+        collection = db["level-2"]
+
+        result = collection.update_one(
+            {"_id": object_id},
+            {
+                "$set": {
+                    "jd_annotations": annotations_doc,
+                    "updatedAt": datetime.utcnow()
+                }
             }
-        }
-    )
+        )
 
-    if result.matched_count == 0:
-        return jsonify({"error": "Job not found"}), 404
+        if result.matched_count == 0:
+            return jsonify({"error": "Job not found"}), 404
 
-    return jsonify({
-        "success": True,
-        "message": f"Saved {len(annotations_doc['annotations'])} annotations"
-    })
+        return jsonify({
+            "success": True,
+            "message": f"Saved {len(annotations_doc['annotations'])} annotations"
+        })
+    except Exception as e:
+        logger.error(f"update_jd_annotations error for job {job_id}: {e}")
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
 @app.route("/api/jobs/<job_id>/synthesize-persona", methods=["POST"])
