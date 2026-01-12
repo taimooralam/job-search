@@ -3513,10 +3513,13 @@ window.deleteAnnotationFromPopover = deleteAnnotationFromPopover;
  */
 function getActiveAnnotationManager() {
     // Check batch context first (if batchAnnotationManager exists and is active)
-    if (typeof batchAnnotationManager !== 'undefined' && batchAnnotationManager) {
-        return batchAnnotationManager;
+    // IMPORTANT: Use window.batchAnnotationManager since it's defined in batch-sidebars.js
+    // and exposed on window for cross-file accessibility. This fixes the critical bug
+    // where annotations were disappearing on batch page (variable scope issue).
+    if (window.batchAnnotationManager) {
+        return window.batchAnnotationManager;
     }
-    // Fall back to job detail page context
+    // Fall back to job detail page context (annotationManager is in same file, so direct access works)
     if (typeof annotationManager !== 'undefined' && annotationManager) {
         return annotationManager;
     }

@@ -11,7 +11,9 @@ window.currentBatchSidebar = null;
 window.currentBatchJobId = null;
 
 // Batch annotation manager instance (separate from job detail page's annotationManager)
-let batchAnnotationManager = null;
+// IMPORTANT: Exposed on window so getActiveAnnotationManager() in jd-annotation.js can find it
+// This fixes the critical bug where annotations were disappearing on batch page
+window.batchAnnotationManager = null;
 
 /**
  * Open JD Annotation sidebar for a job
@@ -669,7 +671,7 @@ async function initBatchAnnotationManager(jobId) {
 
     try {
         // Create annotation manager with batch-specific element IDs
-        batchAnnotationManager = new AnnotationManager(jobId, {
+        window.batchAnnotationManager = new AnnotationManager(jobId, {
             panelId: 'batch-annotation-sidebar',
             contentId: 'batch-jd-processed-content',
             popoverId: 'annotation-popover',  // Shared popover element
@@ -693,7 +695,7 @@ async function initBatchAnnotationManager(jobId) {
         });
 
         // Initialize the manager
-        await batchAnnotationManager.init();
+        await window.batchAnnotationManager.init();
 
         console.log('Batch annotation manager initialized for job:', jobId);
 
@@ -735,11 +737,11 @@ function showBatchAnnotationError(message) {
  * Clean up batch annotation manager
  */
 function cleanupBatchAnnotationManager() {
-    if (batchAnnotationManager) {
-        if (typeof batchAnnotationManager.destroy === 'function') {
-            batchAnnotationManager.destroy();
+    if (window.batchAnnotationManager) {
+        if (typeof window.batchAnnotationManager.destroy === 'function') {
+            window.batchAnnotationManager.destroy();
         }
-        batchAnnotationManager = null;
+        window.batchAnnotationManager = null;
     }
 
     // Hide any open popover
@@ -755,8 +757,8 @@ function cleanupBatchAnnotationManager() {
  */
 window.filterAnnotations = function(filter) {
     // Use batch annotation manager if available and in batch context
-    if (batchAnnotationManager && window.currentBatchSidebar === 'annotation') {
-        batchAnnotationManager.setFilter(filter);
+    if (window.batchAnnotationManager && window.currentBatchSidebar === 'annotation') {
+        window.batchAnnotationManager.setFilter(filter);
     } else if (typeof annotationManager !== 'undefined' && annotationManager) {
         // Fall back to global annotation manager (job detail page)
         annotationManager.setFilter(filter);
