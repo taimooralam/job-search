@@ -855,6 +855,17 @@ window.mobileApp = function() {
             // Clear selection
             window.getSelection()?.removeAllRanges();
 
+            // Show save pulse animation on the new annotation highlight
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const highlight = document.querySelector(`.annotation-highlight[data-annotation-id="${newAnnotation.id}"]`);
+                    if (highlight) {
+                        highlight.classList.add('save-pulse');
+                        setTimeout(() => highlight.classList.remove('save-pulse'), 1000);
+                    }
+                }, 100); // Small delay for x-html to re-render
+            });
+
             // === BACKGROUND SAVE ===
             const annotationsToSave = [...this.annotation.annotations];
             const processedJdHtml = this.annotation.processedJdHtml;
@@ -919,6 +930,11 @@ window.mobileApp = function() {
                 this.annotation.annotations = [...this.annotation.annotations, newAnnotation];
             }
 
+            // Track annotation ID for save pulse animation
+            const savedAnnotationId = isEditing
+                ? this.annotationSheet.editingId
+                : this.annotation.annotations[this.annotation.annotations.length - 1]?.id;
+
             // Increment version to force x-html re-evaluation with new highlights
             this.annotationVersion++;
             this.checkIdentityAnnotations();
@@ -930,6 +946,19 @@ window.mobileApp = function() {
 
             // Close sheet immediately (optimistic - don't wait for server)
             this.closeAnnotationSheet();
+
+            // Show save pulse animation on the annotation highlight
+            if (savedAnnotationId) {
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        const highlight = document.querySelector(`.annotation-highlight[data-annotation-id="${savedAnnotationId}"]`);
+                        if (highlight) {
+                            highlight.classList.add('save-pulse');
+                            setTimeout(() => highlight.classList.remove('save-pulse'), 1000);
+                        }
+                    }, 100); // Small delay for x-html to re-render
+                });
+            }
 
             // === BACKGROUND SAVE: Save to server without blocking UI ===
             // Capture current state for background save
