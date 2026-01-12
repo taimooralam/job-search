@@ -68,25 +68,32 @@ class TestExtractJobId:
 class TestGenerateDedupeKey:
     """Tests for dedupe key generation."""
 
-    def test_basic_dedupe_key(self):
-        """Test basic dedupe key generation following project pattern: company|title|location|source."""
+    def test_basic_dedupe_key_with_job_id(self):
+        """Test dedupe key with job_id uses source|job_id format."""
+        key = _generate_dedupe_key("TestCorp", "Senior Software Engineer", "San Francisco, CA", "linkedin_import", job_id="4081234567")
+        assert key == "linkedin_import|4081234567"
+
+    def test_basic_dedupe_key_without_job_id(self):
+        """Test fallback dedupe key without job_id uses normalized text format."""
         key = _generate_dedupe_key("TestCorp", "Senior Software Engineer", "San Francisco, CA", "linkedin_import")
-        assert key == "testcorp|senior software engineer|san francisco, ca|linkedin_import"
+        # New format: source|company|title|location (all normalized - no spaces/special chars)
+        assert key == "linkedin_import|testcorp|seniorsoftwareengineer|sanfranciscoca"
 
     def test_dedupe_key_with_special_chars(self):
-        """Test dedupe key preserves special chars (just lowercased)."""
+        """Test dedupe key normalizes special chars (removes all non-alphanumeric)."""
         key = _generate_dedupe_key("Test Corp, Inc.", "Senior (Cloud) Engineer!", "Remote", "linkedin_import")
-        assert key == "test corp, inc.|senior (cloud) engineer!|remote|linkedin_import"
+        # All special chars removed, spaces removed
+        assert key == "linkedin_import|testcorpinc|seniorcloudengineer|remote"
 
     def test_dedupe_key_with_empty_values(self):
         """Test dedupe key handles empty/None values."""
         key = _generate_dedupe_key("", "Engineer", None, "linkedin_import")
-        assert key == "|engineer||linkedin_import"
+        assert key == "linkedin_import||engineer|"
 
     def test_dedupe_key_default_source(self):
         """Test dedupe key uses default source if not specified."""
         key = _generate_dedupe_key("Company", "Title", "Location")
-        assert key == "company|title|location|linkedin_import"
+        assert key == "linkedin_import|company|title|location"
 
 
 class TestLinkedInJobToMongoDoc:
@@ -116,8 +123,8 @@ class TestLinkedInJobToMongoDoc:
         assert doc["description"] == "A great job opportunity..."
         assert doc["jobUrl"] == "https://www.linkedin.com/jobs/view/4081234567"
 
-        # dedupeKey follows the pattern: company|title|location|source (all lowercase)
-        assert doc["dedupeKey"] == "testcorp|senior software engineer|san francisco, ca|linkedin_import"
+        # dedupeKey with job_id uses source|job_id format
+        assert doc["dedupeKey"] == "linkedin_import|4081234567"
 
         assert doc["status"] == "under processing"  # Ready for batch processing
         assert "batch_added_at" in doc  # For batch table sorting
@@ -144,7 +151,8 @@ class TestLinkedInJobToMongoDoc:
 
         assert doc["jobId"] == "123"
         assert doc["title"] == "Engineer"
-        assert doc["dedupeKey"] == "co|engineer|remote|linkedin_import"
+        # dedupeKey with job_id uses source|job_id format
+        assert doc["dedupeKey"] == "linkedin_import|123"
         assert doc["linkedin_metadata"]["seniority_level"] is None
 
 

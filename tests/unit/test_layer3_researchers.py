@@ -191,12 +191,12 @@ class TestCompanyResearcherWithMockedDependencies:
     """Test Company Researcher with mocked FireCrawl and LLM."""
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_multi_source_scraping_and_signal_extraction(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state,
         valid_company_research_json
@@ -219,12 +219,10 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        # Mock MongoDB (empty cache)
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None  # Cache miss
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        # Mock company cache repository (empty cache)
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None  # Cache miss
+        mock_cache_repo.return_value = mock_repo
 
         # Run Company Researcher (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -241,27 +239,25 @@ class TestCompanyResearcherWithMockedDependencies:
         assert result["company_url"] == valid_company_research_json["url"]
 
     @patch('src.layer3.company_researcher.create_tracked_llm')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_cache_hit_returns_cached_data(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_invoke,
         sample_job_state,
         valid_company_research_json
     ):
         """Cache hit returns cached research without multi-source scraping."""
-        # Mock MongoDB to return cached data
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = {
+        # Mock company cache repository to return cached data
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = {
             "company_key": "techcorp",
             "company_research": valid_company_research_json,
             "cached_at": datetime.utcnow()
         }
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_cache_repo.return_value = mock_repo
 
         # Mock FireCrawl (job posting scrape happens, but search/multi-source should NOT)
         mock_firecrawl = MagicMock()
@@ -297,12 +293,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "unknown" in SYSTEM_PROMPT_COMPANY_SIGNALS.lower()
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_funding(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -332,11 +328,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -347,12 +341,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "100M" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_acquisition(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -382,11 +376,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -397,12 +389,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "DataCo" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_leadership_change(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -432,11 +424,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -447,12 +437,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "Jane Smith" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_product_launch(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -482,11 +472,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -497,12 +485,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "analytics" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_partnership(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -532,11 +520,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -547,12 +533,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "AWS" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_signal_type_growth(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -582,11 +568,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -597,12 +581,12 @@ class TestCompanyResearcherWithMockedDependencies:
         assert "200" in result["company_research"]["signals"][0]["description"]
 
     @patch('src.layer3.company_researcher.invoke_unified_sync')
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     def test_quality_gate_minimum_signals(
         self,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         mock_unified,
         sample_job_state
     ):
@@ -652,11 +636,9 @@ class TestCompanyResearcherWithMockedDependencies:
             duration_ms=0
         )
 
-        mock_mongo = MagicMock()
-        mock_collection = MagicMock()
-        mock_collection.find_one.return_value = None
-        mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-        mock_mongo_class.return_value = mock_mongo
+        mock_repo = MagicMock()
+        mock_repo.find_by_company_key.return_value = None
+        mock_cache_repo.return_value = mock_repo
 
         # Run (use_claude_api=False for legacy FireCrawl mode)
         researcher = CompanyResearcher(use_claude_api=False)
@@ -785,11 +767,11 @@ class TestRoleResearcherWithMockedLLM:
 
 @pytest.mark.integration
 @patch('src.layer3.company_researcher.invoke_unified_sync')
-@patch('src.layer3.company_researcher.MongoClient')
+@patch('src.layer3.company_researcher.get_company_cache_repository')
 @patch('src.layer3.company_researcher.FirecrawlApp')
 def test_company_researcher_node_integration(
     mock_firecrawl_class,
-    mock_mongo_class,
+    mock_cache_repo,
     mock_unified,
     sample_job_state,
     valid_company_research_json
@@ -809,11 +791,9 @@ def test_company_researcher_node_integration(
         duration_ms=0
     )
 
-    mock_mongo = MagicMock()
-    mock_collection = MagicMock()
-    mock_collection.find_one.return_value = None
-    mock_mongo.__getitem__.return_value.__getitem__.return_value = mock_collection
-    mock_mongo_class.return_value = mock_mongo
+    mock_repo = MagicMock()
+    mock_repo.find_by_company_key.return_value = None
+    mock_cache_repo.return_value = mock_repo
 
     # Run node function (use_claude_api=False for legacy FireCrawl mode)
     updates = company_researcher_node(sample_job_state, use_claude_api=False)
@@ -1020,7 +1000,7 @@ class TestFireCrawlNormalizer:
 class TestCompanyResearcherFallback:
     """Tests for Phase 5 defensive fallback when multi-source scrape yields 0 signals."""
 
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1035,7 +1015,7 @@ class TestCompanyResearcherFallback:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         sample_job_state
     ):
         """Fallback is triggered when LLM returns 0 signals."""
@@ -1131,9 +1111,9 @@ class TestCompanyResearcherFallback:
 class TestSTARAwareness:
     """Tests for Phase 5 STAR-aware research prompts."""
 
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
-    def test_extract_star_context_with_selected_stars(self, mock_firecrawl_class, mock_mongo_class, sample_job_state):
+    def test_extract_star_context_with_selected_stars(self, mock_firecrawl_class, mock_cache_repo, sample_job_state):
         """STAR context extraction works with selected_stars."""
         # Add selected_stars to state
         sample_job_state["selected_stars"] = [
@@ -1166,9 +1146,9 @@ class TestSTARAwareness:
         assert "Operational Efficiency" in outcomes
         assert "Velocity/Speed" in outcomes
 
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
-    def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, mock_mongo_class, sample_job_state):
+    def test_extract_star_context_returns_none_without_stars(self, mock_firecrawl_class, mock_cache_repo, sample_job_state):
         """STAR context extraction returns None when no selected_stars."""
         researcher = CompanyResearcher(use_claude_api=False)
         domains, outcomes = researcher._extract_star_context(sample_job_state)
@@ -1176,7 +1156,7 @@ class TestSTARAwareness:
         assert domains is None
         assert outcomes is None
 
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1191,7 +1171,7 @@ class TestSTARAwareness:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         sample_job_state
     ):
         """STAR context is passed to _analyze_company_signals."""
@@ -1255,7 +1235,7 @@ class TestRoleResearcherSTARAwareness:
 class TestPhase5Integration:
     """Integration tests for Phase 5 (Company & Role Research)."""
 
-    @patch('src.layer3.company_researcher.MongoClient')
+    @patch('src.layer3.company_researcher.get_company_cache_repository')
     @patch('src.layer3.company_researcher.FirecrawlApp')
     @patch.object(CompanyResearcher, '_check_cache')
     @patch.object(CompanyResearcher, '_scrape_job_posting')
@@ -1270,7 +1250,7 @@ class TestPhase5Integration:
         mock_scrape_job,
         mock_cache,
         mock_firecrawl_class,
-        mock_mongo_class,
+        mock_cache_repo,
         sample_job_state
     ):
         """Company researcher produces valid schema output with signals."""
