@@ -2135,22 +2135,29 @@ class AnnotationManager {
     }
 
     /**
-     * Capture feedback for auto-generated annotations.
+     * Capture feedback for auto-generated annotations with retry logic.
      * Called when user saves (with potential edits) or deletes an annotation.
      * Uses direct VPS call to bypass Vercel timeout.
+     * Implements exponential backoff (1s, 2s, 4s) for resilience against 502/network errors.
      *
      * @param {Object} annotation - The annotation object
      * @param {string} action - "save" or "delete"
+     * @param {number} retryCount - Internal retry counter (default: 0)
      */
-    async captureAnnotationFeedback(annotation, action) {
+    async captureAnnotationFeedback(annotation, action, retryCount = 0) {
+        const MAX_RETRIES = 3;
+        const BASE_DELAY = 1000; // 1 second
+
         // Only capture feedback for auto-generated annotations
         if (annotation.source !== 'auto_generated') return;
         if (!annotation.original_values) return;
         // Skip if feedback was already captured for this annotation
         if (annotation.feedback_captured && action === 'save') return;
 
-        // Show subtle syncing indicator
-        this.showFeedbackSyncing();
+        // Show subtle syncing indicator (only on first attempt)
+        if (retryCount === 0) {
+            this.showFeedbackSyncing();
+        }
 
         try {
             const payload = {
@@ -2196,13 +2203,36 @@ class AnnotationManager {
                     }
                     console.log(`Feedback captured for ${action}:`, data);
                     this.showFeedbackSuccess();
+                    return; // Success - exit
                 }
             }
+
+            // Non-OK response (502, 503, etc.) - retry if we have attempts left
+            if (retryCount < MAX_RETRIES) {
+                const delay = BASE_DELAY * Math.pow(2, retryCount); // Exponential backoff
+                console.warn(`Feedback capture failed (${response.status}), retrying in ${delay}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+                setTimeout(() => this.captureAnnotationFeedback(annotation, action, retryCount + 1), delay);
+                return;
+            }
+
+            // All retries exhausted
+            console.error(`Feedback capture failed after ${MAX_RETRIES} retries for annotation ${annotation.id}`);
         } catch (error) {
-            // Don't block the user if feedback capture fails - silent failure
-            console.warn('Failed to capture annotation feedback:', error);
+            // Network error - retry if we have attempts left
+            if (retryCount < MAX_RETRIES) {
+                const delay = BASE_DELAY * Math.pow(2, retryCount);
+                console.warn(`Feedback capture error: ${error.message}, retrying in ${delay}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+                setTimeout(() => this.captureAnnotationFeedback(annotation, action, retryCount + 1), delay);
+                return;
+            }
+
+            // All retries exhausted
+            console.error(`Feedback capture failed after ${MAX_RETRIES} retries:`, error);
         } finally {
-            this.hideFeedbackSyncing();
+            // Only hide indicator after all retries exhausted or success
+            if (retryCount >= MAX_RETRIES || annotation.feedback_captured) {
+                this.hideFeedbackSyncing();
+            }
         }
     }
 
