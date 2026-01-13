@@ -604,6 +604,14 @@ window.mobileApp = function() {
                 this.annotation.annotations = Array.isArray(annotationsList) ? annotationsList : [];
                 this.annotation.personaStatement = jdAnnotations.synthesized_persona?.persona_statement || null;
                 this.checkIdentityAnnotations();
+
+                // Apply highlights after DOM updates with new annotations
+                // Use $nextTick if available (Alpine.js), otherwise requestAnimationFrame
+                if (this.$nextTick) {
+                    this.$nextTick(() => this.applyHighlightsPostRender());
+                } else {
+                    requestAnimationFrame(() => setTimeout(() => this.applyHighlightsPostRender(), 100));
+                }
             } catch (error) {
                 console.error('Failed to reload annotations:', error);
             }
@@ -623,6 +631,49 @@ window.mobileApp = function() {
                     strengthLevels.includes(a.relevance)
                 )
             );
+        },
+
+        /**
+         * Find an existing annotation that matches the given text.
+         * Checks for exact match or substantial overlap (>70% containment).
+         * Used to prevent duplicate annotations when tapping on already-annotated text.
+         *
+         * @param {string} text - The text to search for
+         * @returns {Object|undefined} The matching annotation or undefined
+         */
+        findExistingAnnotation(text) {
+            if (!text) return undefined;
+
+            const normalizedText = text.toLowerCase().trim();
+            const annotations = Array.isArray(this.annotation.annotations)
+                ? this.annotation.annotations
+                : [];
+
+            return annotations.find(ann => {
+                // Skip inactive annotations
+                if (ann.is_active === false) return false;
+
+                const annText = (ann.target?.text || '').toLowerCase().trim();
+
+                // Exact match
+                if (annText === normalizedText) return true;
+
+                // Substantial overlap: one contains the other with >70% match
+                // This handles cases where user taps on part of a longer annotation
+                // or the existing annotation covers part of the tapped text
+                if (annText.length > 10 && normalizedText.length > 10) {
+                    if (annText.includes(normalizedText)) {
+                        // Tapped text is contained within existing annotation
+                        return true;
+                    }
+                    if (normalizedText.includes(annText)) {
+                        // Existing annotation is contained within tapped text
+                        return true;
+                    }
+                }
+
+                return false;
+            });
         },
 
         // Generate processed JD HTML by calling the structure-jd API (on-demand)
@@ -660,11 +711,19 @@ window.mobileApp = function() {
 
         // Handle tap on JD text
         handleAnnotationTap(event) {
+            // Handle text nodes: when event.target is a TEXT_NODE, get parentElement
+            // This prevents "event.target.closest is not a function" errors
+            let target = event.target;
+            if (target.nodeType === Node.TEXT_NODE) {
+                target = target.parentElement;
+                if (!target) return;
+            }
+
             // Prevent if tapping on a link or button
-            if (event.target.closest('a, button')) return;
+            if (target.closest('a, button')) return;
 
             // Check if tapping on an existing annotation highlight
-            const annotationMark = event.target.closest('mark.annotation-highlight');
+            const annotationMark = target.closest('mark.annotation-highlight');
             if (annotationMark) {
                 const annotationId = annotationMark.dataset.annotationId;
                 if (annotationId) {
@@ -685,6 +744,16 @@ window.mobileApp = function() {
             }
 
             if (selectedText && selectedText.length > 10) {
+                // Check if an existing annotation already covers this text
+                // This prevents duplicate annotations when tapping on highlighted text
+                // that wasn't detected by the mark.annotation-highlight check above
+                const existingAnnotation = this.findExistingAnnotation(selectedText);
+                if (existingAnnotation) {
+                    // Open edit sheet for existing annotation instead of creating duplicate
+                    this.editAnnotation(existingAnnotation.id);
+                    return;
+                }
+
                 this.annotationSheet.selectedText = selectedText;
                 // Optimistic defaults - auto-save immediately, user can edit if needed
                 this.annotationSheet.relevance = 'core_strength';
@@ -922,16 +991,28 @@ window.mobileApp = function() {
             // Clear selection
             window.getSelection()?.removeAllRanges();
 
-            // Show save pulse animation on the new annotation highlight
-            requestAnimationFrame(() => {
+            // Apply highlights post-render and show save pulse animation
+            // Use $nextTick if available (Alpine.js), otherwise requestAnimationFrame
+            const applyHighlightsAndPulse = () => {
+                // First, ensure highlight is rendered via post-render method
+                this.applyHighlightsPostRender();
+
+                // Then show save pulse animation
                 setTimeout(() => {
                     const highlight = document.querySelector(`.annotation-highlight[data-annotation-id="${newAnnotation.id}"]`);
                     if (highlight) {
                         highlight.classList.add('save-pulse');
                         setTimeout(() => highlight.classList.remove('save-pulse'), 1000);
                     }
-                }, 100); // Small delay for x-html to re-render
-            });
+                }, 50); // Small delay after highlight is applied
+            };
+
+            // Alpine's $nextTick ensures DOM has updated after x-html re-evaluation
+            if (this.$nextTick) {
+                this.$nextTick(applyHighlightsAndPulse);
+            } else {
+                requestAnimationFrame(() => setTimeout(applyHighlightsAndPulse, 100));
+            }
 
             // === BACKGROUND SAVE ===
             const annotationsToSave = [...this.annotation.annotations];
@@ -1014,17 +1095,28 @@ window.mobileApp = function() {
             // Close sheet immediately (optimistic - don't wait for server)
             this.closeAnnotationSheet();
 
-            // Show save pulse animation on the annotation highlight
+            // Apply highlights post-render and show save pulse animation
             if (savedAnnotationId) {
-                requestAnimationFrame(() => {
+                const applyHighlightsAndPulse = () => {
+                    // First, ensure highlight is rendered via post-render method
+                    this.applyHighlightsPostRender();
+
+                    // Then show save pulse animation
                     setTimeout(() => {
                         const highlight = document.querySelector(`.annotation-highlight[data-annotation-id="${savedAnnotationId}"]`);
                         if (highlight) {
                             highlight.classList.add('save-pulse');
                             setTimeout(() => highlight.classList.remove('save-pulse'), 1000);
                         }
-                    }, 100); // Small delay for x-html to re-render
-                });
+                    }, 50);
+                };
+
+                // Alpine's $nextTick ensures DOM has updated after x-html re-evaluation
+                if (this.$nextTick) {
+                    this.$nextTick(applyHighlightsAndPulse);
+                } else {
+                    requestAnimationFrame(() => setTimeout(applyHighlightsAndPulse, 100));
+                }
             }
 
             // === BACKGROUND SAVE: Save to server without blocking UI ===
@@ -1240,6 +1332,171 @@ window.mobileApp = function() {
             }
 
             return html;
+        },
+
+        /**
+         * Apply annotation highlights after DOM render using TreeWalker.
+         * This is more robust than regex-based highlighting because it works
+         * even when HTML tags interrupt the annotation text.
+         *
+         * Called after autoSaveAnnotation() and reloadAnnotations() to ensure
+         * highlights are properly rendered.
+         */
+        applyHighlightsPostRender() {
+            // Find the JD container element
+            const container = document.querySelector('.jd-formatted');
+            if (!container) {
+                console.log('[Annotation] No .jd-formatted container found for post-render highlighting');
+                return;
+            }
+
+            // Get active annotations that aren't already highlighted
+            const annotations = Array.isArray(this.annotation.annotations)
+                ? this.annotation.annotations.filter(a => a.is_active !== false)
+                : [];
+
+            if (!annotations.length) return;
+
+            // Check which annotations already have highlights in the DOM
+            const existingHighlights = new Set();
+            container.querySelectorAll('mark.annotation-highlight[data-annotation-id]').forEach(mark => {
+                existingHighlights.add(mark.dataset.annotationId);
+            });
+
+            // Process annotations that need highlighting
+            const needsHighlight = annotations.filter(a => !existingHighlights.has(a.id));
+
+            if (!needsHighlight.length) {
+                console.log('[Annotation] All annotations already highlighted');
+                return;
+            }
+
+            console.log('[Annotation] Post-render highlighting', needsHighlight.length, 'annotations');
+
+            // Use TreeWalker to find all text nodes
+            const walker = document.createTreeWalker(
+                container,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: (node) => {
+                        // Skip text nodes inside existing highlights
+                        if (node.parentElement?.closest('mark.annotation-highlight')) {
+                            return NodeFilter.FILTER_SKIP;
+                        }
+                        // Skip empty or whitespace-only nodes
+                        if (!node.textContent?.trim()) {
+                            return NodeFilter.FILTER_SKIP;
+                        }
+                        return NodeFilter.FILTER_ACCEPT;
+                    }
+                }
+            );
+
+            // Collect all text nodes
+            const textNodes = [];
+            let node;
+            while ((node = walker.nextNode())) {
+                textNodes.push(node);
+            }
+
+            // For each annotation needing highlight, search for its text
+            for (const annotation of needsHighlight) {
+                const targetText = annotation.target?.text;
+                if (!targetText || targetText.length < 5) continue;
+
+                const relevance = annotation.relevance || 'relevant';
+                const normalizedTarget = targetText.toLowerCase().trim();
+
+                // Try to find the text across one or more text nodes
+                let found = false;
+
+                // First, try exact match within a single text node
+                for (const textNode of textNodes) {
+                    const nodeText = textNode.textContent || '';
+                    const normalizedNode = nodeText.toLowerCase();
+                    const startIndex = normalizedNode.indexOf(normalizedTarget);
+
+                    if (startIndex !== -1) {
+                        // Found exact match - wrap with Range API
+                        try {
+                            const range = document.createRange();
+                            range.setStart(textNode, startIndex);
+                            range.setEnd(textNode, startIndex + targetText.length);
+
+                            // Create mark element
+                            const mark = document.createElement('mark');
+                            mark.className = 'annotation-highlight';
+                            mark.dataset.annotationId = annotation.id;
+                            mark.dataset.relevance = relevance;
+
+                            // Wrap the range
+                            range.surroundContents(mark);
+
+                            found = true;
+                            console.log('[Annotation] Highlighted annotation', annotation.id, 'in single node');
+                            break;
+                        } catch (e) {
+                            console.warn('[Annotation] Failed to wrap range:', e.message);
+                            // Range.surroundContents can fail if the range crosses element boundaries
+                            // Try alternative approach with substring matching
+                        }
+                    }
+                }
+
+                // If not found with exact match, try fuzzy matching (normalized whitespace)
+                if (!found) {
+                    // Normalize whitespace in target
+                    const normalizedTargetWs = normalizedTarget.replace(/\s+/g, ' ');
+
+                    for (const textNode of textNodes) {
+                        const nodeText = textNode.textContent || '';
+                        const normalizedNodeWs = nodeText.toLowerCase().replace(/\s+/g, ' ');
+
+                        if (normalizedNodeWs.includes(normalizedTargetWs)) {
+                            // Find start position accounting for whitespace differences
+                            const startIndex = normalizedNodeWs.indexOf(normalizedTargetWs);
+                            if (startIndex !== -1) {
+                                // Map back to original positions
+                                let origStart = 0;
+                                let wsCount = 0;
+                                for (let i = 0; i < nodeText.length && wsCount < startIndex; i++) {
+                                    if (/\s/.test(nodeText[i])) {
+                                        wsCount++;
+                                    } else {
+                                        wsCount++;
+                                    }
+                                    origStart++;
+                                }
+
+                                try {
+                                    const range = document.createRange();
+                                    // Clamp to valid range
+                                    const safeStart = Math.min(origStart, nodeText.length);
+                                    const safeEnd = Math.min(safeStart + targetText.length, nodeText.length);
+                                    range.setStart(textNode, safeStart);
+                                    range.setEnd(textNode, safeEnd);
+
+                                    const mark = document.createElement('mark');
+                                    mark.className = 'annotation-highlight';
+                                    mark.dataset.annotationId = annotation.id;
+                                    mark.dataset.relevance = relevance;
+
+                                    range.surroundContents(mark);
+                                    found = true;
+                                    console.log('[Annotation] Highlighted annotation', annotation.id, 'with fuzzy match');
+                                    break;
+                                } catch (e) {
+                                    console.warn('[Annotation] Fuzzy wrap failed:', e.message);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!found) {
+                    console.log('[Annotation] Could not find text for annotation', annotation.id, ':', targetText.substring(0, 50));
+                }
+            }
         },
 
         async openCvViewer(jobId) {
