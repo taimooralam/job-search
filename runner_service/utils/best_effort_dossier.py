@@ -26,6 +26,12 @@ def generate_best_effort_dossier(job: Dict[str, Any]) -> Tuple[str, Dict[str, bo
     # Header (always)
     sections.append(_generate_header(job))
 
+    # Persona (if available - from jd_annotations.synthesized_persona)
+    persona_section, has_persona = _generate_persona_section(job)
+    if has_persona:
+        sections.append(persona_section)
+        included["persona"] = True
+
     # 1. Job Analysis (extracted_jd, opportunity_mapper)
     analysis_section, has_analysis = _generate_analysis_section(job)
     if has_analysis:
@@ -88,6 +94,35 @@ def _generate_header(job: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _generate_persona_section(job: Dict[str, Any]) -> Tuple[str, bool]:
+    """Generate candidate persona section from jd_annotations."""
+    jd_annotations = job.get("jd_annotations", {})
+    if not jd_annotations:
+        return "", False
+
+    synthesized_persona = jd_annotations.get("synthesized_persona", {})
+    persona_statement = synthesized_persona.get("persona_statement")
+
+    if not persona_statement:
+        return "", False
+
+    lines = [
+        "=" * 80,
+        "CANDIDATE PERSONA",
+        "=" * 80,
+        "",
+        persona_statement,
+        "",
+    ]
+
+    # Add edit indicator if user-modified
+    if synthesized_persona.get("is_user_edited"):
+        lines.append("(User-edited)")
+        lines.append("")
+
+    return "\n".join(lines), True
+
+
 def _generate_analysis_section(job: Dict[str, Any]) -> Tuple[str, bool]:
     """Generate job analysis section from extracted_jd and fit data."""
     lines = []
@@ -116,6 +151,29 @@ def _generate_analysis_section(job: Dict[str, Any]) -> Tuple[str, bool]:
                 lines.append(f"Seniority: {extracted_jd['seniority_level']}")
             if extracted_jd.get("remote_policy"):
                 lines.append(f"Remote Policy: {extracted_jd['remote_policy']}")
+            lines.append("")
+
+        # Ideal Candidate Profile (from Layer 1.4 extraction)
+        ideal_profile = extracted_jd.get("ideal_candidate_profile", {})
+        if ideal_profile:
+            lines.extend([
+                "IDEAL CANDIDATE PROFILE",
+                "-" * 40,
+            ])
+            if ideal_profile.get("identity_statement"):
+                lines.append(f"Identity: {ideal_profile['identity_statement']}")
+            if ideal_profile.get("archetype"):
+                lines.append(f"Archetype: {ideal_profile['archetype']}")
+            if ideal_profile.get("experience_profile"):
+                lines.append(f"Experience: {ideal_profile['experience_profile']}")
+            if ideal_profile.get("key_traits"):
+                traits = ideal_profile["key_traits"]
+                if isinstance(traits, list):
+                    lines.append(f"Key Traits: {', '.join(traits)}")
+            if ideal_profile.get("culture_signals"):
+                signals = ideal_profile["culture_signals"]
+                if isinstance(signals, list):
+                    lines.append(f"Culture Signals: {', '.join(signals)}")
             lines.append("")
 
         # Responsibilities
@@ -149,6 +207,27 @@ def _generate_analysis_section(job: Dict[str, Any]) -> Tuple[str, bool]:
                 "",
             ])
 
+        # Soft skills
+        if extracted_jd.get("soft_skills"):
+            lines.extend([
+                "SOFT SKILLS",
+                "-" * 40,
+                ", ".join(extracted_jd["soft_skills"]),
+                "",
+            ])
+
+        # Competency weights (if available)
+        if extracted_jd.get("competency_weights"):
+            weights = extracted_jd["competency_weights"]
+            if isinstance(weights, dict) and weights:
+                lines.extend([
+                    "COMPETENCY WEIGHTS",
+                    "-" * 40,
+                ])
+                for skill, weight in weights.items():
+                    lines.append(f"  * {skill}: {weight}")
+                lines.append("")
+
         # ATS Keywords
         if extracted_jd.get("top_keywords"):
             lines.extend([
@@ -158,29 +237,48 @@ def _generate_analysis_section(job: Dict[str, Any]) -> Tuple[str, bool]:
                 "",
             ])
 
-        # Implied pain points
-        pain_points = extracted_jd.get("implied_pain_points") or job.get("pain_points", [])
-        if pain_points:
-            lines.extend([
-                "IMPLIED PAIN POINTS",
-                "-" * 40,
-            ])
-            for pp in pain_points[:5]:
-                # Handle both string and dict formats
-                text = pp if isinstance(pp, str) else pp.get("text", str(pp))
-                lines.append(f"  * {text}")
-            lines.append("")
+        # Full Pain Point Analysis (4 dimensions)
+        pain_points = job.get("pain_points") or extracted_jd.get("implied_pain_points", [])
+        strategic_needs = job.get("strategic_needs", [])
+        risks_if_unfilled = job.get("risks_if_unfilled", [])
+        success_metrics = job.get("success_metrics") or extracted_jd.get("success_metrics", [])
 
-        # Success metrics
-        success_metrics = extracted_jd.get("success_metrics") or job.get("success_metrics", [])
-        if success_metrics:
+        has_any_pain_data = pain_points or strategic_needs or risks_if_unfilled or success_metrics
+
+        if has_any_pain_data:
             lines.extend([
-                "SUCCESS METRICS",
+                "PAIN POINT ANALYSIS (4 Dimensions)",
                 "-" * 40,
             ])
-            for metric in success_metrics[:5]:
-                lines.append(f"  * {metric}")
-            lines.append("")
+
+            # Pain Points
+            if pain_points:
+                lines.append("Pain Points:")
+                for pp in pain_points[:5]:
+                    text = pp if isinstance(pp, str) else pp.get("text", str(pp))
+                    lines.append(f"  * {text}")
+                lines.append("")
+
+            # Strategic Needs
+            if strategic_needs:
+                lines.append("Strategic Needs:")
+                for need in strategic_needs[:5]:
+                    lines.append(f"  * {need}")
+                lines.append("")
+
+            # Risks if Unfilled
+            if risks_if_unfilled:
+                lines.append("Risks if Unfilled:")
+                for risk in risks_if_unfilled[:5]:
+                    lines.append(f"  * {risk}")
+                lines.append("")
+
+            # Success Metrics
+            if success_metrics:
+                lines.append("Success Metrics:")
+                for metric in success_metrics[:5]:
+                    lines.append(f"  * {metric}")
+                lines.append("")
 
     # Fit analysis from opportunity_mapper
     if job.get("fit_score") is not None or job.get("fit_rationale"):
@@ -377,14 +475,15 @@ def _generate_outputs_section(job: Dict[str, Any]) -> Tuple[str, bool]:
             ])
 
         if cv_text:
-            preview = cv_text[:1000] if len(cv_text) > 1000 else cv_text
+            # Include full CV content, only truncate if extremely long
+            cv_content = cv_text[:8000] if len(cv_text) > 8000 else cv_text
             lines.extend([
-                "CV PREVIEW",
+                "TAILORED CV",
                 "-" * 40,
-                preview,
+                cv_content,
             ])
-            if len(cv_text) > 1000:
-                lines.append("...[truncated]...")
+            if len(cv_text) > 8000:
+                lines.append("...[truncated at 8000 chars]...")
             lines.append("")
 
     return "\n".join(lines), has_content
