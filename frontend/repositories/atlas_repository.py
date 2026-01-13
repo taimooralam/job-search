@@ -4,8 +4,8 @@ Atlas-Only Job Repository
 Phase 1 implementation that wraps Atlas MongoDB operations.
 Proves the repository pattern works before adding dual-write complexity.
 
-SYNC NOTE: This file is copied to frontend/repositories/atlas_repository.py for Vercel deployment.
-When modifying this file, also update the frontend copy to stay in sync.
+NOTE: This is a copy for frontend/Vercel deployment.
+Keep in sync with src/common/repositories/atlas_repository.py
 """
 
 import logging
@@ -31,10 +31,6 @@ class AtlasJobRepository(JobRepositoryInterface):
     - Uses singleton MongoClient for connection pooling
     - Client is created once and reused across requests
     - PyMongo handles connection pool internally
-
-    Error Handling:
-    - Fail-fast: All errors propagate to caller
-    - No silent failures - consumers must handle exceptions
     """
 
     _client: Optional[MongoClient] = None
@@ -59,10 +55,6 @@ class AtlasJobRepository(JobRepositoryInterface):
         Get the MongoDB collection, creating client if needed.
 
         Uses class-level singleton for connection pooling.
-        Thread-safe due to PyMongo's internal locking.
-
-        Returns:
-            MongoDB collection instance
         """
         if AtlasJobRepository._collection is None:
             AtlasJobRepository._client = MongoClient(self._mongodb_uri)
@@ -112,11 +104,7 @@ class AtlasJobRepository(JobRepositoryInterface):
         update: Dict[str, Any],
         upsert: bool = False,
     ) -> WriteResult:
-        """
-        Update a single document.
-
-        Fail-fast behavior: exceptions propagate to caller.
-        """
+        """Update a single document."""
         collection = self._get_collection()
         result = collection.update_one(filter, update, upsert=upsert)
 
@@ -125,7 +113,7 @@ class AtlasJobRepository(JobRepositoryInterface):
             modified_count=result.modified_count,
             upserted_id=str(result.upserted_id) if result.upserted_id else None,
             atlas_success=True,
-            vps_success=None,  # VPS not enabled in Phase 1
+            vps_success=None,
         )
 
     def update_many(
@@ -133,11 +121,7 @@ class AtlasJobRepository(JobRepositoryInterface):
         filter: Dict[str, Any],
         update: Dict[str, Any],
     ) -> WriteResult:
-        """
-        Update multiple documents.
-
-        Fail-fast behavior: exceptions propagate to caller.
-        """
+        """Update multiple documents."""
         collection = self._get_collection()
         result = collection.update_many(filter, update)
 
@@ -192,11 +176,7 @@ class AtlasJobRepository(JobRepositoryInterface):
 
     @classmethod
     def reset_connection(cls) -> None:
-        """
-        Reset the connection pool.
-
-        Used for testing or connection recovery.
-        """
+        """Reset the connection pool."""
         if cls._client:
             cls._client.close()
         cls._client = None

@@ -4,8 +4,8 @@ Repository Configuration and Factory
 Provides factory function to get the appropriate repository implementation
 based on environment configuration.
 
-SYNC NOTE: A simplified version of this file is at frontend/repositories/config.py for Vercel.
-When modifying get_job_repository() or RepositoryConfig, also update the frontend copy.
+NOTE: This is a simplified copy for frontend/Vercel deployment.
+Keep in sync with src/common/repositories/config.py
 """
 
 import os
@@ -15,7 +15,6 @@ from enum import Enum
 from typing import Optional
 
 from .base import JobRepositoryInterface
-from .priors_repository import PriorsRepositoryInterface
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +56,6 @@ class RepositoryConfig:
         - VPS_MONGODB_URI: VPS MongoDB connection string
         - VPS_MONGODB_ENABLED: Enable VPS sync (true/false)
         - VPS_SYNC_MODE: Sync mode (disabled/shadow/write/read_compare)
-
-        Returns:
-            RepositoryConfig instance
-
-        Raises:
-            ValueError: If MONGODB_URI is not set
         """
         atlas_uri = os.getenv("MONGODB_URI")
         if not atlas_uri:
@@ -99,12 +92,6 @@ def get_job_repository() -> JobRepositoryInterface:
 
     Phase 1: Returns AtlasJobRepository
     Phase 3+: Will return DualWriteJobRepository when VPS is enabled
-
-    Returns:
-        JobRepositoryInterface implementation
-
-    Raises:
-        ValueError: If MongoDB URI is not configured
     """
     global _repository_instance
 
@@ -113,7 +100,6 @@ def get_job_repository() -> JobRepositoryInterface:
 
         if config.vps_enabled and config.sync_mode != SyncMode.DISABLED:
             # Phase 3+: Dual-write repository
-            # TODO: Implement DualWriteJobRepository
             raise NotImplementedError(
                 "Dual-write repository not yet implemented. "
                 "Set VPS_MONGODB_ENABLED=false for Phase 1."
@@ -132,80 +118,13 @@ def get_job_repository() -> JobRepositoryInterface:
 
 
 def reset_repository() -> None:
-    """
-    Reset the repository singleton.
-
-    Used for testing or when configuration changes.
-    """
+    """Reset the repository singleton."""
     global _repository_instance
 
     if _repository_instance is not None:
-        # Reset connection pool if applicable
         from .atlas_repository import AtlasJobRepository
         if isinstance(_repository_instance, AtlasJobRepository):
             AtlasJobRepository.reset_connection()
 
     _repository_instance = None
     logger.info("Repository singleton reset")
-
-
-# Singleton priors repository instance
-_priors_repository_instance: Optional[PriorsRepositoryInterface] = None
-
-
-def get_priors_repository() -> PriorsRepositoryInterface:
-    """
-    Get the priors repository instance.
-
-    Factory function that returns the appropriate repository implementation
-    for the annotation_priors collection based on configuration.
-    Uses singleton pattern for connection pooling.
-
-    Phase 1: Returns AtlasPriorsRepository
-    Phase 3+: Will return DualWritePriorsRepository when VPS is enabled
-
-    Returns:
-        PriorsRepositoryInterface implementation
-
-    Raises:
-        ValueError: If MongoDB URI is not configured
-    """
-    global _priors_repository_instance
-
-    if _priors_repository_instance is None:
-        config = RepositoryConfig.from_env()
-
-        if config.vps_enabled and config.sync_mode != SyncMode.DISABLED:
-            # Phase 3+: Dual-write repository
-            raise NotImplementedError(
-                "Dual-write priors repository not yet implemented. "
-                "Set VPS_MONGODB_ENABLED=false for Phase 1."
-            )
-        else:
-            # Phase 1: Atlas-only
-            from .priors_repository import AtlasPriorsRepository
-            _priors_repository_instance = AtlasPriorsRepository(
-                mongodb_uri=config.atlas_uri,
-                database=config.database,
-                collection="annotation_priors",
-            )
-            logger.info("Initialized Atlas-only priors repository (Phase 1)")
-
-    return _priors_repository_instance
-
-
-def reset_priors_repository() -> None:
-    """
-    Reset the priors repository singleton.
-
-    Used for testing or when configuration changes.
-    """
-    global _priors_repository_instance
-
-    if _priors_repository_instance is not None:
-        from .priors_repository import AtlasPriorsRepository
-        if isinstance(_priors_repository_instance, AtlasPriorsRepository):
-            AtlasPriorsRepository.reset_connection()
-
-    _priors_repository_instance = None
-    logger.info("Priors repository singleton reset")

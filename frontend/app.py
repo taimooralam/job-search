@@ -103,15 +103,17 @@ except ImportError:
             return "??"
 
 # Import job repository for MongoDB operations (repository pattern)
+# NOTE: frontend/repositories/ is a copy of src/common/repositories/ for Vercel deployment.
+# When updating src/common/repositories/, also update frontend/repositories/ to stay in sync.
 try:
-    from src.common.repositories import get_job_repository
+    # First try local frontend repository (works on Vercel)
+    from repositories import get_job_repository
 except ImportError:
     try:
-        import sys
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        # Fallback to src/common (works locally when running from project root)
         from src.common.repositories import get_job_repository
     except ImportError:
-        # Fallback: no repository available (will use direct collection access)
+        # Last resort: set to None (should not happen with frontend/repositories/)
         get_job_repository = None
 
 # Session configuration
@@ -377,16 +379,23 @@ def get_collection():
 
 def _get_repo():
     """
-    Get job repository singleton for MongoDB operations.
+    Get job repository for MongoDB operations.
 
-    Uses the repository pattern for abstraction over direct MongoDB access.
-    Falls back to None if repository module is not available (Vercel deployment).
+    Uses the repository pattern via get_job_repository().
+    With frontend/repositories/ now included, this should always work
+    on both local development and Vercel deployment.
 
     Returns:
-        JobRepositoryInterface instance or None
+        JobRepositoryInterface instance
+
+    Raises:
+        RuntimeError: If repository is not available (should not happen)
     """
     if get_job_repository is None:
-        return None
+        raise RuntimeError(
+            "Job repository not available. "
+            "Ensure frontend/repositories/ exists and is properly configured."
+        )
     return get_job_repository()
 
 
