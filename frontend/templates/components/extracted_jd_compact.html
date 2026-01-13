@@ -28,6 +28,35 @@ Parameters:
         {% endif %}
     </div>
 
+    {# Ideal Candidate Profile - Identity Statement (if available) #}
+    {% if extracted.ideal_candidate_profile %}
+    <div class="mb-3 p-2 rounded-lg bg-gradient-to-r from-{{ color }}-50 to-purple-50 border border-{{ color }}-100">
+        <div class="flex items-center gap-1.5 mb-1">
+            <span class="text-xs">🎯</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-{{ color }}-100 text-{{ color }}-700">
+                {{ extracted.ideal_candidate_profile.archetype|replace('_', ' ')|title }}
+            </span>
+        </div>
+        <p class="text-xs text-gray-700 leading-relaxed">
+            {{ extracted.ideal_candidate_profile.identity_statement }}
+        </p>
+        {% if extracted.ideal_candidate_profile.key_traits %}
+        <div class="flex flex-wrap gap-1 mt-1.5">
+            {% for trait in extracted.ideal_candidate_profile.key_traits %}
+            <span class="px-1.5 py-0.5 text-[10px] rounded bg-white/70 text-gray-600 border border-gray-200">
+                {{ trait }}
+            </span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if extracted.ideal_candidate_profile.experience_profile %}
+        <div class="mt-1.5 text-[10px] text-gray-500">
+            📊 {{ extracted.ideal_candidate_profile.experience_profile }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {# Competency Weights - Compact Grid #}
     {% if extracted.competency_weights %}
     <div class="grid grid-cols-4 gap-1 text-center">

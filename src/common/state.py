@@ -42,6 +42,34 @@ class CompetencyWeights(TypedDict):
     leadership: int     # 0-100: People management, team building
 
 
+# Candidate archetype for ideal candidate profile
+# Maps to role categories but focuses on candidate identity/style
+CandidateArchetype = Literal[
+    "technical_architect",      # System designer who influences through architecture decisions
+    "people_leader",            # Team builder focused on developing talent
+    "execution_driver",         # Ships at velocity, removes blockers, delivers results
+    "strategic_visionary",      # Sets direction, aligns technology with business outcomes
+    "domain_expert",            # Deep expertise in specific technical domain
+    "builder_founder",          # Startup mindset, comfortable with ambiguity
+    "process_champion",         # Establishes engineering excellence, quality culture
+    "hybrid_technical_leader",  # Balanced IC and leadership, player-coach
+]
+
+
+class IdealCandidateProfile(TypedDict):
+    """
+    Synthesized ideal candidate identity from job description.
+
+    Provides a human-readable summary of WHO the job is looking for,
+    beyond just skills and requirements. Used for persona mirroring in CV/outreach.
+    """
+    identity_statement: str     # 1-2 sentence synthesis of ideal candidate
+    archetype: str              # CandidateArchetype: primary candidate archetype
+    key_traits: List[str]       # 3-5 defining characteristics (leadership style, mindset, approach)
+    experience_profile: str     # Concise description: "10+ years with 3+ in leadership"
+    culture_signals: List[str]  # 2-4 company culture indicators from JD language
+
+
 class ExtractedJD(TypedDict):
     """
     Structured job description extraction (Layer 1.4).
@@ -81,6 +109,9 @@ class ExtractedJD(TypedDict):
     industry_background: Optional[str]  # e.g., "AdTech", "FinTech"
     years_experience_required: Optional[int]
     education_requirements: Optional[str]
+
+    # Ideal Candidate Profile (synthesized identity)
+    ideal_candidate_profile: Optional['IdealCandidateProfile']
 
 
 class Contact(TypedDict):

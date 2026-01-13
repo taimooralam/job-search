@@ -70,6 +70,18 @@ class RemotePolicy(str, Enum):
     NOT_SPECIFIED = "not_specified"
 
 
+class CandidateArchetype(str, Enum):
+    """Candidate archetype classification for ideal candidate profile."""
+    TECHNICAL_ARCHITECT = "technical_architect"
+    PEOPLE_LEADER = "people_leader"
+    EXECUTION_DRIVER = "execution_driver"
+    STRATEGIC_VISIONARY = "strategic_visionary"
+    DOMAIN_EXPERT = "domain_expert"
+    BUILDER_FOUNDER = "builder_founder"
+    PROCESS_CHAMPION = "process_champion"
+    HYBRID_TECHNICAL_LEADER = "hybrid_technical_leader"
+
+
 class CompetencyWeightsModel(BaseModel):
     """Competency weights with sum validation."""
     delivery: int = Field(..., ge=0, le=100, description="Shipping features, product execution")
@@ -84,6 +96,57 @@ class CompetencyWeightsModel(BaseModel):
         if total != 100:
             raise ValueError(f"Competency weights must sum to 100, got {total}")
         return self
+
+
+class IdealCandidateProfileModel(BaseModel):
+    """Pydantic model for ideal candidate profile validation."""
+
+    identity_statement: str = Field(
+        ...,
+        min_length=20,
+        max_length=400,
+        description="1-2 sentence synthesis of ideal candidate"
+    )
+    archetype: CandidateArchetype = Field(
+        ...,
+        description="Primary candidate archetype"
+    )
+    key_traits: List[str] = Field(
+        ...,
+        min_length=3,
+        max_length=5,
+        description="3-5 key traits"
+    )
+    experience_profile: str = Field(
+        ...,
+        min_length=10,
+        max_length=150,
+        description="Years + level description"
+    )
+    culture_signals: List[str] = Field(
+        default_factory=list,
+        max_length=4,
+        description="Company culture indicators"
+    )
+
+    @field_validator('key_traits')
+    @classmethod
+    def validate_traits(cls, v: List[str]) -> List[str]:
+        """Ensure traits are non-empty and unique."""
+        seen = set()
+        result = []
+        for trait in v:
+            trait_clean = trait.strip()
+            if trait_clean and trait_clean.lower() not in seen:
+                seen.add(trait_clean.lower())
+                result.append(trait_clean)
+        return result
+
+    @field_validator('culture_signals')
+    @classmethod
+    def validate_culture_signals(cls, v: List[str]) -> List[str]:
+        """Ensure culture signals are non-empty."""
+        return [s.strip() for s in v if s and s.strip()]
 
 
 class ExtractedJDModel(BaseModel):
@@ -145,6 +208,12 @@ class ExtractedJDModel(BaseModel):
     years_experience_required: Optional[int] = Field(default=None, ge=0, le=50)
     education_requirements: Optional[str] = Field(default=None)
 
+    # Ideal Candidate Profile (synthesized identity)
+    ideal_candidate_profile: Optional[IdealCandidateProfileModel] = Field(
+        default=None,
+        description="Synthesized ideal candidate identity"
+    )
+
     @field_validator('responsibilities', 'qualifications')
     @classmethod
     def validate_non_empty_strings(cls, v: List[str]) -> List[str]:
@@ -166,6 +235,17 @@ class ExtractedJDModel(BaseModel):
 
     def to_extracted_jd(self) -> ExtractedJD:
         """Convert to TypedDict for state."""
+        # Convert ideal_candidate_profile if present
+        profile_dict = None
+        if self.ideal_candidate_profile:
+            profile_dict = {
+                "identity_statement": self.ideal_candidate_profile.identity_statement,
+                "archetype": self.ideal_candidate_profile.archetype.value,
+                "key_traits": self.ideal_candidate_profile.key_traits,
+                "experience_profile": self.ideal_candidate_profile.experience_profile,
+                "culture_signals": self.ideal_candidate_profile.culture_signals,
+            }
+
         return ExtractedJD(
             title=self.title,
             company=self.company,
@@ -190,6 +270,7 @@ class ExtractedJDModel(BaseModel):
             industry_background=self.industry_background,
             years_experience_required=self.years_experience_required,
             education_requirements=self.education_requirements,
+            ideal_candidate_profile=profile_dict,
         )
 
 logger = logging.getLogger(__name__)
@@ -354,6 +435,17 @@ Return ONLY valid JSON matching the ExtractedJD schema. No markdown, no explanat
             data["seniority_level"] = data["seniority_level"].lower().replace(" ", "_").replace("-", "_")
         if "remote_policy" in data:
             data["remote_policy"] = data["remote_policy"].lower().replace(" ", "_").replace("-", "_")
+
+        # Normalize ideal_candidate_profile archetype if present
+        if "ideal_candidate_profile" in data and data["ideal_candidate_profile"]:
+            profile = data["ideal_candidate_profile"]
+            if "archetype" in profile:
+                profile["archetype"] = profile["archetype"].lower().replace(" ", "_").replace("-", "_")
+            # Truncate profile lists
+            if "key_traits" in profile and isinstance(profile["key_traits"], list):
+                profile["key_traits"] = profile["key_traits"][:5]
+            if "culture_signals" in profile and isinstance(profile["culture_signals"], list):
+                profile["culture_signals"] = profile["culture_signals"][:4]
 
         # Defensive truncation: Claude Opus 4.5 extracts more thoroughly than GPT-4o,
         # so truncate lists to schema max_length before Pydantic validation

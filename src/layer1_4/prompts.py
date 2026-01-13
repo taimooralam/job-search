@@ -30,7 +30,14 @@ JD_OUTPUT_SCHEMA = """{
   "top_keywords": ["keyword1", "keyword2", ... 15 total],
   "industry_background": "AdTech|FinTech|HealthTech|...|null",
   "years_experience_required": 10,
-  "education_requirements": "BS in CS or equivalent"
+  "education_requirements": "BS in CS or equivalent",
+  "ideal_candidate_profile": {
+    "identity_statement": "A senior technical leader who thrives on building scalable systems while mentoring teams...",
+    "archetype": "technical_architect|people_leader|execution_driver|strategic_visionary|domain_expert|builder_founder|process_champion|hybrid_technical_leader",
+    "key_traits": ["builds through delegation", "systems thinker", "startup-to-scale experience"],
+    "experience_profile": "10+ years engineering, 5+ in leadership",
+    "culture_signals": ["fast-paced startup", "data-driven culture", "autonomous teams"]
+  }
 }"""
 
 
@@ -120,6 +127,57 @@ Extract exactly 15 keywords in priority order:
 5. Process methodologies (Agile, DevOps) - aim for 1-2
 6. Leadership terms (for management roles) - aim for 1-2
 
+=== IDEAL CANDIDATE PROFILE ===
+
+Synthesize an "ideal candidate identity" - WHO this job is really looking for beyond just skills.
+
+**Candidate Archetypes** (choose exactly ONE):
+
+**technical_architect**: System designer who influences through architecture decisions
+- Signals: "technical vision", "system design", "architecture ownership", "cross-team technical leadership"
+- Common for: Staff/Principal Engineer, CTO roles
+
+**people_leader**: Team builder focused on developing talent
+- Signals: "grow the team", "mentorship", "performance management", "hiring", "1:1s"
+- Common for: Engineering Manager, Director roles
+
+**execution_driver**: Ships at velocity, removes blockers, delivers results
+- Signals: "delivery velocity", "execution excellence", "ship features", "roadmap delivery"
+- Common for: Engineering Manager, Head of Engineering
+
+**strategic_visionary**: Sets direction, aligns technology with business outcomes
+- Signals: "technology strategy", "executive presence", "board communication", "business outcomes"
+- Common for: VP Engineering, CTO, Head of Engineering
+
+**domain_expert**: Deep expertise in specific technical domain
+- Signals: "ML expertise", "security specialist", "data infrastructure", "specific technology depth"
+- Common for: Staff/Principal Engineer in specialized areas
+
+**builder_founder**: Startup mindset, comfortable with ambiguity, wears many hats
+- Signals: "early-stage", "build from scratch", "founder mentality", "ambiguity"
+- Common for: Head of Engineering (Series A/B), first engineering hire
+
+**process_champion**: Establishes engineering excellence, quality culture
+- Signals: "engineering excellence", "DevOps culture", "quality standards", "CI/CD"
+- Common for: Director of Engineering, VP Engineering
+
+**hybrid_technical_leader**: Balanced IC and leadership, player-coach
+- Signals: "hands-on", "lead by example", "code review", "technical guidance", small team
+- Common for: Tech Lead, small-team Engineering Manager
+
+**Identity Synthesis Rules**:
+1. identity_statement: Write 1-2 sentences synthesizing WHO this role seeks (not WHAT they do)
+   - Focus on mindset, approach, and working style
+   - Ground in specific JD language - use their terminology
+   - Avoid generic statements like "a strong leader" without specifics
+2. key_traits (3-5): Extract defining characteristics - leadership style, technical mindset, collaboration approach
+   - Be specific: "builds through delegation" not just "leader"
+   - Draw directly from JD requirements and language
+3. experience_profile: Concise summary like "10+ years engineering, 5+ in leadership roles"
+4. culture_signals (2-4): Company culture indicators from JD tone and language
+   - Examples: "fast-paced", "data-driven", "collaborative", "autonomous", "customer-obsessed"
+   - Only include if genuinely signaled in the JD text
+
 === OUTPUT FORMAT ===
 
 Return ONLY valid JSON matching this exact schema:
@@ -164,6 +222,7 @@ Analyze this job description and extract structured intelligence.
 5. Technical skills: max 20, prioritize most relevant
 6. Soft skills: max 10
 7. Infer 2-4 implied pain points and success metrics (max 8 each)
+8. Synthesize ideal_candidate_profile with ONE archetype, 3-5 key_traits, and 2-4 culture_signals
 
 Output ONLY the JSON object. No markdown, no explanation."""
 
