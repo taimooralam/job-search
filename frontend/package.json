@@ -1,0 +1,38 @@
+{
+  "name": "job-search-frontend",
+  "version": "1.0.0",
+  "description": "Frontend JavaScript tests for Job Intelligence Pipeline",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:mobile": "jest --testPathPattern=mobile",
+    "test:desktop": "jest --testPathPattern=desktop"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "roots": [
+      "<rootDir>/__tests__"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/setup.js"
+    ],
+    "testMatch": [
+      "**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "static/js/**/*.js",
+      "!static/js/vendor/**"
+    ],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "html"
+    ],
+    "verbose": true
+  }
+}
