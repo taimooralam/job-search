@@ -701,6 +701,21 @@ button:active {
   border-radius: 50%;
 }
 
+/* Base JD Section styling - override light theme from jd-annotation.css */
+.jd-mobile-dark .jd-section,
+.jd-mobile-dark .jd-processed section {
+  background-color: transparent;
+  border: none;
+  border-left: 3px solid rgba(139, 92, 246, 0.5); /* purple-500/50 default */
+  padding-left: 0.75rem;
+  border-radius: 0;
+}
+
+.jd-mobile-dark .jd-section:hover,
+.jd-mobile-dark .jd-processed section:hover {
+  background-color: rgba(55, 65, 81, 0.3); /* gray-700/30 */
+}
+
 /* Section type indicators via colored left borders */
 .jd-mobile-dark .jd-section[data-section-type="responsibilities"] {
   border-left: 3px solid #8B5CF6; /* purple-500 */
