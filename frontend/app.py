@@ -4562,6 +4562,12 @@ def get_cv_editor_state(job_id: str):
             }
         }
 
+    # Convert BSON datetime to ISO string (MongoDB returns datetime objects that aren't JSON serializable)
+    if editor_state and "lastSavedAt" in editor_state:
+        last_saved = editor_state["lastSavedAt"]
+        if hasattr(last_saved, "isoformat"):
+            editor_state["lastSavedAt"] = last_saved.isoformat()
+
     return jsonify({
         "success": True,
         "editor_state": editor_state
