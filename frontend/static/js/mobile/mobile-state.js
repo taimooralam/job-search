@@ -33,7 +33,8 @@ window.mobileApp = function() {
             personaStatement: null,
             personaLoading: false,
             hasIdentityAnnotations: false,
-            processedJdHtml: null  // LLM-structured JD HTML from backend
+            processedJdHtml: null,  // LLM-structured JD HTML from backend
+            autoGenerating: false   // Auto-annotation generation in progress
         },
         annotationSheet: {
             show: false,
@@ -540,6 +541,72 @@ window.mobileApp = function() {
 
         closeAnnotationMode() {
             this.annotationMode = false;
+        },
+
+        /**
+         * Auto-generate annotations using the suggestion system.
+         * Calls the runner service to generate annotations based on
+         * sentence embeddings and skill priors.
+         */
+        async autoAnnotate() {
+            if (!this.currentJob || this.annotation.autoGenerating) return;
+
+            this.annotation.autoGenerating = true;
+
+            try {
+                const response = await fetch(`/api/runner/jobs/${this.currentJob._id}/generate-annotations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload annotations to show the newly created ones
+                    await this.reloadAnnotations();
+
+                    // Haptic feedback
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([100, 50, 100]);
+                    }
+
+                    window.showToast?.(`Created ${data.created} annotations`, 'success');
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                console.error('Failed to auto-generate annotations:', error);
+                window.showToast?.(`Auto-annotate failed: ${error.message}`, 'error');
+            } finally {
+                this.annotation.autoGenerating = false;
+            }
+        },
+
+        /**
+         * Reload annotations from server (after auto-generate or other changes)
+         */
+        async reloadAnnotations() {
+            if (!this.currentJob) return;
+
+            try {
+                const response = await fetch(`/api/jobs/${this.currentJob._id}/jd-annotations`);
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const jdAnnotations = data.annotations || {};
+                const annotationsList = jdAnnotations.annotations;
+                this.annotation.annotations = Array.isArray(annotationsList) ? annotationsList : [];
+                this.annotation.personaStatement = jdAnnotations.synthesized_persona?.persona_statement || null;
+                this.checkIdentityAnnotations();
+            } catch (error) {
+                console.error('Failed to reload annotations:', error);
+            }
         },
 
         checkIdentityAnnotations() {
