@@ -657,7 +657,8 @@ class TestPromptBuilding:
     def test_prompt_truncates_long_jd(self):
         """Long JD is truncated to 12000 chars."""
         extractor = ClaudeJDExtractor()
-        long_jd = "x" * 20000
+        # Create a JD with a marker at position 12000 to verify truncation
+        long_jd = "a" * 12000 + "MARKER_SHOULD_BE_TRUNCATED" + "b" * 7974  # 20000 total
 
         prompt = extractor._build_prompt(
             title="Test",
@@ -665,6 +666,8 @@ class TestPromptBuilding:
             job_description=long_jd
         )
 
-        # The truncated JD should be embedded, so total prompt length
-        # should be less than if full 20000 char JD was used
-        assert len(prompt) < 20000
+        # Verify truncation: first 12000 chars should be present
+        assert "a" * 100 in prompt  # Beginning of JD is present
+        # The marker and content after 12000 chars should be truncated
+        assert "MARKER_SHOULD_BE_TRUNCATED" not in prompt
+        assert "b" * 100 not in prompt
