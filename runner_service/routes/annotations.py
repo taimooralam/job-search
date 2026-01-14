@@ -7,27 +7,76 @@ Provides API endpoints for the self-correcting annotation suggestion system:
 - Capture feedback from user edits
 
 Endpoints:
-- POST /jobs/{job_id}/generate-annotations: Generate annotations for a job
+- POST /jobs/{job_id}/generate-annotations: Generate annotations for a job (async with livetail)
 - GET /user/annotation-priors: Get priors stats
 - POST /user/annotation-priors/rebuild: Rebuild priors from all annotations
 - POST /user/annotation-feedback: Capture feedback from user edit/delete
 """
 
+import json
 import logging
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from .operation_streaming import (
+    create_operation_run,
+    create_log_callback,
+    update_operation_status,
+    get_operation_state,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["annotations"])
 
 
+# In-memory storage for annotation results (keyed by run_id)
+_annotation_results: Dict[str, "GenerateAnnotationsResponse"] = {}
+
+
+def _emit_structured_log(
+    log_callback: Callable[[str], None],
+    event: str,
+    message: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Emit a structured JSON log entry to the operation log buffer.
+
+    Args:
+        log_callback: The log callback from create_log_callback
+        event: Event type (e.g., "annotation_start", "annotation_complete")
+        message: Optional human-readable message
+        **kwargs: Additional fields (metadata, etc.)
+    """
+    log_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "event": event,
+    }
+    if message:
+        log_entry["message"] = message
+
+    for key, value in kwargs.items():
+        if value is not None:
+            log_entry[key] = value
+
+    log_callback(json.dumps(log_entry))
+
+
 # ============================================================================
 # REQUEST/RESPONSE MODELS
 # ============================================================================
+
+
+class GenerateAnnotationsStartResponse(BaseModel):
+    """Response when starting async annotation generation."""
+    run_id: str
+    status: str
+    job_id: str
 
 
 class GenerateAnnotationsResponse(BaseModel):
@@ -36,6 +85,14 @@ class GenerateAnnotationsResponse(BaseModel):
     created: int = 0
     skipped: int = 0
     annotations: list = Field(default_factory=list)
+    error: Optional[str] = None
+
+
+class AnnotationResultResponse(BaseModel):
+    """Response when polling for annotation result."""
+    run_id: str
+    status: str  # "queued", "running", "completed", "failed"
+    result: Optional[GenerateAnnotationsResponse] = None
     error: Optional[str] = None
 
 
@@ -92,10 +149,18 @@ class FeedbackResponse(BaseModel):
 # ============================================================================
 
 
-@router.post("/jobs/{job_id}/generate-annotations", response_model=GenerateAnnotationsResponse)
-async def generate_annotations(job_id: str) -> GenerateAnnotationsResponse:
+@router.post("/jobs/{job_id}/generate-annotations", response_model=GenerateAnnotationsStartResponse)
+async def generate_annotations(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    sync: bool = Query(default=False, description="Run synchronously (for backward compat)"),
+) -> GenerateAnnotationsStartResponse:
     """
-    Generate annotations for a job's structured JD.
+    Generate annotations for a job's structured JD (async with real-time logging).
+
+    This endpoint returns immediately with a run_id. Use:
+    - GET /api/logs/operations/{run_id} for real-time logs via polling
+    - GET /jobs/{job_id}/annotations/result/{run_id} for final result
 
     Generates annotations only for JD items that match the user's profile
     (skills, responsibilities, identity, passion, qualifications).
@@ -105,24 +170,72 @@ async def generate_annotations(job_id: str) -> GenerateAnnotationsResponse:
 
     Args:
         job_id: MongoDB ObjectId of the job
+        sync: If True, run synchronously and return result directly (for backward compat)
 
     Returns:
-        GenerateAnnotationsResponse with created/skipped counts and annotations
+        GenerateAnnotationsStartResponse with run_id for tracking
     """
+    # Validate job_id format
     try:
-        # Validate job_id format
-        try:
-            ObjectId(job_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid job_id format")
+        ObjectId(job_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid job_id format")
+
+    # Create operation run for log streaming
+    run_id = create_operation_run(job_id=job_id, operation="generate-annotations")
+    log_cb = create_log_callback(run_id)
+
+    # Start background task
+    background_tasks.add_task(
+        _run_annotation_generation,
+        run_id=run_id,
+        job_id=job_id,
+        log_callback=log_cb,
+    )
+
+    return GenerateAnnotationsStartResponse(
+        run_id=run_id,
+        status="queued",
+        job_id=job_id,
+    )
+
+
+async def _run_annotation_generation(
+    run_id: str,
+    job_id: str,
+    log_callback: Callable[[str], None],
+) -> None:
+    """Background task for annotation generation with verbose logging."""
+    import time
+
+    try:
+        update_operation_status(run_id, "running")
+        start_time = time.time()
+
+        # Emit structured start event
+        _emit_structured_log(
+            log_callback,
+            event="annotation_start",
+            message=f"Starting annotation generation for job {job_id[:12]}...",
+            metadata={"job_id": job_id},
+        )
 
         # Import here to avoid circular imports
         from src.services.annotation_suggester import generate_annotations_for_job
 
-        logger.info(f"Generating annotations for job {job_id}")
+        _emit_structured_log(
+            log_callback,
+            event="annotation_processing",
+            message="Loading embeddings and matching patterns...",
+        )
+
+        # Run the annotation generation
         result = generate_annotations_for_job(job_id)
 
-        return GenerateAnnotationsResponse(
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # Build response
+        response = GenerateAnnotationsResponse(
             success=result.get("success", False),
             created=result.get("created", 0),
             skipped=result.get("skipped", 0),
@@ -130,14 +243,71 @@ async def generate_annotations(job_id: str) -> GenerateAnnotationsResponse:
             error=result.get("error"),
         )
 
-    except HTTPException:
-        raise
+        # Store result
+        _annotation_results[run_id] = response
+
+        # Mark complete with structured log
+        if response.success:
+            update_operation_status(run_id, "completed", result=response.model_dump())
+            _emit_structured_log(
+                log_callback,
+                event="annotation_complete",
+                message=f"Generated {response.created} annotations ({response.skipped} skipped)",
+                status="success",
+                duration_ms=duration_ms,
+                metadata={
+                    "created": response.created,
+                    "skipped": response.skipped,
+                    "total_annotations": len(response.annotations),
+                },
+            )
+        else:
+            update_operation_status(run_id, "failed", error=response.error)
+            _emit_structured_log(
+                log_callback,
+                event="annotation_error",
+                message=response.error or "Unknown error",
+                error=response.error,
+                status="error",
+                duration_ms=duration_ms,
+            )
+
     except Exception as e:
-        logger.error(f"Failed to generate annotations: {e}", exc_info=True)
-        return GenerateAnnotationsResponse(
-            success=False,
+        logger.exception(f"Annotation generation failed for job {job_id}: {e}")
+        update_operation_status(run_id, "failed", error=str(e))
+        _emit_structured_log(
+            log_callback,
+            event="annotation_error",
+            message=str(e),
             error=str(e),
+            status="error",
         )
+
+
+@router.get("/jobs/{job_id}/annotations/result/{run_id}", response_model=AnnotationResultResponse)
+async def get_annotation_result(job_id: str, run_id: str) -> AnnotationResultResponse:
+    """
+    Get the result of an annotation generation operation.
+
+    Args:
+        job_id: MongoDB ObjectId of the job
+        run_id: Operation run ID from generate-annotations
+
+    Returns:
+        AnnotationResultResponse with status and result if completed
+    """
+    state = get_operation_state(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    result = _annotation_results.get(run_id)
+
+    return AnnotationResultResponse(
+        run_id=run_id,
+        status=state.status,
+        result=result,
+        error=state.error,
+    )
 
 
 @router.get("/user/annotation-priors", response_model=PriorsStatsResponse)
