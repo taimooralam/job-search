@@ -47,6 +47,10 @@ logger = logging.getLogger(__name__)
 # Type alias for log callback
 LogCallback = Callable[[str], None]
 
+# Type alias for progress callback (for UnifiedLLM events)
+# Signature: (event_type: str, message: str, data: Dict) -> None
+ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
+
 
 @dataclass
 class IngestResult:
@@ -104,6 +108,7 @@ class IngestService:
         log_callback: Optional[LogCallback] = None,
         repository: Optional[JobRepositoryInterface] = None,
         system_state_repository: Optional[SystemStateRepositoryInterface] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the ingest service.
@@ -115,6 +120,8 @@ class IngestService:
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
             repository: Optional job repository. If provided, uses repository for level-2 ops.
             system_state_repository: Optional system state repository for ingestion state.
+            progress_callback: Optional callback for LLM progress events (cost tracking, backend attribution).
+                Signature: (event_type: str, message: str, data: Dict) -> None
         """
         if db is not None:
             warnings.warn(
@@ -128,6 +135,7 @@ class IngestService:
         self._system_state_repository = system_state_repository
         self.use_claude_scorer = use_claude_scorer
         self._log_callback = log_callback
+        self._progress_callback = progress_callback
         self._scorer = None  # Lazy init
 
     def _get_repository(self) -> JobRepositoryInterface:
@@ -153,7 +161,10 @@ class IngestService:
             if self.use_claude_scorer:
                 try:
                     from src.services.claude_quick_scorer import ClaudeQuickScorer
-                    self._scorer = ClaudeQuickScorer(log_callback=self._log_callback)
+                    self._scorer = ClaudeQuickScorer(
+                        log_callback=self._log_callback,
+                        progress_callback=self._progress_callback,
+                    )
                     logger.info("Using ClaudeQuickScorer (Claude CLI)")
                 except Exception as e:
                     logger.warning(f"Claude scorer unavailable, falling back to OpenRouter: {e}")

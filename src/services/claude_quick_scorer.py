@@ -22,7 +22,7 @@ Usage:
 import logging
 import re
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 from src.common.unified_llm import UnifiedLLM
 from src.common.config import Config
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 # Type alias for log callback
 LogCallback = Callable[[str], None]
+
+# Type alias for progress callback (for UnifiedLLM events)
+# Signature: (event_type: str, message: str, data: Dict) -> None
+ProgressCallback = Callable[[str, str, Dict[str, Any]], None]
 
 
 # Scoring prompt - same as original quick_scorer for consistency
@@ -84,12 +88,14 @@ class ClaudeQuickScorer:
     - Falls back to LangChain/OpenRouter if CLI unavailable
     - Same scoring logic as original quick_scorer.py
     - Optional verbose logging via log_callback
+    - Optional progress_callback for LLM events (cost tracking, backend attribution)
     """
 
     def __init__(
         self,
         tier: str = "low",
         log_callback: Optional[LogCallback] = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         """
         Initialize the scorer.
@@ -97,10 +103,26 @@ class ClaudeQuickScorer:
         Args:
             tier: LLM tier to use - "low" for cost-effective scoring
             log_callback: Optional callback for verbose logging (e.g., to Redis/SSE)
+            progress_callback: Optional callback for LLM progress events (cost tracking, backend attribution).
+                Signature: (event_type: str, message: str, data: Dict) -> None
+                When provided, enables rich frontend display with cost_usd, backend, duration_ms.
         """
-        self.llm = UnifiedLLM(step_name="quick_scorer")
+        self._tier = tier
+        self._progress_callback = progress_callback
         self._candidate_profile_cache: Optional[str] = None
         self._log_callback = log_callback
+        self._llm: Optional[UnifiedLLM] = None
+
+    @property
+    def llm(self) -> UnifiedLLM:
+        """Lazy-initialize UnifiedLLM with progress_callback."""
+        if self._llm is None:
+            self._llm = UnifiedLLM(
+                step_name="quick_scorer",
+                tier=self._tier,
+                progress_callback=self._progress_callback,
+            )
+        return self._llm
 
     def _log(self, message: str) -> None:
         """Emit a log message via callback if available."""

@@ -10,10 +10,11 @@ scoring (free with Max subscription).
 Supports real-time verbose logging via Redis + LogPoller infrastructure.
 """
 
+import json
 import logging
 import os
-from datetime import datetime
-from typing import Callable, Dict, List, Optional
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
@@ -30,6 +31,81 @@ from src.common.repositories import get_system_state_repository
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["ingestion"])
+
+
+# =============================================================================
+# Structured Log Helpers for Livetail
+# =============================================================================
+
+
+def _emit_structured_log(
+    log_callback: Callable[[str], None],
+    event: str,
+    message: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Emit a structured JSON log entry to the operation log buffer.
+
+    This enables rich frontend display with backend attribution, cost tracking,
+    and proper event parsing.
+
+    Args:
+        log_callback: The log callback from create_log_callback
+        event: Event type (e.g., "llm_call_complete", "ingest_start")
+        message: Optional human-readable message
+        **kwargs: Additional fields (backend, cost_usd, duration_ms, metadata, etc.)
+    """
+    log_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "event": event,
+    }
+    if message:
+        log_entry["message"] = message
+
+    # Add all additional fields
+    for key, value in kwargs.items():
+        if value is not None:
+            log_entry[key] = value
+
+    log_callback(json.dumps(log_entry))
+
+
+def create_progress_callback(
+    log_callback: Callable[[str], None],
+) -> Callable[[str, str, Dict[str, Any]], None]:
+    """
+    Create a progress callback compatible with UnifiedLLM's progress_callback.
+
+    This bridges the gap between UnifiedLLM's event system and the operation
+    log buffer, enabling full cost tracking and backend attribution in the frontend.
+
+    Args:
+        log_callback: The log callback from create_log_callback
+
+    Returns:
+        A callback with signature (event_type, message, data) -> None
+    """
+    def callback(event_type: str, message: str, data: Dict[str, Any]) -> None:
+        # Map UnifiedLLM event types to StructuredLogger events
+        event_map = {
+            "llm_start": "llm_call_start",
+            "llm_complete": "llm_call_complete",
+            "llm_error": "llm_call_error",
+            "llm_fallback": "llm_call_fallback",
+        }
+        event = event_map.get(event_type, event_type)
+
+        # Build structured log entry
+        log_entry = {
+            "timestamp": data.get("timestamp", datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+            "event": event,
+            "message": message,
+            **{k: v for k, v in data.items() if k != "timestamp" and v is not None},
+        }
+        log_callback(json.dumps(log_entry))
+
+    return callback
 
 # In-memory storage for ingest results (keyed by run_id)
 _ingest_results: Dict[str, "IngestResponse"] = {}
@@ -188,21 +264,44 @@ async def _run_himalaya_ingestion(
     """Background task for Himalaya ingestion with verbose logging."""
     try:
         update_operation_status(run_id, "running")
-        log_callback(f"[ingest_start] source=himalayas, keywords={keywords}, incremental={incremental}")
+
+        # Emit structured start event
+        _emit_structured_log(
+            log_callback,
+            event="ingest_start",
+            message=f"Starting Himalayas ingestion",
+            metadata={
+                "source": "himalayas",
+                "keywords": keywords,
+                "max_results": max_results,
+                "incremental": incremental,
+                "worldwide_only": worldwide_only,
+            },
+        )
 
         # Import and initialize services
         from src.services.job_sources import HimalayasSource
         from src.services.job_ingest_service import IngestService
 
         # Fetch jobs from Himalaya
-        log_callback(f"[fetch_start] Fetching from Himalayas API (max={max_results}, worldwide={worldwide_only})...")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_start",
+            message=f"Fetching from Himalayas API (max={max_results}, worldwide={worldwide_only})",
+            metadata={"source": "himalayas", "max_results": max_results},
+        )
         source = HimalayasSource(log_callback=log_callback)
         jobs = source.fetch_jobs({
             "keywords": keywords,
             "max_results": max_results,
             "worldwide_only": worldwide_only,
         })
-        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Himalayas API")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_complete",
+            message=f"Received {len(jobs)} jobs from Himalayas API",
+            metadata={"source": "himalayas", "jobs_count": len(jobs)},
+        )
 
         if not jobs:
             result = IngestResponse(
@@ -221,14 +320,31 @@ async def _run_himalaya_ingestion(
             )
             _store_ingest_result(run_id, result)
             update_operation_status(run_id, "completed", result=result.model_dump())
-            log_callback("[ingest_complete] No jobs to ingest")
+            _emit_structured_log(
+                log_callback,
+                event="ingest_complete",
+                message="No jobs to ingest",
+                status="success",
+                metadata={"jobs_ingested": 0},
+            )
             return
 
-        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
-        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and structured logging
+        # Create progress callback for LLM cost tracking
+        progress_cb = create_progress_callback(log_callback)
+        ingest_service = IngestService(
+            use_claude_scorer=True,
+            log_callback=log_callback,
+            progress_callback=progress_cb,
+        )
 
         # Run ingestion
-        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        _emit_structured_log(
+            log_callback,
+            event="scoring_start",
+            message=f"Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})",
+            metadata={"jobs_count": len(jobs), "score_threshold": score_threshold},
+        )
         ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="himalayas_auto",
@@ -241,20 +357,33 @@ async def _run_himalaya_ingestion(
         result = IngestResponse(**ingest_result.to_dict())
         _store_ingest_result(run_id, result)
 
-        # Mark complete
+        # Mark complete with structured log
         update_operation_status(run_id, "completed", result=result.model_dump())
         stats = result.stats
-        log_callback(
-            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
-            f"Dupes={stats.get('duplicates_skipped', 0)}, "
-            f"BelowThreshold={stats.get('below_threshold', 0)}, "
-            f"Duration={stats.get('duration_ms', 0)}ms"
+        _emit_structured_log(
+            log_callback,
+            event="ingest_complete",
+            message=f"Ingestion complete: {stats.get('ingested', 0)} jobs ingested",
+            status="success",
+            duration_ms=stats.get("duration_ms", 0),
+            metadata={
+                "ingested": stats.get("ingested", 0),
+                "duplicates_skipped": stats.get("duplicates_skipped", 0),
+                "below_threshold": stats.get("below_threshold", 0),
+                "errors": stats.get("errors", 0),
+            },
         )
 
     except Exception as e:
         logger.exception(f"Himalaya ingestion failed: {e}")
         update_operation_status(run_id, "failed", error=str(e))
-        log_callback(f"[ingest_error] {str(e)}")
+        _emit_structured_log(
+            log_callback,
+            event="ingest_error",
+            message=str(e),
+            error=str(e),
+            status="error",
+        )
 
 
 @router.post("/ingest/indeed", response_model=IngestStartResponse, dependencies=[Depends(verify_token)])
@@ -354,9 +483,20 @@ async def _run_indeed_ingestion(
     """Background task for Indeed ingestion with verbose logging."""
     try:
         update_operation_status(run_id, "running")
-        log_callback(
-            f"[ingest_start] source=indeed, term='{search_config.get('search_term')}', "
-            f"location='{search_config.get('location')}', incremental={incremental}"
+
+        # Emit structured start event
+        _emit_structured_log(
+            log_callback,
+            event="ingest_start",
+            message=f"Starting Indeed ingestion for '{search_config.get('search_term')}'",
+            metadata={
+                "source": "indeed",
+                "search_term": search_config.get("search_term"),
+                "location": search_config.get("location"),
+                "country": search_config.get("country"),
+                "max_results": search_config.get("results_wanted"),
+                "incremental": incremental,
+            },
         )
 
         # Import and initialize services
@@ -364,10 +504,20 @@ async def _run_indeed_ingestion(
         from src.services.job_ingest_service import IngestService
 
         # Fetch jobs from Indeed
-        log_callback(f"[fetch_start] Fetching from Indeed (max={search_config.get('results_wanted')})...")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_start",
+            message=f"Fetching from Indeed (max={search_config.get('results_wanted')})",
+            metadata={"source": "indeed", "max_results": search_config.get("results_wanted")},
+        )
         source = IndeedSource(log_callback=log_callback)
         jobs = source.fetch_jobs(search_config)
-        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Indeed")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_complete",
+            message=f"Received {len(jobs)} jobs from Indeed",
+            metadata={"source": "indeed", "jobs_count": len(jobs)},
+        )
 
         if not jobs:
             result = IngestResponse(
@@ -386,14 +536,30 @@ async def _run_indeed_ingestion(
             )
             _store_ingest_result(run_id, result)
             update_operation_status(run_id, "completed", result=result.model_dump())
-            log_callback("[ingest_complete] No jobs to ingest")
+            _emit_structured_log(
+                log_callback,
+                event="ingest_complete",
+                message="No jobs to ingest",
+                status="success",
+                metadata={"jobs_ingested": 0},
+            )
             return
 
-        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
-        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and structured logging
+        progress_cb = create_progress_callback(log_callback)
+        ingest_service = IngestService(
+            use_claude_scorer=True,
+            log_callback=log_callback,
+            progress_callback=progress_cb,
+        )
 
         # Run ingestion
-        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        _emit_structured_log(
+            log_callback,
+            event="scoring_start",
+            message=f"Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})",
+            metadata={"jobs_count": len(jobs), "score_threshold": score_threshold},
+        )
         ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="indeed_auto",
@@ -406,20 +572,33 @@ async def _run_indeed_ingestion(
         result = IngestResponse(**ingest_result.to_dict())
         _store_ingest_result(run_id, result)
 
-        # Mark complete
+        # Mark complete with structured log
         update_operation_status(run_id, "completed", result=result.model_dump())
         stats = result.stats
-        log_callback(
-            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
-            f"Dupes={stats.get('duplicates_skipped', 0)}, "
-            f"BelowThreshold={stats.get('below_threshold', 0)}, "
-            f"Duration={stats.get('duration_ms', 0)}ms"
+        _emit_structured_log(
+            log_callback,
+            event="ingest_complete",
+            message=f"Ingestion complete: {stats.get('ingested', 0)} jobs ingested",
+            status="success",
+            duration_ms=stats.get("duration_ms", 0),
+            metadata={
+                "ingested": stats.get("ingested", 0),
+                "duplicates_skipped": stats.get("duplicates_skipped", 0),
+                "below_threshold": stats.get("below_threshold", 0),
+                "errors": stats.get("errors", 0),
+            },
         )
 
     except Exception as e:
         logger.exception(f"Indeed ingestion failed: {e}")
         update_operation_status(run_id, "failed", error=str(e))
-        log_callback(f"[ingest_error] {str(e)}")
+        _emit_structured_log(
+            log_callback,
+            event="ingest_error",
+            message=str(e),
+            error=str(e),
+            status="error",
+        )
 
 
 @router.post("/ingest/bayt", response_model=IngestStartResponse, dependencies=[Depends(verify_token)])
@@ -505,9 +684,18 @@ async def _run_bayt_ingestion(
     """Background task for Bayt ingestion with verbose logging."""
     try:
         update_operation_status(run_id, "running")
-        log_callback(
-            f"[ingest_start] source=bayt, term='{search_config.get('search_term')}', "
-            f"incremental={incremental}"
+
+        # Emit structured start event
+        _emit_structured_log(
+            log_callback,
+            event="ingest_start",
+            message=f"Starting Bayt ingestion for '{search_config.get('search_term')}'",
+            metadata={
+                "source": "bayt",
+                "search_term": search_config.get("search_term"),
+                "max_results": search_config.get("results_wanted"),
+                "incremental": incremental,
+            },
         )
 
         # Import and initialize services
@@ -515,10 +703,20 @@ async def _run_bayt_ingestion(
         from src.services.job_ingest_service import IngestService
 
         # Fetch jobs from Bayt
-        log_callback(f"[fetch_start] Fetching from Bayt (max={search_config.get('results_wanted')})...")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_start",
+            message=f"Fetching from Bayt (max={search_config.get('results_wanted')})",
+            metadata={"source": "bayt", "max_results": search_config.get("results_wanted")},
+        )
         source = BaytSource(log_callback=log_callback)
         jobs = source.fetch_jobs(search_config)
-        log_callback(f"[fetch_complete] Received {len(jobs)} jobs from Bayt")
+        _emit_structured_log(
+            log_callback,
+            event="fetch_complete",
+            message=f"Received {len(jobs)} jobs from Bayt",
+            metadata={"source": "bayt", "jobs_count": len(jobs)},
+        )
 
         if not jobs:
             result = IngestResponse(
@@ -537,14 +735,30 @@ async def _run_bayt_ingestion(
             )
             _store_ingest_result(run_id, result)
             update_operation_status(run_id, "completed", result=result.model_dump())
-            log_callback("[ingest_complete] No jobs to ingest")
+            _emit_structured_log(
+                log_callback,
+                event="ingest_complete",
+                message="No jobs to ingest",
+                status="success",
+                metadata={"jobs_ingested": 0},
+            )
             return
 
-        # Initialize ingest service with Claude scorer and logging (uses repository pattern internally)
-        ingest_service = IngestService(use_claude_scorer=True, log_callback=log_callback)
+        # Initialize ingest service with Claude scorer and structured logging
+        progress_cb = create_progress_callback(log_callback)
+        ingest_service = IngestService(
+            use_claude_scorer=True,
+            log_callback=log_callback,
+            progress_callback=progress_cb,
+        )
 
         # Run ingestion
-        log_callback(f"[ingest_scoring] Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})...")
+        _emit_structured_log(
+            log_callback,
+            event="scoring_start",
+            message=f"Scoring and ingesting {len(jobs)} jobs (threshold={score_threshold})",
+            metadata={"jobs_count": len(jobs), "score_threshold": score_threshold},
+        )
         ingest_result = await ingest_service.ingest_jobs(
             jobs=jobs,
             source_name="bayt",
@@ -557,20 +771,33 @@ async def _run_bayt_ingestion(
         result = IngestResponse(**ingest_result.to_dict())
         _store_ingest_result(run_id, result)
 
-        # Mark complete
+        # Mark complete with structured log
         update_operation_status(run_id, "completed", result=result.model_dump())
         stats = result.stats
-        log_callback(
-            f"[ingest_complete] Ingested={stats.get('ingested', 0)}, "
-            f"Dupes={stats.get('duplicates_skipped', 0)}, "
-            f"BelowThreshold={stats.get('below_threshold', 0)}, "
-            f"Duration={stats.get('duration_ms', 0)}ms"
+        _emit_structured_log(
+            log_callback,
+            event="ingest_complete",
+            message=f"Ingestion complete: {stats.get('ingested', 0)} jobs ingested",
+            status="success",
+            duration_ms=stats.get("duration_ms", 0),
+            metadata={
+                "ingested": stats.get("ingested", 0),
+                "duplicates_skipped": stats.get("duplicates_skipped", 0),
+                "below_threshold": stats.get("below_threshold", 0),
+                "errors": stats.get("errors", 0),
+            },
         )
 
     except Exception as e:
         logger.exception(f"Bayt ingestion failed: {e}")
         update_operation_status(run_id, "failed", error=str(e))
-        log_callback(f"[ingest_error] {str(e)}")
+        _emit_structured_log(
+            log_callback,
+            event="ingest_error",
+            message=str(e),
+            error=str(e),
+            status="error",
+        )
 
 
 @router.get("/ingest/state/{source}", dependencies=[Depends(verify_token)])
