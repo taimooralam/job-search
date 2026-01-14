@@ -1121,15 +1121,19 @@ def move_to_batch():
     Move selected jobs to batch processing queue.
 
     Updates status to "under processing" and sets batch_added_at timestamp.
-    Optionally auto-queues all-ops (JD extraction + company research) for all jobs.
+    Optionally auto-queues batch-pipeline (complete processing) for all jobs:
+    - Extraction + Annotations + Persona
+    - Company Research + Role Research + People Mapping
+    - CV Generation
+    - Upload CV and Dossier to Google Drive
 
     Request body:
         job_ids: List of job IDs to move to batch
-        auto_process: Optional bool (default True) - auto-queue all-ops with balanced tier
-        tier: Optional str (default "balanced") - processing tier for auto-processing
+        auto_process: Optional bool (default True) - auto-queue batch-pipeline
+        tier: Optional str (default "quality") - processing tier for batch processing
 
     Returns:
-        JSON with success status, updated count, and all-ops queued info
+        JSON with success status, updated count, and batch-pipeline queued info
     """
     data = request.get_json()
     job_ids = data.get("job_ids", [])
@@ -1169,37 +1173,37 @@ def move_to_batch():
 
         for job_id in job_ids:
             try:
+                # Queue batch-pipeline: complete processing flow
+                # Extraction → Annotations → Persona → Company Research → CV Generation → Uploads
                 response = requests.post(
-                    f"{runner_url}/api/jobs/{job_id}/operations/full-extraction/queue",
+                    f"{runner_url}/api/jobs/{job_id}/operations/batch-pipeline/queue",
                     json={
-                        "tier": tier,
-                        "auto_annotate": True,  # Auto-generate annotations after extraction
-                        "auto_persona": True,   # Auto-synthesize persona after annotations
+                        "tier": "quality",  # Use quality tier for full batch processing
                     },
                     headers=headers,
                     timeout=5.0  # Quick timeout - just queuing, not waiting for completion
                 )
                 if response.status_code == 200:
                     auto_queued.append(job_id)
-                    logger.debug(f"Auto-queued analyze-job for job {job_id}")
+                    logger.debug(f"Auto-queued batch-pipeline for job {job_id}")
                 else:
                     queue_errors.append({"job_id": job_id, "error": f"Status {response.status_code}"})
-                    logger.warning(f"Failed to queue analyze-job for {job_id}: {response.status_code}")
+                    logger.warning(f"Failed to queue batch-pipeline for {job_id}: {response.status_code}")
             except requests.exceptions.Timeout:
                 queue_errors.append({"job_id": job_id, "error": "Timeout"})
-                logger.warning(f"Timeout queuing analyze-job for {job_id}")
+                logger.warning(f"Timeout queuing batch-pipeline for {job_id}")
             except Exception as e:
                 queue_errors.append({"job_id": job_id, "error": str(e)})
-                logger.warning(f"Error queuing analyze-job for {job_id}: {e}")
+                logger.warning(f"Error queuing batch-pipeline for {job_id}: {e}")
 
-    logger.info(f"Moved {result.modified_count} jobs to batch, auto-queued {len(auto_queued)} for analysis")
+    logger.info(f"Moved {result.modified_count} jobs to batch, auto-queued {len(auto_queued)} for batch-pipeline")
 
     return jsonify({
         "success": True,
         "updated_count": result.modified_count,
         "batch_added_at": batch_added_at.isoformat(),
         "job_ids": job_ids,
-        "auto_queued": auto_queued,  # Jobs that were successfully queued for analysis
+        "auto_queued": auto_queued,  # Jobs that were successfully queued for batch-pipeline
         "queue_errors": queue_errors if queue_errors else None  # Any queue failures
     })
 

@@ -1761,6 +1761,7 @@ VALID_QUEUE_OPERATIONS = {
     "generate-outreach",     # Outreach message generation
     # Combo operations
     "full-analysis",         # All Phase 1 operations in parallel
+    "batch-pipeline",        # Complete batch: extraction + research + CV + uploads (move-to-batch)
     # Legacy names (still valid for backward compatibility, but aliases are preferred)
     "structure-jd",
     "full-extraction",
@@ -1798,6 +1799,7 @@ OPERATION_TIME_ESTIMATES = {
     "generate-cover-letter": 20,
     "generate-outreach": 25,
     "full-analysis": 90,
+    "batch-pipeline": 180,  # Complete batch: extraction + research + CV + uploads (~3 min)
     # Legacy names (same times as their canonical equivalents)
     "structure-jd": 15,
     "full-extraction": 45,
@@ -2223,6 +2225,19 @@ async def _execute_queued_operation(
                 )
             finally:
                 service.close()
+
+        elif operation == "batch-pipeline":
+            # Complete batch: extraction + annotations + persona + research + CV + uploads
+            # Used by move-to-batch for complete job processing
+            from src.services.batch_pipeline_service import BatchPipelineService
+            service = BatchPipelineService()
+            result = await service.execute(
+                job_id=job_id,
+                tier=tier,  # Use quality tier for all steps
+                progress_callback=layer_cb,
+                log_callback=log_cb,
+                stop_on_failure=False,  # Continue on non-critical failures
+            )
 
         # Update operation status
         if result:
