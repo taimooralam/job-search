@@ -516,6 +516,17 @@ See detailed plan: `.claude/plans/graceful-discovering-sparrow.md`
 - **Impact**: Batch page annotation editor now feature-complete with persona builder
 - **Commit**: `b49d4ba6` - feat(batch): add persona builder to annotation sidebar
 
+**ENHANCEMENT: Persona Badge (PS) Immediate Update in Batch Mode - COMPLETED**:
+- **Feature**: Persona badge (PS) in batch processing now turns green immediately when persona is generated (matching JD/RS/CV badge behavior)
+- **Pattern**: Added `persona:updated` event pattern following same event-driven architecture as other badges
+- **Files Modified**:
+  - `frontend/static/js/jd-annotation.js` - Dispatch `persona:updated` event when persona saved
+  - `frontend/templates/batch_processing.html` - Listen for `persona:updated` event and trigger badge refresh
+- **Behavior**: Badge color changes: orange (generating) → green (persona generated) without page reload
+- **Event Pattern Alignment**: Persona badge now follows consistent event dispatch pattern as JD (`jd:updated`), RS (`rs:updated`), CV (`cv:updated`)
+- **Verification**: Badge updates immediately in batch job row when persona generation completes
+- **Impact**: Users get consistent, immediate visual feedback across all badge types (JD/RS/CV/PS) during batch processing workflow
+
 **TEST CLEANUP: Removed Obsolete SSE Tests - COMPLETED**:
 - **Cleanup**: Removed 1029 lines of obsolete Server-Sent Events tests
   - Tests covered SSE log display pattern (now replaced by polling)

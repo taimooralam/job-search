@@ -7086,6 +7086,54 @@ document.addEventListener('jdAnnotationsSaved', (e) => {
 
 **Related Commit**: `b49d4ba6` - feat(batch): add persona builder to annotation sidebar
 
+### Persona Badge (PS) Immediate Update in Batch Mode
+
+**Feature**: Persona badge (PS) now turns green immediately when persona is generated in batch processing, matching JD/RS/CV badge behavior
+
+**Pattern**: Custom `persona:updated` event dispatch following the same architecture as other badge events
+
+**Event Architecture**:
+```javascript
+// When persona is saved in batch annotation editor
+window.dispatchEvent(new CustomEvent('persona:updated', {
+  detail: {
+    jobId: job_id,
+    timestamp: new Date().toISOString()
+  }
+}))
+```
+
+**Badge Update Handler** (in `batch_processing.html`):
+```javascript
+window.addEventListener('persona:updated', function(e) {
+  const matchedJobId = e.detail.jobId
+  const badgeElement = document.querySelector(`[data-job-id="${matchedJobId}"] .ps-badge`)
+  badgeElement.classList.remove('bg-orange-100', 'text-orange-600')
+  badgeElement.classList.add('bg-green-100', 'text-green-700')
+})
+```
+
+**Event Pattern Consistency**:
+- JD Badge: `jd:updated` event when annotations saved
+- RS Badge: `rs:updated` event when research completed
+- CV Badge: `cv:updated` event when CV generated
+- PS Badge: `persona:updated` event when persona generated
+- All follow the same immediate update pattern without page reload
+
+**UX Flow**:
+1. User selects/generates persona in batch sidebar
+2. Backend saves persona to MongoDB
+3. Frontend dispatches `persona:updated` event
+4. PS badge listener catches event
+5. Badge color changes: orange (incomplete) → green (has persona) immediately
+6. User sees confirmation without page reload
+
+**Files Modified**:
+- `frontend/static/js/jd-annotation.js` - Added event dispatch on persona save
+- `frontend/templates/batch_processing.html` - Added event listener and handler
+
+**Impact**: Batch processing now provides consistent, immediate visual feedback for all four badge types (JD/RS/CV/PS), improving user experience during batch operations
+
 ### Batch Table Layout Optimization (2025-12-19)
 
 **Problem**: Batch processing table had layout issues:
