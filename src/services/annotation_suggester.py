@@ -648,7 +648,7 @@ def generate_annotations_for_job(
                 # Suggest ATS keywords from extracted_jd (Source 3)
                 suggested_keywords = suggest_keywords_for_item(item_text, extracted_jd)
 
-                # Create annotation with section_header
+                # Create annotation with section_header and extracted_jd for dimension inference
                 annotation = _create_annotation(
                     item_text,
                     section_type,
@@ -656,6 +656,8 @@ def generate_annotations_for_job(
                     match_ctx,
                     item if isinstance(item, dict) else None,
                     section_header=section_header,
+                    extracted_jd=extracted_jd,
+                    master_cv=master_cv,
                 )
 
                 # Override requirement_type if inferred (when no match_result)
@@ -713,6 +715,91 @@ def generate_annotations_for_job(
         return {"success": False, "error": str(e)}
 
 
+def _infer_dimensions_from_extracted_jd(
+    item_text: str,
+    section: str,
+    extracted_jd: Dict[str, Any],
+    master_cv: Dict[str, Any],
+    match_ctx: Optional[MatchContext],
+) -> Dict[str, str]:
+    """
+    Infer persona-ready dimensions (relevance/identity/passion) from extracted_jd context.
+
+    This enhancement ensures auto-generated annotations have dimensions that
+    enable persona synthesis, even without historical priors.
+
+    Logic:
+    - RELEVANCE: If user has the skill (hard_skill/jd_signal match) → core_strength
+    - IDENTITY: If skill matches extracted_jd technical_skills → strong_identity
+    - PASSION: If nice_to_have section with user skill → enjoy
+
+    Args:
+        item_text: The JD requirement text
+        section: Section type (e.g., "requirements", "nice_to_have")
+        extracted_jd: Extracted JD intelligence with role_category, technical_skills, etc.
+        master_cv: User's CV data with hard_skills, soft_skills
+        match_ctx: Context about why this item was selected
+
+    Returns:
+        Dict with dimension overrides (relevance, identity, passion) - only includes
+        dimensions that should be upgraded from defaults
+    """
+    result = {}
+
+    if not extracted_jd:
+        return result
+
+    # Get user's skills from master CV (lowercase for matching)
+    user_hard_skills = {s.lower() for s in master_cv.get("hard_skills", set())}
+    user_soft_skills = {s.lower() for s in master_cv.get("soft_skills", set())}
+    user_all_skills = user_hard_skills | user_soft_skills
+
+    # Get extracted_jd data
+    tech_skills = [s.lower() for s in extracted_jd.get("technical_skills", [])]
+    responsibilities = [r.lower() for r in extracted_jd.get("responsibilities", [])]
+    qualifications = [q.lower() for q in extracted_jd.get("qualifications", [])]
+
+    item_lower = item_text.lower()
+
+    # 1. RELEVANCE (strength) - boost to core_strength if user has the skill
+    if match_ctx:
+        if match_ctx.type in ("hard_skill", "jd_signal"):
+            # User has this core skill → core_strength
+            result["relevance"] = "core_strength"
+        elif match_ctx.type == "soft_skill":
+            # User has this soft skill → extremely_relevant
+            result["relevance"] = "extremely_relevant"
+        elif match_ctx.type == "skill_alias":
+            # User has aliased skill → core_strength
+            result["relevance"] = "core_strength"
+
+    # 2. IDENTITY - set strong_identity if skill matches extracted_jd tech skills + user has it
+    for skill in tech_skills:
+        if skill in item_lower:
+            # Check if user has this skill
+            if skill in user_all_skills or any(skill in us for us in user_all_skills):
+                result["identity"] = "strong_identity"
+                break
+
+    # Also check qualifications for identity
+    if "identity" not in result:
+        for qual in qualifications:
+            # If the qualification mentions a skill the user has
+            for user_skill in user_hard_skills:
+                if user_skill in qual and user_skill in item_lower:
+                    result["identity"] = "strong_identity"
+                    break
+
+    # 3. PASSION - nice_to_have items that user has → enjoy
+    if section in ("nice_to_have", "nice_to_haves") and match_ctx:
+        result["passion"] = "enjoy"
+    elif section == "benefits" and match_ctx:
+        # Benefits the user would appreciate
+        result["passion"] = "enjoy"
+
+    return result
+
+
 def _create_annotation(
     text: str,
     section: str,
@@ -720,6 +807,8 @@ def _create_annotation(
     match_ctx: Optional[MatchContext],
     item_dict: Optional[Dict[str, Any]],
     section_header: Optional[str] = None,
+    extracted_jd: Optional[Dict[str, Any]] = None,
+    master_cv: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Create an annotation dict with original values for feedback tracking.
@@ -731,6 +820,8 @@ def _create_annotation(
         match_ctx: Context about why this was selected for annotation
         item_dict: Original item dict with position info
         section_header: Optional original section header from JD
+        extracted_jd: Optional extracted JD intelligence for dimension inference
+        master_cv: Optional master CV data for skill matching
     """
     now = datetime.now(timezone.utc).isoformat()
     ann_id = f"ann_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:8]}"
@@ -765,6 +856,21 @@ def _create_annotation(
         matched_text = None
         matched_keyword = match_ctx.match if match_ctx else None
         matched_score = None
+
+    # Enhance dimensions using extracted_jd context (makes annotations persona-ready)
+    # This ensures auto-generated annotations have meaningful identity/passion/strength
+    # even without historical priors
+    if extracted_jd and master_cv:
+        dimension_overrides = _infer_dimensions_from_extracted_jd(
+            text, section, extracted_jd, master_cv, match_ctx
+        )
+        if dimension_overrides:
+            relevance = dimension_overrides.get("relevance", relevance)
+            identity = dimension_overrides.get("identity", identity)
+            passion = dimension_overrides.get("passion", passion)
+            # Update method to indicate enhancement
+            if method == "default":
+                method = "extracted_jd_enhanced"
 
     # Build target
     target = {
