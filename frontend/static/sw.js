@@ -5,7 +5,7 @@
  * No offline caching - app requires live connection for real-time job data.
  */
 
-const SW_VERSION = '1.0.0';
+const SW_VERSION = '1.1.0';
 
 // Install event - activate immediately
 self.addEventListener('install', (event) => {
@@ -19,9 +19,19 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Fetch event - pass through all requests (no caching)
+// Fetch event - pass through same-origin requests only
+// Cross-origin requests (e.g., to runner.uqab.digital) are NOT intercepted
+// to avoid CORS issues with service worker fetch handling
 self.addEventListener('fetch', (event) => {
-  // Simply fetch from network - no caching strategy
+  const url = new URL(event.request.url);
+
+  // Skip cross-origin requests - let browser handle CORS directly
+  // This prevents intermittent CORS failures caused by SW fetch interception
+  if (url.origin !== self.location.origin) {
+    return; // Don't call respondWith - let browser handle it normally
+  }
+
+  // Same-origin requests: pass through to network
   event.respondWith(fetch(event.request));
 });
 
