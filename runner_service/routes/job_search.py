@@ -5,7 +5,7 @@ Pull-on-demand job search API for searching Indeed, Bayt, and Himalayas
 with caching and a searchable job index.
 
 Endpoints:
-    POST /job-search/search     - Execute search (or return cache)
+    POST /job-search/search     - Execute search (async with livetail)
     GET  /job-search/index      - Query job index with filters
     GET  /job-search/presets    - Get search presets
     GET  /job-search/{job_id}   - Get single job details
@@ -16,17 +16,57 @@ Endpoints:
     GET  /job-search/stats      - Get index and cache stats
 """
 
+import json
 import logging
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import Any, Callable, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 
 from ..auth import verify_token
+from .operation_streaming import (
+    create_operation_run,
+    create_log_callback,
+    update_operation_status,
+    get_operation_state,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/job-search", tags=["job-search"])
+
+# In-memory storage for search results (keyed by run_id)
+_search_results: Dict[str, "SearchResponse"] = {}
+
+
+def _emit_structured_log(
+    log_callback: Callable[[str], None],
+    event: str,
+    message: Optional[str] = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Emit a structured JSON log entry to the operation log buffer.
+
+    Args:
+        log_callback: The log callback from create_log_callback
+        event: Event type (e.g., "search_start", "source_complete")
+        message: Optional human-readable message
+        **kwargs: Additional fields (metadata, etc.)
+    """
+    log_entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "event": event,
+    }
+    if message:
+        log_entry["message"] = message
+
+    for key, value in kwargs.items():
+        if value is not None:
+            log_entry[key] = value
+
+    log_callback(json.dumps(log_entry))
 
 
 # =============================================================================
@@ -64,6 +104,14 @@ class SearchRequest(BaseModel):
     )
 
 
+class SearchStartResponse(BaseModel):
+    """Response when starting async job search."""
+    run_id: str
+    status: str
+    cache_hit: Optional[bool] = None
+    cache_key: Optional[str] = None
+
+
 class SearchResponse(BaseModel):
     """Response model for job search."""
     success: bool
@@ -73,6 +121,14 @@ class SearchResponse(BaseModel):
     total_results: int
     results_by_source: dict
     jobs: List[dict]
+    error: Optional[str] = None
+
+
+class SearchResultResponse(BaseModel):
+    """Response when polling for search result."""
+    run_id: str
+    status: str  # "queued", "running", "completed", "failed"
+    result: Optional[SearchResponse] = None
     error: Optional[str] = None
 
 
@@ -139,10 +195,14 @@ def get_search_service():
 # Endpoints
 # =============================================================================
 
-@router.post("/search", response_model=SearchResponse, dependencies=[Depends(verify_token)])
-async def search_jobs(request: SearchRequest):
+@router.post("/search", response_model=SearchStartResponse, dependencies=[Depends(verify_token)])
+async def search_jobs(request: SearchRequest, background_tasks: BackgroundTasks):
     """
-    Execute job search across specified sources.
+    Execute job search across specified sources (async with real-time logging).
+
+    This endpoint returns immediately with a run_id. Use:
+    - GET /api/logs/operations/{run_id} for real-time logs via polling
+    - GET /job-search/result/{run_id} for final result
 
     Searches Indeed, Bayt, and/or Himalayas based on the request.
     Results are cached for 6 hours by default.
@@ -158,9 +218,15 @@ async def search_jobs(request: SearchRequest):
     }
     ```
     """
-    service = get_search_service()
+    # Create operation run for log streaming
+    run_id = create_operation_run(job_id="search", operation="job-search")
+    log_cb = create_log_callback(run_id)
 
-    result = await service.search(
+    # Start background task
+    background_tasks.add_task(
+        _run_job_search,
+        run_id=run_id,
+        log_callback=log_cb,
         job_titles=request.job_titles,
         regions=request.regions,
         sources=request.sources,
@@ -169,15 +235,142 @@ async def search_jobs(request: SearchRequest):
         max_results_per_source=request.max_results_per_source,
     )
 
-    return SearchResponse(
-        success=result.success,
-        cache_hit=result.cache_hit,
-        cache_key=result.cache_key,
-        search_duration_ms=result.search_duration_ms,
-        total_results=result.total_results,
-        results_by_source=result.results_by_source,
-        jobs=result.jobs,
-        error=result.error,
+    return SearchStartResponse(
+        run_id=run_id,
+        status="queued",
+    )
+
+
+async def _run_job_search(
+    run_id: str,
+    log_callback: Callable[[str], None],
+    job_titles: List[str],
+    regions: List[str],
+    sources: List[str],
+    remote_only: bool,
+    use_cache: bool,
+    max_results_per_source: Optional[int],
+) -> None:
+    """Background task for job search with verbose logging."""
+    try:
+        update_operation_status(run_id, "running")
+
+        # Emit structured start event
+        _emit_structured_log(
+            log_callback,
+            event="search_start",
+            message=f"Starting job search: {', '.join(job_titles)}",
+            metadata={
+                "job_titles": job_titles,
+                "regions": regions,
+                "sources": sources,
+                "remote_only": remote_only,
+                "use_cache": use_cache,
+            },
+        )
+
+        service = get_search_service()
+
+        # Emit per-source progress
+        _emit_structured_log(
+            log_callback,
+            event="search_sources",
+            message=f"Searching {len(sources)} sources: {', '.join(sources)}",
+            metadata={"sources": sources},
+        )
+
+        result = await service.search(
+            job_titles=job_titles,
+            regions=regions,
+            sources=sources,
+            remote_only=remote_only,
+            use_cache=use_cache,
+            max_results_per_source=max_results_per_source,
+        )
+
+        # Build response
+        response = SearchResponse(
+            success=result.success,
+            cache_hit=result.cache_hit,
+            cache_key=result.cache_key,
+            search_duration_ms=result.search_duration_ms,
+            total_results=result.total_results,
+            results_by_source=result.results_by_source,
+            jobs=result.jobs,
+            error=result.error,
+        )
+
+        # Store result
+        _search_results[run_id] = response
+
+        # Emit per-source results
+        for source, count in result.results_by_source.items():
+            _emit_structured_log(
+                log_callback,
+                event="source_complete",
+                message=f"{source}: {count} jobs found",
+                metadata={"source": source, "jobs_count": count},
+            )
+
+        # Mark complete with structured log
+        if response.success:
+            update_operation_status(run_id, "completed", result=response.model_dump())
+            _emit_structured_log(
+                log_callback,
+                event="search_complete",
+                message=f"Search complete: {response.total_results} jobs found",
+                status="success",
+                duration_ms=response.search_duration_ms,
+                metadata={
+                    "total_results": response.total_results,
+                    "cache_hit": response.cache_hit,
+                    "results_by_source": response.results_by_source,
+                },
+            )
+        else:
+            update_operation_status(run_id, "failed", error=response.error)
+            _emit_structured_log(
+                log_callback,
+                event="search_error",
+                message=response.error or "Search failed",
+                error=response.error,
+                status="error",
+            )
+
+    except Exception as e:
+        logger.exception(f"Job search failed: {e}")
+        update_operation_status(run_id, "failed", error=str(e))
+        _emit_structured_log(
+            log_callback,
+            event="search_error",
+            message=str(e),
+            error=str(e),
+            status="error",
+        )
+
+
+@router.get("/result/{run_id}", response_model=SearchResultResponse, dependencies=[Depends(verify_token)])
+async def get_search_result(run_id: str) -> SearchResultResponse:
+    """
+    Get the result of a job search operation.
+
+    Args:
+        run_id: Operation run ID from /search
+
+    Returns:
+        SearchResultResponse with status and result if completed
+    """
+    state = get_operation_state(run_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    result = _search_results.get(run_id)
+
+    return SearchResultResponse(
+        run_id=run_id,
+        status=state.status,
+        result=result,
+        error=state.error,
     )
 
 
