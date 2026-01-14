@@ -475,6 +475,38 @@ class FullExtractionService(OperationService):
             logger.error(f"Failed to persist extraction results: {e}")
             return False
 
+    def _persist_persona(self, job_id: str, persona: "SynthesizedPersona") -> bool:
+        """
+        Persist synthesized persona to MongoDB.
+
+        Args:
+            job_id: MongoDB ObjectId as string
+            persona: SynthesizedPersona dataclass with persona_statement, etc.
+
+        Returns:
+            True if update succeeded
+        """
+        try:
+            object_id = ObjectId(job_id)
+        except Exception:
+            logger.error(f"Invalid job ID for persona persistence: {job_id}")
+            return False
+
+        repo = self._get_repository()
+        try:
+            result = repo.update_one(
+                {"_id": object_id},
+                {"$set": {
+                    "jd_annotations.synthesized_persona": persona.to_dict(),
+                    "updatedAt": datetime.utcnow(),
+                }}
+            )
+            return result.modified_count > 0 or result.matched_count > 0
+
+        except Exception as e:
+            logger.error(f"Failed to persist persona: {e}")
+            return False
+
     async def execute(
         self,
         job_id: str,
@@ -482,10 +514,14 @@ class FullExtractionService(OperationService):
         use_llm: bool = True,
         progress_callback: callable = None,
         log_callback: callable = None,
+        auto_annotate: bool = False,
+        auto_persona: bool = False,
         **kwargs,
     ) -> OperationResult:
         """
         Execute full extraction operation (Layer 1.4 + Layer 2 + Layer 4).
+
+        Optionally generates annotations and persona after extraction.
 
         Args:
             job_id: MongoDB ObjectId of the job to process
@@ -493,6 +529,8 @@ class FullExtractionService(OperationService):
             use_llm: Whether to use LLM for processing (default True)
             progress_callback: Optional callback(layer_key, status, message) for real-time updates
             log_callback: Optional callback(message: str) for log streaming to frontend
+            auto_annotate: Whether to auto-generate annotations after extraction (default False)
+            auto_persona: Whether to auto-synthesize persona after annotations (default False)
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -652,14 +690,90 @@ class FullExtractionService(OperationService):
                     await emit_progress("save_results", "failed", "Persistence failed")
                     logger.warning(f"[{run_id[:16]}] Failed to persist results")
 
-                # 8. Estimate cost (rough - 4 LLM calls now)
+                # 8. Auto-generate annotations if enabled
+                annotation_result = {"created": 0, "skipped": 0}
+                if auto_annotate:
+                    await emit_progress("annotations", "processing", "Generating annotations")
+                    if log_callback:
+                        log_callback(_json.dumps({"message": "Auto-generating annotations..."}))
+
+                    try:
+                        from src.services.annotation_suggester import generate_annotations_for_job
+                        annotation_result = generate_annotations_for_job(job_id, extracted_jd)
+
+                        if annotation_result.get("success"):
+                            created = annotation_result.get("created", 0)
+                            skipped = annotation_result.get("skipped", 0)
+                            await emit_progress("annotations", "success", f"Created {created} annotations")
+                            if log_callback:
+                                log_callback(_json.dumps({
+                                    "message": f"Auto-generated {created} annotations, skipped {skipped}"
+                                }))
+                            logger.info(f"[{run_id[:16]}] Auto-annotations: {created} created, {skipped} skipped")
+                        else:
+                            error = annotation_result.get("error", "Unknown error")
+                            await emit_progress("annotations", "failed", f"Failed: {error}")
+                            logger.warning(f"[{run_id[:16]}] Auto-annotation failed: {error}")
+                    except Exception as ann_err:
+                        await emit_progress("annotations", "failed", f"Error: {ann_err}")
+                        logger.error(f"[{run_id[:16]}] Auto-annotation error: {ann_err}")
+
+                # 9. Auto-synthesize persona if enabled and annotations were created
+                persona_result = None
+                if auto_persona and annotation_result.get("created", 0) > 0:
+                    await emit_progress("persona", "processing", "Synthesizing persona")
+                    if log_callback:
+                        log_callback(_json.dumps({"message": "Synthesizing persona from annotations..."}))
+
+                    try:
+                        from src.common.persona_builder import PersonaBuilder
+
+                        builder = PersonaBuilder()
+                        # Reload job to get updated annotations
+                        job = self._get_job(job_id)
+                        jd_annotations = job.get("jd_annotations", {}) if job else {}
+
+                        if builder.has_persona_annotations(jd_annotations):
+                            persona = await builder.synthesize(jd_annotations, job_id)
+                            if persona:
+                                self._persist_persona(job_id, persona)
+                                persona_result = {
+                                    "persona": persona.persona_statement,
+                                    "primary": persona.primary_identity,
+                                }
+                                await emit_progress(
+                                    "persona", "success",
+                                    f"Persona: {persona.persona_statement[:50]}..."
+                                )
+                                if log_callback:
+                                    log_callback(_json.dumps({
+                                        "message": f"Synthesized persona: {persona.persona_statement[:80]}..."
+                                    }))
+                                logger.info(f"[{run_id[:16]}] Auto-persona synthesized")
+                            else:
+                                await emit_progress("persona", "failed", "Synthesis returned None")
+                                logger.warning(f"[{run_id[:16]}] Persona synthesis returned None")
+                        else:
+                            await emit_progress("persona", "skipped", "No persona-relevant annotations")
+                            logger.info(f"[{run_id[:16]}] Skipped persona - no relevant annotations")
+                    except Exception as persona_err:
+                        await emit_progress("persona", "failed", f"Error: {persona_err}")
+                        logger.error(f"[{run_id[:16]}] Auto-persona error: {persona_err}")
+
+                # 10. Estimate cost (rough - 4 LLM calls now, plus optional annotation/persona)
                 input_tokens = len(jd_text) // 4 * 4 + 2000  # 4x JD + prompts
                 output_tokens = 3000  # Approximate
                 cost_usd = self.estimate_cost(tier, input_tokens, output_tokens)
                 if log_callback:
                     log_callback(_json.dumps({"message": f"Estimated cost: ${cost_usd:.4f} ({tier.value} tier)"}))
 
-                # 9. Build combined response with layer status
+                # 11. Build combined response with layer status
+                layers_completed = ["1.4-processor", "1.4-extractor", "2", "4"]
+                if auto_annotate and annotation_result.get("created", 0) > 0:
+                    layers_completed.append("auto-annotations")
+                if auto_persona and persona_result:
+                    layers_completed.append("auto-persona")
+
                 response_data = {
                     "processed_jd": processed_jd,
                     "extracted_jd": extracted_jd,
@@ -674,7 +788,12 @@ class FullExtractionService(OperationService):
                     "annotation_score": annotation_signals.get("annotation_score"),
                     "good_match_count": annotation_signals.get("good_match_count", 0),
                     "gap_count": annotation_signals.get("gap_count", 0),
-                    "layers_completed": ["1.4-processor", "1.4-extractor", "2", "4"],
+                    # Auto-annotation results
+                    "auto_annotations_created": annotation_result.get("created", 0),
+                    "auto_annotations_skipped": annotation_result.get("skipped", 0),
+                    # Auto-persona results
+                    "auto_persona": persona_result,
+                    "layers_completed": layers_completed,
                     "layer_status": layer_status,
                     "persisted": persisted,
                 }
