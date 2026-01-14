@@ -1015,10 +1015,10 @@ class CVGeneratorV2:
         contact_line = " · ".join(contact_parts)
         lines.append(f"*{contact_line}*")
 
-        # Relocation tagline for Middle East
-        job_location = extracted_jd.get("location", "") or state.get("location", "")
-        if job_location and is_middle_east_location(job_location):
-            lines.append(RELOCATION_TAGLINE)
+        # Relocation tagline for Middle East (DISABLED)
+        # job_location = extracted_jd.get("location", "") or state.get("location", "")
+        # if job_location and is_middle_east_location(job_location):
+        #     lines.append(RELOCATION_TAGLINE)
 
         lines.append("")
 
@@ -1335,10 +1335,10 @@ class CVGeneratorV2:
         contact_line = " · ".join(contact_parts)
         lines.append(f"*{contact_line}*")  # Italic formatting
 
-        # GAP-014: Add relocation tagline for Middle East locations
-        if job_location and is_middle_east_location(job_location):
-            lines.append(RELOCATION_TAGLINE)
-            self._logger.info(f"  [GAP-014] Added relocation tagline for: {job_location}")
+        # GAP-014: Add relocation tagline for Middle East locations (DISABLED)
+        # if job_location and is_middle_east_location(job_location):
+        #     lines.append(RELOCATION_TAGLINE)
+        #     self._logger.info(f"  [GAP-014] Added relocation tagline for: {job_location}")
 
         lines.append("")
 
