@@ -295,9 +295,65 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
                 msg = metadata.get("message", event_name)
                 log_obj["message"] = f"📋 {msg}"
 
+            # === Job Ingestion Events ===
+            elif parsed.get("event") == "ingest_start":
+                source = metadata.get("source", "unknown")
+                log_obj["message"] = f"🚀 {parsed.get('message', f'Starting {source} ingestion')}"
+            elif parsed.get("event") == "fetch_start":
+                source = metadata.get("source", "unknown")
+                log_obj["message"] = f"📥 {parsed.get('message', f'Fetching from {source}')}"
+            elif parsed.get("event") == "fetch_complete":
+                jobs_count = metadata.get("jobs_count", "?")
+                source = metadata.get("source", "unknown")
+                log_obj["message"] = f"✅ {parsed.get('message', f'Received {jobs_count} jobs from {source}')}"
+            elif parsed.get("event") == "scoring_start":
+                jobs_count = metadata.get("jobs_count", "?")
+                log_obj["message"] = f"🔍 {parsed.get('message', f'Scoring {jobs_count} jobs')}"
+            elif parsed.get("event") == "ingest_complete":
+                ingested = metadata.get("ingested", 0)
+                log_obj["message"] = f"✅ {parsed.get('message', f'Ingestion complete: {ingested} jobs')}"
+                log_obj["status"] = parsed.get("status", "success")
+            elif parsed.get("event") == "ingest_error":
+                log_obj["message"] = f"❌ {parsed.get('message', 'Ingestion error')}"
+                log_obj["level"] = "error"
+
+            # === Job Search Events ===
+            elif parsed.get("event") == "search_start":
+                log_obj["message"] = f"🔎 {parsed.get('message', 'Starting job search')}"
+            elif parsed.get("event") == "search_sources":
+                sources = metadata.get("sources", [])
+                log_obj["message"] = f"📡 {parsed.get('message', f'Searching {len(sources)} sources')}"
+            elif parsed.get("event") == "source_complete":
+                source = metadata.get("source", "?")
+                jobs_count = metadata.get("jobs_count", 0)
+                log_obj["message"] = f"  ✓ {parsed.get('message', f'{source}: {jobs_count} jobs')}"
+            elif parsed.get("event") == "search_complete":
+                total = metadata.get("total_results", 0)
+                cache_hit = "📦 cache hit" if metadata.get("cache_hit") else ""
+                log_obj["message"] = f"✅ {parsed.get('message', f'Search complete: {total} jobs')} {cache_hit}".strip()
+            elif parsed.get("event") == "search_error":
+                log_obj["message"] = f"❌ {parsed.get('message', 'Search error')}"
+                log_obj["level"] = "error"
+
+            # === Annotation Events ===
+            elif parsed.get("event") == "annotation_start":
+                log_obj["message"] = f"📝 {parsed.get('message', 'Starting annotation generation')}"
+            elif parsed.get("event") == "annotation_processing":
+                log_obj["message"] = f"  🔄 {parsed.get('message', 'Processing...')}"
+            elif parsed.get("event") == "annotation_complete":
+                created = metadata.get("created", 0)
+                skipped = metadata.get("skipped", 0)
+                log_obj["message"] = f"✅ {parsed.get('message', f'Generated {created} annotations ({skipped} skipped)')}"
+            elif parsed.get("event") == "annotation_error":
+                log_obj["message"] = f"❌ {parsed.get('message', 'Annotation error')}"
+                log_obj["level"] = "error"
+
             else:
-                # Fallback: use event type or raw log
-                log_obj["message"] = parsed.get("event", log)
+                # Fallback: use message field if present, otherwise event type or raw log
+                if parsed.get("message"):
+                    log_obj["message"] = parsed["message"]
+                else:
+                    log_obj["message"] = parsed.get("event", log)
 
             # Extract LLM attribution fields for frontend backend stats
             if parsed.get("backend"):
@@ -485,6 +541,11 @@ async def poll_logs(
     """
     Poll logs for a pipeline operation.
 
+    Multi-Runner Support:
+    - If this runner owns the run, serve from in-memory (fastest)
+    - If another runner owns it, serve from Redis (slightly delayed)
+    - Response includes X-Log-Owner header for debugging
+
     Enables the "replay + live tail" pattern:
     - First request: since=0 to get all past logs
     - Subsequent requests: since=next_index to get only new logs
@@ -501,6 +562,7 @@ async def poll_logs(
         - total_count: Total logs available
         - status: Operation status (running/completed/failed)
         - layer_status: Layer-level progress (if available)
+        - log_source: "memory" or "redis" (for debugging)
 
     Example response:
         {
@@ -511,47 +573,26 @@ async def poll_logs(
             "next_index": 2,
             "total_count": 2,
             "status": "running",
-            "layer_status": {"fetch_job": {"status": "success"}}
+            "layer_status": {"fetch_job": {"status": "success"}},
+            "log_source": "memory"
         }
     """
-    # DIAGNOSTIC: Log request entry
-    logger.info(f"[LOG_POLL] Request received: run_id={run_id}, since={since}, limit={limit}")
-
-    redis = _get_redis_client()
-    logger.info(f"[LOG_POLL] Redis client: {'connected' if redis else 'None'}")
-
-    if not redis:
-        logger.warning(f"[LOG_POLL] Redis not available for run_id={run_id}")
-        raise HTTPException(
-            status_code=503,
-            detail="Log service unavailable (Redis not connected)"
+    # MULTI-RUNNER: Check if we own this run (fastest path)
+    try:
+        from runner_service.routes.operation_streaming import (
+            is_log_owner,
+            get_operation_state,
+            get_runner_id,
         )
 
-    # Build Redis keys
-    logs_key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
-    meta_key = f"{REDIS_LOG_PREFIX}{run_id}:meta"
-    layers_key = f"{REDIS_LOG_PREFIX}{run_id}:layers"
-
-    # Check if run exists
-    logger.info(f"[LOG_POLL] Checking Redis for run_id={run_id}")
-    try:
-        exists = await redis.exists(logs_key) or await redis.exists(meta_key)
-        logger.info(f"[LOG_POLL] Redis exists check: {exists}")
-    except Exception as e:
-        logger.error(f"[LOG_POLL] Redis exists check failed: {e}")
-        raise HTTPException(status_code=503, detail=f"Redis error: {e}")
-
-    if not exists:
-        # Check in-memory state as fallback
-        try:
-            from runner_service.routes.operation_streaming import get_operation_state
+        # If we own this run, serve from in-memory (instant, no Redis latency)
+        if is_log_owner(run_id):
             state = get_operation_state(run_id)
             if state:
-                # Return from in-memory state (also parse for structured data)
                 logs_slice = state.logs[since:since + limit]
                 total = len(state.logs)
-                # For in-memory state, expected_log_count = total when completed/failed
                 expected = total if state.status in {"completed", "failed"} else None
+                logger.debug(f"[LOG_POLL] Serving {run_id} from memory (we own it)")
                 return {
                     "logs": [
                         _parse_log_entry(msg, since + i)
@@ -564,10 +605,36 @@ async def poll_logs(
                     "layer_status": state.layer_status or {},
                     "error": state.error,
                     "langsmith_url": state.langsmith_url,
+                    "log_source": "memory",
+                    "runner_id": get_runner_id(),
                 }
-        except ImportError:
-            pass
+    except ImportError:
+        pass
 
+    # Not owned by us - serve from Redis
+    logger.debug(f"[LOG_POLL] Serving {run_id} from Redis (not our run)")
+
+    redis = _get_redis_client()
+    if not redis:
+        logger.warning(f"[LOG_POLL] Redis not available for run_id={run_id}")
+        raise HTTPException(
+            status_code=503,
+            detail="Log service unavailable (Redis not connected)"
+        )
+
+    # Build Redis keys
+    logs_key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
+    meta_key = f"{REDIS_LOG_PREFIX}{run_id}:meta"
+    layers_key = f"{REDIS_LOG_PREFIX}{run_id}:layers"
+
+    # Check if run exists in Redis
+    try:
+        exists = await redis.exists(logs_key) or await redis.exists(meta_key)
+    except Exception as e:
+        logger.error(f"[LOG_POLL] Redis exists check failed: {e}")
+        raise HTTPException(status_code=503, detail=f"Redis error: {e}")
+
+    if not exists:
         raise HTTPException(
             status_code=404,
             detail=f"Run {run_id} not found"
@@ -625,6 +692,7 @@ async def poll_logs(
         "layer_status": layer_status,
         "error": error,
         "langsmith_url": langsmith_url,
+        "log_source": "redis",  # Multi-runner: served from Redis (not our run)
     }
 
 
