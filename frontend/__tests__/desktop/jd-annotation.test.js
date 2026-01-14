@@ -636,6 +636,195 @@ describe('JD Annotation System', () => {
         expect(annotationManager.personaState.hasIdentityAnnotations).toBe(false);
       });
     });
+
+    describe('savePersona', () => {
+      beforeEach(() => {
+        annotationManager.personaState.statement = 'Test persona statement';
+        annotationManager.personaState.isEditing = true;
+        annotationManager.renderPersonaPanel = jest.fn();
+      });
+
+      test('calls correct API endpoint', async () => {
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        expect(fetch).toHaveBeenCalledWith(
+          '/api/jobs/job123/save-persona',
+          expect.objectContaining({
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      });
+
+      test('sends persona statement and is_edited flag in request body', async () => {
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        const lastCall = fetch.mock.calls[0];
+        const body = JSON.parse(lastCall[1].body);
+
+        expect(body.persona).toBe('Test persona statement');
+        expect(body.is_edited).toBe(true);
+      });
+
+      test('dispatches persona:updated event on success', async () => {
+        const eventHandler = jest.fn();
+        window.addEventListener('persona:updated', eventHandler);
+
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        expect(eventHandler).toHaveBeenCalledTimes(1);
+        expect(eventHandler.mock.calls[0][0].detail).toEqual({
+          jobId: 'job123',
+          hasPersona: true
+        });
+
+        window.removeEventListener('persona:updated', eventHandler);
+      });
+
+      test('does not dispatch event on API failure', async () => {
+        const eventHandler = jest.fn();
+        window.addEventListener('persona:updated', eventHandler);
+
+        mockFetchResponse({ success: false }, { ok: false, status: 500 });
+
+        await annotationManager.savePersona();
+
+        expect(eventHandler).not.toHaveBeenCalled();
+
+        window.removeEventListener('persona:updated', eventHandler);
+      });
+
+      test('updates personaState flags on success', async () => {
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        expect(annotationManager.personaState.isEditing).toBe(false);
+        expect(annotationManager.personaState.isUserEdited).toBe(true);
+      });
+
+      test('calls renderPersonaPanel after save', async () => {
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        expect(annotationManager.renderPersonaPanel).toHaveBeenCalled();
+      });
+
+      test('does not save when statement is empty', async () => {
+        annotationManager.personaState.statement = '';
+
+        await annotationManager.savePersona();
+
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      test('does not save when statement is whitespace only', async () => {
+        annotationManager.personaState.statement = '   \n\t  ';
+
+        await annotationManager.savePersona();
+
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      test('does not save when statement is null', async () => {
+        annotationManager.personaState.statement = null;
+
+        await annotationManager.savePersona();
+
+        expect(fetch).not.toHaveBeenCalled();
+      });
+
+      test('handles network errors gracefully', async () => {
+        mockFetchError(new Error('Network error'));
+
+        // Should not throw
+        await expect(annotationManager.savePersona()).resolves.toBeUndefined();
+      });
+
+      test('trims persona statement before saving', async () => {
+        annotationManager.personaState.statement = '  Test persona with spaces  ';
+        mockFetchResponse({ success: true });
+
+        await annotationManager.savePersona();
+
+        const lastCall = fetch.mock.calls[0];
+        const body = JSON.parse(lastCall[1].body);
+
+        expect(body.persona).toBe('Test persona with spaces');
+      });
+    });
+
+    describe('savePersonaToDb', () => {
+      test('dispatches persona:updated event on success', async () => {
+        const eventHandler = jest.fn();
+        window.addEventListener('persona:updated', eventHandler);
+
+        mockFetchResponse({ success: true }, { ok: true });
+
+        await annotationManager.savePersonaToDb('Test persona', false);
+
+        expect(eventHandler).toHaveBeenCalledTimes(1);
+        expect(eventHandler.mock.calls[0][0].detail).toEqual({
+          jobId: 'job123',
+          hasPersona: true
+        });
+
+        window.removeEventListener('persona:updated', eventHandler);
+      });
+
+      test('calls correct API endpoint', async () => {
+        mockFetchResponse({ success: true }, { ok: true });
+
+        await annotationManager.savePersonaToDb('Test persona', false);
+
+        expect(fetch).toHaveBeenCalledWith(
+          '/api/jobs/job123/save-persona',
+          expect.objectContaining({
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      });
+
+      test('sends persona and is_edited in request body', async () => {
+        mockFetchResponse({ success: true }, { ok: true });
+
+        await annotationManager.savePersonaToDb('My persona', true);
+
+        const lastCall = fetch.mock.calls[0];
+        const body = JSON.parse(lastCall[1].body);
+
+        expect(body.persona).toBe('My persona');
+        expect(body.is_edited).toBe(true);
+      });
+
+      test('does not dispatch event if response is not ok', async () => {
+        const eventHandler = jest.fn();
+        window.addEventListener('persona:updated', eventHandler);
+
+        mockFetchResponse({ success: false }, { ok: false, status: 500 });
+
+        await annotationManager.savePersonaToDb('Test persona', false);
+
+        expect(eventHandler).not.toHaveBeenCalled();
+
+        window.removeEventListener('persona:updated', eventHandler);
+      });
+
+      test('handles network errors gracefully', async () => {
+        mockFetchError(new Error('Network error'));
+
+        // Should not throw
+        await expect(annotationManager.savePersonaToDb('Test', false)).resolves.toBeUndefined();
+      });
+    });
   });
 
   // =========================================================================

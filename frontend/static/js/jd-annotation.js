@@ -2856,7 +2856,7 @@ class AnnotationManager {
      */
     async savePersonaToDb(persona, isEdited) {
         try {
-            await fetch(`/api/jobs/${this.jobId}/save-persona`, {
+            const response = await fetch(`/api/jobs/${this.jobId}/save-persona`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2864,6 +2864,12 @@ class AnnotationManager {
                     is_edited: isEdited
                 })
             });
+            if (response.ok) {
+                // Dispatch event for batch page to update persona badge
+                window.dispatchEvent(new CustomEvent('persona:updated', {
+                    detail: { jobId: this.jobId, hasPersona: true }
+                }));
+            }
         } catch (error) {
             console.error('Error saving persona to DB:', error);
         }
@@ -2891,6 +2897,10 @@ class AnnotationManager {
                 this.personaState.isEditing = false;
                 this.personaState.isUserEdited = true;
                 console.log('Persona saved successfully');
+                // Dispatch event for batch page to update persona badge
+                window.dispatchEvent(new CustomEvent('persona:updated', {
+                    detail: { jobId: this.jobId, hasPersona: true }
+                }));
             }
         } catch (error) {
             console.error('Error saving persona:', error);

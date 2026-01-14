@@ -2223,6 +2223,21 @@ html, body {
             }
         });
 
+        // Listen for persona updates to turn PS badge green
+        window.addEventListener('persona:updated', function(e) {
+            const { jobId, hasPersona } = e.detail;
+            const badge = document.querySelector(`[data-ps-badge="${jobId}"]`);
+            if (badge && hasPersona) {
+                badge.classList.remove(
+                    'bg-gray-100', 'text-gray-400', 'dark:bg-gray-700', 'dark:text-gray-500',
+                    'bg-orange-100', 'text-orange-600', 'dark:bg-orange-900/50', 'dark:text-orange-300'
+                );
+                badge.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900', 'dark:text-green-300');
+                badge.title = 'Persona: Generated';
+                BatchDebug.log('BADGE', `Updated PS badge for ${jobId}: green (persona generated)`);
+            }
+        });
+
         // Listen for queue events to track actual extraction completion
         // Note: Events are dispatched on window, so listen on window
         window.addEventListener('queue:job-started', function(e) {
@@ -2324,6 +2339,14 @@ html, body {
                             }
                         }));
                         BatchDebug.log('BADGE', `Dispatched cv:generated for ${matchedJobId}`);
+                    }
+
+                    // Persona generation updates PS badge
+                    if (operation === 'analyze-job' || operation === 'full-analysis' || operation === 'all-ops') {
+                        window.dispatchEvent(new CustomEvent('persona:updated', {
+                            detail: { jobId: matchedJobId, hasPersona: true }
+                        }));
+                        BatchDebug.log('BADGE', `Dispatched persona:updated for ${matchedJobId}`);
                     }
                 }
             }
