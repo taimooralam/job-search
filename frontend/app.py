@@ -1171,7 +1171,11 @@ def move_to_batch():
             try:
                 response = requests.post(
                     f"{runner_url}/api/jobs/{job_id}/operations/full-extraction/queue",
-                    json={"tier": tier},
+                    json={
+                        "tier": tier,
+                        "auto_annotate": True,  # Auto-generate annotations after extraction
+                        "auto_persona": True,   # Auto-synthesize persona after annotations
+                    },
                     headers=headers,
                     timeout=5.0  # Quick timeout - just queuing, not waiting for completion
                 )
