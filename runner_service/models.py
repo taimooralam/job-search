@@ -248,6 +248,14 @@ class QueueOperationRequest(BaseModel):
         default=True,
         description="Whether to incorporate user annotations for CV generation"
     )
+    auto_annotate: Optional[bool] = Field(
+        default=False,
+        description="Auto-generate annotations after JD extraction (for move-to-batch)"
+    )
+    auto_persona: Optional[bool] = Field(
+        default=False,
+        description="Auto-synthesize persona after annotation generation (for move-to-batch)"
+    )
 
 
 class QueueOperationResponse(BaseModel):

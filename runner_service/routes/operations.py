@@ -1975,6 +1975,8 @@ async def queue_operation(
                 force_refresh=request.force_refresh or False,
                 use_llm=request.use_llm if request.use_llm is not None else True,
                 use_annotations=request.use_annotations if request.use_annotations is not None else True,
+                auto_annotate=request.auto_annotate or False,  # Auto-generate annotations (move-to-batch)
+                auto_persona=request.auto_persona or False,    # Auto-synthesize persona (move-to-batch)
             )
         )
 
@@ -2015,6 +2017,8 @@ async def _execute_queued_operation(
     force_refresh: bool,
     use_llm: bool,
     use_annotations: bool,
+    auto_annotate: bool = False,
+    auto_persona: bool = False,
 ):
     """
     Execute a queued operation in the background.
@@ -2036,6 +2040,8 @@ async def _execute_queued_operation(
         force_refresh: Whether to force refresh (for company research)
         use_llm: Whether to use LLM (for extraction)
         use_annotations: Whether to use annotations (for CV generation)
+        auto_annotate: Whether to auto-generate annotations (for move-to-batch)
+        auto_persona: Whether to auto-synthesize persona (for move-to-batch)
     """
     log_cb = create_log_callback(run_id)
     layer_cb = create_layer_callback(run_id)
@@ -2089,6 +2095,8 @@ async def _execute_queued_operation(
                 use_llm=use_llm,
                 progress_callback=layer_cb,
                 log_callback=log_cb,  # Pass log_cb for LLM backend visibility
+                auto_annotate=auto_annotate,  # Auto-generate annotations (move-to-batch)
+                auto_persona=auto_persona,    # Auto-synthesize persona (move-to-batch)
             )
 
         elif operation in ("research-company", "discover-contacts", "generate-outreach"):
