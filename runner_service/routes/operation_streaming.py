@@ -10,11 +10,18 @@ Key Components:
 - _operation_runs: Global dict for operation state
 - Redis persistence for logs with 6-hour TTL
 - Helper functions for log appending and SSE streaming
+
+Multi-Runner Support:
+- Each runner has a unique ID (hostname + PID)
+- Log ownership tracked via logs:owner:{run_id} Redis key
+- Heartbeat mechanism for dead runner detection
 """
 
 import asyncio
 import json
 import logging
+import os
+import socket
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -24,6 +31,27 @@ from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# Multi-Runner Support
+# =============================================================================
+
+# Generate unique runner ID at module load (stable for process lifetime)
+_RUNNER_ID = f"{socket.gethostname()}_{os.getpid()}"
+
+# Heartbeat configuration
+HEARTBEAT_INTERVAL_SECONDS = 10
+HEARTBEAT_TTL_SECONDS = 30  # Runner considered dead if no heartbeat for 30s
+
+# Redis key prefixes for multi-runner coordination
+REDIS_OWNER_PREFIX = "logs:owner:"
+REDIS_HEARTBEAT_PREFIX = "runners:heartbeat:"
+REDIS_ACTIVE_RUNNERS_KEY = "runners:active"
+
+
+def get_runner_id() -> str:
+    """Get the unique ID for this runner instance."""
+    return _RUNNER_ID
 
 # Maximum logs to keep per operation (prevents unbounded memory growth)
 # CV generation produces 200-300 logs, so 1000 provides ample headroom
@@ -85,7 +113,10 @@ def create_operation_run(job_id: str, operation: str) -> str:
     # Persist to Redis (fire-and-forget, non-blocking)
     asyncio.create_task(_persist_operation_meta_to_redis(run_id, state))
 
-    logger.info(f"[{run_id[:16]}] Created operation run for {operation} on job {job_id}")
+    # Set log ownership for multi-runner support
+    asyncio.create_task(_set_log_owner(run_id, _RUNNER_ID))
+
+    logger.info(f"[{run_id[:16]}] Created operation run for {operation} on job {job_id} (runner={_RUNNER_ID})")
     return run_id
 
 
@@ -622,3 +653,165 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
     except Exception as e:
         logger.warning(f"[{run_id[:16]}] Failed to restore from Redis: {e}")
         return None
+
+
+# =============================================================================
+# Multi-Runner Log Ownership & Heartbeat
+# =============================================================================
+
+
+async def _set_log_owner(run_id: str, runner_id: str) -> None:
+    """
+    Set this runner as the owner of logs for the given run_id.
+
+    This enables log routing in multi-runner deployments: when a client
+    polls for logs, the system can serve from in-memory (if we own it)
+    or from Redis (if another runner owns it).
+
+    Args:
+        run_id: Operation run ID
+        runner_id: This runner's unique ID
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return
+
+        key = f"{REDIS_OWNER_PREFIX}{run_id}"
+        # Set owner with 24-hour TTL (matches log TTL)
+        await redis.setex(key, 86400, runner_id)
+        logger.debug(f"[{run_id[:16]}] Set log owner to {runner_id}")
+
+    except Exception as e:
+        logger.debug(f"[{run_id[:16]}] Failed to set log owner: {e}")
+
+
+async def get_log_owner(run_id: str) -> Optional[str]:
+    """
+    Get the runner ID that owns logs for the given run_id.
+
+    Args:
+        run_id: Operation run ID
+
+    Returns:
+        Runner ID string or None if not found/expired
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return None
+
+        key = f"{REDIS_OWNER_PREFIX}{run_id}"
+        owner = await redis.get(key)
+        if owner:
+            return owner if isinstance(owner, str) else owner.decode()
+        return None
+
+    except Exception as e:
+        logger.debug(f"[{run_id[:16]}] Failed to get log owner: {e}")
+        return None
+
+
+def is_log_owner(run_id: str) -> bool:
+    """
+    Check if this runner owns the logs for the given run_id (sync, in-memory check).
+
+    This is a fast check that doesn't hit Redis - it just checks if the run
+    exists in our in-memory state, which means we created it.
+
+    Args:
+        run_id: Operation run ID
+
+    Returns:
+        True if this runner owns the logs
+    """
+    return run_id in _operation_runs
+
+
+async def send_heartbeat() -> None:
+    """
+    Send a heartbeat to Redis indicating this runner is alive.
+
+    Called periodically by the heartbeat loop in app.py.
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return
+
+        # Set heartbeat with TTL
+        heartbeat_key = f"{REDIS_HEARTBEAT_PREFIX}{_RUNNER_ID}"
+        await redis.setex(heartbeat_key, HEARTBEAT_TTL_SECONDS, "alive")
+
+        # Add to active runners set
+        await redis.sadd(REDIS_ACTIVE_RUNNERS_KEY, _RUNNER_ID)
+
+        logger.debug(f"Heartbeat sent for runner {_RUNNER_ID}")
+
+    except Exception as e:
+        logger.warning(f"Heartbeat send failed: {e}")
+
+
+async def remove_runner_from_active() -> None:
+    """
+    Remove this runner from the active runners set on shutdown.
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return
+
+        # Remove from active set
+        await redis.srem(REDIS_ACTIVE_RUNNERS_KEY, _RUNNER_ID)
+
+        # Delete heartbeat key
+        heartbeat_key = f"{REDIS_HEARTBEAT_PREFIX}{_RUNNER_ID}"
+        await redis.delete(heartbeat_key)
+
+        logger.info(f"Runner {_RUNNER_ID} removed from active set")
+
+    except Exception as e:
+        logger.warning(f"Failed to remove runner from active set: {e}")
+
+
+async def get_active_runners() -> List[str]:
+    """
+    Get list of active runner IDs.
+
+    Returns:
+        List of runner ID strings
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return [_RUNNER_ID]  # Just us if no Redis
+
+        members = await redis.smembers(REDIS_ACTIVE_RUNNERS_KEY)
+        return [m if isinstance(m, str) else m.decode() for m in members]
+
+    except Exception as e:
+        logger.warning(f"Failed to get active runners: {e}")
+        return [_RUNNER_ID]
+
+
+async def check_runner_alive(runner_id: str) -> bool:
+    """
+    Check if a specific runner is alive (has recent heartbeat).
+
+    Args:
+        runner_id: Runner ID to check
+
+    Returns:
+        True if runner has a valid heartbeat
+    """
+    try:
+        redis = _get_redis_client()
+        if not redis:
+            return runner_id == _RUNNER_ID  # Only we exist if no Redis
+
+        heartbeat_key = f"{REDIS_HEARTBEAT_PREFIX}{runner_id}"
+        return await redis.exists(heartbeat_key) > 0
+
+    except Exception as e:
+        logger.warning(f"Failed to check runner heartbeat: {e}")
+        return False

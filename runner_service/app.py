@@ -1503,6 +1503,46 @@ async def startup_queue_manager():
         _queue_manager = None
 
 
+@app.on_event("startup")
+async def startup_heartbeat_loop():
+    """Start the heartbeat loop for multi-runner coordination."""
+    if not settings.redis_url:
+        return
+
+    async def heartbeat_loop():
+        from runner_service.routes.operation_streaming import (
+            send_heartbeat,
+            get_runner_id,
+            HEARTBEAT_INTERVAL_SECONDS,
+        )
+        runner_id = get_runner_id()
+        logger.info(f"Starting heartbeat loop for runner {runner_id}")
+
+        while True:
+            try:
+                await send_heartbeat()
+            except Exception as e:
+                logger.warning(f"Heartbeat failed: {e}")
+            await asyncio.sleep(HEARTBEAT_INTERVAL_SECONDS)
+
+    # Start heartbeat as background task
+    asyncio.create_task(heartbeat_loop())
+    logger.info("Heartbeat loop started for multi-runner coordination")
+
+
+@app.on_event("shutdown")
+async def shutdown_runner_cleanup():
+    """Remove this runner from active set on shutdown."""
+    if not settings.redis_url:
+        return
+
+    try:
+        from runner_service.routes.operation_streaming import remove_runner_from_active
+        await remove_runner_from_active()
+    except Exception as e:
+        logger.warning(f"Failed to clean up runner on shutdown: {e}")
+
+
 @app.on_event("shutdown")
 async def shutdown_queue_manager():
     """Disconnect queue manager on shutdown."""
