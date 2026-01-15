@@ -612,9 +612,15 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
 
         # Get metadata
         meta_key = f"{REDIS_LOG_PREFIX}{run_id}:meta"
-        meta = await redis.hgetall(meta_key)
-        if not meta:
+        raw_meta = await redis.hgetall(meta_key)
+        if not raw_meta:
             return None
+
+        # Decode bytes to strings (redis-py returns bytes by default)
+        meta = {
+            (k.decode() if isinstance(k, bytes) else k): (v.decode() if isinstance(v, bytes) else v)
+            for k, v in raw_meta.items()
+        }
 
         # Get logs
         logs_key = f"{REDIS_LOG_PREFIX}{run_id}:buffer"
@@ -623,6 +629,9 @@ async def get_operation_state_from_redis(run_id: str) -> Optional[OperationState
         # Get layer status
         layers_key = f"{REDIS_LOG_PREFIX}{run_id}:layers"
         layers_json = await redis.get(layers_key)
+        # Decode bytes if needed
+        if isinstance(layers_json, bytes):
+            layers_json = layers_json.decode()
         layer_status = json.loads(layers_json) if layers_json else {}
 
         # Reconstruct state
