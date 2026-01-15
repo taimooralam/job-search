@@ -142,7 +142,7 @@ class CandidateData:
     email: str
     phone: str
     linkedin: str
-    location: str
+    nationality: str
     languages: List[str]
     education_masters: str
     education_bachelors: str
@@ -160,7 +160,7 @@ class CandidateData:
             "email": self.email,
             "phone": self.phone,
             "linkedin": self.linkedin,
-            "location": self.location,
+            "nationality": self.nationality,
             "languages": self.languages,
             "education_masters": self.education_masters,
             "education_bachelors": self.education_bachelors,
@@ -309,7 +309,7 @@ class CVLoader:
             email=contact.get("email", ""),
             phone=contact.get("phone", ""),
             linkedin=contact.get("linkedin", ""),
-            location=contact.get("location", ""),
+            nationality=contact.get("nationality", ""),
             languages=coerce_to_list(candidate_meta.get("languages")),
             education_masters=education.get("masters", ""),
             education_bachelors=education.get("bachelors", ""),
@@ -447,7 +447,7 @@ class CVLoader:
             email=contact.get("email", ""),
             phone=contact.get("phone", ""),
             linkedin=contact.get("linkedin", ""),
-            location=contact.get("location", ""),
+            nationality=contact.get("nationality", ""),
             languages=coerce_to_list(candidate_meta.get("languages")),
             education_masters=education.get("masters", ""),
             education_bachelors=education.get("bachelors", ""),

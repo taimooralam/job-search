@@ -1431,7 +1431,7 @@ EMPHASIS AREAS: {', '.join(template_data['emphasis'])}
                 "email": candidate_data.get("email", ""),
                 "phone": candidate_data.get("phone", ""),
                 "linkedin": candidate_data.get("linkedin", ""),
-                "location": candidate_data.get("location", ""),
+                "nationality": candidate_data.get("nationality", ""),
             }
             education = candidate_data.get("education", [])
             certifications = candidate_data.get("certifications", [])

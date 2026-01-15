@@ -782,8 +782,8 @@ class MasterCVStore:
                 contact_parts.append(contact["email"])
             if contact.get("phone"):
                 contact_parts.append(contact["phone"])
-            if contact.get("location"):
-                contact_parts.append(contact["location"])
+            if contact.get("nationality"):
+                contact_parts.append(contact["nationality"])
             if contact.get("linkedin"):
                 contact_parts.append(contact["linkedin"])
             if contact_parts:

@@ -649,7 +649,7 @@ Return JSON matching this ProfileResponse schema:
             "email": candidate_data.get("email", ""),
             "phone": candidate_data.get("phone", ""),
             "linkedin": candidate_data.get("linkedin", ""),
-            "location": candidate_data.get("location", ""),
+            "nationality": candidate_data.get("nationality", ""),
         }
 
 

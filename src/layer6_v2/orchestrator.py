@@ -486,7 +486,7 @@ class CVGeneratorV2:
                 "email": candidate_data.email,
                 "phone": candidate_data.phone,
                 "linkedin": candidate_data.linkedin,
-                "location": candidate_data.location,
+                "nationality": candidate_data.nationality,
                 "education_masters": candidate_data.education_masters,
                 "education_bachelors": candidate_data.education_bachelors,
                 "certifications": candidate_data.certifications,
@@ -911,7 +911,7 @@ class CVGeneratorV2:
                 "email": candidate_data.email,
                 "phone": candidate_data.phone,
                 "linkedin": candidate_data.linkedin,
-                "location": candidate_data.location,
+                "nationality": candidate_data.nationality,
                 "roles": [
                     {
                         "title": role.title,
@@ -1010,8 +1010,8 @@ class CVGeneratorV2:
             contact_parts.append(candidate.phone)
         if candidate.linkedin:
             contact_parts.append(candidate.linkedin)
-        if candidate.location:
-            contact_parts.append(candidate.location)
+        if candidate.nationality:
+            contact_parts.append(candidate.nationality)
         contact_line = " · ".join(contact_parts)
         lines.append(f"*{contact_line}*")
 
@@ -1329,8 +1329,8 @@ class CVGeneratorV2:
             contact_parts.append(candidate.phone)
         if candidate.linkedin:
             contact_parts.append(candidate.linkedin)
-        if candidate.location:
-            contact_parts.append(candidate.location)
+        if candidate.nationality:
+            contact_parts.append(candidate.nationality)
 
         contact_line = " · ".join(contact_parts)
         lines.append(f"*{contact_line}*")  # Italic formatting

@@ -1526,10 +1526,10 @@ class HeaderOutput:
         email = self.contact_info.get("email", "")
         phone = self.contact_info.get("phone", "")
         linkedin = self.contact_info.get("linkedin", "")
-        location = self.contact_info.get("location", "")
+        nationality = self.contact_info.get("nationality", "")
 
         lines.append(name)
-        contact_parts = [p for p in [email, phone, linkedin, location] if p]
+        contact_parts = [p for p in [email, phone, linkedin, nationality] if p]
         lines.append(" | ".join(contact_parts))
         lines.append("")
 
