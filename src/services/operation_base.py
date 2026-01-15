@@ -93,13 +93,24 @@ class OperationService(ABC):
         """
         return get_model_for_operation(tier, self.operation_name)
 
-    def create_run_id(self) -> str:
+    def create_run_id(self, parent_run_id: Optional[str] = None) -> str:
         """
-        Generate unique run ID for tracking.
+        Generate unique run ID for tracking, or use parent's if provided.
+
+        When called from a parent pipeline (e.g., BatchPipelineService),
+        the parent_run_id ensures all child operations log to the same
+        run_id for unified visibility in the CLI panel.
+
+        Args:
+            parent_run_id: Optional run_id from parent pipeline.
+                          If provided, returns this instead of generating new one.
 
         Returns:
-            Unique run ID string in format "op_{operation}_{random_hex}"
+            Unique run ID string in format "op_{operation}_{random_hex}",
+            or parent_run_id if provided.
         """
+        if parent_run_id:
+            return parent_run_id
         return f"op_{self.operation_name}_{uuid.uuid4().hex[:12]}"
 
     def estimate_cost(

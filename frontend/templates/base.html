@@ -3043,6 +3043,22 @@
                 if (response.ok && result.success) {
                     showToast(`${result.updated_count} job${result.updated_count > 1 ? 's' : ''} moved to batch!`, 'success');
 
+                    // Dispatch cli:start-run for each queued job so CLI panel shows logs
+                    if (result.auto_queued && result.auto_queued.length > 0) {
+                        result.auto_queued.forEach(queued => {
+                            if (queued.run_id) {
+                                window.dispatchEvent(new CustomEvent('cli:start-run', {
+                                    detail: {
+                                        runId: queued.run_id,
+                                        jobId: queued.job_id,
+                                        jobTitle: queued.title || 'Job',
+                                        action: 'batch-pipeline'
+                                    }
+                                }));
+                            }
+                        });
+                    }
+
                     // Clear selection
                     selectedJobIds.clear();
                     updateSelectionCount();
@@ -3219,6 +3235,22 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
+                    // Dispatch cli:start-run for CLI panel logging
+                    if (result.auto_queued && result.auto_queued.length > 0) {
+                        result.auto_queued.forEach(queued => {
+                            if (queued.run_id) {
+                                window.dispatchEvent(new CustomEvent('cli:start-run', {
+                                    detail: {
+                                        runId: queued.run_id,
+                                        jobId: queued.job_id,
+                                        jobTitle: queued.title || jobTitle || 'Job',
+                                        action: 'batch-pipeline'
+                                    }
+                                }));
+                            }
+                        });
+                    }
+
                     // Dispatch events for each queued job so live status badges update immediately
                     if (result.all_ops_runs && result.all_ops_runs.length > 0) {
                         result.all_ops_runs.forEach((run, index) => {

@@ -194,6 +194,7 @@ class BatchPipelineService(OperationService):
                 log_callback=log_callback,
                 auto_annotate=True,
                 auto_persona=True,
+                parent_run_id=run_id,  # Pass parent's run_id for unified logging
             )
 
             step_results["extraction"] = {
@@ -256,6 +257,7 @@ class BatchPipelineService(OperationService):
                 force_refresh=False,
                 progress_callback=progress_callback,
                 log_callback=log_callback,
+                parent_run_id=run_id,  # Pass parent's run_id for unified logging
             )
 
             step_results["company_research"] = {
@@ -304,6 +306,7 @@ class BatchPipelineService(OperationService):
                 tier=tier,
                 use_annotations=True,
                 progress_callback=progress_callback,
+                parent_run_id=run_id,  # Pass parent's run_id for unified logging
             )
 
             step_results["cv_generation"] = {
@@ -340,15 +343,21 @@ class BatchPipelineService(OperationService):
 
         # =====================================================================
         # STEP 6: Upload CV to Google Drive
-        # Reuses existing HTTP endpoint - no code duplication
+        # Uses direct function call for unified logging (no HTTP overhead)
         # =====================================================================
         _emit_progress("cv_upload", "running", "Uploading CV to Google Drive...")
 
         try:
-            cv_upload_result = await self._call_upload_endpoint(
+            from src.services.gdrive_upload_service import upload_cv_to_gdrive
+
+            # Create string log callback wrapper for upload service
+            def cv_upload_log(message: str) -> None:
+                if log_callback:
+                    log_callback(message)
+
+            cv_upload_result = await upload_cv_to_gdrive(
                 job_id=job_id,
-                endpoint_path="cv/upload-drive",
-                step_name="cv_upload",
+                log_callback=cv_upload_log,
             )
 
             step_results["cv_upload"] = cv_upload_result
@@ -378,15 +387,21 @@ class BatchPipelineService(OperationService):
 
         # =====================================================================
         # STEP 7: Upload Dossier to Google Drive
-        # Reuses existing HTTP endpoint - no code duplication
+        # Uses direct function call for unified logging (no HTTP overhead)
         # =====================================================================
         _emit_progress("dossier_upload", "running", "Uploading dossier to Google Drive...")
 
         try:
-            dossier_upload_result = await self._call_upload_endpoint(
+            from src.services.gdrive_upload_service import upload_dossier_to_gdrive
+
+            # Create string log callback wrapper for upload service
+            def dossier_upload_log(message: str) -> None:
+                if log_callback:
+                    log_callback(message)
+
+            dossier_upload_result = await upload_dossier_to_gdrive(
                 job_id=job_id,
-                endpoint_path="dossier/upload-drive",
-                step_name="dossier_upload",
+                log_callback=dossier_upload_log,
             )
 
             step_results["dossier_upload"] = dossier_upload_result

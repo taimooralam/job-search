@@ -325,8 +325,24 @@ window.mobileApp = function() {
                         job_ids: [jobId],
                         auto_process: true
                     })
-                }).then(response => {
+                }).then(async response => {
                     if (response.ok) {
+                        const data = await response.json();
+
+                        // Dispatch cli:start-run for CLI panel (visible on desktop)
+                        // This allows logs to stream even when triggered from mobile
+                        if (data.auto_queued?.[0]?.run_id) {
+                            const queued = data.auto_queued[0];
+                            window.dispatchEvent(new CustomEvent('cli:start-run', {
+                                detail: {
+                                    runId: queued.run_id,
+                                    jobId: queued.job_id,
+                                    jobTitle: queued.title || this.currentJob?.title || 'Job',
+                                    action: 'batch-pipeline'
+                                }
+                            }));
+                        }
+
                         window.showToast?.('Moved to batch & analyzing', 'success');
                     } else {
                         window.showToast?.('Failed to move to batch', 'error');

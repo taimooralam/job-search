@@ -20,7 +20,7 @@
    ============================================================================ */
 
 const CLI_STORAGE_KEY = 'cli_state';
-const MAX_RUNS = 10;
+const MAX_RUNS = 50;
 const MAX_LOGS_PER_RUN = 500;
 const SAVE_DEBOUNCE_MS = 2000;
 const PENDING_LOGS_TIMEOUT_MS = 5000; // How long to wait for run to be created before fetching from API

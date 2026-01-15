@@ -303,6 +303,7 @@ class CompanyResearchService(OperationService):
         force_refresh: bool = False,
         progress_callback: callable = None,
         log_callback: callable = None,
+        parent_run_id: Optional[str] = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -314,6 +315,8 @@ class CompanyResearchService(OperationService):
             force_refresh: If True, skip cache and re-research
             progress_callback: Optional callback(layer_key, status, message) for real-time updates
             log_callback: Optional callback(message: str) for log streaming to frontend
+            parent_run_id: Optional run_id from parent pipeline (e.g., BatchPipelineService).
+                          If provided, logs to parent's run_id for unified CLI visibility.
             **kwargs: Additional parameters (unused)
 
         Returns:
@@ -328,7 +331,7 @@ class CompanyResearchService(OperationService):
                 except Exception as e:
                     logger.warning(f"Progress callback failed: {e}")
 
-        run_id = self.create_run_id()
+        run_id = self.create_run_id(parent_run_id)
         model = self.get_model(tier)
 
         logger.info(

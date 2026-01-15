@@ -1162,7 +1162,7 @@ def move_to_batch():
     )
 
     # Auto-queue analyze-job (full-extraction) for each job if auto_process is True
-    # This runs silently in the background without CLI console visibility
+    # Returns run_id so frontend can subscribe to logs
     auto_queued = []
     queue_errors = []
 
@@ -1170,6 +1170,10 @@ def move_to_batch():
         runner_url = os.getenv("RUNNER_URL", "http://72.61.92.76:8000")
         runner_secret = os.getenv("RUNNER_API_SECRET", "")
         headers = {"Authorization": f"Bearer {runner_secret}"} if runner_secret else {}
+
+        # Fetch job titles for CLI panel labels
+        jobs_cursor = repo.find({"_id": {"$in": object_ids}}, {"title": 1, "company": 1})
+        jobs_by_id = {str(j["_id"]): j for j in jobs_cursor}
 
         for job_id in job_ids:
             try:
@@ -1184,8 +1188,15 @@ def move_to_batch():
                     timeout=5.0  # Quick timeout - just queuing, not waiting for completion
                 )
                 if response.status_code == 200:
-                    auto_queued.append(job_id)
-                    logger.debug(f"Auto-queued batch-pipeline for job {job_id}")
+                    resp_data = response.json()
+                    job_info = jobs_by_id.get(job_id, {})
+                    auto_queued.append({
+                        "job_id": job_id,
+                        "run_id": resp_data.get("run_id"),
+                        "title": job_info.get("title", "Job"),
+                        "company": job_info.get("company", ""),
+                    })
+                    logger.debug(f"Auto-queued batch-pipeline for job {job_id}, run_id={resp_data.get('run_id')}")
                 else:
                     queue_errors.append({"job_id": job_id, "error": f"Status {response.status_code}"})
                     logger.warning(f"Failed to queue batch-pipeline for {job_id}: {response.status_code}")

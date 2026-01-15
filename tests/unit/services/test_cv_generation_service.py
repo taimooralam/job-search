@@ -277,12 +277,16 @@ class TestCVGenerationServiceBuildEditorState:
     """Tests for CV editor state building."""
 
     def test_build_editor_state_returns_doc_structure(self, service):
-        """Should return prosemirror doc structure."""
+        """Should return full editor state with prosemirror doc structure."""
         state = service._build_cv_editor_state("# Heading\n\nSome text")
 
-        assert "type" in state
-        assert state["type"] == "doc"
+        # New format includes version, content (with doc), and documentStyles
+        assert "version" in state
         assert "content" in state
+        assert "documentStyles" in state
+        # The actual doc structure is nested under content
+        assert state["content"]["type"] == "doc"
+        assert "content" in state["content"]
 
     def test_build_editor_state_handles_empty_text(self, service):
         """Should return empty doc for empty text."""
@@ -490,7 +494,10 @@ class TestCVGenerationServiceExecute:
             )
 
         assert "cv_editor_state" in result.data
-        assert "type" in result.data["cv_editor_state"]
+        # New format: editor state contains version, content (with doc), and documentStyles
+        assert "version" in result.data["cv_editor_state"]
+        assert "content" in result.data["cv_editor_state"]
+        assert result.data["cv_editor_state"]["content"]["type"] == "doc"
 
     @pytest.mark.asyncio
     async def test_execute_returns_error_for_missing_job(

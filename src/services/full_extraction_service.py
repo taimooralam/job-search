@@ -516,6 +516,7 @@ class FullExtractionService(OperationService):
         log_callback: callable = None,
         auto_annotate: bool = False,
         auto_persona: bool = False,
+        parent_run_id: Optional[str] = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -531,6 +532,8 @@ class FullExtractionService(OperationService):
             log_callback: Optional callback(message: str) for log streaming to frontend
             auto_annotate: Whether to auto-generate annotations after extraction (default False)
             auto_persona: Whether to auto-synthesize persona after annotations (default False)
+            parent_run_id: Optional run_id from parent pipeline (e.g., BatchPipelineService).
+                          If provided, logs to parent's run_id for unified CLI visibility.
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -554,7 +557,7 @@ class FullExtractionService(OperationService):
                 # Emit JSON log with backend field for frontend visibility
                 log_callback(_json.dumps(data))
 
-        run_id = self.create_run_id()
+        run_id = self.create_run_id(parent_run_id)
         logger.info(f"[{run_id[:16]}] Starting full-extraction for job {job_id}")
 
         with self.timed_execution() as timer:

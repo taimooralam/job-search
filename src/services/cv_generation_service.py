@@ -75,6 +75,7 @@ class CVGenerationService(OperationService):
         tier: ModelTier,
         use_annotations: bool = True,
         progress_callback: callable = None,
+        parent_run_id: Optional[str] = None,
         **kwargs,
     ) -> OperationResult:
         """
@@ -86,12 +87,14 @@ class CVGenerationService(OperationService):
             use_annotations: Whether to use JD annotations if available
             progress_callback: Optional callback for real-time progress updates.
                               Signature: callback(layer_key: str, status: str, message: str)
+            parent_run_id: Optional run_id from parent pipeline (e.g., BatchPipelineService).
+                          If provided, logs to parent's run_id for unified CLI visibility.
             **kwargs: Additional arguments (ignored)
 
         Returns:
             OperationResult with cv_text and cv_editor_state in data
         """
-        run_id = self.create_run_id()
+        run_id = self.create_run_id(parent_run_id)
         model = self.get_model(tier)
 
         # Helper to call progress callback if provided (async to yield to event loop)
