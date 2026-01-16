@@ -166,7 +166,9 @@ class BatchPipelineService(OperationService):
             """Emit log entry to callback if provided."""
             if log_callback:
                 try:
-                    log_callback(log_entry)
+                    # Stringify dict for log_callback (expects str, not dict)
+                    import json as _json
+                    log_callback(_json.dumps(log_entry))
                 except Exception as e:
                     logger.warning(f"Log callback error: {e}")
 
