@@ -62,6 +62,17 @@ def _parse_log_entry(log: str, index: int) -> Dict[str, Any]:
         log_obj["source"] = "unknown"
         return log_obj
 
+    # Handle case where log is already a dict (from in-memory state)
+    # This happens when serving from memory rather than Redis
+    if isinstance(log, dict):
+        log_obj["source"] = "structured"
+        log_obj["message"] = log.get("message", str(log))
+        # Copy relevant fields from the dict
+        for key in ("backend", "tier", "cost_usd", "event", "metadata", "traceback", "error"):
+            if key in log:
+                log_obj[key] = log[key]
+        return log_obj
+
     log_stripped = log.strip()
 
     # Try to parse as JSON (structured log from StructuredLogger)
