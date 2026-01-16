@@ -117,19 +117,29 @@ function sanitizeRuns(runs) {
             continue;
         }
 
+        // First, strip any internal properties (starting with _) that may have
+        // been incorrectly saved to sessionStorage. These are runtime-only
+        // properties like _logPoller that serialize to {} and cause bugs.
+        const cleanRun = {};
+        for (const [key, value] of Object.entries(run)) {
+            if (!key.startsWith('_')) {
+                cleanRun[key] = value;
+            }
+        }
+
         // Ensure required fields exist with defaults
         sanitized[runId] = {
-            jobId: run.jobId || null,
-            jobTitle: run.jobTitle || 'Unknown',
-            action: run.action || 'unknown',
-            status: run.status || 'unknown',
-            logs: Array.isArray(run.logs) ? run.logs : [],
-            layerStatus: run.layerStatus || {},
-            startedAt: run.startedAt || Date.now(),
-            completedAt: run.completedAt || null,
-            error: run.error || null,
-            // Preserve any extra fields
-            ...run
+            jobId: cleanRun.jobId || null,
+            jobTitle: cleanRun.jobTitle || 'Unknown',
+            action: cleanRun.action || 'unknown',
+            status: cleanRun.status || 'unknown',
+            logs: Array.isArray(cleanRun.logs) ? cleanRun.logs : [],
+            layerStatus: cleanRun.layerStatus || {},
+            startedAt: cleanRun.startedAt || Date.now(),
+            completedAt: cleanRun.completedAt || null,
+            error: cleanRun.error || null,
+            // Preserve any extra public fields
+            ...cleanRun
         };
     }
 
@@ -1972,10 +1982,24 @@ document.addEventListener('alpine:init', () => {
          */
         _saveStateImmediate() {
             try {
+                // Strip internal properties (like _logPoller) from runs before saving
+                // _logPoller is a class instance that serializes to {} and causes bugs on restore
+                const cleanRuns = {};
+                for (const [runId, run] of Object.entries(this.runs)) {
+                    const cleanRun = {};
+                    for (const [key, value] of Object.entries(run)) {
+                        // Skip internal properties (those starting with _)
+                        if (!key.startsWith('_')) {
+                            cleanRun[key] = value;
+                        }
+                    }
+                    cleanRuns[runId] = cleanRun;
+                }
+
                 const state = {
                     expanded: this.expanded,
                     activeRunId: this.activeRunId,
-                    runs: this.runs,
+                    runs: cleanRuns,
                     runOrder: this.runOrder,
                     panelSize: this.panelSize,
                     fontSize: this.fontSize
