@@ -149,16 +149,17 @@ class FeedbackResponse(BaseModel):
 # ============================================================================
 
 
-@router.post("/jobs/{job_id}/generate-annotations", response_model=GenerateAnnotationsStartResponse)
+@router.post("/jobs/{job_id}/generate-annotations")
 async def generate_annotations(
     job_id: str,
     background_tasks: BackgroundTasks,
-    sync: bool = Query(default=False, description="Run synchronously (for backward compat)"),
-) -> GenerateAnnotationsStartResponse:
+    sync: bool = Query(default=True, description="Run synchronously (default for backward compat)"),
+):
     """
-    Generate annotations for a job's structured JD (async with real-time logging).
+    Generate annotations for a job's structured JD.
 
-    This endpoint returns immediately with a run_id. Use:
+    By default (sync=True), runs synchronously and returns the result directly.
+    Set sync=False for async mode with real-time logging via:
     - GET /api/logs/operations/{run_id} for real-time logs via polling
     - GET /jobs/{job_id}/annotations/result/{run_id} for final result
 
@@ -170,10 +171,10 @@ async def generate_annotations(
 
     Args:
         job_id: MongoDB ObjectId of the job
-        sync: If True, run synchronously and return result directly (for backward compat)
+        sync: If True (default), run synchronously and return result directly
 
     Returns:
-        GenerateAnnotationsStartResponse with run_id for tracking
+        GenerateAnnotationsResponse (sync) or GenerateAnnotationsStartResponse (async)
     """
     # Validate job_id format
     try:
@@ -185,19 +186,50 @@ async def generate_annotations(
     run_id = create_operation_run(job_id=job_id, operation="generate-annotations")
     log_cb = create_log_callback(run_id)
 
-    # Start background task
-    background_tasks.add_task(
-        _run_annotation_generation,
-        run_id=run_id,
-        job_id=job_id,
-        log_callback=log_cb,
-    )
+    if sync:
+        # Run synchronously and return result directly (backward compatible)
+        from src.services.annotation_suggester import generate_annotations_for_job
 
-    return GenerateAnnotationsStartResponse(
-        run_id=run_id,
-        status="queued",
-        job_id=job_id,
-    )
+        try:
+            update_operation_status(run_id, "running")
+            result = generate_annotations_for_job(job_id)
+
+            response = GenerateAnnotationsResponse(
+                success=result.get("success", False),
+                created=result.get("created", 0),
+                skipped=result.get("skipped", 0),
+                annotations=result.get("annotations", []),
+                error=result.get("error"),
+            )
+
+            if response.success:
+                update_operation_status(run_id, "completed", result=response.model_dump())
+            else:
+                update_operation_status(run_id, "failed", error=response.error)
+
+            return response
+
+        except Exception as e:
+            logger.exception(f"Annotation generation failed for job {job_id}: {e}")
+            update_operation_status(run_id, "failed", error=str(e))
+            return GenerateAnnotationsResponse(
+                success=False,
+                error=str(e),
+            )
+    else:
+        # Async mode - return run_id for polling
+        background_tasks.add_task(
+            _run_annotation_generation,
+            run_id=run_id,
+            job_id=job_id,
+            log_callback=log_cb,
+        )
+
+        return GenerateAnnotationsStartResponse(
+            run_id=run_id,
+            status="queued",
+            job_id=job_id,
+        )
 
 
 async def _run_annotation_generation(
