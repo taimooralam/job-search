@@ -1313,13 +1313,13 @@ def generate_annotations(job_id: str):
         response = requests.post(
             f"{RUNNER_URL}/jobs/{job_id}/generate-annotations",
             headers=get_headers(),
-            timeout=60,  # Longer timeout for embedding computation
+            timeout=180,  # 3 min timeout for embedding loading + similarity computation
         )
 
         return jsonify(response.json()), response.status_code
 
     except requests.exceptions.Timeout:
-        return jsonify({"error": "Annotation generation timeout"}), 504
+        return jsonify({"error": "Annotation generation timeout - embedding computation took too long"}), 504
     except requests.exceptions.ConnectionError:
         return jsonify({"error": "Cannot connect to runner service"}), 503
     except Exception as e:
