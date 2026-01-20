@@ -428,8 +428,12 @@ class ClaudeCLI:
                 "--output-format", "text",
                 "--model", self.model,
                 "--dangerously-skip-permissions",
-                "--tools", "",  # Disable all tools (proper syntax for --print mode)
             ]
+
+            # Only disable tools if not needed (allow_tools=False)
+            # When allow_tools=True, CLI uses default tools including WebSearch
+            if not allow_tools:
+                cmd.extend(["--tools", ""])  # Disable all tools
 
             result = subprocess.run(
                 cmd,

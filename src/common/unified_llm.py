@@ -409,6 +409,12 @@ class UnifiedLLM:
         """
         start_time = datetime.utcnow()
 
+        # Auto-enable tools for research steps (they need WebSearch)
+        # Research steps are named: research_company, research_role, research_people, etc.
+        allow_tools = self.step_name.startswith("research_")
+        if allow_tools:
+            logger.debug(f"[UnifiedLLM:{self.step_name}] Enabling CLI tools (WebSearch) for research step")
+
         # Run sync CLI in thread pool
         # Pass struct_logger for Redis live-tail logging of prompts/results
         loop = asyncio.get_event_loop()
@@ -418,6 +424,7 @@ class UnifiedLLM:
                 prompt,
                 job_id,
                 validate_json=validate_json,
+                allow_tools=allow_tools,
                 struct_logger=self._struct_logger,
             ),
         )
