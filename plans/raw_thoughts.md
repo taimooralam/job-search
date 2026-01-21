@@ -32,5 +32,6 @@ mongodb://jobsearch_app:<password>@72.61.92.76:27018/jobs?authSource=jobs&direct
 js:vps-mongo
 js:pliant
 togaf:ai-agentic
-togaf: togaf
+togaf: togaf-learning
 js:cv-rewrite
+js:misc
