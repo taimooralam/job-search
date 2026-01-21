@@ -179,6 +179,13 @@
                         <button type="button" onclick="setQuickDateFilter(this, 3, 'hour')" class="quick-date-btn quick-date-btn-hour btn btn-sm btn-ghost border">3h</button>
                         <button type="button" onclick="setQuickDateFilter(this, 6, 'hour')" class="quick-date-btn quick-date-btn-hour btn btn-sm btn-ghost border">6h</button>
                         <button type="button" onclick="setQuickDateFilter(this, 12, 'hour')" class="quick-date-btn quick-date-btn-hour btn btn-sm btn-ghost border">12h</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 24, 'hour')" class="quick-date-btn quick-date-btn-hour btn btn-sm btn-ghost border">24h</button>
+
+                        <!-- Day filters (orange) -->
+                        <button type="button" onclick="setQuickDateFilter(this, 1, 'day')" class="quick-date-btn quick-date-btn-day btn btn-sm btn-ghost border">1d</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 2, 'day')" class="quick-date-btn quick-date-btn-day btn btn-sm btn-ghost border">2d</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 3, 'day')" class="quick-date-btn quick-date-btn-day btn btn-sm btn-ghost border">3d</button>
+                        <button type="button" onclick="setQuickDateFilter(this, 5, 'day')" class="quick-date-btn quick-date-btn-day btn btn-sm btn-ghost border">5d</button>
 
                         <!-- Week filters (green) -->
                         <button type="button" onclick="setQuickDateFilter(this, 1, 'week')" class="quick-date-btn quick-date-btn-week btn btn-sm btn-ghost border">1w</button>
@@ -837,6 +844,9 @@
         switch (unit) {
             case 'hour':
                 fromDate.setTime(now.getTime() - (amount * 60 * 60 * 1000));
+                break;
+            case 'day':
+                fromDate.setTime(now.getTime() - (amount * 24 * 60 * 60 * 1000));
                 break;
             case 'week':
                 fromDate.setTime(now.getTime() - (amount * 7 * 24 * 60 * 60 * 1000));
