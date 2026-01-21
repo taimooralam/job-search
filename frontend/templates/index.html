@@ -223,6 +223,21 @@
                                    hx-include=".filter-input">
                             <span class="text-sm font-medium theme-text-secondary">Applied Only</span>
                         </label>
+
+                        <!-- Leadership Only toggle -->
+                        <label class="flex items-center gap-2 cursor-pointer ml-4">
+                            <input type="checkbox"
+                                   id="leadership-only-checkbox"
+                                   name="leadership_only"
+                                   value="true"
+                                   class="filter-input h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                                   hx-get="/partials/job-rows"
+                                   hx-trigger="change"
+                                   hx-target="#job-table-container"
+                                   hx-include=".filter-input">
+                            <span class="text-sm font-medium theme-text-secondary">Leadership Only</span>
+                            <span class="text-xs theme-text-tertiary" title="CTO, VP, Director roles">(C-level)</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -968,6 +983,9 @@
 
         // Clear applied-only checkbox
         document.getElementById('applied-only-checkbox').checked = false;
+
+        // Clear leadership-only checkbox
+        document.getElementById('leadership-only-checkbox').checked = false;
 
         // Reload all locations (no date filter)
         loadLocations();

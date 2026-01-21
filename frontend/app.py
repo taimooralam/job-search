@@ -561,6 +561,9 @@ def list_jobs():
     # Check for "applied only" quick filter - overrides status filter
     applied_only = request.args.get("applied_only", "").lower() == "true"
 
+    # Check for "leadership only" filter - filters to CTO/VP/Director roles (tiers 0-2)
+    leadership_only = request.args.get("leadership_only", "").lower() == "true"
+
     # Status filter (can be multiple values)
     # Default: exclude 'discarded', 'applied', 'interview scheduled'
     statuses = request.args.getlist("statuses")
@@ -692,8 +695,8 @@ def list_jobs():
     # MongoDB $toDate normalizes both ISO strings AND Date objects to Date objects
     # This allows hour-level granularity regardless of how createdAt was stored
     has_date_filter = date_filter_from is not None or date_filter_to is not None
-    # Use aggregation for date filtering OR for default multi-criteria sorting
-    use_aggregation = has_date_filter or use_default_sort
+    # Use aggregation for date filtering OR for default multi-criteria sorting OR for leadership filter
+    use_aggregation = has_date_filter or use_default_sort or leadership_only
 
     if use_aggregation:
         # Build aggregation pipeline
@@ -716,8 +719,8 @@ def list_jobs():
                 }
             }
 
-        # Add computed sort fields for default multi-criteria sorting
-        if use_default_sort:
+        # Add computed sort fields for default multi-criteria sorting or leadership filtering
+        if use_default_sort or leadership_only:
             # _locationPriority: tiered priority (1=Saudi, 2=UAE, 3=Others)
             # Lower value = higher priority. Only add if no location filter is applied
             if not has_location_filter:
@@ -779,6 +782,10 @@ def list_jobs():
             if date_filter_to:
                 date_match["$lte"] = date_filter_to
             pipeline.append({"$match": {"_normalizedDate": date_match}})
+
+        # Stage 3b: Filter by leadership roles (tiers 0-2: CTO, VP, Director)
+        if leadership_only:
+            pipeline.append({"$match": {"_seniorityRank": {"$lte": 2}}})
 
         # Build sort specification
         if use_default_sort:
