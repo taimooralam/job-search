@@ -35,3 +35,5 @@ togaf:ai-agentic
 togaf: togaf-learning
 js:cv-rewrite
 js:misc
+js:cv-improvements (for cv generation improvements)
+togaf:exam-injestion
