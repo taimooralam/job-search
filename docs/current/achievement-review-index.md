@@ -10,8 +10,8 @@
 | Metric | Count |
 |--------|-------|
 | **Total Achievements** | 44 |
-| **Reviewed** | 0 |
-| **Pending** | 44 |
+| **Reviewed** | 2 |
+| **Pending** | 42 |
 | **In Progress** | - |
 
 ---
@@ -44,8 +44,8 @@
 
 | # | ID | Title | Role | Company | Gap Summary |
 |---|----|----|------|---------|-------------|
-| 1 | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | Current | Seven.One | 0% leadership, too much architecture |
-| 2 | `01_seven_one_entertainment_6` | Technical Vision & Business Alignment | Current | Seven.One | All competencies at 0% |
+| 1 | `01_seven_one_entertainment_2` | Architectural Runway & Technical Debt Strategy | Current | Seven.One | ✅ Reviewed |
+| 2 | `01_seven_one_entertainment_6` | Technical Vision & Architectural North Star | Current | Seven.One | ✅ Reviewed |
 | 3 | `02_samdock_daypaio_4` | API Design & Documentation | Mid-Senior | Samdock | 0% leadership, 67% architecture |
 | 4 | `02_samdock_daypaio_8` | Scalability Architecture | Mid-Senior | Samdock | 25% leadership (needs 45%) |
 | 5 | `03_ki_labs_3` | API Documentation & Developer Experience | Mid | KI Labs | 0% leadership |

@@ -7,8 +7,8 @@ last_updated: "2026-01-01"
 
 summary:
   total: 44
-  reviewed: 0
-  pending: 44
+  reviewed: 2
+  pending: 42
   in_progress: null
 
 # Achievements sorted by priority score (lowest first = highest priority)
@@ -25,7 +25,8 @@ achievements:
     company: "Seven.One Entertainment"
     period: "2020-Present"
     priority_score: 0.0
-    status: pending
+    status: reviewed
+    last_reviewed: "2026-01-23"
     review_session: null
     last_reviewed: null
     gaps:
@@ -46,12 +47,13 @@ achievements:
       skills_whitelisted: []
 
   - id: "01_seven_one_entertainment_6"
-    title: "Technical Vision & Business Alignment"
+    title: "Technical Vision & Architectural North Star"
     role_file: "01_seven_one_entertainment"
     company: "Seven.One Entertainment"
     period: "2020-Present"
     priority_score: 0.0
-    status: pending
+    status: reviewed
+    last_reviewed: "2026-01-23"
     review_session: null
     last_reviewed: null
     gaps:
