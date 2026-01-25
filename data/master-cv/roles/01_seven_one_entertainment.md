@@ -118,20 +118,26 @@ Per the CV generation critique recommendations:
 
 ---
 
-### Achievement 6: Technical Vision & Business Alignment
+### Achievement 6: Technical Vision & Architectural North Star
 
-**Core Fact**: Devised technical vision and roadmap aligned with company strategy of increasing reach and consented users. Preserved and increased ad impressions (15% YoY growth) despite global industry-wide decline in linear TV viewership through adaptive algorithmic blacklisting and ad supply optimization.
+**Core Fact**: Established "intelligent servers, dumb clients" architectural north star for AdTech platform, addressing critical observability gaps where HbbTV clients couldn't log to servers—creating knowledge black holes. Educated business stakeholders on technical debt ROI, securing investment in system health over pure feature delivery. Mentored engineering team through collaborative architecture design using DDD, event-driven choreography, and autonomous monitored workflows. Designed adaptive algorithmic blacklisting using history cookies and confidence scoring to optimize ad break success rates.
 
 **Variants**:
-- **Strategy**: Devised technical roadmap aligned with business OKRs, achieving 15% YoY impression growth despite declining linear TV market
-- **Innovation**: Developed adaptive algorithmic blacklisting technique increasing reach and revenue by ~20% against industry headwinds
-- **Leadership**: Aligned technical architecture with company strategy, turning industry decline into competitive advantage
-- **Impact**: Preserved ad revenue through technical innovation despite global linear TV viewership decline
-- **Short**: Technical vision driving 15% growth against declining market through algorithmic innovation
+- **Leadership**: Led cross-functional alignment across product, SRE, and data teams to invest in technical health during feature delivery pressure. Mentored engineering team through collaborative architecture design, establishing north star that transformed opaque client-side logic into observable server-side intelligence
+- **Architecture**: Established "intelligent servers, dumb clients" north star addressing HbbTV observability gaps. Created target architecture with DDD, event-driven choreography, and autonomous workflows—visualized through MIRO diagrams aligning technical and business stakeholders
+- **Strategy**: Educated business stakeholders on technical debt ROI, securing investment in system health. Translated business OKRs (maximize reach) into technical strategy (observable server-side intelligence with adaptive algorithms)
+- **Innovation**: Designed adaptive algorithmic blacklisting system using historical playback data and confidence scoring. Created history cookie mechanism tracking ad break outcomes to generate real-time confidence scores for delivery optimization
+- **Technical**: Architected shift from client-side logic (unobservable HbbTV) to server-side intelligence, enabling debugging scenarios previously invisible. Applied separation of concerns, DDD bounded contexts, and event-driven patterns
+- **Short**: Architectural north star ("intelligent servers")—DDD, event-driven design, adaptive blacklisting algorithm, team mentorship
 
-**Keywords**: technical strategy, OKRs, business alignment, ad optimization, algorithmic blacklisting, AdTech, impression growth
+**Keywords**: technical vision, north star architecture, HbbTV, observability, stakeholder alignment, technical debt ROI, DDD, event-driven, choreography, autonomous workflows, adaptive algorithm, confidence scoring, ad optimization, MIRO, mentoring, cross-functional, AdTech
 
-**Interview Defensibility**: ✅ Can explain blacklisting algorithm, how OKRs translated to technical decisions, market context
+**Interview Defensibility**: ✅ Can explain:
+- "Intelligent servers" principle rationale (HbbTV logging limitations, knowledge black holes)
+- Stakeholder education approach (convincing PO to invest in tech health over features)
+- Collaborative design process (MIRO diagrams, team input, engineering buy-in)
+- Adaptive blacklisting algorithm (history cookie tracking playback success/failure, confidence scoring)
+- DDD and event-driven patterns applied (bounded contexts, choreography vs orchestration)
 
 ---
 
