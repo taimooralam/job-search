@@ -2021,6 +2021,61 @@
                         <!-- Queue Dropdowns (WebSocket-powered) -->
                         {% include 'components/queue_dropdowns.html' %}
 
+                        <!-- Starred Jobs Button with Dropdown Panel -->
+                        <div class="relative" x-data="starredJobsDropdown()">
+                            <button @click="toggle()"
+                                    class="p-2 rounded-lg transition-all duration-200 hover:scale-105 relative"
+                                    :class="open ? 'bg-yellow-500/20 text-yellow-500' : ''"
+                                    :style="!open ? 'background-color: var(--bg-hover); color: var(--text-secondary);' : ''"
+                                    title="Starred Jobs (F)"
+                                    aria-label="Starred Jobs">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                <!-- Starred count badge -->
+                                <span x-show="count > 0"
+                                      x-text="count > 99 ? '99+' : count"
+                                      class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center
+                                             text-[10px] font-bold text-white bg-yellow-500 rounded-full px-1
+                                             transition-all duration-200">
+                                </span>
+                            </button>
+
+                            <!-- Dropdown Panel -->
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl shadow-xl z-50"
+                                 style="background-color: var(--bg-card); border: 1px solid var(--border-default);">
+                                <!-- Panel header -->
+                                <div class="sticky top-0 px-4 py-3 border-b"
+                                     style="background-color: var(--bg-card); border-color: var(--border-default);">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="font-semibold" style="color: var(--text-primary);">Starred Jobs</h3>
+                                        <span x-show="count > 0" x-text="count + ' job' + (count !== 1 ? 's' : '')"
+                                              class="text-xs" style="color: var(--text-tertiary);"></span>
+                                    </div>
+                                </div>
+                                <!-- Job list (HTMX loaded) -->
+                                <div hx-get="/api/jobs/favorites/panel"
+                                     hx-trigger="revealed, starredChanged from:body"
+                                     hx-swap="innerHTML"
+                                     class="divide-y"
+                                     style="border-color: var(--border-default);">
+                                    <!-- Loading skeleton -->
+                                    <div class="px-4 py-3 animate-pulse">
+                                        <div class="h-4 rounded w-3/4 mb-2" style="background-color: var(--bg-secondary);"></div>
+                                        <div class="h-3 rounded w-1/2" style="background-color: var(--bg-secondary);"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Batch Processing Button with Count Badge -->
                         <a
                             href="/batch-processing"
@@ -2245,6 +2300,13 @@
                 discardBtn.disabled = count === 0;
                 discardBtn.classList.toggle('opacity-50', count === 0);
                 discardBtn.classList.toggle('cursor-not-allowed', count === 0);
+            }
+            // Star Selected button
+            const starBtn = document.getElementById('star-selected-btn');
+            if (starBtn) {
+                starBtn.disabled = count === 0;
+                starBtn.classList.toggle('opacity-50', count === 0);
+                starBtn.classList.toggle('cursor-not-allowed', count === 0);
             }
         }
 
@@ -3629,6 +3691,177 @@
             batchCountCache = { count: null, timestamp: 0 };
             loadBatchCount();
         });
+
+        // ============================================================================
+        // Starred Jobs Dropdown Component
+        // ============================================================================
+
+        // Alpine.js component for starred jobs dropdown
+        function starredJobsDropdown() {
+            return {
+                open: false,
+                count: 0,
+
+                init() {
+                    this.loadCount();
+                    // Listen for starredChanged events to refresh count
+                    document.body.addEventListener('starredChanged', () => {
+                        this.loadCount();
+                    });
+                    // Refresh count periodically
+                    setInterval(() => this.loadCount(), 60000);
+                },
+
+                toggle() {
+                    this.open = !this.open;
+                    if (this.open) {
+                        this.loadCount();
+                    }
+                },
+
+                async loadCount() {
+                    try {
+                        const response = await fetch('/api/jobs/favorites/count');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.count = data.count || 0;
+                        }
+                    } catch (err) {
+                        console.error('Failed to load starred count:', err);
+                    }
+                }
+            };
+        }
+
+        // ============================================================================
+        // Toggle Favorite Function (shared across all views)
+        // ============================================================================
+
+        /**
+         * Toggle or set starred status for a job.
+         * @param {string} jobId - The job _id
+         * @param {boolean} starred - New starred state (true/false)
+         * @returns {Promise<boolean|null>} - New starred state or null on error
+         */
+        async function toggleFavorite(jobId, starred) {
+            try {
+                const response = await fetch('/api/jobs/favorite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, starred: starred })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    if (typeof showToast === 'function') {
+                        showToast(error.error || 'Failed to update starred status', 'error');
+                    }
+                    return null;
+                }
+
+                const result = await response.json();
+
+                // Update all star buttons for this job
+                updateStarButtons(jobId, result.starred);
+
+                // Dispatch event to refresh panel and counts
+                document.body.dispatchEvent(new CustomEvent('starredChanged'));
+
+                // Show toast notification
+                if (typeof showToast === 'function') {
+                    showToast(result.starred ? 'Job starred' : 'Star removed', 'success');
+                }
+
+                return result.starred;
+            } catch (err) {
+                console.error('Failed to toggle favorite:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Network error', 'error');
+                }
+                return null;
+            }
+        }
+
+        /**
+         * Bulk toggle starred status for multiple jobs.
+         * @param {string[]} jobIds - Array of job _ids
+         * @param {boolean} starred - New starred state
+         * @returns {Promise<number|null>} - Count of updated jobs or null on error
+         */
+        async function toggleFavoriteBulk(jobIds, starred) {
+            try {
+                const response = await fetch('/api/jobs/favorite/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_ids: jobIds, starred: starred })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    if (typeof showToast === 'function') {
+                        showToast(error.error || 'Failed to update starred status', 'error');
+                    }
+                    return null;
+                }
+
+                const result = await response.json();
+
+                // Update star buttons for all jobs
+                jobIds.forEach(jobId => updateStarButtons(jobId, starred));
+
+                // Dispatch event to refresh panel and counts
+                document.body.dispatchEvent(new CustomEvent('starredChanged'));
+
+                // Show toast notification
+                if (typeof showToast === 'function') {
+                    const label = starred ? 'starred' : 'unstarred';
+                    showToast(`${result.updated_count} job(s) ${label}`, 'success');
+                }
+
+                return result.updated_count;
+            } catch (err) {
+                console.error('Failed to bulk toggle favorites:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Network error', 'error');
+                }
+                return null;
+            }
+        }
+
+        /**
+         * Update all star buttons for a job across the page.
+         * @param {string} jobId - The job _id
+         * @param {boolean} starred - New starred state
+         */
+        function updateStarButtons(jobId, starred) {
+            // Update buttons with data-star-job attribute
+            document.querySelectorAll(`[data-star-job="${jobId}"]`).forEach(btn => {
+                const svg = btn.querySelector('svg');
+                if (starred) {
+                    btn.classList.add('text-yellow-500');
+                    btn.classList.remove('text-[--text-tertiary]');
+                    if (svg) svg.setAttribute('fill', 'currentColor');
+                } else {
+                    btn.classList.remove('text-yellow-500');
+                    btn.classList.add('text-[--text-tertiary]');
+                    if (svg) svg.setAttribute('fill', 'none');
+                }
+            });
+
+            // Update row-level star buttons (job table)
+            document.querySelectorAll(`tr[data-job-id="${jobId}"] .star-btn`).forEach(btn => {
+                const svg = btn.querySelector('svg');
+                if (starred) {
+                    btn.classList.add('text-yellow-500');
+                    btn.classList.remove('text-[--text-tertiary]');
+                    if (svg) svg.setAttribute('fill', 'currentColor');
+                } else {
+                    btn.classList.remove('text-yellow-500');
+                    btn.classList.add('text-[--text-tertiary]');
+                    if (svg) svg.setAttribute('fill', 'none');
+                }
+            });
+        }
     </script>
 
     <!-- Global Debug Mode Helpers -->
