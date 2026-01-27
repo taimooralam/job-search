@@ -11,25 +11,34 @@ from typing import Optional
 
 def sanitize_for_path(text: str) -> str:
     """
-    Sanitize text for use in filesystem paths.
+    Sanitize text for use in filesystem paths and HTTP headers.
 
-    Removes special characters (except word chars, spaces, hyphens)
-    and replaces spaces with underscores.
+    Removes non-ASCII characters and special characters, keeping only
+    ASCII letters, digits, spaces, and hyphens. This ensures compatibility
+    with HTTP Content-Disposition headers (which use latin-1 encoding).
 
     Args:
-        text: Raw text (company name, job title, etc.)
+        text: Raw text (company name, job title, etc.) - may contain Unicode
 
     Returns:
-        Sanitized string safe for filesystem paths
+        Sanitized ASCII-only string safe for filesystem paths and HTTP headers
 
     Example:
         >>> sanitize_for_path("Director of Engineering (Software)")
-        "Director_of_Engineering__Software_"
+        "Director_of_Engineering_Software"
+        >>> sanitize_for_path("HUNGERSTATION | هنقرستيشن")
+        "HUNGERSTATION"
     """
-    # Remove special characters except word characters, spaces, and hyphens
-    cleaned = re.sub(r'[^\w\s-]', '_', text)
-    # Replace spaces with underscores
-    return cleaned.replace(" ", "_")
+    # First, remove non-ASCII characters (Arabic, Chinese, etc.)
+    # This is required for HTTP header compatibility (latin-1 encoding)
+    ascii_only = text.encode('ascii', 'ignore').decode('ascii')
+    # Remove special characters except ASCII letters, digits, spaces, and hyphens
+    cleaned = re.sub(r'[^a-zA-Z0-9\s-]', '', ascii_only)
+    # Replace multiple spaces/underscores with single underscore
+    cleaned = re.sub(r'[\s_]+', '_', cleaned)
+    # Remove leading/trailing underscores
+    cleaned = cleaned.strip('_')
+    return cleaned if cleaned else "Unknown"
 
 
 def tiptap_json_to_html(tiptap_content: dict, max_depth: int = 50) -> str:
