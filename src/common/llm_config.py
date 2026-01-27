@@ -152,9 +152,11 @@ STEP_CONFIGS: Dict[str, StepConfig] = {
     # Research steps (called with f"research_{type}" pattern)
     # IMPORTANT: use_fallback=False because Claude CLI with WebSearch is required
     # LangChain doesn't have web search, so fallback would produce garbage
-    "research_company": StepConfig(tier="middle", use_fallback=False),
-    "research_role": StepConfig(tier="middle", use_fallback=False),
-    "research_people": StepConfig(tier="middle", use_fallback=False),
+    # IMPORTANT: timeout_seconds=300 because web research involves multiple searches
+    # and can take longer than the default 120s
+    "research_company": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
+    "research_role": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
+    "research_people": StepConfig(tier="middle", use_fallback=False, timeout_seconds=300),
 
     # Persona Builder
     "persona_synthesis": StepConfig(tier="high"),
