@@ -2868,6 +2868,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================================
+// Keyboard Shortcuts
+// ============================================================================
+
+document.addEventListener('keydown', (e) => {
+    // Skip if user is typing in an input, textarea, or contenteditable
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (
+        (activeElement.tagName === 'INPUT' && activeElement.type !== 'checkbox') ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        activeElement.isContentEditable
+    );
+    if (isInputFocused) return;
+
+    // F key - toggle star/favorite
+    if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleCurrentJobFavorite();
+    }
+});
+
+/**
+ * Toggle star/favorite status for the current job.
+ */
+async function toggleCurrentJobFavorite() {
+    const jobId = getJobId();
+    if (!jobId) {
+        console.error('No job ID found');
+        return;
+    }
+
+    // Get current starred state from the star button
+    const starBtn = document.getElementById('star-btn');
+    const isCurrentlyStarred = starBtn?.classList.contains('text-yellow-500');
+
+    // Toggle to opposite state
+    if (typeof toggleFavorite === 'function') {
+        await toggleFavorite(jobId, !isCurrentlyStarred);
+    } else {
+        console.error('toggleFavorite function not available');
+    }
+}
+
+// ============================================================================
 // UI Refresh Event Handler (for CLI Panel integration)
 // ============================================================================
 

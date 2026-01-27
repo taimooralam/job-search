@@ -158,9 +158,13 @@
                                 <path d="M7.71 3.5L1.15 15l2.86 5h13.15l2.86-5L13.44 3.5H7.71zm.58 1.27l4.72 8.23H5.29l3-8.23zm6.42 0L17.14 10h-3.58l-2.43-5.23zM4.29 16l1.71-3h5.14l-1.71 3H4.29zm9.43 0l1.71-3h5.14l1.71 3h-8.56z"/>
                             </svg>
                         </button>
-                        <button onclick="toggleBookmark('{{ job._id }}')" title="Bookmark" class="quick-action-icon" id="bookmark-btn">
-                            <svg fill="{{ 'currentColor' if job.bookmarked else 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        <button onclick="toggleFavorite('{{ job._id }}', {{ 'false' if job.starred else 'true' }})"
+                                title="{{ 'Remove from starred' if job.starred else 'Star this job' }} (F)"
+                                class="quick-action-icon star-btn {{ 'text-yellow-500' if job.starred else '' }}"
+                                id="star-btn"
+                                data-star-job="{{ job._id }}">
+                            <svg fill="{{ 'currentColor' if job.starred else 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
                             </svg>
                         </button>
                         <!-- Job IDs Tooltip -->
