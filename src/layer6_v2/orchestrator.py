@@ -59,6 +59,70 @@ def is_middle_east_location(location: str) -> bool:
     return any(country in location_lower for country in MIDDLE_EAST_COUNTRIES)
 
 
+# Technical role indicators for GitHub link inclusion
+TECHNICAL_TITLE_KEYWORDS = [
+    "engineer", "developer", "architect", "sre", "devops", "data",
+    "machine learning", "ml", "ai", "platform", "infrastructure",
+    "backend", "frontend", "full stack", "fullstack", "software",
+    "systems", "cloud", "security", "staff", "principal", "tech lead",
+]
+
+# Ambiguous titles that need JD content analysis
+AMBIGUOUS_TITLES = [
+    "engineering manager", "director of engineering", "head of engineering",
+    "vp engineering", "cto", "technical program manager", "tpm",
+]
+
+# JD content signals that indicate technical depth is valued
+TECHNICAL_JD_SIGNALS = [
+    "hands-on", "coding", "code review", "pull request", "pr review",
+    "technical deep dive", "architecture review", "system design",
+    "open source", "github", "contributions", "side project",
+    "still code", "write code", "programming", "development experience",
+]
+
+
+def should_include_github(job_title: str, job_description: str = "") -> bool:
+    """
+    Determine if GitHub link should be included in CV header.
+
+    Uses hybrid logic:
+    1. Check for ambiguous titles FIRST (need JD analysis)
+    2. Clearly technical titles → Include GitHub
+    3. Clearly non-technical titles → Exclude GitHub
+
+    Args:
+        job_title: The job title from the JD
+        job_description: Full job description text for signal analysis
+
+    Returns:
+        True if GitHub should be included in the header
+    """
+    title_lower = job_title.lower()
+
+    # Check for ambiguous titles FIRST - these need JD analysis
+    # (Must check before technical keywords because "engineering manager" contains "engineer")
+    is_ambiguous = any(amb in title_lower for amb in AMBIGUOUS_TITLES)
+
+    if is_ambiguous:
+        # For ambiguous titles, only include GitHub if JD has technical signals
+        if job_description:
+            jd_lower = job_description.lower()
+            for signal in TECHNICAL_JD_SIGNALS:
+                if signal in jd_lower:
+                    return True
+        # Ambiguous without JD signals → don't include GitHub
+        return False
+
+    # Check for clearly technical titles
+    for keyword in TECHNICAL_TITLE_KEYWORDS:
+        if keyword in title_lower:
+            return True
+
+    # Default: don't include for non-technical titles
+    return False
+
+
 from src.layer6_v2.cv_loader import CVLoader, RoleData, CandidateData
 from src.layer6_v2.role_generator import (
     RoleGenerator,
@@ -1308,6 +1372,12 @@ class CVGeneratorV2:
         - **bold** for section headers and role titles
         - *italic* for tagline
         - Dot separators for elegant contact info
+
+        Header structure:
+        - Name (H1, uppercase)
+        - Links line: website · linkedin · github (conditional)
+        - Job title tagline (H3)
+        - Contact info: email · phone · nationality (no linkedin - it's in links)
         """
         lines = []
         extracted_jd = extracted_jd or {}
@@ -1315,20 +1385,33 @@ class CVGeneratorV2:
         # Header with name in uppercase (as H1 heading)
         lines.append(f"# {candidate.name.upper()}")
 
-        # Role tagline (H3): JD Title · Generic Title
+        # Links line: website, linkedin, and conditional github
         job_title = extracted_jd.get("title", "Engineering Professional")
+        job_description = extracted_jd.get("job_description", "")
+        link_parts = []
+        if candidate.website:
+            link_parts.append(candidate.website)
+        if candidate.linkedin:
+            link_parts.append(candidate.linkedin)
+        if candidate.github and should_include_github(job_title, job_description):
+            link_parts.append(candidate.github)
+
+        if link_parts:
+            links_line = " · ".join(link_parts)
+            lines.append(links_line)  # Plain text links line (styled by CSS)
+
+        # Role tagline (H3): JD Title · Generic Title
         role_category = extracted_jd.get("role_category", "engineering_manager")
         generic_title = self._get_generic_title(role_category)
         lines.append(f"### {job_title} · {generic_title}")
 
-        # Build contact info with dot separators - elegant styling, no emojis
+        # Build contact info with dot separators - no linkedin (it's in the links line above)
         contact_parts = []
         if candidate.email:
             contact_parts.append(candidate.email)
         if candidate.phone:
             contact_parts.append(candidate.phone)
-        if candidate.linkedin:
-            contact_parts.append(candidate.linkedin)
+        # LinkedIn removed from contact line - it's now in the links section above
         if candidate.nationality:
             contact_parts.append(candidate.nationality)
 

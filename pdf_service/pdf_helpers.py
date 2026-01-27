@@ -351,10 +351,19 @@ def build_pdf_html_template(
         h1 {{
             font-size: 32px;
             font-weight: 700;
-            margin: 0 0 8px 0; /* GAP-026: 20% tighter spacing */
+            margin: 0 0 4px 0; /* Reduced bottom margin for links line proximity */
             letter-spacing: 0.02em; /* Refined letter-spacing for elegance */
             text-transform: uppercase; /* Executive styling - uppercase name */
             color: #1e293b; /* slate-800 - darker for executive presence */
+        }}
+
+        /* Header links line - first paragraph after name (website, linkedin, github) */
+        h1 + p {{
+            text-align: right;
+            font-size: 10pt;
+            color: var(--color-muted);
+            margin: -28px 0 8px 0; /* Pull up to align with name, then space for h3 */
+            font-family: var(--font-body);
         }}
 
         h2 {{
